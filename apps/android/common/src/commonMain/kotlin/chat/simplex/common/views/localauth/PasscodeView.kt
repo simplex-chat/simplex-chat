@@ -39,9 +39,9 @@ fun PasscodeView(
       }
       PasscodeEntry(passcode, true)
       Row {
-        SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), click = cancel)
+        SimpleButton(generalGetString(R.string.cancel_verb), icon = painterResource(R.drawable.ic_close), click = cancel)
         Spacer(Modifier.size(20.dp))
-        SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
+        SimpleButton(submitLabel, icon = painterResource(R.drawable.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
       }
     }
   }
@@ -82,8 +82,8 @@ fun PasscodeView(
             Modifier.padding(start = 30.dp).height(s * 3),
             verticalArrangement = Arrangement.SpaceEvenly
           ) {
-            SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), click = cancel)
-            SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
+            SimpleButton(generalGetString(R.string.cancel_verb), icon = painterResource(R.drawable.ic_close), click = cancel)
+            SimpleButton(submitLabel, icon = painterResource(R.drawable.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
           }
         }
       }

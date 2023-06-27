@@ -35,7 +35,7 @@ fun ContactRequestView(chatModelIncognito: Boolean, contactRequest: ChatInfo.Con
         color = if (chatModelIncognito) Indigo else MaterialTheme.colors.primary
       )
       val height = with(LocalDensity.current) { 46.sp.toDp() }
-      Text(stringResource(MR.strings.contact_wants_to_connect_with_you), Modifier.heightIn(min = height), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
+      Text(stringResource(R.string.contact_wants_to_connect_with_you), Modifier.heightIn(min = height), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
     }
     val ts = getTimestampText(contactRequest.contactRequest.updatedAt)
     Column(

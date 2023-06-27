@@ -106,12 +106,12 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
 
 fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   val alertTextKey =
-    if (groupInfo.membership.memberCurrent) MR.strings.delete_group_for_all_members_cannot_undo_warning
-    else MR.strings.delete_group_for_self_cannot_undo_warning
+    if (groupInfo.membership.memberCurrent) R.string.delete_group_for_all_members_cannot_undo_warning
+    else R.string.delete_group_for_self_cannot_undo_warning
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.delete_group_question),
+    title = generalGetString(R.string.delete_group_question),
     text = generalGetString(alertTextKey),
-    confirmText = generalGetString(MR.strings.delete_verb),
+    confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
       withApi {
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
@@ -129,9 +129,9 @@ fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatM
 
 fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.leave_group_question),
-    text = generalGetString(MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
-    confirmText = generalGetString(MR.strings.leave_group_button),
+    title = generalGetString(R.string.leave_group_question),
+    text = generalGetString(R.string.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
+    confirmText = generalGetString(R.string.leave_group_button),
     onConfirm = {
       withApi {
         chatModel.controller.leaveGroup(groupInfo.groupId)
@@ -181,10 +181,10 @@ fun GroupChatInfoLayout(
       }
       GroupPreferencesButton(openPreferences)
     }
-    SectionTextFooter(stringResource(MR.strings.only_group_owners_can_change_prefs))
+    SectionTextFooter(stringResource(R.string.only_group_owners_can_change_prefs))
     SectionDividerSpaced(maxTopPadding = true)
 
-    SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
+    SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
         if (groupLink == null) {
           CreateGroupLinkButton(manageGroupLink)
@@ -214,9 +214,9 @@ fun GroupChatInfoLayout(
 
     if (developerTools) {
       SectionDividerSpaced()
-      SectionView(title = stringResource(MR.strings.section_title_for_console)) {
-        InfoRow(stringResource(MR.strings.info_row_local_name), groupInfo.localDisplayName)
-        InfoRow(stringResource(MR.strings.info_row_database_id), groupInfo.apiId.toString())
+      SectionView(title = stringResource(R.string.section_title_for_console)) {
+        InfoRow(stringResource(R.string.info_row_local_name), groupInfo.localDisplayName)
+        InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
       }
     }
     SectionBottomSpacer()
@@ -250,8 +250,8 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
 @Composable
 private fun GroupPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_toggle_on),
-    stringResource(MR.strings.group_preferences),
+    painterResource(R.drawable.ic_toggle_on),
+    stringResource(R.string.group_preferences),
     click = onClick
   )
 }
@@ -259,8 +259,8 @@ private fun GroupPreferencesButton(onClick: () -> Unit) {
 @Composable
 private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_add),
-    stringResource(MR.strings.button_add_members),
+    painterResource(R.drawable.ic_add),
+    stringResource(R.string.button_add_members),
     onClick,
     iconColor = tint,
     textColor = tint
@@ -304,7 +304,7 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
           )
         }
         val s = member.memberStatus.shortText
-        val statusDescr = if (user) String.format(generalGetString(MR.strings.group_info_member_you), s) else s
+        val statusDescr = if (user) String.format(generalGetString(R.string.group_info_member_you), s) else s
         Text(
           statusDescr,
           color = MaterialTheme.colors.secondary,
@@ -323,14 +323,14 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
 
 @Composable
 private fun MemberVerifiedShield() {
-  Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = MaterialTheme.colors.secondary)
+  Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = MaterialTheme.colors.secondary)
 }
 
 @Composable
 private fun GroupLinkButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_link),
-    stringResource(MR.strings.group_link),
+    painterResource(R.drawable.ic_link),
+    stringResource(R.string.group_link),
     onClick,
     iconColor = MaterialTheme.colors.secondary
   )
@@ -339,8 +339,8 @@ private fun GroupLinkButton(onClick: () -> Unit) {
 @Composable
 private fun CreateGroupLinkButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_add_link),
-    stringResource(MR.strings.create_group_link),
+    painterResource(R.drawable.ic_add_link),
+    stringResource(R.string.create_group_link),
     onClick,
     iconColor = MaterialTheme.colors.secondary
   )
@@ -349,8 +349,8 @@ private fun CreateGroupLinkButton(onClick: () -> Unit) {
 @Composable
 fun EditGroupProfileButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_edit),
-    stringResource(MR.strings.button_edit_group_profile),
+    painterResource(R.drawable.ic_edit),
+    stringResource(R.string.button_edit_group_profile),
     onClick,
     iconColor = MaterialTheme.colors.secondary
   )
@@ -359,12 +359,12 @@ fun EditGroupProfileButton(onClick: () -> Unit) {
 @Composable
 private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit) {
   val text = if (welcomeMessage == null) {
-    stringResource(MR.strings.button_add_welcome_message)
+    stringResource(R.string.button_add_welcome_message)
   } else {
-    stringResource(MR.strings.button_welcome_message)
+    stringResource(R.string.button_welcome_message)
   }
   SettingsActionItem(
-    painterResource(MR.images.ic_maps_ugc),
+    painterResource(R.drawable.ic_maps_ugc),
     text,
     onClick,
     iconColor = MaterialTheme.colors.secondary
@@ -374,8 +374,8 @@ private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit
 @Composable
 private fun LeaveGroupButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_logout),
-    stringResource(MR.strings.button_leave_group),
+    painterResource(R.drawable.ic_logout),
+    stringResource(R.string.button_leave_group),
     onClick,
     iconColor = Color.Red,
     textColor = Color.Red
@@ -385,8 +385,8 @@ private fun LeaveGroupButton(onClick: () -> Unit) {
 @Composable
 private fun DeleteGroupButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_delete),
-    stringResource(MR.strings.button_delete_group),
+    painterResource(R.drawable.ic_delete),
+    stringResource(R.string.button_delete_group),
     onClick,
     iconColor = Color.Red,
     textColor = Color.Red

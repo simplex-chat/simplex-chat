@@ -60,8 +60,8 @@ fun ComposeVoiceView(
           enabled = finishedRecording
         ) {
           Icon(
-            if (audioPlaying.value) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
-            stringResource(MR.strings.icon_descr_file),
+            if (audioPlaying.value) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
+            stringResource(R.string.icon_descr_file),
             Modifier
               .padding(start = 4.dp, end = 2.dp)
               .size(36.dp),
@@ -92,8 +92,8 @@ fun ComposeVoiceView(
             modifier = Modifier.padding(0.dp)
           ) {
             Icon(
-              painterResource(MR.images.ic_close),
-              contentDescription = stringResource(MR.strings.icon_descr_cancel_file_preview),
+              painterResource(R.drawable.ic_close),
+              contentDescription = stringResource(R.string.icon_descr_cancel_file_preview),
               tint = MaterialTheme.colors.primary,
               modifier = Modifier.padding(10.dp)
             )

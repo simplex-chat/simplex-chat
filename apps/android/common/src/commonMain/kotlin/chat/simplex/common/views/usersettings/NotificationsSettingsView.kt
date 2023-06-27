@@ -58,10 +58,10 @@ fun NotificationsSettingsLayout(
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.notifications))
+    AppBarTitle(stringResource(R.string.notifications))
     SectionView(null) {
       if (appPlatform == AppPlatform.ANDROID) {
-        SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notifications_mode_title), { showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
+        SettingsActionItemWithContent(null, stringResource(R.string.settings_notifications_mode_title), { showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
           Text(
             modes.first { it.value == notificationsMode.value }.title,
             maxLines = 1,
@@ -70,7 +70,7 @@ fun NotificationsSettingsLayout(
           )
         }
       }
-      SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notification_preview_mode_title), { showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
+      SettingsActionItemWithContent(null, stringResource(R.string.settings_notification_preview_mode_title), { showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
         Text(
           previewModes.first { it.value == notificationPreviewMode.value }.title,
           maxLines = 1,
@@ -92,7 +92,7 @@ fun NotificationsModeView(
   Column(
     Modifier.fillMaxWidth(),
   ) {
-    AppBarTitle(stringResource(MR.strings.settings_notifications_mode_title).lowercase().capitalize(Locale.current))
+    AppBarTitle(stringResource(R.string.settings_notifications_mode_title).lowercase().capitalize(Locale.current))
     SectionViewSelectable(null, notificationsMode, modes, onNotificationsModeSelected)
   }
 }
@@ -106,7 +106,7 @@ fun NotificationPreviewView(
   Column(
     Modifier.fillMaxWidth(),
   ) {
-    AppBarTitle(stringResource(MR.strings.settings_notification_preview_title))
+    AppBarTitle(stringResource(R.string.settings_notification_preview_title))
     SectionViewSelectable(null, notificationPreviewMode, previewModes, onNotificationPreviewModeSelected)
   }
 }
@@ -117,22 +117,22 @@ private fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
   res.add(
     ValueTitleDesc(
       NotificationsMode.OFF,
-      generalGetString(MR.strings.notifications_mode_off),
-      generalGetString(MR.strings.notifications_mode_off_desc),
+      generalGetString(R.string.notifications_mode_off),
+      generalGetString(R.string.notifications_mode_off_desc),
     )
   )
   res.add(
     ValueTitleDesc(
       NotificationsMode.PERIODIC,
-      generalGetString(MR.strings.notifications_mode_periodic),
-      generalGetString(MR.strings.notifications_mode_periodic_desc),
+      generalGetString(R.string.notifications_mode_periodic),
+      generalGetString(R.string.notifications_mode_periodic_desc),
     )
   )
   res.add(
     ValueTitleDesc(
       NotificationsMode.SERVICE,
-      generalGetString(MR.strings.notifications_mode_service),
-      generalGetString(MR.strings.notifications_mode_service_desc),
+      generalGetString(R.string.notifications_mode_service),
+      generalGetString(R.string.notifications_mode_service_desc),
     )
   )
   return res
@@ -144,22 +144,22 @@ fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
   res.add(
     ValueTitleDesc(
       NotificationPreviewMode.MESSAGE,
-      generalGetString(MR.strings.notification_preview_mode_message),
-      generalGetString(MR.strings.notification_preview_mode_message_desc),
+      generalGetString(R.string.notification_preview_mode_message),
+      generalGetString(R.string.notification_preview_mode_message_desc),
     )
   )
   res.add(
     ValueTitleDesc(
       NotificationPreviewMode.CONTACT,
-      generalGetString(MR.strings.notification_preview_mode_contact),
-      generalGetString(MR.strings.notification_preview_mode_contact_desc),
+      generalGetString(R.string.notification_preview_mode_contact),
+      generalGetString(R.string.notification_preview_mode_contact_desc),
     )
   )
   res.add(
     ValueTitleDesc(
       NotificationPreviewMode.HIDDEN,
-      generalGetString(MR.strings.notification_preview_mode_hidden),
-      generalGetString(MR.strings.notification_display_mode_hidden_desc),
+      generalGetString(R.string.notification_preview_mode_hidden),
+      generalGetString(R.string.notification_display_mode_hidden_desc),
     )
   )
   return res

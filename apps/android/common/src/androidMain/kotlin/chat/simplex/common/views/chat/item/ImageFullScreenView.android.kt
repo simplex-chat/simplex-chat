@@ -43,7 +43,7 @@ actual fun FullScreenImageView(modifier: Modifier, uri: URI, imageBitmap: ImageB
       placeholder = BitmapPainter(imageBitmap), // show original image while it's still loading by coil
       imageLoader = imageLoader
     ),
-    contentDescription = stringResource(MR.strings.image_descr),
+    contentDescription = stringResource(R.string.image_descr),
     contentScale = ContentScale.Fit,
     modifier = modifier,
   )

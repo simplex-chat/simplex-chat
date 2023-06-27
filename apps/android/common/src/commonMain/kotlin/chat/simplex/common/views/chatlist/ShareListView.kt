@@ -54,7 +54,7 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
 @Composable
 private fun EmptyList() {
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Text(stringResource(MR.strings.you_have_no_chats), color = MaterialTheme.colors.secondary)
+    Text(stringResource(R.string.you_have_no_chats), color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -84,7 +84,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
   if (chatModel.chats.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_search_500), stringResource(R.string.search).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -92,13 +92,13 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
     barButtons.add {
       IconButton(onClick = {
         AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
+          generalGetString(R.string.chat_is_stopped_indication),
+          generalGetString(R.string.you_can_start_chat_via_setting_or_by_restarting_the_app)
         )
       }) {
         Icon(
-          painterResource(MR.images.ic_report_filled),
-          generalGetString(MR.strings.chat_is_stopped_indication),
+          painterResource(R.drawable.ic_report_filled),
+          generalGetString(R.string.chat_is_stopped_indication),
           tint = Color.Red,
         )
       }
@@ -111,18 +111,18 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
           when (chatModel.sharedContent.value) {
-            is SharedContent.Text -> stringResource(MR.strings.share_message)
-            is SharedContent.Media -> stringResource(MR.strings.share_image)
-            is SharedContent.File -> stringResource(MR.strings.share_file)
-            else -> stringResource(MR.strings.share_message)
+            is SharedContent.Text -> stringResource(R.string.share_message)
+            is SharedContent.Media -> stringResource(R.string.share_image)
+            is SharedContent.File -> stringResource(R.string.share_file)
+            else -> stringResource(R.string.share_message)
           },
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
         if (chatModel.incognito.value) {
           Icon(
-            painterResource(MR.images.ic_theater_comedy_filled),
-            stringResource(MR.strings.incognito),
+            painterResource(R.drawable.ic_theater_comedy_filled),
+            stringResource(R.string.incognito),
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)
           )

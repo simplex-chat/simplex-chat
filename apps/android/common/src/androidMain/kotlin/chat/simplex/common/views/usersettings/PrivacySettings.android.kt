@@ -15,10 +15,10 @@ actual fun PrivacyDeviceSection(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit,
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_device)) {
+  SectionView(stringResource(R.string.settings_section_title_device)) {
     ChatLockItem(showSettingsModal, setPerformLA)
     val context = LocalContext.current
-    SettingsPreferenceItem(painterResource(MR.images.ic_visibility_off), stringResource(MR.strings.protect_app_screen), ChatModel.controller.appPrefs.privacyProtectScreen) { on ->
+    SettingsPreferenceItem(painterResource(R.drawable.ic_visibility_off), stringResource(R.string.protect_app_screen), ChatModel.controller.appPrefs.privacyProtectScreen) { on ->
       if (on) {
         (context as? FragmentActivity)?.window?.setFlags(
           WindowManager.LayoutParams.FLAG_SECURE,

@@ -17,9 +17,9 @@ fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
         from.inputStream().use { it.copyTo(outputStream) }
       }
     }
-    showToast(generalGetString(MR.strings.file_saved))
+    showToast(generalGetString(R.string.file_saved))
   } catch (e: Error) {
-    showToast(generalGetString(MR.strings.error_saving_file))
+    showToast(generalGetString(R.string.error_saving_file))
     Log.e(TAG, "copyFileToFile error saving file $e")
   } finally {
     finally()
@@ -33,9 +33,9 @@ fun copyBytesToFile(bytes: ByteArrayInputStream, to: URI, finally: () -> Unit) {
         bytes.use { it.copyTo(outputStream) }
       }
     }
-    showToast(generalGetString(MR.strings.file_saved))
+    showToast(generalGetString(R.string.file_saved))
   } catch (e: Error) {
-    showToast(generalGetString(MR.strings.error_saving_file))
+    showToast(generalGetString(R.string.error_saving_file))
     Log.e(TAG, "copyBytesToFile error saving file $e")
   } finally {
     finally()

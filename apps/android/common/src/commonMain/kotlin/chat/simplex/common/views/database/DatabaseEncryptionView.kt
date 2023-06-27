@@ -71,14 +71,14 @@ fun DatabaseEncryptionView(m: ChatModel) {
               sqliteError is SQLiteError.ErrorNotADatabase -> {
                 operationEnded(m, progressIndicator) {
                   AlertManager.shared.showAlertMsg(
-                    generalGetString(MR.strings.wrong_passphrase_title),
-                    generalGetString(MR.strings.enter_correct_current_passphrase)
+                    generalGetString(R.string.wrong_passphrase_title),
+                    generalGetString(R.string.enter_correct_current_passphrase)
                   )
                 }
               }
               error != null -> {
                 operationEnded(m, progressIndicator) {
-                  AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_encrypting_database),
+                  AlertManager.shared.showAlertMsg(generalGetString(R.string.error_encrypting_database),
                     "failed to set storage encryption: ${error.responseType} ${error.details}"
                   )
                 }
@@ -91,13 +91,13 @@ fun DatabaseEncryptionView(m: ChatModel) {
                 }
                 resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
                 operationEnded(m, progressIndicator) {
-                  AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_encrypted))
+                  AlertManager.shared.showAlertMsg(generalGetString(R.string.database_encrypted))
                 }
               }
             }
           } catch (e: Exception) {
             operationEnded(m, progressIndicator) {
-              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_encrypting_database), e.stackTraceToString())
+              AlertManager.shared.showAlertMsg(generalGetString(R.string.error_encrypting_database), e.stackTraceToString())
             }
           }
         }
@@ -136,16 +136,16 @@ fun DatabaseEncryptionLayout(
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.database_passphrase))
+    AppBarTitle(stringResource(R.string.database_passphrase))
     SectionView(null) {
       SavePassphraseSetting(useKeychain.value, initialRandomDBPassphrase.value, storedKey.value, progressIndicator.value) { checked ->
         if (checked) {
           setUseKeychain(true, useKeychain, prefs)
         } else if (storedKey.value) {
           AlertManager.shared.showAlertDialog(
-            title = generalGetString(MR.strings.remove_passphrase_from_keychain),
-            text = generalGetString(MR.strings.notifications_will_be_hidden) + "\n" + storeSecurelyDanger(),
-            confirmText = generalGetString(MR.strings.remove_passphrase),
+            title = generalGetString(R.string.remove_passphrase_from_keychain),
+            text = generalGetString(R.string.notifications_will_be_hidden) + "\n" + storeSecurelyDanger(),
+            confirmText = generalGetString(R.string.remove_passphrase),
             onConfirm = {
               DatabaseUtils.ksDatabasePassword.remove()
               setUseKeychain(false, useKeychain, prefs)
@@ -161,7 +161,7 @@ fun DatabaseEncryptionLayout(
       if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
         PassphraseField(
           currentKey,
-          generalGetString(MR.strings.current_passphrase),
+          generalGetString(R.string.current_passphrase),
           modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
           isValid = ::validKey,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
@@ -170,7 +170,7 @@ fun DatabaseEncryptionLayout(
 
       PassphraseField(
         newKey,
-        generalGetString(MR.strings.new_passphrase),
+        generalGetString(R.string.new_passphrase),
         modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
         showStrength = true,
         isValid = ::validKey,
@@ -201,7 +201,7 @@ fun DatabaseEncryptionLayout(
 
       PassphraseField(
         confirmNewKey,
-        generalGetString(MR.strings.confirm_new_passphrase),
+        generalGetString(R.string.confirm_new_passphrase),
         modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
         isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
         keyboardActions = KeyboardActions(onDone = {
@@ -211,27 +211,27 @@ fun DatabaseEncryptionLayout(
       )
 
       SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
-        Text(generalGetString(MR.strings.update_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+        Text(generalGetString(R.string.update_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }
     }
 
     Column {
       if (chatDbEncrypted == false) {
-        SectionTextFooter(generalGetString(MR.strings.database_is_not_encrypted))
+        SectionTextFooter(generalGetString(R.string.database_is_not_encrypted))
       } else if (useKeychain.value) {
         if (storedKey.value) {
-          SectionTextFooter(generalGetString(MR.strings.keychain_is_storing_securely))
+          SectionTextFooter(generalGetString(R.string.keychain_is_storing_securely))
           if (initialRandomDBPassphrase.value) {
-            SectionTextFooter(generalGetString(MR.strings.encrypted_with_random_passphrase))
+            SectionTextFooter(generalGetString(R.string.encrypted_with_random_passphrase))
           } else {
-            SectionTextFooter(generalGetString(MR.strings.impossible_to_recover_passphrase))
+            SectionTextFooter(generalGetString(R.string.impossible_to_recover_passphrase))
           }
         } else {
-          SectionTextFooter(generalGetString(MR.strings.keychain_allows_to_receive_ntfs))
+          SectionTextFooter(generalGetString(R.string.keychain_allows_to_receive_ntfs))
         }
       } else {
-        SectionTextFooter(generalGetString(MR.strings.you_have_to_enter_passphrase_every_time))
-        SectionTextFooter(generalGetString(MR.strings.impossible_to_recover_passphrase))
+        SectionTextFooter(generalGetString(R.string.you_have_to_enter_passphrase_every_time))
+        SectionTextFooter(generalGetString(R.string.impossible_to_recover_passphrase))
       }
     }
     SectionBottomSpacer()
@@ -240,9 +240,9 @@ fun DatabaseEncryptionLayout(
 
 fun encryptDatabaseSavedAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.encrypt_database_question),
-    text = generalGetString(MR.strings.database_will_be_encrypted_and_passphrase_stored) + "\n" + storeSecurelySaved(),
-    confirmText = generalGetString(MR.strings.encrypt_database),
+    title = generalGetString(R.string.encrypt_database_question),
+    text = generalGetString(R.string.database_will_be_encrypted_and_passphrase_stored) + "\n" + storeSecurelySaved(),
+    confirmText = generalGetString(R.string.encrypt_database),
     onConfirm = onConfirm,
     destructive = true,
   )
@@ -250,9 +250,9 @@ fun encryptDatabaseSavedAlert(onConfirm: () -> Unit) {
 
 fun encryptDatabaseAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.encrypt_database_question),
-    text = generalGetString(MR.strings.database_will_be_encrypted) +"\n" + storeSecurelyDanger(),
-    confirmText = generalGetString(MR.strings.encrypt_database),
+    title = generalGetString(R.string.encrypt_database_question),
+    text = generalGetString(R.string.database_will_be_encrypted) +"\n" + storeSecurelyDanger(),
+    confirmText = generalGetString(R.string.encrypt_database),
     onConfirm = onConfirm,
     destructive = true,
   )
@@ -260,9 +260,9 @@ fun encryptDatabaseAlert(onConfirm: () -> Unit) {
 
 fun changeDatabaseKeySavedAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.change_database_passphrase_question),
-    text = generalGetString(MR.strings.database_encryption_will_be_updated) + "\n" + storeSecurelySaved(),
-    confirmText = generalGetString(MR.strings.update_database),
+    title = generalGetString(R.string.change_database_passphrase_question),
+    text = generalGetString(R.string.database_encryption_will_be_updated) + "\n" + storeSecurelySaved(),
+    confirmText = generalGetString(R.string.update_database),
     onConfirm = onConfirm,
     destructive = false,
   )
@@ -270,9 +270,9 @@ fun changeDatabaseKeySavedAlert(onConfirm: () -> Unit) {
 
 fun changeDatabaseKeyAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.change_database_passphrase_question),
-    text = generalGetString(MR.strings.database_passphrase_will_be_updated) + "\n" + storeSecurelyDanger(),
-    confirmText = generalGetString(MR.strings.update_database),
+    title = generalGetString(R.string.change_database_passphrase_question),
+    text = generalGetString(R.string.database_passphrase_will_be_updated) + "\n" + storeSecurelyDanger(),
+    confirmText = generalGetString(R.string.update_database),
     onConfirm = onConfirm,
     destructive = true,
   )
@@ -290,13 +290,13 @@ fun SavePassphraseSetting(
   SectionItemView(minHeight = minHeight) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
-        if (storedKey) painterResource(MR.images.ic_vpn_key_filled) else painterResource(MR.images.ic_vpn_key_off_filled),
-        stringResource(MR.strings.save_passphrase_in_keychain),
+        if (storedKey) painterResource(R.drawable.ic_vpn_key_filled) else painterResource(R.drawable.ic_vpn_key_off_filled),
+        stringResource(R.string.save_passphrase_in_keychain),
         tint = if (storedKey) SimplexGreen else MaterialTheme.colors.secondary
       )
       Spacer(Modifier.padding(horizontal = 4.dp))
       Text(
-        stringResource(MR.strings.save_passphrase_in_keychain),
+        stringResource(R.string.save_passphrase_in_keychain),
         Modifier.padding(end = 24.dp),
         color = Color.Unspecified
       )
@@ -333,9 +333,9 @@ fun setUseKeychain(value: Boolean, useKeychain: MutableState<Boolean>, prefs: Ap
   prefs.storeDBPassphrase.set(value)
 }
 
-fun storeSecurelySaved() = generalGetString(MR.strings.store_passphrase_securely)
+fun storeSecurelySaved() = generalGetString(R.string.store_passphrase_securely)
 
-fun storeSecurelyDanger() = generalGetString(MR.strings.store_passphrase_securely_without_recover)
+fun storeSecurelyDanger() = generalGetString(R.string.store_passphrase_securely_without_recover)
 
 private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean>, alert: () -> Unit) {
   m.chatDbChanged.value = true
@@ -357,8 +357,8 @@ fun PassphraseField(
   var valid by remember { mutableStateOf(validKey(key.value)) }
   var showKey by remember { mutableStateOf(false) }
   val icon = if (valid) {
-    if (showKey) painterResource(MR.images.ic_visibility_off_filled) else painterResource(MR.images.ic_visibility_filled)
-  } else painterResource(MR.images.ic_error)
+    if (showKey) painterResource(R.drawable.ic_visibility_off_filled) else painterResource(R.drawable.ic_visibility_filled)
+  } else painterResource(R.drawable.ic_error)
   val iconColor = if (valid) {
     if (showStrength && key.value.isNotEmpty()) PassphraseStrength.check(key.value).color else MaterialTheme.colors.secondary
   } else Color.Red

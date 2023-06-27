@@ -160,7 +160,7 @@ actual fun GetImageBottomSheet(
       cameraLauncher.launchWithFallback()
       hideBottomSheet()
     } else {
-      showToast(generalGetString(MR.strings.toast_permission_denied))
+      showToast(generalGetString(R.string.toast_permission_denied))
     }
   }
 
@@ -178,7 +178,7 @@ actual fun GetImageBottomSheet(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, stringResource(MR.strings.use_camera_button), icon = painterResource(MR.images.ic_photo_camera)) {
+      ActionButton(null, stringResource(R.string.use_camera_button), icon = painterResource(R.drawable.ic_photo_camera)) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launchWithFallback()
@@ -189,7 +189,7 @@ actual fun GetImageBottomSheet(
           }
         }
       }
-      ActionButton(null, stringResource(MR.strings.from_gallery_button), icon = painterResource(MR.images.ic_image)) {
+      ActionButton(null, stringResource(R.string.from_gallery_button), icon = painterResource(R.drawable.ic_image)) {
         try {
           galleryLauncher.launch(0)
         } catch (e: ActivityNotFoundException) {
@@ -228,7 +228,7 @@ class PickMultipleImagesFromGallery: ActivityResultContract<Int, List<Uri>>() {
           if (uri != null) uris.add(uri)
         }
         if (itemCount > 10) {
-          AlertManager.shared.showAlertMsg(MR.strings.images_limit_title, MR.strings.images_limit_desc)
+          AlertManager.shared.showAlertMsg(R.string.images_limit_title, R.string.images_limit_desc)
         }
         uris
       }
@@ -255,7 +255,7 @@ class PickMultipleVideosFromGallery: ActivityResultContract<Int, List<Uri>>() {
           if (uri != null) uris.add(uri)
         }
         if (itemCount > 10) {
-          AlertManager.shared.showAlertMsg(MR.strings.videos_limit_title, MR.strings.videos_limit_desc)
+          AlertManager.shared.showAlertMsg(R.string.videos_limit_title, R.string.videos_limit_desc)
         }
         uris
       }

@@ -67,7 +67,7 @@ fun <T> SectionViewSelectable(
         SectionItemViewSpaceBetween({ onSelected(item.value) }) {
           Text(item.title)
           if (currentValue.value == item.value) {
-            Icon(painterResource(MR.images.ic_check), item.title, tint = MaterialTheme.colors.primary)
+            Icon(painterResource(R.drawable.ic_check), item.title, tint = MaterialTheme.colors.primary)
           }
         }
         Spacer(Modifier.padding(horizontal = 4.dp))

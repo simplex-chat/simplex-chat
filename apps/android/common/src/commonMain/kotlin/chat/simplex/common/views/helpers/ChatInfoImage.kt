@@ -24,8 +24,8 @@ import dev.icerock.moko.resources.ImageResource
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   val icon =
-    if (chatInfo is ChatInfo.Group) MR.images.ic_supervised_user_circle_filled
-                                    else MR.images.ic_account_circle_filled
+    if (chatInfo is ChatInfo.Group) R.drawable.ic_supervised_user_circle_filled
+                                    else R.drawable.ic_account_circle_filled
   ProfileImage(size, chatInfo.image, icon, iconColor)
 }
 
@@ -33,7 +33,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
 fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   Box(Modifier.size(size)) {
     Icon(
-      painterResource(MR.images.ic_theater_comedy_filled), stringResource(MR.strings.incognito),
+      painterResource(R.drawable.ic_theater_comedy_filled), stringResource(R.string.incognito),
       modifier = Modifier.size(size).padding(size / 12),
       iconColor
     )
@@ -44,27 +44,27 @@ fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVa
 fun ProfileImage(
   size: Dp,
   image: String? = null,
-  icon: ImageResource = MR.images.ic_account_circle_filled,
+  icon: ImageResource = R.drawable.ic_account_circle_filled,
   color: Color = MaterialTheme.colors.secondaryVariant
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {
       val iconToReplace = when (icon) {
-        MR.images.ic_account_circle_filled -> AccountCircleFilled
-        MR.images.ic_supervised_user_circle_filled -> SupervisedUserCircleFilled
+        R.drawable.ic_account_circle_filled -> AccountCircleFilled
+        R.drawable.ic_supervised_user_circle_filled -> SupervisedUserCircleFilled
         else -> null
       }
       if (iconToReplace != null) {
         Icon(
           iconToReplace,
-          contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
+          contentDescription = stringResource(R.string.icon_descr_profile_image_placeholder),
           tint = color,
           modifier = Modifier.fillMaxSize()
         )
       } else {
         Icon(
           painterResource(icon),
-          contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
+          contentDescription = stringResource(R.string.icon_descr_profile_image_placeholder),
           tint = color,
           modifier = Modifier.fillMaxSize()
         )
@@ -73,7 +73,7 @@ fun ProfileImage(
       val imageBitmap = base64ToBitmap(image)
       Image(
         imageBitmap,
-        stringResource(MR.strings.image_descr_profile_image),
+        stringResource(R.string.image_descr_profile_image),
         contentScale = ContentScale.Crop,
         modifier = Modifier.size(size).padding(size / 12).clip(CircleShape)
       )

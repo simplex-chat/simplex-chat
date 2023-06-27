@@ -65,28 +65,28 @@ object ThemeManager {
       Triple(
         if (darkForSystemTheme) systemDarkThemeColors().first else LightColorPalette,
         DefaultTheme.SYSTEM,
-        generalGetString(MR.strings.theme_system)
+        generalGetString(R.string.theme_system)
       )
     )
     allThemes.add(
       Triple(
         LightColorPalette,
         DefaultTheme.LIGHT,
-        generalGetString(MR.strings.theme_light)
+        generalGetString(R.string.theme_light)
       )
     )
     allThemes.add(
       Triple(
         DarkColorPalette,
         DefaultTheme.DARK,
-        generalGetString(MR.strings.theme_dark)
+        generalGetString(R.string.theme_dark)
       )
     )
     allThemes.add(
       Triple(
         SimplexColorPalette,
         DefaultTheme.SIMPLEX,
-        generalGetString(MR.strings.theme_simplex)
+        generalGetString(R.string.theme_simplex)
       )
     )
     return allThemes

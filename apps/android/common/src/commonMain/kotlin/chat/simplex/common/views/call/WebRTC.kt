@@ -30,9 +30,9 @@ data class Call(
 
   val encryptionStatus: String @Composable get() = when(callState) {
     CallState.WaitCapabilities -> ""
-    CallState.InvitationSent -> stringResource(if (localEncrypted) MR.strings.status_e2e_encrypted else MR.strings.status_no_e2e_encryption)
-    CallState.InvitationAccepted -> stringResource(if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_contact_has_e2e_encryption)
-    else -> stringResource(if (!localEncrypted) MR.strings.status_no_e2e_encryption else if (sharedKey == null) MR.strings.status_contact_has_no_e2e_encryption else MR.strings.status_e2e_encrypted)
+    CallState.InvitationSent -> stringResource(if (localEncrypted) R.string.status_e2e_encrypted else R.string.status_no_e2e_encryption)
+    CallState.InvitationAccepted -> stringResource(if (sharedKey == null) R.string.status_contact_has_no_e2e_encryption else R.string.status_contact_has_e2e_encryption)
+    else -> stringResource(if (!localEncrypted) R.string.status_no_e2e_encryption else if (sharedKey == null) R.string.status_contact_has_no_e2e_encryption else R.string.status_e2e_encrypted)
   }
 
   val hasMedia: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
@@ -50,15 +50,15 @@ enum class CallState {
   Ended;
 
   val text: String @Composable get() = when(this) {
-    WaitCapabilities -> stringResource(MR.strings.callstate_starting)
-    InvitationSent -> stringResource(MR.strings.callstate_waiting_for_answer)
-    InvitationAccepted -> stringResource(MR.strings.callstate_starting)
-    OfferSent -> stringResource(MR.strings.callstate_waiting_for_confirmation)
-    OfferReceived -> stringResource(MR.strings.callstate_received_answer)
-    AnswerReceived -> stringResource(MR.strings.callstate_received_confirmation)
-    Negotiated -> stringResource(MR.strings.callstate_connecting)
-    Connected -> stringResource(MR.strings.callstate_connected)
-    Ended -> stringResource(MR.strings.callstate_ended)
+    WaitCapabilities -> stringResource(R.string.callstate_starting)
+    InvitationSent -> stringResource(R.string.callstate_waiting_for_answer)
+    InvitationAccepted -> stringResource(R.string.callstate_starting)
+    OfferSent -> stringResource(R.string.callstate_waiting_for_confirmation)
+    OfferReceived -> stringResource(R.string.callstate_received_answer)
+    AnswerReceived -> stringResource(R.string.callstate_received_confirmation)
+    Negotiated -> stringResource(R.string.callstate_connecting)
+    Connected -> stringResource(R.string.callstate_connected)
+    Ended -> stringResource(R.string.callstate_ended)
   }
 }
 
@@ -96,12 +96,12 @@ sealed class WCallResponse {
 @Serializable data class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
 @Serializable data class RcvCallInvitation(val user: User, val contact: Contact, val callType: CallType, val sharedKey: String? = null, val callTs: Instant) {
   val callTypeText: String get() = generalGetString(when(callType.media) {
-    CallMediaType.Video -> if (sharedKey == null) MR.strings.video_call_no_encryption else MR.strings.encrypted_video_call
-    CallMediaType.Audio -> if (sharedKey == null) MR.strings.audio_call_no_encryption else MR.strings.encrypted_audio_call
+    CallMediaType.Video -> if (sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
+    CallMediaType.Audio -> if (sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
   })
   val callTitle: String get() = generalGetString(when(callType.media) {
-    CallMediaType.Video -> MR.strings.incoming_video_call
-    CallMediaType.Audio -> MR.strings.incoming_audio_call
+    CallMediaType.Video -> R.string.incoming_video_call
+    CallMediaType.Audio -> R.string.incoming_audio_call
   })
 }
 @Serializable data class CallCapabilities(val encryption: Boolean)
@@ -111,9 +111,9 @@ sealed class WCallResponse {
     val remote = remoteCandidate?.candidateType
     return when {
       local == RTCIceCandidateType.Host && remote == RTCIceCandidateType.Host ->
-        stringResource(MR.strings.call_connection_peer_to_peer)
+        stringResource(R.string.call_connection_peer_to_peer)
       local == RTCIceCandidateType.Relay && remote == RTCIceCandidateType.Relay ->
-        stringResource(MR.strings.call_connection_via_relay)
+        stringResource(R.string.call_connection_via_relay)
       else ->
         "${local?.value ?: "unknown"} / ${remote?.value ?: "unknown"}"
     }

@@ -37,9 +37,9 @@ object AppLock {
     if (!laNoticeShown.get()) {
       laNoticeShown.set(true)
       AlertManager.shared.showAlertDialog(
-        title = generalGetString(MR.strings.la_notice_title_simplex_lock),
-        text = generalGetString(MR.strings.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
-        confirmText = generalGetString(MR.strings.la_notice_turn_on),
+        title = generalGetString(R.string.la_notice_title_simplex_lock),
+        text = generalGetString(R.string.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
+        confirmText = generalGetString(R.string.la_notice_turn_on),
         onConfirm = {
           withBGApi { // to remove this call, change ordering of onConfirm call in AlertManager
             showChooseLAMode(laNoticeShown)
@@ -53,10 +53,10 @@ object AppLock {
     Log.d(TAG, "showLANotice")
     laNoticeShown.set(true)
     AlertManager.shared.showAlertDialogStacked(
-      title = generalGetString(MR.strings.la_lock_mode),
+      title = generalGetString(R.string.la_lock_mode),
       text = null,
-      confirmText = generalGetString(MR.strings.la_lock_mode_passcode),
-      dismissText = generalGetString(MR.strings.la_lock_mode_system),
+      confirmText = generalGetString(R.string.la_lock_mode_passcode),
+      dismissText = generalGetString(R.string.la_lock_mode_system),
       onConfirm = {
         AlertManager.shared.hideAlert()
         setPasscode()
@@ -73,8 +73,8 @@ object AppLock {
     val appPrefs = ChatController.appPrefs
     appPrefs.laMode.set(LAMode.SYSTEM)
     authenticate(
-      generalGetString(MR.strings.auth_enable_simplex_lock),
-      generalGetString(MR.strings.auth_confirm_credential),
+      generalGetString(R.string.auth_enable_simplex_lock),
+      generalGetString(R.string.auth_confirm_credential),
       completed = { laResult ->
         when (laResult) {
           LAResult.Success -> {
@@ -134,13 +134,13 @@ object AppLock {
         withContext(Dispatchers.Main) {
           authenticate(
             if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-              generalGetString(MR.strings.auth_unlock)
+              generalGetString(R.string.auth_unlock)
             else
-              generalGetString(MR.strings.la_enter_app_passcode),
+              generalGetString(R.string.la_enter_app_passcode),
             if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-              generalGetString(MR.strings.auth_log_in_using_credential)
+              generalGetString(R.string.auth_log_in_using_credential)
             else
-              generalGetString(MR.strings.auth_unlock),
+              generalGetString(R.string.auth_unlock),
             selfDestruct = true,
             completed = { laResult ->
               when (laResult) {
@@ -180,11 +180,11 @@ object AppLock {
     val m = ChatModel
     authenticate(
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(MR.strings.auth_enable_simplex_lock)
+        generalGetString(R.string.auth_enable_simplex_lock)
       else
-        generalGetString(MR.strings.new_passcode),
+        generalGetString(R.string.new_passcode),
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(MR.strings.auth_confirm_credential)
+        generalGetString(R.string.auth_confirm_credential)
       else
         "",
       completed = { laResult ->
@@ -215,13 +215,13 @@ object AppLock {
     val m = ChatModel
     authenticate(
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(MR.strings.auth_disable_simplex_lock)
+        generalGetString(R.string.auth_disable_simplex_lock)
       else
-        generalGetString(MR.strings.la_enter_app_passcode),
+        generalGetString(R.string.la_enter_app_passcode),
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(MR.strings.auth_confirm_credential)
+        generalGetString(R.string.auth_confirm_credential)
       else
-        generalGetString(MR.strings.auth_disable_simplex_lock),
+        generalGetString(R.string.auth_disable_simplex_lock),
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         val selfDestructPref = m.controller.appPrefs.selfDestruct

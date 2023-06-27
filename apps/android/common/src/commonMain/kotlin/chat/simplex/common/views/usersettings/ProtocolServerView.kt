@@ -83,7 +83,7 @@ private fun ProtocolServerLayout(
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
   ) {
-    AppBarTitle(stringResource(if (server.preset) MR.strings.smp_servers_preset_server else MR.strings.smp_servers_your_server))
+    AppBarTitle(stringResource(if (server.preset) R.string.smp_servers_preset_server else R.string.smp_servers_your_server))
 
     if (server.preset) {
       PresetServer(testing, server, testServer, onUpdate, onDelete)
@@ -102,7 +102,7 @@ private fun PresetServer(
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
 ) {
-  SectionView(stringResource(MR.strings.smp_servers_preset_address).uppercase()) {
+  SectionView(stringResource(R.string.smp_servers_preset_address).uppercase()) {
     SelectionContainer {
       Text(
         server.server,
@@ -136,8 +136,8 @@ private fun CustomServer(
     }
   }
   SectionView(
-    stringResource(MR.strings.smp_servers_your_server_address).uppercase(),
-    icon = painterResource(MR.images.ic_error),
+    stringResource(R.string.smp_servers_your_server_address).uppercase(),
+    icon = painterResource(R.drawable.ic_error),
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
@@ -159,7 +159,7 @@ private fun CustomServer(
 
   if (valid.value) {
     SectionDividerSpaced()
-    SectionView(stringResource(MR.strings.smp_servers_add_to_another_device).uppercase()) {
+    SectionView(stringResource(R.string.smp_servers_add_to_another_device).uppercase()) {
       QRCode(serverAddress.value, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
     }
   }
@@ -174,15 +174,15 @@ private fun UseServerSection(
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
 ) {
-  SectionView(stringResource(MR.strings.smp_servers_use_server).uppercase()) {
+  SectionView(stringResource(R.string.smp_servers_use_server).uppercase()) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
-      Text(stringResource(MR.strings.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+      Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server)
     }
     val enabled = rememberUpdatedState(server.enabled)
-    PreferenceToggle(stringResource(MR.strings.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
+    PreferenceToggle(stringResource(R.string.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
     SectionItemView(onDelete, disabled = testing) {
-      Text(stringResource(MR.strings.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
+      Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
     }
   }
 }
@@ -190,9 +190,9 @@ private fun UseServerSection(
 @Composable
 fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
   when (server.tested) {
-    true -> Icon(painterResource(MR.images.ic_check), null, modifier, tint = SimplexGreen)
-    false -> Icon(painterResource(MR.images.ic_close), null, modifier, tint = MaterialTheme.colors.error)
-    else -> Icon(painterResource(MR.images.ic_check), null, modifier, tint = Color.Transparent)
+    true -> Icon(painterResource(R.drawable.ic_check), null, modifier, tint = SimplexGreen)
+    false -> Icon(painterResource(R.drawable.ic_close), null, modifier, tint = MaterialTheme.colors.error)
+    else -> Icon(painterResource(R.drawable.ic_check), null, modifier, tint = Color.Transparent)
   }
 
 suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCfg, ProtocolTestFailure?> =

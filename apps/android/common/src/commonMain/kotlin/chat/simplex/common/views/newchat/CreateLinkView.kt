@@ -42,9 +42,9 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
   }
   val tabTitles = CreateLinkTab.values().map {
     when {
-      it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() -> stringResource(MR.strings.create_one_time_link)
-      it == CreateLinkTab.ONE_TIME -> stringResource(MR.strings.one_time_link)
-      it == CreateLinkTab.LONG_TERM -> stringResource(MR.strings.your_simplex_contact_address)
+      it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() -> stringResource(R.string.create_one_time_link)
+      it == CreateLinkTab.ONE_TIME -> stringResource(R.string.one_time_link)
+      it == CreateLinkTab.LONG_TERM -> stringResource(R.string.your_simplex_contact_address)
       else -> ""
     }
   }
@@ -77,7 +77,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
           text = { Text(it, fontSize = 13.sp) },
           icon = {
             Icon(
-              if (CreateLinkTab.ONE_TIME.ordinal == index) painterResource(MR.images.ic_repeat_one) else painterResource(MR.images.ic_all_inclusive),
+              if (CreateLinkTab.ONE_TIME.ordinal == index) painterResource(R.drawable.ic_repeat_one) else painterResource(R.drawable.ic_all_inclusive),
               it
             )
           },

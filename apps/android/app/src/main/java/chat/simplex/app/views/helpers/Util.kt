@@ -80,8 +80,8 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
     }.onFailure {
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.import_theme_error),
-          text = generalGetString(MR.strings.import_theme_error_desc),
+          title = generalGetString(R.string.import_theme_error),
+          text = generalGetString(R.string.import_theme_error_desc),
         )
       }
     }

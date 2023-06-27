@@ -72,9 +72,9 @@ fun UserAddressView(
             chatModel.userAddress.value = UserContactLinkRec(connReqContact)
 
             AlertManager.shared.showAlertDialog(
-              title = generalGetString(MR.strings.share_address_with_contacts_question),
-              text = generalGetString(MR.strings.add_address_to_your_profile),
-              confirmText = generalGetString(MR.strings.share_verb),
+              title = generalGetString(R.string.share_address_with_contacts_question),
+              text = generalGetString(R.string.add_address_to_your_profile),
+              confirmText = generalGetString(R.string.share_verb),
               onConfirm = {
                 setProfileAddress(true)
                 shareViaProfile.value = true
@@ -99,16 +99,16 @@ fun UserAddressView(
       share = { userAddress: String -> clipboard.shareText(userAddress) },
       sendEmail = { userAddress ->
         uriHandler.sendEmail(
-          generalGetString(MR.strings.email_invite_subject),
-          generalGetString(MR.strings.email_invite_body).format(userAddress.connReqContact)
+          generalGetString(R.string.email_invite_subject),
+          generalGetString(R.string.email_invite_body).format(userAddress.connReqContact)
         )
       },
       setProfileAddress = ::setProfileAddress,
       deleteAddress = {
         AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.delete_address__question),
-          text = if (shareViaProfile.value) generalGetString(MR.strings.all_your_contacts_will_remain_connected_update_sent) else generalGetString(MR.strings.all_your_contacts_will_remain_connected),
-          confirmText = generalGetString(MR.strings.delete_verb),
+          title = generalGetString(R.string.delete_address__question),
+          text = if (shareViaProfile.value) generalGetString(R.string.all_your_contacts_will_remain_connected_update_sent) else generalGetString(R.string.all_your_contacts_will_remain_connected),
+          confirmText = generalGetString(R.string.delete_verb),
           onConfirm = {
             progressIndicator = true
             withApi {
@@ -179,7 +179,7 @@ private fun UserAddressLayout(
   Column(
     Modifier.verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.simplex_address), false)
+    AppBarTitle(stringResource(R.string.simplex_address), false)
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -188,7 +188,7 @@ private fun UserAddressLayout(
       if (userAddress == null) {
         SectionView {
           CreateAddressButton(createAddress)
-          SectionTextFooter(stringResource(MR.strings.create_address_and_let_people_connect))
+          SectionTextFooter(stringResource(R.string.create_address_and_let_people_connect))
         }
         SectionDividerSpaced(maxBottomPadding = false)
         SectionView {
@@ -200,7 +200,7 @@ private fun UserAddressLayout(
       } else {
         val autoAcceptState = remember { mutableStateOf(AutoAcceptState(userAddress)) }
         val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
-        SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
+        SectionView(stringResource(R.string.address_section_title).uppercase()) {
           QRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
           ShareAddressButton { share(userAddress.connReqContact) }
           ShareViaEmailButton { sendEmail(userAddress) }
@@ -217,7 +217,7 @@ private fun UserAddressLayout(
 
         SectionView {
           DeleteAddressButton(deleteAddress)
-          SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
+          SectionTextFooter(stringResource(R.string.your_contacts_will_remain_connected))
         }
         LaunchedEffect(Unit) {
           onCloseHandler.value = { close ->
@@ -234,8 +234,8 @@ private fun UserAddressLayout(
 @Composable
 private fun CreateAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_qr_code),
-    stringResource(MR.strings.create_simplex_address),
+    painterResource(R.drawable.ic_qr_code),
+    stringResource(R.string.create_simplex_address),
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
@@ -245,8 +245,8 @@ private fun CreateAddressButton(onClick: () -> Unit) {
 @Composable
 private fun LearnMoreButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_info),
-    stringResource(MR.strings.learn_more_about_address),
+    painterResource(R.drawable.ic_info),
+    stringResource(R.string.learn_more_about_address),
     onClick,
   )
 }
@@ -254,8 +254,8 @@ private fun LearnMoreButton(onClick: () -> Unit) {
 @Composable
 fun ShareViaEmailButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_mail),
-    stringResource(MR.strings.invite_friends),
+    painterResource(R.drawable.ic_mail),
+    stringResource(R.string.invite_friends),
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
@@ -265,16 +265,16 @@ fun ShareViaEmailButton(onClick: () -> Unit) {
 @Composable
 fun ShareWithContactsButton(shareViaProfile: MutableState<Boolean>, setProfileAddress: (Boolean) -> Unit) {
   PreferenceToggleWithIcon(
-    stringResource(MR.strings.share_with_contacts),
-    painterResource(MR.images.ic_person),
+    stringResource(R.string.share_with_contacts),
+    painterResource(R.drawable.ic_person),
     checked = shareViaProfile.value,
   ) { on ->
     shareViaProfile.value = on
     if (on) {
       AlertManager.shared.showAlertDialog(
-        title = generalGetString(MR.strings.share_address_with_contacts_question),
-        text = generalGetString(MR.strings.profile_update_will_be_sent_to_contacts),
-        confirmText = generalGetString(MR.strings.share_verb),
+        title = generalGetString(R.string.share_address_with_contacts_question),
+        text = generalGetString(R.string.profile_update_will_be_sent_to_contacts),
+        confirmText = generalGetString(R.string.share_verb),
         onConfirm = {
           setProfileAddress(on)
         },
@@ -286,9 +286,9 @@ fun ShareWithContactsButton(shareViaProfile: MutableState<Boolean>, setProfileAd
         })
     } else {
       AlertManager.shared.showAlertDialog(
-        title = generalGetString(MR.strings.stop_sharing_address),
-        text = generalGetString(MR.strings.profile_update_will_be_sent_to_contacts),
-        confirmText = generalGetString(MR.strings.stop_sharing),
+        title = generalGetString(R.string.stop_sharing_address),
+        text = generalGetString(R.string.profile_update_will_be_sent_to_contacts),
+        confirmText = generalGetString(R.string.stop_sharing),
         onConfirm = {
           setProfileAddress(on)
         },
@@ -304,7 +304,7 @@ fun ShareWithContactsButton(shareViaProfile: MutableState<Boolean>, setProfileAd
 
 @Composable
 private fun AutoAcceptToggle(autoAcceptState: MutableState<AutoAcceptState>, saveAas: (AutoAcceptState) -> Unit) {
-  PreferenceToggleWithIcon(stringResource(MR.strings.auto_accept_contact), painterResource(MR.images.ic_check), checked = autoAcceptState.value.enable) {
+  PreferenceToggleWithIcon(stringResource(R.string.auto_accept_contact), painterResource(R.drawable.ic_check), checked = autoAcceptState.value.enable) {
     autoAcceptState.value = if (!it)
       AutoAcceptState()
     else
@@ -316,8 +316,8 @@ private fun AutoAcceptToggle(autoAcceptState: MutableState<AutoAcceptState>, sav
 @Composable
 private fun DeleteAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_delete),
-    stringResource(MR.strings.delete_address),
+    painterResource(R.drawable.ic_delete),
+    stringResource(R.string.delete_address),
     onClick,
     iconColor = MaterialTheme.colors.error,
     textColor = MaterialTheme.colors.error,
@@ -382,7 +382,7 @@ private fun AutoAcceptSection(
   savedAutoAcceptState: MutableState<AutoAcceptState>,
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit
 ) {
-  SectionView(stringResource(MR.strings.auto_accept_contact).uppercase()) {
+  SectionView(stringResource(R.string.auto_accept_contact).uppercase()) {
     AcceptIncognitoToggle(autoAcceptState)
     WelcomeMessageEditor(autoAcceptState)
     SaveAASButton(autoAcceptState.value == savedAutoAcceptState.value) { saveAas(autoAcceptState.value, savedAutoAcceptState) }
@@ -392,8 +392,8 @@ private fun AutoAcceptSection(
 @Composable
 private fun AcceptIncognitoToggle(autoAcceptState: MutableState<AutoAcceptState>) {
   PreferenceToggleWithIcon(
-    stringResource(MR.strings.accept_contact_incognito_button),
-    if (autoAcceptState.value.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_theater_comedy),
+    stringResource(R.string.accept_contact_incognito_button),
+    if (autoAcceptState.value.incognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_theater_comedy),
     if (autoAcceptState.value.incognito) Indigo else MaterialTheme.colors.secondary,
     autoAcceptState.value.incognito,
   ) {
@@ -404,7 +404,7 @@ private fun AcceptIncognitoToggle(autoAcceptState: MutableState<AutoAcceptState>
 @Composable
 private fun WelcomeMessageEditor(autoAcceptState: MutableState<AutoAcceptState>) {
   val welcomeText = rememberSaveable { mutableStateOf(autoAcceptState.value.welcomeText) }
-  TextEditor(welcomeText, Modifier.height(100.dp), placeholder = stringResource(MR.strings.enter_welcome_message_optional))
+  TextEditor(welcomeText, Modifier.height(100.dp), placeholder = stringResource(R.string.enter_welcome_message_optional))
   LaunchedEffect(welcomeText.value) {
     if (welcomeText.value != autoAcceptState.value.welcomeText) {
       autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, autoAcceptState.value.incognito, welcomeText.value)
@@ -415,7 +415,7 @@ private fun WelcomeMessageEditor(autoAcceptState: MutableState<AutoAcceptState>)
 @Composable
 private fun SaveAASButton(disabled: Boolean, onClick: () -> Unit) {
   SectionItemView(onClick, disabled = disabled) {
-    Text(stringResource(MR.strings.save_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+    Text(stringResource(R.string.save_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
   }
 }
 
@@ -444,9 +444,9 @@ fun PreviewUserAddressLayoutNoAddress() {
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
-    title = generalGetString(MR.strings.save_settings_question),
-    confirmText = generalGetString(MR.strings.save_auto_accept_settings),
-    dismissText = generalGetString(MR.strings.exit_without_saving),
+    title = generalGetString(R.string.save_settings_question),
+    confirmText = generalGetString(R.string.save_auto_accept_settings),
+    dismissText = generalGetString(R.string.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
   )

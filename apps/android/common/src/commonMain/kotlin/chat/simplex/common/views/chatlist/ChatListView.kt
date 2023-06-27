@@ -87,7 +87,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           contentColor = Color.White
         ) {
-          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(MR.images.ic_edit_filled) else painterResource(MR.images.ic_close), stringResource(MR.strings.add_contact_or_create_group))
+          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(R.drawable.ic_edit_filled) else painterResource(R.drawable.ic_close), stringResource(R.string.add_contact_or_create_group))
         }
       }
     }
@@ -104,7 +104,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
             }
-            Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+            Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
           }
         }
       }
@@ -130,11 +130,11 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
 private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
     val uriHandler = LocalUriHandler.current
-    ConnectButton(generalGetString(MR.strings.chat_with_developers)) {
+    ConnectButton(generalGetString(R.string.chat_with_developers)) {
       uriHandler.openUriCatching(simplexTeamUri)
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
-    ConnectButton(generalGetString(MR.strings.tap_to_start_new_chat), openNewChatSheet)
+    ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatSheet)
     val color = MaterialTheme.colors.primaryVariant
     Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
       val trianglePath = Path().apply {
@@ -179,7 +179,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
   if (chatModel.chats.size > 0) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_search_500), stringResource(R.string.search).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -187,13 +187,13 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
     barButtons.add {
       IconButton(onClick = {
         AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
+          generalGetString(R.string.chat_is_stopped_indication),
+          generalGetString(R.string.you_can_start_chat_via_setting_or_by_restarting_the_app)
         )
       }) {
         Icon(
-          painterResource(MR.images.ic_report_filled),
-          generalGetString(MR.strings.chat_is_stopped_indication),
+          painterResource(R.drawable.ic_report_filled),
+          generalGetString(R.string.chat_is_stopped_indication),
           tint = Color.Red,
         )
       }
@@ -223,14 +223,14 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-          stringResource(MR.strings.your_chats),
+          stringResource(R.string.your_chats),
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
         if (chatModel.incognito.value) {
           Icon(
-            painterResource(MR.images.ic_theater_comedy_filled),
-            stringResource(MR.strings.incognito),
+            painterResource(R.drawable.ic_theater_comedy_filled),
+            stringResource(R.string.incognito),
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)
           )
@@ -294,17 +294,17 @@ fun connectIfOpenedViaUri(uri: URI, chatModel: ChatModel) {
   } else {
     withUriAction(uri) { linkType ->
       val title = when (linkType) {
-        ConnectionLinkType.CONTACT -> generalGetString(MR.strings.connect_via_contact_link)
-        ConnectionLinkType.INVITATION -> generalGetString(MR.strings.connect_via_invitation_link)
-        ConnectionLinkType.GROUP -> generalGetString(MR.strings.connect_via_group_link)
+        ConnectionLinkType.CONTACT -> generalGetString(R.string.connect_via_contact_link)
+        ConnectionLinkType.INVITATION -> generalGetString(R.string.connect_via_invitation_link)
+        ConnectionLinkType.GROUP -> generalGetString(R.string.connect_via_group_link)
       }
       AlertManager.shared.showAlertDialog(
         title = title,
         text = if (linkType == ConnectionLinkType.GROUP)
-          generalGetString(MR.strings.you_will_join_group)
+          generalGetString(R.string.you_will_join_group)
         else
-          generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link),
-        confirmText = generalGetString(MR.strings.connect_via_link_verb),
+          generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
+        confirmText = generalGetString(R.string.connect_via_link_verb),
         onConfirm = {
           withApi {
             Log.d(TAG, "connectIfOpenedViaUri: connecting")

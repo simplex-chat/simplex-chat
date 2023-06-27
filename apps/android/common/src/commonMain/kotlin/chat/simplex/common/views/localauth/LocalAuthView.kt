@@ -19,7 +19,7 @@ import com.icerockdev.library.MR
 @Composable
 fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
   val passcode = rememberSaveable { mutableStateOf("") }
-  PasscodeView(passcode, authRequest.title ?: stringResource(MR.strings.la_enter_app_passcode), authRequest.reason, stringResource(MR.strings.submit_passcode),
+  PasscodeView(passcode, authRequest.title ?: stringResource(R.string.la_enter_app_passcode), authRequest.reason, stringResource(R.string.submit_passcode),
     submit = {
       val sdPassword = ksSelfDestructPassword.get()
       if (sdPassword == passcode.value && authRequest.selfDestruct) {
@@ -27,12 +27,12 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
           authRequest.completed(r)
         }
       } else {
-        val r: LAResult = if (passcode.value == authRequest.password) LAResult.Success else LAResult.Error(generalGetString(MR.strings.incorrect_passcode))
+        val r: LAResult = if (passcode.value == authRequest.password) LAResult.Success else LAResult.Error(generalGetString(R.string.incorrect_passcode))
         authRequest.completed(r)
       }
     },
     cancel = {
-      authRequest.completed(LAResult.Error(generalGetString(MR.strings.authentication_cancelled)))
+      authRequest.completed(LAResult.Error(generalGetString(R.string.authentication_cancelled)))
     })
 }
 
@@ -75,7 +75,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       AlertManager.shared.hideAlert()
       completed(LAResult.Success)
     } catch (e: Exception) {
-      completed(LAResult.Error(generalGetString(MR.strings.incorrect_passcode)))
+      completed(LAResult.Error(generalGetString(R.string.incorrect_passcode)))
     }
   }
 }

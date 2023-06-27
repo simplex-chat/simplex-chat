@@ -76,8 +76,8 @@ fun SendMsgView(
           .matchParentSize()
           .clickable(enabled = !userCanSend, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
             AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.observer_cant_send_message_title),
-              text = generalGetString(MR.strings.observer_cant_send_message_desc)
+              title = generalGetString(R.string.observer_cant_send_message_title),
+              text = generalGetString(R.string.observer_cant_send_message_desc)
             )
           })
       )
@@ -136,7 +136,7 @@ fun SendMsgView(
         }
         else -> {
           val cs = composeState.value
-          val icon = if (cs.editing || cs.liveMessage != null) painterResource(MR.images.ic_check_filled) else painterResource(MR.images.ic_arrow_upward)
+          val icon = if (cs.editing || cs.liveMessage != null) painterResource(R.drawable.ic_check_filled) else painterResource(R.drawable.ic_arrow_upward)
           val disabled = !cs.sendEnabled() ||
               (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
               cs.endLiveDisabled
@@ -154,7 +154,7 @@ fun SendMsgView(
               ) {
                 menuItems.add {
                   ItemAction(
-                    generalGetString(MR.strings.send_live_message),
+                    generalGetString(R.string.send_live_message),
                     BoltFilled,
                     onClick = {
                       startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
@@ -166,8 +166,8 @@ fun SendMsgView(
               if (timedMessageAllowed) {
                 menuItems.add {
                   ItemAction(
-                    generalGetString(MR.strings.disappearing_message),
-                    painterResource(MR.images.ic_timer),
+                    generalGetString(R.string.disappearing_message),
+                    painterResource(R.drawable.ic_timer),
                     onClick = {
                       showCustomDisappearingMessageDialog.value = true
                       showDropdown.value = false
@@ -215,8 +215,8 @@ private fun CustomDisappearingMessageDialog(
     }
     CustomTimePickerDialog(
       selectedDisappearingMessageTime,
-      title = generalGetString(MR.strings.delete_after),
-      confirmButtonText = generalGetString(MR.strings.send_disappearing_message_send),
+      title = generalGetString(R.string.delete_after),
+      confirmButtonText = generalGetString(R.string.send_disappearing_message_send),
       confirmButtonAction = { ttl ->
         sendMessage(ttl)
         customDisappearingMessageTimePref?.set?.invoke(ttl)
@@ -260,32 +260,32 @@ private fun CustomDisappearingMessageDialog(
             ) {
               Text(" ") // centers title
               Text(
-                generalGetString(MR.strings.send_disappearing_message),
+                generalGetString(R.string.send_disappearing_message),
                 fontSize = 16.sp,
                 color = MaterialTheme.colors.secondary
               )
               Icon(
-                painterResource(MR.images.ic_close),
-                generalGetString(MR.strings.icon_descr_close_button),
+                painterResource(R.drawable.ic_close),
+                generalGetString(R.string.icon_descr_close_button),
                 tint = MaterialTheme.colors.secondary,
                 modifier = Modifier
                   .size(25.dp)
                   .clickable { setShowDialog(false) }
               )
             }
-            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_30_seconds)) {
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_30_seconds)) {
               sendMessage(30)
               setShowDialog(false)
             }
-            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_1_minute)) {
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_1_minute)) {
               sendMessage(60)
               setShowDialog(false)
             }
-            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_5_minutes)) {
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_5_minutes)) {
               sendMessage(300)
               setShowDialog(false)
             }
-            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_custom_time)) {
+            ChoiceButton(generalGetString(R.string.send_disappearing_message_custom_time)) {
               showCustomTimePicker.value = true
             }
           }
@@ -301,7 +301,7 @@ private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) 
     { composeState.value = composeState.value.copy(message = "") },
     Modifier.align(Alignment.TopEnd).size(36.dp)
   ) {
-    Icon(painterResource(MR.images.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(R.drawable.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
   }
 }
 
@@ -358,8 +358,8 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
 private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp), enabled = enabled) {
     Icon(
-      painterResource(MR.images.ic_keyboard_voice),
-      stringResource(MR.strings.icon_descr_record_voice_message),
+      painterResource(R.drawable.ic_keyboard_voice),
+      stringResource(R.string.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.secondary,
       modifier = Modifier
         .size(36.dp)
@@ -372,8 +372,8 @@ private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
 fun VoiceButtonWithoutPermission(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
-      painterResource(MR.images.ic_keyboard_voice_filled),
-      stringResource(MR.strings.icon_descr_record_voice_message),
+      painterResource(R.drawable.ic_keyboard_voice_filled),
+      stringResource(R.string.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(34.dp)
@@ -386,8 +386,8 @@ fun VoiceButtonWithoutPermission(onClick: () -> Unit) {
 private fun StopRecordButton(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
-      painterResource(MR.images.ic_stop_filled),
-      stringResource(MR.strings.icon_descr_record_voice_message),
+      painterResource(R.drawable.ic_stop_filled),
+      stringResource(R.string.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(36.dp)
@@ -400,8 +400,8 @@ private fun StopRecordButton(onClick: () -> Unit) {
 private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
   IconButton({}, Modifier.size(36.dp), interactionSource = interactionSource) {
     Icon(
-      painterResource(MR.images.ic_keyboard_voice_filled),
-      stringResource(MR.strings.icon_descr_record_voice_message),
+      painterResource(R.drawable.ic_keyboard_voice_filled),
+      stringResource(R.string.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(34.dp)
@@ -421,8 +421,8 @@ private fun CancelLiveMessageButton(
 ) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
-      painterResource(MR.images.ic_close),
-      stringResource(MR.strings.icon_descr_cancel_live_message),
+      painterResource(R.drawable.ic_close),
+      stringResource(R.string.icon_descr_cancel_live_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(36.dp)
@@ -455,7 +455,7 @@ private fun SendMsgButton(
   ) {
     Icon(
       icon,
-      stringResource(MR.strings.icon_descr_send_message),
+      stringResource(R.string.icon_descr_send_message),
       tint = Color.White,
       modifier = Modifier
         .size(sizeDp.value.dp)
@@ -484,7 +484,7 @@ private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
   ) {
     Icon(
       BoltFilled,
-      stringResource(MR.strings.icon_descr_send_message),
+      stringResource(R.string.icon_descr_send_message),
       tint = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       modifier = Modifier
         .size(36.dp)
@@ -535,9 +535,9 @@ private fun startLiveMessage(
     start()
   } else {
     AlertManager.shared.showAlertDialog(
-      title = generalGetString(MR.strings.live_message),
-      text = generalGetString(MR.strings.send_live_message_desc),
-      confirmText = generalGetString(MR.strings.send_verb),
+      title = generalGetString(R.string.live_message),
+      text = generalGetString(R.string.send_live_message_desc),
+      confirmText = generalGetString(R.string.send_verb),
       onConfirm = {
         liveMessageAlertShown.set(true)
         start()
@@ -547,22 +547,22 @@ private fun startLiveMessage(
 
 private fun showNeedToAllowVoiceAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.allow_voice_messages_question),
-    text = generalGetString(MR.strings.you_need_to_allow_to_send_voice),
-    confirmText = generalGetString(MR.strings.allow_verb),
-    dismissText = generalGetString(MR.strings.cancel_verb),
+    title = generalGetString(R.string.allow_voice_messages_question),
+    text = generalGetString(R.string.you_need_to_allow_to_send_voice),
+    confirmText = generalGetString(R.string.allow_verb),
+    dismissText = generalGetString(R.string.cancel_verb),
     onConfirm = onConfirm,
   )
 }
 
 private fun showDisabledVoiceAlert(isDirectChat: Boolean) {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(MR.strings.voice_messages_prohibited),
+    title = generalGetString(R.string.voice_messages_prohibited),
     text = generalGetString(
       if (isDirectChat)
-        MR.strings.ask_your_contact_to_enable_voice
+        R.string.ask_your_contact_to_enable_voice
       else
-        MR.strings.only_group_owners_can_enable_voice
+        R.string.only_group_owners_can_enable_voice
     )
   )
 }

@@ -86,10 +86,10 @@ fun saveImage(ciFile: CIFile?) {
         val outputStream = BufferedOutputStream(stream)
         File(filePath).inputStream().use { it.copyTo(outputStream) }
         outputStream.close()
-        showToast(generalGetString(MR.strings.image_saved))
+        showToast(generalGetString(R.string.image_saved))
       }
     }
   } else {
-    showToast(generalGetString(MR.strings.file_not_found))
+    showToast(generalGetString(R.string.file_not_found))
   }
 }

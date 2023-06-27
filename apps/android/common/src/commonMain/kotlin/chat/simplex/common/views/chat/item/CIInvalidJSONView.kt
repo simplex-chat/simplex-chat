@@ -24,7 +24,7 @@ fun CIInvalidJSONView(json: String) {
     .clickable { ModalManager.shared.showModal(true) { InvalidJSONView(json) } }
     .padding(horizontal = 10.dp, vertical = 6.dp)
   ) {
-    Text(stringResource(MR.strings.invalid_data), color = Color.Red, fontStyle = FontStyle.Italic)
+    Text(stringResource(R.string.invalid_data), color = Color.Red, fontStyle = FontStyle.Italic)
   }
 }
 
@@ -34,7 +34,7 @@ fun InvalidJSONView(json: String) {
     Spacer(Modifier.height(DEFAULT_PADDING))
     SectionView {
       val clipboard = LocalClipboardManager.current
-      SettingsActionItem(painterResource(MR.images.ic_share), generalGetString(MR.strings.share_verb), click = {
+      SettingsActionItem(painterResource(R.drawable.ic_share), generalGetString(R.string.share_verb), click = {
         clipboard.shareText(json)
       })
     }

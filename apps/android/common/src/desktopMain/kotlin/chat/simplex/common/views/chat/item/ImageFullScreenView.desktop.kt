@@ -16,8 +16,8 @@ import java.net.URI
 @Composable
 actual fun FullScreenImageView(modifier: Modifier, uri: URI, imageBitmap: ImageBitmap) {
   Image(
-    getBitmapFromUri(uri, false) ?: MR.images.decentralized.image.toComposeImageBitmap(),
-    contentDescription = stringResource(MR.strings.image_descr),
+    getBitmapFromUri(uri, false) ?: R.drawable.decentralized.image.toComposeImageBitmap(),
+    contentDescription = stringResource(R.string.image_descr),
     contentScale = ContentScale.Fit,
     modifier = modifier,
   )

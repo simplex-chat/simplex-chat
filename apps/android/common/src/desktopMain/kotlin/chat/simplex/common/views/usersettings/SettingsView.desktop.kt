@@ -14,8 +14,8 @@ actual fun SettingsSectionApp(
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_app)) {
-    SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) }, extraPadding = true)
+  SectionView(stringResource(R.string.settings_section_title_app)) {
+    SettingsActionItem(painterResource(R.drawable.ic_code), stringResource(R.string.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) }, extraPadding = true)
     AppVersionItem(showVersion)
   }
 }

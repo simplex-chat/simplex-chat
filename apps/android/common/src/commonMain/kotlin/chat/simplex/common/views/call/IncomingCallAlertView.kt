@@ -58,9 +58,9 @@ fun IncomingCallAlertLayout(
         ProfilePreview(profileOf = invitation.contact, size = 64.dp)
       }
       Row(verticalAlignment = Alignment.CenterVertically) {
-        CallButton(stringResource(MR.strings.reject), painterResource(MR.images.ic_call_end_filled), Color.Red, rejectCall)
-        CallButton(stringResource(MR.strings.ignore), painterResource(MR.images.ic_close), MaterialTheme.colors.primary, ignoreCall)
-        CallButton(stringResource(MR.strings.accept), painterResource(MR.images.ic_check_filled), SimplexGreen, acceptCall)
+        CallButton(stringResource(R.string.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
+        CallButton(stringResource(R.string.ignore), painterResource(R.drawable.ic_close), MaterialTheme.colors.primary, ignoreCall)
+        CallButton(stringResource(R.string.accept), painterResource(R.drawable.ic_check_filled), SimplexGreen, acceptCall)
       }
     }
   }
@@ -74,8 +74,8 @@ fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
       ProfileImage(size = 32.dp, image = invitation.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
       Spacer(Modifier.width(4.dp))
     }
-    if (invitation.callType.media == CallMediaType.Video) CallIcon(painterResource(MR.images.ic_videocam_filled), stringResource(MR.strings.icon_descr_video_call))
-    else CallIcon(painterResource(MR.images.ic_call_filled), stringResource(MR.strings.icon_descr_audio_call))
+    if (invitation.callType.media == CallMediaType.Video) CallIcon(painterResource(R.drawable.ic_videocam_filled), stringResource(R.string.icon_descr_video_call))
+    else CallIcon(painterResource(R.drawable.ic_call_filled), stringResource(R.string.icon_descr_audio_call))
     Spacer(Modifier.width(4.dp))
     Text(invitation.callTypeText, color = MaterialTheme.colors.onBackground)
   }

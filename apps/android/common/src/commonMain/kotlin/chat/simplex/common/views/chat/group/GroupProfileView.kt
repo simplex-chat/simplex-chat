@@ -103,7 +103,7 @@ fun GroupProfileLayout(
             Modifier.fillMaxWidth()
               .padding(horizontal = DEFAULT_PADDING)
           ) {
-            ReadableText(MR.strings.group_profile_is_stored_on_members_devices, TextAlign.Center)
+            ReadableText(R.string.group_profile_is_stored_on_members_devices, TextAlign.Center)
             Box(
               Modifier
                 .fillMaxWidth()
@@ -122,13 +122,13 @@ fun GroupProfileLayout(
             }
             Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
               Text(
-                stringResource(MR.strings.group_display_name_field),
+                stringResource(R.string.group_display_name_field),
                 fontSize = 16.sp
               )
               if (!isValidDisplayName(displayName.value)) {
                 Spacer(Modifier.size(DEFAULT_PADDING_HALF))
                 Text(
-                  stringResource(MR.strings.no_spaces),
+                  stringResource(R.string.no_spaces),
                   fontSize = 16.sp,
                   color = Color.Red
                 )
@@ -137,7 +137,7 @@ fun GroupProfileLayout(
             ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
             Spacer(Modifier.height(DEFAULT_PADDING))
             Text(
-              stringResource(MR.strings.group_full_name_field),
+              stringResource(R.string.group_full_name_field),
               fontSize = 16.sp,
               modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
             )
@@ -146,7 +146,7 @@ fun GroupProfileLayout(
             val enabled = !dataUnchanged && displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
             if (enabled) {
               Text(
-                stringResource(MR.strings.save_group_profile),
+                stringResource(R.string.save_group_profile),
                 modifier = Modifier.clickable {
                   saveProfile(
                     groupProfile.copy(
@@ -160,7 +160,7 @@ fun GroupProfileLayout(
               )
             } else {
               Text(
-                stringResource(MR.strings.save_group_profile),
+                stringResource(R.string.save_group_profile),
                 color = MaterialTheme.colors.secondary
               )
             }
@@ -180,9 +180,9 @@ fun GroupProfileLayout(
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
-    title = generalGetString(MR.strings.save_preferences_question),
-    confirmText = generalGetString(MR.strings.save_and_notify_group_members),
-    dismissText = generalGetString(MR.strings.exit_without_saving),
+    title = generalGetString(R.string.save_preferences_question),
+    confirmText = generalGetString(R.string.save_and_notify_group_members),
+    dismissText = generalGetString(R.string.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
   )

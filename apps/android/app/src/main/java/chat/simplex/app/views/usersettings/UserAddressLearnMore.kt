@@ -15,10 +15,10 @@ fun UserAddressLearnMore() {
   Column(
     Modifier.verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.simplex_address))
-    ReadableText(MR.strings.you_can_share_your_address)
-    ReadableText(MR.strings.you_wont_lose_your_contacts_if_delete_address)
-    ReadableText(MR.strings.you_can_accept_or_reject_connection)
-    ReadableTextWithLink(MR.strings.read_more_in_user_guide_with_link, "https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address")
+    AppBarTitle(stringResource(R.string.simplex_address))
+    ReadableText(R.string.you_can_share_your_address)
+    ReadableText(R.string.you_wont_lose_your_contacts_if_delete_address)
+    ReadableText(R.string.you_can_accept_or_reject_connection)
+    ReadableTextWithLink(R.string.read_more_in_user_guide_with_link, "https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address")
   }
 }

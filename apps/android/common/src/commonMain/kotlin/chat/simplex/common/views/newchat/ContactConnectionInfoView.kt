@@ -88,16 +88,16 @@ private fun ContactConnectionInfoLayout(
   ) {
     AppBarTitle(
       stringResource(
-        if (contactConnection.initiated) MR.strings.you_invited_your_contact
-        else MR.strings.you_accepted_connection
+        if (contactConnection.initiated) R.string.you_invited_your_contact
+        else R.string.you_accepted_connection
       )
     )
     Text(
       stringResource(
         if (contactConnection.viaContactUri)
-          if (contactConnection.groupLinkId != null) MR.strings.you_will_be_connected_when_group_host_device_is_online
-          else MR.strings.you_will_be_connected_when_your_connection_request_is_accepted
-        else MR.strings.you_will_be_connected_when_your_contacts_device_is_online
+          if (contactConnection.groupLinkId != null) R.string.you_will_be_connected_when_group_host_device_is_online
+          else R.string.you_will_be_connected_when_your_connection_request_is_accepted
+        else R.string.you_will_be_connected_when_your_contacts_device_is_online
       ),
       Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
     )
@@ -126,8 +126,8 @@ private fun ContactConnectionInfoLayout(
 @Composable
 fun DeleteButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_delete),
-    stringResource(MR.strings.delete_verb),
+    painterResource(R.drawable.ic_delete),
+    stringResource(R.string.delete_verb),
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,

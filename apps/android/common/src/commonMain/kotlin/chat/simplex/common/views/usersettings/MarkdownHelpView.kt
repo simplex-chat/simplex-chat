@@ -22,14 +22,14 @@ fun MarkdownHelpView() {
     Modifier
       .fillMaxWidth()
   ) {
-    Text(stringResource(MR.strings.you_can_use_markdown_to_format_messages__prompt))
+    Text(stringResource(R.string.you_can_use_markdown_to_format_messages__prompt))
     Spacer(Modifier.height(DEFAULT_PADDING))
-    val bold = stringResource(MR.strings.bold_font)
-    val italic = stringResource(MR.strings.italic_font)
-    val strikethrough = stringResource(MR.strings.strikethrough)
-    val equation = stringResource(MR.strings.a_plus_b)
-    val colored = stringResource(MR.strings.colored_font)
-    val secret = stringResource(MR.strings.secret_text)
+    val bold = stringResource(R.string.bold_font)
+    val italic = stringResource(R.string.italic_font)
+    val strikethrough = stringResource(R.string.strikethrough)
+    val equation = stringResource(R.string.a_plus_b)
+    val colored = stringResource(R.string.colored_font)
+    val secret = stringResource(R.string.secret_text)
 
     MdFormat("*$bold*", bold, Format.Bold())
     MdFormat("_${italic}_", italic, Format.Italic())

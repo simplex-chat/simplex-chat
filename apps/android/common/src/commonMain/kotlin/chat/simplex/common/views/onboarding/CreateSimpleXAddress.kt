@@ -35,8 +35,8 @@ fun CreateSimpleXAddress(m: ChatModel) {
     share = { address: String -> clipboard.shareText(address) },
     sendEmail = { address ->
       uriHandler.sendEmail(
-        generalGetString(MR.strings.email_invite_subject),
-        generalGetString(MR.strings.email_invite_body).format(address.connReqContact)
+        generalGetString(R.string.email_invite_subject),
+        generalGetString(R.string.email_invite_body).format(address.connReqContact)
       )
     },
     createAddress = {
@@ -80,7 +80,7 @@ private fun CreateSimpleXAddressLayout(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
-    AppBarTitle(stringResource(MR.strings.simplex_address))
+    AppBarTitle(stringResource(R.string.simplex_address))
 
     Spacer(Modifier.weight(1f))
 
@@ -93,7 +93,7 @@ private fun CreateSimpleXAddressLayout(
       ContinueButton(nextStep)
     } else {
       CreateAddressButton(createAddress)
-      TextBelowButton(stringResource(MR.strings.your_contacts_will_see_it))
+      TextBelowButton(stringResource(R.string.your_contacts_will_see_it))
       Spacer(Modifier.weight(1f))
       SkipButton(nextStep)
     }
@@ -104,7 +104,7 @@ private fun CreateSimpleXAddressLayout(
 @Composable
 private fun CreateAddressButton(onClick: () -> Unit) {
   TextButton(onClick) {
-    Text(stringResource(MR.strings.create_simplex_address), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.create_simplex_address), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary)
   }
 }
 
@@ -112,10 +112,10 @@ private fun CreateAddressButton(onClick: () -> Unit) {
 fun ShareAddressButton(onClick: () -> Unit) {
   SimpleButtonFrame(onClick) {
     Icon(
-      painterResource(MR.images.ic_share_filled), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
+      painterResource(R.drawable.ic_share_filled), generalGetString(R.string.share_verb), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(end = 8.dp).size(18.dp)
     )
-    Text(stringResource(MR.strings.share_verb), style = MaterialTheme.typography.caption, color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.share_verb), style = MaterialTheme.typography.caption, color = MaterialTheme.colors.primary)
   }
 }
 
@@ -123,22 +123,22 @@ fun ShareAddressButton(onClick: () -> Unit) {
 fun ShareViaEmailButton(onClick: () -> Unit) {
   SimpleButtonFrame(onClick) {
     Icon(
-      painterResource(MR.images.ic_mail), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
+      painterResource(R.drawable.ic_mail), generalGetString(R.string.share_verb), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(end = 8.dp).size(30.dp)
     )
-    Text(stringResource(MR.strings.invite_friends), style = MaterialTheme.typography.h6, color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.invite_friends), style = MaterialTheme.typography.h6, color = MaterialTheme.colors.primary)
   }
 }
 
 @Composable
 private fun ContinueButton(onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.continue_to_next_step), painterResource(MR.images.ic_chevron_right), click = onClick)
+  SimpleButtonIconEnded(stringResource(R.string.continue_to_next_step), painterResource(R.drawable.ic_chevron_right), click = onClick)
 }
 
 @Composable
 private fun SkipButton(onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.dont_create_address), painterResource(MR.images.ic_chevron_right), click = onClick)
-  TextBelowButton(stringResource(MR.strings.you_can_create_it_later))
+  SimpleButtonIconEnded(stringResource(R.string.dont_create_address), painterResource(R.drawable.ic_chevron_right), click = onClick)
+  TextBelowButton(stringResource(R.string.you_can_create_it_later))
 }
 
 @Composable

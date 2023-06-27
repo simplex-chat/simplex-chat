@@ -33,7 +33,7 @@ fun DefaultTopAppBar(
       if (!showSearch) {
         title?.invoke()
       } else {
-        SearchTextField(Modifier.fillMaxWidth(), stringResource(MR.strings.search), alwaysVisible = false, onSearchValueChanged)
+        SearchTextField(Modifier.fillMaxWidth(), stringResource(R.string.search), alwaysVisible = false, onSearchValueChanged)
       }
     },
     backgroundColor = if (isInDarkTheme()) ToolbarDark else ToolbarLight,
@@ -47,7 +47,7 @@ fun DefaultTopAppBar(
 fun NavigationButtonBack(onButtonClicked: (() -> Unit)?) {
   IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
     Icon(
-      painterResource(MR.images.ic_arrow_back_ios_new), stringResource(MR.strings.back), tint = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+      painterResource(R.drawable.ic_arrow_back_ios_new), stringResource(R.string.back), tint = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
     )
   }
 }
@@ -56,7 +56,7 @@ fun NavigationButtonBack(onButtonClicked: (() -> Unit)?) {
 fun ShareButton(onButtonClicked: () -> Unit) {
   IconButton(onButtonClicked) {
     Icon(
-      painterResource(MR.images.ic_share), stringResource(MR.strings.share_verb), tint = MaterialTheme.colors.primary
+      painterResource(R.drawable.ic_share), stringResource(R.string.share_verb), tint = MaterialTheme.colors.primary
     )
   }
 }
@@ -65,8 +65,8 @@ fun ShareButton(onButtonClicked: () -> Unit) {
 fun NavigationButtonMenu(onButtonClicked: () -> Unit) {
   IconButton(onClick = onButtonClicked) {
     Icon(
-      painterResource(MR.images.ic_menu),
-      stringResource(MR.strings.icon_descr_settings),
+      painterResource(R.drawable.ic_menu),
+      stringResource(R.string.icon_descr_settings),
       tint = MaterialTheme.colors.primary,
     )
   }

@@ -17,7 +17,7 @@ import dev.icerock.moko.resources.compose.stringResource
 actual fun SaveContentItemAction(cItem: ChatItem, showMenu: MutableState<Boolean>) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
   val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
-  ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), onClick = {
+  ItemAction(stringResource(R.string.save_verb), painterResource(R.drawable.ic_download), onClick = {
     when (cItem.content.msgContent) {
       is MsgContent.MCImage -> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.hasPermission) {

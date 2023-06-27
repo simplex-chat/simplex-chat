@@ -20,10 +20,10 @@ actual fun SettingsSectionApp(
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_app)) {
-    SettingsActionItem(painterResource(MR.images.ic_restart_alt), stringResource(MR.strings.settings_restart_app), ::restartApp, extraPadding = true)
-    SettingsActionItem(painterResource(MR.images.ic_power_settings_new), stringResource(MR.strings.settings_shutdown), { shutdownAppAlert(::shutdownApp) }, extraPadding = true)
-    SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) }, extraPadding = true)
+  SectionView(stringResource(R.string.settings_section_title_app)) {
+    SettingsActionItem(painterResource(R.drawable.ic_restart_alt), stringResource(R.string.settings_restart_app), ::restartApp, extraPadding = true)
+    SettingsActionItem(painterResource(R.drawable.ic_power_settings_new), stringResource(R.string.settings_shutdown), { shutdownAppAlert(::shutdownApp) }, extraPadding = true)
+    SettingsActionItem(painterResource(R.drawable.ic_code), stringResource(R.string.settings_developer_tools), showSettingsModal { DeveloperView(it, showCustomModal, withAuth) }, extraPadding = true)
     AppVersionItem(showVersion)
   }
 }
@@ -42,8 +42,8 @@ private fun shutdownApp() {
 
 private fun shutdownAppAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.shutdown_alert_question),
-    text = generalGetString(MR.strings.shutdown_alert_desc),
+    title = generalGetString(R.string.shutdown_alert_question),
+    text = generalGetString(R.string.shutdown_alert_desc),
     destructive = true,
     onConfirm = onConfirm
   )

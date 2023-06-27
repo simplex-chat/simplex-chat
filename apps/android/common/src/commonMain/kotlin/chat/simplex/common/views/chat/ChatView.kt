@@ -416,7 +416,7 @@ fun ChatInfoToolbar(
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   menuItems.add {
-    ItemAction(stringResource(MR.strings.search).capitalize(Locale.current), painterResource(MR.images.ic_search), onClick = {
+    ItemAction(stringResource(R.string.search).capitalize(Locale.current), painterResource(R.drawable.ic_search), onClick = {
       showMenu.value = false
       showSearch = true
     })
@@ -428,11 +428,11 @@ fun ChatInfoToolbar(
         showMenu.value = false
         startCall(CallMediaType.Audio)
       }) {
-        Icon(painterResource(MR.images.ic_call_500), stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_call_500), stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
       }
     }
     menuItems.add {
-      ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+      ItemAction(stringResource(R.string.icon_descr_video_call).capitalize(Locale.current), painterResource(R.drawable.ic_videocam), onClick = {
         showMenu.value = false
         startCall(CallMediaType.Video)
       })
@@ -443,15 +443,15 @@ fun ChatInfoToolbar(
         showMenu.value = false
         addMembers(chat.chatInfo.groupInfo)
       }) {
-        Icon(painterResource(MR.images.ic_person_add_500), stringResource(MR.strings.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_person_add_500), stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
       }
     }
   }
   val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
   menuItems.add {
     ItemAction(
-      if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
-      if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+      if (ntfsEnabled.value) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
+      if (ntfsEnabled.value) painterResource(R.drawable.ic_notifications_off) else painterResource(R.drawable.ic_notifications),
       onClick = {
         showMenu.value = false
         // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
@@ -465,7 +465,7 @@ fun ChatInfoToolbar(
 
   barButtons.add {
     IconButton({ showMenu.value = true }) {
-      Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+      Icon(MoreVertFilled, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
     }
   }
 
@@ -522,7 +522,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
 
 @Composable
 private fun ContactVerifiedShield() {
-  Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
+  Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
 }
 
 data class CIListState(val scrolled: Boolean, val itemCount: Int, val keyboardState: KeyboardState)
@@ -823,8 +823,8 @@ fun BoxWithConstraintsScope.FloatingButtons(
 
   DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
     ItemAction(
-      generalGetString(MR.strings.mark_read),
-      painterResource(MR.images.ic_check),
+      generalGetString(R.string.mark_read),
+      painterResource(R.drawable.ic_check),
       onClick = {
         markRead(
           CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
@@ -931,7 +931,7 @@ private fun bottomEndFloatingButton(
         backgroundColor = MaterialTheme.colors.secondaryVariant,
       ) {
         Icon(
-          painter = painterResource(MR.images.ic_keyboard_arrow_down),
+          painter = painterResource(R.drawable.ic_keyboard_arrow_down),
           contentDescription = null,
           tint = MaterialTheme.colors.primary
         )

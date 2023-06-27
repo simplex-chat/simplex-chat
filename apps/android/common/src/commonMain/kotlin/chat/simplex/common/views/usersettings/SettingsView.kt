@@ -56,7 +56,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
           ModalView(
             { close() },
             endButtons = {
-              SearchTextField(Modifier.fillMaxWidth(), stringResource(MR.strings.search), alwaysVisible = true) { search.value = it }
+              SearchTextField(Modifier.fillMaxWidth(), stringResource(R.string.search), alwaysVisible = true) { search.value = it }
             },
             content = { modalView(chatModel, search) })
         }
@@ -94,8 +94,8 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
               contentAlignment = Alignment.Center
             ) {
               SimpleButton(
-                stringResource(MR.strings.auth_unlock),
-                icon = painterResource(MR.images.ic_lock),
+                stringResource(R.string.auth_unlock),
+                icon = painterResource(R.drawable.ic_lock),
                 click = {
                   runAuth(title, desc, onFinishAuth)
                 }
@@ -135,40 +135,40 @@ fun SettingsLayout(
         .fillMaxSize()
         .padding(top = DEFAULT_PADDING)
     ) {
-      AppBarTitle(stringResource(MR.strings.your_settings))
+      AppBarTitle(stringResource(R.string.your_settings))
 
-      SectionView(stringResource(MR.strings.settings_section_title_you)) {
+      SectionView(stringResource(R.string.settings_section_title_you)) {
         SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
           ProfilePreview(profile, stopped = stopped)
         }
         val profileHidden = rememberSaveable { mutableStateOf(false) }
-        SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.your_chat_profiles), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_manage_accounts), stringResource(R.string.your_chat_profiles), { withAuth(generalGetString(R.string.auth_open_chat_profiles), generalGetString(R.string.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
-        SettingsActionItem(painterResource(MR.images.ic_qr_code), stringResource(MR.strings.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_qr_code), stringResource(R.string.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped, extraPadding = true)
         ChatPreferencesItem(showCustomModal, stopped = stopped)
       }
       SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.settings_section_title_settings)) {
-        SettingsActionItem(painterResource(MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it, showSettingsModal) }, extraPadding = true)
+      SectionView(stringResource(R.string.settings_section_title_settings)) {
+        SettingsActionItem(painterResource(R.drawable.ic_bolt), stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_wifi_tethering), stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_videocam), stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_lock), stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_light_mode), stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(it, showSettingsModal) }, extraPadding = true)
         DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.settings_section_title_help)) {
-        SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) }, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openUriCatching(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary, extraPadding = true)
+      SectionView(stringResource(R.string.settings_section_title_help)) {
+        SettingsActionItem(painterResource(R.drawable.ic_help), stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_add), stringResource(R.string.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_info), stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) }, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_tag), stringResource(R.string.chat_with_the_founder), { uriHandler.openUriCatching(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(R.drawable.ic_mail), stringResource(R.string.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary, extraPadding = true)
       }
       SectionDividerSpaced()
 
-      SectionView(stringResource(MR.strings.settings_section_title_support)) {
+      SectionView(stringResource(R.string.settings_section_title_support)) {
         ContributeItem(uriHandler)
         RateAppItem(uriHandler)
         StarOnGithubItem(uriHandler)
@@ -197,9 +197,9 @@ fun SettingsIncognitoActionItem(
   onClickInfo: () -> Unit,
 ) {
   SettingsPreferenceItemWithInfo(
-    if (incognito.value) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_theater_comedy),
+    if (incognito.value) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_theater_comedy),
     if (incognito.value) Indigo else MaterialTheme.colors.secondary,
-    stringResource(MR.strings.incognito),
+    stringResource(R.string.incognito),
     stopped,
     onClickInfo,
     incognitoPref,
@@ -234,17 +234,17 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
     ) {
       Row(Modifier.weight(1f)) {
         Icon(
-          painterResource(MR.images.ic_database),
-          contentDescription = stringResource(MR.strings.database_passphrase_and_export),
+          painterResource(R.drawable.ic_database),
+          contentDescription = stringResource(R.string.database_passphrase_and_export),
           tint = if (encrypted) MaterialTheme.colors.secondary else WarningOrange,
         )
         TextIconSpaced(true)
-        Text(stringResource(MR.strings.database_passphrase_and_export))
+        Text(stringResource(R.string.database_passphrase_and_export))
       }
       if (stopped) {
         Icon(
-          painterResource(MR.images.ic_report_filled),
-          contentDescription = stringResource(MR.strings.chat_is_stopped),
+          painterResource(R.drawable.ic_report_filled),
+          contentDescription = stringResource(R.string.chat_is_stopped),
           tint = Color.Red,
           modifier = Modifier.padding(end = 6.dp)
         )
@@ -255,8 +255,8 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 
 @Composable fun ChatPreferencesItem(showCustomModal: ((@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit)), stopped: Boolean) {
   SettingsActionItem(
-    painterResource(MR.images.ic_toggle_on),
-    stringResource(MR.strings.chat_preferences),
+    painterResource(R.drawable.ic_toggle_on),
+    stringResource(R.string.chat_preferences),
     click = if (stopped) null else ({
       withApi {
         showCustomModal { m, close ->
@@ -278,24 +278,24 @@ fun ChatLockItem(
   val currentLAMode = remember { ChatModel.controller.appPrefs.laMode }
   SettingsActionItemWithContent(
     click = showSettingsModal { SimplexLockView(ChatModel, currentLAMode, setPerformLA) },
-    icon = if (performLA.value) painterResource(MR.images.ic_lock_filled) else painterResource(MR.images.ic_lock),
-    text = stringResource(MR.strings.chat_lock),
+    icon = if (performLA.value) painterResource(R.drawable.ic_lock_filled) else painterResource(R.drawable.ic_lock),
+    text = stringResource(R.string.chat_lock),
     iconColor = if (performLA.value) SimplexGreen else MaterialTheme.colors.secondary,
     extraPadding = false,
   ) {
-    Text(if (performLA.value) remember { currentLAMode.state }.value.text else generalGetString(MR.strings.mode_off), color = MaterialTheme.colors.secondary)
+    Text(if (performLA.value) remember { currentLAMode.state }.value.text else generalGetString(R.string.mode_off), color = MaterialTheme.colors.secondary)
   }
 }
 
 @Composable private fun ContributeItem(uriHandler: UriHandler) {
   SectionItemViewWithIcon({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat#contribute") }) {
     Icon(
-      painterResource(MR.images.ic_keyboard),
+      painterResource(R.drawable.ic_keyboard),
       contentDescription = "GitHub",
       tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced(extraPadding = true)
-    Text(generalGetString(MR.strings.contribute), color = MaterialTheme.colors.primary)
+    Text(generalGetString(R.string.contribute), color = MaterialTheme.colors.primary)
   }
 }
 
@@ -306,48 +306,48 @@ fun ChatLockItem(
   }
   ) {
     Icon(
-      painterResource(MR.images.ic_star),
+      painterResource(R.drawable.ic_star),
       contentDescription = "Google Play",
       tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced(extraPadding = true)
-    Text(generalGetString(MR.strings.rate_the_app), color = MaterialTheme.colors.primary)
+    Text(generalGetString(R.string.rate_the_app), color = MaterialTheme.colors.primary)
   }
 }
 
 @Composable private fun StarOnGithubItem(uriHandler: UriHandler) {
   SectionItemViewWithIcon({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
-      painter = painterResource(MR.images.ic_github),
+      painter = painterResource(R.drawable.ic_github),
       contentDescription = "GitHub",
       tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced(extraPadding = true)
-    Text(generalGetString(MR.strings.star_on_github), color = MaterialTheme.colors.primary)
+    Text(generalGetString(R.string.star_on_github), color = MaterialTheme.colors.primary)
   }
 }
 
 @Composable fun ChatConsoleItem(showTerminal: () -> Unit) {
   SectionItemView(showTerminal) {
     Icon(
-      painter = painterResource(MR.images.ic_outline_terminal),
-      contentDescription = stringResource(MR.strings.chat_console),
+      painter = painterResource(R.drawable.ic_outline_terminal),
+      contentDescription = stringResource(R.string.chat_console),
       tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced()
-    Text(stringResource(MR.strings.chat_console))
+    Text(stringResource(R.string.chat_console))
   }
 }
 
 @Composable fun InstallTerminalAppItem(uriHandler: UriHandler) {
   SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
-      painter = painterResource(MR.images.ic_github),
+      painter = painterResource(R.drawable.ic_github),
       contentDescription = "GitHub",
       tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced()
-    Text(generalGetString(MR.strings.install_simplex_chat_for_terminal), color = MaterialTheme.colors.primary)
+    Text(generalGetString(R.string.install_simplex_chat_for_terminal), color = MaterialTheme.colors.primary)
   }
 }
 
@@ -441,7 +441,7 @@ fun SettingsPreferenceItemWithInfo(
   prefState: MutableState<Boolean>? = null
 ) {
   SettingsActionItemWithContent(icon, null, click = if (stopped) null else onClickInfo, iconColor = iconTint, extraPadding = true,) {
-    SharedPreferenceToggleWithIcon(text, painterResource(MR.images.ic_info), stopped, onClickInfo, pref, prefState)
+    SharedPreferenceToggleWithIcon(text, painterResource(R.drawable.ic_info), stopped, onClickInfo, pref, prefState)
   }
 }
 

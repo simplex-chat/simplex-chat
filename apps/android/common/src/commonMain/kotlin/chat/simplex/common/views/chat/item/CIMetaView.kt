@@ -38,11 +38,11 @@ fun CIMetaView(chatItem: ChatItem, timedMessagesTTL: Int?, metaColor: Color = Ma
 // changing this function requires updating reserveSpaceForMeta
 private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
   if (meta.itemEdited) {
-    StatusIconText(painterResource(MR.images.ic_edit), color)
+    StatusIconText(painterResource(R.drawable.ic_edit), color)
     Spacer(Modifier.width(3.dp))
   }
   if (meta.disappearing) {
-    StatusIconText(painterResource(MR.images.ic_timer), color)
+    StatusIconText(painterResource(R.drawable.ic_timer), color)
     val ttl = meta.itemTimed?.ttl
     if (ttl != chatTTL) {
       Text(shortTimeText(ttl), color = color, fontSize = 12.sp)
@@ -55,7 +55,7 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
     StatusIconText(painterResource(icon), statusColor)
     Spacer(Modifier.width(4.dp))
   } else if (!meta.disappearing) {
-    StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
+    StatusIconText(painterResource(R.drawable.ic_circle_filled), Color.Transparent)
     Spacer(Modifier.width(4.dp))
   }
   Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

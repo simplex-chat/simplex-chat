@@ -34,7 +34,7 @@ actual fun AttachmentSelection(
     if (isGranted) {
       cameraLauncher.launchWithFallback()
     } else {
-      showToast(generalGetString(MR.strings.toast_permission_denied))
+      showToast(generalGetString(R.string.toast_permission_denied))
     }
   }
   val galleryImageLauncher = rememberLauncherForActivityResult(contract = PickMultipleImagesFromGallery()) { processPickedMedia(it.map { it.toURI() }, null) }

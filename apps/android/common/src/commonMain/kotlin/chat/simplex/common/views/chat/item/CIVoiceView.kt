@@ -226,7 +226,7 @@ private fun PlayPauseButton(
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
+        if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
         contentDescription = null,
         Modifier.size(36.dp),
         tint = if (error) WarningOrange else if (!enabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -256,7 +256,7 @@ private fun VoiceMsgIndicator(
     if (hasText) {
       IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
         Icon(
-          if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
+          if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
           contentDescription = null,
           Modifier.size(36.dp),
           tint = MaterialTheme.colors.primary

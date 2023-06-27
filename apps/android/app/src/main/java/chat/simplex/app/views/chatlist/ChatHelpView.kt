@@ -27,14 +27,14 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
   Column(
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
-    Text(stringResource(MR.strings.thank_you_for_installing_simplex), lineHeight = 22.sp)
-    ReadableTextWithLink(MR.strings.you_can_connect_to_simplex_chat_founder, simplexTeamUri)
+    Text(stringResource(R.string.thank_you_for_installing_simplex), lineHeight = 22.sp)
+    ReadableTextWithLink(R.string.you_can_connect_to_simplex_chat_founder, simplexTeamUri)
     Column(
       Modifier.padding(top = 24.dp),
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       Text(
-        stringResource(MR.strings.to_start_a_new_chat_help_header),
+        stringResource(R.string.to_start_a_new_chat_help_header),
         style = MaterialTheme.typography.h2,
         lineHeight = 22.sp
       )
@@ -42,33 +42,33 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        Text(stringResource(MR.strings.chat_help_tap_button))
+        Text(stringResource(R.string.chat_help_tap_button))
         Icon(
-          painterResource(MR.images.ic_person_add),
-          stringResource(MR.strings.add_contact),
+          painterResource(R.drawable.ic_person_add),
+          stringResource(R.string.add_contact),
           modifier = if (addContact != null) Modifier.clickable(onClick = addContact) else Modifier,
         )
-        Text(stringResource(MR.strings.above_then_preposition_continuation))
+        Text(stringResource(R.string.above_then_preposition_continuation))
       }
-      Text(annotatedStringResource(MR.strings.add_new_contact_to_create_one_time_QR_code), lineHeight = 22.sp)
-      Text(annotatedStringResource(MR.strings.scan_QR_code_to_connect_to_contact_who_shows_QR_code), lineHeight = 22.sp)
+      Text(annotatedStringResource(R.string.add_new_contact_to_create_one_time_QR_code), lineHeight = 22.sp)
+      Text(annotatedStringResource(R.string.scan_QR_code_to_connect_to_contact_who_shows_QR_code), lineHeight = 22.sp)
     }
 
     Column(
       Modifier.padding(top = 24.dp),
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-      Text(stringResource(MR.strings.to_connect_via_link_title), style = MaterialTheme.typography.h2)
-      Text(stringResource(MR.strings.if_you_received_simplex_invitation_link_you_can_open_in_browser), lineHeight = 22.sp)
-      Text(annotatedStringResource(MR.strings.desktop_scan_QR_code_from_app_via_scan_QR_code), lineHeight = 22.sp)
-      Text(annotatedStringResource(MR.strings.mobile_tap_open_in_mobile_app_then_tap_connect_in_app), lineHeight = 22.sp)
+      Text(stringResource(R.string.to_connect_via_link_title), style = MaterialTheme.typography.h2)
+      Text(stringResource(R.string.if_you_received_simplex_invitation_link_you_can_open_in_browser), lineHeight = 22.sp)
+      Text(annotatedStringResource(R.string.desktop_scan_QR_code_from_app_via_scan_QR_code), lineHeight = 22.sp)
+      Text(annotatedStringResource(R.string.mobile_tap_open_in_mobile_app_then_tap_connect_in_app), lineHeight = 22.sp)
     }
 
     Column(
       Modifier.padding(vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-      Text(stringResource(MR.strings.markdown_in_messages), style = MaterialTheme.typography.h2)
+      Text(stringResource(R.string.markdown_in_messages), style = MaterialTheme.typography.h2)
       MarkdownHelpView()
     }
   }

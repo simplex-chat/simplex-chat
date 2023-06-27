@@ -105,12 +105,12 @@ fun AddGroupMembersLayout(
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.button_add_members))
+    AppBarTitle(stringResource(R.string.button_add_members))
     InfoAboutIncognito(
       chatModelIncognito,
       false,
-      generalGetString(MR.strings.group_unsupported_incognito_main_profile_sent),
-      generalGetString(MR.strings.group_main_profile_sent),
+      generalGetString(R.string.group_unsupported_incognito_main_profile_sent),
+      generalGetString(R.string.group_main_profile_sent),
       true
     )
     Spacer(Modifier.size(DEFAULT_PADDING))
@@ -132,7 +132,7 @@ fun AddGroupMembersLayout(
         horizontalArrangement = Arrangement.Center
       ) {
         Text(
-          stringResource(MR.strings.no_contacts_to_add),
+          stringResource(R.string.no_contacts_to_add),
           Modifier.padding(),
           color = MaterialTheme.colors.secondary
         )
@@ -141,7 +141,7 @@ fun AddGroupMembersLayout(
       SectionView {
         if (creatingGroup) {
           SectionItemView(openPreferences) {
-            Text(stringResource(MR.strings.set_group_preferences))
+            Text(stringResource(R.string.set_group_preferences))
           }
         }
         RoleSelectionRow(groupInfo, selectedRole, allowModifyMembers)
@@ -156,7 +156,7 @@ fun AddGroupMembersLayout(
       }
       SectionDividerSpaced(maxTopPadding = true)
 
-      SectionView(stringResource(MR.strings.select_contacts)) {
+      SectionView(stringResource(R.string.select_contacts)) {
         ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, allowModifyMembers, addContact, removeContact)
       }
     }
@@ -173,7 +173,7 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
   ) {
     val values = GroupMemberRole.values().filter { it <= groupInfo.membership.memberRole }.map { it to it.text }
     ExposedDropDownSettingRow(
-      generalGetString(MR.strings.new_member_role),
+      generalGetString(R.string.new_member_role),
       values,
       selectedRole,
       icon = null,
@@ -185,8 +185,8 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
 @Composable
 fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
   SettingsActionItem(
-    painterResource(MR.images.ic_check),
-    stringResource(MR.strings.invite_to_group_button),
+    painterResource(R.drawable.ic_check),
+    stringResource(R.string.invite_to_group_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
@@ -197,8 +197,8 @@ fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
 @Composable
 fun SkipInvitingButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_check),
-    stringResource(MR.strings.skip_inviting_button),
+    painterResource(R.drawable.ic_check),
+    stringResource(R.string.skip_inviting_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
@@ -214,7 +214,7 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
   ) {
     if (selectedContactsCount >= 1) {
       Text(
-        String.format(generalGetString(MR.strings.num_contacts_selected), selectedContactsCount),
+        String.format(generalGetString(R.string.num_contacts_selected), selectedContactsCount),
         color = MaterialTheme.colors.secondary,
         fontSize = 12.sp
       )
@@ -222,14 +222,14 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
         Modifier.clickable { if (enabled) clearSelection() }
       ) {
         Text(
-          stringResource(MR.strings.clear_contacts_selection_button),
+          stringResource(R.string.clear_contacts_selection_button),
           color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           fontSize = 12.sp
         )
       }
     } else {
       Text(
-        stringResource(MR.strings.no_contacts_selected),
+        stringResource(R.string.no_contacts_selected),
         color = MaterialTheme.colors.secondary,
         fontSize = 12.sp
       )
@@ -270,13 +270,13 @@ fun ContactCheckRow(
   val icon: Painter
   val iconColor: Color
   if (prohibitedToInviteIncognito) {
-    icon = painterResource(MR.images.ic_theater_comedy_filled)
+    icon = painterResource(R.drawable.ic_theater_comedy_filled)
     iconColor = MaterialTheme.colors.secondary
   } else if (checked) {
-    icon = painterResource(MR.images.ic_check_circle_filled)
+    icon = painterResource(R.drawable.ic_check_circle_filled)
     iconColor = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
   } else {
-    icon = painterResource(MR.images.ic_circle)
+    icon = painterResource(R.drawable.ic_circle)
     iconColor = MaterialTheme.colors.secondary
   }
   SectionItemView(
@@ -300,7 +300,7 @@ fun ContactCheckRow(
     Spacer(Modifier.fillMaxWidth().weight(1f))
     Icon(
       icon,
-      contentDescription = stringResource(MR.strings.icon_descr_contact_checked),
+      contentDescription = stringResource(R.string.icon_descr_contact_checked),
       tint = iconColor
     )
   }
@@ -308,9 +308,9 @@ fun ContactCheckRow(
 
 fun showProhibitedToInviteIncognitoAlertDialog() {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(MR.strings.invite_prohibited),
-    text = generalGetString(MR.strings.invite_prohibited_description),
-    confirmText = generalGetString(MR.strings.ok),
+    title = generalGetString(R.string.invite_prohibited),
+    text = generalGetString(R.string.invite_prohibited_description),
+    confirmText = generalGetString(R.string.ok),
   )
 }
 

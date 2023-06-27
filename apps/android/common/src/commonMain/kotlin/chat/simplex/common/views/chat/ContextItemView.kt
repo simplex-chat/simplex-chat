@@ -48,7 +48,7 @@ fun ContextItemView(
           .padding(horizontal = 8.dp)
           .height(20.dp)
           .width(20.dp),
-        contentDescription = stringResource(MR.strings.icon_descr_context),
+        contentDescription = stringResource(R.string.icon_descr_context),
         tint = MaterialTheme.colors.secondary,
       )
       MarkdownText(
@@ -60,8 +60,8 @@ fun ContextItemView(
     }
     IconButton(onClick = cancelContextItem) {
       Icon(
-        painterResource(MR.images.ic_close),
-        contentDescription = stringResource(MR.strings.cancel_verb),
+        painterResource(R.drawable.ic_close),
+        contentDescription = stringResource(R.string.cancel_verb),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )
@@ -75,7 +75,7 @@ fun PreviewContextItemView() {
   SimpleXTheme {
     ContextItemView(
       contextItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), "hello"),
-      contextIcon = painterResource(MR.images.ic_edit_filled)
+      contextIcon = painterResource(R.drawable.ic_edit_filled)
     ) {}
   }
 }

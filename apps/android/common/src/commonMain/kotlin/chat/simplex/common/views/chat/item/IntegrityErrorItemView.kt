@@ -29,21 +29,21 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, timedMessagesTT
     when (msgError) {
       is MsgErrorType.MsgSkipped ->
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.alert_title_skipped_messages),
-          text = generalGetString(MR.strings.alert_text_skipped_messages_it_can_happen_when)
+          title = generalGetString(R.string.alert_title_skipped_messages),
+          text = generalGetString(R.string.alert_text_skipped_messages_it_can_happen_when)
         )
       is MsgErrorType.MsgBadHash ->
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.alert_title_msg_bad_hash),
-          text = generalGetString(MR.strings.alert_text_msg_bad_hash) + "\n" +
-              generalGetString(MR.strings.alert_text_fragment_encryption_out_of_sync_old_database) + "\n" +
-              generalGetString(MR.strings.alert_text_fragment_please_report_to_developers)
+          title = generalGetString(R.string.alert_title_msg_bad_hash),
+          text = generalGetString(R.string.alert_text_msg_bad_hash) + "\n" +
+              generalGetString(R.string.alert_text_fragment_encryption_out_of_sync_old_database) + "\n" +
+              generalGetString(R.string.alert_text_fragment_please_report_to_developers)
         )
       is MsgErrorType.MsgBadId, is MsgErrorType.MsgDuplicate ->
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.alert_title_msg_bad_id),
-          text = generalGetString(MR.strings.alert_text_msg_bad_id) + "\n" +
-              generalGetString(MR.strings.alert_text_fragment_please_report_to_developers)
+          title = generalGetString(R.string.alert_title_msg_bad_id),
+          text = generalGetString(R.string.alert_text_msg_bad_id) + "\n" +
+              generalGetString(R.string.alert_text_fragment_please_report_to_developers)
         )
     }
   }

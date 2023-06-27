@@ -133,8 +133,8 @@ fun DefaultConfigurableTextField(
   var valid by remember { mutableStateOf(validKey(state.value.text)) }
   var showKey by remember { mutableStateOf(false) }
   val icon = if (valid) {
-    if (showKey) painterResource(MR.images.ic_visibility_off_filled) else painterResource(MR.images.ic_visibility_filled)
-  } else painterResource(MR.images.ic_error)
+    if (showKey) painterResource(R.drawable.ic_visibility_off_filled) else painterResource(R.drawable.ic_visibility_filled)
+  } else painterResource(R.drawable.ic_error)
   val iconColor = if (valid) {
     if (showPasswordStrength && state.value.text.isNotEmpty()) PassphraseStrength.check(state.value.text).color else MaterialTheme.colors.secondary
   } else Color.Red

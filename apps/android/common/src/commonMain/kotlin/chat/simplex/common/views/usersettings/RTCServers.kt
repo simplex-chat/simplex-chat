@@ -42,8 +42,8 @@ fun RTCServersView(
       editRTCServers = false
     } else {
       AlertManager.shared.showAlertMsg(
-        generalGetString(MR.strings.error_saving_ICE_servers),
-        generalGetString(MR.strings.ensure_ICE_server_address_are_correct_format_and_unique)
+        generalGetString(R.string.error_saving_ICE_servers),
+        generalGetString(R.string.ensure_ICE_server_address_are_correct_format_and_unique)
       )
     }
   }
@@ -63,9 +63,9 @@ fun RTCServersView(
         isUserRTCServers = true
       } else if (userRTCServers.isNotEmpty()) {
           AlertManager.shared.showAlertDialog(
-            title = generalGetString(MR.strings.use_simplex_chat_servers__question),
-            text = generalGetString(MR.strings.saved_ICE_servers_will_be_removed),
-            confirmText = generalGetString(MR.strings.confirm_verb),
+            title = generalGetString(R.string.use_simplex_chat_servers__question),
+            text = generalGetString(R.string.saved_ICE_servers_will_be_removed),
+            confirmText = generalGetString(R.string.confirm_verb),
             onConfirm = {
               resetRTCServers()
               isUserRTCServers = false
@@ -99,7 +99,7 @@ fun RTCServersLayout(
   editOn: () -> Unit,
 ) {
   Column {
-    AppBarTitle(stringResource(MR.strings.your_ICE_servers))
+    AppBarTitle(stringResource(R.string.your_ICE_servers))
     Column(
       Modifier
         .fillMaxWidth()
@@ -108,7 +108,7 @@ fun RTCServersLayout(
       verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
       SectionItemViewSpaceBetween(padding = PaddingValues()) {
-        Text(stringResource(MR.strings.configure_ICE_servers), Modifier.padding(end = 24.dp))
+        Text(stringResource(R.string.configure_ICE_servers), Modifier.padding(end = 24.dp))
         DefaultSwitch(
           checked = isUserRTCServers,
           onCheckedChange = isUserRTCServersOnOff,
@@ -116,9 +116,9 @@ fun RTCServersLayout(
       }
 
       if (!isUserRTCServers) {
-        Text(stringResource(MR.strings.using_simplex_chat_servers), lineHeight = 22.sp)
+        Text(stringResource(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
       } else {
-        Text(stringResource(MR.strings.enter_one_ICE_server_per_line))
+        Text(stringResource(R.string.enter_one_ICE_server_per_line))
         if (editRTCServers) {
           TextEditor(userRTCServersStr, Modifier.height(160.dp), contentPadding = PaddingValues())
 
@@ -130,14 +130,14 @@ fun RTCServersLayout(
             Column {
               Row {
                 Text(
-                  stringResource(MR.strings.cancel_verb),
+                  stringResource(R.string.cancel_verb),
                   color = MaterialTheme.colors.primary,
                   modifier = Modifier
                     .clickable(onClick = cancelEdit)
                 )
                 Spacer(Modifier.padding(horizontal = 8.dp))
                 Text(
-                  stringResource(MR.strings.save_servers_button),
+                  stringResource(R.string.save_servers_button),
                   color = MaterialTheme.colors.primary,
                   modifier = Modifier.clickable(onClick = {
                     saveRTCServers()
@@ -175,7 +175,7 @@ fun RTCServersLayout(
           ) {
             Column {
               Text(
-                stringResource(MR.strings.edit_verb),
+                stringResource(R.string.edit_verb),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier
                   .clickable(onClick = editOn)
@@ -199,9 +199,9 @@ private fun howToButton() {
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.clickable { uriHandler.openUriCatching("https://simplex.chat/docs/webrtc.html#configure-mobile-apps") }
   ) {
-    Text(stringResource(MR.strings.how_to), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.how_to), color = MaterialTheme.colors.primary)
     Icon(
-      painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.how_to), tint = MaterialTheme.colors.primary,
+      painterResource(R.drawable.ic_open_in_new), stringResource(R.string.how_to), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 5.dp)
     )
   }

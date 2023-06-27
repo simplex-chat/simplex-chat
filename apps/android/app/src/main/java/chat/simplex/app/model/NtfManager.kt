@@ -86,7 +86,7 @@ object NtfManager {
       user = user,
       chatId = cInfo.id,
       displayName = cInfo.displayName,
-      msgText = generalGetString(MR.strings.notification_new_contact_request),
+      msgText = generalGetString(R.string.notification_new_contact_request),
       image = cInfo.image,
       listOf(NotificationAction.ACCEPT_CONTACT_REQUEST)
     )
@@ -97,7 +97,7 @@ object NtfManager {
       user = user,
       chatId = contact.id,
       displayName = contact.displayName,
-      msgText = generalGetString(MR.strings.notification_contact_connected)
+      msgText = generalGetString(R.string.notification_contact_connected)
     )
   }
 
@@ -114,8 +114,8 @@ object NtfManager {
     prevNtfTime[chatId] = now
 
     val previewMode = appPreferences.notificationPreviewMode.get()
-    val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(MR.strings.notification_preview_somebody) else displayName
-    val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(MR.strings.notification_preview_new_message) else msgText
+    val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(R.string.notification_preview_somebody) else displayName
+    val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(R.string.notification_preview_new_message) else msgText
     val largeIcon = when {
       actions.isEmpty() -> null
       image == null || previewMode == NotificationPreviewMode.HIDDEN.name -> BitmapFactory.decodeResource(context.resources, R.drawable.icon)
@@ -143,7 +143,7 @@ object NtfManager {
       actionIntent.putExtra(ChatIdKey, chatId)
       val actionPendingIntent: PendingIntent = PendingIntent.getBroadcast(SimplexApp.context, 0, actionIntent, flags)
       val actionButton = when (action) {
-        NotificationAction.ACCEPT_CONTACT_REQUEST -> generalGetString(MR.strings.accept)
+        NotificationAction.ACCEPT_CONTACT_REQUEST -> generalGetString(R.string.accept)
       }
       builder.addAction(0, actionButton, actionPendingIntent)
     }
@@ -191,21 +191,21 @@ object NtfManager {
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, CallChannel)
           .setContentIntent(chatPendingIntent(OpenChatAction, invitation.user.userId, invitation.contact.id))
-          .addAction(R.drawable.ntf_icon, generalGetString(MR.strings.accept), chatPendingIntent(AcceptCallAction, invitation.user.userId, contactId))
-          .addAction(R.drawable.ntf_icon, generalGetString(MR.strings.reject), chatPendingIntent(RejectCallAction, invitation.user.userId, contactId, true))
+          .addAction(R.drawable.ntf_icon, generalGetString(R.string.accept), chatPendingIntent(AcceptCallAction, invitation.user.userId, contactId))
+          .addAction(R.drawable.ntf_icon, generalGetString(R.string.reject), chatPendingIntent(RejectCallAction, invitation.user.userId, contactId, true))
           .setFullScreenIntent(fullScreenPendingIntent, true)
           .setSound(soundUri)
       }
     val text = generalGetString(
       if (invitation.callType.media == CallMediaType.Video) {
-        if (invitation.sharedKey == null) MR.strings.video_call_no_encryption else MR.strings.encrypted_video_call
+        if (invitation.sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
       } else {
-        if (invitation.sharedKey == null) MR.strings.audio_call_no_encryption else MR.strings.encrypted_audio_call
+        if (invitation.sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
       }
     )
     val previewMode = appPreferences.notificationPreviewMode.get()
     val title = if (previewMode == NotificationPreviewMode.HIDDEN.name)
-      generalGetString(MR.strings.notification_preview_somebody)
+      generalGetString(R.string.notification_preview_somebody)
     else
       invitation.contact.displayName
     val largeIcon = if (image == null || previewMode == NotificationPreviewMode.HIDDEN.name)
@@ -280,8 +280,8 @@ object NtfManager {
    * old ones if needed
    * */
   fun createNtfChannelsMaybeShowAlert() {
-    manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(MR.strings.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
-    manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(MR.strings.ntf_channel_calls)))
+    manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
+    manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls)))
     // Remove old channels since they can't be edited
     manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION")
     manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION")

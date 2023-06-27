@@ -50,17 +50,17 @@ fun ChatArchiveLayout(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(title)
-    SectionView(stringResource(MR.strings.chat_archive_section)) {
+    SectionView(stringResource(R.string.chat_archive_section)) {
       SettingsActionItem(
-        painterResource(MR.images.ic_ios_share),
-        stringResource(MR.strings.save_archive),
+        painterResource(R.drawable.ic_ios_share),
+        stringResource(R.string.save_archive),
         saveArchive,
         textColor = MaterialTheme.colors.primary,
         iconColor = MaterialTheme.colors.primary,
       )
       SettingsActionItem(
-        painterResource(MR.images.ic_delete),
-        stringResource(MR.strings.delete_archive),
+        painterResource(R.drawable.ic_delete),
+        stringResource(R.string.delete_archive),
         deleteArchiveAlert,
         textColor = Color.Red,
         iconColor = Color.Red,
@@ -68,7 +68,7 @@ fun ChatArchiveLayout(
     }
     val archiveTs = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
     SectionTextFooter(
-      String.format(generalGetString(MR.strings.archive_created_on_ts), archiveTs)
+      String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
     )
     SectionBottomSpacer()
   }
@@ -76,8 +76,8 @@ fun ChatArchiveLayout(
 
 private fun deleteArchiveAlert(m: ChatModel, archivePath: String) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.delete_chat_archive_question),
-    confirmText = generalGetString(MR.strings.delete_verb),
+    title = generalGetString(R.string.delete_chat_archive_question),
+    confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
       val fileDeleted = File(archivePath).delete()
       if (fileDeleted) {

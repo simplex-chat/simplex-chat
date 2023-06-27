@@ -87,8 +87,8 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = DEFAULT_PADDING)
         ) {
-          AppBarTitle(stringResource(MR.strings.create_secret_group_title))
-          ReadableText(MR.strings.group_is_decentralized, TextAlign.Center)
+          AppBarTitle(stringResource(R.string.create_secret_group_title))
+          ReadableText(R.string.group_is_decentralized, TextAlign.Center)
           Box(
             Modifier
               .fillMaxWidth()
@@ -107,13 +107,13 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
           }
           Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
-              stringResource(MR.strings.group_display_name_field),
+              stringResource(R.string.group_display_name_field),
               fontSize = 16.sp
             )
             if (!isValidDisplayName(displayName.value)) {
               Spacer(Modifier.size(DEFAULT_PADDING_HALF))
               Text(
-                stringResource(MR.strings.no_spaces),
+                stringResource(R.string.no_spaces),
                 fontSize = 16.sp,
                 color = Color.Red
               )
@@ -122,7 +122,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
           ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
           Spacer(Modifier.height(DEFAULT_PADDING))
           Text(
-            stringResource(MR.strings.group_full_name_field),
+            stringResource(R.string.group_full_name_field),
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
           )
@@ -162,8 +162,8 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
   ) {
     Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
       Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = color, fontWeight = FontWeight.Bold)
-        Icon(painterResource(MR.images.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = color)
+        Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = color, fontWeight = FontWeight.Bold)
+        Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(R.string.create_profile_button), tint = color)
       }
     }
   }

@@ -244,8 +244,8 @@ actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitma
       Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.image_decoding_exception_title),
-          text = generalGetString(MR.strings.image_decoding_exception_desc)
+          title = generalGetString(R.string.image_decoding_exception_title),
+          text = generalGetString(R.string.image_decoding_exception_desc)
         )
       }
       null
@@ -263,8 +263,8 @@ actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? {
     } catch (e: android.graphics.ImageDecoder.DecodeException) {
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.image_decoding_exception_title),
-          text = generalGetString(MR.strings.image_decoding_exception_desc)
+          title = generalGetString(R.string.image_decoding_exception_title),
+          text = generalGetString(R.string.image_decoding_exception_desc)
         )
       }
       Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")

@@ -15,9 +15,9 @@ fun AddContactLearnMore() {
   Column(
     Modifier.verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.one_time_link))
-    ReadableText(MR.strings.scan_qr_to_connect_to_contact)
-    ReadableText(MR.strings.if_you_cant_meet_in_person)
-    ReadableTextWithLink(MR.strings.read_more_in_user_guide_with_link, "https://simplex.chat/docs/guide/readme.html#connect-to-friends")
+    AppBarTitle(stringResource(R.string.one_time_link))
+    ReadableText(R.string.scan_qr_to_connect_to_contact)
+    ReadableText(R.string.if_you_cant_meet_in_person)
+    ReadableTextWithLink(R.string.read_more_in_user_guide_with_link, "https://simplex.chat/docs/guide/readme.html#connect-to-friends")
   }
 }

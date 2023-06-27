@@ -119,7 +119,7 @@ fun FramedItemView(
           val imageBitmap = base64ToBitmap(qi.content.image)
           Image(
             imageBitmap,
-            contentDescription = stringResource(MR.strings.image_descr),
+            contentDescription = stringResource(R.string.image_descr),
             contentScale = ContentScale.Crop,
             modifier = Modifier.size(68.dp).clipToBounds()
           )
@@ -131,7 +131,7 @@ fun FramedItemView(
           val imageBitmap = base64ToBitmap(qi.content.image)
           Image(
             imageBitmap,
-            contentDescription = stringResource(MR.strings.video_descr),
+            contentDescription = stringResource(R.string.video_descr),
             contentScale = ContentScale.Crop,
             modifier = Modifier.size(68.dp).clipToBounds()
           )
@@ -141,8 +141,8 @@ fun FramedItemView(
             ciQuotedMsgView(qi)
           }
           Icon(
-            if (qi.content is MsgContent.MCFile) painterResource(MR.images.ic_draft_filled) else painterResource(MR.images.ic_mic_filled),
-            if (qi.content is MsgContent.MCFile) stringResource(MR.strings.icon_descr_file) else stringResource(MR.strings.voice_message),
+            if (qi.content is MsgContent.MCFile) painterResource(R.drawable.ic_draft_filled) else painterResource(R.drawable.ic_mic_filled),
+            if (qi.content is MsgContent.MCFile) stringResource(R.string.icon_descr_file) else stringResource(R.string.voice_message),
             Modifier
               .padding(top = 6.dp, end = 4.dp)
               .size(22.dp),
@@ -182,12 +182,12 @@ fun FramedItemView(
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
             if (ci.meta.itemDeleted is CIDeleted.Moderated) {
-              FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
+              FramedItemHeader(String.format(stringResource(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(R.drawable.ic_flag))
             } else {
-              FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
+              FramedItemHeader(stringResource(R.string.marked_deleted_description), true, painterResource(R.drawable.ic_delete))
             }
           } else if (ci.meta.isLive) {
-            FramedItemHeader(stringResource(MR.strings.live), false)
+            FramedItemHeader(stringResource(R.string.live), false)
           }
           ci.quotedItem?.let { ciQuoteView(it) }
           if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {

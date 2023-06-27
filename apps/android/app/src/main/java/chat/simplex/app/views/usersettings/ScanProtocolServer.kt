@@ -22,7 +22,7 @@ fun ScanProtocolServerLayout(onNext: (ServerCfg) -> Unit) {
       .fillMaxSize()
       .padding(horizontal = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(MR.strings.smp_servers_scan_qr), false)
+    AppBarTitle(stringResource(R.string.smp_servers_scan_qr), false)
     Box(
       Modifier
         .fillMaxWidth()
@@ -35,8 +35,8 @@ fun ScanProtocolServerLayout(onNext: (ServerCfg) -> Unit) {
           onNext(ServerCfg(text, false, null, true))
         } else {
           AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.smp_servers_invalid_address),
-            text = generalGetString(MR.strings.smp_servers_check_address)
+            title = generalGetString(R.string.smp_servers_invalid_address),
+            text = generalGetString(R.string.smp_servers_check_address)
           )
         }
       }

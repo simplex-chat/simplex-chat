@@ -44,7 +44,7 @@ fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Uni
               modifier = Modifier.widthIn(max = 80.dp).height(60.dp)
             )
             Icon(
-              painterResource(MR.images.ic_videocam_filled),
+              painterResource(R.drawable.ic_videocam_filled),
               "preview video",
               Modifier
                 .size(20.dp),
@@ -64,8 +64,8 @@ fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Uni
     if (cancelEnabled) {
       IconButton(onClick = cancelImages) {
         Icon(
-          painterResource(MR.images.ic_close),
-          contentDescription = stringResource(MR.strings.icon_descr_cancel_image_preview),
+          painterResource(R.drawable.ic_close),
+          contentDescription = stringResource(R.string.icon_descr_cancel_image_preview),
           tint = MaterialTheme.colors.primary,
         )
       }

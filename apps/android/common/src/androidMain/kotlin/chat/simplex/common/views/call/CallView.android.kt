@@ -272,14 +272,14 @@ private fun ActiveCallOverlayLayout(
           ToggleAudioButton(call, toggleAudio)
           Spacer(Modifier.size(40.dp))
           IconButton(onClick = dismiss) {
-            Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+            Icon(painterResource(R.drawable.ic_call_end_filled), stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
           }
           if (call.videoEnabled) {
-            ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, flipCamera)
-            ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, toggleVideo)
+            ControlButton(call, painterResource(R.drawable.ic_flip_camera_android_filled), R.string.icon_descr_flip_camera, flipCamera)
+            ControlButton(call, painterResource(R.drawable.ic_videocam_filled), R.string.icon_descr_video_off, toggleVideo)
           } else {
             Spacer(Modifier.size(48.dp))
-            ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, toggleVideo)
+            ControlButton(call, painterResource(R.drawable.ic_videocam_off), R.string.icon_descr_video_on, toggleVideo)
           }
         }
       }
@@ -297,7 +297,7 @@ private fun ActiveCallOverlayLayout(
         Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
           Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             IconButton(onClick = dismiss) {
-              Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+              Icon(painterResource(R.drawable.ic_call_end_filled), stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
             }
           }
           Box(Modifier.padding(start = 32.dp)) {
@@ -328,18 +328,18 @@ private fun ControlButton(call: Call, icon: Painter, iconText: StringResource, a
 @Composable
 private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
   if (call.audioEnabled) {
-    ControlButton(call, painterResource(MR.images.ic_mic), MR.strings.icon_descr_audio_off, toggleAudio)
+    ControlButton(call, painterResource(R.drawable.ic_mic), R.string.icon_descr_audio_off, toggleAudio)
   } else {
-    ControlButton(call, painterResource(MR.images.ic_mic_off), MR.strings.icon_descr_audio_on, toggleAudio)
+    ControlButton(call, painterResource(R.drawable.ic_mic_off), R.string.icon_descr_audio_on, toggleAudio)
   }
 }
 
 @Composable
 private fun ToggleSoundButton(call: Call, enabled: Boolean, toggleSound: () -> Unit) {
   if (call.soundSpeaker) {
-    ControlButton(call, painterResource(MR.images.ic_volume_up), MR.strings.icon_descr_speaker_off, toggleSound, enabled)
+    ControlButton(call, painterResource(R.drawable.ic_volume_up), R.string.icon_descr_speaker_off, toggleSound, enabled)
   } else {
-    ControlButton(call, painterResource(MR.images.ic_volume_down), MR.strings.icon_descr_speaker_on, toggleSound, enabled)
+    ControlButton(call, painterResource(R.drawable.ic_volume_down), R.string.icon_descr_speaker_on, toggleSound, enabled)
   }
 }
 

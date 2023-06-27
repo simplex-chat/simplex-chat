@@ -21,17 +21,17 @@ fun IncognitoView() {
 @Composable
 fun IncognitoLayout() {
   Column {
-    AppBarTitle(stringResource(MR.strings.settings_section_title_incognito))
+    AppBarTitle(stringResource(R.string.settings_section_title_incognito))
     Column(
       Modifier
         .verticalScroll(rememberScrollState())
         .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-      Text(generalGetString(MR.strings.incognito_info_protects))
-      Text(generalGetString(MR.strings.incognito_info_allows))
-      Text(generalGetString(MR.strings.incognito_info_share))
-      Text(generalGetString(MR.strings.incognito_info_find))
+      Text(generalGetString(R.string.incognito_info_protects))
+      Text(generalGetString(R.string.incognito_info_allows))
+      Text(generalGetString(R.string.incognito_info_share))
+      Text(generalGetString(R.string.incognito_info_find))
       SectionBottomSpacer()
     }
   }

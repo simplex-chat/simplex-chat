@@ -88,14 +88,14 @@ fun AppearanceScope.AppearanceLayout(
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.appearance_settings))
-    SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {
+    AppBarTitle(stringResource(R.string.appearance_settings))
+    SectionView(stringResource(R.string.settings_section_title_language), padding = PaddingValues()) {
       val context = LocalContext.current
       //      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       //        SectionItemWithValue(
-      //          generalGetString(MR.strings.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
+      //          generalGetString(R.string.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
       //          remember { mutableStateOf("system") },
-      //          listOf(ValueTitleDesc("system", generalGetString(MR.strings.change_verb), "")),
+      //          listOf(ValueTitleDesc("system", generalGetString(R.string.change_verb), "")),
       //          onSelected = { openSystemLangPicker(context as? Activity ?: return@SectionItemWithValue) }
       //        )
       //      } else {
@@ -118,7 +118,7 @@ fun AppearanceScope.AppearanceLayout(
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+    SectionView(stringResource(R.string.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]

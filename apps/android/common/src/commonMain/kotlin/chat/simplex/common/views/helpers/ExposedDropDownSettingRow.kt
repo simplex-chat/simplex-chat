@@ -50,8 +50,8 @@ fun <T> ExposedDropDownSettingRow(
         )
         Spacer(Modifier.size(12.dp))
         Icon(
-          if (!expanded.value) painterResource(MR.images.ic_expand_more) else painterResource(MR.images.ic_expand_less),
-          generalGetString(MR.strings.icon_descr_more_button),
+          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
+          generalGetString(R.string.icon_descr_more_button),
           tint = MaterialTheme.colors.secondary
         )
       }

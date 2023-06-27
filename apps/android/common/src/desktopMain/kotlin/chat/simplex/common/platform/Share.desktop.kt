@@ -17,7 +17,7 @@ actual fun UriHandler.sendEmail(subject: String, body: CharSequence) {
 
 actual fun ClipboardManager.shareText(text: String) {
   setText(AnnotatedString(text))
-  showToast(MR.strings.copied.localized())
+  showToast(R.string.copied.localized())
 }
 
 actual fun shareFile(text: String, filePath: String) {

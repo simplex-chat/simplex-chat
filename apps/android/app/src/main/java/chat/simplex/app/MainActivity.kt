@@ -138,7 +138,7 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       chatModel.clearOverlays.value = true
       val invitation = chatModel.callInvitations[chatId]
       if (invitation == null) {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_already_ended))
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended))
       } else {
         chatModel.callManager.acceptIncomingCall(invitation = invitation)
       }

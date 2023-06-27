@@ -32,7 +32,7 @@ fun CIFeaturePreferenceView(
     if (contact != null && allowed != FeatureAllowed.NO && contact.allowsFeature(feature) && !contact.userAllowsFeature(feature)) {
       val acceptStyle = SpanStyle(color = MaterialTheme.colors.primary, fontSize = 12.sp)
       val setParam = feature == ChatFeature.TimedMessages && contact.mergedPreferences.timedMessages.userPreference.pref.ttl == null
-      val acceptTextId = if (setParam) MR.strings.accept_feature_set_1_day else MR.strings.accept_feature
+      val acceptTextId = if (setParam) R.string.accept_feature_set_1_day else R.string.accept_feature
       val param = if (setParam) 86400 else null
       val annotatedText = buildAnnotatedString {
         withStyle(chatEventStyle) { append(chatItem.content.text + "  ") }

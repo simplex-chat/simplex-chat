@@ -80,7 +80,7 @@ actual fun GrayU8.toImageBitmap(): ImageBitmap = ConvertBufferedImage.extractBuf
 actual fun ImageBitmap.addLogo(): ImageBitmap {
   val radius = (width * 0.16f).toInt()
   val logoSize = (width * 0.24).toInt()
-  val logo: BufferedImage = MR.images.icon_foreground_common.image
+  val logo: BufferedImage = R.drawable.icon_foreground_common.image
   val original = toAwtImage()
   val withLogo = BufferedImage(width, height, original.type)
   val g = withLogo.createGraphics()

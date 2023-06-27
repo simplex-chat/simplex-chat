@@ -40,17 +40,17 @@ fun QRCodeScanner(close: () -> Unit) {
         }
         if (linkType == ConnectionLinkType.GROUP) {
           AlertManager.shared.showAlertDialog(
-            title = generalGetString(MR.strings.connect_via_group_link),
-            text = generalGetString(MR.strings.you_will_join_group),
-            confirmText = generalGetString(MR.strings.connect_via_link_verb),
+            title = generalGetString(R.string.connect_via_group_link),
+            text = generalGetString(R.string.you_will_join_group),
+            confirmText = generalGetString(R.string.connect_via_link_verb),
             onConfirm = { withApi { action() } }
           )
         } else action()
       }
     } catch (e: RuntimeException) {
       AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.invalid_QR_code),
-        text = generalGetString(MR.strings.this_QR_code_is_not_a_link)
+        title = generalGetString(R.string.invalid_QR_code),
+        text = generalGetString(R.string.this_QR_code_is_not_a_link)
       )
     }
   }
@@ -87,8 +87,8 @@ fun withUriAction(uri: URI, run: suspend (ConnectionLinkType) -> Unit) {
     withApi { run(type) }
   } else {
     AlertManager.shared.showAlertMsg(
-      title = generalGetString(MR.strings.invalid_contact_link),
-      text = generalGetString(MR.strings.this_link_is_not_a_valid_connection_link)
+      title = generalGetString(R.string.invalid_contact_link),
+      text = generalGetString(R.string.this_link_is_not_a_valid_connection_link)
     )
   }
 }
@@ -97,12 +97,12 @@ suspend fun connectViaUri(chatModel: ChatModel, action: ConnectionLinkType, uri:
   val r = chatModel.controller.apiConnect(uri.toString())
   if (r) {
     AlertManager.shared.showAlertMsg(
-      title = generalGetString(MR.strings.connection_request_sent),
+      title = generalGetString(R.string.connection_request_sent),
       text =
       when (action) {
-        ConnectionLinkType.CONTACT -> generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted)
-        ConnectionLinkType.INVITATION -> generalGetString(MR.strings.you_will_be_connected_when_your_contacts_device_is_online)
-        ConnectionLinkType.GROUP -> generalGetString(MR.strings.you_will_be_connected_when_group_host_device_is_online)
+        ConnectionLinkType.CONTACT -> generalGetString(R.string.you_will_be_connected_when_your_connection_request_is_accepted)
+        ConnectionLinkType.INVITATION -> generalGetString(R.string.you_will_be_connected_when_your_contacts_device_is_online)
+        ConnectionLinkType.GROUP -> generalGetString(R.string.you_will_be_connected_when_group_host_device_is_online)
       }
     )
   }
@@ -115,12 +115,12 @@ fun ConnectContactLayout(chatModelIncognito: Boolean, close: () -> Unit) {
     Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
-    AppBarTitle(stringResource(MR.strings.scan_QR_code), false)
+    AppBarTitle(stringResource(R.string.scan_QR_code), false)
     InfoAboutIncognito(
       chatModelIncognito,
       true,
-      generalGetString(MR.strings.incognito_random_profile_description),
-      generalGetString(MR.strings.your_profile_will_be_sent)
+      generalGetString(R.string.incognito_random_profile_description),
+      generalGetString(R.string.your_profile_will_be_sent)
     )
     Box(
       Modifier
@@ -129,7 +129,7 @@ fun ConnectContactLayout(chatModelIncognito: Boolean, close: () -> Unit) {
         .padding(bottom = 12.dp)
     ) { QRCodeScanner(close) }
     Text(
-      annotatedStringResource(MR.strings.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link),
+      annotatedStringResource(R.string.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link),
       lineHeight = 22.sp
     )
     SectionBottomSpacer()

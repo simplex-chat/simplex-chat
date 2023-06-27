@@ -100,8 +100,8 @@ fun UserProfileLayout(
             .verticalScroll(scrollState)
             .padding(horizontal = DEFAULT_PADDING),
         ) {
-          AppBarTitle(stringResource(MR.strings.your_current_profile))
-          ReadableText(generalGetString(MR.strings.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it), TextAlign.Center)
+          AppBarTitle(stringResource(R.string.your_current_profile))
+          ReadableText(generalGetString(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it), TextAlign.Center)
           Column(
             Modifier
               .fillMaxWidth()
@@ -124,13 +124,13 @@ fun UserProfileLayout(
             }
             Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
               Text(
-                stringResource(MR.strings.display_name__field),
+                stringResource(R.string.display_name__field),
                 fontSize = 16.sp
               )
               if (!isValidDisplayName(displayName.value)) {
                 Spacer(Modifier.size(DEFAULT_PADDING_HALF))
                 Text(
-                  stringResource(MR.strings.no_spaces),
+                  stringResource(R.string.no_spaces),
                   fontSize = 16.sp,
                   color = Color.Red
                 )
@@ -139,7 +139,7 @@ fun UserProfileLayout(
             ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
             Spacer(Modifier.height(DEFAULT_PADDING))
             Text(
-              stringResource(MR.strings.full_name__field),
+              stringResource(R.string.full_name__field),
               fontSize = 16.sp,
               modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
             )
@@ -158,7 +158,7 @@ fun UserProfileLayout(
               saveColor = MaterialTheme.colors.secondary
             }
             Text(
-              stringResource(MR.strings.save_and_notify_contacts),
+              stringResource(R.string.save_and_notify_contacts),
               modifier = saveModifier,
               color = saveColor
             )
@@ -186,8 +186,8 @@ fun EditImageButton(click: () -> Unit) {
     modifier = Modifier.size(30.dp)
   ) {
     Icon(
-      painterResource(MR.images.ic_photo_camera),
-      contentDescription = stringResource(MR.strings.edit_image),
+      painterResource(R.drawable.ic_photo_camera),
+      contentDescription = stringResource(R.string.edit_image),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.size(30.dp)
     )
@@ -198,8 +198,8 @@ fun EditImageButton(click: () -> Unit) {
 fun DeleteImageButton(click: () -> Unit) {
   IconButton(onClick = click) {
     Icon(
-      painterResource(MR.images.ic_close),
-      contentDescription = stringResource(MR.strings.delete_image),
+      painterResource(R.drawable.ic_close),
+      contentDescription = stringResource(R.string.delete_image),
       tint = MaterialTheme.colors.primary,
     )
   }
@@ -207,9 +207,9 @@ fun DeleteImageButton(click: () -> Unit) {
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
-    title = generalGetString(MR.strings.save_preferences_question),
-    confirmText = generalGetString(MR.strings.save_and_notify_contacts),
-    dismissText = generalGetString(MR.strings.exit_without_saving),
+    title = generalGetString(R.string.save_preferences_question),
+    confirmText = generalGetString(R.string.save_and_notify_contacts),
+    dismissText = generalGetString(R.string.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
   )

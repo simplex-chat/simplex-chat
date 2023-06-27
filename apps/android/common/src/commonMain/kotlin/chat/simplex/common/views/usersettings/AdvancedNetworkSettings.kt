@@ -134,39 +134,39 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   revert: () -> Unit,
   save: () -> Unit
 ) {
-  val secondsLabel = stringResource(MR.strings.network_option_seconds_label)
+  val secondsLabel = stringResource(R.string.network_option_seconds_label)
 
   Column(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.network_settings_title))
+    AppBarTitle(stringResource(R.string.network_settings_title))
     SectionView {
       SectionItemView {
         ResetToDefaultsButton(reset, disabled = resetDisabled)
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
+          stringResource(R.string.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
           listOf(2_500000, 5_000000, 7_500000, 10_000000, 15_000000, 20_000000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeout,
+          stringResource(R.string.network_option_protocol_timeout), networkTCPTimeout,
           listOf(1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(MR.strings.network_option_ping_interval), networkSMPPingInterval,
+          stringResource(R.string.network_option_ping_interval), networkSMPPingInterval,
           listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
         )
       }
       SectionItemView {
         IntSettingRow(
-          stringResource(MR.strings.network_option_ping_count), networkSMPPingCount,
+          stringResource(R.string.network_option_ping_count), networkSMPPingCount,
           listOf(1, 2, 3, 5, 8), ""
         )
       }
@@ -210,7 +210,7 @@ fun ResetToDefaultsButton(reset: () -> Unit, disabled: Boolean) {
     verticalAlignment = Alignment.CenterVertically
   ) {
     val color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-    Text(stringResource(MR.strings.network_options_reset_to_defaults), color = color)
+    Text(stringResource(R.string.network_options_reset_to_defaults), color = color)
   }
 }
 
@@ -223,7 +223,7 @@ fun EnableKeepAliveSwitch(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    Text(stringResource(MR.strings.network_option_enable_tcp_keep_alive))
+    Text(stringResource(R.string.network_option_enable_tcp_keep_alive))
     DefaultSwitch(
       checked = networkEnableKeepAlive.value,
       onCheckedChange = { networkEnableKeepAlive.value = it },
@@ -261,8 +261,8 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded.value) painterResource(MR.images.ic_expand_more) else painterResource(MR.images.ic_expand_less),
-          generalGetString(MR.strings.invite_to_group_button),
+          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
+          generalGetString(R.string.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )
@@ -322,8 +322,8 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded.value) painterResource(MR.images.ic_expand_more) else painterResource(MR.images.ic_expand_less),
-          generalGetString(MR.strings.invite_to_group_button),
+          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
+          generalGetString(R.string.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )
@@ -358,8 +358,8 @@ fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit, disabled: Boolea
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(painterResource(MR.images.ic_replay), stringResource(MR.strings.network_options_revert), revert, disabled)
-    FooterButton(painterResource(MR.images.ic_check), stringResource(MR.strings.network_options_save), save, disabled)
+    FooterButton(painterResource(R.drawable.ic_replay), stringResource(R.string.network_options_revert), revert, disabled)
+    FooterButton(painterResource(R.drawable.ic_check), stringResource(R.string.network_options_save), save, disabled)
   }
 }
 
@@ -389,9 +389,9 @@ fun FooterButton(icon: Painter, title: String, action: () -> Unit, disabled: Boo
 
 fun showUpdateNetworkSettingsDialog(action: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.update_network_settings_question),
-    text = generalGetString(MR.strings.updating_settings_will_reconnect_client_to_all_servers),
-    confirmText = generalGetString(MR.strings.update_network_settings_confirmation),
+    title = generalGetString(R.string.update_network_settings_question),
+    text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
+    confirmText = generalGetString(R.string.update_network_settings_confirmation),
     onConfirm = action
   )
 }

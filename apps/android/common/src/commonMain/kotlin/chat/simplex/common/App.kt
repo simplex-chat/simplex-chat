@@ -84,8 +84,8 @@ fun MainScreen() {
         contentAlignment = Alignment.Center
       ) {
         SimpleButton(
-          stringResource(MR.strings.auth_unlock),
-          icon = painterResource(MR.images.ic_lock),
+          stringResource(R.string.auth_unlock),
+          icon = painterResource(R.drawable.ic_lock),
           click = {
             laFailed.value = false
             runAuthenticate()
@@ -212,7 +212,7 @@ fun InitializationView() {
         color = MaterialTheme.colors.secondary,
         strokeWidth = 2.5.dp
       )
-      Text(stringResource(MR.strings.opening_database))
+      Text(stringResource(R.string.opening_database))
     }
   }
 }

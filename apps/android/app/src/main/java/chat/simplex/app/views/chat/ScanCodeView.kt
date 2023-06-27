@@ -20,7 +20,7 @@ fun ScanCodeLayout(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: 
       .fillMaxSize()
       .padding(horizontal = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(MR.strings.scan_code), false)
+    AppBarTitle(stringResource(R.string.scan_code), false)
     Box(
       Modifier
         .fillMaxWidth()
@@ -33,12 +33,12 @@ fun ScanCodeLayout(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: 
             close()
           } else {
             AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.incorrect_code)
+              title = generalGetString(R.string.incorrect_code)
             )
           }
         }
       }
     }
-    Text(stringResource(MR.strings.scan_code_from_contacts_app))
+    Text(stringResource(R.string.scan_code_from_contacts_app))
   }
 }

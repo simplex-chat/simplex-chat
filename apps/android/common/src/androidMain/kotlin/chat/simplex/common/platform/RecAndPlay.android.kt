@@ -151,13 +151,13 @@ actual object AudioPlayer: AudioPlayerInterface {
         player.setDataSource(filePath)
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.unknown_error), it.message)
         return null
       }
       runCatching { player.prepare() }.onFailure {
         // Can happen when audio file is broken
         Log.e(TAG, it.stackTraceToString())
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.unknown_error), it.message)
         return null
       }
     }

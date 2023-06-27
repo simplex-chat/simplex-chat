@@ -55,8 +55,8 @@ class SimplexService: Service() {
   override fun onCreate() {
     super.onCreate()
     Log.d(TAG, "Simplex service created")
-    val title = generalGetString(MR.strings.simplex_service_notification_title)
-    val text = generalGetString(MR.strings.simplex_service_notification_text)
+    val title = generalGetString(R.string.simplex_service_notification_title)
+    val text = generalGetString(R.string.simplex_service_notification_text)
     notificationManager = createNotificationChannel()
     serviceNotification = createNotification(title, text)
     startForeground(SIMPLEX_SERVICE_ID, serviceNotification)
@@ -156,7 +156,7 @@ class SimplexService: Service() {
       setupIntent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
       setupIntent.putExtra(Settings.EXTRA_CHANNEL_ID, NOTIFICATION_CHANNEL_ID)
       val setup = PendingIntent.getActivity(this, 0, setupIntent, flags)
-      builder.addAction(0, generalGetString(MR.strings.hide_notification), setup)
+      builder.addAction(0, generalGetString(R.string.hide_notification), setup)
     }
 
     return builder.build()
@@ -309,15 +309,15 @@ class SimplexService: Service() {
       }
 
       val title = when(chatDbStatus) {
-        is DBMigrationResult.ErrorNotADatabase -> generalGetString(MR.strings.enter_passphrase_notification_title)
+        is DBMigrationResult.ErrorNotADatabase -> generalGetString(R.string.enter_passphrase_notification_title)
         is DBMigrationResult.OK -> return
-        else -> generalGetString(MR.strings.database_initialization_error_title)
+        else -> generalGetString(R.string.database_initialization_error_title)
       }
 
       val description = when(chatDbStatus) {
-        is DBMigrationResult.ErrorNotADatabase -> generalGetString(MR.strings.enter_passphrase_notification_desc)
+        is DBMigrationResult.ErrorNotADatabase -> generalGetString(R.string.enter_passphrase_notification_desc)
         is DBMigrationResult.OK -> return
-        else -> generalGetString(MR.strings.database_initialization_error_desc)
+        else -> generalGetString(R.string.database_initialization_error_desc)
       }
 
       val builder =  NotificationCompat.Builder(SimplexApp.context, NOTIFICATION_CHANNEL_ID)
@@ -396,12 +396,12 @@ class SimplexService: Service() {
         title = {
           Row {
             Icon(
-              painterResource(MR.images.ic_bolt),
+              painterResource(R.drawable.ic_bolt),
               contentDescription =
-              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
+              if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
             )
             Text(
-              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
+              if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
               fontWeight = FontWeight.Bold
             )
           }
@@ -409,16 +409,16 @@ class SimplexService: Service() {
         text = {
           Column {
             Text(
-              if (mode == NotificationsMode.SERVICE) annotatedStringResource(MR.strings.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(MR.strings.periodic_notifications_desc),
+              if (mode == NotificationsMode.SERVICE) annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(R.string.periodic_notifications_desc),
               Modifier.padding(bottom = 8.dp)
             )
             Text(
-              annotatedStringResource(MR.strings.it_can_disabled_via_settings_notifications_still_shown)
+              annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown)
             )
           }
         },
         confirmButton = {
-          TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
+          TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
         }
       )
     }
@@ -433,12 +433,12 @@ class SimplexService: Service() {
         title = {
           Row {
             Icon(
-              painterResource(MR.images.ic_bolt),
+              painterResource(R.drawable.ic_bolt),
               contentDescription =
-              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
+              if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
             )
             Text(
-              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.service_notifications) else stringResource(MR.strings.periodic_notifications),
+              if (mode == NotificationsMode.SERVICE) stringResource(R.string.service_notifications) else stringResource(R.string.periodic_notifications),
               fontWeight = FontWeight.Bold
             )
           }
@@ -446,14 +446,14 @@ class SimplexService: Service() {
         text = {
           Column {
             Text(
-              if (mode == NotificationsMode.SERVICE) annotatedStringResource(MR.strings.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(MR.strings.periodic_notifications_desc),
+              if (mode == NotificationsMode.SERVICE) annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(R.string.periodic_notifications_desc),
               Modifier.padding(bottom = 8.dp)
             )
-            Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
+            Text(annotatedStringResource(R.string.turn_off_battery_optimization))
           }
         },
         confirmButton = {
-          TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.ok)) }
+          TextButton(onClick = ignoreOptimization) { Text(stringResource(R.string.ok)) }
         }
       )
     }
@@ -464,12 +464,12 @@ class SimplexService: Service() {
         title = {
           Row {
             Icon(
-              painterResource(MR.images.ic_bolt),
+              painterResource(R.drawable.ic_bolt),
               contentDescription =
-              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
+              if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
             )
             Text(
-              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.service_notifications_disabled) else stringResource(MR.strings.periodic_notifications_disabled),
+              if (mode == NotificationsMode.SERVICE) stringResource(R.string.service_notifications_disabled) else stringResource(R.string.periodic_notifications_disabled),
               fontWeight = FontWeight.Bold
             )
           }
@@ -477,13 +477,13 @@ class SimplexService: Service() {
         text = {
           Column {
             Text(
-              annotatedStringResource(MR.strings.turning_off_service_and_periodic),
+              annotatedStringResource(R.string.turning_off_service_and_periodic),
               Modifier.padding(bottom = 8.dp)
             )
           }
         },
         confirmButton = {
-          TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
+          TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
         }
       )
     }

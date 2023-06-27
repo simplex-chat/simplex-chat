@@ -34,9 +34,9 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Bool
     ) {
       Box(Modifier.weight(1f, false)) {
         if (ci.meta.itemDeleted is CIDeleted.Moderated) {
-          MarkedDeletedText(String.format(generalGetString(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName))
+          MarkedDeletedText(String.format(generalGetString(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName))
         } else {
-          MarkedDeletedText(generalGetString(MR.strings.marked_deleted_description))
+          MarkedDeletedText(generalGetString(R.string.marked_deleted_description))
         }
       }
       CIMetaView(ci, timedMessagesTTL)

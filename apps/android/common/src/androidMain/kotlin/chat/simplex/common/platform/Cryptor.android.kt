@@ -24,8 +24,8 @@ internal class Cryptor: CryptorInterface {
         // Repeated calls will not show the alert again
         warningShown = true
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.wrong_passphrase),
-          text = generalGetString(MR.strings.restore_passphrase_not_found_desc)
+          title = generalGetString(R.string.wrong_passphrase),
+          text = generalGetString(R.string.restore_passphrase_not_found_desc)
         )
       }
       return null

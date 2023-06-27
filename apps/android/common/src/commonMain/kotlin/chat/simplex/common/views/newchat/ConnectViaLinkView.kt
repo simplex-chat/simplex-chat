@@ -24,8 +24,8 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
   }
   val tabTitles = ConnectViaLinkTab.values().map {
     when (it) {
-      ConnectViaLinkTab.SCAN -> stringResource(MR.strings.scan_QR_code)
-      ConnectViaLinkTab.PASTE -> stringResource(MR.strings.paste_the_link_you_received)
+      ConnectViaLinkTab.SCAN -> stringResource(R.string.scan_QR_code)
+      ConnectViaLinkTab.PASTE -> stringResource(R.string.paste_the_link_you_received)
     }
   }
   Column(
@@ -57,7 +57,7 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
           text = { Text(it, fontSize = 13.sp) },
           icon = {
             Icon(
-              if (ConnectViaLinkTab.SCAN.ordinal == index) painterResource(MR.images.ic_qr_code) else painterResource(MR.images.ic_article),
+              if (ConnectViaLinkTab.SCAN.ordinal == index) painterResource(R.drawable.ic_qr_code) else painterResource(R.drawable.ic_article),
               it
             )
           },

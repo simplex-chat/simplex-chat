@@ -190,8 +190,8 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
 @Composable
 fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(MR.strings.mark_read),
-    painterResource(MR.images.ic_check),
+    stringResource(R.string.mark_read),
+    painterResource(R.drawable.ic_check),
     onClick = {
       markChatRead(chat, chatModel)
       ntfManager.cancelNotificationsForChat(chat.id)
@@ -203,8 +203,8 @@ fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<
 @Composable
 fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(MR.strings.mark_unread),
-    painterResource(MR.images.ic_mark_chat_unread),
+    stringResource(R.string.mark_unread),
+    painterResource(R.drawable.ic_mark_chat_unread),
     onClick = {
       markChatUnread(chat, chatModel)
       showMenu.value = false
@@ -215,8 +215,8 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
 @Composable
 fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled: Boolean, showMenu: MutableState<Boolean>) {
   ItemAction(
-    if (ntfsEnabled) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
-    if (ntfsEnabled) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+    if (ntfsEnabled) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
+    if (ntfsEnabled) painterResource(R.drawable.ic_notifications_off) else painterResource(R.drawable.ic_notifications),
     onClick = {
       changeNtfsStatePerChat(!ntfsEnabled, mutableStateOf(ntfsEnabled), chat, chatModel)
       showMenu.value = false
@@ -227,8 +227,8 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
 @Composable
 fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(MR.strings.clear_chat_menu_action),
-    painterResource(MR.images.ic_settings_backup_restore),
+    stringResource(R.string.clear_chat_menu_action),
+    painterResource(R.drawable.ic_settings_backup_restore),
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
@@ -240,8 +240,8 @@ fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boo
 @Composable
 fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(MR.strings.delete_contact_menu_action),
-    painterResource(MR.images.ic_delete),
+    stringResource(R.string.delete_contact_menu_action),
+    painterResource(R.drawable.ic_delete),
     onClick = {
       deleteContactDialog(chat.chatInfo, chatModel)
       showMenu.value = false
@@ -253,8 +253,8 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
 @Composable
 fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(MR.strings.delete_group_menu_action),
-    painterResource(MR.images.ic_delete),
+    stringResource(R.string.delete_group_menu_action),
+    painterResource(R.drawable.ic_delete),
     onClick = {
       deleteGroupDialog(chat.chatInfo, groupInfo, chatModel)
       showMenu.value = false
@@ -267,8 +267,8 @@ fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, sh
 fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   val joinGroup: () -> Unit = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } }
   ItemAction(
-    if (chat.chatInfo.incognito) stringResource(MR.strings.join_group_incognito_button) else stringResource(MR.strings.join_group_button),
-    if (chat.chatInfo.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_login),
+    if (chat.chatInfo.incognito) stringResource(R.string.join_group_incognito_button) else stringResource(R.string.join_group_button),
+    if (chat.chatInfo.incognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_login),
     color = if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
       joinGroup()
@@ -280,8 +280,8 @@ fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, show
 @Composable
 fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(MR.strings.leave_group_button),
-    painterResource(MR.images.ic_logout),
+    stringResource(R.string.leave_group_button),
+    painterResource(R.drawable.ic_logout),
     onClick = {
       leaveGroupDialog(groupInfo, chatModel)
       showMenu.value = false
@@ -293,8 +293,8 @@ fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: Mutab
 @Composable
 fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    if (chatModel.incognito.value) stringResource(MR.strings.accept_contact_incognito_button) else stringResource(MR.strings.accept_contact_button),
-    if (chatModel.incognito.value) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_check),
+    if (chatModel.incognito.value) stringResource(R.string.accept_contact_incognito_button) else stringResource(R.string.accept_contact_button),
+    if (chatModel.incognito.value) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_check),
     color = if (chatModel.incognito.value) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
       acceptContactRequest(chatInfo.apiId, chatInfo, true, chatModel)
@@ -302,8 +302,8 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
     }
   )
   ItemAction(
-    stringResource(MR.strings.reject_contact_button),
-    painterResource(MR.images.ic_close),
+    stringResource(R.string.reject_contact_button),
+    painterResource(R.drawable.ic_close),
     onClick = {
       rejectContactRequest(chatInfo, chatModel)
       showMenu.value = false
@@ -315,8 +315,8 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
 @Composable
 fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(MR.strings.set_contact_name),
-    painterResource(MR.images.ic_edit),
+    stringResource(R.string.set_contact_name),
+    painterResource(R.drawable.ic_edit),
     onClick = {
       ModalManager.shared.showModalCloseable(true) { close ->
         ContactConnectionInfoView(chatModel, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
@@ -325,8 +325,8 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     },
   )
   ItemAction(
-    stringResource(MR.strings.delete_verb),
-    painterResource(MR.images.ic_delete),
+    stringResource(R.string.delete_verb),
+    painterResource(R.drawable.ic_delete),
     onClick = {
       deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {}
       showMenu.value = false
@@ -338,14 +338,14 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
 @Composable
 private fun InvalidDataView() {
   Row {
-    ProfileImage(72.dp, null, MR.images.ic_account_circle_filled, MaterialTheme.colors.secondary)
+    ProfileImage(72.dp, null, R.drawable.ic_account_circle_filled, MaterialTheme.colors.secondary)
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
         .weight(1F)
     ) {
       Text(
-        stringResource(MR.strings.invalid_data),
+        stringResource(R.string.invalid_data),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
@@ -402,11 +402,11 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
 
 fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.accept_connection_request__question),
-    text = generalGetString(MR.strings.if_you_choose_to_reject_the_sender_will_not_be_notified),
-    confirmText = if (chatModel.incognito.value) generalGetString(MR.strings.accept_contact_incognito_button) else generalGetString(MR.strings.accept_contact_button),
+    title = generalGetString(R.string.accept_connection_request__question),
+    text = generalGetString(R.string.if_you_choose_to_reject_the_sender_will_not_be_notified),
+    confirmText = if (chatModel.incognito.value) generalGetString(R.string.accept_contact_incognito_button) else generalGetString(R.string.accept_contact_button),
     onConfirm = { acceptContactRequest(contactRequest.apiId, contactRequest, true, chatModel) },
-    dismissText = generalGetString(MR.strings.reject_contact_button),
+    dismissText = generalGetString(R.string.reject_contact_button),
     onDismiss = { rejectContactRequest(contactRequest, chatModel) }
   )
 }
@@ -431,12 +431,12 @@ fun rejectContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: Cha
 fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialogButtons(
     title = generalGetString(
-      if (connection.initiated) MR.strings.you_invited_your_contact
-      else MR.strings.you_accepted_connection
+      if (connection.initiated) R.string.you_invited_your_contact
+      else R.string.you_accepted_connection
     ),
     text = generalGetString(
-      if (connection.viaContactUri) MR.strings.you_will_be_connected_when_your_connection_request_is_accepted
-      else MR.strings.you_will_be_connected_when_your_contacts_device_is_online
+      if (connection.viaContactUri) R.string.you_will_be_connected_when_your_connection_request_is_accepted
+      else R.string.you_will_be_connected_when_your_contacts_device_is_online
     ),
     buttons = {
       Row(
@@ -449,11 +449,11 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
           AlertManager.shared.hideAlert()
           deleteContactConnectionAlert(connection, chatModel) {}
         }) {
-          Text(stringResource(MR.strings.delete_verb))
+          Text(stringResource(R.string.delete_verb))
         }
         Spacer(Modifier.padding(horizontal = 4.dp))
         TextButton(onClick = { AlertManager.shared.hideAlert() }) {
-          Text(stringResource(MR.strings.ok))
+          Text(stringResource(R.string.ok))
         }
       }
     }
@@ -462,12 +462,12 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
 
 fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.delete_pending_connection__question),
+    title = generalGetString(R.string.delete_pending_connection__question),
     text = generalGetString(
-      if (connection.initiated) MR.strings.contact_you_shared_link_with_wont_be_able_to_connect
-      else MR.strings.connection_you_accepted_will_be_cancelled
+      if (connection.initiated) R.string.contact_you_shared_link_with_wont_be_able_to_connect
+      else R.string.connection_you_accepted_will_be_cancelled
     ),
-    confirmText = generalGetString(MR.strings.delete_verb),
+    confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
       withApi {
         AlertManager.shared.hideAlert()
@@ -483,9 +483,9 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
 
 fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.alert_title_contact_connection_pending),
-    text = generalGetString(MR.strings.alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry),
-    confirmText = generalGetString(MR.strings.button_delete_contact),
+    title = generalGetString(R.string.alert_title_contact_connection_pending),
+    text = generalGetString(R.string.alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry),
+    confirmText = generalGetString(R.string.button_delete_contact),
     onConfirm = {
       withApi {
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
@@ -496,26 +496,26 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
       }
     },
     destructive = true,
-    dismissText = generalGetString(MR.strings.cancel_verb),
+    dismissText = generalGetString(R.string.cancel_verb),
   )
 }
 
 fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.join_group_question),
-    text = generalGetString(MR.strings.you_are_invited_to_group_join_to_connect_with_group_members),
-    confirmText = if (groupInfo.membership.memberIncognito) generalGetString(MR.strings.join_group_incognito_button) else generalGetString(MR.strings.join_group_button),
+    title = generalGetString(R.string.join_group_question),
+    text = generalGetString(R.string.you_are_invited_to_group_join_to_connect_with_group_members),
+    confirmText = if (groupInfo.membership.memberIncognito) generalGetString(R.string.join_group_incognito_button) else generalGetString(R.string.join_group_button),
     onConfirm = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } },
-    dismissText = generalGetString(MR.strings.delete_verb),
+    dismissText = generalGetString(R.string.delete_verb),
     onDismiss = { deleteGroup(groupInfo, chatModel) }
   )
 }
 
 fun cantInviteIncognitoAlert() {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(MR.strings.alert_title_cant_invite_contacts),
-    text = generalGetString(MR.strings.alert_title_cant_invite_contacts_descr),
-    confirmText = generalGetString(MR.strings.ok),
+    title = generalGetString(R.string.alert_title_cant_invite_contacts),
+    text = generalGetString(R.string.alert_title_cant_invite_contacts_descr),
+    confirmText = generalGetString(R.string.ok),
   )
 }
 
@@ -532,8 +532,8 @@ fun deleteGroup(groupInfo: GroupInfo, chatModel: ChatModel) {
 
 fun groupInvitationAcceptedAlert() {
   AlertManager.shared.showAlertMsg(
-    generalGetString(MR.strings.joining_group),
-    generalGetString(MR.strings.youve_accepted_group_invitation_connecting_to_inviting_group_member)
+    generalGetString(R.string.joining_group),
+    generalGetString(R.string.youve_accepted_group_invitation_connecting_to_inviting_group_member)
   )
 }
 

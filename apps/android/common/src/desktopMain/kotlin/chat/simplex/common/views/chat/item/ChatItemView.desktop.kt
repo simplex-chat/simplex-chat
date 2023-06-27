@@ -20,7 +20,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, showMenu: MutableState<Boolean
       copyFileToFile(file, to) {}
     }
   }
-  ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), onClick = {
+  ItemAction(stringResource(R.string.save_verb), painterResource(R.drawable.ic_download), onClick = {
     when (cItem.content.msgContent) {
       is MsgContent.MCImage -> saveImage(getAppFileUri(cItem.file?.fileName ?: return@ItemAction))
       is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }

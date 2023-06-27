@@ -56,13 +56,13 @@ private fun BoxWithConstraintsScope.VerticalPasswordGrid(password: MutableState<
     DigitsRow(s, 7, 8, 9, password)
     Divider()
     Row(Modifier.requiredHeight(s)) {
-      PasswordEdit(s, painterResource(MR.images.ic_close)) {
+      PasswordEdit(s, painterResource(R.drawable.ic_close)) {
         password.value = ""
       }
       VerticalDivider()
       PasswordDigit(s, 0, password)
       VerticalDivider()
-      PasswordEdit(s, painterResource(MR.images.ic_backspace)) {
+      PasswordEdit(s, painterResource(R.drawable.ic_backspace)) {
         password.value = password.value.dropLast(1)
       }
     }
@@ -76,7 +76,7 @@ private fun BoxWithConstraintsScope.HorizontalPasswordGrid(password: MutableStat
     Row(Modifier.height(IntrinsicSize.Min)) {
       DigitsRow(s, 1, 2, 3, password);
       VerticalDivider()
-      PasswordEdit(s, painterResource(MR.images.ic_close)) {
+      PasswordEdit(s, painterResource(R.drawable.ic_close)) {
         password.value = ""
       }
     }
@@ -90,7 +90,7 @@ private fun BoxWithConstraintsScope.HorizontalPasswordGrid(password: MutableStat
     Row(Modifier.height(IntrinsicSize.Min)) {
       DigitsRow(s, 7, 8, 9, password)
       VerticalDivider()
-      PasswordEdit(s, painterResource(MR.images.ic_backspace)) {
+      PasswordEdit(s, painterResource(R.drawable.ic_backspace)) {
         password.value = password.value.dropLast(1)
       }
     }

@@ -190,8 +190,8 @@ fun ComposeView(
             } else {
               bitmap = null
               AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.large_file),
-                String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
+                generalGetString(R.string.large_file),
+                String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
               )
             }
           } else {
@@ -224,8 +224,8 @@ fun ComposeView(
         }
       } else {
         AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.large_file),
-          String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
+          generalGetString(R.string.large_file),
+          String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
         )
       }
     }
@@ -590,10 +590,10 @@ fun ComposeView(
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
-      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_reply)) {
+      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_reply)) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
-      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_edit_filled)) {
+      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_edit_filled)) {
         clearState()
       }
     }
@@ -647,8 +647,8 @@ fun ComposeView(
     ) {
       IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
         Icon(
-          painterResource(MR.images.ic_attach_file_filled_500),
-          contentDescription = stringResource(MR.strings.attach),
+          painterResource(R.drawable.ic_attach_file_filled_500),
+          contentDescription = stringResource(R.string.attach),
           tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           modifier = Modifier
             .size(28.dp)

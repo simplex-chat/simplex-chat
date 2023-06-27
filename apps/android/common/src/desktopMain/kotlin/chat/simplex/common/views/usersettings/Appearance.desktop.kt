@@ -46,8 +46,8 @@ fun AppearanceScope.AppearanceLayout(
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.appearance_settings))
-    SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {
+    AppBarTitle(stringResource(R.string.appearance_settings))
+    SectionView(stringResource(R.string.settings_section_title_language), padding = PaddingValues()) {
       val state = rememberSaveable { mutableStateOf(languagePref.get() ?: "system") }
       LangSelector(state) {
         state.value = it

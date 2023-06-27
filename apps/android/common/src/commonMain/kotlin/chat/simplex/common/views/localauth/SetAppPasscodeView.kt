@@ -11,7 +11,7 @@ import chat.simplex.common.views.helpers.generalGetString
 @Composable
 fun SetAppPasscodeView(
   passcodeKeychain: DatabaseUtils.KeyStoreItem = ksAppPassword,
-  title: String = generalGetString(MR.strings.new_passcode),
+  title: String = generalGetString(R.string.new_passcode),
   reason: String? = null,
   submit: () -> Unit,
   cancel: () -> Unit,
@@ -35,8 +35,8 @@ fun SetAppPasscodeView(
 
   if (confirming) {
     SetPasswordView(
-      generalGetString(MR.strings.confirm_passcode),
-      generalGetString(MR.strings.confirm_verb),
+      generalGetString(R.string.confirm_passcode),
+      generalGetString(R.string.confirm_verb),
       submitEnabled = { pwd -> pwd == enteredPassword }
     ) {
       if (passcode.value == enteredPassword) {
@@ -48,7 +48,7 @@ fun SetAppPasscodeView(
       }
     }
   } else {
-    SetPasswordView(title, generalGetString(MR.strings.save_verb)) {
+    SetPasswordView(title, generalGetString(R.string.save_verb)) {
       enteredPassword = passcode.value
       passcode.value = ""
       confirming = true

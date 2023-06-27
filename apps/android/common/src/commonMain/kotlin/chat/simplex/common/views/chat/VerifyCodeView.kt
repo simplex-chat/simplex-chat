@@ -62,14 +62,14 @@ private fun VerifyCodeLayout(
       .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(MR.strings.security_code), false)
+    AppBarTitle(stringResource(R.string.security_code), false)
     val splitCode = splitToParts(connectionCode, 24)
     Row(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), horizontalArrangement = Arrangement.Center) {
       if (connectionVerified) {
-        Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 4.dp).size(22.dp), tint = MaterialTheme.colors.secondary)
-        Text(String.format(stringResource(MR.strings.is_verified), displayName))
+        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 4.dp).size(22.dp), tint = MaterialTheme.colors.secondary)
+        Text(String.format(stringResource(R.string.is_verified), displayName))
       } else {
-        Text(String.format(stringResource(MR.strings.is_not_verified), displayName))
+        Text(String.format(stringResource(R.string.is_not_verified), displayName))
       }
     }
 
@@ -90,14 +90,14 @@ private fun VerifyCodeLayout(
       Box(Modifier.weight(1f)) {
         val clipboard = LocalClipboardManager.current
         IconButton({ clipboard.shareText(connectionCode) }, Modifier.size(20.dp).align(Alignment.CenterStart)) {
-          Icon(painterResource(MR.images.ic_share_filled), null, tint = MaterialTheme.colors.primary)
+          Icon(painterResource(R.drawable.ic_share_filled), null, tint = MaterialTheme.colors.primary)
         }
       }
       Spacer(Modifier.weight(1f))
     }
 
     Text(
-      generalGetString(MR.strings.to_verify_compare),
+      generalGetString(R.string.to_verify_compare),
       Modifier.padding(bottom = DEFAULT_PADDING)
     )
 
@@ -106,20 +106,20 @@ private fun VerifyCodeLayout(
       horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       if (connectionVerified) {
-        SimpleButton(generalGetString(MR.strings.clear_verification), painterResource(MR.images.ic_shield)) {
+        SimpleButton(generalGetString(R.string.clear_verification), painterResource(R.drawable.ic_shield)) {
           verifyCode(null) {}
         }
       } else {
-        SimpleButton(generalGetString(MR.strings.scan_code), painterResource(MR.images.ic_qr_code)) {
+        SimpleButton(generalGetString(R.string.scan_code), painterResource(R.drawable.ic_qr_code)) {
           ModalManager.shared.showModal {
             ScanCodeView(verifyCode) { }
           }
         }
-        SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(MR.images.ic_verified_user)) {
+        SimpleButton(generalGetString(R.string.mark_code_verified), painterResource(R.drawable.ic_verified_user)) {
           verifyCode(connectionCode) { verified ->
             if (!verified) {
               AlertManager.shared.showAlertMsg(
-                title = generalGetString(MR.strings.incorrect_code)
+                title = generalGetString(R.string.incorrect_code)
               )
             }
           }

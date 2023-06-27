@@ -33,7 +33,7 @@ fun QRCode(
     }
     Image(
       bitmap = qr,
-      contentDescription = stringResource(MR.strings.image_descr_qr_code),
+      contentDescription = stringResource(R.string.image_descr_qr_code),
       modifier
         .clickable {
           scope.launch {

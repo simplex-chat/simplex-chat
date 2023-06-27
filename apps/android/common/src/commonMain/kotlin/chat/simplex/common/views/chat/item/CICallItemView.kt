@@ -22,20 +22,20 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
     Modifier
       .padding(horizontal = 4.dp)
       .padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-    @Composable fun ConnectingCallIcon() = Icon(painterResource(MR.images.ic_settings_phone), stringResource(MR.strings.icon_descr_call_connecting), tint = SimplexGreen)
+    @Composable fun ConnectingCallIcon() = Icon(painterResource(R.drawable.ic_settings_phone), stringResource(R.string.icon_descr_call_connecting), tint = SimplexGreen)
     when (status) {
       CICallStatus.Pending -> if (sent) {
-        Icon(painterResource(MR.images.ic_call), stringResource(MR.strings.icon_descr_call_pending_sent))
+        Icon(painterResource(R.drawable.ic_call), stringResource(R.string.icon_descr_call_pending_sent))
       } else {
         AcceptCallButton(cInfo, acceptCall)
       }
-      CICallStatus.Missed -> Icon(painterResource(MR.images.ic_call), stringResource(MR.strings.icon_descr_call_missed), tint = Color.Red)
-      CICallStatus.Rejected -> Icon(painterResource(MR.images.ic_call_end), stringResource(MR.strings.icon_descr_call_rejected), tint = Color.Red)
+      CICallStatus.Missed -> Icon(painterResource(R.drawable.ic_call), stringResource(R.string.icon_descr_call_missed), tint = Color.Red)
+      CICallStatus.Rejected -> Icon(painterResource(R.drawable.ic_call_end), stringResource(R.string.icon_descr_call_rejected), tint = Color.Red)
       CICallStatus.Accepted -> ConnectingCallIcon()
       CICallStatus.Negotiated -> ConnectingCallIcon()
-      CICallStatus.Progress -> Icon(painterResource(MR.images.ic_phone_in_talk_filled), stringResource(MR.strings.icon_descr_call_progress), tint = SimplexGreen)
+      CICallStatus.Progress -> Icon(painterResource(R.drawable.ic_phone_in_talk_filled), stringResource(R.string.icon_descr_call_progress), tint = SimplexGreen)
       CICallStatus.Ended -> Row {
-        Icon(painterResource(MR.images.ic_call_end), stringResource(MR.strings.icon_descr_call_ended), tint = MaterialTheme.colors.secondary, modifier = Modifier.padding(end = 4.dp))
+        Icon(painterResource(R.drawable.ic_call_end), stringResource(R.string.icon_descr_call_ended), tint = MaterialTheme.colors.secondary, modifier = Modifier.padding(end = 4.dp))
         Text(durationText(duration), color = MaterialTheme.colors.secondary)
       }
       CICallStatus.Error -> {}
@@ -53,9 +53,9 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
 @Composable
 fun AcceptCallButton(cInfo: ChatInfo, acceptCall: (Contact) -> Unit) {
   if (cInfo is ChatInfo.Direct) {
-    SimpleButton(stringResource(MR.strings.answer_call), painterResource(MR.images.ic_ring_volume)) { acceptCall(cInfo.contact) }
+    SimpleButton(stringResource(R.string.answer_call), painterResource(R.drawable.ic_ring_volume)) { acceptCall(cInfo.contact) }
   } else {
-    Icon(painterResource(MR.images.ic_ring_volume), stringResource(MR.strings.answer_call), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(R.drawable.ic_ring_volume), stringResource(R.string.answer_call), tint = MaterialTheme.colors.secondary)
   }
 //    if case let .direct(contact) = chatInfo {
 //      Button {

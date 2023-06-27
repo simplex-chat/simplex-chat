@@ -11,7 +11,7 @@ actual fun PrivacyDeviceSection(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit,
 ) {
-  SectionView(stringResource(MR.strings.settings_section_title_device)) {
+  SectionView(stringResource(R.string.settings_section_title_device)) {
     ChatLockItem(showSettingsModal, setPerformLA)
   }
 }

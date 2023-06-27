@@ -104,7 +104,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
       m.currentUser.value,
       addServer = {
         AlertManager.shared.showAlertDialogButtonsColumn(
-          title = generalGetString(MR.strings.smp_servers_add),
+          title = generalGetString(R.string.smp_servers_add),
           buttons = {
             Column {
               SectionItemView({
@@ -113,7 +113,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                 // No saving until something will be changed on the next screen to prevent blank servers on the list
                 showServer(servers.last())
               }) {
-                Text(stringResource(MR.strings.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                Text(stringResource(R.string.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
               }
               SectionItemView({
                 AlertManager.shared.hideAlert()
@@ -126,7 +126,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                 }
               }
               ) {
-                Text(stringResource(MR.strings.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                Text(stringResource(R.string.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
               }
               val hasAllPresets = hasAllPresets(presetServers, servers, m)
               if (!hasAllPresets) {
@@ -134,7 +134,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                   AlertManager.shared.hideAlert()
                   servers = (servers + addAllPresets(presetServers, servers, m)).sortedByDescending { it.preset }
                 }) {
-                  Text(stringResource(MR.strings.smp_servers_preset_add), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+                  Text(stringResource(R.string.smp_servers_preset_add), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
                 }
               }
             }
@@ -196,17 +196,17 @@ private fun ProtocolServersLayout(
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
   ) {
-    AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.your_SMP_servers else MR.strings.your_XFTP_servers))
+    AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) R.string.your_SMP_servers else R.string.your_XFTP_servers))
 
-    SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.smp_servers else MR.strings.xftp_servers).uppercase()) {
+    SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) R.string.smp_servers else R.string.xftp_servers).uppercase()) {
       for (srv in servers) {
         SectionItemView({ showServer(srv) }, disabled = testing) {
           ProtocolServerView(serverProtocol, srv, servers, testing)
         }
       }
       SettingsActionItem(
-        painterResource(MR.images.ic_add),
-        stringResource(MR.strings.smp_servers_add),
+        painterResource(R.drawable.ic_add),
+        stringResource(R.string.smp_servers_add),
         addServer,
         disabled = testing,
         textColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
@@ -216,7 +216,7 @@ private fun ProtocolServersLayout(
     SectionTextFooter(
       remember(currentUser?.displayName) {
         buildAnnotatedString {
-          append(generalGetString(MR.strings.smp_servers_per_user) + " ")
+          append(generalGetString(R.string.smp_servers_per_user) + " ")
           withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
             append(currentUser?.displayName ?: "")
           }
@@ -227,14 +227,14 @@ private fun ProtocolServersLayout(
     SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
     SectionView {
       SectionItemView(resetServers, disabled = serversUnchanged) {
-        Text(stringResource(MR.strings.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+        Text(stringResource(R.string.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
       val testServersDisabled = testing || allServersDisabled
       SectionItemView(testServers, disabled = testServersDisabled) {
-        Text(stringResource(MR.strings.smp_servers_test_servers), color = if (!testServersDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+        Text(stringResource(R.string.smp_servers_test_servers), color = if (!testServersDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
       SectionItemView(saveSMPServers, disabled = saveDisabled) {
-        Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+        Text(stringResource(R.string.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       }
     }
     SectionDividerSpaced(maxBottomPadding = false)
@@ -250,7 +250,7 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
-    !srv.enabled -> Icon(painterResource(MR.images.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
+    !srv.enabled -> Icon(painterResource(R.drawable.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
     else -> ShowTestStatus(srv)
   }
   Spacer(Modifier.padding(horizontal = 4.dp))
@@ -266,8 +266,8 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
 private fun HowToButton() {
   val uriHandler = LocalUriHandler.current
   SettingsActionItem(
-    painterResource(MR.images.ic_open_in_new),
-    stringResource(MR.strings.how_to_use_your_servers),
+    painterResource(R.drawable.ic_open_in_new),
+    stringResource(R.string.how_to_use_your_servers),
     { uriHandler.openUriCatching("https://simplex.chat/docs/server.html") },
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary
@@ -276,7 +276,7 @@ private fun HowToButton() {
 
 @Composable
 fun InvalidServer() {
-  Icon(painterResource(MR.images.ic_error), null, tint = MaterialTheme.colors.error)
+  Icon(painterResource(R.drawable.ic_error), null, tint = MaterialTheme.colors.error)
 }
 
 private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<ServerCfg>): Boolean = servers.all { srv ->
@@ -310,8 +310,8 @@ private suspend fun testServers(testing: MutableState<Boolean>, servers: List<Se
   if (fs.isNotEmpty()) {
     val msg = fs.map { it.key + ": " + it.value.localizedDescription }.joinToString("\n")
     AlertManager.shared.showAlertMsg(
-      title = generalGetString(MR.strings.smp_servers_test_failed),
-      text = generalGetString(MR.strings.smp_servers_test_some_failed) + "\n" + msg
+      title = generalGetString(R.string.smp_servers_test_failed),
+      text = generalGetString(R.string.smp_servers_test_some_failed) + "\n" + msg
     )
   }
 }
@@ -357,9 +357,9 @@ private fun saveServers(protocol: ServerProtocol, currServers: MutableState<List
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
-    title = generalGetString(MR.strings.smp_save_servers_question),
-    confirmText = generalGetString(MR.strings.save_verb),
-    dismissText = generalGetString(MR.strings.exit_without_saving),
+    title = generalGetString(R.string.smp_save_servers_question),
+    confirmText = generalGetString(R.string.save_verb),
+    dismissText = generalGetString(R.string.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
   )

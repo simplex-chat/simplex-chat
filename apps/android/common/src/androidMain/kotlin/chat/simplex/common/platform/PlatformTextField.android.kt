@@ -139,9 +139,9 @@ actual fun PlatformTextField(
     showDeleteTextButton.value = it.lineCount >= 4 && !cs.inProgress
   }
   if (composeState.value.preview is ComposePreview.VoicePreview) {
-    ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
+    ComposeOverlay(R.string.voice_message_send_text, textStyle, padding)
   } else if (userIsObserver) {
-    ComposeOverlay(MR.strings.you_are_observer, textStyle, padding)
+    ComposeOverlay(R.string.you_are_observer, textStyle, padding)
   }
 }
 

@@ -26,8 +26,8 @@ fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boo
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
-      painterResource(MR.images.ic_draft_filled),
-      stringResource(MR.strings.icon_descr_file),
+      painterResource(R.drawable.ic_draft_filled),
+      stringResource(R.string.icon_descr_file),
       Modifier
         .padding(start = 4.dp, end = 2.dp)
         .size(36.dp),
@@ -38,8 +38,8 @@ fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boo
     if (cancelEnabled) {
       IconButton(onClick = cancelFile, modifier = Modifier.padding(0.dp)) {
         Icon(
-          painterResource(MR.images.ic_close),
-          contentDescription = stringResource(MR.strings.icon_descr_cancel_file_preview),
+          painterResource(R.drawable.ic_close),
+          contentDescription = stringResource(R.string.icon_descr_cancel_file_preview),
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )

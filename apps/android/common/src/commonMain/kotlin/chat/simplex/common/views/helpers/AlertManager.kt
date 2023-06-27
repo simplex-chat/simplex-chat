@@ -79,9 +79,9 @@ class AlertManager {
   fun showAlertDialog(
     title: String,
     text: String? = null,
-    confirmText: String = generalGetString(MR.strings.ok),
+    confirmText: String = generalGetString(R.string.ok),
     onConfirm: (() -> Unit)? = null,
-    dismissText: String = generalGetString(MR.strings.cancel_verb),
+    dismissText: String = generalGetString(R.string.cancel_verb),
     onDismiss: (() -> Unit)? = null,
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false
@@ -114,9 +114,9 @@ class AlertManager {
   fun showAlertDialogStacked(
     title: String,
     text: String? = null,
-    confirmText: String = generalGetString(MR.strings.ok),
+    confirmText: String = generalGetString(R.string.ok),
     onConfirm: (() -> Unit)? = null,
-    dismissText: String = generalGetString(MR.strings.cancel_verb),
+    dismissText: String = generalGetString(R.string.cancel_verb),
     onDismiss: (() -> Unit)? = null,
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false
@@ -148,7 +148,7 @@ class AlertManager {
 
   fun showAlertMsg(
     title: String, text: String? = null,
-    confirmText: String = generalGetString(MR.strings.ok)
+    confirmText: String = generalGetString(R.string.ok)
   ) {
     showAlert {
       AlertDialog(
@@ -172,7 +172,7 @@ class AlertManager {
   fun showAlertMsg(
     title: StringResource,
     text: StringResource? = null,
-    confirmText: StringResource = MR.strings.ok,
+    confirmText: StringResource = R.string.ok,
   ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText))
 
   @Composable

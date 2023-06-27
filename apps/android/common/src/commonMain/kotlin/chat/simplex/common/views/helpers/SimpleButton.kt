@@ -93,6 +93,6 @@ fun SimpleButtonFrame(click: () -> Unit, modifier: Modifier = Modifier, disabled
 @Composable
 fun PreviewShareButton() {
   SimpleXTheme {
-    SimpleButton(text = "Share", icon = painterResource(MR.images.ic_share), click = {})
+    SimpleButton(text = "Share", icon = painterResource(R.drawable.ic_share), click = {})
   }
 }

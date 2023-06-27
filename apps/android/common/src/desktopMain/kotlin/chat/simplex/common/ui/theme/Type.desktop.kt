@@ -5,10 +5,10 @@ import androidx.compose.ui.text.platform.Font
 import com.icerockdev.library.MR
 
 actual val Inter: FontFamily = FontFamily(
-  Font(MR.fonts.Inter.regular.file),
-  Font(MR.fonts.Inter.italic.file, style = FontStyle.Italic),
-  Font(MR.fonts.Inter.bold.file, FontWeight.Bold),
-  Font(MR.fonts.Inter.semibold.file, FontWeight.SemiBold),
-  Font(MR.fonts.Inter.medium.file, FontWeight.Medium),
-  Font(MR.fonts.Inter.light.file, FontWeight.Light)
+  Font(R.font.Inter.regular.file),
+  Font(R.font.Inter.italic.file, style = FontStyle.Italic),
+  Font(R.font.Inter.bold.file, FontWeight.Bold),
+  Font(R.font.Inter.semibold.file, FontWeight.SemiBold),
+  Font(R.font.Inter.medium.file, FontWeight.Medium),
+  Font(R.font.Inter.light.file, FontWeight.Light)
 )

@@ -98,7 +98,7 @@ fun SearchTextField(modifier: Modifier, placeholder: String, alwaysVisible: Bool
             searchText = TextFieldValue("");
             onValueChange("")
           }) {
-            Icon(painterResource(MR.images.ic_close), stringResource(MR.strings.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
+            Icon(painterResource(R.drawable.ic_close), stringResource(R.string.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
           }
         }} else null,
         singleLine = true,

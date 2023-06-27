@@ -31,18 +31,18 @@ fun SetNotificationsMode(m: ChatModel) {
       .padding(vertical = 14.dp)
   ) {
     //CloseSheetBar(null)
-    AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title))
+    AppBarTitle(stringResource(R.string.onboarding_notifications_mode_title))
     val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
     Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
-      Text(stringResource(MR.strings.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+      Text(stringResource(R.string.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
       Spacer(Modifier.height(DEFAULT_PADDING * 2f))
-      NotificationButton(currentMode, NotificationsMode.OFF, MR.strings.onboarding_notifications_mode_off, MR.strings.onboarding_notifications_mode_off_desc)
-      NotificationButton(currentMode, NotificationsMode.PERIODIC, MR.strings.onboarding_notifications_mode_periodic, MR.strings.onboarding_notifications_mode_periodic_desc)
-      NotificationButton(currentMode, NotificationsMode.SERVICE, MR.strings.onboarding_notifications_mode_service, MR.strings.onboarding_notifications_mode_service_desc)
+      NotificationButton(currentMode, NotificationsMode.OFF, R.string.onboarding_notifications_mode_off, R.string.onboarding_notifications_mode_off_desc)
+      NotificationButton(currentMode, NotificationsMode.PERIODIC, R.string.onboarding_notifications_mode_periodic, R.string.onboarding_notifications_mode_periodic_desc)
+      NotificationButton(currentMode, NotificationsMode.SERVICE, R.string.onboarding_notifications_mode_service, R.string.onboarding_notifications_mode_service_desc)
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
     Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), contentAlignment = Alignment.Center) {
-      OnboardingActionButton(MR.strings.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
+      OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
         changeNotificationsMode(currentMode.value, m)
       }
     }

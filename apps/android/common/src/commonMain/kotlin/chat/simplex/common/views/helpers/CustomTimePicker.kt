@@ -177,8 +177,8 @@ fun CustomTimePickerDialog(
               color = MaterialTheme.colors.secondary
             )
             Icon(
-              painterResource(MR.images.ic_close),
-              generalGetString(MR.strings.icon_descr_close_button),
+              painterResource(R.drawable.ic_close),
+              generalGetString(R.string.icon_descr_close_button),
               tint = MaterialTheme.colors.secondary,
               modifier = Modifier
                 .size(25.dp)
@@ -242,7 +242,7 @@ fun DropdownCustomTimePickerSettingRow(
     values.value.map { sel: DropdownSelection ->
       when (sel) {
         is DropdownSelection.DropdownValue -> sel to timeText(sel.value)
-        DropdownSelection.Custom -> sel to generalGetString(MR.strings.custom_time_picker_custom)
+        DropdownSelection.Custom -> sel to generalGetString(R.string.custom_time_picker_custom)
       }
     },
     dropdownSelection,

@@ -59,14 +59,14 @@ fun CIVideoView(
                 when (file.fileProtocol) {
                   FileProtocol.XFTP ->
                     AlertManager.shared.showAlertMsg(
-                      generalGetString(MR.strings.waiting_for_video),
-                      generalGetString(MR.strings.video_will_be_received_when_contact_completes_uploading)
+                      generalGetString(R.string.waiting_for_video),
+                      generalGetString(R.string.video_will_be_received_when_contact_completes_uploading)
                     )
 
                   FileProtocol.SMP ->
                     AlertManager.shared.showAlertMsg(
-                      generalGetString(MR.strings.waiting_for_video),
-                      generalGetString(MR.strings.video_will_be_received_when_contact_is_online)
+                      generalGetString(R.string.waiting_for_video),
+                      generalGetString(R.string.video_will_be_received_when_contact_is_online)
                     )
                 }
               CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
@@ -146,7 +146,7 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        painterResource(MR.images.ic_play_arrow_filled),
+        painterResource(R.drawable.ic_play_arrow_filled),
         contentDescription = null,
         tint = if (error) WarningOrange else Color.White
       )
@@ -174,7 +174,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
           color = Color.White
         )
         /*if (!soundEnabled.value) {
-        Icon(painterResource(MR.images.ic_volume_off_filled), null,
+        Icon(painterResource(R.drawable.ic_volume_off_filled), null,
           Modifier.padding(start = 5.dp).size(10.dp),
           tint = Color.White
         )
@@ -205,7 +205,7 @@ private fun ImageView(preview: ImageBitmap, showMenu: MutableState<Boolean>, onC
   val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 1000.dp }
   Image(
     preview,
-    contentDescription = stringResource(MR.strings.video_descr),
+    contentDescription = stringResource(R.string.video_descr),
     modifier = Modifier
       .width(width)
       .combinedClickable(
@@ -272,19 +272,19 @@ private fun loadingIndicator(file: CIFile?) {
             FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
             FileProtocol.SMP -> progressIndicator()
           }
-        is CIFileStatus.SndComplete -> fileIcon(painterResource(MR.images.ic_check_filled), MR.strings.icon_descr_video_snd_complete)
-        is CIFileStatus.SndCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
-        is CIFileStatus.SndError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
-        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
-        is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_video)
+        is CIFileStatus.SndComplete -> fileIcon(painterResource(R.drawable.ic_check_filled), R.string.icon_descr_video_snd_complete)
+        is CIFileStatus.SndCancelled -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
+        is CIFileStatus.SndError -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
+        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(R.drawable.ic_arrow_downward), R.string.icon_descr_video_asked_to_receive)
+        is CIFileStatus.RcvAccepted -> fileIcon(painterResource(R.drawable.ic_more_horiz), R.string.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
           if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
             progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
           } else {
             progressIndicator()
           }
-        is CIFileStatus.RcvCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
-        is CIFileStatus.RcvError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.RcvCancelled -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
+        is CIFileStatus.RcvError -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
         else -> {}
       }
     }
@@ -303,8 +303,8 @@ private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
     receiveFile(file.fileId)
   } else {
     AlertManager.shared.showAlertMsg(
-      generalGetString(MR.strings.large_file),
-      String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
+      generalGetString(R.string.large_file),
+      String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
     )
   }
 }

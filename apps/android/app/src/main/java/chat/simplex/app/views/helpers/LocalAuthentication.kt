@@ -26,7 +26,7 @@ data class LocalAuthRequest (
   val completed: (LAResult) -> Unit
 ) {
   companion object {
-    val sample = LocalAuthRequest(generalGetString(MR.strings.la_enter_app_passcode), generalGetString(MR.strings.la_authenticate), "", selfDestruct = false) { }
+    val sample = LocalAuthRequest(generalGetString(R.string.la_enter_app_passcode), generalGetString(R.string.la_authenticate), "", selfDestruct = false) { }
   }
 }
 
@@ -44,11 +44,11 @@ fun authenticateWithPasscode(
   selfDestruct: Boolean,
   completed: (LAResult) -> Unit
 ) {
-  val password = DatabaseUtils.ksAppPassword.get() ?: return completed(LAResult.Unavailable(generalGetString(MR.strings.la_no_app_password)))
+  val password = DatabaseUtils.ksAppPassword.get() ?: return completed(LAResult.Unavailable(generalGetString(R.string.la_no_app_password)))
   ModalManager.shared.showPasscodeCustomModal { close ->
     BackHandler {
       close()
-      completed(LAResult.Error(generalGetString(MR.strings.authentication_cancelled)))
+      completed(LAResult.Error(generalGetString(R.string.authentication_cancelled)))
     }
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
       LocalAuthView(ChatModel, LocalAuthRequest(promptTitle, promptSubtitle, password, selfDestruct && ChatController.appPrefs.selfDestruct.get()) {

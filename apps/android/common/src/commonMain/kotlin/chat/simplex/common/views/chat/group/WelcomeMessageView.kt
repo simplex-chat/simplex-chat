@@ -77,14 +77,14 @@ private fun GroupWelcomeLayout(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     val editMode = remember { mutableStateOf(true) }
-    AppBarTitle(stringResource(MR.strings.group_welcome_title))
+    AppBarTitle(stringResource(R.string.group_welcome_title))
     val wt = rememberSaveable { welcomeText }
     if (groupInfo.canEdit) {
       if (editMode.value) {
         val focusRequester = remember { FocusRequester() }
         TextEditor(
           wt,
-          Modifier.height(140.dp), stringResource(MR.strings.enter_welcome_message),
+          Modifier.height(140.dp), stringResource(R.string.enter_welcome_message),
           focusRequester = focusRequester
         )
         LaunchedEffect(Unit) {
@@ -136,7 +136,7 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
 private fun SaveButton(save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(MR.strings.save_and_update_group_profile), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.save_and_update_group_profile), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }
@@ -145,13 +145,13 @@ private fun SaveButton(save: () -> Unit, disabled: Boolean) {
 private fun ChangeModeButton(editMode: Boolean, click: () -> Unit, disabled: Boolean) {
   SectionItemView(click, disabled = disabled) {
     Icon(
-      painterResource(if (editMode) MR.images.ic_visibility else MR.images.ic_edit),
-      contentDescription = generalGetString(MR.strings.edit_verb),
+      painterResource(if (editMode) R.drawable.ic_visibility else R.drawable.ic_edit),
+      contentDescription = generalGetString(R.string.edit_verb),
       tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
     )
     TextIconSpaced()
     Text(
-      stringResource(if (editMode) MR.strings.group_welcome_preview else MR.strings.edit_verb),
+      stringResource(if (editMode) R.string.group_welcome_preview else R.string.edit_verb),
       color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
     )
   }
@@ -161,20 +161,20 @@ private fun ChangeModeButton(editMode: Boolean, click: () -> Unit, disabled: Boo
 private fun CopyTextButton(click: () -> Unit) {
   SectionItemView(click) {
     Icon(
-      painterResource(MR.images.ic_content_copy),
-      contentDescription = generalGetString(MR.strings.copy_verb),
+      painterResource(R.drawable.ic_content_copy),
+      contentDescription = generalGetString(R.string.copy_verb),
       tint = MaterialTheme.colors.primary,
     )
     TextIconSpaced()
-    Text(stringResource(MR.strings.copy_verb), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.copy_verb), color = MaterialTheme.colors.primary)
   }
 }
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
-    title = generalGetString(MR.strings.save_welcome_message_question),
-    confirmText = generalGetString(MR.strings.save_and_update_group_profile),
-    dismissText = generalGetString(MR.strings.exit_without_saving),
+    title = generalGetString(R.string.save_welcome_message_question),
+    confirmText = generalGetString(R.string.save_and_update_group_profile),
+    dismissText = generalGetString(R.string.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
   )

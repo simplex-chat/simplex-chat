@@ -74,7 +74,7 @@ private fun GroupPreferencesLayout(
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.group_preferences))
+    AppBarTitle(stringResource(R.string.group_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
     val onTTLUpdated = { ttl: Int? ->
       applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
@@ -146,10 +146,10 @@ private fun FeatureSection(
         DropdownCustomTimePickerSettingRow(
           selection = ttl,
           propagateExternalSelectionUpdate = true, // for Reset
-          label = generalGetString(MR.strings.delete_after),
+          label = generalGetString(R.string.delete_after),
           dropdownValues = TimedMessagesPreference.ttlValues,
-          customPickerTitle = generalGetString(MR.strings.delete_after),
-          customPickerConfirmButtonText = generalGetString(MR.strings.custom_time_picker_select),
+          customPickerTitle = generalGetString(R.string.delete_after),
+          customPickerConfirmButtonText = generalGetString(R.string.custom_time_picker_select),
           onSelected = onTTLUpdated
         )
       }
@@ -161,7 +161,7 @@ private fun FeatureSection(
         iconTint = iconTint,
       )
       if (timedOn) {
-        InfoRow(generalGetString(MR.strings.delete_after), timeText(preferences.timedMessages.ttl))
+        InfoRow(generalGetString(R.string.delete_after), timeText(preferences.timedMessages.ttl))
       }
     }
   }
@@ -172,19 +172,19 @@ private fun FeatureSection(
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(MR.strings.save_and_notify_group_members), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Text(stringResource(R.string.save_and_notify_group_members), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
-    title = generalGetString(MR.strings.save_preferences_question),
-    confirmText = generalGetString(MR.strings.save_and_notify_group_members),
-    dismissText = generalGetString(MR.strings.exit_without_saving),
+    title = generalGetString(R.string.save_preferences_question),
+    confirmText = generalGetString(R.string.save_and_notify_group_members),
+    dismissText = generalGetString(R.string.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
   )
