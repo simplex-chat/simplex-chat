@@ -400,16 +400,19 @@
 **Veuillez noter** : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort" xml:space="preserve">
+      <trans-unit id="Abort" xml:space="preserve" approved="no">
         <source>Abort</source>
+        <target state="translated">Annuler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address" xml:space="preserve">
+      <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
         <source>Abort changing address</source>
+        <target state="translated">Annuler le changement d'adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address?" xml:space="preserve">
+      <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
         <source>Abort changing address?</source>
+        <target state="translated">Abandonner le changement d'adresse ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -493,8 +496,9 @@
         <target>Adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
+      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve" approved="no">
         <source>Address change will be aborted. Old receiving address will be used.</source>
+        <target state="translated">Le changement d'adresse sera annulé. L'ancienne adresse de réception sera utilisée.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -1796,8 +1800,9 @@
         <target>Erreur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error aborting address change" xml:space="preserve">
+      <trans-unit id="Error aborting address change" xml:space="preserve" approved="no">
         <source>Error aborting address change</source>
+        <target state="translated">Erreur lors de l'annulation du changement d'adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
@@ -2060,8 +2065,9 @@
         <target>Rapide et ne nécessitant pas d'attendre que l'expéditeur soit en ligne !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Favorite" xml:space="preserve">
+      <trans-unit id="Favorite" xml:space="preserve" approved="no">
         <source>Favorite</source>
+        <target state="translated">Favoris</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
@@ -3421,8 +3427,9 @@
         <target>Message reçu</target>
         <note>message info title</note>
       </trans-unit>
-      <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
+      <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve" approved="no">
         <source>Receiving address will be changed to a different server. Address change will complete after sender comes online.</source>
+        <target state="translated">L'adresse de réception sera changée pour un autre serveur. Le changement d'adresse sera terminé lorsque l'expéditeur sera en ligne.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -4439,8 +4446,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>État de la migration inattendu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unfav." xml:space="preserve">
+      <trans-unit id="Unfav." xml:space="preserve" approved="no">
         <source>Unfav.</source>
+        <target state="translated">Unfav.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
