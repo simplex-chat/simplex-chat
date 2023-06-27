@@ -201,21 +201,34 @@ struct ChatListView: View {
         return s == "" && !showUnreadAndFavorites
             ? chatModel.chats
             : chatModel.chats.filter { chat in
-                let contains = s == ""
-                                ? ((chat.chatInfo.chatSettings?.favorite ?? false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat)
-                                : chat.chatInfo.chatViewName.localizedLowercase.contains(s)
-                switch chat.chatInfo {
+                let cInfo = chat.chatInfo
+                switch cInfo {
                 case let .direct(contact):
-                    return contains ||
-                            (s != "" &&
-                             (contact.profile.displayName.localizedLowercase.contains(s) ||
-                              contact.fullName.localizedLowercase.contains(s)))
-                case let .group(gInfo): return contains || (s == "" && gInfo.membership.memberStatus == .memInvited)
-                case .contactRequest: return contains || s == ""
-                case .contactConnection: return contains
-                case .invalidJSON: return false
+                    return s == ""
+                            ? filtered(chat)
+                            : (viewNameContains(cInfo, s) ||
+                               contact.profile.displayName.localizedLowercase.contains(s) ||
+                               contact.fullName.localizedLowercase.contains(s))
+                case let .group(gInfo):
+                    return s == ""
+                            ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
+                            : viewNameContains(cInfo, s)
+                case .contactRequest:
+                    return s == "" || viewNameContains(cInfo, s)
+                case let .contactConnection(conn):
+                    return s != "" && conn.localAlias.localizedLowercase.contains(s)
+                case .invalidJSON:
+                    return false
                 }
             }
+
+        func filtered(_ chat: Chat) -> Bool {
+            (chat.chatInfo.chatSettings?.favorite ?? false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+        }
+
+        func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
+            cInfo.chatViewName.localizedLowercase.contains(s)
+        }
     }
 }
 
