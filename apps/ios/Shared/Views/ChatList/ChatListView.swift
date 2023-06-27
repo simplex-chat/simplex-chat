@@ -117,18 +117,24 @@ struct ChatListView: View {
         }
     }
 
-    private var chatList: some View {
-        List {
-            ForEach(filteredChats(), id: \.viewId) { chat in
-                ChatListNavLink(chat: chat)
-                    .padding(.trailing, -16)
-                    .disabled(chatModel.chatRunning != true)
+    @ViewBuilder private var chatList: some View {
+        let cs = filteredChats()
+        ZStack {
+            List {
+                ForEach(cs, id: \.viewId) { chat in
+                    ChatListNavLink(chat: chat)
+                        .padding(.trailing, -16)
+                        .disabled(chatModel.chatRunning != true)
+                }
             }
-        }
-        .onChange(of: chatModel.chatId) { _ in
-            if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
-                chatModel.chatToTop = nil
-                chatModel.popChat(chatId)
+            .onChange(of: chatModel.chatId) { _ in
+                if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
+                    chatModel.chatToTop = nil
+                    chatModel.popChat(chatId)
+                }
+            }
+            if cs.isEmpty && !chatModel.chats.isEmpty {
+                Text("No filtered chats").foregroundColor(.secondary)
             }
         }
     }
@@ -200,11 +206,14 @@ struct ChatListView: View {
                                 : chat.chatInfo.chatViewName.localizedLowercase.contains(s)
                 switch chat.chatInfo {
                 case let .direct(contact):
-                    return contains
-                    || contact.profile.displayName.localizedLowercase.contains(s)
-                    || contact.fullName.localizedLowercase.contains(s)
-                case .contactConnection: return false
-                default: return contains
+                    return contains ||
+                            (s != "" &&
+                             (contact.profile.displayName.localizedLowercase.contains(s) ||
+                              contact.fullName.localizedLowercase.contains(s)))
+                case let .group(gInfo): return contains || (s == "" && gInfo.membership.memberStatus == .memInvited)
+                case .contactRequest: return contains || s == ""
+                case .contactConnection: return contains
+                case .invalidJSON: return false
                 }
             }
     }
