@@ -312,7 +312,7 @@
     <string name="maximum_supported_file_size">La taille maximale supportés des fichiers actuellement est de <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
     <string name="voice_message_with_duration">Message vocal (<xliff:g id="duration">%1$s</xliff:g>)</string>
     <string name="notifications">Notifications</string>
-    <string name="switch_receiving_address_desc">Cette fonctionnalité est expérimentale ! Elle ne fonctionnera que si l\'autre client a la version 4.2 installée. Vous devriez voir le message dans la conversation une fois le changement d\'adresse effectué. Vérifiez que vous pouvez toujours recevoir des messages de ce contact (ou membre du groupe).</string>
+    <string name="switch_receiving_address_desc">L\'adresse de réception sera changée pour un autre serveur. Le changement d\'adresse sera terminé lorsque l\'expéditeur sera en ligne.</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Vous serez connecté·e au groupe lorsque l\'appareil de l\'hôte sera en ligne, veuillez attendre ou vérifier plus tard !</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Si vous ne pouvez pas vous rencontrer en personne, <b>montrez le code QR lors d\'un appel vidéo</b>, ou partagez le lien.</string>
     <string name="scan_code_from_contacts_app">Scannez le code de sécurité depuis l\'application de votre contact.</string>
@@ -1267,4 +1267,9 @@
     <string name="settings_shutdown">Mise à l\'arrêt</string>
     <string name="settings_restart_app">Redémarrer</string>
     <string name="settings_section_title_app">APP</string>
+    <string name="abort_switch_receiving_address_confirm">Annuler</string>
+    <string name="error_aborting_address_change">Erreur lors de l\'annulation du changement d\'adresse</string>
+    <string name="abort_switch_receiving_address_question">Abandonner le changement d\'adresse \?</string>
+    <string name="abort_switch_receiving_address">Annuler le changement d\'adresse</string>
+    <string name="abort_switch_receiving_address_desc">Le changement d\'adresse sera annulé. L\'ancienne adresse de réception sera utilisée.</string>
 </resources>
