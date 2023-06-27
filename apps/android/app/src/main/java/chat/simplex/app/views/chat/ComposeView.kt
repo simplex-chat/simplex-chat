@@ -16,6 +16,7 @@ import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -713,11 +714,22 @@ fun ComposeView(
       modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
-      IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
+      val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on
+      val attachmentClicked = if (isGroupAndProhibitedFiles) {
+        {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(R.string.files_and_media_prohibited),
+            text = generalGetString(R.string.only_owners_can_enable_files_and_media)
+          )
+        }
+      } else {
+        showChooseAttachment
+      }
+      IconButton(attachmentClicked, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
         Icon(
           painterResource(R.drawable.ic_attach_file_filled_500),
           contentDescription = stringResource(R.string.attach),
-          tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+          tint = if (!composeState.value.attachmentDisabled && userCanSend.value && !isGroupAndProhibitedFiles) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           modifier = Modifier
             .size(28.dp)
             .clip(CircleShape)
