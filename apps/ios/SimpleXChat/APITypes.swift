@@ -1090,9 +1090,9 @@ public struct KeepAliveOpts: Codable, Equatable {
 
 public struct ChatSettings: Codable {
     public var enableNtfs: Bool
-    public var favorite: Bool? = false
+    public var favorite: Bool
 
-    public init(enableNtfs: Bool, favorite: Bool?) {
+    public init(enableNtfs: Bool, favorite: Bool) {
         self.enableNtfs = enableNtfs
         self.favorite = favorite
     }

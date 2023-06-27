@@ -2522,7 +2522,7 @@ data class KeepAliveOpts(
 @Serializable
 data class ChatSettings(
   val enableNtfs: Boolean,
-  val favorite: Boolean? = false
+  val favorite: Boolean
 ) {
   companion object {
     val defaults: ChatSettings = ChatSettings(enableNtfs = true, favorite = false)
