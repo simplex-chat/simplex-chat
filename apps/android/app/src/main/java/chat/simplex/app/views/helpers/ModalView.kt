@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import android.R
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -8,8 +9,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.capitalize
+import androidx.compose.ui.text.intl.Locale
 import chat.simplex.app.TAG
 import chat.simplex.app.ui.theme.isInDarkTheme
 import chat.simplex.app.ui.theme.themedBackground
@@ -48,6 +54,36 @@ class ModalManager {
   fun showModalCloseable(settings: Boolean = false, content: @Composable (close: () -> Unit) -> Unit) {
     showCustomModal { close ->
       ModalView(close, content = { content(close) })
+    }
+  }
+
+  fun showModalCloseableWithSearch(content: @Composable (search: MutableState<String?>, close: () -> Unit) -> Unit) {
+    showCustomModal { close ->
+      val search = rememberSaveable { mutableStateOf(null as String?) }
+      ModalView(
+        close = {
+          if (search.value == null) {
+            close()
+          } else {
+            search.value = null
+          }
+        },
+        endButtons = {
+          if (search.value != null) {
+            SearchTextField(Modifier.fillMaxWidth(), stringResource(R.string.search_go), alwaysVisible = false) {
+              if (search.value != null) search.value = it
+            }
+            BackHandler {
+              search.value = null
+            }
+          } else {
+            IconButton({ search.value = "" }) {
+              Icon(painterResource(chat.simplex.app.R.drawable.ic_search_500), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+            }
+          }
+        },
+        content = { content(search, close) }
+      )
     }
   }
 

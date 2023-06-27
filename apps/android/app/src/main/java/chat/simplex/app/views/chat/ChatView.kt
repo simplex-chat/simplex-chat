@@ -154,8 +154,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             val link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
             var groupLink = link?.first
             var groupLinkMemberRole = link?.second
-            ModalManager.shared.showModalCloseable(true) { close ->
-              GroupChatInfoView(chatModel, groupLink, groupLinkMemberRole, {
+            ModalManager.shared.showModalCloseableWithSearch { search, close ->
+              GroupChatInfoView(chatModel, groupLink, groupLinkMemberRole, search, {
                 groupLink = it.first;
                 groupLinkMemberRole = it.second
               }, close)
@@ -289,8 +289,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         hideKeyboard(view)
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(true) { close ->
-              AddGroupMembersView(groupInfo, false, chatModel, close)
+          ModalManager.shared.showModalCloseableWithSearch { search, close ->
+              AddGroupMembersView(groupInfo, false, search, chatModel, close)
           }
         }
       },

@@ -34,7 +34,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, searchText: MutableState<String?>, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
@@ -44,15 +44,15 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
       chat,
       groupInfo,
       members = chatModel.groupMembers
-        .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
+        .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved && it.chatViewName.lowercase().contains(searchText.value?.trim() ?: "") }
         .sortedBy { it.displayName.lowercase() },
       developerTools,
       groupLink,
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(true) { close ->
-            AddGroupMembersView(groupInfo, false, chatModel, close)
+          ModalManager.shared.showModalCloseableWithSearch { search, close ->
+            AddGroupMembersView(groupInfo, false, search, chatModel, close)
           }
         }
       },

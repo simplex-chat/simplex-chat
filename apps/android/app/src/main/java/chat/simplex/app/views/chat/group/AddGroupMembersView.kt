@@ -30,7 +30,7 @@ import chat.simplex.app.views.newchat.InfoAboutIncognito
 import chat.simplex.app.views.usersettings.SettingsActionItem
 
 @Composable
-fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
+fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, searchText: MutableState<String?>, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
   val selectedRole = remember { mutableStateOf(GroupMemberRole.Member) }
   var allowModifyMembers by remember { mutableStateOf(true) }
@@ -39,7 +39,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
     chatModel.incognito.value,
     groupInfo = groupInfo,
     creatingGroup = creatingGroup,
-    contactsToAdd = getContactsToAdd(chatModel),
+    contactsToAdd = getContactsToAdd(chatModel, searchText.value ?: ""),
     selectedContacts = selectedContacts,
     selectedRole = selectedRole,
     allowModifyMembers = allowModifyMembers,
@@ -67,9 +67,13 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
     removeContact = { contactId -> selectedContacts.removeIf { it == contactId } },
     close = close,
   )
+  LaunchedEffect(selectedContacts.size) {
+    searchText.value = null
+  }
 }
 
-fun getContactsToAdd(chatModel: ChatModel): List<Contact> {
+fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
+  val s = search.trim().lowercase()
   val memberContactIds = chatModel.groupMembers
     .filter { it.memberCurrent }
     .mapNotNull { it.memberContactId }
@@ -78,7 +82,7 @@ fun getContactsToAdd(chatModel: ChatModel): List<Contact> {
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
     .map { it.contact }
-    .filter { it.contactId !in memberContactIds }
+    .filter { it.contactId !in memberContactIds && it.chatViewName.lowercase().contains(s) }
     .sortedBy { it.displayName.lowercase() }
     .toList()
 }
