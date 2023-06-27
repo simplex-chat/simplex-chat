@@ -1,2 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="color_primary">রং</string>
+    <string name="chat_item_ttl_day">১ দিন</string>
+    <string name="send_disappearing_message_1_minute">১ মিনিট</string>
+    <string name="one_time_link_short">এককালীন লিংক</string>
+    <string name="send_disappearing_message_30_seconds">৩০ সেকেন্ড</string>
+    <string name="about_simplex">SimpleX সম্পর্কে</string>
+    <string name="learn_more_about_address">SimpleX ঠিকানা সম্পর্কে</string>
+    <string name="abort_switch_receiving_address_confirm">থামুন</string>
+    <string name="abort_switch_receiving_address_question">ঠিকানা পরিবর্তন প্রক্রিয়া থামাতে চান\?</string>
+    <string name="send_disappearing_message_5_minutes">৫ মিনিট</string>
+    <string name="above_then_preposition_continuation">উপরে, তারপর</string>
+    <string name="accept">গ্রহণ করুন</string>
+    <string name="accept_call_on_lock_screen">গ্রহণ করুন</string>
+    <string name="abort_switch_receiving_address">ঠিকানা পরিবর্তন থামান</string>
+    <string name="accept_feature">গ্রহণ করুন</string>
+    <string name="chat_item_ttl_month">১ মাস</string>
+    <string name="chat_item_ttl_week">১ সপ্তাহ</string>
+    <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="accept_contact_button">গ্রহণ করুন</string>
+    <string name="accept_connection_request__question">সংযোগের অনুরোধটি গ্রহণ করবেন কি\?</string>
+    <string name="callstatus_accepted">কলটি গৃহীত হয়েছে</string>
+</resources>
