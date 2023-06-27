@@ -2937,7 +2937,8 @@ enum class GroupFeature: Feature {
   @SerialName("directMessages") DirectMessages,
   @SerialName("fullDelete") FullDelete,
   @SerialName("reactions") Reactions,
-  @SerialName("voice") Voice;
+  @SerialName("voice") Voice,
+  @SerialName("files") Files;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
@@ -2951,6 +2952,7 @@ enum class GroupFeature: Feature {
       FullDelete -> generalGetString(R.string.full_deletion)
       Reactions -> generalGetString(R.string.message_reactions)
       Voice -> generalGetString(R.string.voice_messages)
+      Files -> generalGetString(R.string.files_and_media)
     }
 
   val icon: Painter
@@ -2960,6 +2962,7 @@ enum class GroupFeature: Feature {
       FullDelete -> painterResource(R.drawable.ic_delete_forever)
       Reactions -> painterResource(R.drawable.ic_add_reaction)
       Voice -> painterResource(R.drawable.ic_keyboard_voice)
+      Files -> painterResource(R.drawable.ic_draft)
     }
 
   @Composable
@@ -2969,6 +2972,7 @@ enum class GroupFeature: Feature {
     FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
     Reactions -> painterResource(R.drawable.ic_add_reaction_filled)
     Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
+    Files -> painterResource(R.drawable.ic_draft_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
@@ -2994,6 +2998,10 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_voice)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_voice)
         }
+        Files -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_files)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_files)
+        }
       }
     } else {
       when(this) {
@@ -3016,6 +3024,10 @@ enum class GroupFeature: Feature {
         Voice -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_voice)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.voice_messages_are_prohibited)
+        }
+        Files -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_files)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.files_are_prohibited_in_group)
         }
       }
     }
@@ -3129,7 +3141,8 @@ data class FullGroupPreferences(
   val directMessages: GroupPreference,
   val fullDelete: GroupPreference,
   val reactions: GroupPreference,
-  val voice: GroupPreference
+  val voice: GroupPreference,
+  val files: GroupPreference,
 ) {
   fun toGroupPreferences(): GroupPreferences =
     GroupPreferences(
@@ -3137,7 +3150,8 @@ data class FullGroupPreferences(
       directMessages = directMessages,
       fullDelete = fullDelete,
       reactions = reactions,
-      voice = voice
+      voice = voice,
+      files = files,
     )
 
   companion object {
@@ -3146,7 +3160,8 @@ data class FullGroupPreferences(
       directMessages = GroupPreference(GroupFeatureEnabled.OFF),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
       reactions = GroupPreference(GroupFeatureEnabled.ON),
-      voice = GroupPreference(GroupFeatureEnabled.ON)
+      voice = GroupPreference(GroupFeatureEnabled.ON),
+      files = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }
@@ -3157,7 +3172,8 @@ data class GroupPreferences(
   val directMessages: GroupPreference?,
   val fullDelete: GroupPreference?,
   val reactions: GroupPreference?,
-  val voice: GroupPreference?
+  val voice: GroupPreference?,
+  val files: GroupPreference?,
 ) {
   companion object {
     val sampleData = GroupPreferences(
@@ -3165,7 +3181,8 @@ data class GroupPreferences(
       directMessages = GroupPreference(GroupFeatureEnabled.OFF),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
       reactions = GroupPreference(GroupFeatureEnabled.ON),
-      voice = GroupPreference(GroupFeatureEnabled.ON)
+      voice = GroupPreference(GroupFeatureEnabled.ON),
+      files = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }
