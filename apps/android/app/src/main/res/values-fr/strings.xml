@@ -118,7 +118,6 @@
     <string name="allow_verb">Autoriser</string>
     <string name="delete_message__question">Supprimer le message \?</string>
     <string name="for_me_only">Supprimer pour moi</string>
-    <string name="your_chats">Vos chats</string>
     <string name="notification_preview_mode_message">Texte du message</string>
     <string name="notification_preview_mode_hidden">Caché</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Pour protéger vos informations, activez la fonction SimpleX Lock.

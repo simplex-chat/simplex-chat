@@ -172,7 +172,6 @@
     <string name="personal_welcome">Здравствуйте <xliff:g>%1$s</xliff:g>!</string>
     <string name="welcome">Здравствуйте!</string>
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
-    <string name="your_chats">Ваши чаты</string>
     <string name="contact_connection_pending">соединяется…</string>
     <string name="group_preview_you_are_invited">Вы приглашены в группу</string>
     <string name="group_preview_join_as">вступить как %s</string>

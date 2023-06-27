@@ -245,6 +245,21 @@ fun ChatPreviewView(
               .size(17.dp)
           )
         }
+      } else if (chat.chatInfo.chatSettings?.favorite == true) {
+        Box(
+          Modifier.padding(top = 24.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            painterResource(R.drawable.ic_star_filled),
+            contentDescription = generalGetString(R.string.favorite_chat),
+            tint = MaterialTheme.colors.secondary,
+            modifier = Modifier
+              .padding(horizontal = 3.dp)
+              .padding(vertical = 1.dp)
+              .size(17.dp)
+          )
+        }
       }
       if (cInfo is ChatInfo.Direct) {
         Box(

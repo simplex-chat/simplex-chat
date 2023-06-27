@@ -951,7 +951,6 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Budete připojeni, jakmile bude zařízení vašeho kontaktu online, vyčkejte prosím nebo se podívejte později!</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Váš chat profil bude odeslán
 \nvašemu kontaktu</string>
-    <string name="your_chats">Vaše konverzace</string>
     <string name="paste_connection_link_below_to_connect">Do níže uvedeného pole vložte odkaz, který jste obdrželi pro spojení s kontaktem.</string>
     <string name="share_invitation_link">Sdílet jednorázovou pozvánku</string>
     <string name="status_e2e_encrypted">koncově šifrované</string>

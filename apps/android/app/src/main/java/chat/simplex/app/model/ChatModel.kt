@@ -695,6 +695,13 @@ sealed class ChatInfo: SomeChat, NamedChat {
       private val invalidChatName = generalGetString(R.string.invalid_chat)
     }
   }
+
+  val chatSettings
+    get() = when(this) {
+      is Direct -> contact.chatSettings
+      is Group -> groupInfo.chatSettings
+      else -> null
+    }
 }
 
 @Serializable

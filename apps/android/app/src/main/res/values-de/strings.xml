@@ -170,7 +170,6 @@
     <string name="personal_welcome">Willkommen <xliff:g>%1$s</xliff:g>!</string>
     <string name="welcome">Willkommen!</string>
     <string name="this_text_is_available_in_settings">Dieser Text ist in den Einstellungen verfügbar.</string>
-    <string name="your_chats">Meine Chats</string>
     <string name="contact_connection_pending">verbinde …</string>
     <string name="group_preview_you_are_invited">Sie sind zu der Gruppe eingeladen</string>
     <string name="group_preview_join_as">Beitreten als %s</string>

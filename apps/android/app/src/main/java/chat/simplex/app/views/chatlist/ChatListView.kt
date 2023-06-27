@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.*
@@ -222,11 +223,6 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
     },
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-          stringResource(R.string.your_chats),
-          color = MaterialTheme.colors.onBackground,
-          fontWeight = FontWeight.SemiBold,
-        )
         if (chatModel.incognito.value) {
           Icon(
             painterResource(R.drawable.ic_theater_comedy_filled),
@@ -234,6 +230,14 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)
           )
+        }
+        Text(
+          stringResource(R.string.settings_section_title_chats).lowercase().capitalize(Locale.current),
+          color = MaterialTheme.colors.onBackground,
+          fontWeight = FontWeight.SemiBold,
+        )
+        if (chatModel.chats.size > 0) {
+          ToggleFilterButton()
         }
       }
     },
@@ -276,6 +280,19 @@ private fun BoxScope.unreadBadge(text: String? = "") {
 }
 
 @Composable
+private fun ToggleFilterButton() {
+  val pref = remember { SimplexApp.context.chatModel.controller.appPrefs.showUnreadAndFavorites }
+  IconButton(onClick = { pref.set(!pref.get()) }) {
+    Icon(
+      painterResource(if (pref.state.value) R.drawable.ic_filter_alt_filled else R.drawable.ic_filter_alt),
+      null,
+      tint = MaterialTheme.colors.primary,
+      modifier = Modifier.padding(10.dp).size(26.dp)
+    )
+  }
+}
+
+@Composable
 private fun ProgressIndicator() {
   CircularProgressIndicator(
     Modifier
@@ -290,14 +307,12 @@ private var lazyListState = 0 to 0
 
 @Composable
 private fun ChatList(chatModel: ChatModel, search: String) {
-  val filter: (Chat) -> Boolean = { chat: Chat ->
-    chat.chatInfo.chatViewName.lowercase().contains(search.lowercase())
-  }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val chats by remember(search) { derivedStateOf { if (search.isEmpty()) chatModel.chats else chatModel.chats.filter(filter) } }
+  val showUnreadAndFavorites = remember { chatModel.controller.appPrefs.showUnreadAndFavorites.state }.value
+  val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search) } }
   LazyColumn(
     modifier = Modifier.fillMaxWidth(),
     listState
@@ -306,4 +321,44 @@ private fun ChatList(chatModel: ChatModel, search: String) {
       ChatListNavLinkView(chat, chatModel)
     }
   }
+  if (chats.isEmpty() && !chatModel.chats.isEmpty()) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+      Text(generalGetString(R.string.no_filtered_chats), color = MaterialTheme.colors.secondary)
+    }
+  }
 }
+
+private fun filteredChats(showUnreadAndFavorites: Boolean, searchText: String): List<Chat> {
+  val chatModel = SimplexApp.context.chatModel
+  val s = searchText.trim().lowercase()
+  return if (s.isEmpty() && !showUnreadAndFavorites)
+    chatModel.chats
+  else {
+    chatModel.chats.filter { chat ->
+      when (val cInfo = chat.chatInfo) {
+        is ChatInfo.Direct -> if (s.isEmpty()) {
+          filtered(chat)
+        } else {
+          (viewNameContains(cInfo, s) ||
+              cInfo.contact.profile.displayName.lowercase().contains(s) ||
+              cInfo.contact.fullName.lowercase().contains(s))
+        }
+        is ChatInfo.Group -> if (s.isEmpty()) {
+          (filtered(chat) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited)
+        } else {
+          viewNameContains(cInfo, s)
+        }
+        is ChatInfo.ContactRequest -> s.isEmpty() || viewNameContains(cInfo, s)
+        is ChatInfo.ContactConnection -> s.isNotEmpty() && cInfo.contactConnection.localAlias.lowercase().contains(s)
+        is ChatInfo.InvalidJSON -> false
+      }
+    }
+  }
+}
+
+private fun filtered(chat: Chat): Boolean =
+  (chat.chatInfo.chatSettings?.favorite ?: false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+
+private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
+  cInfo.chatViewName.lowercase().contains(s.lowercase())
+
