@@ -27,6 +27,8 @@ struct GroupPreferencesView: View {
                 featureSection(.directMessages, $preferences.directMessages.enable)
                 featureSection(.reactions, $preferences.reactions.enable)
                 featureSection(.voice, $preferences.voice.enable)
+//                TODO uncomment in 5.3
+//                featureSection(.files, $preferences.files.enable)
 
                 if groupInfo.canEdit {
                     Section {

@@ -667,10 +667,11 @@ public enum ChatFeature: String, Decodable, Feature {
 
 public enum GroupFeature: String, Decodable, Feature {
     case timedMessages
+    case directMessages
     case fullDelete
     case reactions
     case voice
-    case directMessages
+    case files
 
     public var id: Self { self }
 
@@ -688,6 +689,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
         case .reactions: return NSLocalizedString("Message reactions", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
+        case .files: return NSLocalizedString("Files and media", comment: "chat feature")
         }
     }
 
@@ -698,6 +700,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .fullDelete: return "trash.slash"
         case .reactions: return "face.smiling"
         case .voice: return "mic"
+        case .files: return "doc"
         }
     }
 
@@ -708,6 +711,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .fullDelete: return "trash.slash.fill"
         case .reactions: return "face.smiling.fill"
         case .voice: return "mic.fill"
+        case .files: return "doc.fill"
         }
     }
 
@@ -746,6 +750,11 @@ public enum GroupFeature: String, Decodable, Feature {
                 case .on: return "Allow to send voice messages."
                 case .off: return "Prohibit sending voice messages."
                 }
+            case .files:
+                switch enabled {
+                case .on: return "Allow to send files and media."
+                case .off: return "Prohibit sending files and media."
+                }
             }
         } else {
             switch self {
@@ -773,6 +782,11 @@ public enum GroupFeature: String, Decodable, Feature {
                 switch enabled {
                 case .on: return "Group members can send voice messages."
                 case .off: return "Voice messages are prohibited in this group."
+                }
+            case .files:
+                switch enabled {
+                case .on: return "Group members can send files and media."
+                case .off: return "Files and media are prohibited in this group."
                 }
             }
         }
@@ -912,19 +926,22 @@ public struct FullGroupPreferences: Decodable, Equatable {
     public var fullDelete: GroupPreference
     public var reactions: GroupPreference
     public var voice: GroupPreference
+    public var files: GroupPreference
 
     public init(
         timedMessages: TimedMessagesGroupPreference,
         directMessages: GroupPreference,
         fullDelete: GroupPreference,
         reactions: GroupPreference,
-        voice: GroupPreference
+        voice: GroupPreference,
+        files: GroupPreference
     ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
         self.reactions = reactions
         self.voice = voice
+        self.files = files
     }
 
     public static let sampleData = FullGroupPreferences(
@@ -932,7 +949,8 @@ public struct FullGroupPreferences: Decodable, Equatable {
         directMessages: GroupPreference(enable: .off),
         fullDelete: GroupPreference(enable: .off),
         reactions: GroupPreference(enable: .on),
-        voice: GroupPreference(enable: .on)
+        voice: GroupPreference(enable: .on),
+        files: GroupPreference(enable: .on)
     )
 }
 
@@ -942,19 +960,22 @@ public struct GroupPreferences: Codable {
     public var fullDelete: GroupPreference?
     public var reactions: GroupPreference?
     public var voice: GroupPreference?
+    public var files: GroupPreference?
 
     public init(
         timedMessages: TimedMessagesGroupPreference?,
         directMessages: GroupPreference?,
         fullDelete: GroupPreference?,
         reactions: GroupPreference?,
-        voice: GroupPreference?
+        voice: GroupPreference?,
+        files: GroupPreference?
     ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
         self.reactions = reactions
         self.voice = voice
+        self.files = files
     }
 
     public static let sampleData = GroupPreferences(
@@ -962,7 +983,8 @@ public struct GroupPreferences: Codable {
         directMessages: GroupPreference(enable: .off),
         fullDelete: GroupPreference(enable: .off),
         reactions: GroupPreference(enable: .on),
-        voice: GroupPreference(enable: .on)
+        voice: GroupPreference(enable: .on),
+        files: GroupPreference(enable: .on)
     )
 }
 
@@ -972,7 +994,8 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         directMessages: fullPreferences.directMessages,
         fullDelete: fullPreferences.fullDelete,
         reactions: fullPreferences.reactions,
-        voice: fullPreferences.voice
+        voice: fullPreferences.voice,
+        files: fullPreferences.files
     )
 }
 
