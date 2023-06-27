@@ -284,10 +284,10 @@ private fun ToggleFilterButton() {
   val pref = remember { SimplexApp.context.chatModel.controller.appPrefs.showUnreadAndFavorites }
   IconButton(onClick = { pref.set(!pref.get()) }) {
     Icon(
-      painterResource(if (pref.state.value) R.drawable.ic_filter_alt_filled else R.drawable.ic_filter_alt),
+      painterResource(R.drawable.ic_filter_list),
       null,
-      tint = MaterialTheme.colors.primary,
-      modifier = Modifier.padding(10.dp).size(26.dp)
+      tint = if (pref.state.value) MaterialTheme.colors.primary else MaterialTheme.colors.background,
+      modifier = Modifier.padding(7.dp).background(if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.primary, RoundedCornerShape(50)).padding(3.dp).size(26.dp)
     )
   }
 }

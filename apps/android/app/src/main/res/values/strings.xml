@@ -423,7 +423,7 @@
   <string name="mute_chat">Mute</string>
   <string name="unmute_chat">Unmute</string>
   <string name="favorite_chat">Favorite</string>
-  <string name="unfav_chat">Unfav.</string>
+  <string name="unfavorite_chat">Unfavorite</string>
 
 
   <!-- Pending contact connection alert dialogues -->

@@ -215,7 +215,7 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
 @Composable
 fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolean, showMenu: MutableState<Boolean>) {
   ItemAction(
-    if (favorite) stringResource(R.string.unfav_chat) else stringResource(R.string.favorite_chat),
+    if (favorite) stringResource(R.string.unfavorite_chat) else stringResource(R.string.favorite_chat),
     if (favorite) painterResource(R.drawable.ic_star_filled) else painterResource(R.drawable.ic_star),
     color = SimplexGreen,
     onClick = {
