@@ -286,8 +286,8 @@ private fun ToggleFilterButton() {
     Icon(
       painterResource(R.drawable.ic_filter_list),
       null,
-      tint = if (pref.state.value) MaterialTheme.colors.primary else MaterialTheme.colors.background,
-      modifier = Modifier.padding(7.dp).background(if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.primary, RoundedCornerShape(50)).padding(3.dp).size(26.dp)
+      tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.primary,
+      modifier = Modifier.padding(7.dp).background(if (pref.state.value) MaterialTheme.colors.primary else MaterialTheme.colors.background, RoundedCornerShape(50)).padding(3.dp).size(26.dp)
     )
   }
 }
