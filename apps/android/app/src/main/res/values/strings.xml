@@ -253,7 +253,7 @@
   <string name="personal_welcome">Welcome <xliff:g>%1$s</xliff:g>!</string>
   <string name="welcome">Welcome!</string>
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
-  <string name="your_chats">Your chats</string>
+  <string name="your_chats">Chats</string>
   <string name="contact_connection_pending">connecting…</string>
   <string name="group_preview_you_are_invited">you are invited to group</string>
   <string name="group_preview_join_as">join as %s</string>
@@ -261,6 +261,7 @@
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
+  <string name="no_filtered_chats">No filtered chats</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
@@ -281,6 +282,8 @@
   <string name="you_are_observer">you are observer</string>
   <string name="observer_cant_send_message_title">You can\'t send messages!</string>
   <string name="observer_cant_send_message_desc">Please contact group admin.</string>
+  <string name="files_and_media_prohibited">Files and media prohibited!</string>
+  <string name="only_owners_can_enable_files_and_media">Only group owners can enable files and media.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -422,6 +425,9 @@
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Mute</string>
   <string name="unmute_chat">Unmute</string>
+  <string name="favorite_chat">Favorite</string>
+  <string name="unfavorite_chat">Unfavorite</string>
+
 
   <!-- Pending contact connection alert dialogues -->
   <string name="you_invited_your_contact">You invited your contact</string>
@@ -1290,6 +1296,7 @@
   <string name="full_deletion">Delete for everyone</string>
   <string name="message_reactions">Message reactions</string>
   <string name="voice_messages">Voice messages</string>
+  <string name="files_and_media">Files and media</string>
   <string name="audio_video_calls">Audio/video calls</string>
   <string name="available_in_v51">\nAvailable in v5.1</string>
   <string name="feature_enabled">enabled</string>
@@ -1344,6 +1351,8 @@
   <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
   <string name="allow_message_reactions">Allow message reactions.</string>
   <string name="prohibit_message_reactions_group">Prohibit messages reactions.</string>
+  <string name="allow_to_send_files">Allow to send files and media.</string>
+  <string name="prohibit_sending_files">Prohibit sending files and media.</string>
   <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
   <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
   <string name="group_members_can_send_dms">Group members can send direct messages.</string>
@@ -1354,6 +1363,8 @@
   <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
   <string name="group_members_can_add_message_reactions">Group members can add message reactions.</string>
   <string name="message_reactions_are_prohibited">Message reactions are prohibited in this group.</string>
+  <string name="group_members_can_send_files">Group members can send files and media.</string>
+  <string name="files_are_prohibited_in_group">Files and media are prohibited in this group.</string>
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>

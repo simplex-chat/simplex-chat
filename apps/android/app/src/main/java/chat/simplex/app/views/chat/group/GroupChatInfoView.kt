@@ -13,12 +13,14 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -196,10 +198,17 @@ fun GroupChatInfoLayout(
         val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         AddMembersButton(tint, onAddMembersClick)
       }
+      val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
+      val filteredMembers = derivedStateOf { members.filter { it.chatViewName.lowercase().contains(searchText.value.text.trim()) } }
+      if (members.size > 8) {
+        SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
+          SearchRowView(searchText)
+        }
+      }
       SectionItemView(minHeight = 54.dp) {
         MemberRow(groupInfo.membership, user = true)
       }
-      MembersList(members, showMemberInfo)
+      MembersList(filteredMembers.value, showMemberInfo)
     }
     SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
     SectionView {
@@ -391,6 +400,19 @@ private fun DeleteGroupButton(onClick: () -> Unit) {
     iconColor = Color.Red,
     textColor = Color.Red
   )
+}
+
+@Composable
+private fun SearchRowView(
+  searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
+) {
+  Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) {
+    Icon(painterResource(R.drawable.ic_search), stringResource(android.R.string.search_go), tint = MaterialTheme.colors.secondary)
+  }
+  Spacer(Modifier.width(14.dp))
+  SearchTextField(Modifier.fillMaxWidth(), searchText = searchText, alwaysVisible = true) {
+    searchText.value = searchText.value.copy(it)
+  }
 }
 
 @Preview

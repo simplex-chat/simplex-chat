@@ -62,7 +62,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
           ModalView(
             { close() },
             endButtons = {
-              SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), alwaysVisible = true) { search.value = it }
+              SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = true) { search.value = it }
             },
             content = { modalView(chatModel, search) })
         }

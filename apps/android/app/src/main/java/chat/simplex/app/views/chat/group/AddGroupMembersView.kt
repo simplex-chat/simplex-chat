@@ -11,12 +11,16 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,15 +38,17 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
   val selectedContacts = remember { mutableStateListOf<Long>() }
   val selectedRole = remember { mutableStateOf(GroupMemberRole.Member) }
   var allowModifyMembers by remember { mutableStateOf(true) }
+  val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   BackHandler(onBack = close)
   AddGroupMembersLayout(
     chatModel.incognito.value,
     groupInfo = groupInfo,
     creatingGroup = creatingGroup,
-    contactsToAdd = getContactsToAdd(chatModel),
+    contactsToAdd = getContactsToAdd(chatModel, searchText.value.text),
     selectedContacts = selectedContacts,
     selectedRole = selectedRole,
     allowModifyMembers = allowModifyMembers,
+    searchText,
     openPreferences = {
       ModalManager.shared.showCustomModal { close ->
         GroupPreferencesView(chatModel, groupInfo.id, close)
@@ -69,7 +75,8 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
   )
 }
 
-fun getContactsToAdd(chatModel: ChatModel): List<Contact> {
+fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
+  val s = search.trim().lowercase()
   val memberContactIds = chatModel.groupMembers
     .filter { it.memberCurrent }
     .mapNotNull { it.memberContactId }
@@ -78,7 +85,7 @@ fun getContactsToAdd(chatModel: ChatModel): List<Contact> {
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
     .map { it.contact }
-    .filter { it.contactId !in memberContactIds }
+    .filter { it.contactId !in memberContactIds && it.chatViewName.lowercase().contains(s) }
     .sortedBy { it.displayName.lowercase() }
     .toList()
 }
@@ -92,6 +99,7 @@ fun AddGroupMembersLayout(
   selectedContacts: List<Long>,
   selectedRole: MutableState<GroupMemberRole>,
   allowModifyMembers: Boolean,
+  searchText: MutableState<TextFieldValue>,
   openPreferences: () -> Unit,
   inviteMembers: () -> Unit,
   clearSelection: () -> Unit,
@@ -125,7 +133,7 @@ fun AddGroupMembersLayout(
     }
     SectionSpacer()
 
-    if (contactsToAdd.isEmpty()) {
+    if (contactsToAdd.isEmpty() && searchText.value.text.isEmpty()) {
       Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
@@ -154,12 +162,33 @@ fun AddGroupMembersLayout(
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
       SectionDividerSpaced(maxTopPadding = true)
-
       SectionView(stringResource(R.string.select_contacts)) {
+        SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
+          SearchRowView(searchText, selectedContacts.size)
+        }
         ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, allowModifyMembers, addContact, removeContact)
       }
     }
     SectionBottomSpacer()
+  }
+}
+
+@Composable
+private fun SearchRowView(
+  searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) },
+  selectedContactsSize: Int
+) {
+  Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) {
+    Icon(painterResource(R.drawable.ic_search), stringResource(android.R.string.search_go), tint = MaterialTheme.colors.secondary)
+  }
+  Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+  SearchTextField(Modifier.fillMaxWidth(), searchText = searchText, alwaysVisible = true) {
+    searchText.value = searchText.value.copy(it)
+  }
+  val view = LocalView.current
+  LaunchedEffect(selectedContactsSize) {
+    searchText.value = searchText.value.copy("")
+    hideKeyboard(view)
   }
 }
 
@@ -325,6 +354,7 @@ fun PreviewAddGroupMembersLayout() {
       selectedContacts = remember { mutableStateListOf() },
       selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) },
       allowModifyMembers = true,
+      searchText = remember { mutableStateOf(TextFieldValue("")) },
       openPreferences = {},
       inviteMembers = {},
       clearSelection = {},
