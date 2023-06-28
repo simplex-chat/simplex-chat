@@ -392,4 +392,30 @@
     <string name="display_name__field">പ്രദർശന നാമം:</string>
     <string name="settings_section_title_experimenta">പരീക്ഷണാത്മകം</string>
     <string name="service_notifications_disabled">തൽക്ഷണ അറിയിപ്പുകൾ പ്രവർത്തനരഹിതമാക്കി!</string>
+    <string name="alert_text_fragment_please_report_to_developers">ദയവായി അത് വികസിപ്പിക്കുന്നവരെ അറിയിക്കുക.</string>
+    <string name="alert_title_group_invitation_expired">ക്ഷണം കാലഹരണപ്പെട്ടു!</string>
+    <string name="notification_preview_mode_message">സന്ദേശ വാചകം</string>
+    <string name="favorite_chat">പ്രിയപ്പെട്ടത്</string>
+    <string name="mark_read">വായിച്ചു എന്ന് അടയാളപ്പെടുത്തുക</string>
+    <string name="network_settings_title">ശൃംഖലയുടെ ക്രമീകരണങ്ങൾ</string>
+    <string name="network_status">ശൃംഖലയുടെ നില</string>
+    <string name="delete_message_cannot_be_undone_warning">സന്ദേശം ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
+    <string name="join_group_button">ചേരുക</string>
+    <string name="group_preview_join_as">%s ആയി ചേരുക</string>
+    <string name="images_limit_desc">ഒരേ സമയം 10 ചിത്രങ്ങൾ മാത്രമേ അയക്കാൻ കഴിയൂ</string>
+    <string name="icon_descr_more_button">കൂടുതൽ</string>
+    <string name="mark_code_verified">പരിശോധിച്ചു എന്ന് അടയാളപ്പെടുത്തുക</string>
+    <string name="self_destruct_new_display_name">പുതിയ പ്രദർശന നാമം:</string>
+    <string name="new_member_role">പുതിയ അംഗ കർത്തവ്യം</string>
+    <string name="group_member_role_owner">ഉടമ</string>
+    <string name="group_welcome_preview">പൂര്‍വ്വദര്‍ശനം</string>
+    <string name="only_you_can_add_message_reactions">നിങ്ങൾക്ക് മാത്രമേ സന്ദേശ പ്രതികരണങ്ങൾ ചേർക്കാൻ കഴിയൂ.</string>
+    <string name="v4_5_reduced_battery_usage_descr">കൂടുതൽ മെച്ചപ്പെടുത്തലുകൾ ഉടൻ വരുന്നു!</string>
+    <string name="custom_time_unit_minutes">നിമിഷങ്ങള്‍</string>
+    <string name="custom_time_unit_months">മാസങ്ങൾ</string>
+    <string name="rcv_group_event_member_added"><xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> ക്ഷണിച്ചു</string>
+    <string name="delete_message_mark_deleted_warning">സന്ദേശം ഇല്ലാതാക്കാൻ അടയാളപ്പെടുത്തും. സ്വീകർത്താവിന്(കൾക്ക്) ഈ സന്ദേശം വെളിപ്പെടുത്താൻ കഴിയും.</string>
+    <string name="marked_deleted_description">അടയാളപ്പെടുത്തിയത് ഇല്ലാതാക്കി</string>
+    <string name="mark_unread">വായിച്ചിട്ടില്ല എന്ന് അടയാളപ്പെടുത്തുക</string>
+    <string name="feature_offered_item">%s വാഗ്ദാനം ചെയ്തു</string>
 </resources>
