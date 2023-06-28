@@ -13,8 +13,8 @@ android {
         targetSdk 32
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
-        versionCode 127
-        versionName "5.1.3"
+        versionCode 129
+        versionName "5.2-beta.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
