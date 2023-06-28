@@ -1103,6 +1103,7 @@
     <string name="personal_welcome">ยินดีต้อนรับ <xliff:g>%1$s</xliff:g>!</string>
     <string name="group_preview_you_are_invited">คุณได้รับเชิญให้เข้าร่วมกลุ่ม</string>
     <string name="you_have_no_chats">คุณไม่มีการแชท</string>
+    <string name="your_chats">แชท</string>
     <string name="you_are_observer">คุณเป็นผู้สังเกตการณ์</string>
     <string name="image_decoding_exception_desc">ไม่สามารถถอดรหัสภาพได้ โปรดลองใช้ภาพอื่นหรือติดต่อผู้พัฒนาแอป</string>
     <string name="observer_cant_send_message_title">คุณไม่สามารถส่งข้อความได้!</string>

@@ -216,7 +216,7 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
 fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolean, showMenu: MutableState<Boolean>) {
   ItemAction(
     if (favorite) stringResource(R.string.unfavorite_chat) else stringResource(R.string.favorite_chat),
-    if (favorite) painterResource(R.drawable.ic_star_filled) else painterResource(R.drawable.ic_star),
+    if (favorite) painterResource(R.drawable.ic_star_off) else painterResource(R.drawable.ic_star),
     onClick = {
       toggleChatFavorite(chat, !favorite, chatModel)
       showMenu.value = false

@@ -347,6 +347,7 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Jūs nustosite gauti žinutes iš šios grupės. Pokalbio istorija bus išsaugota.</string>
     <string name="group_info_member_you">jūs: <xliff:g id="group_info_you">%1$s</xliff:g></string>
     <string name="personal_welcome">Sveiki, <xliff:g>%1$s</xliff:g>!</string>
+    <string name="your_chats">Pokalbiai</string>
     <string name="wrong_passphrase">Neteisinga duomenų bazės slaptafrazė</string>
     <string name="icon_descr_video_snd_complete">Vaizdo įrašas išsiųstas</string>
     <string name="voice_message">Balso žinutė</string>

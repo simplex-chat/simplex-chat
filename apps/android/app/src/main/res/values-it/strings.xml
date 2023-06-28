@@ -145,6 +145,7 @@
     <string name="personal_welcome">Benvenuto/a <xliff:g>%1$s</xliff:g>!</string>
     <string name="welcome">Benvenuto/a!</string>
     <string name="this_text_is_available_in_settings">Questo testo è disponibile nelle impostazioni</string>
+    <string name="your_chats">Сhat</string>
     <string name="group_preview_you_are_invited">sei stato invitato in un gruppo</string>
     <string name="group_preview_join_as">entra come %s</string>
     <string name="group_connection_pending">in connessione…</string>

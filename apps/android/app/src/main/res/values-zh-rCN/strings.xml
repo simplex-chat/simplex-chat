@@ -495,6 +495,7 @@
     <string name="notification_preview_mode_contact_desc">只显示联系人</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">为保护您的信息，请打开 SimpleX 锁定。
 \n在启用此功能之前，系统将提示您完成身份验证。</string>
+    <string name="your_chats">聊天</string>
     <string name="share_file">分享文件……</string>
     <string name="share_image">分享媒体……</string>
     <string name="share_message">分享消息……</string>

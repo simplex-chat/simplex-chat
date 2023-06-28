@@ -232,7 +232,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
           )
         }
         Text(
-          stringResource(R.string.settings_section_title_chats).lowercase().capitalize(Locale.current),
+          stringResource(R.string.your_chats),
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )

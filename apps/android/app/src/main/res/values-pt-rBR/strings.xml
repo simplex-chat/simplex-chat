@@ -573,6 +573,7 @@
     <string name="notifications_mode_off">Executa quando o aplicativo está aberto</string>
     <string name="icon_descr_sent_msg_status_sent">enviado</string>
     <string name="icon_descr_sent_msg_status_send_failed">o envio falhou</string>
+    <string name="your_chats">Chats</string>
     <string name="your_profile_will_be_sent">Seu perfil de chat será enviado para seu contato</string>
     <string name="paste_button">Colar</string>
     <string name="one_time_link">Link de convite de uso único</string>

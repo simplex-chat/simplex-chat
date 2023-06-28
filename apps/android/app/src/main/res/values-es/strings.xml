@@ -851,6 +851,7 @@
     <string name="smp_servers_use_server_for_new_conn">Usar para conexiones nuevas</string>
     <string name="theme_system">Sistema</string>
     <string name="description_via_one_time_link">mediante enlace de un solo uso</string>
+    <string name="your_chats">Chats</string>
     <string name="voice_message_send_text">Mensaje de voz…</string>
     <string name="icon_descr_video_off">Desactivar vídeo</string>
     <string name="icon_descr_video_on">Activar vídeo</string>

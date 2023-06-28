@@ -1083,6 +1083,7 @@
     <string name="v4_4_verify_connection_security">Tarkista yhteyden suojaus</string>
     <string name="moderate_message_will_be_marked_warning">Viesti merkitään moderoiduksi kaikille jäsenille.</string>
     <string name="video_will_be_received_when_contact_completes_uploading">Video vastaanotetaan, kun kontaktisi on ladannut sen.</string>
+    <string name="your_chats">Keskustelusi</string>
     <string name="network_enable_socks">Käytä SOCKS-välityspalvelinta\?</string>
     <string name="you_control_your_chat">Hallitset keskustelujasi!</string>
     <string name="your_current_profile">Nykyinen profiilisi</string>

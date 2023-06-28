@@ -253,6 +253,7 @@
   <string name="personal_welcome">Welcome <xliff:g>%1$s</xliff:g>!</string>
   <string name="welcome">Welcome!</string>
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
+  <string name="your_chats">Chats</string>
   <string name="contact_connection_pending">connecting…</string>
   <string name="group_preview_you_are_invited">you are invited to group</string>
   <string name="group_preview_join_as">join as %s</string>
