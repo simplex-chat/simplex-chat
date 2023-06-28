@@ -57,36 +57,6 @@ class ModalManager {
     }
   }
 
-  fun showModalCloseableWithSearch(content: @Composable (search: MutableState<String?>, close: () -> Unit) -> Unit) {
-    showCustomModal { close ->
-      val search = rememberSaveable { mutableStateOf(null as String?) }
-      ModalView(
-        close = {
-          if (search.value == null) {
-            close()
-          } else {
-            search.value = null
-          }
-        },
-        endButtons = {
-          if (search.value != null) {
-            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = false) {
-              if (search.value != null) search.value = it
-            }
-            BackHandler {
-              search.value = null
-            }
-          } else {
-            IconButton({ search.value = "" }) {
-              Icon(painterResource(chat.simplex.app.R.drawable.ic_search_500), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
-            }
-          }
-        },
-        content = { content(search, close) }
-      )
-    }
-  }
-
   fun showCustomModal(animated: Boolean = true, modal: @Composable (close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showCustomModal")
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
