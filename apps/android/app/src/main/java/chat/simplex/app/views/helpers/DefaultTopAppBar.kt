@@ -33,7 +33,7 @@ fun DefaultTopAppBar(
       if (!showSearch) {
         title?.invoke()
       } else {
-        SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), alwaysVisible = false, onSearchValueChanged)
+        SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = false, onValueChange = onSearchValueChanged)
       }
     },
     backgroundColor = if (isInDarkTheme()) ToolbarDark else ToolbarLight,

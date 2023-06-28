@@ -70,7 +70,7 @@ class ModalManager {
         },
         endButtons = {
           if (search.value != null) {
-            SearchTextField(Modifier.fillMaxWidth(), stringResource(R.string.search_go), alwaysVisible = false) {
+            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = false) {
               if (search.value != null) search.value = it
             }
             BackHandler {

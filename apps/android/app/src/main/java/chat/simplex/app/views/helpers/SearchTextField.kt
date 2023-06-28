@@ -29,8 +29,13 @@ import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun SearchTextField(modifier: Modifier, placeholder: String, alwaysVisible: Boolean, onValueChange: (String) -> Unit) {
-  var searchText by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+fun SearchTextField(
+  modifier: Modifier,
+  alwaysVisible: Boolean,
+  searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) },
+  placeholder: String = stringResource(android.R.string.search_go),
+  onValueChange: (String) -> Unit
+) {
   val focusRequester = remember { FocusRequester() }
   val focusManager = LocalFocusManager.current
   val keyboard = LocalSoftwareKeyboardController.current
@@ -45,7 +50,7 @@ fun SearchTextField(modifier: Modifier, placeholder: String, alwaysVisible: Bool
 
   DisposableEffect(Unit) {
     onDispose {
-      if (searchText.text.isNotEmpty()) onValueChange("")
+      if (searchText.value.text.isNotEmpty()) onValueChange("")
     }
   }
 
@@ -59,7 +64,7 @@ fun SearchTextField(modifier: Modifier, placeholder: String, alwaysVisible: Bool
   val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
   val interactionSource = remember { MutableInteractionSource() }
   BasicTextField(
-    value = searchText,
+    value = searchText.value,
     modifier = modifier
       .background(colors.backgroundColor(enabled).value, shape)
       .indicatorLine(enabled, false, interactionSource, colors)
@@ -69,7 +74,7 @@ fun SearchTextField(modifier: Modifier, placeholder: String, alwaysVisible: Bool
         minHeight = TextFieldDefaults.MinHeight
       ),
     onValueChange = {
-      searchText = it
+      searchText.value = it
       onValueChange(it.text)
     },
     cursorBrush = SolidColor(colors.cursorColor(false).value),
@@ -84,18 +89,18 @@ fun SearchTextField(modifier: Modifier, placeholder: String, alwaysVisible: Bool
     interactionSource = interactionSource,
     decorationBox = @Composable { innerTextField ->
       TextFieldDefaults.TextFieldDecorationBox(
-        value = searchText.text,
+        value = searchText.value.text,
         innerTextField = innerTextField,
         placeholder = {
           Text(placeholder)
         },
-        trailingIcon = if (searchText.text.isNotEmpty()) {{
+        trailingIcon = if (searchText.value.text.isNotEmpty()) {{
           IconButton({
             if (alwaysVisible) {
               keyboard?.hide()
               focusManager.clearFocus()
             }
-            searchText = TextFieldValue("");
+            searchText.value = TextFieldValue("");
             onValueChange("")
           }) {
             Icon(painterResource(R.drawable.ic_close), stringResource(R.string.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
