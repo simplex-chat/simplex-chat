@@ -253,7 +253,7 @@
   <string name="personal_welcome">Welcome <xliff:g>%1$s</xliff:g>!</string>
   <string name="welcome">Welcome!</string>
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
-  <string name="your_chats">Your chats</string>
+  <string name="your_chats">Chats</string>
   <string name="contact_connection_pending">connecting…</string>
   <string name="group_preview_you_are_invited">you are invited to group</string>
   <string name="group_preview_join_as">join as %s</string>
@@ -261,6 +261,7 @@
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
+  <string name="no_filtered_chats">No filtered chats</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
@@ -424,6 +425,9 @@
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Mute</string>
   <string name="unmute_chat">Unmute</string>
+  <string name="favorite_chat">Favorite</string>
+  <string name="unfavorite_chat">Unfavorite</string>
+
 
   <!-- Pending contact connection alert dialogues -->
   <string name="you_invited_your_contact">You invited your contact</string>

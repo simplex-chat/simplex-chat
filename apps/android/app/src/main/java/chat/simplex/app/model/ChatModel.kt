@@ -695,6 +695,13 @@ sealed class ChatInfo: SomeChat, NamedChat {
       private val invalidChatName = generalGetString(R.string.invalid_chat)
     }
   }
+
+  val chatSettings
+    get() = when(this) {
+      is Direct -> contact.chatSettings
+      is Group -> groupInfo.chatSettings
+      else -> null
+    }
 }
 
 @Serializable
@@ -783,7 +790,7 @@ data class Contact(
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
       contactUsed = true,
-      chatSettings = ChatSettings(true),
+      chatSettings = ChatSettings(true, false),
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
@@ -931,7 +938,7 @@ data class GroupInfo (
       fullGroupPreferences = FullGroupPreferences.sampleData,
       membership = GroupMember.sampleData,
       hostConnCustomUserProfileId = null,
-      chatSettings = ChatSettings(true),
+      chatSettings = ChatSettings(true, false),
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
