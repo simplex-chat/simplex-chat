@@ -704,7 +704,7 @@
     <string name="images_limit_title">画像数の上限を超えてます！</string>
     <string name="welcome">ようこそ！</string>
     <string name="group_preview_you_are_invited">グループ招待が届きました</string>
-    <string name="your_chats">あなたのチャット</string>
+    <string name="your_chats">チャット</string>
     <string name="text_field_set_contact_placeholder">連絡先を設定…</string>
     <string name="waiting_for_file">ファイル待ち</string>
     <string name="switch_receiving_address_question">受信アドレスを変えますか？</string>

@@ -156,7 +156,7 @@
     <string name="personal_welcome">Witaj <xliff:g>%1$s</xliff:g>!</string>
     <string name="group_preview_you_are_invited">jesteś zaproszony do grupy</string>
     <string name="you_have_no_chats">Nie masz czatów</string>
-    <string name="your_chats">Twoje czaty</string>
+    <string name="your_chats">Czaty</string>
     <string name="icon_descr_asked_to_receive">Poproszony o odbiór obrazu</string>
     <string name="icon_descr_video_asked_to_receive">Poproszony o odbiór filmu</string>
     <string name="image_decoding_exception_title">Błąd dekodowania</string>

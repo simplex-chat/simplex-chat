@@ -145,6 +145,7 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
   } else {
     MarkUnreadChatAction(chat, chatModel, showMenu)
   }
+  ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
   ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
   ClearChatAction(chat, chatModel, showMenu)
   DeleteContactAction(chat, chatModel, showMenu)
@@ -173,6 +174,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
       } else {
         MarkUnreadChatAction(chat, chatModel, showMenu)
       }
+      ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
       ClearChatAction(chat, chatModel, showMenu)
       if (groupInfo.membership.memberCurrent) {
@@ -211,12 +213,24 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
 }
 
 @Composable
+fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolean, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    if (favorite) stringResource(R.string.unfavorite_chat) else stringResource(R.string.favorite_chat),
+    if (favorite) painterResource(R.drawable.ic_star_off) else painterResource(R.drawable.ic_star),
+    onClick = {
+      toggleChatFavorite(chat, !favorite, chatModel)
+      showMenu.value = false
+    }
+  )
+}
+
+@Composable
 fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled: Boolean, showMenu: MutableState<Boolean>) {
   ItemAction(
     if (ntfsEnabled) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
     if (ntfsEnabled) painterResource(R.drawable.ic_notifications_off) else painterResource(R.drawable.ic_notifications),
     onClick = {
-      changeNtfsStatePerChat(!ntfsEnabled, mutableStateOf(ntfsEnabled), chat, chatModel)
+      toggleNotifications(chat, !ntfsEnabled, chatModel)
       showMenu.value = false
     }
   )
@@ -535,13 +549,23 @@ fun groupInvitationAcceptedAlert() {
   )
 }
 
-fun changeNtfsStatePerChat(enabled: Boolean, currentState: MutableState<Boolean>, chat: Chat, chatModel: ChatModel) {
+fun toggleNotifications(chat: Chat, enableNtfs: Boolean, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
+  val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(enableNtfs = enableNtfs)
+  updateChatSettings(chat, chatSettings, chatModel, currentState)
+}
+
+fun toggleChatFavorite(chat: Chat, favorite: Boolean, chatModel: ChatModel) {
+  val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(favorite = favorite)
+  updateChatSettings(chat, chatSettings, chatModel)
+}
+
+fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
   val newChatInfo = when(chat.chatInfo) {
     is ChatInfo.Direct -> with (chat.chatInfo) {
-      ChatInfo.Direct(contact.copy(chatSettings = contact.chatSettings.copy(enableNtfs = enabled)))
+      ChatInfo.Direct(contact.copy(chatSettings = chatSettings))
     }
     is ChatInfo.Group -> with(chat.chatInfo) {
-      ChatInfo.Group(groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(enableNtfs = enabled)))
+      ChatInfo.Group(groupInfo.copy(chatSettings = chatSettings))
     }
     else -> null
   }
@@ -557,10 +581,13 @@ fun changeNtfsStatePerChat(enabled: Boolean, currentState: MutableState<Boolean>
     }
     if (res && newChatInfo != null) {
       chatModel.updateChatInfo(newChatInfo)
-      if (!enabled) {
+      if (!chatSettings.enableNtfs) {
         chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
       }
-      currentState.value = enabled
+      val current = currentState?.value
+      if (current != null) {
+        currentState.value = !current
+      }
     }
   }
 }

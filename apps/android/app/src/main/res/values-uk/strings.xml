@@ -331,7 +331,7 @@
     <string name="auth_stop_chat">Зупинити чат</string>
     <string name="auth_open_chat_console">Відкрийте консоль чату</string>
     <string name="moderate_message_will_be_marked_warning">Повідомлення буде позначено як модероване для всіх учасників.</string>
-    <string name="your_chats">Ваші чати</string>
+    <string name="your_chats">Чати</string>
     <string name="contact_connection_pending">підключення…</string>
     <string name="group_connection_pending">підключення…</string>
     <string name="tap_to_start_new_chat">Натисніть, щоб почати новий чат</string>
