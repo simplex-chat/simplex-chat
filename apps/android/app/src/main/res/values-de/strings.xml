@@ -224,8 +224,8 @@
     <string name="icon_descr_server_status_disconnected">Getrennt</string>
     <string name="icon_descr_server_status_error">Fehler</string>
     <string name="icon_descr_server_status_pending">Ausstehend</string>
-    <string name="switch_receiving_address_question">Empfängeradresse wechseln?</string>
-    <string name="switch_receiving_address_desc">Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls eine SimpleX-Version ab v4.2 installiert hat. Sobald der Adress-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.</string>
+    <string name="switch_receiving_address_question">Empfängeradresse wechseln\?</string>
+    <string name="switch_receiving_address_desc">Die Empfängeradresse wird auf einen anderen Server geändert. Der Adresswechsel wird abgeschlossen, wenn der Absender wieder online ist.</string>
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Nachricht senden</string>
     <string name="icon_descr_record_voice_message">Nehme Sprachnachricht auf</string>
@@ -811,7 +811,7 @@
     <string name="receiving_via">Empfangen über</string>
     <string name="sending_via">Senden über</string>
     <string name="network_status">Netzwerkstatus</string>
-    <string name="switch_receiving_address">Wechseln der Empfängeradresse</string>
+    <string name="switch_receiving_address">Empfängeradresse wechseln</string>
     <!-- AddGroupView.kt -->
     <string name="create_secret_group_title">Geheime Gruppe erstellen</string>
     <string name="group_is_decentralized">Die Gruppe ist vollständig dezentralisiert – sie ist nur für Mitglieder sichtbar.</string>
@@ -1347,4 +1347,16 @@
     <string name="settings_section_title_app">APP</string>
     <string name="settings_restart_app">Neustart</string>
     <string name="settings_shutdown">Herunterfahren</string>
+    <string name="error_aborting_address_change">Fehler beim Abbrechen des Adresswechsels</string>
+    <string name="abort_switch_receiving_address_confirm">Abbrechen</string>
+    <string name="files_and_media">Dateien und Medien</string>
+    <string name="allow_to_send_files">Das Senden von Dateien und Medien erlauben.</string>
+    <string name="prohibit_sending_files">Das Senden von Dateien und Medien nicht erlauben.</string>
+    <string name="abort_switch_receiving_address">Wechsel der Adresse abbrechen</string>
+    <string name="abort_switch_receiving_address_question">Wechsel der Adresse abbrechen\?</string>
+    <string name="files_and_media_prohibited">Dateien und Medien sind nicht erlaubt!</string>
+    <string name="only_owners_can_enable_files_and_media">Nur Gruppenbesitzer können Dateien und Medien aktivieren.</string>
+    <string name="group_members_can_send_files">Gruppenmitglieder können Dateien und Medien senden.</string>
+    <string name="abort_switch_receiving_address_desc">Der Wechsel der Adresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</string>
+    <string name="files_are_prohibited_in_group">In dieser Gruppe sind Dateien und Medien nicht erlaubt.</string>
 </resources>
