@@ -395,7 +395,7 @@ private fun NativeKeyboard(
     it.setTextColor(textColor.toArgb())
     it.textSize = textStyle.value.fontSize.value
     DrawableCompat.setTint(it.background, tintColor.toArgb())
-    it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview && !cs.inProgress
+    it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
     if (cs.message != it.text.toString()) {
       it.setText(cs.message)
