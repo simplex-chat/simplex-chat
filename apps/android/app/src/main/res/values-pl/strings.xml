@@ -1272,4 +1272,14 @@
     <string name="error_aborting_address_change">Błąd przerwania zmiany adresu</string>
     <string name="abort_switch_receiving_address_question">Przerwać zmianę adresu\?</string>
     <string name="abort_switch_receiving_address_confirm">Przerwij</string>
+    <string name="favorite_chat">Ulubione</string>
+    <string name="files_and_media">Pliki i media</string>
+    <string name="files_and_media_prohibited">Pliki i media zabronione!</string>
+    <string name="allow_to_send_files">Pozwól na wysyłanie plików i mediów.</string>
+    <string name="no_filtered_chats">Brak filtrowanych czatów</string>
+    <string name="unfavorite_chat">Nieulubione</string>
+    <string name="group_members_can_send_files">Członkowie grupy mogą wysyłać pliki i media.</string>
+    <string name="prohibit_sending_files">Zakaz wysyłania plików i mediów.</string>
+    <string name="files_are_prohibited_in_group">Pliki i media są zabronione w tej grupie.</string>
+    <string name="only_owners_can_enable_files_and_media">Tylko właściciele grup mogą włączać pliki i media.</string>
 </resources>
