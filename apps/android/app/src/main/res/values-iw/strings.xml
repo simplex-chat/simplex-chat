@@ -995,7 +995,7 @@
     <string name="lock_not_enabled">נעילת SimpleX לא מופעלת!</string>
     <string name="auth_stop_chat">עצירת צ׳אט</string>
     <string name="stop_rcv_file__title">לעצור קבלת קובץ\?</string>
-    <string name="switch_receiving_address_question">להחליף כתובת מקבלת\?</string>
+    <string name="switch_receiving_address_question">לשנות כתובת קבלה\?</string>
     <string name="simplex_address">כתובת SimpleX</string>
     <string name="smp_servers">שרתי SMP</string>
     <string name="share_with_contacts">שתף עם אנשי קשר</string>
@@ -1016,7 +1016,7 @@
     <string name="non_fatal_errors_occured_during_import">כמה שגיאות לא קטלניות התרחשו במהלך הייבוא – ניתן לראות את מסוף הצ׳אט לקבלת פרטים נוספים.</string>
     <string name="chat_item_ttl_seconds">%s שניות</string>
     <string name="switch_verb">החלף</string>
-    <string name="switch_receiving_address">החלף כתובת קבלה</string>
+    <string name="switch_receiving_address">שנה כתובת קבלה</string>
     <string name="v5_0_polish_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
     <string name="v4_4_french_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
     <string name="v4_5_italian_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
@@ -1274,4 +1274,13 @@
     <string name="error_aborting_address_change">שגיאה בביטול שינוי הכתובת</string>
     <string name="settings_shutdown">כיבוי</string>
     <string name="settings_section_title_app">אפליקציה</string>
+    <string name="allow_to_send_files">אפשר לשלוח קבצים ומדיה.</string>
+    <string name="favorite_chat">מועדף</string>
+    <string name="files_and_media">קבצים ומדיה</string>
+    <string name="no_filtered_chats">אין צ\'אטים מסוננים</string>
+    <string name="shutdown_alert_question">לכבות\?</string>
+    <string name="files_and_media_prohibited">קבצים ומדיה אסורים!</string>
+    <string name="files_are_prohibited_in_group">קבצים ומדיה אסורים בקבוצה זו.</string>
+    <string name="group_members_can_send_files">חברי הקבוצה יכולים לשלוח קבצים ומדיה.</string>
+    <string name="settings_restart_app">איתחול</string>
 </resources>
