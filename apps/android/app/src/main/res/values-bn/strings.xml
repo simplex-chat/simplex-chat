@@ -36,4 +36,8 @@
     <string name="users_delete_all_chats_deleted">সকল আলাপ এবং বার্তা মুছে ফেলা হবে - এটি আর পূর্বাবস্থায় ফেরানো যাবে না!</string>
     <string name="v5_1_self_destruct_passcode_descr">এটি প্রবেশ করালে সকল তথ্য মুছে ফেলা হবে।</string>
     <string name="network_settings">অগ্রবর্তী নেটওয়ার্ক সেটিংস</string>
+    <string name="thousand_abbreviation">হাজার</string>
+    <string name="connect_via_invitation_link">আমন্ত্রণের সংযোগ-সূত্র দ্বারা যুক্ত হতে চান\?</string>
+    <string name="connect_via_contact_link">যোগাযোগের সংযোগ-সূত্র দ্বারা যুক্ত হতে চান\?</string>
+    <string name="connect_via_group_link">গ্রুপের সংযোগ-সূত্র দ্বারা যুুক্ত হতে চান\?</string>
 </resources>
