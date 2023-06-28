@@ -3,12 +3,12 @@
     <string name="color_primary">রং</string>
     <string name="chat_item_ttl_day">১ দিন</string>
     <string name="send_disappearing_message_1_minute">১ মিনিট</string>
-    <string name="one_time_link_short">এককালীন লিংক</string>
+    <string name="one_time_link_short">এককালীন সংযোগ-সূত্র</string>
     <string name="send_disappearing_message_30_seconds">৩০ সেকেন্ড</string>
     <string name="about_simplex">SimpleX সম্পর্কে</string>
-    <string name="learn_more_about_address">SimpleX ঠিকানা সম্পর্কে</string>
+    <string name="learn_more_about_address">SimpleX ঠিকানা সম্পর্কে জানুন</string>
     <string name="abort_switch_receiving_address_confirm">থামুন</string>
-    <string name="abort_switch_receiving_address_question">ঠিকানা পরিবর্তন প্রক্রিয়া থামাতে চান\?</string>
+    <string name="abort_switch_receiving_address_question">ঠিকানা পরিবর্তন বাতিল করতে চান\?</string>
     <string name="send_disappearing_message_5_minutes">৫ মিনিট</string>
     <string name="above_then_preposition_continuation">উপরে, তারপর</string>
     <string name="accept">গ্রহণ করুন</string>
@@ -21,4 +21,19 @@
     <string name="accept_contact_button">গ্রহণ করুন</string>
     <string name="accept_connection_request__question">সংযোগের অনুরোধটি গ্রহণ করবেন কি\?</string>
     <string name="callstatus_accepted">কলটি গৃহীত হয়েছে</string>
+    <string name="smp_servers_preset_add">পূর্বনির্ধারিত সার্ভারগুলি যুক্ত করুন</string>
+    <string name="group_member_role_admin">অ্যাডমিন</string>
+    <string name="button_add_welcome_message">স্বাগত বার্তা যুক্ত করুন</string>
+    <string name="users_add">প্রোফাইল যুক্ত করুন</string>
+    <string name="color_secondary_variant">আনুষঙ্গিক রং</string>
+    <string name="v4_2_group_links_desc">অ্যাডমিনরা গ্রুপে যোগদানের সংযোগ-সূত্র তৈরি করতে পারবেন।</string>
+    <string name="v4_3_improved_server_configuration_desc">QR কোড স্ক্যান করে সার্ভার যুক্ত করুন।</string>
+    <string name="smp_servers_add">সার্ভার যুক্ত করুন…</string>
+    <string name="address_section_title">ঠিকানা</string>
+    <string name="abort_switch_receiving_address_desc">ঠিকানা পরিবর্তন বাতিল করা হবে। বার্তা গ্রহণের পুরনো ঠিকানা ব্যবহার করা হবে।</string>
+    <string name="all_app_data_will_be_cleared">অ্যাপের সকল তথ্য মুছে ফেলা হয়েছে।</string>
+    <string name="smp_servers_add_to_another_device">আরেকটি যন্ত্রে যুক্ত করুন</string>
+    <string name="users_delete_all_chats_deleted">সকল আলাপ এবং বার্তা মুছে ফেলা হবে - এটি আর পূর্বাবস্থায় ফেরানো যাবে না!</string>
+    <string name="v5_1_self_destruct_passcode_descr">এটি প্রবেশ করালে সকল তথ্য মুছে ফেলা হবে।</string>
+    <string name="network_settings">অগ্রবর্তী নেটওয়ার্ক সেটিংস</string>
 </resources>
