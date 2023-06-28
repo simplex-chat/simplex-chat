@@ -53,7 +53,7 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable { close ->
+          ModalManager.shared.showModalCloseable(true) { close ->
             AddGroupMembersView(groupInfo, false, chatModel, close)
           }
         }
