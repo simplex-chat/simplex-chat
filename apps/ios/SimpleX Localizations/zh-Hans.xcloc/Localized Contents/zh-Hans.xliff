@@ -2578,9 +2578,9 @@
         <target>加入隐身聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Joining group" xml:space="preserve">
+      <trans-unit id="Joining group" xml:space="preserve" approved="no">
         <source>Joining group</source>
-        <target>加入群组</target>
+        <target state="translated">加入群组中</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="KeyChain error" xml:space="preserve">
