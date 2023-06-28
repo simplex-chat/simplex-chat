@@ -1279,4 +1279,7 @@
     <string name="group_members_can_send_files">群组成员可以发送文件和媒体。</string>
     <string name="prohibit_sending_files">禁止发送文件和媒体。</string>
     <string name="files_and_media_prohibited">禁止文件和媒体！</string>
+    <string name="no_filtered_chats">无过滤聊天</string>
+    <string name="unfavorite_chat">取消最喜欢</string>
+    <string name="favorite_chat">最喜欢</string>
 </resources>
