@@ -36,8 +36,9 @@
         <source> (can be copied)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="!1 colored!" xml:space="preserve">
+      <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
         <source>!1 colored!</source>
+        <target state="translated">!1 রঙিন!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="#secret#" xml:space="preserve">
