@@ -1271,4 +1271,14 @@
     <string name="abort_switch_receiving_address_desc">Adres wijziging wordt afgebroken. Het oude ontvangstadres wordt gebruikt.</string>
     <string name="abort_switch_receiving_address">Annuleer het wijzigen van het adres</string>
     <string name="abort_switch_receiving_address_confirm">Afbreken</string>
+    <string name="no_filtered_chats">Geen gefilterde gesprekken</string>
+    <string name="only_owners_can_enable_files_and_media">Alleen groepseigenaren kunnen bestanden en media inschakelen.</string>
+    <string name="files_are_prohibited_in_group">Bestanden en media zijn verboden in deze groep.</string>
+    <string name="favorite_chat">Favoriet</string>
+    <string name="files_and_media_prohibited">Bestanden en media verboden!</string>
+    <string name="unfavorite_chat">Niet favoriet</string>
+    <string name="files_and_media">Bestanden en media</string>
+    <string name="prohibit_sending_files">Verbied het verzenden van bestanden en media.</string>
+    <string name="allow_to_send_files">Sta toe om bestanden en media te verzenden.</string>
+    <string name="group_members_can_send_files">Groepsleden kunnen bestanden en media verzenden.</string>
 </resources>
