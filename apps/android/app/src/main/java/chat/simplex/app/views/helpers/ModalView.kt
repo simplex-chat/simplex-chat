@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import android.R
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -8,8 +9,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.capitalize
+import androidx.compose.ui.text.intl.Locale
 import chat.simplex.app.TAG
 import chat.simplex.app.ui.theme.isInDarkTheme
 import chat.simplex.app.ui.theme.themedBackground
