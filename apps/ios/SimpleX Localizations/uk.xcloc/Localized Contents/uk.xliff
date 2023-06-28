@@ -3420,8 +3420,9 @@ To connect, please ask your contact to create another connection link and check 
         <target state="translated">Оновити налаштування мережі?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update transport isolation mode?" xml:space="preserve">
+      <trans-unit id="Update transport isolation mode?" xml:space="preserve" approved="no">
         <source>Update transport isolation mode?</source>
+        <target state="translated">Оновити режим транспортної ізоляції?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
