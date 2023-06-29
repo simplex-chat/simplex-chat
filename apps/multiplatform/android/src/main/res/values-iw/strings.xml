@@ -4,7 +4,6 @@
     <string name="accept_contact_button">אשר</string>
     <string name="accept_connection_request__question">לאשר בקשת חיבור\?</string>
     <string name="about_simplex_chat">אודות <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
-    <string name="accept_requests">אשר בקשות</string>
     <string name="about_simplex">אודות SimpleX</string>
     <string name="accept_call_on_lock_screen">ענה</string>
     <string name="chat_item_ttl_week">שבוע</string>
@@ -25,7 +24,6 @@
     <string name="appearance_settings">מראה</string>
     <string name="app_version_name">גרסת האפליקציה: v%s</string>
     <string name="app_version_code">גרסת אפליקציה: %s</string>
-    <string name="section_title_welcome_message">הודעת פתיחה</string>
     <string name="all_your_contacts_will_remain_connected">כל אנשי הקשר יישארו מחוברים.</string>
     <string name="always_use_relay">תמיד להשתמש בממסר</string>
     <string name="answer_call">ענה לשיחה</string>
@@ -83,7 +81,6 @@
     <string name="la_authenticate">אימות</string>
     <string name="la_auth_failed">אימות נכשל</string>
     <string name="back">חזרה</string>
-    <string name="accept_automatically">אוטומטית</string>
     <string name="bold">מודגש</string>
     <string name="integrity_msg_bad_hash">גיבוב הודעה שגוי</string>
     <string name="integrity_msg_bad_id">מזהה הודעה שגוי</string>
@@ -228,7 +225,6 @@
     <string name="contribute">תרומה</string>
     <string name="core_version">גרסת ליבה: v%s</string>
     <string name="create_address">צור כתובת</string>
-    <string name="contact_requests">בקשות ליצירת קשר</string>
     <string name="create_profile_button">צור</string>
     <string name="create_profile">צור פרופיל</string>
     <string name="create_your_profile">יצירת הפרופיל שלך</string>
