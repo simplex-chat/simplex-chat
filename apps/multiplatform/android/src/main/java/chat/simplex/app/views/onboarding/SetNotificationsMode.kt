@@ -1,5 +1,7 @@
 package chat.simplex.app.views.onboarding
 
+import android.Manifest
+import android.os.Build
 import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -15,11 +17,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.NotificationsMode
 import chat.simplex.app.views.usersettings.changeNotificationsMode
+import com.google.accompanist.permissions.rememberPermissionState
 
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
@@ -47,8 +52,24 @@ fun SetNotificationsMode(m: ChatModel) {
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
   }
-  LaunchedEffect(Unit) {
-    m.controller.ntfManager.createNtfChannelsMaybeShowAlert()
+  SetNotificationsModeAdditions()
+}
+
+@Composable
+fun SetNotificationsModeAdditions() {
+  if (Build.VERSION.SDK_INT >= 33) {
+    val notificationsPermissionState = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
+    LaunchedEffect(notificationsPermissionState.hasPermission) {
+      if (notificationsPermissionState.hasPermission) {
+        SimplexApp.context.chatModel.controller.ntfManager.createNtfChannelsMaybeShowAlert()
+      } else {
+        notificationsPermissionState.launchPermissionRequest()
+      }
+    }
+  } else {
+    LaunchedEffect(Unit) {
+      SimplexApp.context.chatModel.controller.ntfManager.createNtfChannelsMaybeShowAlert()
+    }
   }
 }
 
