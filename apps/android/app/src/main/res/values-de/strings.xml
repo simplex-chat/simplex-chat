@@ -1359,4 +1359,7 @@
     <string name="group_members_can_send_files">Gruppenmitglieder können Dateien und Medien senden.</string>
     <string name="abort_switch_receiving_address_desc">Der Wechsel der Adresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</string>
     <string name="files_are_prohibited_in_group">In dieser Gruppe sind Dateien und Medien nicht erlaubt.</string>
+    <string name="unfavorite_chat">Favorit löschen</string>
+    <string name="favorite_chat">Favorit</string>
+    <string name="no_filtered_chats">Keine gefilterten Chats</string>
 </resources>
