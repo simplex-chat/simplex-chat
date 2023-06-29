@@ -54,7 +54,6 @@
     <string name="database_encryption_will_be_updated">Tietokannan salauksen tunnuslause päivitetään ja tallennetaan Keystoreen.</string>
     <string name="users_delete_profile_for">Poista keskusteluprofiili käyttäjälle</string>
     <string name="deleted_description">poistettu</string>
-    <string name="settings_section_title_develop">KEHITÄ</string>
     <string name="settings_section_title_device">LAITE</string>
     <string name="ttl_h">%dh</string>
     <string name="connection_error">Yhteysvirhe</string>

@@ -7,7 +7,6 @@
     <string name="chat_console">Consola de conversa</string>
     <string name="smp_servers_test_failed">Teste ao servidor falhou!</string>
     <string name="network_socks_toggle_use_socks_proxy">Usar proxy SOCKS</string>
-    <string name="network_socks_toggle">Usar proxy SOCKS (porto 9050)</string>
     <string name="network_enable_socks">Usar proxy SOCKS\?</string>
     <string name="port_verb">Porto</string>
     <string name="network_proxy_port">porto %d</string>
@@ -15,7 +14,6 @@
     <string name="app_version_title">Versão da aplicação</string>
     <string name="all_your_contacts_will_remain_connected">Todos os seus contatos permanecerão conectados.</string>
     <string name="delete_address">Eliminar endereço</string>
-    <string name="accept_automatically">Automaticamente</string>
     <string name="a_plus_b">a + b</string>
     <string name="callstatus_missed">chamada perdida</string>
     <string name="always_use_relay">Utilizar sempre o servidor de relay</string>
@@ -129,7 +127,6 @@
     <string name="accept">Aceitar</string>
     <string name="accept_connection_request__question">Aceitar pedido de ligação\?</string>
     <string name="accept_contact_incognito_button">Aceitar modo anónimo</string>
-    <string name="accept_requests">Aceitar pedidos</string>
     <string name="smp_servers_preset_add">Adicionar servidores pré-definidos</string>
     <string name="network_enable_socks_info">Aceder aos servidores via proxy SOCKS no porto %d\? O proxy tem de iniciar antes de ativar esta opção.</string>
     <string name="smp_servers_add_to_another_device">Adicionar a outro dispositivo</string>
@@ -357,7 +354,6 @@
     <string name="icon_descr_server_status_connected">Conectado</string>
     <string name="contact_connection_pending">conectando…</string>
     <string name="connection_timeout">Tempo limite de conexão</string>
-    <string name="contact_requests">Pedidos de contato</string>
     <string name="contact_preferences">Preferências de contato</string>
     <string name="notification_preview_somebody">Contato escondido:</string>
     <string name="alert_title_contact_connection_pending">O contato ainda não está conectado!</string>
@@ -736,7 +732,6 @@
     <string name="decryption_error">Erro de desencriptação</string>
     <string name="app_passcode_replaced_with_self_destruct">O código de acesso é substituído por um código auto-destrutivo.</string>
     <string name="share_text_database_id">ID da base de dados: %d</string>
-    <string name="settings_section_title_develop">DESENVOLVER</string>
     <string name="v4_5_multiple_chat_profiles_descr">Nomes, avatares e isolamento de transporte diferentes.</string>
     <string name="color_secondary_variant">Secundário adicional</string>
     <string name="color_primary_variant">Realce adicional</string>

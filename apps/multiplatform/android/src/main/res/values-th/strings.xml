@@ -401,7 +401,6 @@
     <string name="enabled_self_destruct_passcode">เปิดใช้งานรหัสผ่านแบบทําลายตัวเอง</string>
     <string name="enable_self_destruct">เปิดใช้งานการทำลายตัวเอง</string>
     <string name="settings_section_title_help">ความช่วยเหลือ</string>
-    <string name="settings_section_title_develop">พัฒนา</string>
     <string name="settings_developer_tools">เครื่องมือสำหรับนักพัฒนา</string>
     <string name="settings_section_title_device">อุปกรณ์</string>
     <string name="settings_experimental_features">คุณลักษณะสำหรับการทดลอง</string>
