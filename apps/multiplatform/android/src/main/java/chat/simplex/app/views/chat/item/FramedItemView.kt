@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
-import androidx.compose.ui.util.fastMap
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -300,7 +299,7 @@ fun PriorityLayout(
     // Find important element which should tell what max width other elements can use
     // Expecting only one such element. Can be less than one but not more
     val imagePlaceable = measureable.firstOrNull { it.layoutId == priorityLayoutId }?.measure(constraints)
-    val placeables: List<Placeable> = measureable.fastMap {
+    val placeables: List<Placeable> = measureable.map {
       if (it.layoutId == priorityLayoutId)
         imagePlaceable!!
       else
