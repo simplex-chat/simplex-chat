@@ -201,7 +201,7 @@ fun ComposeView(
     val imagesPreview = ArrayList<String>()
     uris.forEach { uri ->
       var bitmap: Bitmap? = null
-      val isImage = MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileName(SimplexApp.context, uri)?.split(".")?.last())?.contains("image/") == true
+      val isImage = MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileName(uri)?.split(".")?.last())?.contains("image/") == true
       when {
         isImage -> {
           // Image
@@ -209,10 +209,10 @@ fun ComposeView(
           bitmap = if (drawable != null) getBitmapFromUri(uri) else null
           val isAnimNewApi = Build.VERSION.SDK_INT >= 28 && drawable is AnimatedImageDrawable
           val isAnimOldApi = Build.VERSION.SDK_INT < 28 &&
-              (getFileName(SimplexApp.context, uri)?.endsWith(".gif") == true || getFileName(SimplexApp.context, uri)?.endsWith(".webp") == true)
+              (getFileName(uri)?.endsWith(".gif") == true || getFileName(uri)?.endsWith(".webp") == true)
           if (isAnimNewApi || isAnimOldApi) {
             // It's a gif or webp
-            val fileSize = getFileSize(context, uri)
+            val fileSize = getFileSize(uri)
             if (fileSize != null && fileSize <= maxFileSize) {
               content.add(UploadContent.AnimatedImage(uri))
             } else {
@@ -244,9 +244,9 @@ fun ComposeView(
   }
   val processPickedFile = { uri: Uri?, text: String? ->
     if (uri != null) {
-      val fileSize = getFileSize(context, uri)
+      val fileSize = getFileSize(uri)
       if (fileSize != null && fileSize <= maxFileSize) {
-        val fileName = getFileName(SimplexApp.context, uri)
+        val fileName = getFileName(uri)
         if (fileName != null) {
           composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.FilePreview(fileName, uri))
         }
@@ -381,7 +381,7 @@ fun ComposeView(
       chatModel.addChatItem(cInfo, aChatItem.chatItem)
       return aChatItem.chatItem
     }
-    if (file != null) removeFile(context, file)
+    if (file != null) removeFile(file)
     return null
   }
 
@@ -460,9 +460,9 @@ fun ComposeView(
         is ComposePreview.MediaPreview -> {
           preview.content.forEachIndexed { index, it ->
             val file = when (it) {
-              is UploadContent.SimpleImage -> saveImage(context, it.uri)
-              is UploadContent.AnimatedImage -> saveAnimImage(context, it.uri)
-              is UploadContent.Video -> saveFileFromUri(context, it.uri)
+              is UploadContent.SimpleImage -> saveImage(it.uri)
+              is UploadContent.AnimatedImage -> saveAnimImage(it.uri)
+              is UploadContent.Video -> saveFileFromUri(it.uri)
             }
             if (file != null) {
               files.add(file)
@@ -477,7 +477,7 @@ fun ComposeView(
         is ComposePreview.VoicePreview -> {
           val tmpFile = File(preview.voice)
           AudioPlayer.stop(tmpFile.absolutePath)
-          val actualFile = File(getAppFilePath(SimplexApp.context, tmpFile.name.replaceAfter(RecorderNative.extension, "")))
+          val actualFile = File(getAppFilePath(tmpFile.name.replaceAfter(RecorderNative.extension, "")))
           withContext(Dispatchers.IO) {
             Files.move(tmpFile.toPath(), actualFile.toPath())
           }
@@ -486,7 +486,7 @@ fun ComposeView(
           msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
         }
         is ComposePreview.FilePreview -> {
-          val file = saveFileFromUri(context, preview.uri)
+          val file = saveFileFromUri(preview.uri)
           if (file != null) {
             files.add((file))
             msgs.add(MsgContent.MCFile(if (msgs.isEmpty()) msgText else ""))

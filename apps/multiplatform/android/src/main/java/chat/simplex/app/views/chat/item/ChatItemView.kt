@@ -176,7 +176,7 @@ fun ChatItemView(
               })
             }
             ItemAction(stringResource(R.string.share_verb), painterResource(R.drawable.ic_share), onClick = {
-              val filePath = getLoadedFilePath(SimplexApp.context, cItem.file)
+              val filePath = getLoadedFilePath(cItem.file)
               when {
                 filePath != null -> shareFile(context, cItem.text, filePath)
                 else -> shareText(context, cItem.content.text)
@@ -188,7 +188,7 @@ fun ChatItemView(
               showMenu.value = false
             })
             if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
-              val filePath = getLoadedFilePath(context, cItem.file)
+              val filePath = getLoadedFilePath(cItem.file)
               if (filePath != null) {
                 val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 ItemAction(stringResource(R.string.save_verb), painterResource(R.drawable.ic_download), onClick = {

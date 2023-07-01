@@ -139,8 +139,8 @@ fun CIImageView(
   }
 
   fun imageAndFilePath(file: CIFile?): Pair<Bitmap?, String?> {
-    val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, file)
-    val filePath = getLoadedFilePath(SimplexApp.context, file)
+    val imageBitmap: Bitmap? = getLoadedImage(file)
+    val filePath = getLoadedFilePath(file)
     return imageBitmap to filePath
   }
 
@@ -160,7 +160,7 @@ fun CIImageView(
       val view = LocalView.current
       imageView(imagePainter, onClick = {
         hideKeyboard(view)
-        if (getLoadedFilePath(context, file) != null) {
+        if (getLoadedFilePath(file) != null) {
           ModalManager.shared.showCustomModal(animated = false) { close ->
             ImageFullScreenView(imageProvider, close)
           }

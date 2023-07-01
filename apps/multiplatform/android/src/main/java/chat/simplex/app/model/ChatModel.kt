@@ -34,7 +34,8 @@ import kotlin.time.*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
 @Stable
-class ChatModel(val controller: ChatController) {
+object ChatModel {
+  val controller: ChatController = ChatController
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()
@@ -65,11 +66,11 @@ class ChatModel(val controller: ChatController) {
   val appOpenUrl = mutableStateOf<Uri?>(null)
 
   // preferences
-  val notificationsMode = mutableStateOf(NotificationsMode.default)
-  var notificationPreviewMode = mutableStateOf(NotificationPreviewMode.default)
-  val performLA = mutableStateOf(false)
+  val notificationsMode = mutableStateOf(try { NotificationsMode.valueOf(ChatController.appPrefs.notificationsMode.get()!!) } catch(e: Exception) { NotificationsMode.default })
+  var notificationPreviewMode = mutableStateOf(try { NotificationPreviewMode.valueOf(ChatController.appPrefs.notificationPreviewMode.get()!!) } catch(e: Exception) { NotificationPreviewMode.default })
+  val performLA by lazy { mutableStateOf(controller.appPrefs.performLA.get()) }
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
-  var incognito = mutableStateOf(false)
+  val incognito by lazy { mutableStateOf(ChatController.appPrefs.incognito.get()) }
 
   // current WebRTC call
   val callManager = CallManager(this)
@@ -91,7 +92,7 @@ class ChatModel(val controller: ChatController) {
   val sharedContent = mutableStateOf(null as SharedContent?)
 
   val filesToDelete = mutableSetOf<File>()
-  val simplexLinkMode = mutableStateOf(controller.appPrefs.simplexLinkMode.get())
+  val simplexLinkMode by lazy { mutableStateOf(controller.appPrefs.simplexLinkMode.get()) }
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value

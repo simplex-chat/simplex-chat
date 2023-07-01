@@ -66,7 +66,7 @@ fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResu
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
       destination?.let {
-        val filePath = getLoadedFilePath(cxt, ciFile)
+        val filePath = getLoadedFilePath(ciFile)
         if (filePath != null) {
           val contentResolver = cxt.contentResolver
           contentResolver.openOutputStream(destination)?.let { stream ->
@@ -96,7 +96,7 @@ fun imageMimeType(fileName: String): String {
 
 /** Before calling, make sure the user allows to write to external storage [Manifest.permission.WRITE_EXTERNAL_STORAGE] */
 fun saveImage(cxt: Context, ciFile: CIFile?) {
-  val filePath = getLoadedFilePath(cxt, ciFile)
+  val filePath = getLoadedFilePath(ciFile)
   val fileName = ciFile?.fileName
   if (filePath != null && fileName != null) {
     val values = ContentValues()

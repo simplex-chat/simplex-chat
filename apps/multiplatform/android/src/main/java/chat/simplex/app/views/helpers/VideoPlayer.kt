@@ -108,7 +108,7 @@ class VideoPlayer private constructor(
   }
 
   private fun start(seek: Long? = null, onProgressUpdate: (position: Long?, state: TrackState) -> Unit): Boolean {
-    val filepath = getAppFilePath(SimplexApp.context, uri)
+    val filepath = getAppFilePath(uri)
     if (filepath == null || !File(filepath).exists()) {
       Log.e(TAG, "No such file: $uri")
       brokenVideo.value = true

@@ -46,7 +46,7 @@ fun CIVideoView(
     contentAlignment = Alignment.TopEnd
   ) {
     val context = LocalContext.current
-    val filePath = remember(file) { getLoadedFilePath(SimplexApp.context, file) }
+    val filePath = remember(file) { getLoadedFilePath(file) }
     val preview = remember(image) { base64ToBitmap(image) }
     if (file != null && filePath != null) {
       val uri = remember(filePath) { FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))  }

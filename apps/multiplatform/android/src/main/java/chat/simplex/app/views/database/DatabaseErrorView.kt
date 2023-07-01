@@ -299,7 +299,7 @@ fun PreviewChatInfoLayout() {
   SimpleXTheme {
     DatabaseErrorView(
       remember { mutableStateOf(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db")) },
-      AppPreferences(SimplexApp.context)
+      AppPreferences()
     )
   }
 }

@@ -24,7 +24,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import chat.simplex.app.MainActivity.Companion.enteredBackground
 import chat.simplex.app.model.*
-import chat.simplex.app.model.NtfManager.Companion.getUserIdFromIntent
+import chat.simplex.app.model.NtfManager.getUserIdFromIntent
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView

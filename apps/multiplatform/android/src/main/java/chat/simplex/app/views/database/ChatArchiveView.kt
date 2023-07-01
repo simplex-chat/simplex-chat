@@ -14,7 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -36,7 +35,7 @@ import java.util.*
 @Composable
 fun ChatArchiveView(m: ChatModel, title: String, archiveName: String, archiveTime: Instant) {
   val context = LocalContext.current
-  val archivePath = "${getFilesDirectory(context)}/$archiveName"
+  val archivePath = "${getFilesDirectory()}/$archiveName"
   val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, archivePath)
   ChatArchiveLayout(
     title,

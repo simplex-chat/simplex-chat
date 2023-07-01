@@ -976,7 +976,7 @@ private fun providerForGallery(
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
   fun canShowMedia(item: ChatItem): Boolean =
-    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && getLoadedFilePath(SimplexApp.context, item.file) != null)
+    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && getLoadedFilePath(item.file) != null)
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign
@@ -1003,15 +1003,15 @@ private fun providerForGallery(
       val item = item(internalIndex, initialChatId)?.second ?: return null
       return when (item.content.msgContent) {
         is MsgContent.MCImage -> {
-          val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, item.file)
-          val filePath = getLoadedFilePath(SimplexApp.context, item.file)
+          val imageBitmap: Bitmap? = getLoadedImage(item.file)
+          val filePath = getLoadedFilePath(item.file)
           if (imageBitmap != null && filePath != null) {
             val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
             ProviderMedia.Image(uri, imageBitmap)
           } else null
         }
         is MsgContent.MCVideo -> {
-          val filePath = getLoadedFilePath(SimplexApp.context, item.file)
+          val filePath = getLoadedFilePath(item.file)
           if (filePath != null) {
             val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
             ProviderMedia.Video(uri, (item.content.msgContent as MsgContent.MCVideo).image)

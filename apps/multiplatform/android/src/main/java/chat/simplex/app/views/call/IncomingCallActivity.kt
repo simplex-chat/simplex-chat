@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.model.NtfManager.Companion.OpenChatAction
+import chat.simplex.app.model.NtfManager.OpenChatAction
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
 import kotlinx.datetime.Clock
