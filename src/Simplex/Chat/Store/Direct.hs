@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -391,7 +392,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
         ExceptT $
           maybeM getContactRequestByXContactId xContactId_ >>= \case
             Nothing -> createContactRequest
-            Just cr -> updateContactRequest cr $> Right (contactRequestId (cr :: UserContactRequest))
+            Just cr -> updateContactRequest cr $> Right cr.contactRequestId
       getContactRequest db user cReqId
     createContactRequest :: IO (Either StoreError Int64)
     createContactRequest = do

@@ -478,7 +478,9 @@ createRcvFileTransfer :: DB.Connection -> UserId -> Contact -> FileInvitation ->
 createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
   currentTs <- liftIO getCurrentTime
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
-  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd_
+  let getFDId :: RcvFileDescr -> Int64
+      getFDId RcvFileDescr{fileDescrId} = fileDescrId
+  let rfdId = getFDId <$> rfd_
       xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
   fileId <- liftIO $ do
@@ -498,7 +500,9 @@ createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupMember -> FileInvi
 createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
   currentTs <- liftIO getCurrentTime
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
-  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd_
+  let getFDId :: RcvFileDescr -> Int64
+      getFDId RcvFileDescr{fileDescrId} = fileDescrId
+  let rfdId = getFDId <$> rfd_
       xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
   fileId <- liftIO $ do
