@@ -7,7 +7,6 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.AppPreferences
 import chat.simplex.app.views.helpers.generalGetString
-import okhttp3.internal.toHexString
 
 object ThemeManager {
   private val appPrefs: AppPreferences by lazy {
@@ -149,4 +148,4 @@ object ThemeManager {
   }
 }
 
-private fun Color.toReadableHex(): String = "#" + toArgb().toHexString()
+private fun Color.toReadableHex(): String = "#" + Integer.toHexString(toArgb())

@@ -82,7 +82,7 @@ checks() {
 build() {
   # Build preparations
   sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/multiplatform/android/src/main/AndroidManifest.xml"
-  sed -i.bak '/android {/a lint {abortOnError false}' "$folder/apps/multiplatform/android/build.gradle"
+  sed -i.bak '/android {/a lint {abortOnError false}' "$folder/apps/multiplatform/android/build.gradle.kts"
 
   for arch in $arches; do
     android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
@@ -95,7 +95,7 @@ build() {
     android_tmp_folder="${tmp}/android-${arch}"
     android_apk_output="${folder}/apps/multiplatform/android/build/outputs/apk/release/android-${android_arch}-release-unsigned.apk"
     android_apk_output_final="simplex-chat-${android_arch}.apk"
-    libs_folder="$folder/apps/multiplatform/android/src/main/cpp/libs"
+    libs_folder="$folder/apps/multiplatform/common/src/commonMain/cpp/android/libs"
 
     # Create missing folders
     mkdir -p "$libs_folder/$android_arch"
@@ -107,7 +107,7 @@ build() {
     unzip -o "$android_support_lib_output" -d "$libs_folder/$android_arch"
 
     # Build only one arch
-    sed -i.bak "s/include '.*/include '${android_arch}'/" "$folder/apps/multiplatform/android/build.gradle"
+    sed -i.bak "s/include '.*/include '${android_arch}'/" "$folder/apps/multiplatform/android/build.gradle.kts"
     gradle -p "$folder/apps/multiplatform/" clean assembleRelease
 
     mkdir -p "$android_tmp_folder"

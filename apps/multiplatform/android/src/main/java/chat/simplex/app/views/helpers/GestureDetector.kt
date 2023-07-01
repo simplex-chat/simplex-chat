@@ -28,9 +28,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.util.fastAll
-import androidx.compose.ui.util.fastAny
-import androidx.compose.ui.util.fastForEach
 import chat.simplex.app.TAG
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
@@ -98,8 +95,8 @@ suspend fun PointerInputScope.detectGesture(
 private suspend fun AwaitPointerEventScope.consumeUntilUp() {
   do {
     val event = awaitPointerEvent()
-    event.changes.fastForEach { it.consumeAllChanges() }
-  } while (event.changes.fastAny { it.pressed })
+    event.changes.forEach { it.consumeAllChanges() }
+  } while (event.changes.any { it.pressed })
 }
 
 suspend fun AwaitPointerEventScope.awaitFirstDown(
@@ -115,7 +112,7 @@ internal suspend fun AwaitPointerEventScope.awaitFirstDownOnPass(
   do {
     event = awaitPointerEvent(pass)
   } while (
-    !event.changes.fastAll {
+    !event.changes.all {
       if (requireUnconsumed) it.changedToDown() else it.changedToDownIgnoreConsumed()
     }
   )
@@ -125,18 +122,18 @@ internal suspend fun AwaitPointerEventScope.awaitFirstDownOnPass(
 suspend fun AwaitPointerEventScope.waitForUpOrCancellation(): PointerInputChange? {
   while (true) {
     val event = awaitPointerEvent(PointerEventPass.Main)
-    if (event.changes.fastAll { it.changedToUp() }) {
+    if (event.changes.all { it.changedToUp() }) {
       return event.changes[0]
     }
 
-    if (event.changes.fastAny {
+    if (event.changes.any {
         it.consumed.downChange || it.isOutOfBounds(size, extendedTouchPadding)
       }
     ) {
       return null
     }
     val consumeCheck = awaitPointerEvent(PointerEventPass.Final)
-    if (consumeCheck.changes.fastAny { it.positionChangeConsumed() }) {
+    if (consumeCheck.changes.any { it.positionChangeConsumed() }) {
       return null
     }
   }
@@ -254,7 +251,7 @@ suspend fun PointerInputScope.detectTransformGestures(
       awaitFirstDown(requireUnconsumed = false)
       do {
         val event = awaitPointerEvent()
-        val canceled = event.changes.fastAny { it.isConsumed }
+        val canceled = event.changes.any { it.isConsumed }
         if (!canceled) {
           val zoomChange = event.calculateZoom()
           val rotationChange = event.calculateRotation()
@@ -288,14 +285,14 @@ suspend fun PointerInputScope.detectTransformGestures(
             ) {
               onGesture(centroid, panChange, zoomChange, effectiveRotation)
             }
-            event.changes.fastForEach {
+            event.changes.forEach {
               if (it.positionChanged() && zoom != 1f && allowIntercept()) {
                 it.consume()
               }
             }
           }
         }
-      } while (!canceled && event.changes.fastAny { it.pressed })
+      } while (!canceled && event.changes.any { it.pressed })
     }
   }
 }
