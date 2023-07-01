@@ -20,8 +20,8 @@ android {
         targetSdkVersion(33)
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
-        versionCode = (extra["app.version_code"] as String).toInt()
-        versionName = extra["app.version_name"] as String
+        versionCode = (extra["android.version_code"] as String).toInt()
+        versionName = extra["android.version_name"] as String
 
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables {

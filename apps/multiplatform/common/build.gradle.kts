@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "chat.simplex"
-version = extra["app.version_name"] as String
+version = extra["android.version_name"] as String
 
 kotlin {
   android()
@@ -133,7 +133,8 @@ multiplatformResources {
 
 buildConfig {
   forClass("BuildConfigCommon") {
-    buildConfigField("String", "VERSION_NAME", "\"${extra["app.version_name"]}\"")
-    buildConfigField("int", "VERSION_CODE", "${extra["app.version_code"]}")
+    buildConfigField("String", "ANDROID_VERSION_NAME", "\"${extra["android.version_name"]}\"")
+    buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
+    buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
   }
 }

@@ -48,7 +48,7 @@ buildscript {
 }*/
 
 group = "chat.simplex"
-version = extra["app.version_name"] as String
+version = extra["android.version_name"] as String
 
 allprojects {
     repositories {

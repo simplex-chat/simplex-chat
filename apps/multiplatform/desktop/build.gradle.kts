@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "chat.simplex"
-version = extra["app.version_name"] as String
+version = extra["desktop.version_name"] as String
 
 
 kotlin {
@@ -58,7 +58,7 @@ compose {
         }
         packageName = "simplex"
         // Packaging requires to have version like MAJOR.MINOR.PATCH
-        var adjustedVersion = rootProject.extra["app.version_name"] as String
+        var adjustedVersion = rootProject.extra["desktop.version_name"] as String
         adjustedVersion = adjustedVersion.replace(Regex("[^0-9.]"), "")
         if (adjustedVersion.split(".").size != 3) {
           adjustedVersion += ".0"
