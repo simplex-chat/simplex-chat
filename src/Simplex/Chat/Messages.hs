@@ -35,7 +35,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
@@ -624,6 +624,7 @@ data CIFileInfo = CIFileInfo
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
   CISSndSent :: CIStatus 'MDSnd
+  CISSndReceived :: MsgReceiptStatus -> CIStatus 'MDSnd
   CISSndErrorAuth :: CIStatus 'MDSnd
   CISSndError :: String -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
@@ -647,6 +648,7 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
   strEncode = \case
     CISSndNew -> "snd_new"
     CISSndSent -> "snd_sent"
+    CISSndReceived status -> "snd_received " <> strEncode status
     CISSndErrorAuth -> "snd_error_auth"
     CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
     CISRcvNew -> "rcv_new"
@@ -659,6 +661,7 @@ instance StrEncoding ACIStatus where
     A.takeTill (== ' ') >>= \case
       "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
       "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
+      "snd_received" -> ACIStatus SMDSnd . CISSndReceived <$> (A.space *> strP)
       "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
       "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
@@ -668,6 +671,7 @@ instance StrEncoding ACIStatus where
 data JSONCIStatus
   = JCISSndNew
   | JCISSndSent
+  | JCISSndReceived {msgRcptStatus :: MsgReceiptStatus}
   | JCISSndErrorAuth
   | JCISSndError {agentError :: String}
   | JCISRcvNew
@@ -682,6 +686,7 @@ jsonCIStatus :: CIStatus d -> JSONCIStatus
 jsonCIStatus = \case
   CISSndNew -> JCISSndNew
   CISSndSent -> JCISSndSent
+  CISSndReceived ok -> JCISSndReceived ok
   CISSndErrorAuth -> JCISSndErrorAuth
   CISSndError e -> JCISSndError e
   CISRcvNew -> JCISRcvNew
