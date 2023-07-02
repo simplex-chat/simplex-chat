@@ -47,6 +47,7 @@ dependencies:
   - time == 1.9.*
   - unliftio == 0.2.*
   - unliftio-core == 0.2.*
+  - yaml == 0.11.*
   - zip == 1.7.*
 
 flags:
@@ -92,6 +93,14 @@ executables:
 
   simplex-broadcast-bot:
     source-dirs: apps/simplex-broadcast-bot
+    main: Main.hs
+    dependencies:
+      - simplex-chat
+    ghc-options:
+      - -threaded
+
+  simplex-survey-bot:
+    source-dirs: apps/simplex-survey-bot
     main: Main.hs
     dependencies:
       - simplex-chat
