@@ -248,6 +248,15 @@
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "**Für jeden Kontakt und jedes Gruppenmitglied** wird eine separate TCP-Verbindung genutzt.\n**Bitte beachten Sie**: Wenn Sie viele Verbindungen haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.";
 
 /* No comment provided by engineer. */
+"Abort" = "Abbrechen";
+
+/* No comment provided by engineer. */
+"Abort changing address" = "Wechsel der Adresse abbrechen";
+
+/* No comment provided by engineer. */
+"Abort changing address?" = "Wechsel der Adresse abbrechen?";
+
+/* No comment provided by engineer. */
 "About SimpleX" = "Über SimpleX";
 
 /* No comment provided by engineer. */
@@ -301,6 +310,9 @@
 
 /* No comment provided by engineer. */
 "Address" = "Adresse";
+
+/* No comment provided by engineer. */
+"Address change will be aborted. Old receiving address will be used." = "Der Wechsel der Adresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.";
 
 /* member role */
 "admin" = "Admin";
@@ -1219,6 +1231,9 @@
 "Error" = "Fehler";
 
 /* No comment provided by engineer. */
+"Error aborting address change" = "Fehler beim Abbrechen des Adresswechsels";
+
+/* No comment provided by engineer. */
 "Error accepting contact request" = "Fehler beim Annehmen der Kontaktanfrage";
 
 /* No comment provided by engineer. */
@@ -1373,6 +1388,9 @@
 
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "Schnell und ohne warten auf den Absender, bis er online ist!";
+
+/* No comment provided by engineer. */
+"Favorite" = "Favorit";
 
 /* No comment provided by engineer. */
 "File will be deleted from servers." = "Die Datei wird von den Servern gelöscht.";
@@ -1738,7 +1756,7 @@
 "Keychain error" = "Schlüsselbundfehler";
 
 /* No comment provided by engineer. */
-"KeyChain error" = "Keystore Fehler";
+"KeyChain error" = "KeyChain Fehler";
 
 /* No comment provided by engineer. */
 "Large file!" = "Große Datei!";
@@ -2313,6 +2331,9 @@
 
 /* message info title */
 "Received message" = "Empfangene Nachricht";
+
+/* No comment provided by engineer. */
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Die Empfängeradresse wird auf einen anderen Server geändert. Der Adresswechsel wird abgeschlossen, wenn der Absender wieder online ist.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Der Empfang der Datei wird beendet.";
@@ -2949,6 +2970,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Unerwarteter Migrationsstatus";
+
+/* No comment provided by engineer. */
+"Unfav." = "Unfav.";
 
 /* No comment provided by engineer. */
 "Unhide" = "Verbergen aufheben";

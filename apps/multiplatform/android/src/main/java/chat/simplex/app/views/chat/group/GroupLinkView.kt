@@ -10,7 +10,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -26,7 +25,6 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
   var groupLink by rememberSaveable { mutableStateOf(connReqContact) }
   val groupLinkMemberRole = rememberSaveable { mutableStateOf(memberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
-  val cxt = LocalContext.current
   fun createLink() {
     creatingLink = true
     withApi {
@@ -50,7 +48,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
     groupLinkMemberRole,
     creatingLink,
     createLink = ::createLink,
-    share = { shareText(cxt, groupLink ?: return@GroupLinkLayout) },
+    share = { shareText(groupLink ?: return@GroupLinkLayout) },
     updateLink = {
       val role = groupLinkMemberRole.value
       if (role != null) {

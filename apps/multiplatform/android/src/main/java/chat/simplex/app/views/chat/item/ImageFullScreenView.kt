@@ -178,7 +178,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
 @Composable
 private fun VideoView(modifier: Modifier, uri: Uri, defaultPreview: Bitmap, currentPage: Boolean) {
   val context = LocalContext.current
-  val player = remember(uri) { VideoPlayer.getOrCreate(uri, true, defaultPreview, 0L, true, context) }
+  val player = remember(uri) { VideoPlayer.getOrCreate(uri, true, defaultPreview, 0L, true) }
   val isCurrentPage = rememberUpdatedState(currentPage)
   val play = {
     player.play(true)

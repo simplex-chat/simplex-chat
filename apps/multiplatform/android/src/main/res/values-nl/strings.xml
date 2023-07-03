@@ -908,7 +908,7 @@
     <string name="smp_servers_scan_qr">Scan server QR-code</string>
     <string name="this_string_is_not_a_connection_link">Deze string is geen verbinding link!</string>
     <string name="enable_automatic_deletion_message">Deze actie kan niet ongedaan worden gemaakt, de berichten die eerder zijn verzonden en ontvangen dan geselecteerd, worden verwijderd. Het kan enkele minuten duren.</string>
-    <string name="switch_receiving_address_desc">Deze functie is experimenteel! Het werkt alleen als op de andere client versie 4.2 is geïnstalleerd. U zou het bericht in het gesprek moeten zien zodra de adreswijziging is voltooid. Controleer of u nog steeds berichten van dit contact (of groepslid) kunt ontvangen.</string>
+    <string name="switch_receiving_address_desc">Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Om je privacy te behouden, heeft de app in plaats van push meldingen een <b><xliff:g id="appName">SimpleX</xliff:g> achtergrond service</b> - deze gebruikt een paar procent van de batterij per dag.</string>
     <string name="chat_preferences_you_allow">Jij staat toe</string>
     <string name="you_are_invited_to_group">Je bent uitgenodigd voor de groep</string>
@@ -1266,4 +1266,19 @@
     <string name="settings_restart_app">Herstarten</string>
     <string name="settings_shutdown">Afsluiten</string>
     <string name="shutdown_alert_desc">Meldingen werken niet meer totdat u de app opnieuw start</string>
+    <string name="error_aborting_address_change">Fout bij het afbreken van adres wijziging</string>
+    <string name="abort_switch_receiving_address_question">Adres wijziging afbreken\?</string>
+    <string name="abort_switch_receiving_address_desc">Adres wijziging wordt afgebroken. Het oude ontvangstadres wordt gebruikt.</string>
+    <string name="abort_switch_receiving_address">Annuleer het wijzigen van het adres</string>
+    <string name="abort_switch_receiving_address_confirm">Afbreken</string>
+    <string name="no_filtered_chats">Geen gefilterde gesprekken</string>
+    <string name="only_owners_can_enable_files_and_media">Alleen groepseigenaren kunnen bestanden en media inschakelen.</string>
+    <string name="files_are_prohibited_in_group">Bestanden en media zijn verboden in deze groep.</string>
+    <string name="favorite_chat">Favoriet</string>
+    <string name="files_and_media_prohibited">Bestanden en media verboden!</string>
+    <string name="unfavorite_chat">Niet favoriet</string>
+    <string name="files_and_media">Bestanden en media</string>
+    <string name="prohibit_sending_files">Verbied het verzenden van bestanden en media.</string>
+    <string name="allow_to_send_files">Sta toe om bestanden en media te verzenden.</string>
+    <string name="group_members_can_send_files">Groepsleden kunnen bestanden en media verzenden.</string>
 </resources>

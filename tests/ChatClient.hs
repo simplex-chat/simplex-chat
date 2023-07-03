@@ -37,6 +37,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
+import Simplex.Messaging.Transport.Server (defaultTransportServerConfig)
 import Simplex.Messaging.Version
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import System.FilePath ((</>))
@@ -125,7 +126,7 @@ testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = mkVersionRange 1 1,
       smpAgentVRange = mkVersionRange 1 1,
-      smpCfg = (smpCfg testAgentCfg) {smpServerVRange = mkVersionRange 1 1}
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange 1 1}
     }
 
 testCfgV1 :: ChatConfig
@@ -318,7 +319,7 @@ serverCfg =
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       smpServerVRange = supportedSMPServerVRange,
-      logTLSErrors = True
+      transportConfig = defaultTransportServerConfig
     }
 
 withSmpServer :: IO () -> IO ()
@@ -349,7 +350,7 @@ xftpServerConfig =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
-      logTLSErrors = True
+      transportConfig = defaultTransportServerConfig
     }
 
 withXFTPServer :: IO () -> IO ()

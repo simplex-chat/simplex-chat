@@ -497,7 +497,7 @@ fun PreviewDatabaseEncryptionLayout() {
   SimpleXTheme {
     DatabaseEncryptionLayout(
       useKeychain = remember { mutableStateOf(true) },
-      prefs = AppPreferences(SimplexApp.context),
+      prefs = AppPreferences(),
       chatDbEncrypted = true,
       currentKey = remember { mutableStateOf("") },
       newKey = remember { mutableStateOf("") },

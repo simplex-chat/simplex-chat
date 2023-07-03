@@ -188,7 +188,7 @@ fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
 
 fun changeNotificationsMode(mode: NotificationsMode, chatModel: ChatModel) {
   chatModel.controller.appPrefs.notificationsMode.set(mode.name)
-  if (mode.requiresIgnoringBattery && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
+  if (mode.requiresIgnoringBattery && !chatModel.controller.isIgnoringBatteryOptimizations()) {
     chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
   }
   chatModel.notificationsMode.value = mode

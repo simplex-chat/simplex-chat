@@ -27,7 +27,6 @@ fun QRCode(
   tintColor: Color = Color(0xff062d56),
   withLogo: Boolean = true
 ) {
-  val context = LocalContext.current
   val scope = rememberCoroutineScope()
 
   BoxWithConstraints {
@@ -47,7 +46,7 @@ fun QRCode(
               .let { if (withLogo) it.addLogo() else it }
             val file = saveTempImageUncompressed(image, false)
             if (file != null) {
-              shareFile(context, "", file.absolutePath)
+              shareFile("", file.absolutePath)
             }
           }
         }

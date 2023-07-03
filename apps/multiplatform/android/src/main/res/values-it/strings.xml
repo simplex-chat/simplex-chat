@@ -225,7 +225,7 @@
     <string name="share_message">Condividi messaggio…</string>
     <string name="contact_sent_large_file">Il tuo contatto ha inviato un file più grande della dimensione massima supportata (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Il contatto e tutti i messaggi verranno eliminati, non è reversibile!</string>
-    <string name="switch_receiving_address_desc">Questa funzionalità è sperimentale! Funzionerà solo se l\'altro client ha la versione 4.2 installata. Dovresti vedere il messaggio nella conversazione una volta completato il cambio di indirizzo. Controlla di potere ancora ricevere messaggi da questo contatto (o membro del gruppo).</string>
+    <string name="switch_receiving_address_desc">L\'indirizzo di ricezione verrà cambiato in un server diverso. La modifica dell\'indirizzo verrà completata dopo che il mittente sarà in linea.</string>
     <string name="only_group_owners_can_enable_voice">Solo i proprietari del gruppo possono attivare i messaggi vocali.</string>
     <string name="send_live_message_desc">Invia un messaggio in diretta: si aggiornerà per i destinatari mentre lo digiti</string>
     <string name="chat_item_ttl_day">1 giorno</string>
@@ -1267,4 +1267,16 @@
     <string name="shutdown_alert_desc">Le notifiche smetteranno di funzionare fino a quando non riavvierai l\'app</string>
     <string name="settings_shutdown">Spegni</string>
     <string name="shutdown_alert_question">Spegnere\?</string>
+    <string name="abort_switch_receiving_address_confirm">Interrompi</string>
+    <string name="allow_to_send_files">Consenti l\'invio di file e contenuti multimediali.</string>
+    <string name="abort_switch_receiving_address">Interrompi il cambio di indirizzo</string>
+    <string name="abort_switch_receiving_address_question">Interrompere il cambio di indirizzo\?</string>
+    <string name="error_aborting_address_change">Errore nell\'interruzione del cambio di indirizzo</string>
+    <string name="only_owners_can_enable_files_and_media">Solo i proprietari del gruppo possono attivare file e contenuti multimediali.</string>
+    <string name="files_and_media">File e multimediali</string>
+    <string name="group_members_can_send_files">I membri del gruppo possono inviare file e contenuti multimediali.</string>
+    <string name="prohibit_sending_files">Proibisci l\'invio di file e contenuti multimediali.</string>
+    <string name="abort_switch_receiving_address_desc">Il cambio di indirizzo verrà interrotto. Verrà usato il vecchio indirizzo di ricezione.</string>
+    <string name="files_are_prohibited_in_group">File e contenuti multimediali sono vietati in questo gruppo.</string>
+    <string name="files_and_media_prohibited">File e contenuti multimediali vietati!</string>
 </resources>

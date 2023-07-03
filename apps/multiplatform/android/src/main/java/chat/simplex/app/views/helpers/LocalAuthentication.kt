@@ -40,10 +40,10 @@ fun authenticate(
   promptTitle: String,
   promptSubtitle: String,
   selfDestruct: Boolean = false,
-  activity: FragmentActivity,
   usingLAMode: LAMode = SimplexApp.context.chatModel.controller.appPrefs.laMode.get(),
   completed: (LAResult) -> Unit
 ) {
+  val activity = SimplexApp.context.mainActivity.get() ?: return completed(LAResult.Error(""))
   when (usingLAMode) {
     LAMode.SYSTEM -> when {
       SDK_INT in 28..29 ->

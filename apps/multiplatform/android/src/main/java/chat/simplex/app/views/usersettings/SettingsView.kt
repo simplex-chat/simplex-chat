@@ -6,7 +6,6 @@ import SectionItemView
 import SectionItemViewWithIcon
 import SectionView
 import TextIconSpaced
-import android.content.*
 import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -45,7 +44,6 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
 
   if (user != null) {
     val requireAuth = remember { chatModel.controller.appPrefs.performLA.state }
-    val context = LocalContext.current
     SettingsLayout(
       profile = user.profile,
       stopped,
@@ -92,7 +90,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
             LaunchedEffect(Unit) {
               if (autoShow) {
                 autoShow = false
-                runAuth(title, desc, context, onFinishAuth)
+                runAuth(title, desc, onFinishAuth)
               }
             }
             Box(
@@ -103,7 +101,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
                 stringResource(R.string.auth_unlock),
                 icon = painterResource(R.drawable.ic_lock),
                 click = {
-                  runAuth(title, desc, context, onFinishAuth)
+                  runAuth(title, desc, onFinishAuth)
                 }
               )
             }
@@ -481,11 +479,10 @@ fun PreferenceToggleWithIcon(
   }
 }
 
-private fun runAuth(title: String, desc: String, context: Context, onFinish: (success: Boolean) -> Unit) {
+private fun runAuth(title: String, desc: String, onFinish: (success: Boolean) -> Unit) {
   authenticate(
     title,
     desc,
-    activity = context as FragmentActivity,
     completed = { laResult ->
       onFinish(laResult == LAResult.Success || laResult is LAResult.Unavailable)
     }

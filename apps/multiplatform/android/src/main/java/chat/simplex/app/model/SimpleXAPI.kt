@@ -58,9 +58,9 @@ enum class SimplexLinkMode {
   }
 }
 
-class AppPreferences(val context: Context) {
-  private val sharedPreferences: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
-  private val sharedPreferencesThemes: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_THEMES_ID, Context.MODE_PRIVATE)
+class AppPreferences {
+  private val sharedPreferences: SharedPreferences = SimplexApp.context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+  private val sharedPreferencesThemes: SharedPreferences = SimplexApp.context.getSharedPreferences(SHARED_PREFS_THEMES_ID, Context.MODE_PRIVATE)
 
   // deprecated, remove in 2024
   private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
@@ -298,20 +298,15 @@ class AppPreferences(val context: Context) {
 
 private const val MESSAGE_TIMEOUT: Int = 15_000_000
 
-open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
-  val chatModel = ChatModel(this)
+object ChatController {
+  var ctrl: ChatCtrl? = -1
+  val appPrefs: AppPreferences by lazy { AppPreferences() }
+  val ntfManager by lazy { NtfManager }
+
+  val chatModel = ChatModel
   private var receiverStarted = false
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
-
-  init {
-    chatModel.notificationsMode.value =
-      kotlin.runCatching { NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!) }.getOrDefault(NotificationsMode.default)
-    chatModel.notificationPreviewMode.value =
-      kotlin.runCatching { NotificationPreviewMode.valueOf(appPrefs.notificationPreviewMode.get()!!) }.getOrDefault(NotificationPreviewMode.default)
-    chatModel.performLA.value = appPrefs.performLA.get()
-    chatModel.incognito.value = appPrefs.incognito.get()
-  }
 
   private fun currentUserId(funcName: String): Long {
     val userId = chatModel.currentUser.value?.userId
@@ -328,8 +323,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     try {
       if (chatModel.chatRunning.value == true) return
       apiSetNetworkConfig(getNetCfg())
-      apiSetTempFolder(getTempFilesDirectory(appContext))
-      apiSetFilesFolder(getAppFilesDirectory(appContext))
+      apiSetTempFolder(getTempFilesDirectory())
+      apiSetFilesFolder(getAppFilesDirectory())
       apiSetXFTPConfig(getXFTPCfg())
       val justStarted = apiStartChat()
       val users = listUsers()
@@ -1602,7 +1597,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       mc is MsgContent.MCFile
       && fileName != null
     ) {
-      removeFile(appContext, fileName)
+      removeFile(fileName)
     }
   }
 
@@ -1671,7 +1666,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
     if (!appPrefs.backgroundServiceNoticeShown.get()) {
       // the branch for the new users who have never seen service notice
-      if (!mode.requiresIgnoringBattery || isIgnoringBatteryOptimizations(appContext)) {
+      if (!mode.requiresIgnoringBattery || isIgnoringBatteryOptimizations()) {
         showBGServiceNotice(mode)
       } else {
         showBGServiceNoticeIgnoreOptimization(mode)
@@ -1679,7 +1674,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
       appPrefs.backgroundServiceNoticeShown.set(true)
       appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-    } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations(appContext)) {
+    } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations()) {
       // the branch for users who have app installed, and have seen the service notice,
       // but the battery optimization for the app is on (Android 12) AND the service is running
       if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
@@ -1738,7 +1733,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode) = AlertManager.shared.showAlert {
     val ignoreOptimization = {
       AlertManager.shared.hideAlert()
-      askAboutIgnoringBatteryOptimization(appContext)
+      askAboutIgnoringBatteryOptimization()
     }
     AlertDialog(
       onDismissRequest = ignoreOptimization,
@@ -1800,19 +1795,19 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     )
   }
 
-  fun isIgnoringBatteryOptimizations(context: Context): Boolean {
-    val powerManager = context.getSystemService(Application.POWER_SERVICE) as PowerManager
-    return powerManager.isIgnoringBatteryOptimizations(context.packageName)
+  fun isIgnoringBatteryOptimizations(): Boolean {
+    val powerManager = SimplexApp.context.getSystemService(Application.POWER_SERVICE) as PowerManager
+    return powerManager.isIgnoringBatteryOptimizations(SimplexApp.context.packageName)
   }
 
-  private fun askAboutIgnoringBatteryOptimization(context: Context) {
+  private fun askAboutIgnoringBatteryOptimization() {
     Intent().apply {
       @SuppressLint("BatteryLife")
       action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-      data = Uri.parse("package:${context.packageName}")
+      data = Uri.parse("package:${SimplexApp.context.packageName}")
       // This flag is needed when you start a new activity from non-Activity context
       addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-      context.startActivity(this)
+      SimplexApp.context.startActivity(this)
     }
   }
 

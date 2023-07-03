@@ -42,7 +42,7 @@ fun DatabaseErrorView(
   var storedDBKey by remember { mutableStateOf(DatabaseUtils.ksDatabasePassword.get()) }
   var useKeychain by remember { mutableStateOf(appPreferences.storeDBPassphrase.get()) }
   val context = LocalContext.current
-  val restoreDbFromBackup = remember { mutableStateOf(shouldShowRestoreDbButton(appPreferences, context)) }
+  val restoreDbFromBackup = remember { mutableStateOf(shouldShowRestoreDbButton(appPreferences)) }
 
   fun callRunChat(confirmMigrations: MigrationConfirmation? = null) {
     val useKey = if (useKeychain) null else dbKey.value
@@ -164,7 +164,7 @@ fun DatabaseErrorView(
           title = generalGetString(R.string.restore_database_alert_title),
           text = generalGetString(R.string.restore_database_alert_desc),
           confirmText = generalGetString(R.string.restore_database_alert_confirm),
-          onConfirm = { restoreDb(restoreDbFromBackup, appPreferences, context) },
+          onConfirm = { restoreDb(restoreDbFromBackup, appPreferences) },
           destructive = true,
         )
       }
@@ -226,7 +226,8 @@ private fun runChat(
   }
 }
 
-private fun shouldShowRestoreDbButton(prefs: AppPreferences, context: Context): Boolean {
+private fun shouldShowRestoreDbButton(prefs: AppPreferences): Boolean {
+  val context = SimplexApp.context
   val startedAt = prefs.encryptionStartedAt.get() ?: return false
   /** Just in case there is any small difference between reported Java's [Clock.System.now] and Linux's time on a file */
   val safeDiffInTime = 10_000L
@@ -238,7 +239,8 @@ private fun shouldShowRestoreDbButton(prefs: AppPreferences, context: Context): 
       startedAt.toEpochMilliseconds() - safeDiffInTime <= filesAgent.lastModified()
 }
 
-private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPreferences, context: Context) {
+private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPreferences) {
+  val context = SimplexApp.context
   val filesChatBase = context.dataDir.absolutePath + File.separator + "files_chat.db"
   val filesAgentBase = context.dataDir.absolutePath + File.separator + "files_agent.db"
   try {
@@ -299,7 +301,7 @@ fun PreviewChatInfoLayout() {
   SimpleXTheme {
     DatabaseErrorView(
       remember { mutableStateOf(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db")) },
-      AppPreferences(SimplexApp.context)
+      AppPreferences()
     )
   }
 }

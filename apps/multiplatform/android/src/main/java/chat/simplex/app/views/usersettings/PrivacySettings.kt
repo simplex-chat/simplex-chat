@@ -143,7 +143,7 @@ fun SimplexLockView(
       } else {
         generalGetString(R.string.chat_lock)
       },
-      generalGetString(R.string.change_lock_mode), activity = activity
+      generalGetString(R.string.change_lock_mode)
     ) { laResult ->
       when (laResult) {
         is LAResult.Error -> {
@@ -153,7 +153,7 @@ fun SimplexLockView(
         LAResult.Success -> {
           when (toLAMode) {
             LAMode.SYSTEM -> {
-              authenticate(generalGetString(R.string.auth_enable_simplex_lock), promptSubtitle = "", activity = activity, usingLAMode = toLAMode) { laResult ->
+              authenticate(generalGetString(R.string.auth_enable_simplex_lock), promptSubtitle = "", usingLAMode = toLAMode) { laResult ->
                 when (laResult) {
                   LAResult.Success -> {
                     currentLAMode.set(toLAMode)
@@ -189,7 +189,7 @@ fun SimplexLockView(
   }
 
   fun toggleSelfDestruct(selfDestruct: SharedPreference<Boolean>) {
-    authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.change_self_destruct_mode), activity = activity) { laResult ->
+    authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.change_self_destruct_mode)) { laResult ->
       when (laResult) {
         is LAResult.Error -> laFailedAlert()
         is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
@@ -208,7 +208,7 @@ fun SimplexLockView(
   }
 
   fun changeLAPassword() {
-    authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.la_change_app_passcode), activity = activity) { laResult ->
+    authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.la_change_app_passcode)) { laResult ->
       when (laResult) {
         LAResult.Success -> {
           ModalManager.shared.showCustomModal { close ->
@@ -231,7 +231,7 @@ fun SimplexLockView(
   }
 
   fun changeSelfDestructPassword() {
-    authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.change_self_destruct_passcode), activity = activity) { laResult ->
+    authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.change_self_destruct_passcode)) { laResult ->
       when (laResult) {
         LAResult.Success -> {
           ModalManager.shared.showCustomModal { close ->

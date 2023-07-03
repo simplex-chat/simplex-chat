@@ -2,8 +2,7 @@ package chat.simplex.app.views.helpers
 
 import android.util.Log
 import chat.simplex.app.*
-import chat.simplex.app.model.AppPreferences
-import chat.simplex.app.model.SharedPreference
+import chat.simplex.app.model.*
 import chat.simplex.app.views.usersettings.Cryptor
 import kotlinx.serialization.*
 import java.io.File
@@ -13,7 +12,7 @@ object DatabaseUtils {
   private val cryptor = Cryptor()
 
   private val appPreferences: AppPreferences by lazy {
-    AppPreferences(SimplexApp.context)
+    ChatController.appPrefs
   }
 
   private const val DATABASE_PASSWORD_ALIAS: String = "databasePassword"
