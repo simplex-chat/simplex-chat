@@ -15,13 +15,13 @@ git clone https://github.com/simplex-chat/simplex-chat "$tmp/simplex-chat"
 git -C "$tmp/simplex-chat" checkout "$commit"
 
 # Create missing folders
-mkdir -p "$tmp/simplex-chat/apps/android/app/src/main/cpp/libs/arm64-v8a"
+mkdir -p "$tmp/simplex-chat/apps/multiplatform/common/src/commonMain/cpp/android/libs/arm64-v8a"
 
 curl -sSf "$libsim" -o "$tmp/libsimplex.zip"
-unzip -o "$tmp/libsimplex.zip" -d "$tmp/simplex-chat/apps/android/app/src/main/cpp/libs/arm64-v8a"
+unzip -o "$tmp/libsimplex.zip" -d "$tmp/simplex-chat/apps/multiplatform/common/src/commonMain/cpp/android/libs/arm64-v8a"
 
 curl -sSf "$libsup" -o "$tmp/libsupport.zip"
-unzip -o "$tmp/libsupport.zip" -d "$tmp/simplex-chat/apps/android/app/src/main/cpp/libs/arm64-v8a"
+unzip -o "$tmp/libsupport.zip" -d "$tmp/simplex-chat/apps/multiplatform/common/src/commonMain/cpp/android/libs/arm64-v8a"
 
-gradle -p "$tmp/simplex-chat/apps/android/" clean build
-cp "$tmp/simplex-chat/apps/android/app/build/outputs/apk/release/app-release-unsigned.apk" "$PWD/simplex-chat.apk"
+gradle -p "$tmp/simplex-chat/apps/multiplatform/" clean build
+cp "$tmp/simplex-chat/apps/multiplatform/android/build/outputs/apk/release/android-release-unsigned.apk" "$PWD/simplex-chat.apk"
