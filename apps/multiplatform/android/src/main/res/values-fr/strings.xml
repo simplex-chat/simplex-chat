@@ -79,15 +79,15 @@
     <string name="icon_descr_instant_notifications">Notifications instantanées</string>
     <string name="service_notifications">Notifications instantanées !</string>
     <string name="service_notifications_disabled">Les notifications instantanées sont désactivées !</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Il peut être désactivé via les paramètres</b> - les notifications seront toujours affichées lorsque l\'application est en cours d\'exécution.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Il peut être désactivé via les paramètres</b> - les notifications seront toujours affichées lorsque l\'application est en cours d\'exécution.]]></string>
     <string name="turning_off_service_and_periodic">L\'optimisation de la batterie est active et désactive le service de fond et les demandes périodiques de nouveaux messages. Vous pouvez les réactiver via les paramètres.</string>
     <string name="periodic_notifications">Notifications périodiques</string>
     <string name="periodic_notifications_disabled">Les notifications périodiques sont désactivées !</string>
     <string name="enter_passphrase_notification_title">Une phrase secrète est nécessaire</string>
-    <string name="turn_off_battery_optimization">Pour l\'utiliser, veuillez <b>désactiver l\'optimisation de la batterie</b> pour SimpleX dans la prochaine fenêtre de dialogue. Sinon, les notifications seront désactivées.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Pour l\'utiliser, veuillez <b>désactiver l\'optimisation de la batterie</b> pour SimpleX dans la prochaine fenêtre de dialogue. Sinon, les notifications seront désactivées.]]></string>
     <string name="error_smp_test_server_auth">Le serveur requiert une autorisation pour créer des files d\'attente, vérifiez le mot de passe</string>
     <string name="periodic_notifications_desc">L\'application récupère périodiquement les nouveaux messages - elle utilise un peu votre batterie chaque jour. L\'application n\'utilise pas les notifications push - les données de votre appareil ne sont pas envoyées aux serveurs.</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Pour protéger votre vie privée, au lieu des notifications push, l\'application possède un <b>SimpleX service de fond</b> - il utilise quelques pour cent de la batterie par jour.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Pour protéger votre vie privée, au lieu des notifications push, l\'application possède un <b>SimpleX service de fond</b> - il utilise quelques pour cent de la batterie par jour.]]></string>
     <string name="hide_notification">Cacher</string>
     <string name="settings_notification_preview_mode_title">Montrer l\'aperçu</string>
     <string name="notification_preview_mode_contact">Nom du contact</string>
@@ -206,11 +206,11 @@
     <string name="gallery_video_button">Vidéo</string>
     <string name="to_start_a_new_chat_help_header">Pour démarrer une nouvelle discussion</string>
     <string name="chat_help_tap_button">Appuyez sur le bouton</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scanner un code QR</b> : pour vous connecter à votre contact qui vous montre un code QR.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scanner un code QR</b> : pour vous connecter à votre contact qui vous montre un code QR.]]></string>
     <string name="to_connect_via_link_title">Pour se connecter via un lien</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si vous avez reçu un lien d\'invitation SimpleX Chat, vous pouvez l\'ouvrir dans votre navigateur :</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 bureau : scanner le code QR affiché depuis l\'app, via <b>Scanner le code QR</b>.</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobile : appuyez sur <b>Ouvrir dans l\'application</b>, puis appuyez sur <b>se connecter</b> dans l\'app.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 bureau : scanner le code QR affiché depuis l\'app, via <b>Scanner le code QR</b>.]]></string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobile : appuyez sur <b>Ouvrir dans l\'application</b>, puis appuyez sur <b>se connecter</b> dans l\'app.]]></string>
     <string name="accept_contact_incognito_button">Accepter en incognito</string>
     <string name="reject_contact_button">Rejeter</string>
     <string name="clear_chat_question">Effacer la conversation \?</string>
@@ -246,7 +246,7 @@
     <string name="your_profile_will_be_sent">Votre profil de chat sera envoyé à votre contact</string>
     <string name="paste_button">Coller</string>
     <string name="this_string_is_not_a_connection_link">Cette chaîne n\'est pas un lien de connexion !</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Vous pouvez aussi vous connecter en cliquant sur le lien. Si il s\'ouvre dans le navigateur, cliquez sur <b>Ouvrir dans l\'app mobile</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Vous pouvez aussi vous connecter en cliquant sur le lien. Si il s\'ouvre dans le navigateur, cliquez sur <b>Ouvrir dans l\'app mobile</b>.]]></string>
     <string name="create_one_time_link">Créer un lien d\'invitation unique</string>
     <string name="text_field_set_contact_placeholder">Définir le nom du contact…</string>
     <string name="icon_descr_server_status_disconnected">Déconnecté</string>
@@ -296,9 +296,9 @@
     <string name="toast_permission_denied">Autorisation refusée !</string>
     <string name="use_camera_button">Appareil\nphoto</string>
     <string name="thank_you_for_installing_simplex">Merci d\'avoir installé SimpleX Chat !</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Vous pouvez <font color="#0088ff">vous connecter aux développeurs de SimpleX Chat pour leur poser des questions et recevoir des réponses :</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Vous pouvez <font color="#0088ff">vous connecter aux développeurs de SimpleX Chat pour leur poser des questions et recevoir des réponses :</font>.]]></string>
     <string name="above_then_preposition_continuation">ci-dessus, puis :</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Ajouter un nouveau contact</b> : afin de créer un code QR à usage unique pour votre contact.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Ajouter un nouveau contact</b> : afin de créer un code QR à usage unique pour votre contact.]]></string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Si vous choisissez de la rejeter, l\'expéditeur·rice NE sera PAS notifié·e.</string>
     <string name="accept_contact_button">Accepter</string>
     <string name="mute_chat">Muet</string>
@@ -314,10 +314,10 @@
     <string name="notifications">Notifications</string>
     <string name="switch_receiving_address_desc">L\'adresse de réception sera changée pour un autre serveur. Le changement d\'adresse sera terminé lorsque l\'expéditeur sera en ligne.</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Vous serez connecté·e au groupe lorsque l\'appareil de l\'hôte sera en ligne, veuillez attendre ou vérifier plus tard !</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Si vous ne pouvez pas vous rencontrer en personne, <b>montrez le code QR lors d\'un appel vidéo</b>, ou partagez le lien.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Si vous ne pouvez pas vous rencontrer en personne, <b>montrez le code QR lors d\'un appel vidéo</b>, ou partagez le lien.]]></string>
     <string name="scan_code_from_contacts_app">Scannez le code de sécurité depuis l\'application de votre contact.</string>
     <string name="to_verify_compare">Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Si vous ne pouvez pas vous rencontrer en personne, vous pouvez <b>scanner un code QR lors d\'un appel vidéo</b>, ou votre contact peut partager un lien d\'invitation.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Si vous ne pouvez pas vous rencontrer en personne, vous pouvez <b>scanner un code QR lors d\'un appel vidéo</b>, ou votre contact peut partager un lien d\'invitation.]]></string>
     <string name="smp_servers_add">Ajouter un serveur…</string>
     <string name="markdown_in_messages">Markdown dans les messages</string>
     <string name="smp_servers_preset_add">Ajouter des serveurs prédéfinis</string>
@@ -328,7 +328,7 @@
     <string name="network_use_onion_hosts">Utiliser les hôtes .onions</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Les hôtes .onion seront utilisés lorsqu\'ils sont disponibles.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Les hôtes .onion seront nécessaires pour la connexion.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Vous contrôlez par quel·s serveur·s vous pouvez <b>transmettre</b> ainsi que par quel·s serveur·s vous pouvez <b>recevoir</b> les messages de vos contacts.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Vous contrôlez par quel·s serveur·s vous pouvez <b>transmettre</b> ainsi que par quel·s serveur·s vous pouvez <b>recevoir</b> les messages de vos contacts.]]></string>
     <string name="your_settings">Vos paramètres</string>
     <string name="chat_lock">SimpleX Lock</string>
     <string name="chat_console">Console du chat</string>
@@ -388,7 +388,7 @@
     <string name="onboarding_notifications_mode_off">Quand l\'application fonctionne</string>
     <string name="onboarding_notifications_mode_periodic">Périodique</string>
     <string name="onboarding_notifications_mode_service">Instantanée</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Économie de batterie</b>. Vous recevrez des notifications uniquement lorsque l\'application est en cours d\'exécution (PAS de service d\'arrière-plan)</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Économie de batterie</b>. Vous recevrez des notifications uniquement lorsque l\'application est en cours d\'exécution (PAS de service d\'arrière-plan)]]></string>
     <string name="about_simplex_chat">À propos de SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Comment l\'utiliser</string>
     <string name="markdown_help">Aide Markdown</string>
@@ -459,11 +459,11 @@
     <string name="make_private_connection">Établir une connexion privée</string>
     <string name="how_it_works">Comment ça fonctionne</string>
     <string name="how_simplex_works">Comment SimpleX fonctionne</string>
-    <string name="many_people_asked_how_can_it_deliver">Beaucoup se demandent : <i>si SimpleX n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i></string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.</string>
-    <string name="read_more_in_github_with_link">Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Batterie peu utilisée</b>. Le service de fond vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Batterie plus utilisée </b> ! Le service de fond est toujours en cours d\'exécution - les notifications s\'affichent dès que les messages sont disponibles.</string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Beaucoup se demandent : <i>si SimpleX n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i>]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.]]></string>
+    <string name="read_more_in_github_with_link"><![CDATA[Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Batterie peu utilisée</b>. Le service de fond vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Batterie plus utilisée </b> ! Le service de fond est toujours en cours d\'exécution - les notifications s\'affichent dès que les messages sont disponibles.]]></string>
     <string name="integrity_msg_skipped">%1$d message⸱s manqué⸱s</string>
     <string name="integrity_msg_bad_id">ID de message incorrecte</string>
     <string name="settings_section_title_settings">PARAMÈTRES</string>
@@ -518,7 +518,7 @@
     <string name="encrypt_database">Chiffrer</string>
     <string name="enter_correct_current_passphrase">Veuillez entrer la phrase secrète actuelle correcte.</string>
     <string name="database_is_not_encrypted">Votre base de données de chat n\'est pas chiffrée - définissez une phrase secrète pour la protéger.</string>
-    <string name="impossible_to_recover_passphrase"><b>Veuillez noter</b> : vous NE pourrez PAS récupérer ou modifier la phrase secrète si vous la perdez.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Veuillez noter</b> : vous NE pourrez PAS récupérer ou modifier la phrase secrète si vous la perdez.]]></string>
     <string name="keychain_allows_to_receive_ntfs">Le Keystore d\'Android sera utilisé pour stocker en toute sécurité la phrase secrète après sa modification ou redémarrage de l\'app - cela permettra de recevoir les notifications.</string>
     <string name="store_passphrase_securely_without_recover">Veuillez conserver votre phrase secrète en lieu sûr, vous NE pourrez PAS accéder au chat si vous la perdez.</string>
     <string name="passphrase_is_different">La phrase secrète de la base de données est différente de celle enregistrée dans le Keystore.</string>
@@ -919,7 +919,7 @@
     <string name="users_delete_all_chats_deleted">Toutes les discussions et tous les messages seront supprimés - il est impossible de revenir en arrière !</string>
     <string name="delete_files_and_media_all">Effacer tous les fichiers</string>
     <string name="users_delete_profile_for">Supprimer le profil de chat pour</string>
-    <string name="network_session_mode_user_description">Une connexion TCP distincte (et un identifiant SOCKS) sera utilisée <b>pour chaque profil de chat que vous avez dans l\'application</b>.</string>
+    <string name="network_session_mode_user_description"><![CDATA[Une connexion TCP distincte (et un identifiant SOCKS) sera utilisée <b>pour chaque profil de chat que vous avez dans l\'application</b>.]]></string>
     <string name="users_delete_question">Supprimer le profil du chat \?</string>
     <string name="files_and_media_section">Fichiers &amp; médias</string>
     <string name="messages_section_title">Messages</string>
@@ -1059,7 +1059,7 @@
     <string name="network_proxy_port">port %d</string>
     <string name="network_socks_proxy_settings">Paramètres de proxy SOCKS</string>
     <string name="network_socks_toggle_use_socks_proxy">Utiliser un proxy SOCKS</string>
-    <string name="disable_onion_hosts_when_not_supported">Définissez <i>Utiliser les hôtes .onion</i> sur Non si le proxy SOCKS ne les prend pas en charge.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Définissez <i>Utiliser les hôtes .onion</i> sur Non si le proxy SOCKS ne les prend pas en charge.]]></string>
     <string name="la_lock_mode">Mode de SimpleX Lock</string>
     <string name="lock_not_enabled">SimpleX Lock n\'est pas activé !</string>
     <string name="la_lock_mode_system">Authentification du système</string>
@@ -1180,7 +1180,7 @@
     <string name="color_received_message">Message reçu</string>
     <string name="import_theme_error_desc">Assurez-vous que le fichier a une syntaxe YAML correcte. Exporter le thème pour avoir un exemple de la structure du fichier du thème.</string>
     <string name="profile_update_will_be_sent_to_contacts">La mise à jour du profil sera envoyée à vos contacts.</string>
-    <string name="read_more_in_user_guide_with_link">Pour en savoir plus, consultez le <font color="#0088ff">Guide de l\'utilisateur</font>.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Pour en savoir plus, consultez le <font color="#0088ff">Guide de l\'utilisateur</font>.]]></string>
     <string name="save_auto_accept_settings">Sauvegarder les paramètres d\'acceptation automatique</string>
     <string name="scan_qr_to_connect_to_contact">Pour se connecter, votre contact peut scanner le code QR ou utiliser le lien dans l\'application.</string>
     <string name="your_contacts_will_see_it">Vos contacts dans SimpleX la verront.

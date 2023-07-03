@@ -21,8 +21,8 @@
     <string name="allow_verb">允許</string>
     <string name="display_name__field">顯示名稱：</string>
     <string name="full_name__field">全名：</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>使用更多電量</b>！通知服務長期在背景中運行 – 有效的訊息就會即時顯示在通知內。</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>對電量友善</b>。通知服務於每十分鐘檢查一次訊息。你可能會錯過通話和迫切的訊息。</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>使用更多電量</b>！通知服務長期在背景中運行 – 有效的訊息就會即時顯示在通知內。]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>對電量友善</b>。通知服務於每十分鐘檢查一次訊息。你可能會錯過通話和迫切的訊息。]]></string>
     <string name="answer_call">回應通話請求</string>
     <string name="clear_contacts_selection_button">清除</string>
     <string name="allow_direct_messages">允許向群組內的成員傳送私訊。</string>
@@ -48,8 +48,8 @@
     <string name="allow_voice_messages_question">允許使用語音訊息？</string>
     <string name="cancel_verb">取消</string>
     <string name="icon_descr_cancel_live_message">取消實況訊息</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>新增新的聯絡人</b>：建立你的一次性二維碼給你的聯絡人。</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>掃描二維碼</b>：連接到向你出示二維碼的聯絡人。</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>新增新的聯絡人</b>：建立你的一次性二維碼給你的聯絡人。]]></string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>掃描二維碼</b>：連接到向你出示二維碼的聯絡人。]]></string>
     <string name="choose_file">選擇檔案</string>
     <string name="use_camera_button">相機</string>
     <string name="from_gallery_button">從圖片庫選擇圖片</string>
@@ -79,7 +79,7 @@
     <string name="callstatus_in_progress">通話中</string>
     <string name="secret">私密</string>
     <string name="callstate_connected">已連接</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>對電量最好</b>。 只有在應用程式運行中的時侯才可以接收訊息通知。（沒有後台服務）</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>對電量最好</b>。 只有在應用程式運行中的時侯才可以接收訊息通知。（沒有後台服務）]]></string>
     <string name="encrypted_video_call">端對端加密的視訊通話</string>
     <string name="video_call_no_encryption">視訊通話（沒有端對端加密）</string>
     <string name="call_already_ended">通話已經結束了！</string>
@@ -100,7 +100,7 @@
     <string name="settings_section_title_icon">應用程式圖示</string>
     <string name="chat_database_imported">已匯入對話數據庫</string>
     <string name="keychain_is_storing_securely">Android 金鑰庫是用於安全地儲存密碼 - 確保通知推送服務的運作。</string>
-    <string name="impossible_to_recover_passphrase"><b>請注意</b>：如果你忘記了密碼你將不能再次復原或修改密碼。</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>請注意</b>：如果你忘記了密碼你將不能再次復原或修改密碼。]]></string>
     <string name="keychain_allows_to_receive_ntfs">當你重新啟動應用程式或修改密碼後， Android 金鑰庫將用來安全地儲存密碼 - 將允許接收訊息通知。</string>
     <string name="chat_is_stopped_indication">聊天室已停止運作</string>
     <string name="only_group_owners_can_change_prefs">只有這個群組的負責人才能修改群組內的設定。</string>
@@ -149,7 +149,7 @@
     <string name="failed_to_create_user_duplicate_title">重複的顯示名稱！</string>
     <string name="network_session_mode_entity_description">一個單獨的 TCP 連接（和 SOCKS 憑證）將用於<b>每個聯絡人和群組內的成員</b>。
 \n<b>請注意</b>：如果你有很多連接，你的電話電量和數據流量的消耗率會大大增加，一些連接有機會會連接失敗。</string>
-    <string name="network_session_mode_user_description">一個單獨的 TCP 連接（和 SOCKS 憑證）將用於 <b>每個聊天室的設定</b>。</string>
+    <string name="network_session_mode_user_description"><![CDATA[一個單獨的 TCP 連接（和 SOCKS 憑證）將用於 <b>每個聊天室的設定</b>。]]></string>
     <string name="back">返回</string>
     <string name="turning_off_service_and_periodic">省電模式運行中，關閉了背景通知服務和定期更新接收訊息。你可以在通知設定內重新啟用。</string>
     <string name="settings_section_title_incognito">匿名聊天模式</string>
@@ -161,7 +161,7 @@
     <string name="server_connected">已連接</string>
     <string name="simplex_link_mode_description">簡介</string>
     <string name="simplex_link_mode_full">完整連結</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>你可以透過設定關閉</b> – 當應用程式運行時，通知服務仍然會運行。</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>你可以透過設定關閉</b> – 當應用程式運行時，通知服務仍然會運行。]]></string>
     <string name="notifications_mode_service_desc">通知服務會一直在後台中運行 - 一但接收到新的訊息就會顯示在通知內。</string>
     <string name="notifications_mode_off_desc">此應用程式只會在運行中的時候才會接收訊息通知。</string>
     <string name="icon_descr_asked_to_receive">要求接收圖片</string>
@@ -327,7 +327,7 @@
     <string name="smp_server_test_secure_queue">安全佇列</string>
     <string name="smp_server_test_delete_queue">刪除佇列</string>
     <string name="smp_server_test_disconnect">斷開連接</string>
-    <string name="turn_off_battery_optimization">為了使用它，請 <b>禁用電量優化</b> 為了 SimpleX 在下一個對話中。否則，將禁用通知功能。</string>
+    <string name="turn_off_battery_optimization"><![CDATA[為了使用它，請 <b>禁用電量優化</b> 為了 SimpleX 在下一個對話中。否則，將禁用通知功能。]]></string>
     <string name="enter_passphrase_notification_desc">在接收通知之前，請你輸入數據庫的密碼</string>
     <string name="periodic_notifications_desc">應用程式會定期取得新的訊息 — 它每天會消耗百分之幾的電量。應用程式將不使用推送通知 — 你裝置中的數據不會傳送至伺服器。</string>
     <string name="simplex_service_notification_title">SimpleX Chat 服務</string>
@@ -366,7 +366,7 @@
     <string name="send_live_message_desc">傳送實況訊息 - 這會即時顯示你在輸入中的文字</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">（掃描或使用剪貼薄貼上）</string>
     <string name="toast_permission_denied">權限被拒絕！</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">為了保護你的私隱，<b>SimpleX</b> 有一個後台通知服務 – 它每天使用百分之幾的電量。</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[為了保護你的私隱，<b>SimpleX</b> 有一個後台通知服務 – 它每天使用百分之幾的電量。]]></string>
     <string name="periodic_notifications">定期通知</string>
     <string name="notifications_mode_periodic_desc">每十分鐘會檢查一次訊息，最快可設為每分鐘檢查一次</string>
     <string name="notification_preview_mode_message">訊息文字</string>
@@ -424,7 +424,7 @@
     <string name="colored">顏色</string>
     <string name="how_to_use_your_servers">如何使用你的伺服器</string>
     <string name="to_connect_via_link_title">使用連結連接</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 桌面版：在應用程式內掃描一個已存在的二維碼，透過 <b>掃描二維碼</b>。</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 桌面版：在應用程式內掃描一個已存在的二維碼，透過 <b>掃描二維碼</b>。]]></string>
     <string name="icon_descr_settings">設定</string>
     <string name="this_QR_code_is_not_a_link">這個二維碼不是一個連結！</string>
     <string name="create_one_time_link">建立一次性邀請連結</string>
@@ -448,7 +448,7 @@
     <string name="callstate_starting">開始中 …</string>
     <string name="callstate_waiting_for_answer">等待對方回應…</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">如果你收到 SimepleX Chat 邀請連結，你可以使用瀏覧器開啟：</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 電話版： 點擊 <b>使用電話程式開啟</b>, 然後在程式內點擊 <b>連接</b>。</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 電話版： 點擊 <b>使用電話程式開啟</b>, 然後在程式內點擊 <b>連接</b>。]]></string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">如果你選擇拒絕，傳送者將不會收到通知。</string>
     <string name="reject_contact_button">拒絕</string>
     <string name="delete_contact_menu_action">刪除</string>
@@ -473,15 +473,15 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">當群組的建立人上線，你便會成功連接至群組，請耐心等待！</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">當你的連接請求已被接受，你便會連接成功，請耐心等待！</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">當你的聯絡人上線，你便會連接成功，請耐心等待！</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">如果你不能面對面接觸此聯絡人，<b>可於視訊通話中出示你的二維碼</b>，或者分享連結。</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[如果你不能面對面接觸此聯絡人，<b>可於視訊通話中出示你的二維碼</b>，或者分享連結。]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">你的個人檔案會傳送給
 \n你的聯絡人</string>
     <string name="paste_connection_link_below_to_connect">將你接收到的連結貼上至下面的框內，以開啟你與你的聯絡人對話。</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">如果你不能面對面接觸此聯絡人，你可以於 <b>視訊通話中掃描二維碼</b> ，或者你可以分享一個邀請連結給此聯絡人。</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[如果你不能面對面接觸此聯絡人，你可以於 <b>視訊通話中掃描二維碼</b> ，或者你可以分享一個邀請連結給此聯絡人。]]></string>
     <string name="your_profile_will_be_sent">你的個人檔案會傳送給你的聯絡人</string>
     <string name="paste_button">貼上</string>
     <string name="this_string_is_not_a_connection_link">這些字串不是連接連結！</string>
-    <string name="you_can_also_connect_by_clicking_the_link">你也可以點擊連結連接。如果在瀏覧器中開啟，點擊 <b>在電話應用程式內的開啟</b> 按鈕。</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[你也可以點擊連結連接。如果在瀏覧器中開啟，點擊 <b>在電話應用程式內的開啟</b> 按鈕。]]></string>
     <string name="one_time_link">一次性邀請連結</string>
     <string name="scan_code">掃描二維碼</string>
     <string name="incorrect_code">錯誤的安全碼！</string>
@@ -530,7 +530,7 @@
     <string name="we_do_not_store_contacts_or_messages_on_servers">我們不會在伺服器內儲存你的任何聯絡人和訊息（一旦傳送）。</string>
     <string name="create_profile">建立個人檔案</string>
     <string name="callstate_received_confirmation">已確認回應…</string>
-    <string name="you_can_connect_to_simplex_chat_founder">你可以透過 <font color="#0088ff">連接到 SimpleX Chat 開發人員提出任何問題並同意更新</font>。</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[你可以透過 <font color="#0088ff">連接到 SimpleX Chat 開發人員提出任何問題並同意更新</font>。]]></string>
     <string name="to_start_a_new_chat_help_header">開啟新的對話</string>
     <string name="set_contact_name">設定聯絡人名稱</string>
     <string name="you_invited_your_contact">你已邀請了你的聯絡人</string>
@@ -565,7 +565,7 @@
     <string name="description_via_group_link_incognito">透過群組連結使用匿名聊天模式</string>
     <string name="description_via_contact_address_link_incognito">一個使用了匿名聊天模式的人透過連結加入了群組</string>
     <string name="description_via_one_time_link_incognito">透過使用一次性連結匿名聊天模式連接</string>
-    <string name="many_people_asked_how_can_it_deliver">有很多人問：<i>如果 SimpleX 沒有任何的用戶標識符，它如何傳送訊息？</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[有很多人問：<i>如果 SimpleX 沒有任何的用戶標識符，它如何傳送訊息？</i>]]></string>
     <string name="onboarding_notifications_mode_service">即時</string>
     <string name="onboarding_notifications_mode_periodic">定期的</string>
     <string name="no_call_on_lock_screen">關閉</string>
@@ -802,7 +802,7 @@
     <string name="chat_preferences_contact_allows">聯絡人允許</string>
     <string name="ttl_s">%ds</string>
     <string name="onboarding_notifications_mode_title">私人通知</string>
-    <string name="read_more_in_github_with_link">可在 <font color="#0088ff">GitHub</font>內查看更多。</string>
+    <string name="read_more_in_github_with_link"><![CDATA[可在 <font color="#0088ff">GitHub</font>內查看更多。]]></string>
     <string name="read_more_in_github">於 GitHub 儲存庫內查看更多。</string>
     <string name="incoming_video_call">視訊通話來電</string>
     <string name="icon_descr_hang_up">掛斷電話來電</string>
@@ -878,7 +878,7 @@
 \n1. 訊息將在傳送至客戶端後兩天或在伺服器內三十天時過時。
 \n2. 訊息解密失敗，因為你或你的聯絡人用了舊的數據庫備份
 \n3. 連接被破壞。</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">只有客戶端裝置才會儲存你的個人檔案、聯絡人，群組，所有訊息都會經過 <b>兩層的端對端加密</b>。</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[只有客戶端裝置才會儲存你的個人檔案、聯絡人，群組，所有訊息都會經過 <b>兩層的端對端加密</b>。]]></string>
     <string name="store_passphrase_securely">請放置你的密碼於安全的地方，如果你遺失了密碼，將不可能修改你的密碼。</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天室以匯出對話，匯入或刪除對話數據庫。當聊天室停止後你將不能接收或傳送訊息。</string>
     <string name="alert_title_cant_invite_contacts_descr">你正在使用匿名聊天模式進入此群組 - 為了避免分享你的真實個人檔案，邀請聯絡人是不允許的。</string>
@@ -895,7 +895,7 @@
     <string name="update_network_session_mode_question">更新傳輸隔離模式？</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">為了保護隱私，而不像是其他平台般需要提取和存儲用戶的 IDs 資料， SimpleX 平台有自家佇列的標識符，這對於你的每個聯絡人也是獨一無二的。</string>
     <string name="onboarding_notifications_mode_off">當應用程式是運行中</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">你可以控制通過哪一個伺服器 <b>來接收</b> 你的聯絡人訊息 – 這些伺服器用來接收他們傳送給你的訊息。</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[你可以控制通過哪一個伺服器 <b>來接收</b> 你的聯絡人訊息 – 這些伺服器用來接收他們傳送給你的訊息。]]></string>
     <string name="allow_accepting_calls_from_lock_screen">透過設定啟用於上鎖畫面顯示來電通知。</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">這操作不能還原 - 你目前的個人檔案，聯絡人，訊息和檔案將不可逆地遺失。</string>
     <string name="you_must_use_the_most_recent_version_of_database">你必須在裝置上使用最新版本的對話數據庫，否則你可能會停止接收某些聯絡人的訊息。</string>
@@ -1057,7 +1057,7 @@
     <string name="la_lock_mode">SimpleX 鎖定模式</string>
     <string name="lock_not_enabled">未啟用 SimpleX 鎖定！</string>
     <string name="host_verb">主機</string>
-    <string name="disable_onion_hosts_when_not_supported">如果SOCKS 代理不支援它們，請設定 <i>Use .onion hosts</i>為否。</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[如果SOCKS 代理不支援它們，請設定 <i>Use .onion hosts</i>為否。]]></string>
     <string name="lock_mode">鎖定模式</string>
     <string name="la_mode_passcode">密碼</string>
     <string name="passcode_changed">已修改密碼！</string>
@@ -1170,7 +1170,7 @@
     <string name="dark_theme">黑暗主題</string>
     <string name="error_setting_address">設定聯絡地址時出錯</string>
     <string name="auth_open_chat_profiles">開啟多個個人檔案</string>
-    <string name="read_more_in_user_guide_with_link">可在 <font color="#0088ff"> 內查看更多關於用戶指南的資料</font>。</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[可在 <font color="#0088ff"> 內查看更多關於用戶指南的資料</font>。]]></string>
     <string name="self_destruct">自毁</string>
     <string name="enabled_self_destruct_passcode">啟用自毀密碼</string>
     <string name="change_self_destruct_passcode">修改自毀密碼</string>

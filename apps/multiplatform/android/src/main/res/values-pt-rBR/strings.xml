@@ -14,7 +14,7 @@
     <string name="change_verb">Mudar</string>
     <string name="incognito_random_profile_from_contact_description">Um perfil aleatório será enviado para o contato do qual você recebeu este link</string>
     <string name="both_you_and_your_contacts_can_delete">Você e seu contato podem excluir mensagens enviadas de forma irreversível.</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Pode ser desativado nas configurações</b> – as notificações ainda serão exibidas enquanto o aplicativo estiver em execução.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Pode ser desativado nas configurações</b> – as notificações ainda serão exibidas enquanto o aplicativo estiver em execução.]]></string>
     <string name="both_you_and_your_contact_can_send_voice">Você e seu contato podem enviar mensagens de voz.</string>
     <string name="notifications_mode_off_desc">O aplicativo pode receber notificações apenas quando estiver em execução, nenhum serviço em segundo plano será iniciado</string>
     <string name="notifications_mode_service">Sempre ativada</string>
@@ -25,8 +25,8 @@
     <string name="icon_descr_cancel_live_message">Cancelar mensagem ao vivo</string>
     <string name="back">Voltar</string>
     <string name="choose_file">Arquivo</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Adicionar novo contato</b>: para criar seu QR code de uso único para seu contato.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Escanear código QR</b>: para se conectar ao seu contato que mostra o código QR para você.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Adicionar novo contato</b>: para criar seu QR code de uso único para seu contato.]]></string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Escanear código QR</b>: para se conectar ao seu contato que mostra o código QR para você.]]></string>
     <string name="accept_contact_button">Aceitar</string>
     <string name="clear_chat_question">Limpar chat\?</string>
     <string name="clear_verb">Limpar</string>
@@ -44,7 +44,7 @@
     <string name="answer_call">Atender ligação</string>
     <string name="integrity_msg_bad_hash">hash de mensagem incorreto</string>
     <string name="integrity_msg_bad_id">ID de mensagem incorreta</string>
-    <string name="impossible_to_recover_passphrase"><b>Observação</b>: você NÃO poderá recuperar ou alterar a senha se a perder.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Observação</b>: você NÃO poderá recuperar ou alterar a senha se a perder.]]></string>
     <string name="cannot_receive_file">Não é possível receber o arquivo</string>
     <string name="icon_descr_cancel_image_preview">Cancelar visualização da imagem</string>
     <string name="icon_descr_close_button">Botão Fechar</string>
@@ -76,9 +76,9 @@
     <string name="cancel_verb">Cancelar</string>
     <string name="chat_console">Console de chat</string>
     <string name="smp_servers_check_address">Verifique o endereço do servidor e tente novamente.</string>
-    <string name="network_session_mode_user_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada perfil de chat que você tiver no aplicativo</b>.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Melhor para bateria</b>. Você receberá notificações apenas quando o aplicativo estiver em execução (sem segundo plano).</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações são exibidas assim que as mensagens estiverem disponíveis.</string>
+    <string name="network_session_mode_user_description"><![CDATA[Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada perfil de chat que você tiver no aplicativo</b>.]]></string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Melhor para bateria</b>. Você receberá notificações apenas quando o aplicativo estiver em execução (sem segundo plano).]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações são exibidas assim que as mensagens estiverem disponíveis.]]></string>
     <string name="settings_section_title_chats">CHATS</string>
     <string name="settings_section_title_icon">ÍCONE DO APP</string>
     <string name="chat_database_section">BANCO DE DADOS DE CHAT</string>
@@ -95,7 +95,7 @@
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="network_session_mode_entity_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada contato e membro do grupo</b>.
 \n<b>Observação</b>: se você tiver muitas conexões, o consumo de bateria e tráfego pode ser substancialmente maior e algumas conexões podem falhar.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Bom para bateria</b>. O serviço em segundo plano procura por mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bom para bateria</b>. O serviço em segundo plano procura por mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.]]></string>
     <string name="callstatus_ended">chamda encerrada %1$s</string>
     <string name="chat_with_developers">Chat com os desenvolvedores</string>
     <string name="create_group_link">Criar link de grupo</string>
@@ -249,7 +249,7 @@
     <string name="v4_5_transport_isolation_descr">Por perfil de chat (padrão) ou por conexão (BETA).</string>
     <string name="accept_contact_incognito_button">Aceitar anônimo</string>
     <string name="delete_messages_after">Excluir mensagens após</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: Scaneie o código QR exibido no aplicativo, via <b>Scan QR code</b></string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: Scaneie o código QR exibido no aplicativo, via <b>Scan QR code</b>]]></string>
     <string name="delete_pending_connection__question">Excluir conexão pendente\?</string>
     <string name="simplex_link_mode_description">Descrição</string>
     <string name="smp_servers_delete_server">Excluir servidor</string>
@@ -393,8 +393,8 @@
     <string name="notification_display_mode_hidden_desc">Ocultar contato e mensagem</string>
     <string name="how_to_use_simplex_chat">Como usar</string>
     <string name="how_to_use_markdown">Como usar markdown</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Se você não puder se encontrar pessoalmente, <b>mostre o código QR na videochamada</b> ou compartilhe o link.</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Se você não puder encontrar pessoalmente, você pode <b>escanear o código QR na videochamada</b> ou seu contato pode compartilhar um link de convite.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Se você não puder se encontrar pessoalmente, <b>mostre o código QR na videochamada</b> ou compartilhe o link.]]></string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Se você não puder encontrar pessoalmente, você pode <b>escanear o código QR na videochamada</b> ou seu contato pode compartilhar um link de convite.]]></string>
     <string name="network_disable_socks_info">Se você confirmar, os servidores de mensagens poderão ver seu endereço IP e seu provedor - e quais servidores você está se conectando.</string>
     <string name="image_descr">Imagem</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Se você recebeu o link de convite SimpleX Chat, você pode abri-lo em seu navegador:</string>
@@ -402,7 +402,7 @@
     <string name="group_unsupported_incognito_main_profile_sent">O modo de navegação anônima não é suportado aqui - seu perfil principal será enviado aos membros do grupo</string>
     <string name="description_via_group_link_incognito">anônimo via link do grupo</string>
     <string name="incoming_video_call">Chamada de vídeo recebida</string>
-    <string name="turn_off_battery_optimization">Para usá-lo, por favor <b>desative a otimização da bateria</b> para SimpleX na próxima caixa de diálogo. Caso contrário, as notificações serão desativadas.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Para usá-lo, por favor <b>desative a otimização da bateria</b> para SimpleX na próxima caixa de diálogo. Caso contrário, as notificações serão desativadas.]]></string>
     <string name="share_one_time_link">Gerar um link de convite de uso único</string>
     <string name="file_not_found">Arquivo não encontrado</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Se você optar por rejeitar o remetente NÃO será notificado.</string>
@@ -569,7 +569,7 @@
     <string name="sender_may_have_deleted_the_connection_request">O remetente pode ter excluído a solicitação de conexão.</string>
     <string name="periodic_notifications_disabled">Notificações periódicas estão desativadas!</string>
     <string name="service_notifications_disabled">As notificações instantâneas estão desativadas!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Para preservar sua privacidade, em vez de notificações push, o aplicativo tem um<b>SimpleXserviço em segundo plano</b> - ele usa uma porcentagem da bateria por dia.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Para preservar sua privacidade, em vez de notificações push, o aplicativo tem um<b>SimpleXserviço em segundo plano</b> - ele usa uma porcentagem da bateria por dia.]]></string>
     <string name="notifications_mode_off">Executa quando o aplicativo está aberto</string>
     <string name="icon_descr_sent_msg_status_sent">enviado</string>
     <string name="icon_descr_sent_msg_status_send_failed">o envio falhou</string>
@@ -604,7 +604,7 @@
     <string name="markdown_in_messages">Markdown em mensagens</string>
     <string name="smp_servers">Servidores SMP</string>
     <string name="smp_servers_preset_address">Endereço do servidor pré-definido</string>
-    <string name="many_people_asked_how_can_it_deliver">Muitos perguntaram:<i> se SimpleX não tem identificadores de usuários, como ele pode mandar mensagens\?</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Muitos perguntaram:<i> se SimpleX não tem identificadores de usuários, como ele pode mandar mensagens\?</i>]]></string>
     <string name="reject">Rejeitar</string>
     <string name="integrity_msg_skipped">%1$d mensagens ignoradas</string>
     <string name="protect_app_screen">Proteger a tela do app</string>
@@ -659,7 +659,7 @@
     <string name="network_use_onion_hosts_required_desc">Os hosts Onion serão necessários para a conexão.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Os hosts Onion serão necessários para a conexão.</string>
     <string name="core_version">Versão principal: v%s</string>
-    <string name="read_more_in_github_with_link">Leia mais no nosso<font color="#0088ff"> repositório do GitHub</font>.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Leia mais no nosso<font color="#0088ff"> repositório do GitHub</font>.]]></string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser mudado mais tarde via configurações.</string>
     <string name="contact_wants_to_connect_via_call">%1$s quer se conectar com você via</string>
     <string name="status_no_e2e_encryption">sem criptografia ponta-a-ponta</string>
@@ -864,7 +864,7 @@
     <string name="database_initialization_error_desc">O banco de dados não está funcionando corretamente. Toque para saber mais</string>
     <string name="waiting_for_image">Aguardando imagem</string>
     <string name="show_QR_code">Mostrar código QR</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Você também pode se conectar clicando no link. Se abrir no navegador, clique em <b>Abrir no aplicativo móvel</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Você também pode se conectar clicando no link. Se abrir no navegador, clique em <b>Abrir no aplicativo móvel</b>.]]></string>
     <string name="smp_servers_test_servers">Servidores de teste</string>
     <string name="update_network_session_mode_question">Atualizar o modo de isolamento de transporte\?</string>
     <string name="icon_descr_video_on">Vídeo ativado</string>
@@ -959,7 +959,7 @@
     <string name="user_unhide">Mostrar</string>
     <string name="user_unmute">Desmutar</string>
     <string name="v4_3_voice_messages">Mensagens de voz</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Você pode <font color="#0088ff">se conectar aos desenvolvedores doSimpleX para fazer qualquer pergunta e receber atualizações</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Você pode <font color="#0088ff">se conectar aos desenvolvedores doSimpleX para fazer qualquer pergunta e receber atualizações</font>.]]></string>
     <string name="connection_you_accepted_will_be_cancelled">A conexão que você aceitou será cancelada!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">O contato com o qual você compartilhou este link NÃO será capaz de se conectar!</string>
     <string name="icon_descr_simplex_team">Equipe SimpleX</string>
@@ -1017,7 +1017,7 @@
     <string name="simplex_link_contact">Endereço de contato</string>
     <string name="simplex_link_group">Link do grupo</string>
     <string name="simplex_link_invitation">Convite de uso único</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 móvel: toque em <b>Abrir no aplicativo móvel</b> e toque em <b>Conectar</b> no aplicativo.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 móvel: toque em <b>Abrir no aplicativo móvel</b> e toque em <b>Conectar</b> no aplicativo.]]></string>
     <string name="ntf_channel_calls">Chamadas</string>
     <string name="ntf_channel_messages">Mensagens</string>
     <string name="la_notice_title_simplex_lock">Bloqueio SimpleX</string>
@@ -1031,11 +1031,11 @@
     <string name="settings_section_title_support">APOIE SIMPLEX</string>
     <string name="enable_automatic_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas antes do selecionado serão excluídas. Pode levar vários minutos.</string>
     <string name="confirm_database_upgrades">Confirme as atualizações do banco de dados</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Perfis de usuário, contatos, grupos e mensagens enviadas com <b>criptografia de ponta-a-ponta</b> são armazenados somente no seu dispositivo.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Perfis de usuário, contatos, grupos e mensagens enviadas com <b>criptografia de ponta-a-ponta</b> são armazenados somente no seu dispositivo.]]></string>
     <string name="thank_you_for_installing_simplex">Obrigado por instalar SimpleX!</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">A plataforma de mensagens que protege sua privacidade e segurança.</string>
     <string name="invite_prohibited_description">Você está tentando convidar um contato com quem compartilhou um perfil anônimo para o grupo no qual está usando seu perfil principal</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Você controla por meio de qual(is) servidor(es) <b>receber</b> as mensagens, seus contatos controlam os servidores que você usa para enviar mensagens.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Você controla por meio de qual(is) servidor(es) <b>receber</b> as mensagens, seus contatos controlam os servidores que você usa para enviar mensagens.]]></string>
     <string name="smp_server_test_secure_queue">Fila segura</string>
     <string name="icon_descr_profile_image_placeholder">imagem de perfil temporária</string>
     <string name="error_loading_smp_servers">Erro ao carregar servidores SMP</string>
@@ -1069,7 +1069,7 @@
     <string name="network_socks_proxy_settings">Configurações de proxy SOCKS</string>
     <string name="network_socks_toggle_use_socks_proxy">Usar proxy SOCKS</string>
     <string name="host_verb">Hospedar</string>
-    <string name="disable_onion_hosts_when_not_supported">Definir <i>Usar hosts .onion</i> para não se o proxy SOCKS não oferecer suporte a eles.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Definir <i>Usar hosts .onion</i> para não se o proxy SOCKS não oferecer suporte a eles.]]></string>
     <string name="port_verb">Migrar</string>
     <string name="confirm_passcode">Confirmar senha</string>
     <string name="incorrect_passcode">Senha incorreta</string>
@@ -1173,7 +1173,7 @@
     <string name="group_welcome_preview">Prévia</string>
     <string name="color_secondary">Secundária</string>
     <string name="import_theme">Importar tema</string>
-    <string name="read_more_in_user_guide_with_link">Leia mais em <font color="#0088ff">Guia do Usuário</font>.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Leia mais em <font color="#0088ff">Guia do Usuário</font>.]]></string>
     <string name="enter_welcome_message_optional">Digite a mensagem de boas-vindas... (opcional)</string>
     <string name="save_auto_accept_settings">Salvar configurações de aceitação automática</string>
     <string name="opening_database">Abrindo banco de dados…</string>

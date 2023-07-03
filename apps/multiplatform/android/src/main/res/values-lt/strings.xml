@@ -44,7 +44,7 @@
     <string name="v4_6_audio_video_calls">Garso ir vaizdo skambučiai</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Leisti jūsų adresatams siųsti išnykstančias žinutes.</string>
     <string name="auth_unavailable">Tapatybės nustatymas neprieinamas</string>
-    <string name="impossible_to_recover_passphrase"><b>Turėkite omenyje</b>: jeigu prarasite slaptafrazę, NEBEGALĖSITE jos atkurti ar pakeisti.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Turėkite omenyje</b>: jeigu prarasite slaptafrazę, NEBEGALĖSITE jos atkurti ar pakeisti.]]></string>
     <string name="cancel_verb">Atsisakyti</string>
     <string name="callstate_connecting">jungiamasi…</string>
     <string name="connect_via_link_verb">Prisijungti</string>
@@ -389,8 +389,8 @@
     <string name="error_smp_test_certificate">Gali būti, kad liudijimo kontrolinis kodas serverio adrese yra neteisingas</string>
     <string name="smp_server_test_delete_file">Ištrinti failą</string>
     <string name="image_decoding_exception_title">Dekodavimo klaida</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Pridėti naują adresatą</b>: norėdami sukurti adresatui vienkartinį QR kodą.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Skenuoti QR kodą</b>: norėdami prisijungti prie adresato, kuris jums rodo QR kodą.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Pridėti naują adresatą</b>: norėdami sukurti adresatui vienkartinį QR kodą.]]></string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Skenuoti QR kodą</b>: norėdami prisijungti prie adresato, kuris jums rodo QR kodą.]]></string>
     <string name="clear_chat_button">Išvalyti pokalbį</string>
     <string name="unmute_chat">Įjungti pranešimus</string>
     <string name="invalid_QR_code">Neteisingas QR kodas</string>
@@ -432,7 +432,7 @@
     <string name="smp_servers_invalid_address">Neteisingas serverio adresas!</string>
     <string name="network_session_mode_user">Pokalbio profilis</string>
     <string name="profile_is_only_shared_with_your_contacts">Profilis yra bendrinamas tik su jūsų adresatais.</string>
-    <string name="read_more_in_github_with_link">Išsamiau skaitykite mūsų <font color="#0088ff">„GitHub“ saugykloje</font>.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Išsamiau skaitykite mūsų <font color="#0088ff">„GitHub“ saugykloje</font>.]]></string>
     <string name="settings_section_title_socks">SOCKS ĮGALIOTASIS SERVERIS</string>
     <string name="save_passphrase_and_open_chat">Įrašyti slaptafrazę ir atverti pokalbį</string>
     <string name="restore_database">Atkurti atsarginę duomenų bazės kopiją</string>

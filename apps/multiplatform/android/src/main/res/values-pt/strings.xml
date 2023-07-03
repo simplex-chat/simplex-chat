@@ -193,14 +193,14 @@
     <string name="conn_stats_section_title_servers">SERVIDORES</string>
     <string name="error_xftp_test_server_auth">O servidor requer autorização para fazer upload, verifique a senha</string>
     <string name="incognito_random_profile_description">Um perfil aleatório será enviado para o seu contato</string>
-    <string name="disable_onion_hosts_when_not_supported">Defina <i>Usar hosts .onion</i> como Não se o proxy SOCKS não o suportar.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Defina <i>Usar hosts .onion</i> como Não se o proxy SOCKS não o suportar.]]></string>
     <string name="network_use_onion_hosts">Usar hosts .onion</string>
     <string name="smp_servers_use_server">Usar servidor</string>
     <string name="v4_6_audio_video_calls">Chamadas de áudio e vídeo</string>
     <string name="attach">Anexar</string>
     <string name="v4_5_message_draft_descr">Preservar o último rascunho da mensagem, com anexos.</string>
     <string name="icon_descr_video_asked_to_receive">Solicitada a recepção do vídeo</string>
-    <string name="network_session_mode_user_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b> para cada perfil de conversa que você tiver na aplicação </b>.</string>
+    <string name="network_session_mode_user_description"><![CDATA[Uma conexão TCP separada (e credencial SOCKS) será usada <b> para cada perfil de conversa que você tiver na aplicação </b>.]]></string>
     <string name="network_session_mode_entity_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b> para cada contato e membro do grupo</b>.
 \n<b> Por favor note</b>: se você tiver muitas conexões, o seu consumo de bateria e consumo de tráfego pode ser substancialmente maior e algumas conexões podem falhar.</string>
     <string name="icon_descr_asked_to_receive">Solicitada a recepção da imagem</string>
@@ -209,26 +209,26 @@
     <string name="both_you_and_your_contacts_can_delete">Você e o seu contato podem eliminar irreversivelmente as mensagens enviadas.</string>
     <string name="failed_to_create_user_duplicate_desc">Você já tem um perfil de chat com o mesmo nome para exibição. Por favor, escolha outro nome.</string>
     <string name="you_are_invited_to_group">Você está convidado para o grupo</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Você também se pode conectar clicando na ligação. Se ele abrir no navegador, clique no botão <b>Abrir na aplicação móvel</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Você também se pode conectar clicando na ligação. Se ele abrir no navegador, clique no botão <b>Abrir na aplicação móvel</b>.]]></string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Você está convidado para o grupo. Junte-se para se conectar com os membros do grupo.</string>
     <string name="info_row_group">Grupo</string>
     <string name="icon_descr_audio_on">Áudio ligado</string>
     <string name="authentication_cancelled">Autenticação cancelada</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b> Adicionar novo contato</b>: para criar o seu código QR de utilização única para o seu contato.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b> Bom para a bateria </b>. O serviço em segundo plano verifica se há mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b> Adicionar novo contato</b>: para criar o seu código QR de utilização única para o seu contato.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> Bom para a bateria </b>. O serviço em segundo plano verifica se há mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.]]></string>
     <string name="turning_off_service_and_periodic">A otimização da bateria está ativa, desativando o serviço em segundo plano e os pedidos periódicos de novas mensagens. Você pode reativá-los através das definições.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Melhor para a bateria</b>. Apenas receberá notificações enquanto a app estiver em execução (SEM serviço em segundo plano)</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Pode ser desativado nas definições</b> – as notificações ainda serão exibidas enquanto a aplicação estiver em execução.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Melhor para a bateria</b>. Apenas receberá notificações enquanto a app estiver em execução (SEM serviço em segundo plano)]]></string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Pode ser desativado nas definições</b> – as notificações ainda serão exibidas enquanto a aplicação estiver em execução.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.]]></string>
     <string name="settings_audio_video_calls">Chamadas de áudio e vídeo</string>
     <string name="icon_descr_audio_off">Áudio desligado</string>
-    <string name="impossible_to_recover_passphrase"><b> Por favor note </b>: você NÃO será capaz de recuperar ou alterar a senha se a perder.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b> Por favor note </b>: você NÃO será capaz de recuperar ou alterar a senha se a perder.]]></string>
     <string name="audio_video_calls">Chamadas de áudio/vídeo</string>
     <string name="both_you_and_your_contact_can_send_voice">Tanto você como o seu contato podem enviar mensagens de voz.</string>
     <string name="calls_prohibited_with_this_contact">Chamadas de áudio/vídeo são proibidas.</string>
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="la_authenticate">Autenticar</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Leia o código QR </b>: para se conectar ao seu contato que lhe mostra o código QR.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Leia o código QR </b>: para se conectar ao seu contato que lhe mostra o código QR.]]></string>
     <string name="callstatus_ended">chamada finalizada %1$s</string>
     <string name="callstatus_calling">a chamar…</string>
     <string name="callstatus_error">erro de chamada</string>
@@ -385,7 +385,7 @@
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Se você recebeu convite de ligação do SimpleX Chat, você pode abri-lo no seu navegador:</string>
     <string name="group_invitation_tap_to_join_incognito">Toque para entrar em modo anónimo</string>
     <string name="save_passphrase_in_keychain">Salvar senha na Keystore</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Se não se poderem encontrar pessoalmente, <b>mostre o código QR na chamada de vídeo </b> ou partilhe a ligação.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Se não se poderem encontrar pessoalmente, <b>mostre o código QR na chamada de vídeo </b> ou partilhe a ligação.]]></string>
     <string name="save_auto_accept_settings">Salvar definições de aceitação automática</string>
     <string name="auto_accept_contact">Aceitar automaticamente</string>
     <string name="save_and_update_group_profile">Salvar e atualizar o perfil do grupo</string>
@@ -412,7 +412,7 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contato e todas as mensagens serão eliminadas - esta acção não pode ser revertida!</string>
     <string name="image_descr_link_preview">ligação de visualização de imagem</string>
     <string name="invalid_contact_link">Ligação inválida!</string>
-    <string name="read_more_in_user_guide_with_link">Leia mais em <font color="#0088ff">Guia de Utilizador</font>.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Leia mais em <font color="#0088ff">Guia de Utilizador</font>.]]></string>
     <string name="network_session_mode_entity">Conexão</string>
     <string name="create_address_and_let_people_connect">Crie um endereço para permitir que as pessoas se conectem consigo.</string>
     <string name="save_and_notify_contact">Salvar e notificar contato</string>
@@ -433,7 +433,7 @@
     <string name="one_time_link_short">Ligação para 1 utilização</string>
     <string name="button_create_group_link">Criar ligação</string>
     <string name="delete_link_question">Apagar ligação\?</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Se não puderem encontrar-se pessoalmente, você pode <b>ler o código QR na chamada de vídeo </b>, ou o seu contato pode partilhar um convite de ligação.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Se não puderem encontrar-se pessoalmente, você pode <b>ler o código QR na chamada de vídeo </b>, ou o seu contato pode partilhar um convite de ligação.]]></string>
     <string name="if_you_cant_meet_in_person">Se não se poderem encontrar pessoalmente, mostre o código QR numa chamada de vídeo ou partilhe a ligação.</string>
     <string name="people_can_connect_only_via_links_you_share">As pessoas podem se conectar a si apenas por meio das ligações que você partilhe.</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Verifique se você usou a ligação correta ou peça ao seu contato para enviar outra.</string>
@@ -441,7 +441,7 @@
     <string name="send_link_previews">Enviar pré-visualizações de ligações</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(ler ou colar da área de transferência)</string>
     <string name="share_invitation_link">Partilhar ligação de utilização única</string>
-    <string name="read_more_in_github_with_link">Leia mais no nosso repositório <font color="#0088ff">GitHub</font>.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Leia mais no nosso repositório <font color="#0088ff">GitHub</font>.]]></string>
     <string name="create_profile">Criar perfil</string>
     <string name="create_your_profile">Criar perfil</string>
     <string name="num_contacts_selected">%d contato(s) selecionado(s)</string>
@@ -543,7 +543,7 @@
     <string name="simplex_service_notification_title">SimpleX Chat service</string>
     <string name="large_file">Ficheiro grande!</string>
     <string name="icon_descr_image_snd_complete">Imagem enviada</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Você pode <font color="#0088ff">conectar-se com os desenvolvedores do SimpleX Chat para fazer quaisquer perguntas e receber atualizações</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Você pode <font color="#0088ff">conectar-se com os desenvolvedores do SimpleX Chat para fazer quaisquer perguntas e receber atualizações</font>.]]></string>
     <string name="gallery_image_button">Imagem</string>
     <string name="gallery_video_button">Vídeo</string>
     <string name="icon_descr_address">Endereço SimpleX</string>
@@ -639,7 +639,7 @@
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Pode acontecer quando você ou sua conexão usaram o backup de base de dados antigo.</string>
     <string name="status_e2e_encrypted">encriptado ponta a ponta</string>
     <string name="feature_off">desligado</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: leia o código QR exibido a partir do aplicação, via <b>Ler código QR</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: leia o código QR exibido a partir do aplicação, via <b>Ler código QR</b>.]]></string>
     <string name="no_spaces">Sem espaços!</string>
     <string name="status_contact_has_no_e2e_encryption">contato não tem encriptação ponta a ponta</string>
     <string name="feature_offered_item_with_param">oferecido %s: %2s</string>
@@ -658,7 +658,7 @@
     <string name="scan_code_from_contacts_app">Ler o código de segurança a partir da aplicação do seu contacto.</string>
     <string name="smp_servers_scan_qr">Ler o código QR do servidor</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Hosts Onion não serão usados.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Apenas dispositivos cliente armazenam perfis de utilizador, contatos, grupos e mensagens enviadas com <b>encriptação de ponta a ponta de 2 camadas</b>.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Apenas dispositivos cliente armazenam perfis de utilizador, contatos, grupos e mensagens enviadas com <b>encriptação de ponta a ponta de 2 camadas</b>.]]></string>
     <string name="status_contact_has_e2e_encryption">contato tem encriptação ponta a ponta</string>
     <string name="status_no_e2e_encryption">sem encriptação ponta a ponta</string>
     <string name="group_member_status_creator">criador</string>

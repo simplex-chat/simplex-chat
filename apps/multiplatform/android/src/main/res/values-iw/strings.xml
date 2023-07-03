@@ -61,7 +61,7 @@
     <string name="app_version_title">גרסת האפליקציה</string>
     <string name="incognito_random_profile_description">פרופיל אקראי יישלח לאיש הקשר</string>
     <string name="incognito_random_profile_from_contact_description">פרופיל אקראי יישלח לאיש הקשר שממנו קיבלת קישור זה</string>
-    <string name="network_session_mode_user_description">חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל פרופיל צ׳אט שיש ברשותך באפליקציה</b>.</string>
+    <string name="network_session_mode_user_description"><![CDATA[חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל פרופיל צ׳אט שיש ברשותך באפליקציה</b>.]]></string>
     <string name="network_session_mode_entity_description">חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל איש קשר וחבר קבוצה</b>.
 \n<b>שימו לב</b>: אם ברשותכם חיבורים רבים, צריכת הסוללה ותעבורת האינטרנט עשויה להיות גבוהה משמעותית וחלק מהחיבורים עלולים להיכשל.</string>
     <string name="icon_descr_video_asked_to_receive">הנמען התבקש לקבל את הסרטון</string>
@@ -76,7 +76,7 @@
     <string name="audio_video_calls">שיחות שמע/וידאו</string>
     <string name="settings_audio_video_calls">שיחות שמע ווידאו</string>
     <string name="turning_off_service_and_periodic">מיטוב הסוללה פעיל, מכבה את שירות הרקע ובקשות תקופתיות לקבלת הודעות חדשות. ניתן להפעיל אותם מחדש בהגדרות.</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>ניתן להשבית זאת בהגדרות</b> – התראות עדיין יוצגו בזמן שהאפליקציה פועלת.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>ניתן להשבית זאת בהגדרות</b> – התראות עדיין יוצגו בזמן שהאפליקציה פועלת.]]></string>
     <string name="notifications_mode_service_desc">שירות רקע תמיד מופעל – התראות יוצגו מיד כאשר הודעות מגיעות.</string>
     <string name="la_authenticate">אימות</string>
     <string name="la_auth_failed">אימות נכשל</string>
@@ -87,7 +87,7 @@
     <string name="alert_title_msg_bad_hash">גיבוב הודעה שגוי</string>
     <string name="alert_title_msg_bad_id">מזהה הודעה שגוי</string>
     <string name="auto_accept_images">קבל אוטומטית תמונות</string>
-    <string name="impossible_to_recover_passphrase"><b>שימו לב</b>: לא ניתן יהיה לשחזר או לשנות את הסיסמה אם תאבדו אותה.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>שימו לב</b>: לא ניתן יהיה לשחזר או לשנות את הסיסמה אם תאבדו אותה.]]></string>
     <string name="available_in_v51">"
 \nזמין מ־v5.1"</string>
     <string name="both_you_and_your_contact_can_send_voice">גם אתם וגם איש הקשר יכולים לשלוח הודעות קוליות.</string>
@@ -95,9 +95,9 @@
     <string name="v4_2_auto_accept_contact_requests">אשר אוטומטית בקשות ליצירת קשר.</string>
     <string name="authentication_cancelled">אימות בוטל</string>
     <string name="auth_unavailable">אימות לא זמין</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>הוסיפו איש קשר חדש</b>: ליצירת קוד QR חד־פעמי עבור איש הקשר שלכם.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת (ללא שירות רקע).</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות כל 10 דקות. שיחות או הודעות דחופות עלולות להתפספס.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>הוסיפו איש קשר חדש</b>: ליצירת קוד QR חד־פעמי עבור איש הקשר שלכם.]]></string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת (ללא שירות רקע).]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות כל 10 דקות. שיחות או הודעות דחופות עלולות להתפספס.]]></string>
     <string name="both_you_and_your_contacts_can_delete">גם אתם וגם איש הקשר יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">גם אתם וגם איש הקשר יכולים לשלוח הודעות נעלמות.</string>
     <string name="cannot_receive_file">לא ניתן לקבל את הקובץ</string>
@@ -105,11 +105,11 @@
     <string name="cancel_verb">ביטול</string>
     <string name="icon_descr_cancel_live_message">בטל הודעה חיה</string>
     <string name="use_camera_button">מצלמה</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>סירקו קוד QR</b>: כדי להתחבר לאיש קשר המציג לכם קוד QR.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>סירקו קוד QR</b>: כדי להתחבר לאיש קשר המציג לכם קוד QR.]]></string>
     <string name="icon_descr_cancel_link_preview">בטל תצוגה מקדימה של קישורים</string>
     <string name="callstatus_error">שגיאת שיחה</string>
     <string name="callstatus_in_progress">שיחה מתמשכת</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>צורך יותר סוללה</b>! שירות רקע תמיד מופעל – התראות יוצגו מיד כאשר הודעות מגיעות.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>צורך יותר סוללה</b>! שירות רקע תמיד מופעל – התראות יוצגו מיד כאשר הודעות מגיעות.]]></string>
     <string name="call_already_ended">השיחה כבר הסתיימה!</string>
     <string name="call_on_lock_screen">שיחות במסך הנעילה:</string>
     <string name="icon_descr_call_ended">השיחה הסתיימה</string>
@@ -323,7 +323,7 @@
     <string name="full_deletion">מחק לכולם</string>
     <string name="button_delete_group">מחק קבוצה</string>
     <string name="delete_group_question">למחוק קבוצה\?</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 שולחן עבודה: סירקו את קוד ה־QR המוצג באפליקציה, באמצעות <b>סריקת קוד QR</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 שולחן עבודה: סירקו את קוד ה־QR המוצג באפליקציה, באמצעות <b>סריקת קוד QR</b>.]]></string>
     <string name="settings_section_title_device">מכשיר</string>
     <string name="auth_device_authentication_is_disabled_turning_off">נעילת המכשיר מושבתת. מכבה נעילת SimpleX.</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">נעילת המכשיר אינה מופעלת. ניתן להפעיל את נעילת SimpleX, לאחר שתפעילו את נעילת המכשיר.</string>
@@ -466,7 +466,7 @@
     <string name="revoke_file__message">הקובץ יימחק מהשרתים.</string>
     <string name="icon_descr_flip_camera">הפוך מצלמה</string>
     <string name="icon_descr_help">עזרה</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">אם לא ניתן להיפגש פנים אל פנים, <b>הציגו את קוד ה־QR בשיחת וידאו</b>, או שתפו את הקישור.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[אם לא ניתן להיפגש פנים אל פנים, <b>הציגו את קוד ה־QR בשיחת וידאו</b>, או שתפו את הקישור.]]></string>
     <string name="how_to">איך</string>
     <string name="how_to_use_your_servers">איך להשתמש בשרתים שלך</string>
     <string name="enter_one_ICE_server_per_line">שרתי ICE (אחד בכל שורה)</string>
@@ -486,7 +486,7 @@
     <string name="notification_preview_mode_hidden">מוסתר</string>
     <string name="notification_display_mode_hidden_desc">הסתר איש קשר והודעה</string>
     <string name="hide_verb">הסתר</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">אם לא ניתן להיפגש פנים אל פנים, ניתן <b>לסרוק את קוד ה־QR בשיחת וידאו</b>, או שאיש הקשר שלך ישתף קישור הזמנה.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[אם לא ניתן להיפגש פנים אל פנים, ניתן <b>לסרוק את קוד ה־QR בשיחת וידאו</b>, או שאיש הקשר שלך ישתף קישור הזמנה.]]></string>
     <string name="if_you_cant_meet_in_person">אם לא ניתן להיפגש פנים אל פנים, הציגו את קוד ה־QR בשיחת וידאו, או שתפו את הקישור.</string>
     <string name="how_to_use_simplex_chat">איך להשתמש בזה</string>
     <string name="email_invite_body">היי!
@@ -535,7 +535,7 @@
     <string name="description_via_group_link_incognito">זהות נסתרת באמצעות קישור קבוצה</string>
     <string name="description_via_one_time_link_incognito">זהות נסתרת באמצעות קישור חד־פעמי</string>
     <string name="invalid_connection_link">קישור חיבור לא תקין</string>
-    <string name="turn_off_battery_optimization">על מנת להשתמש בזה, אנא <b>השביתו מיטוב סוללה</b> עבור SimpleX בתיבת הדו־שיח הבאה. אחרת, ההתראות יושבתו.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[על מנת להשתמש בזה, אנא <b>השביתו מיטוב סוללה</b> עבור SimpleX בתיבת הדו־שיח הבאה. אחרת, ההתראות יושבתו.]]></string>
     <string name="service_notifications_disabled">התראות מיידיות מושבתות!</string>
     <string name="icon_descr_add_members">הזמן חברי קבוצה</string>
     <string name="group_member_status_invited">הוזמן</string>
@@ -600,7 +600,7 @@
     <string name="learn_more">למדו עוד</string>
     <string name="markdown_help">עזרה במרקדאון</string>
     <string name="email_invite_subject">בואו נדבר ב־Simplex Chat</string>
-    <string name="many_people_asked_how_can_it_deliver">אנשים רבים שאלו: <i>אם ל־SimpleX אין מזהי משתמש, איך ניתן להעביר הודעות\?</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[אנשים רבים שאלו: <i>אם ל־SimpleX אין מזהי משתמש, איך ניתן להעביר הודעות\?</i>]]></string>
     <string name="keychain_error">שגיאת Keychain</string>
     <string name="join_group_incognito_button">הצטרף עם זהות נסתרת</string>
     <string name="leave_group_question">לעזוב קבוצה\?</string>
@@ -673,7 +673,7 @@
     <string name="moderate_verb">חסימת הודעה</string>
     <string name="delete_message_cannot_be_undone_warning">ההודעה תימחק – לא ניתן לבטל זאת!</string>
     <string name="delete_message_mark_deleted_warning">ההודעה תסומן למחיקה. הנמענים יוכלו לחשוף הודעה זו.</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 נייד: הקישו <b>פתח באפליקציה</b>, ואז הקישו <b>התחבר</b> באפליקציה.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 נייד: הקישו <b>פתח באפליקציה</b>, ואז הקישו <b>התחבר</b> באפליקציה.]]></string>
     <string name="only_stored_on_members_devices">(מאוחסן רק על ידי חברי הקבוצה)</string>
     <string name="mute_chat">השתק</string>
     <string name="icon_descr_more_button">עוד</string>
@@ -684,7 +684,7 @@
     <string name="network_use_onion_hosts_no_desc">לא ייעשה שימוש במארחי Onion.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">לא ייעשה שימוש במארחי Onion.</string>
     <string name="callstatus_missed">שיחה שלא נענתה</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">רק מכשירי לקוח מאחסנים פרופילי משתמש, אנשי קשר, קבוצות, והודעות שנשלחו עם <b>הצפנה מקצה־לקצה דו־שכבתית</b>.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[רק מכשירי לקוח מאחסנים פרופילי משתמש, אנשי קשר, קבוצות, והודעות שנשלחו עם <b>הצפנה מקצה־לקצה דו־שכבתית</b>.]]></string>
     <string name="status_no_e2e_encryption">ללא הצפנה מקצה־לקצה</string>
     <string name="icon_descr_call_missed">שיחה שלא נענתה</string>
     <string name="new_passcode">קוד גישה חדש</string>
@@ -807,10 +807,10 @@
     <string name="stop_rcv_file__message">קבלת הקובץ תופסק.</string>
     <string name="icon_descr_record_voice_message">הקלט הודעה קולית</string>
     <string name="reject_contact_button">דחיה</string>
-    <string name="read_more_in_user_guide_with_link">קראו עוד ב<font color="#0088ff">מדריך למשתמש</font>.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[קראו עוד ב<font color="#0088ff">מדריך למשתמש</font>.]]></string>
     <string name="rate_the_app">דרגו את האפליקציה</string>
     <string name="read_more_in_github">קראו עוד ב־GitHub repository שלנו.</string>
-    <string name="read_more_in_github_with_link">קראו עוד ב־<font color="#0088ff">GitHub repository</font> שלנו.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[קראו עוד ב־<font color="#0088ff">GitHub repository</font> שלנו.]]></string>
     <string name="relay_server_if_necessary">יבוצע שימוש בשרת ממסר רק במידת הצורך. גורם אחר יכול לצפות בכתובת ה־IP שלך.</string>
     <string name="relay_server_protects_ip">שרת ממסר מגן על כתובת ה־IP שלך, אך הוא יכול לראות את משך השיחה.</string>
     <string name="icon_descr_call_rejected">שיחה נדחתה</string>
@@ -935,7 +935,7 @@
     <string name="error_xftp_test_server_auth">השרת דורש הרשאה כדי להעלות, בידקו את הסיסמה</string>
     <string name="set_contact_name">הגדרת שם איש קשר</string>
     <string name="network_use_onion_hosts">שימוש במארחי ‪.onion‬</string>
-    <string name="disable_onion_hosts_when_not_supported">הגדירו את <i>שימוש במארחי ‪.onion‬</i> ללא אם פרוקסי SOCKS אינו תומך בהם.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[הגדירו את <i>שימוש במארחי ‪.onion‬</i> ללא אם פרוקסי SOCKS אינו תומך בהם.]]></string>
     <string name="color_sent_message">הודעה שנשלחה</string>
     <string name="set_group_preferences">הגדרת העדפות קבוצה</string>
     <string name="v5_0_app_passcode_descr">הגדירו אותו במקום אימות מערכת.</string>
@@ -1081,7 +1081,7 @@
     <string name="upgrade_and_open_chat">שדרג ופתח צ׳אט</string>
     <string name="v4_5_private_filenames_descr">כדי להגן על אזור הזמן, קובצי תמונה/קול משתמשים ב־UTC.</string>
     <string name="smp_server_test_upload_file">העלה קובץ</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">כדי לשמור על פרטיותך, האפליקציה כוללת <b>שירות רקע SimpleX</b> – הוא משתמש בכמה אחוזים מהסוללה ביום.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[כדי לשמור על פרטיותך, האפליקציה כוללת <b>שירות רקע SimpleX</b> – הוא משתמש בכמה אחוזים מהסוללה ביום.]]></string>
     <string name="enter_passphrase_notification_desc">כדי לקבל התראות, יש להזין את סיסמת מסד הנתונים</string>
     <string name="auth_unlock">בטל נעילה</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">שליחה לא מורשית</string>
@@ -1156,8 +1156,8 @@
     <string name="voice_message_send_text">הודעה קולית…</string>
     <string name="you_need_to_allow_to_send_voice">עליכם לאפשר לאיש הקשר שלכם לשלוח הודעות קוליות כדי שתוכלו לשלוח אותן.</string>
     <string name="gallery_video_button">סרטון</string>
-    <string name="you_can_connect_to_simplex_chat_founder">באפשרותך <font color="#0088ff">להתחבר למפתחי SimpleX Chat כדי לשאול כל שאלה ולקבל עדכונים</font>.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">אתם קובעים דרך אילו שרתים <b>לקבל</b> את ההודעות, אנשי הקשר שלכם – השרתים דרכם אתם שולחים להם הודעות.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[באפשרותך <font color="#0088ff">להתחבר למפתחי SimpleX Chat כדי לשאול כל שאלה ולקבל עדכונים</font>.]]></string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[אתם קובעים דרך אילו שרתים <b>לקבל</b> את ההודעות, אנשי הקשר שלכם – השרתים דרכם אתם שולחים להם הודעות.]]></string>
     <string name="webrtc_ice_servers">שרתי WebRTC ICE</string>
     <string name="integrity_msg_skipped">%1$d הודעות שדולגו</string>
     <string name="custom_time_unit_weeks">שבועות</string>
@@ -1185,7 +1185,7 @@
     <string name="you_invited_your_contact">הזמנת את איש הקשר שלך</string>
     <string name="you_can_share_your_address">באפשרותכם לשתף את הכתובת שלכם כקישור או כקוד QR – כל אחד יכול להתחבר אליכם.</string>
     <string name="you_can_accept_or_reject_connection">כאשר אנשים מבקשים להתחבר, באפשרותך לקבל או לדחות זאת.</string>
-    <string name="you_can_also_connect_by_clicking_the_link">באפשרותכם גם להתחבר על־ידי לחיצה על הקישור. אם הוא נפתח בדפדפן, ליחצו על הכפתור <b>פתח באפליקציה</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[באפשרותכם גם להתחבר על־ידי לחיצה על הקישור. אם הוא נפתח בדפדפן, ליחצו על הכפתור <b>פתח באפליקציה</b>.]]></string>
     <string name="network_use_onion_hosts_prefer">כשזמין</string>
     <string name="you_can_create_it_later">תוכלו ליצור אותה מאוחר יותר</string>
     <string name="you_control_your_chat">אתם שולטים בצ׳אט שלכם!</string>

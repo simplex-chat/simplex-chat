@@ -193,9 +193,9 @@
     <string name="to_start_a_new_chat_help_header">Pro zahájení nové konverzace</string>
     <string name="chat_help_tap_button">Klepněte na tlačítko</string>
     <string name="above_then_preposition_continuation">potom:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Přidejte nový kontakt</b>: vytvořte jednorázý QR kód pro váš kontakt.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Naskenujte QR kód</b>: připojíte se ke kontaktu, který vám QR kód ukázal.</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 počítač: naskenujte QR kód z aplikace přez <b>Skenovat QR kód</b>.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Přidejte nový kontakt</b>: vytvořte jednorázý QR kód pro váš kontakt.]]></string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Naskenujte QR kód</b>: připojíte se ke kontaktu, který vám QR kód ukázal.]]></string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 počítač: naskenujte QR kód z aplikace přez <b>Skenovat QR kód</b>.]]></string>
     <string name="clear_chat_question">Vyčistit chat\?</string>
     <string name="clear_verb">Vyčistit</string>
     <string name="mark_read">Označit jako přečteno</string>
@@ -251,7 +251,7 @@
     <string name="decentralized">Decentralizovaná</string>
     <string name="how_it_works">Jak to funguje</string>
     <string name="how_simplex_works">Jak funguje SimpleX</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy odesílané pomocí <b>2 vrstvého koncového šifrování</b>.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy odesílané pomocí <b>2 vrstvého koncového šifrování</b>.]]></string>
     <string name="onboarding_notifications_mode_title">Oznámení</string>
     <string name="onboarding_notifications_mode_periodic">Pravidelné</string>
     <string name="ignore">Ignorovat</string>
@@ -301,7 +301,7 @@
     <string name="enter_correct_current_passphrase">Zadejte prosím správnou aktuální přístupovou frázi.</string>
     <string name="database_is_not_encrypted">Chat databáze není šifrována - nastavte přístupovou frázi pro její ochranu.</string>
     <string name="keychain_is_storing_securely">K bezpečnému uložení přístupové fráze slouží úložiště klíčů Android - umožňuje fungování služby oznámení.</string>
-    <string name="impossible_to_recover_passphrase"><b>Upozornění</b>: pokud přístupovou frázi ztratíte, NEBUDE možné ji obnovit ani změnit.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Upozornění</b>: pokud přístupovou frázi ztratíte, NEBUDE možné ji obnovit ani změnit.]]></string>
     <string name="database_will_be_encrypted_and_passphrase_stored">Databáze bude šifrována a přístupová fráze bude uložena v úložišti klíčů.</string>
     <string name="store_passphrase_securely">Heslo uložte bezpečně, v případě jeho ztráty jej NEBUDE možné změnit.</string>
     <string name="file_with_path">Soubor: %s</string>
@@ -330,8 +330,8 @@
     <string name="smp_server_test_create_queue">Vytvořit frontu</string>
     <string name="smp_server_test_secure_queue">Zabezpečit frontu</string>
     <string name="service_notifications">Okamžitá oznámení!</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>V nastavení ji lze vypnout</b> - oznámení se budou zobrazovat pokud aplikace běží.</string>
-    <string name="turn_off_battery_optimization">Chcete-li ji používat, <b>vypněte optimalizaci baterie</b> pro SimpleX v dalším dialogu. V opačném případě budou oznámení vypnuta.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>V nastavení ji lze vypnout</b> - oznámení se budou zobrazovat pokud aplikace běží.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Chcete-li ji používat, <b>vypněte optimalizaci baterie</b> pro SimpleX v dalším dialogu. V opačném případě budou oznámení vypnuta.]]></string>
     <string name="periodic_notifications_desc">Aplikace pravidelně načítá nové zprávy - denně spotřebuje několik procent baterie. Aplikace nepoužívá push oznámení - data ze zařízení nejsou odesílána na servery.</string>
     <string name="enter_passphrase_notification_title">Je vyžadována přístupová fráze</string>
     <string name="enter_passphrase_notification_desc">Chcete-li dostávat oznámení, zadejte přístupovou frázi do databáze.</string>
@@ -375,7 +375,7 @@
     <string name="delete_pending_connection__question">Smazat čekající připojení\?</string>
     <string name="icon_descr_settings">Nastavení</string>
     <string name="image_descr_qr_code">QR kód</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Pokud se nemůžete setkat osobně, ukažte ve <b>videohovoru QR kód</b> nebo sdílejte odkaz.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Pokud se nemůžete setkat osobně, ukažte ve <b>videohovoru QR kód</b> nebo sdílejte odkaz.]]></string>
     <string name="scan_code">Skenovat kód</string>
     <string name="incorrect_code">Nesprávný bezpečnostní kód!</string>
     <string name="scan_code_from_contacts_app">Naskenujte bezpečnostní kód z aplikace vašeho kontaktu.</string>
@@ -396,7 +396,7 @@
     <string name="delete_address">Smazat adresu</string>
     <string name="full_name__field">Celé jméno:</string>
     <string name="your_current_profile">Váš současný profil</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Pro zachování vašeho soukromí používá aplikace místo push oznámení <b>SimpleX službu na pozadí</b> - denně využije několik procent baterie.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Pro zachování vašeho soukromí používá aplikace místo push oznámení <b>SimpleX službu na pozadí</b> - denně využije několik procent baterie.]]></string>
     <string name="periodic_notifications">Pravidelná oznámení</string>
     <string name="simplex_service_notification_title">SimpleX Chat služba</string>
     <string name="simplex_service_notification_text">Příjem zpráv…</string>
@@ -582,11 +582,11 @@
     <string name="live_message">Živá zpráva!</string>
     <string name="connect_via_link_or_qr">Připojit se prostřednictvím odkazu / QR kódu</string>
     <string name="thank_you_for_installing_simplex">Děkujeme za instalaci SimpleX Chat!</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Můžete se <font color="#0088ff">připojit k SimpleX Chat vývojářům, položit jim případné dotazy a získat aktualizace</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Můžete se <font color="#0088ff">připojit k SimpleX Chat vývojářům, položit jim případné dotazy a získat aktualizace</font>.]]></string>
     <string name="to_connect_via_link_title">Připojení prostřednictvím odkazu</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Pokud jste dostali SimpleX Chat pozvánku, můžete ji otevřít v prohlížeči:</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Pokud zvolíte odmítnutí, odesílatel NEBUDE upozorněn.</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 telefon: <b>Otevřete v mobilní aplikaci</b>, potom klikněte na <b>Připojit</b>.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 telefon: <b>Otevřete v mobilní aplikaci</b>, potom klikněte na <b>Připojit</b>.]]></string>
     <string name="reject_contact_button">Odmítnout</string>
     <string name="clear_chat_button">Smazat chat</string>
     <string name="clear_chat_menu_action">Vyčistit</string>
@@ -610,12 +610,12 @@
     <string name="this_QR_code_is_not_a_link">Tento QR kód není odkaz!</string>
     <string name="invalid_contact_link">Neplatný odkaz!</string>
     <string name="this_link_is_not_a_valid_connection_link">Tento odkaz není platným odkazem pro připojení!</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Pokud se nemůžete setkat osobně, můžete <b>skenovat QR kód ve videohovoru</b> nebo může váš kontakt sdílet pozvánku.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Pokud se nemůžete setkat osobně, můžete <b>skenovat QR kód ve videohovoru</b> nebo může váš kontakt sdílet pozvánku.]]></string>
     <string name="connect_via_link">Připojte se prostřednictvím odkazu</string>
     <string name="connect_button">Připojit</string>
     <string name="paste_button">Vložit</string>
     <string name="this_string_is_not_a_connection_link">Tento řetězec není odkazem na připojení!</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Můžete se také připojit kliknutím na odkaz. Pokud se otevře v prohlížeči, klikněte na tlačítko <b>Otevřít v mobilní aplikaci</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Můžete se také připojit kliknutím na odkaz. Pokud se otevře v prohlížeči, klikněte na tlačítko <b>Otevřít v mobilní aplikaci</b>.]]></string>
     <string name="is_not_verified">%s není ověřeno</string>
     <string name="how_to_use_simplex_chat">Návod k použití</string>
     <string name="markdown_help">Nápověda k markdown</string>
@@ -644,7 +644,7 @@
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hostitelé budou použiti, pokud jsou k dispozici.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Pro připojení budou vyžadováni Onion hostitelé.</string>
     <string name="network_session_mode_transport_isolation">Izolace přenosu</string>
-    <string name="network_session_mode_user_description">A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.</string>
+    <string name="network_session_mode_user_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.]]></string>
     <string name="network_session_mode_entity_description">Oddělit TCP připojení (a SOCKS pověření) bude použito <b>pro všechny kontakty a členy skupin</b>.
 \n<b>Upozornění</b>: Pokud máte mnoho připojení, může být spotřeba baterie a provoz podstatně vyšší a některá připojení mohou selhat.</string>
     <string name="appearance_settings">Vzhled</string>
@@ -682,17 +682,17 @@
     <string name="first_platform_without_user_ids">1. platforma bez jakýchkoliv uživatelských identifikátorů – soukromá již od návrhu.</string>
     <string name="immune_to_spam_and_abuse">Odolná vůči spamu a zneužití</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">K ochraně soukromí, místo uživatelských ID užívaných všemi ostatními platformami, SimpleX používá identifikátory pro fronty zpráv, zvlášť pro každý z vašich kontaktů.</string>
-    <string name="many_people_asked_how_can_it_deliver">Mnoho lidí se ptá: <i>když SimpleX nemá žádný identifikátor uživatelů, jak může doručovat zprávy\?</i></string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Vy určujete, přes které servery <b>přijímat</b> zprávy, vaše kontakty – servery, které používáte k zasílání zpráv.</string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Mnoho lidí se ptá: <i>když SimpleX nemá žádný identifikátor uživatelů, jak může doručovat zprávy\?</i>]]></string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Vy určujete, přes které servery <b>přijímat</b> zprávy, vaše kontakty – servery, které používáte k zasílání zpráv.]]></string>
     <string name="read_more_in_github">Další informace najdete v našem repozitáři na GitHubu.</string>
-    <string name="read_more_in_github_with_link">Další informace najdete v našem <font color="#0088ff">úložišti GitHub</font>.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Další informace najdete v našem <font color="#0088ff">úložišti GitHub</font>.]]></string>
     <string name="use_chat">Použijte chat</string>
     <string name="onboarding_notifications_mode_subtitle">Lze změnit později v nastavení.</string>
     <string name="onboarding_notifications_mode_off">Když aplikace běží</string>
     <string name="onboarding_notifications_mode_service">Okamžité</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Nejlepší pro baterii</b>. Budete přijímat oznámení pouze když aplikace běží (žádná služba na pozadí).</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Dobré pro baterii</b>. Služba na pozadí bude kontrolovat každých 10 minut. Můžete zmeškat hovory nebo naléhavé zprávy.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Využívá více baterie</b>! Služba na pozadí je spuštěna vždy - oznámení se zobrazí, jakmile jsou zprávy k dispozici.</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Nejlepší pro baterii</b>. Budete přijímat oznámení pouze když aplikace běží (žádná služba na pozadí).]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Dobré pro baterii</b>. Služba na pozadí bude kontrolovat každých 10 minut. Můžete zmeškat hovory nebo naléhavé zprávy.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Využívá více baterie</b>! Služba na pozadí je spuštěna vždy - oznámení se zobrazí, jakmile jsou zprávy k dispozici.]]></string>
     <string name="paste_the_link_you_received">Vložení přijatého odkazu</string>
     <string name="incoming_video_call">Příchozí videohovor</string>
     <string name="incoming_audio_call">Příchozí zvukový hovor</string>
@@ -1074,7 +1074,7 @@
     <string name="lock_not_enabled">Zámek SimpleX není povolen!</string>
     <string name="you_can_turn_on_lock">Zámek SimpleX můžete zapnout v Nastavení.</string>
     <string name="port_verb">Port</string>
-    <string name="disable_onion_hosts_when_not_supported">Nastavte <i>Použít .onion hostitele</i> na Ne, pokud je SOCKS proxy nepodporuje.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Nastavte <i>Použít .onion hostitele</i> na Ne, pokud je SOCKS proxy nepodporuje.]]></string>
     <string name="your_XFTP_servers">Vaše XFTP servery</string>
     <string name="enable_lock">Povolit zámek</string>
     <string name="lock_after">Zamknout po</string>
@@ -1195,7 +1195,7 @@
     <string name="error_setting_address">Chyba nastavení adresy</string>
     <string name="scan_qr_to_connect_to_contact">Pro připojení může váš kontakt naskenovat QR kód, nebo použít odkaz v aplikaci.</string>
     <string name="you_can_accept_or_reject_connection">Když někdo požádá o připojení, můžete žádost přijmout nebo odmítnout.</string>
-    <string name="read_more_in_user_guide_with_link">Přečtěte si více v <font color="#0088ff">Uživatelské příručce</font>.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Přečtěte si více v <font color="#0088ff">Uživatelské příručce</font>.]]></string>
     <string name="simplex_address">Adresa SimpleX</string>
     <string name="theme_colors_section_title">BARVY MOTIVU</string>
     <string name="customize_theme_title">Přizpůsobit motiv</string>

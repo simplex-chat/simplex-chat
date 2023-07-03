@@ -126,9 +126,9 @@
   <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="service_notifications">Instant notifications!</string>
   <string name="service_notifications_disabled">Instant notifications are disabled!</string>
-  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b>SimpleX background service</b> – it uses a few percent of the battery per day.</string>
-  <string name="it_can_disabled_via_settings_notifications_still_shown"><b>It can be disabled via settings</b> – notifications will still be shown while the app is running.</string>
-  <string name="turn_off_battery_optimization">In order to use it, please <b>disable battery optimization</b> for SimpleX in the next dialog. Otherwise, the notifications will be disabled.</string>
+  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[To preserve your privacy, instead of push notifications the app has a <b>SimpleX background service</b> – it uses a few percent of the battery per day.]]></string>
+  <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>It can be disabled via settings</b> – notifications will still be shown while the app is running.]]></string>
+  <string name="turn_off_battery_optimization"><![CDATA[In order to use it, please <b>disable battery optimization</b> for SimpleX in the next dialog. Otherwise, the notifications will be disabled.]]></string>
   <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
@@ -392,16 +392,16 @@
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Thank you for installing SimpleX Chat!</string>
-  <string name="you_can_connect_to_simplex_chat_founder">You can <font color="#0088ff">connect to SimpleX Chat developers to ask any questions and to receive updates</font>.</string>
+  <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[You can <font color="#0088ff">connect to SimpleX Chat developers to ask any questions and to receive updates</font>.]]></string>
   <string name="to_start_a_new_chat_help_header">To start a new chat</string>
   <string name="chat_help_tap_button">Tap button</string>
   <string name="above_then_preposition_continuation">above, then:</string>
-  <string name="add_new_contact_to_create_one_time_QR_code"><b>Add new contact</b>: to create your one-time QR Code for your contact.</string>
-  <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scan QR code</b>: to connect to your contact who shows QR code to you.</string>
+  <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Add new contact</b>: to create your one-time QR Code for your contact.]]></string>
+  <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scan QR code</b>: to connect to your contact who shows QR code to you.]]></string>
   <string name="to_connect_via_link_title">To connect via link</string>
   <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">If you received SimpleX Chat invitation link, you can open it in your browser:</string>
-  <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.</string>
-  <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobile: tap <b>Open in mobile app</b>, then tap <b>Connect</b> in the app.</string>
+  <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.]]></string>
+  <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobile: tap <b>Open in mobile app</b>, then tap <b>Connect</b> in the app.]]></string>
 
   <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
   <string name="accept_connection_request__question">Accept connection request?</string>
@@ -472,9 +472,9 @@
   <string name="you_will_be_connected_when_group_host_device_is_online">You will be connected to group when the group host\'s device is online, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_connection_request_is_accepted">You will be connected when your connection request is accepted, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_contacts_device_is_online">You will be connected when your contact\'s device is online, please wait or check later!</string>
-  <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">If you can\'t meet in person, <b>show QR code in the video call</b>, or share the link.</string>
+  <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[If you can\'t meet in person, <b>show QR code in the video call</b>, or share the link.]]></string>
   <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
-  <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.</string>
+  <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.]]></string>
   <string name="share_invitation_link">Share 1-time link</string>
   <string name="paste_connection_link_below_to_connect">Paste the link you received into the box below to connect with your contact.</string>
   <string name="your_profile_will_be_sent">Your chat profile will be sent to your contact</string>
@@ -489,14 +489,14 @@
   <string name="you_can_share_your_address">You can share your address as a link or QR code - anybody can connect to you.</string>
   <string name="you_wont_lose_your_contacts_if_delete_address">You won\'t lose your contacts if you later delete your address.</string>
   <string name="you_can_accept_or_reject_connection">When people request to connect, you can accept or reject it.</string>
-  <string name="read_more_in_user_guide_with_link">Read more in <font color="#0088ff">User Guide</font>.</string>
+  <string name="read_more_in_user_guide_with_link"><![CDATA[Read more in <font color="#0088ff">User Guide</font>.]]></string>
 
   <!-- PasteToConnect.kt -->
   <string name="connect_via_link">Connect via link</string>
   <string name="connect_button">Connect</string>
   <string name="paste_button">Paste</string>
   <string name="this_string_is_not_a_connection_link">This string is not a connection link!</string>
-  <string name="you_can_also_connect_by_clicking_the_link">You can also connect by clicking the link. If it opens in the browser, click <b>Open in mobile app</b> button.</string>
+  <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[You can also connect by clicking the link. If it opens in the browser, click <b>Open in mobile app</b> button.]]></string>
 
   <!-- CreateLinkView.kt -->
   <string name="create_one_time_link">Create one-time invitation link</string>
@@ -596,10 +596,10 @@
   <string name="network_session_mode_transport_isolation">Transport isolation</string>
   <string name="network_session_mode_user">Chat profile</string>
   <string name="network_session_mode_entity">Connection</string>
-  <string name="network_session_mode_user_description">A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.</string>
-  <string name="network_session_mode_entity_description">A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</string>
+  <string name="network_session_mode_user_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.]]></string>
+  <string name="network_session_mode_entity_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.]]></string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
-  <string name="disable_onion_hosts_when_not_supported">Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.</string>
+  <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.]]></string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
   <string name="theme_colors_section_title">THEME COLORS</string>
@@ -725,12 +725,12 @@
 
   <!-- How SimpleX Works -->
   <string name="how_simplex_works">How SimpleX works</string>
-  <string name="many_people_asked_how_can_it_deliver">Many people asked: <i>if SimpleX has no user identifiers, how can it deliver messages?</i></string>
+  <string name="many_people_asked_how_can_it_deliver"><![CDATA[Many people asked: <i>if SimpleX has no user identifiers, how can it deliver messages?</i>]]></string>
   <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</string>
-  <string name="you_control_servers_to_receive_your_contacts_to_send">You control through which server(s) <b>to receive</b> the messages, your contacts – the servers you use to message them.</string>
-  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.</string>
+  <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[You control through which server(s) <b>to receive</b> the messages, your contacts – the servers you use to message them.]]></string>
+  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.]]></string>
   <string name="read_more_in_github">Read more in our GitHub repository.</string>
-  <string name="read_more_in_github_with_link">Read more in our <font color="#0088ff">GitHub repository</font>.</string>
+  <string name="read_more_in_github_with_link"><![CDATA[Read more in our <font color="#0088ff">GitHub repository</font>.]]></string>
 
   <!-- SetNotificationsMode.kt -->
   <string name="use_chat">Use chat</string>
@@ -739,9 +739,9 @@
   <string name="onboarding_notifications_mode_off">When app is running</string>
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
-  <string name="onboarding_notifications_mode_off_desc"><b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).</string>
-  <string name="onboarding_notifications_mode_periodic_desc"><b>Good for battery</b>. Background service checks messages every 10 minutes. You may miss calls or urgent messages.</string>
-  <string name="onboarding_notifications_mode_service_desc"><b>Uses more battery</b>! Background service always runs – notifications are shown as soon as messages are available.</string>
+  <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).]]></string>
+  <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. Background service checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
+  <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! Background service always runs – notifications are shown as soon as messages are available.]]></string>
 
   <!-- MakeConnection -->
   <string name="paste_the_link_you_received">Paste received link</string>
@@ -950,7 +950,7 @@
   <string name="database_is_not_encrypted">Your chat database is not encrypted - set passphrase to protect it.</string>
   <string name="keychain_is_storing_securely">Android Keystore is used to securely store passphrase - it allows notification service to work.</string>
   <string name="encrypted_with_random_passphrase">Database is encrypted using a random passphrase, you can change it.</string>
-  <string name="impossible_to_recover_passphrase"><b>Please note</b>: you will NOT be able to recover or change passphrase if you lose it.</string>
+  <string name="impossible_to_recover_passphrase"><![CDATA[<b>Please note</b>: you will NOT be able to recover or change passphrase if you lose it.]]></string>
   <string name="keychain_allows_to_receive_ntfs">Android Keystore will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving notifications.</string>
   <string name="you_have_to_enter_passphrase_every_time">You have to enter passphrase every time the app starts - it is not stored on the device.</string>
   <string name="encrypt_database_question">Encrypt database?</string>

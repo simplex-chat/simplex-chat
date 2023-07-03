@@ -214,7 +214,7 @@
     <string name="clear_verb">വൃത്തിയാക്കുക</string>
     <string name="clear_chat_menu_action">വൃത്തിയാക്കുക</string>
     <string name="learn_more">കൂടുതലറിയുക</string>
-    <string name="read_more_in_user_guide_with_link"><font color="#0088ff">ഉപയോക്തൃ മാര്‍ഗ്ഗദര്‍ശിയിൽ</font> കൂടുതൽ വായിക്കുക.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">ഉപയോക്തൃ മാര്‍ഗ്ഗദര്‍ശിയിൽ</font> കൂടുതൽ വായിക്കുക.]]></string>
     <string name="smp_servers_check_address">സെർവർ വിലാസം പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.</string>
     <string name="your_SMP_servers">നിങ്ങളുടെ SMP സെർവറുകൾ</string>
     <string name="network_session_mode_entity">ബന്ധം</string>

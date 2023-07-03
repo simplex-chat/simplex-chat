@@ -26,7 +26,7 @@
     <string name="users_delete_all_chats_deleted">全チャットとメッセージが削除されます(※元に戻せません※)！</string>
     <string name="allow_your_contacts_to_send_voice_messages">送信相手からの音声メッセージを許可する。</string>
     <string name="both_you_and_your_contact_can_send_voice">あなたと連絡相手が音声メッセージを送信できます。</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>電池省エネに良い</b>：バックグラウンド機能で10分毎に新着メッセージを確認します。通話と緊急メッセージを見逃す可能性があります。</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>電池省エネに良い</b>：バックグラウンド機能で10分毎に新着メッセージを確認します。通話と緊急メッセージを見逃す可能性があります。]]></string>
     <string name="icon_descr_audio_off">音声オフ</string>
     <string name="attach">添付する</string>
     <string name="app_version_code">アプリ・ビルド番号： %s</string>
@@ -40,13 +40,13 @@
     <string name="appearance_settings">見た目</string>
     <string name="app_version_title">アプリのバージョン</string>
     <string name="app_version_name">アプリのバージョン: v%s</string>
-    <string name="network_session_mode_user_description"><b>アプリ内の各チャットプロフィールに、</b>.連絡先毎にそれぞれのTCP接続(とSOCKS資格情報)が使われます。</string>
+    <string name="network_session_mode_user_description"><![CDATA[<b>アプリ内の各チャットプロフィールに、</b>.連絡先毎にそれぞれのTCP接続(とSOCKS資格情報)が使われます。]]></string>
     <string name="network_session_mode_entity_description"><b>各連絡先とグループに、</b>それぞれのTCP接続(とSOCKS資格情報)が使われます。
 \n<b>※注意※</b> 接続が多かったら、電池とデータの使用量が増えて、切断する可能性もあります。</string>
     <string name="bold">太文字</string>
     <string name="icon_descr_audio_call">音声通話</string>
     <string name="settings_audio_video_calls">音声とビデオ通話</string>
-    <string name="impossible_to_recover_passphrase"><b>※注意※</b>：喪失したら、パスフレーズの回復・変更ができません。</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>※注意※</b>：喪失したら、パスフレーズの回復・変更ができません。]]></string>
     <string name="all_group_members_will_remain_connected">グループ全員の接続が継続します。</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">送信相手が消えるメッセージを送るのを許可する。</string>
     <string name="allow_your_contacts_irreversibly_delete">送信相手が永久メッセージ削除するのを許可する。</string>
@@ -75,12 +75,12 @@
     <string name="auth_unavailable">認証不可能</string>
     <string name="auto_accept_images">画像を自動的に受信</string>
     <string name="notifications_mode_service_desc">バックグラウンド機能が常にオンで、メッセージが到着次第に通知が出ます。</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>新しい連絡先を追加</b>：使い捨てのQRコードを発行</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>新しい連絡先を追加</b>：使い捨てのQRコードを発行]]></string>
     <string name="turning_off_service_and_periodic">電池省エネをオンに、バックグラウンド機能と定期的な受信依頼をオフにします。設定メニューにて変更できます。</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>電池消費が最少</b>：アプリがアクティブ時のみに通知が出ます（バックグラウンドサービス無し）。</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>設定メニューにてオフにできます。</b> アプリがアクティブ時に通知が出ます。</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>電池消費が最少</b>：アプリがアクティブ時のみに通知が出ます（バックグラウンドサービス無し）。]]></string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>設定メニューにてオフにできます。</b> アプリがアクティブ時に通知が出ます。]]></string>
     <string name="both_you_and_your_contacts_can_delete">あなたと連絡相手が送信済みメッセージを永久削除できます。</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>QRコードを読み込み</b>：連絡相手のQRコードをスキャンすると繋がります。</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QRコードを読み込み</b>：連絡相手のQRコードをスキャンすると繋がります。]]></string>
     <string name="chat_archive_section">チャットのアーカイブ</string>
     <string name="delete_chat_archive_question">チャットのアーカイブを削除しますか？</string>
     <string name="join_group_incognito_button">シークレットモードで参加</string>
@@ -160,14 +160,14 @@
     <string name="icon_descr_instant_notifications">即時通知</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMPサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICEサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
-    <string name="many_people_asked_how_can_it_deliver">よく聞かれるのは、 <i>if SimpleX にユーザIDがなければ、メッセージをどうやって届けるのでしょうかと。</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[よく聞かれるのは、 <i>if SimpleX にユーザIDがなければ、メッセージをどうやって届けるのでしょうかと。</i>]]></string>
     <string name="how_simplex_works">SimpleX の仕様</string>
     <string name="icon_descr_call_progress">通話中</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>電池消費がより高い</b>！非アクティブ時でもバックグラウンドのサービスが常に稼働します（着信次第に通知がすぐに出ます）。</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>電池消費がより高い</b>！非アクティブ時でもバックグラウンドのサービスが常に稼働します（着信次第に通知がすぐに出ます）。]]></string>
     <string name="callstatus_calling">発信中</string>
     <string name="callstatus_ended">通話終了 %1$s</string>
     <string name="icon_descr_call_ended">通話が終了しました。</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">直接会えない時は、 <b>ビデオ通話中にQRコードを見せてもらうか</b>、招待リンクを送ってもらえば相手に繋がります。</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[直接会えない時は、 <b>ビデオ通話中にQRコードを見せてもらうか</b>、招待リンクを送ってもらえば相手に繋がります。]]></string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">メンバーをグループから除名する (※元に戻せません※)！</string>
     <string name="message_delivery_error_title">メッセージ送信エラー</string>
     <string name="call_on_lock_screen">通話をロック画面に表示</string>
@@ -177,7 +177,7 @@
     <string name="cannot_receive_file">ファイル受信ができません。</string>
     <string name="invite_prohibited">連絡先を招待できません！</string>
     <string name="change_verb">変更</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">直接会えない時は、 <b>ビデオ通話にてQRコードを見せるか</b>、招待リンクを送って、相手に繋がります。</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[直接会えない時は、 <b>ビデオ通話にてQRコードを見せるか</b>、招待リンクを送って、相手に繋がります。]]></string>
     <string name="rcv_conn_event_switch_queue_phase_completed">あなたのアドレスを変えました。</string>
     <string name="snd_conn_event_switch_queue_phase_changing">アドレスを変更しています…</string>
     <string name="chat_database_section">チャットのデータベース</string>
@@ -230,7 +230,7 @@
     <string name="network_use_onion_hosts_no_desc">オニオンのホストが使われません。</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">オニオンのホストが利用可能時に使われます。</string>
     <string name="images_limit_desc">画像を1回で最大10枚を送信できます。</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><b>2層エンドツーエンド暗号化</b>で送信されたプロフィール、連絡先、グループ、メッセージは、クライント端末にしか保存されません。</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[<b>2層エンドツーエンド暗号化</b>で送信されたプロフィール、連絡先、グループ、メッセージは、クライント端末にしか保存されません。]]></string>
     <string name="only_group_owners_can_change_prefs">グループ設定を変えられるのはグループのオーナーだけです。</string>
     <string name="only_group_owners_can_enable_voice">音声メッセージを利用可能に設定できるのはグループのオーナーだけです。</string>
     <string name="create_profile">プロフィールを作成する</string>
@@ -339,7 +339,7 @@
     <string name="how_it_works">技術の説明</string>
     <string name="make_private_connection">プライベートな接続をする</string>
     <string name="onboarding_notifications_mode_title">プライベートな通知</string>
-    <string name="read_more_in_github_with_link"><font color="#0088ff">GitHubリポジトリ</font>で詳細をご確認ください。</string>
+    <string name="read_more_in_github_with_link"><![CDATA[<font color="#0088ff">GitHubリポジトリ</font>で詳細をご確認ください。]]></string>
     <string name="read_more_in_github">GitHubリポジトリで詳細をご確認ください。</string>
     <string name="encrypted_video_call">エンドツーエンド暗号化済みビデオ通話</string>
     <string name="no_call_on_lock_screen">無効にする</string>
@@ -489,7 +489,7 @@
     <string name="smp_server_test_create_queue">サーバの待ち行列を作成する</string>
     <string name="smp_server_test_delete_queue">待ち行列を削除</string>
     <string name="smp_server_test_disconnect">切断</string>
-    <string name="turn_off_battery_optimization">利用するには次の画面にてSimpleXに対する <b>電気省電力の設定をオフ</b> for SimpleX してください。そうしないと通知が無効になります。</string>
+    <string name="turn_off_battery_optimization"><![CDATA[利用するには次の画面にてSimpleXに対する <b>電気省電力の設定をオフ</b> for SimpleX してください。そうしないと通知が無効になります。]]></string>
     <string name="database_initialization_error_title">データベースを起動できません。</string>
     <string name="settings_notification_preview_title">通知のプレビュー</string>
     <string name="simplex_service_notification_text">メッセージ受信中…</string>
@@ -518,9 +518,9 @@
     <string name="share_one_time_link">使い捨てリンクを発行する</string>
     <string name="create_group">シークレットグループを作成する</string>
     <string name="only_stored_on_members_devices">(グループのメンバーのみに保存されてます)</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 デスクトップ： <b>「QRコードを読み取る」</b>経由でアプリに表示されるQRコードを読み取る</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 デスクトップ： <b>「QRコードを読み取る」</b>経由でアプリに表示されるQRコードを読み取る]]></string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">SimpleX Chat の招待リンクをもらったら、ブラウザで開けます：</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 携帯： <b>「アプリで開く」</b>をタップし、 アプリ内で<b>「接続」</b>をタップする。</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 携帯： <b>「アプリで開く」</b>をタップし、 アプリ内で<b>「接続」</b>をタップする。]]></string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">拒否しても、相手には知らされません。</string>
     <string name="reject_contact_button">拒否</string>
     <string name="clear_chat_question">チャットを消しますか？</string>
@@ -762,7 +762,7 @@
     <string name="strikethrough">取り消し線</string>
     <string name="callstate_starting">接続中…</string>
     <string name="next_generation_of_private_messaging">次世代のプライバシー・メッセンジャー</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">あなたがメッセージの<b>受信</b>サーバを決められます。あなたの連絡先が同じく、自分に対する受信サーバを決められます。</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[あなたがメッセージの<b>受信</b>サーバを決められます。あなたの連絡先が同じく、自分に対する受信サーバを決められます。]]></string>
     <string name="icon_descr_video_call">ビデオ通話</string>
     <string name="onboarding_notifications_mode_off">アプリが稼働中に</string>
     <string name="webrtc_ice_servers">WebRTC ICEサーバ</string>
@@ -867,13 +867,13 @@
     <string name="contact_sent_large_file">向こうが最上限の大きさを超えるファイルを送ろうとしました (%1$s)。</string>
     <string name="voice_messages_prohibited">音声メッセージは使用禁止です！</string>
     <string name="add_contact_or_create_group">新しいチャットを始める</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><font color="#0088ff">SimpleX Chatの開発者と繋がれば、質問したり、速報を受けたりすることができます</font>。</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[<font color="#0088ff">SimpleX Chatの開発者と繋がれば、質問したり、速報を受けたりすることができます</font>。]]></string>
     <string name="to_start_a_new_chat_help_header">新しいチャットを始めるには</string>
     <string name="chat_help_tap_button">ボタンをタップ</string>
     <string name="unmute_chat">ミュート解除</string>
     <string name="set_contact_name">連絡先を設定</string>
     <string name="contact_wants_to_connect_with_you">はあなたと繋がりたいです！</string>
-    <string name="you_can_also_connect_by_clicking_the_link">リンクをクリックすることでも接続できます。ブラウザが起動すれば <b>Open in mobile app (アプリで開く)</b>ボタンをクリックしてください。</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[リンクをクリックすることでも接続できます。ブラウザが起動すれば <b>Open in mobile app (アプリで開く)</b>ボタンをクリックしてください。]]></string>
     <string name="your_chat_profiles">あなたのチャットプロフィール</string>
     <string name="smp_servers_scan_qr">サーバのQRコードを読み込む</string>
     <string name="smp_servers_test_some_failed">テストに失敗したサーバがあります：</string>
@@ -910,7 +910,7 @@
     <string name="settings_section_title_support">SIMPLEX CHATを支援</string>
     <string name="smp_servers_test_servers">テストサーバ</string>
     <string name="switch_receiving_address_desc">開発中の機能です！相手のクライアントが4.2でなければ機能しません。アドレス変更が完了すると、会話にメッセージが出ます。連絡相手 (またはグループのメンバー) からメッセージを受信できないかをご確認ください。</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">あなたのプライバシーを守るために、このアプリはプッシュ通知の変わりに <b>SimpleX バックグラウンド・サービス</b> を使ってます。一日の電池使用量は約3%です。</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[あなたのプライバシーを守るために、このアプリはプッシュ通知の変わりに <b>SimpleX バックグラウンド・サービス</b> を使ってます。一日の電池使用量は約3%です。]]></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">あなたのプライバシーを守るために、他のアプリと違って、ユーザーIDの変わりに SimpleX メッセージ束毎にIDを配布し、各連絡先が別々と扱います。</string>
     <string name="group_main_profile_sent">あなたのチャットプロフィールが他のグループメンバーに送られます。</string>
     <string name="to_verify_compare">エンドツーエンド暗号化を確認するには、ご自分の端末と連絡先の端末のコードを比べます (スキャンします)。</string>
@@ -970,7 +970,7 @@
     <string name="dark_theme">ダークテーマ</string>
     <string name="gallery_image_button">画像</string>
     <string name="learn_more_about_address">SimpleXアドレスについて</string>
-    <string name="read_more_in_user_guide_with_link"><font color="#0088ff">ユーザーガイド</font>で詳細を見る</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">ユーザーガイド</font>で詳細を見る]]></string>
     <string name="simplex_address">SimpleXアドレス</string>
     <string name="network_proxy_port">ポート %d</string>
     <string name="enter_welcome_message_optional">ウェルカムメッセージを入力…（オプション）</string>
@@ -1024,7 +1024,7 @@
     <string name="you_are_observer">あなたはオブザーバーです</string>
     <string name="observer_cant_send_message_desc">グループの管理者に連絡してください。</string>
     <string name="video_will_be_received_when_contact_completes_uploading">動画は相手がアップロードを完了した時点で受信するができます。</string>
-    <string name="disable_onion_hosts_when_not_supported">SOCKSプロキシがサポートしていない場合、<i>.onion hostを使用する</i>、は「いいえ」に設定します。</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[SOCKSプロキシがサポートしていない場合、<i>.onion hostを使用する</i>、は「いいえ」に設定します。]]></string>
     <string name="network_socks_toggle_use_socks_proxy">SOCKSプロキシーを使用</string>
     <string name="auth_open_chat_profiles">チャットのプロフィールを開く</string>
     <string name="file_will_be_received_when_contact_completes_uploading">連絡先がアップロードを完了した時点で、ファイルを受信します。</string>

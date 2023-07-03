@@ -66,9 +66,9 @@
     <string name="allow_your_contacts_to_send_voice_messages">Sta toe dat uw contacten spraak berichten verzenden.</string>
     <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
     <string name="allow_voice_messages_question">Spraak berichten toestaan\?</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Goed voor de batterij</b>. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Goed voor de batterij</b>. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.]]></string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scan QR-code</b>: om verbinding te maken met uw contactpersoon die u de QR-code laat zien.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scan QR-code</b>: om verbinding te maken met uw contactpersoon die u de QR-code laat zien.]]></string>
     <string name="integrity_msg_bad_id">Onjuiste bericht ID</string>
     <string name="call_already_ended">Oproep al beëindigd!</string>
     <string name="chat_item_ttl_month">1 maand</string>
@@ -93,19 +93,19 @@
     <string name="settings_section_title_icon">APP ICON</string>
     <string name="app_version_title">App versie</string>
     <string name="app_version_name">App versie: v%s</string>
-    <string name="network_session_mode_user_description">Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chat profiel dat je in de app hebt </b>.</string>
+    <string name="network_session_mode_user_description"><![CDATA[Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chat profiel dat je in de app hebt </b>.]]></string>
     <string name="audio_call_no_encryption">audio oproep (niet e2e versleuteld)</string>
     <string name="notifications_mode_service_desc">Achtergrondservice is altijd actief, meldingen worden weergegeven zodra de berichten beschikbaar zijn.</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Nieuw contact toevoegen</b>: om een eenmalige QR-code voor uw contact te maken.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Nieuw contact toevoegen</b>: om een eenmalige QR-code voor uw contact te maken.]]></string>
     <string name="icon_descr_call_ended">Oproep beëindigd</string>
     <string name="turning_off_service_and_periodic">Batterijoptimalisatie is actief, waardoor achtergrondservice en periodieke verzoeken om nieuwe berichten worden uitgeschakeld. Je kunt ze weer inschakelen via instellingen.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Het beste voor de batterij</b>. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Het kan worden uitgeschakeld via instellingen</b>, meldingen worden nog steeds weergegeven terwijl de app actief is.</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Het beste voor de batterij</b>. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).]]></string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Het kan worden uitgeschakeld via instellingen</b>, meldingen worden nog steeds weergegeven terwijl de app actief is.]]></string>
     <string name="both_you_and_your_contacts_can_delete">Zowel jij als je contactpersoon kunnen verzonden berichten onherroepelijk verwijderen.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Zowel jij als je contactpersoon kunnen verdwijnende berichten sturen.</string>
     <string name="both_you_and_your_contact_can_send_voice">Zowel jij als je contactpersoon kunnen spraak berichten verzenden.</string>
-    <string name="impossible_to_recover_passphrase"><b>Let op</b>: u kunt het wachtwoord NIET herstellen of wijzigen als u het kwijt raakt.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Gebruikt meer batterij</b>! Achtergrondservice wordt altijd uitgevoerd - meldingen worden weergegeven zodra berichten beschikbaar zijn.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Let op</b>: u kunt het wachtwoord NIET herstellen of wijzigen als u het kwijt raakt.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Gebruikt meer batterij</b>! Achtergrondservice wordt altijd uitgevoerd - meldingen worden weergegeven zodra berichten beschikbaar zijn.]]></string>
     <string name="icon_descr_cancel_link_preview">link voorbeeld annuleren</string>
     <string name="callstatus_ended">oproep beëindigd %1$s</string>
     <string name="database_initialization_error_title">Kan de database niet initialiseren</string>
@@ -260,7 +260,7 @@
     <string name="button_delete_group">Groep verwijderen</string>
     <string name="delete_link_question">Link verwijderen\?</string>
     <string name="delete_pending_connection__question">Wachtende verbinding verwijderen\?</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan weergegeven QR-code vanuit de app, via <b>Scan QR-code</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: scan weergegeven QR-code vanuit de app, via <b>Scan QR-code</b>.]]></string>
     <string name="settings_developer_tools">Ontwikkel gereedschap</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Apparaatverificatie is uitgeschakeld. SimpleX Vergrendelen uitschakelen.</string>
     <string name="display_name">Weergavenaam</string>
@@ -422,8 +422,8 @@
     <string name="mark_read">Markeer gelezen</string>
     <string name="mark_unread">Markeer als ongelezen</string>
     <string name="mute_chat">Dempen</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Als u elkaar niet persoonlijk kunt ontmoeten, kunt u <b> de QR-code scannen in het video gesprek </b>, of uw contactpersoon kan een uitnodiging link delen.</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Als je elkaar niet persoonlijk kunt ontmoeten, <b>toon je de QR-code in het video gesprek</b> of deel je de link.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Als u elkaar niet persoonlijk kunt ontmoeten, kunt u <b> de QR-code scannen in het video gesprek </b>, of uw contactpersoon kan een uitnodiging link delen.]]></string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Als je elkaar niet persoonlijk kunt ontmoeten, <b>toon je de QR-code in het video gesprek</b> of deel je de link.]]></string>
     <string name="invalid_QR_code">Ongeldige QR-code</string>
     <string name="icon_descr_more_button">Meer</string>
     <string name="incorrect_code">Onjuiste beveiligingscode!</string>
@@ -437,7 +437,7 @@
     <string name="how_it_works">Hoe het werkt</string>
     <string name="callstatus_missed">gemiste oproep</string>
     <string name="how_simplex_works">Hoe SimpleX werkt</string>
-    <string name="many_people_asked_how_can_it_deliver">Veel mensen vroegen: <i>als SimpleX geen gebruikers ID\'s heeft, hoe kan het dan berichten bezorgen\?</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Veel mensen vroegen: <i>als SimpleX geen gebruikers ID\'s heeft, hoe kan het dan berichten bezorgen\?</i>]]></string>
     <string name="incoming_audio_call">Inkomende audio oproep</string>
     <string name="incoming_video_call">Inkomend video gesprek</string>
     <string name="ignore">Negeren</string>
@@ -472,7 +472,7 @@
     <string name="v4_5_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
     <string name="button_add_members">Nodig leden uit</string>
     <string name="notification_display_mode_hidden_desc">Verberg contact en bericht</string>
-    <string name="turn_off_battery_optimization">Om het te gebruiken <b>batterijoptimalisatie uitschakelen</b> voor SimpleX in het volgende dialoogvenster. Anders worden de meldingen uitgeschakeld.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Om het te gebruiken <b>batterijoptimalisatie uitschakelen</b> voor SimpleX in het volgende dialoogvenster. Anders worden de meldingen uitgeschakeld.]]></string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Als u ervoor kiest om te weigeren, wordt de afzender NIET op de hoogte gesteld.</string>
     <string name="onboarding_notifications_mode_service">Onmiddellijk</string>
     <string name="rcv_group_event_member_added">heeft %1$s uitgenodigd</string>
@@ -490,7 +490,7 @@
     <string name="image_descr_link_preview">link voorbeeld afbeelding</string>
     <string name="member_info_section_title_member">GEBRUIKER</string>
     <string name="settings_section_title_messages">BERICHTEN EN BESTANDEN</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobiel: tik op <b>Openen in mobiele app</b> en tik vervolgens op <b>Verbinden</b> in de app.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobiel: tik op <b>Openen in mobiele app</b> en tik vervolgens op <b>Verbinden</b> in de app.]]></string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Gebruiker wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!</string>
     <string name="message_delivery_error_title">Fout bij bezorging van bericht</string>
     <string name="delete_message_mark_deleted_warning">Bericht wordt gemarkeerd voor verwijdering. De ontvanger(s) kunnen dit bericht onthullen.</string>
@@ -608,7 +608,7 @@
     <string name="icon_descr_call_pending_sent">Oproep in behandeling</string>
     <string name="simplex_link_mode_browser_warning">Het openen van de link in de browser kan de privacy en beveiliging van de verbinding verminderen. Niet vertrouwde SimpleX links worden rood weergegeven.</string>
     <string name="contact_developers">Werk de app bij en neem contact op met de ontwikkelaars.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Alleen client apparaten slaan gebruikers profielen, contacten, groepen en berichten op die zijn verzonden met <b>2-laags end-to-end codering</b>.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Alleen client apparaten slaan gebruikers profielen, contacten, groepen en berichten op die zijn verzonden met <b>2-laags end-to-end codering</b>.]]></string>
     <string name="sender_may_have_deleted_the_connection_request">De afzender heeft mogelijk het verbindingsverzoek verwijderd.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Schakel SimpleX Vergrendelen in om uw informatie te beschermen.
 \nU wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.</string>
@@ -628,7 +628,7 @@
     <string name="you_control_your_chat">Jij beheert je gesprek!</string>
     <string name="your_profile_is_stored_on_your_device">Uw profiel, contacten en afgeleverde berichten worden op uw apparaat opgeslagen.</string>
     <string name="callstate_starting">beginnen…</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">U bepaalt via welke server(s) je de berichten <b>ontvangt</b>, uw contacten de servers die u gebruikt om ze berichten te sturen.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[U bepaalt via welke server(s) je de berichten <b>ontvangt</b>, uw contacten de servers die u gebruikt om ze berichten te sturen.]]></string>
     <string name="icon_descr_video_on">Video aan</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
     <string name="messages_section_description">Deze instelling is van toepassing op berichten in uw huidige chat profiel</string>
@@ -700,7 +700,7 @@
     <string name="is_not_verified">%s is niet geverifieerd</string>
     <string name="is_verified">%s is geverifieerd</string>
     <string name="to_verify_compare">Vergelijk (of scan) de code op uw apparaten om end-to-end codering met uw contactpersoon te verifiëren.</string>
-    <string name="you_can_also_connect_by_clicking_the_link">U kunt ook verbinding maken door op de link te klikken. Als het in de browser wordt geopend, klikt u op de knop <b> Openen in mobiele app </b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[U kunt ook verbinding maken door op de link te klikken. Als het in de browser wordt geopend, klikt u op de knop <b> Openen in mobiele app </b>.]]></string>
     <string name="your_profile_will_be_sent">Uw chat profiel wordt naar uw contactpersoon verzonden</string>
     <string name="your_chat_profiles">Uw chat profielen</string>
     <string name="your_simplex_contact_address">Uw SimpleX adres</string>
@@ -909,10 +909,10 @@
     <string name="this_string_is_not_a_connection_link">Deze string is geen verbinding link!</string>
     <string name="enable_automatic_deletion_message">Deze actie kan niet ongedaan worden gemaakt, de berichten die eerder zijn verzonden en ontvangen dan geselecteerd, worden verwijderd. Het kan enkele minuten duren.</string>
     <string name="switch_receiving_address_desc">Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Om je privacy te behouden, heeft de app in plaats van push meldingen een <b>SimpleX achtergrond service</b> - deze gebruikt een paar procent van de batterij per dag.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Om je privacy te behouden, heeft de app in plaats van push meldingen een <b>SimpleX achtergrond service</b> - deze gebruikt een paar procent van de batterij per dag.]]></string>
     <string name="chat_preferences_you_allow">Jij staat toe</string>
     <string name="you_are_invited_to_group">Je bent uitgenodigd voor de groep</string>
-    <string name="you_can_connect_to_simplex_chat_founder">U kunt <font color="#0088ff">verbinding maken met SimpleX Chat ontwikkelaars om vragen te stellen en updates te ontvangen</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[U kunt <font color="#0088ff">verbinding maken met SimpleX Chat ontwikkelaars om vragen te stellen en updates te ontvangen</font>.]]></string>
     <string name="connection_error_auth_desc">Tenzij uw contactpersoon de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
 \nOm verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
     <string name="update_onion_hosts_settings_question">.onion hosts-instelling updaten\?</string>
@@ -951,7 +951,7 @@
     <string name="description_you_shared_one_time_link">je hebt een eenmalige link gedeeld</string>
     <string name="description_you_shared_one_time_link_incognito">je hebt een eenmalige link incognito gedeeld</string>
     <string name="chat_help_tap_button">Tik op de knop</string>
-    <string name="read_more_in_github_with_link">Lees meer in onze <font color="#0088ff">GitHub repository</font>.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Lees meer in onze <font color="#0088ff">GitHub repository</font>.]]></string>
     <string name="read_more_in_github">Lees meer in onze GitHub repository.</string>
     <string name="integrity_msg_skipped">%1$d bericht(en) overgeslagen</string>
     <string name="moderated_description">gemodereerd</string>
@@ -1054,7 +1054,7 @@
     <string name="port_verb">Poort</string>
     <string name="network_socks_proxy_settings">SOCKS proxy instellingen</string>
     <string name="network_socks_toggle_use_socks_proxy">Gebruik SOCKS proxy</string>
-    <string name="disable_onion_hosts_when_not_supported">Stel <i>Use .onion hosts</i> in op Nee als de SOCKS-proxy deze niet ondersteunt.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Stel <i>Use .onion hosts</i> in op Nee als de SOCKS-proxy deze niet ondersteunt.]]></string>
     <string name="smp_server_test_create_file">Bestand maken</string>
     <string name="error_loading_smp_servers">Fout bij het laden van SMP servers</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Zorg ervoor dat XFTP server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
@@ -1179,7 +1179,7 @@
     <string name="import_theme_error">Fout bij importeren thema</string>
     <string name="import_theme_error_desc">Zorg ervoor dat het bestand de juiste YAML-syntaxis heeft. Exporteer het thema om een voorbeeld te hebben van de themabestandsstructuur.</string>
     <string name="opening_database">Database openen…</string>
-    <string name="read_more_in_user_guide_with_link">Lees meer in de <font color="#0088ff">Gebruikershandleiding</font>.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Lees meer in de <font color="#0088ff">Gebruikershandleiding</font>.]]></string>
     <string name="theme_colors_section_title">THEMA KLEUREN</string>
     <string name="you_can_share_your_address">U kunt uw adres delen als een link of QR-code - iedereen kan verbinding met u maken.</string>
     <string name="your_contacts_will_see_it">Uw contacten in SimpleX zullen het zien.

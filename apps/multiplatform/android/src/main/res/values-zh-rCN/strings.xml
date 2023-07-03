@@ -116,22 +116,22 @@
     <string name="icon_descr_audio_off">关闭音频</string>
     <string name="icon_descr_audio_on">开启音频</string>
     <string name="icon_descr_asked_to_receive">已要求接收图片</string>
-    <string name="network_session_mode_user_description">一个单独的TCP连接（和SOCKS凭证）将被用于<b>，用于您在应用程序中的每个聊天资料</b> 。</string>
+    <string name="network_session_mode_user_description"><![CDATA[一个单独的TCP连接（和SOCKS凭证）将被用于<b>，用于您在应用程序中的每个聊天资料</b> 。]]></string>
     <string name="network_session_mode_entity_description">每个联系人和群组成员 <b>将使用单独的 TCP 连接（和 SOCKS 凭证）</b>。
 \n<b>请注意</b>：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
     <string name="back">返回</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>添加新联系人</b>：为您的联系人创建一次性二维码。</string>
-    <string name="onboarding_notifications_mode_off_desc"><b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b> 较长续航 </b>。后台服务每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>添加新联系人</b>：为您的联系人创建一次性二维码。]]></string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。后台服务每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
     <string name="bold">加粗</string>
     <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以不可逆转地删除已发送的消息。</string>
     <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送限时消息。</string>
     <string name="both_you_and_your_contact_can_send_voice">您和您的联系人都可以发送语音消息。</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b> 可以在设置里禁用它 </b> - 应用程序运行时仍会显示通知。</string>
-    <string name="onboarding_notifications_mode_service_desc"><b> 使用更多电量 </b>！后台服务始终运行——一旦收到消息，就会显示通知。</string>
-    <string name="impossible_to_recover_passphrase"><b>请注意</b>：如果您丢失密码，您将无法恢复或者更改密码。</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> 可以在设置里禁用它 </b> - 应用程序运行时仍会显示通知。]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> 使用更多电量 </b>！后台服务始终运行——一旦收到消息，就会显示通知。]]></string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>请注意</b>：如果您丢失密码，您将无法恢复或者更改密码。]]></string>
     <string name="call_already_ended">通话已结束！</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>扫描二维码</b> ：与向您展示二维码的联系人联系。</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>扫描二维码</b> ：与向您展示二维码的联系人联系。]]></string>
     <string name="alert_title_cant_invite_contacts">无法邀请联系人！</string>
     <string name="invite_prohibited">无法邀请联系人！</string>
     <string name="cancel_verb">取消</string>
@@ -278,7 +278,7 @@
     <string name="file_saved">文件已保存</string>
     <string name="icon_descr_server_status_disconnected">已断开连接</string>
     <string name="icon_descr_server_status_error">错误</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 桌面：通过 <b>扫描二维码</b> 从应用程序扫描显示的二维码。</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 桌面：通过 <b>扫描二维码</b> 从应用程序扫描显示的二维码。]]></string>
     <string name="delete_pending_connection__question">删除待定连接？</string>
     <string name="how_to_use_markdown">如何使用 markdown</string>
     <string name="create_profile_button">创建</string>
@@ -502,7 +502,7 @@
     <string name="text_field_set_contact_placeholder">设置联系人姓名……</string>
     <string name="callstate_received_answer">已收到回复……</string>
     <string name="callstate_received_confirmation">已受到确认……</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">只有客户端设备存储用户配置文件、联系人、群组和使用 <b>双层端到端加密 </b> 发送的消息。</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[只有客户端设备存储用户配置文件、联系人、群组和使用 <b>双层端到端加密 </b> 发送的消息。]]></string>
     <string name="video_call_no_encryption">视频通话（非端到端加密）</string>
     <string name="onboarding_notifications_mode_periodic">定期</string>
     <string name="onboarding_notifications_mode_title">私密通知</string>
@@ -534,9 +534,9 @@
     <string name="notifications">通知</string>
     <string name="simplex_service_notification_text">正在接收消息……</string>
     <string name="enter_passphrase_notification_desc">要接收通知，请输入数据库密码</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">为了保护您的隐私，该应用程序没有推送通知，而是具有 <b>SimpleX 后台服务 </b>——它每天使用百分之几的电池。</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[为了保护您的隐私，该应用程序没有推送通知，而是具有 <b>SimpleX 后台服务 </b>——它每天使用百分之几的电池。]]></string>
     <string name="your_settings">您的设置</string>
-    <string name="turn_off_battery_optimization">为了使用它，请 <b>禁用电池优化</b>为SimpleX在下一个对话框。否则通知将被禁用。</string>
+    <string name="turn_off_battery_optimization"><![CDATA[为了使用它，请 <b>禁用电池优化</b>为SimpleX在下一个对话框。否则通知将被禁用。]]></string>
     <string name="settings_notification_preview_title">通知预览</string>
     <string name="enter_passphrase_notification_title">需要密码</string>
     <string name="periodic_notifications_disabled">定期通知被禁用！</string>
@@ -574,7 +574,7 @@
     <string name="icon_descr_call_rejected">拒接来电</string>
     <string name="call_connection_peer_to_peer">点对点</string>
     <string name="error_with_info">错误：%s</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">如果您不能亲自见面，您可以 <b>扫描视频通话中的二维码</b>，或者您的联系人可以分享邀请链接。</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[如果您不能亲自见面，您可以 <b>扫描视频通话中的二维码</b>，或者您的联系人可以分享邀请链接。]]></string>
     <string name="your_calls">您的通话</string>
     <string name="call_connection_via_relay">通过中继</string>
     <string name="callstatus_missed">未接来电</string>
@@ -582,7 +582,7 @@
     <string name="v4_3_voice_messages">语音消息</string>
     <string name="voice_messages">语音消息</string>
     <string name="ntf_channel_calls">SimpleX Chat 通话</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">如果您不能亲自见面，<b>在视频通话</b>中出示二维码，或分享链接。</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[如果您不能亲自见面，<b>在视频通话</b>中出示二维码，或分享链接。]]></string>
     <string name="your_chat_profiles">您的聊天资料</string>
     <string name="icon_descr_call_missed">未接来电</string>
     <string name="icon_descr_call_pending_sent">待定来电</string>
@@ -641,7 +641,7 @@
     <string name="ttl_sec">%d 秒</string>
     <string name="how_simplex_works">SimpleX 是如何工作的</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。</string>
-    <string name="many_people_asked_how_can_it_deliver">许多人问：<i>如果SimpleX没有用户标识符，它是怎样传递信息的？</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[许多人问：<i>如果SimpleX没有用户标识符，它是怎样传递信息的？</i>]]></string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">确保 SMP 服务器地址格式正确、每行分开且不重复。</string>
     <string name="markdown_help">Markdown 帮助</string>
     <string name="mark_code_verified">标记为已验证</string>
@@ -668,7 +668,7 @@
     <string name="moderated_description">已被管理员移除</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion 主机将在可用时使用。</string>
     <string name="network_use_onion_hosts_no_desc">将不会使用 Onion 主机。</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 手机：点击<b>在手机应用程序中打开</b>，然后在应用程序中点击<b>连接</b>。</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 手机：点击<b>在手机应用程序中打开</b>，然后在应用程序中点击<b>连接</b>。]]></string>
     <string name="delete_message_mark_deleted_warning">消息将被标记为删除。收件人将能够揭示此消息。</string>
     <string name="v4_5_reduced_battery_usage_descr">更多改进即将推出！</string>
     <string name="no_contacts_selected">未选择联系人</string>
@@ -844,7 +844,7 @@
     <string name="v4_5_reduced_battery_usage">减少电池使用量</string>
     <string name="v4_5_private_filenames_descr">为了保护时区，图像/语音文件使用 UTC。</string>
     <string name="use_chat">使用聊天</string>
-    <string name="read_more_in_github_with_link">在我们的 <font color="#0088ff">GitHub 存储库</font> 中阅读更多内容。</string>
+    <string name="read_more_in_github_with_link"><![CDATA[在我们的 <font color="#0088ff">GitHub 存储库</font> 中阅读更多内容。]]></string>
     <string name="auth_open_chat_console">打开聊天控制台</string>
     <string name="auth_stop_chat">停止聊天程序</string>
     <string name="toast_permission_denied">权限被拒绝！</string>
@@ -885,11 +885,11 @@
     <string name="icon_descr_simplex_team">SimpleX 团队</string>
     <string name="group_info_section_title_num_members">%1$s 成员</string>
     <string name="chat_preferences_yes">是</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">您可以控制通过哪些服务器<b>接收</b>消息，您的联系人 - 您用来向他们发送消息的服务器。</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[您可以控制通过哪些服务器<b>接收</b>消息，您的联系人 - 您用来向他们发送消息的服务器。]]></string>
     <string name="you_will_be_connected_when_group_host_device_is_online">您将在组主设备上线时连接到该群组，请稍等或稍后再检查！</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">当您启动应用或在应用程序驻留后台超过30 秒后，您将需要进行身份验证。</string>
     <string name="archive_created_on_ts">创建于 %1$s</string>
-    <string name="you_can_connect_to_simplex_chat_founder">您可以 <font color="#0088ff"> 连接到  SimpleX Chat  开发者提出任何问题并接收更新 </font>。</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[您可以 <font color="#0088ff"> 连接到  SimpleX Chat  开发者提出任何问题并接收更新 </font>。]]></string>
     <string name="you_accepted_connection">您已接受连接</string>
     <string name="your_SMP_servers">您的 SMP 服务器</string>
     <string name="integrity_msg_skipped">%1$d 已跳过消息</string>
@@ -922,7 +922,7 @@
     <string name="snd_conn_event_switch_queue_phase_completed">您已更改地址</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">您可以共享链接或二维码——任何人都可以加入该群组。如果您稍后将其删除，您不会失去该组的成员。</string>
     <string name="conn_level_desc_indirect">间接（%1$s）</string>
-    <string name="you_can_also_connect_by_clicking_the_link">您也可以通过点击链接进行连接。 如果它在浏览器中打开，请单击<b>在移动应用程序中打开</b>按钮。</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[您也可以通过点击链接进行连接。 如果它在浏览器中打开，请单击<b>在移动应用程序中打开</b>按钮。]]></string>
     <string name="app_name">SimpleX</string>
     <string name="you_will_join_group">您将加入此链接指向的群组并连接到其群组成员。</string>
     <string name="description_via_group_link">通过群组链接</string>
@@ -1046,7 +1046,7 @@
     <string name="smp_server_test_upload_file">上传文件</string>
     <string name="xftp_servers">XFTP 服务器</string>
     <string name="your_XFTP_servers">您的 XFTP 服务器</string>
-    <string name="disable_onion_hosts_when_not_supported">如果 SOCKS 代理不支持它们，请将 <i>Use .onion hosts</i> 设置为否。</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[如果 SOCKS 代理不支持它们，请将 <i>Use .onion hosts</i> 设置为否。]]></string>
     <string name="network_socks_toggle_use_socks_proxy">使用 SOCKS 代理</string>
     <string name="port_verb">端口</string>
     <string name="smp_server_test_delete_file">删除文件</string>
@@ -1208,7 +1208,7 @@
     <string name="learn_more">了解更多</string>
     <string name="you_can_accept_or_reject_connection">当人们请求连接时，您可以接受或拒绝它。</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">如果您以后删除您的地址，您不会丢失您的联系人。</string>
-    <string name="read_more_in_user_guide_with_link">在<font color="#0088ff">用户指南</font>中阅读更多。</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[在<font color="#0088ff">用户指南</font>中阅读更多。]]></string>
     <string name="theme_colors_section_title">主题颜色</string>
     <string name="your_contacts_will_remain_connected">与您的联系人保持连接。</string>
     <string name="share_with_contacts">与联系人分享</string>

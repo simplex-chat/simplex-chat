@@ -87,9 +87,9 @@
     <string name="icon_descr_instant_notifications">Sofortige Benachrichtigungen</string>
     <string name="service_notifications">Sofortige Benachrichtigungen!</string>
     <string name="service_notifications_disabled">Sofortige Benachrichtigungen sind deaktiviert!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Um Ihre Privatsphäre zu schützen kann statt der Push-Benachrichtigung der <b>SimpleX Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Diese können über die Einstellungen deaktiviert werden</b> – Solange die App abläuft werden Benachrichtigungen weiterhin angezeigt.</string>
-    <string name="turn_off_battery_optimization">Um diese Funktion zu nutzen, ist es nötig, die Einstellung <b>Akkuoptimierung</b> für SimpleX im nächsten Dialog zu <b>deaktivieren</b>. Ansonsten werden die Benachrichtigungen deaktiviert.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Um Ihre Privatsphäre zu schützen kann statt der Push-Benachrichtigung der <b>SimpleX Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.]]></string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Diese können über die Einstellungen deaktiviert werden</b> – Solange die App abläuft werden Benachrichtigungen weiterhin angezeigt.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Um diese Funktion zu nutzen, ist es nötig, die Einstellung <b>Akkuoptimierung</b> für SimpleX im nächsten Dialog zu <b>deaktivieren</b>. Ansonsten werden die Benachrichtigungen deaktiviert.]]></string>
     <string name="turning_off_service_and_periodic">Die Akkuoptimierung ist aktiv, der Hintergrunddienst und die periodische Nachfrage nach neuen Nachrichten ist abgeschaltet. Sie können diese Funktion in den Einstellungen wieder aktivieren.</string>
     <string name="periodic_notifications">Periodische Benachrichtigungen</string>
     <string name="periodic_notifications_disabled">Periodische Benachrichtigungen sind deaktiviert!</string>
@@ -261,16 +261,16 @@
     <string name="gallery_video_button">Video</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Danke, dass Sie SimpleX Chat installiert haben!</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Sie können sich <font color="#0088ff">mit SimpleX Chat Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Sie können sich <font color="#0088ff">mit SimpleX Chat Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.]]></string>
     <string name="to_start_a_new_chat_help_header">Um einen neuen Chat zu starten</string>
     <string name="chat_help_tap_button">Schaltfläche antippen</string>
     <string name="above_then_preposition_continuation">Danach die gewünschte Aktion auswählen:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Neuen Kontakt hinzufügen</b>: Um Ihren Einmal-QR-Code für Ihren Kontakt zu erstellen.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>QR-Code scannen</b>: Um sich mit Ihrem Kontakt zu verbinden, der Ihnen seinen QR-Code zeigt.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Neuen Kontakt hinzufügen</b>: Um Ihren Einmal-QR-Code für Ihren Kontakt zu erstellen.]]></string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR-Code scannen</b>: Um sich mit Ihrem Kontakt zu verbinden, der Ihnen seinen QR-Code zeigt.]]></string>
     <string name="to_connect_via_link_title">Über Link verbinden</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Wenn Sie einen SimpleX Chat Einladungslink erhalten haben, können Sie ihn in Ihrem Browser öffnen:</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 Desktop: Angezeigten QR-Code aus der App scannen, über <b>QR-Code scannen</b>.</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 Handy: Tippen Sie auf <b>In mobiler App öffnen</b> und dann auf <b>Verbinden</b> in der App.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Desktop: Angezeigten QR-Code aus der App scannen, über <b>QR-Code scannen</b>.]]></string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 Handy: Tippen Sie auf <b>In mobiler App öffnen</b> und dann auf <b>Verbinden</b> in der App.]]></string>
     <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
     <string name="accept_connection_request__question">Die Verbindungsanfrage akzeptieren?</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Wenn Sie ablehnen, wird der Absender NICHT benachrichtigt.</string>
@@ -328,10 +328,10 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Sie werden mit der Gruppe verbunden, sobald das Endgerät des Gruppen-Hosts online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird. Bitte warten oder schauen Sie später nochmal nach!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Sie werden verbunden, sobald das Endgerät Ihres Kontakts online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs anzeigen</b> oder einen Einladungslink über einen anderen Kanal mit Ihrem Kontakt teilen.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs anzeigen</b> oder einen Einladungslink über einen anderen Kanal mit Ihrem Kontakt teilen.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ihr Chat-Profil wird
 \nan Ihren Kontakt gesendet</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs scannen</b> oder Ihr Kontakt kann einen Einladungslink über einen anderen Kanal mit Ihnen teilen.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs scannen</b> oder Ihr Kontakt kann einen Einladungslink über einen anderen Kanal mit Ihnen teilen.]]></string>
     <string name="share_invitation_link">Einmal-Link teilen</string>
     <string name="paste_connection_link_below_to_connect">Fügen Sie den erhaltenen Link in das Feld unten ein, um sich mit Ihrem Kontakt zu verbinden.</string>
     <string name="your_profile_will_be_sent">Ihr Chat-Profil wird an Ihren Kontakt gesendet</string>
@@ -340,7 +340,7 @@
     <string name="connect_button">Verbinden</string>
     <string name="paste_button">Einfügen</string>
     <string name="this_string_is_not_a_connection_link">Diese Zeichenfolge entspricht keinem gültigen Verbindungslink!</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche <b>In mobiler App öffnen</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche <b>In mobiler App öffnen</b>.]]></string>
     <!-- CreateLinkView.kt -->
     <string name="create_one_time_link">Link / QR-Code erstellen</string>
     <string name="one_time_link">Einmaliger Einladungs-Link</string>
@@ -481,12 +481,12 @@
     <string name="how_it_works">Wie es funktioniert</string>
     <!-- How SimpleX Works -->
     <string name="how_simplex_works">Wie SimpleX funktioniert</string>
-    <string name="many_people_asked_how_can_it_deliver">Viele Menschen haben gefragt: <i>Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Viele Menschen haben gefragt: <i>Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?</i>]]></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet SimpleX an Stelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Sie können selbst festlegen, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b> wollen.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>2-Schichten Ende-zu-Ende-Verschlüsselung</b> gesendet werden.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Sie können selbst festlegen, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b> wollen.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>2-Schichten Ende-zu-Ende-Verschlüsselung</b> gesendet werden.]]></string>
     <string name="read_more_in_github">Erfahren Sie in unserem GitHub-Repository mehr dazu.</string>
-    <string name="read_more_in_github_with_link">Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.]]></string>
     <!-- MakeConnection -->
     <string name="paste_the_link_you_received">Fügen Sie den erhaltenen Link ein</string>
     <!-- Call -->
@@ -639,7 +639,7 @@
     <string name="database_is_not_encrypted">Ihre Chat-Datenbank ist nicht verschlüsselt. Bitte legen Sie ein Passwort fest, um sie zu schützen.</string>
     <string name="keychain_is_storing_securely">Der Android Keystore wird verwendet, um das Passwort sicher zu speichern. Dies ermöglicht die ordentliche Funktion des Benachrichtigungsdienstes.</string>
     <string name="encrypted_with_random_passphrase">Die Datenbank wird mit einem zufälligen Passwort verschlüsselt, Sie können es ändern.</string>
-    <string name="impossible_to_recover_passphrase"><b>Bitte beachten Sie</b>: Sie können das Passwort NICHT wiederherstellen oder ändern, wenn Sie es vergessen haben oder verlieren.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Bitte beachten Sie</b>: Sie können das Passwort NICHT wiederherstellen oder ändern, wenn Sie es vergessen haben oder verlieren.]]></string>
     <string name="keychain_allows_to_receive_ntfs">Der Android Keystore wird verwendet, um das Passwort sicher zu speichern, nachdem Sie die App neu gestartet oder das Passwort geändert haben – dies ermöglicht den Empfang von Benachrichtigungen.</string>
     <string name="you_have_to_enter_passphrase_every_time">Sie müssen das Passwort jedes Mal eingeben, wenn die App startet. Es wird nicht auf dem Gerät gespeichert.</string>
     <string name="encrypt_database_question">Datenbank verschlüsseln?</string>
@@ -904,8 +904,8 @@
     <string name="live">LIVE</string>
     <string name="view_security_code">Schauen Sie sich den Sicherheitscode an</string>
     <string name="onboarding_notifications_mode_service">Sofort</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Gute Option für die Batterieausdauer</b>. Der Hintergrundservice überprüft alle 10 Minuten nach Nachrichten. Sie können eventuell Anrufe oder dringende Nachrichten verpassen.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Beste Option für die Batterieausdauer</b>. Sie empfangen Benachrichtigungen nur solange die App abläuft (kein aktiver Hintergrundservice).</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Gute Option für die Batterieausdauer</b>. Der Hintergrundservice überprüft alle 10 Minuten nach Nachrichten. Sie können eventuell Anrufe oder dringende Nachrichten verpassen.]]></string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Beste Option für die Batterieausdauer</b>. Sie empfangen Benachrichtigungen nur solange die App abläuft (kein aktiver Hintergrundservice).]]></string>
     <string name="send_verb">Senden</string>
     <string name="is_verified">%s wurde erfolgreich überprüft</string>
     <string name="clear_verification">Überprüfung zurücknehmen</string>
@@ -941,7 +941,7 @@
     <string name="failed_to_parse_chat_title">Fehler beim Laden des Chats</string>
     <string name="failed_to_parse_chats_title">Fehler beim Laden der Chats</string>
     <string name="contact_developers">Bitte aktualisieren Sie die App und nehmen Sie Kontakt mit den Entwicklern auf.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Benötigt mehr Leistung Ihrer Batterie</b>! Der Hintergrundservice läuft permanent ab. Benachrichtigungen werden Ihnen angezeigt, sobald Sie neue Nachrichten erhalten haben.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Benötigt mehr Leistung Ihrer Batterie</b>! Der Hintergrundservice läuft permanent ab. Benachrichtigungen werden Ihnen angezeigt, sobald Sie neue Nachrichten erhalten haben.]]></string>
     <string name="create_group_link">Gruppenlink erstellen</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Erlauben Sie Ihren Kontakten das Senden von verschwindenden Nachrichten.</string>
     <string name="prohibit_sending_disappearing_messages">Das Senden von verschwindenden Nachrichten verbieten.</string>
@@ -1013,7 +1013,7 @@
     <string name="network_session_mode_entity_description"><b>Für jeden Kontakt und jedes Gruppenmitglied</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.
 \n
 \n<b>Bitte beachten Sie</b>: Wenn Sie viele Verbindung haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.</string>
-    <string name="network_session_mode_user_description"><b>Für jedes von Ihnen in der App genutzte Chat-Profil</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.</string>
+    <string name="network_session_mode_user_description"><![CDATA[<b>Für jedes von Ihnen in der App genutzte Chat-Profil</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.]]></string>
     <string name="users_delete_data_only">Nur lokale Profildaten</string>
     <string name="users_delete_with_connections">Profil und Serververbindungen</string>
     <string name="messages_section_description">Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil</string>
@@ -1166,7 +1166,7 @@
     <string name="network_socks_toggle_use_socks_proxy">SOCKS-Proxy nutzen</string>
     <string name="la_lock_mode">SimpleX Sperr-Modus</string>
     <string name="lock_not_enabled">SimpleX Sperre ist nicht aktiviert!</string>
-    <string name="disable_onion_hosts_when_not_supported">Setzen Sie <i>Verwende .onion-Hosts</i> auf \"Nein\", wenn der SOCKS-Proxy sie nicht unterstützt.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Setzen Sie <i>Verwende .onion-Hosts</i> auf \"Nein\", wenn der SOCKS-Proxy sie nicht unterstützt.]]></string>
     <string name="submit_passcode">Bestätigen</string>
     <string name="la_mode_system">System</string>
     <string name="la_could_not_be_verified">Sie können nicht überprüft werden - bitte versuchen Sie es nochmal.</string>
@@ -1259,7 +1259,7 @@
     <string name="continue_to_next_step">Weiter</string>
     <string name="dark_theme">Dunkles Design</string>
     <string name="if_you_cant_meet_in_person">Falls Sie sich nicht persönlich treffen können, zeigen Sie den QR-Code in einem Videoanruf oder teilen Sie den Link.</string>
-    <string name="read_more_in_user_guide_with_link">Lesen Sie mehr dazu in der <font color="#0088ff">Benutzeranleitung</font>.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Lesen Sie mehr dazu in der <font color="#0088ff">Benutzeranleitung</font>.]]></string>
     <string name="import_theme_error_desc">Stellen Sie sicher, dass die Datei die korrekte YAML-Syntax hat. Exportieren sie das Design, um ein Beispiel für die Dateistruktur des Designs zu erhalten.</string>
     <string name="auth_open_chat_profiles">Offene Chat-Profile</string>
     <string name="you_can_share_your_address">Sie können Ihre Adresse als Link oder QR-Code teilen - jede Person kann sich mit Ihnen verbinden.</string>
