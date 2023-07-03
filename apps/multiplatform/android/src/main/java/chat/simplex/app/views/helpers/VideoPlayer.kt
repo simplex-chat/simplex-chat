@@ -24,7 +24,6 @@ class VideoPlayer private constructor(
   private val defaultPreview: Bitmap,
   defaultDuration: Long,
   soundEnabled: Boolean,
-  context: Context
 ) {
   companion object {
     private val players: MutableMap<Pair<Uri, Boolean>, VideoPlayer> = mutableMapOf()
@@ -36,9 +35,8 @@ class VideoPlayer private constructor(
       defaultPreview: Bitmap,
       defaultDuration: Long,
       soundEnabled: Boolean,
-      context: Context
     ): VideoPlayer =
-      players.getOrPut(uri to gallery) { VideoPlayer(uri, gallery, defaultPreview, defaultDuration, soundEnabled, context) }
+      players.getOrPut(uri to gallery) { VideoPlayer(uri, gallery, defaultPreview, defaultDuration, soundEnabled) }
 
     fun enableSound(enable: Boolean, fileName: String?, gallery: Boolean): Boolean =
       player(fileName, gallery)?.enableSound(enable) == true
@@ -76,8 +74,8 @@ class VideoPlayer private constructor(
     setPreviewAndDuration()
   }
 
-  val player = ExoPlayer.Builder(context,
-    DefaultRenderersFactory(context))
+  val player = ExoPlayer.Builder(SimplexApp.context,
+    DefaultRenderersFactory(SimplexApp.context))
     /*.setLoadControl(DefaultLoadControl.Builder()
       .setPrioritizeTimeOverSizeThresholds(false) // Could probably save some megabytes in memory in case it will be needed
       .createDefaultLoadControl())*/

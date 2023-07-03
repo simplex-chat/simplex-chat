@@ -12,7 +12,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -32,7 +31,6 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   val sent = ci.chatDir.sent
   val appColors = CurrentColors.collectAsState().value.appColors
   val itemColor = if (sent) appColors.sentMessage else appColors.receivedMessage
-  val context = LocalContext.current
   val uriHandler = LocalUriHandler.current
 
   @Composable
@@ -83,11 +81,11 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
       if (text != "") {
         DefaultDropdownMenu(showMenu) {
           ItemAction(stringResource(R.string.share_verb), painterResource(R.drawable.ic_share), onClick = {
-            shareText(context, text)
+            shareText(text)
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
-            copyText(context, text)
+            copyText(text)
             showMenu.value = false
           })
         }

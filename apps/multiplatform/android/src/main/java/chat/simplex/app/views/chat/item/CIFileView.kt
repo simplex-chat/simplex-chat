@@ -32,7 +32,7 @@ fun CIFileView(
   receiveFile: (Long) -> Unit
 ) {
   val context = LocalContext.current
-  val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = file)
+  val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
 
   @Composable
   fun fileIcon(

@@ -98,7 +98,7 @@ private fun GroupWelcomeLayout(
         },
         wt.value.isEmpty()
       )
-      CopyTextButton { copyText(SimplexApp.context, wt.value) }
+      CopyTextButton { copyText(wt.value) }
       SectionDividerSpaced(maxBottomPadding = false)
       SaveButton(
         save = save,
@@ -106,7 +106,7 @@ private fun GroupWelcomeLayout(
       )
     } else {
       TextPreview(wt.value, linkMode)
-      CopyTextButton { copyText(SimplexApp.context, wt.value) }
+      CopyTextButton { copyText(wt.value) }
     }
     SectionBottomSpacer()
   }

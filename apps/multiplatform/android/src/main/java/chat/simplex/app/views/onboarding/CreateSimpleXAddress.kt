@@ -9,7 +9,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -24,16 +23,14 @@ import chat.simplex.app.views.newchat.QRCode
 
 @Composable
 fun CreateSimpleXAddress(m: ChatModel) {
-  val context = LocalContext.current
   var progressIndicator by remember { mutableStateOf(false) }
   val userAddress = remember { m.userAddress }
 
   CreateSimpleXAddressLayout(
     userAddress.value,
-    share = { address: String -> shareText(context, address) },
+    share = { address: String -> shareText(address) },
     sendEmail = { address ->
       sendEmail(
-        context,
         generalGetString(R.string.email_invite_subject),
         generalGetString(R.string.email_invite_body).format(address.connReqContact)
       )

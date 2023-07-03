@@ -42,7 +42,7 @@ fun DatabaseErrorView(
   var storedDBKey by remember { mutableStateOf(DatabaseUtils.ksDatabasePassword.get()) }
   var useKeychain by remember { mutableStateOf(appPreferences.storeDBPassphrase.get()) }
   val context = LocalContext.current
-  val restoreDbFromBackup = remember { mutableStateOf(shouldShowRestoreDbButton(appPreferences, context)) }
+  val restoreDbFromBackup = remember { mutableStateOf(shouldShowRestoreDbButton(appPreferences)) }
 
   fun callRunChat(confirmMigrations: MigrationConfirmation? = null) {
     val useKey = if (useKeychain) null else dbKey.value
@@ -164,7 +164,7 @@ fun DatabaseErrorView(
           title = generalGetString(R.string.restore_database_alert_title),
           text = generalGetString(R.string.restore_database_alert_desc),
           confirmText = generalGetString(R.string.restore_database_alert_confirm),
-          onConfirm = { restoreDb(restoreDbFromBackup, appPreferences, context) },
+          onConfirm = { restoreDb(restoreDbFromBackup, appPreferences) },
           destructive = true,
         )
       }
@@ -226,21 +226,21 @@ private fun runChat(
   }
 }
 
-private fun shouldShowRestoreDbButton(prefs: AppPreferences, context: Context): Boolean {
+private fun shouldShowRestoreDbButton(prefs: AppPreferences): Boolean {
   val startedAt = prefs.encryptionStartedAt.get() ?: return false
   /** Just in case there is any small difference between reported Java's [Clock.System.now] and Linux's time on a file */
   val safeDiffInTime = 10_000L
-  val filesChat = File(context.dataDir.absolutePath + File.separator + "files_chat.db.bak")
-  val filesAgent = File(context.dataDir.absolutePath + File.separator + "files_agent.db.bak")
+  val filesChat = File(SimplexApp.context.dataDir.absolutePath + File.separator + "files_chat.db.bak")
+  val filesAgent = File(SimplexApp.context.dataDir.absolutePath + File.separator + "files_agent.db.bak")
   return filesChat.exists() &&
       filesAgent.exists() &&
       startedAt.toEpochMilliseconds() - safeDiffInTime <= filesChat.lastModified() &&
       startedAt.toEpochMilliseconds() - safeDiffInTime <= filesAgent.lastModified()
 }
 
-private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPreferences, context: Context) {
-  val filesChatBase = context.dataDir.absolutePath + File.separator + "files_chat.db"
-  val filesAgentBase = context.dataDir.absolutePath + File.separator + "files_agent.db"
+private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPreferences) {
+  val filesChatBase = SimplexApp.context.dataDir.absolutePath + File.separator + "files_chat.db"
+  val filesAgentBase = SimplexApp.context.dataDir.absolutePath + File.separator + "files_agent.db"
   try {
     Files.copy(Path("$filesChatBase.bak"), Path(filesChatBase), StandardCopyOption.REPLACE_EXISTING)
     Files.copy(Path("$filesAgentBase.bak"), Path(filesAgentBase), StandardCopyOption.REPLACE_EXISTING)

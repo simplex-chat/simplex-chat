@@ -16,7 +16,7 @@ class SoundPlayer {
   private var player: MediaPlayer? = null
   var playing = false
 
-  fun start(cxt: Context, scope: CoroutineScope, sound: Boolean) {
+  fun start(scope: CoroutineScope, sound: Boolean) {
     player?.reset()
     player = MediaPlayer().apply {
       setAudioAttributes(
@@ -28,7 +28,7 @@ class SoundPlayer {
       setDataSource(SimplexApp.context, Uri.parse("android.resource://" + SimplexApp.context.packageName + "/" + R.raw.ring_once))
       prepare()
     }
-    val vibrator = ContextCompat.getSystemService(cxt, Vibrator::class.java)
+    val vibrator = ContextCompat.getSystemService(SimplexApp.context, Vibrator::class.java)
     val effect = VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE)
     playing = true
     withScope(scope) {

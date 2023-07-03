@@ -211,10 +211,9 @@ fun ChatInfoLayout(
 
     SectionDividerSpaced()
     if (contact.contactLink != null) {
-      val context = LocalContext.current
       SectionView(stringResource(R.string.address_section_title).uppercase()) {
         QRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
-        ShareAddressButton { shareText(context, contact.contactLink) }
+        ShareAddressButton { shareText(contact.contactLink) }
         SectionTextFooter(stringResource(R.string.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
       SectionDividerSpaced()

@@ -16,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,7 +35,6 @@ fun UserAddressView(
   shareViaProfile: Boolean = false,
   close: () -> Unit
 ) {
-  val context = LocalContext.current
   val shareViaProfile = remember { mutableStateOf(shareViaProfile) }
   var progressIndicator by remember { mutableStateOf(false) }
   val onCloseHandler: MutableState<(close: () -> Unit) -> Unit> = remember { mutableStateOf({ _ -> }) }
@@ -94,10 +92,9 @@ fun UserAddressView(
           }
         }
       },
-      share = { userAddress: String -> shareText(context, userAddress) },
+      share = { userAddress: String -> shareText(userAddress) },
       sendEmail = { userAddress ->
         sendEmail(
-        context,
           generalGetString(R.string.email_invite_subject),
           generalGetString(R.string.email_invite_body).format(userAddress.connReqContact)
         )

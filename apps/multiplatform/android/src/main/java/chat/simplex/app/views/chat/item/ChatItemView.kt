@@ -3,7 +3,6 @@ package chat.simplex.app.views.chat.item
 import android.Manifest
 import android.os.Build
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -21,13 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.usersettings.IncognitoView
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.datetime.Clock
 
@@ -59,7 +56,7 @@ fun ChatItemView(
   val showMenu = remember { mutableStateOf(false) }
   val revealed = remember { mutableStateOf(false) }
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
-  val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = cItem.file)
+  val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
   val onLinkLongClick = { _: String -> showMenu.value = true }
   val live = composeState.value.liveMessage != null
 
@@ -178,13 +175,13 @@ fun ChatItemView(
             ItemAction(stringResource(R.string.share_verb), painterResource(R.drawable.ic_share), onClick = {
               val filePath = getLoadedFilePath(cItem.file)
               when {
-                filePath != null -> shareFile(context, cItem.text, filePath)
-                else -> shareText(context, cItem.content.text)
+                filePath != null -> shareFile(cItem.text, filePath)
+                else -> shareText(cItem.content.text)
               }
               showMenu.value = false
             })
             ItemAction(stringResource(R.string.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
-              copyText(context, cItem.content.text)
+              copyText(cItem.content.text)
               showMenu.value = false
             })
             if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
@@ -195,7 +192,7 @@ fun ChatItemView(
                   when (cItem.content.msgContent) {
                     is MsgContent.MCImage -> {
                       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.hasPermission) {
-                        saveImage(context, cItem.file)
+                        saveImage(cItem.file)
                       } else {
                         writePermissionState.launchPermissionRequest()
                       }

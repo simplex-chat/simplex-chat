@@ -220,7 +220,7 @@ fun GroupMemberInfoLayout(
       val context = LocalContext.current
       SectionView(stringResource(R.string.address_section_title).uppercase()) {
         QRCode(member.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
-        ShareAddressButton { shareText(context, member.contactLink) }
+        ShareAddressButton { shareText(member.contactLink) }
         if (contactId != null) {
           if (knownDirectChat(contactId) == null && !groupInfo.fullGroupPreferences.directMessages.on) {
             ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })

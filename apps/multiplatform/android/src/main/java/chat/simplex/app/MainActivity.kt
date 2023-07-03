@@ -42,6 +42,7 @@ import chat.simplex.app.views.onboarding.*
 import chat.simplex.app.views.usersettings.LAMode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
+import java.lang.ref.WeakReference
 
 class MainActivity: FragmentActivity() {
   companion object {
@@ -65,6 +66,7 @@ class MainActivity: FragmentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    SimplexApp.context.mainActivity = WeakReference(this)
     // testJson()
     val m = vm.chatModel
     applyAppLocale(m.controller.appPrefs.appLanguage)
@@ -181,7 +183,6 @@ class MainActivity: FragmentActivity() {
             else
               generalGetString(R.string.auth_unlock),
             selfDestruct = true,
-            this@MainActivity,
             completed = { laResult ->
               when (laResult) {
                 LAResult.Success ->
@@ -250,7 +251,6 @@ class MainActivity: FragmentActivity() {
     authenticate(
       generalGetString(R.string.auth_enable_simplex_lock),
       generalGetString(R.string.auth_confirm_credential),
-      activity = activity,
       completed = { laResult ->
         when (laResult) {
           LAResult.Success -> {
@@ -317,7 +317,6 @@ class MainActivity: FragmentActivity() {
         generalGetString(R.string.auth_confirm_credential)
       else
         "",
-      activity = activity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         when (laResult) {
@@ -353,7 +352,6 @@ class MainActivity: FragmentActivity() {
         generalGetString(R.string.auth_confirm_credential)
       else
         generalGetString(R.string.auth_disable_simplex_lock),
-      activity = activity,
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         val selfDestructPref = m.controller.appPrefs.selfDestruct

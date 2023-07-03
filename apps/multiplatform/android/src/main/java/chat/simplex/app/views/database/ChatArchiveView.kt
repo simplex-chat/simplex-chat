@@ -20,8 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
@@ -36,7 +36,7 @@ import java.util.*
 fun ChatArchiveView(m: ChatModel, title: String, archiveName: String, archiveTime: Instant) {
   val context = LocalContext.current
   val archivePath = "${getFilesDirectory()}/$archiveName"
-  val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, archivePath)
+  val saveArchiveLauncher = rememberSaveArchiveLauncher(archivePath)
   ChatArchiveLayout(
     title,
     archiveTime,
@@ -81,22 +81,22 @@ fun ChatArchiveLayout(
 }
 
 @Composable
-private fun rememberSaveArchiveLauncher(cxt: Context, chatArchivePath: String): ManagedActivityResultLauncher<String, Uri?> =
+private fun rememberSaveArchiveLauncher(chatArchivePath: String): ManagedActivityResultLauncher<String, Uri?> =
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
       try {
         destination?.let {
-          val contentResolver = cxt.contentResolver
+          val contentResolver = SimplexApp.context.contentResolver
           contentResolver.openOutputStream(destination)?.let { stream ->
             val outputStream = BufferedOutputStream(stream)
             File(chatArchivePath).inputStream().use { it.copyTo(outputStream) }
             outputStream.close()
-            Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            Toast.makeText(SimplexApp.context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
           }
         }
       } catch (e: Error) {
-        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Toast.makeText(SimplexApp.context, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
         Log.e(TAG, "rememberSaveArchiveLauncher error saving archive $e")
       }
     }

@@ -100,7 +100,7 @@ fun CIVideoView(
 @Composable
 private fun VideoView(uri: Uri, file: CIFile, defaultPreview: Bitmap, defaultDuration: Long, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
   val context = LocalContext.current
-  val player = remember(uri) { VideoPlayer.getOrCreate(uri, false, defaultPreview, defaultDuration, true, context) }
+  val player = remember(uri) { VideoPlayer.getOrCreate(uri, false, defaultPreview, defaultDuration, true) }
   val videoPlaying = remember(uri.path) { player.videoPlaying }
   val progress = remember(uri.path) { player.progress }
   val duration = remember(uri.path) { player.duration }

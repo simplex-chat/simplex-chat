@@ -236,9 +236,8 @@ fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
     }
     SectionSpacer()
     SectionView {
-      val context = LocalContext.current
       val theme = remember { mutableStateOf(null as String?) }
-      val exportThemeLauncher = rememberSaveThemeLauncher(context, theme)
+      val exportThemeLauncher = rememberSaveThemeLauncher(theme)
       SectionItemView({
         val overrides = ThemeManager.currentThemeOverridesForExport(isInDarkTheme)
         theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
@@ -375,7 +374,7 @@ private fun DarkThemeSelector(state: State<String?>, onSelected: (String) -> Uni
 //}
 
 @Composable
-private fun rememberSaveThemeLauncher(cxt: Context, theme: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
+private fun rememberSaveThemeLauncher(theme: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
@@ -383,17 +382,17 @@ private fun rememberSaveThemeLauncher(cxt: Context, theme: MutableState<String?>
         destination?.let {
           val theme = theme.value
           if (theme != null) {
-            val contentResolver = cxt.contentResolver
+            val contentResolver = SimplexApp.context.contentResolver
             contentResolver.openOutputStream(destination)?.let { stream ->
               BufferedOutputStream(stream).use { outputStream ->
                 theme.byteInputStream().use { it.copyTo(outputStream) }
               }
-              Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+              Toast.makeText(SimplexApp.context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
             }
           }
         }
       } catch (e: Error) {
-        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Toast.makeText(SimplexApp.context, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
         Log.e(TAG, "rememberSaveThemeLauncher error saving theme $e")
       } finally {
         theme.value = null

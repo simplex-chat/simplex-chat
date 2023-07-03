@@ -18,17 +18,19 @@ import chat.simplex.app.model.CIFile
 import java.io.BufferedOutputStream
 import java.io.File
 
-fun shareText(cxt: Context, text: String) {
+fun shareText(text: String) {
   val sendIntent: Intent = Intent().apply {
     action = Intent.ACTION_SEND
     putExtra(Intent.EXTRA_TEXT, text)
     type = "text/plain"
   }
   val shareIntent = Intent.createChooser(sendIntent, null)
-  cxt.startActivity(shareIntent)
+  // This flag is needed when you start a new activity from non-Activity context
+  shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+  SimplexApp.context.startActivity(shareIntent)
 }
 
-fun shareFile(cxt: Context, text: String, filePath: String) {
+fun shareFile(text: String, filePath: String) {
   val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
   val ext = filePath.substringAfterLast(".")
   val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: return
@@ -41,42 +43,46 @@ fun shareFile(cxt: Context, text: String, filePath: String) {
     type = mimeType
   }
   val shareIntent = Intent.createChooser(sendIntent, null)
-  cxt.startActivity(shareIntent)
+  // This flag is needed when you start a new activity from non-Activity context
+  shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+  SimplexApp.context.startActivity(shareIntent)
 }
 
-fun copyText(cxt: Context, text: String) {
-  val clipboard = ContextCompat.getSystemService(cxt, ClipboardManager::class.java)
+fun copyText(text: String) {
+  val clipboard = ContextCompat.getSystemService(SimplexApp.context, ClipboardManager::class.java)
   clipboard?.setPrimaryClip(ClipData.newPlainText("text", text))
 }
 
-fun sendEmail(context: Context, subject: String, body: CharSequence) {
+fun sendEmail(subject: String, body: CharSequence) {
   val emailIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
   emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject)
   emailIntent.putExtra(Intent.EXTRA_TEXT, body)
+  // This flag is needed when you start a new activity from non-Activity context
+  emailIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
   try {
-    context.startActivity(emailIntent)
+    SimplexApp.context.startActivity(emailIntent)
   } catch (e: ActivityNotFoundException) {
     Log.e(TAG, "No activity was found for handling email intent")
   }
 }
 
 @Composable
-fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResultLauncher<String, Uri?> =
+fun rememberSaveFileLauncher(ciFile: CIFile?): ManagedActivityResultLauncher<String, Uri?> =
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
       destination?.let {
         val filePath = getLoadedFilePath(ciFile)
         if (filePath != null) {
-          val contentResolver = cxt.contentResolver
+          val contentResolver = SimplexApp.context.contentResolver
           contentResolver.openOutputStream(destination)?.let { stream ->
             val outputStream = BufferedOutputStream(stream)
             File(filePath).inputStream().use { it.copyTo(outputStream) }
             outputStream.close()
-            Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            Toast.makeText(SimplexApp.context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
           }
         } else {
-          Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+          Toast.makeText(SimplexApp.context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
         }
       }
     }
@@ -95,7 +101,8 @@ fun imageMimeType(fileName: String): String {
 }
 
 /** Before calling, make sure the user allows to write to external storage [Manifest.permission.WRITE_EXTERNAL_STORAGE] */
-fun saveImage(cxt: Context, ciFile: CIFile?) {
+fun saveImage(ciFile: CIFile?) {
+  val cxt = SimplexApp.context
   val filePath = getLoadedFilePath(ciFile)
   val fileName = ciFile?.fileName
   if (filePath != null && fileName != null) {

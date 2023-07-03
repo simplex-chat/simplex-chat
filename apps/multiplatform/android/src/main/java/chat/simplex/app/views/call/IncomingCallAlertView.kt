@@ -28,7 +28,7 @@ fun IncomingCallAlertView(invitation: RcvCallInvitation, chatModel: ChatModel) {
   val cm = chatModel.callManager
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
-  LaunchedEffect(true) { SoundPlayer.shared.start(cxt, scope, sound = !chatModel.showCallView.value) }
+  LaunchedEffect(true) { SoundPlayer.shared.start(scope, sound = !chatModel.showCallView.value) }
   DisposableEffect(true) { onDispose { SoundPlayer.shared.stop() } }
   IncomingCallAlertLayout(
     invitation,

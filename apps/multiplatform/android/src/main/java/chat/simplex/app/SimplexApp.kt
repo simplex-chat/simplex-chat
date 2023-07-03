@@ -14,6 +14,7 @@ import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import java.io.*
+import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -37,6 +38,7 @@ external fun chatParseServer(str: String): String
 external fun chatPasswordHash(pwd: String, salt: String): String
 
 class SimplexApp: Application(), LifecycleEventObserver {
+  var mainActivity: WeakReference<MainActivity> = WeakReference(null)
   val chatModel: ChatModel
     get() = chatController.chatModel
   val appPreferences: AppPreferences

@@ -278,7 +278,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           val ciInfo = chatModel.controller.apiGetChatItemInfo(cInfo.chatType, cInfo.apiId, cItem.id)
           if (ciInfo != null) {
             ModalManager.shared.showModal(endButtons = { ShareButton {
-              shareText(context, itemInfoShareText(cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
+              shareText(itemInfoShareText(cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
             } }) {
               ChatItemInfoView(cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
             }
