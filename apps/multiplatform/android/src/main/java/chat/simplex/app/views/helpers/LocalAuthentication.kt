@@ -43,13 +43,14 @@ fun authenticate(
   usingLAMode: LAMode = SimplexApp.context.chatModel.controller.appPrefs.laMode.get(),
   completed: (LAResult) -> Unit
 ) {
+  val activity = SimplexApp.context.mainActivity.get() ?: return completed(LAResult.Error(""))
   when (usingLAMode) {
     LAMode.SYSTEM -> when {
       SDK_INT in 28..29 ->
         // KeyguardManager.isDeviceSecure()? https://developer.android.com/training/sign-in/biometric-auth#declare-supported-authentication-types
-        authenticateWithBiometricManager(promptTitle, promptSubtitle, SimplexApp.context.mainActivity.get() ?: return completed(LAResult.Error("")), completed, BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
+        authenticateWithBiometricManager(promptTitle, promptSubtitle, activity, completed, BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
       SDK_INT > 29 ->
-        authenticateWithBiometricManager(promptTitle, promptSubtitle, SimplexApp.context.mainActivity.get() ?: return completed(LAResult.Error("")), completed, BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+        authenticateWithBiometricManager(promptTitle, promptSubtitle, activity, completed, BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
       else -> completed(LAResult.Unavailable())
     }
     LAMode.PASSCODE -> {

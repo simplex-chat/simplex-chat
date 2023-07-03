@@ -66,8 +66,8 @@ object ChatModel {
   val appOpenUrl = mutableStateOf<Uri?>(null)
 
   // preferences
-  val notificationsMode by lazy { mutableStateOf(NotificationsMode.values().firstOrNull { it.name == ChatController.appPrefs.notificationsMode.get() } ?: NotificationsMode.default) }
-  val notificationPreviewMode by lazy { mutableStateOf(NotificationPreviewMode.values().firstOrNull { it.name == ChatController.appPrefs.notificationPreviewMode.get() } ?: NotificationPreviewMode.default) }
+  val notificationsMode by lazy { mutableStateOf(NotificationsMode.values().firstOrNull { it.name == controller.appPrefs.notificationsMode.get() } ?: NotificationsMode.default) }
+  val notificationPreviewMode by lazy { mutableStateOf(NotificationPreviewMode.values().firstOrNull { it.name == controller.appPrefs.notificationPreviewMode.get() } ?: NotificationPreviewMode.default) }
   val performLA by lazy { mutableStateOf(controller.appPrefs.performLA.get()) }
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
   val incognito by lazy { mutableStateOf(controller.appPrefs.incognito.get()) }

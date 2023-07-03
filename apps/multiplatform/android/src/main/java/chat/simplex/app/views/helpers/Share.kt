@@ -72,17 +72,18 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): ManagedActivityResultLauncher<Str
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
       destination?.let {
+        val cxt = SimplexApp.context
         val filePath = getLoadedFilePath(ciFile)
         if (filePath != null) {
-          val contentResolver = SimplexApp.context.contentResolver
+          val contentResolver = cxt.contentResolver
           contentResolver.openOutputStream(destination)?.let { stream ->
             val outputStream = BufferedOutputStream(stream)
             File(filePath).inputStream().use { it.copyTo(outputStream) }
             outputStream.close()
-            Toast.makeText(SimplexApp.context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
           }
         } else {
-          Toast.makeText(SimplexApp.context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+          Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
         }
       }
     }
