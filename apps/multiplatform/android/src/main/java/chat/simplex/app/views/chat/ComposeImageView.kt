@@ -18,7 +18,7 @@ import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.UploadContent
 import chat.simplex.app.views.helpers.base64ToBitmap
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Unit, cancelEnabled: Boolean) {

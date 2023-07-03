@@ -25,7 +25,7 @@ import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberPermissionState
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

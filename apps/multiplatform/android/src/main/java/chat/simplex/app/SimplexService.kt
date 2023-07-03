@@ -11,7 +11,7 @@ import androidx.core.content.ContextCompat
 import androidx.work.*
 import chat.simplex.app.model.ChatController
 import chat.simplex.app.views.helpers.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 
 // based on:

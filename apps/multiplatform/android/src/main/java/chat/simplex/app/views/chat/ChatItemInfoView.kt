@@ -25,7 +25,7 @@ import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {

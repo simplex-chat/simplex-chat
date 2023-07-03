@@ -27,7 +27,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ShareAddressButton
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun UserAddressView(

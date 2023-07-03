@@ -26,7 +26,7 @@ import chat.simplex.app.views.chat.ComposePreview
 import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun ChatPreviewView(

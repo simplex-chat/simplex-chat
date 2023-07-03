@@ -26,7 +26,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberPermissionState
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)

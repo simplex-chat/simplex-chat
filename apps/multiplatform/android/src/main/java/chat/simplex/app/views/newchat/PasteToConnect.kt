@@ -22,7 +22,7 @@ import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {

@@ -17,7 +17,7 @@ import androidx.compose.ui.window.Dialog
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.ui.theme.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 
 class AlertManager {

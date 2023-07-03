@@ -17,7 +17,7 @@ import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chatlist.acceptContactRequest
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.NotificationPreviewMode
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 object NtfManager {

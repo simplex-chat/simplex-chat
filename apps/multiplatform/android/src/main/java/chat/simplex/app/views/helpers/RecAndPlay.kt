@@ -13,7 +13,7 @@ import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatItem
 import chat.simplex.app.views.helpers.AudioPlayer.duration
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.io.*
 

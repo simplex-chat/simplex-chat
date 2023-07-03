@@ -14,7 +14,7 @@ import chat.simplex.app.R
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.views.helpers.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun PasscodeView(

@@ -30,7 +30,7 @@ import chat.simplex.app.views.chatlist.UserProfileRow
 import chat.simplex.app.views.database.PassphraseField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.CreateProfile
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
 

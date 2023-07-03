@@ -36,7 +36,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
 import chat.simplex.app.views.usersettings.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock

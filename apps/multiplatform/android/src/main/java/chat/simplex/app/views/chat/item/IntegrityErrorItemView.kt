@@ -23,7 +23,7 @@ import chat.simplex.app.ui.theme.CurrentColors
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.generalGetString
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {

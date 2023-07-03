@@ -15,7 +15,7 @@ import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.io.File
 

@@ -12,7 +12,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.CoreVersionInfo
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.helpers.AppBarTitle
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun VersionInfoView(info: CoreVersionInfo) {

@@ -24,7 +24,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 @Composable

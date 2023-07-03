@@ -36,7 +36,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.model.NtfManager.OpenChatAction
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 class IncomingCallActivity: ComponentActivity() {

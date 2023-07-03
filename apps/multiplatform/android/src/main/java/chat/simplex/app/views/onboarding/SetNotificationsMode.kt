@@ -24,7 +24,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.NotificationsMode
 import chat.simplex.app.views.usersettings.changeNotificationsMode
 import com.google.accompanist.permissions.rememberPermissionState
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 
 @Composable

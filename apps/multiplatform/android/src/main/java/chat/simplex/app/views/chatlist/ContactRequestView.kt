@@ -15,7 +15,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ChatInfoImage
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun ContactRequestView(chatModelIncognito: Boolean, contactRequest: ChatInfo.ContactRequest) {

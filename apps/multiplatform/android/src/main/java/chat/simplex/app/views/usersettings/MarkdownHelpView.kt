@@ -18,7 +18,7 @@ import chat.simplex.app.model.Format
 import chat.simplex.app.model.FormatColor
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun MarkdownHelpView() {

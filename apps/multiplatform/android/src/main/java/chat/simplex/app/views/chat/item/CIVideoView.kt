@@ -29,7 +29,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
 import com.google.android.exoplayer2.ui.StyledPlayerView
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import java.io.File
 

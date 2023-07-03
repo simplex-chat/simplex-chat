@@ -28,7 +28,7 @@ import chat.simplex.app.views.isValidDisplayName
 import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.launch
 
 @Composable

@@ -15,7 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.model.CIFile
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import java.io.BufferedOutputStream
 import java.io.File
 

@@ -13,7 +13,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.views.newchat.ActionButton
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 sealed class AttachmentOption {
   object CameraPhoto: AttachmentOption()

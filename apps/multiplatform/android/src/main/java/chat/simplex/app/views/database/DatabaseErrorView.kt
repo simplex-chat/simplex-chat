@@ -24,7 +24,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.AppVersionText
 import chat.simplex.app.views.usersettings.NotificationsMode
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock

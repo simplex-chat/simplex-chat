@@ -13,7 +13,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.DatabaseUtils.ksSelfDestructPassword
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.app.views.onboarding.OnboardingStage
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 @Composable

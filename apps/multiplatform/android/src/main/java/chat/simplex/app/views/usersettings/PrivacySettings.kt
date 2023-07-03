@@ -28,7 +28,7 @@ import chat.simplex.app.views.helpers.DatabaseUtils.ksSelfDestructPassword
 import chat.simplex.app.views.isValidDisplayName
 import chat.simplex.app.views.localauth.SetAppPasscodeView
 import chat.simplex.app.views.onboarding.ReadableText
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 enum class LAMode {
   SYSTEM,

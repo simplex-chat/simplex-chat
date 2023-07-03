@@ -31,7 +31,7 @@ import chat.simplex.app.views.usersettings.DeleteImageButton
 import chat.simplex.app.views.usersettings.EditImageButton
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

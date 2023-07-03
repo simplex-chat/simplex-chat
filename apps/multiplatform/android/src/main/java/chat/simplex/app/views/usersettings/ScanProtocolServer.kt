@@ -14,7 +14,7 @@ import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCodeScanner
 import com.google.accompanist.permissions.rememberPermissionState
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun ScanProtocolServer(onNext: (ServerCfg) -> Unit) {

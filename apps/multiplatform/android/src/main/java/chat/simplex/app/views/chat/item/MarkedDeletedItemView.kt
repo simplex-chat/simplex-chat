@@ -19,7 +19,7 @@ import chat.simplex.app.model.CIDeleted
 import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.generalGetString
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 @Composable

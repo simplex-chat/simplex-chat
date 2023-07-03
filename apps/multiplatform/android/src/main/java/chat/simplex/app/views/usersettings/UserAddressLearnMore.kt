@@ -9,7 +9,7 @@ import chat.simplex.app.R
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.ReadableText
 import chat.simplex.app.views.onboarding.ReadableTextWithLink
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun UserAddressLearnMore() {

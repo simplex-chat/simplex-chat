@@ -33,7 +33,7 @@ import chat.simplex.app.views.database.DatabaseView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.SimpleXInfo
 import chat.simplex.app.views.onboarding.WhatsNewView
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import com.jakewharton.processphoenix.ProcessPhoenix
 
 @Composable

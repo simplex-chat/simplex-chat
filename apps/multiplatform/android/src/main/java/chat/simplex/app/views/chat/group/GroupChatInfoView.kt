@@ -34,7 +34,7 @@ import chat.simplex.app.views.chatlist.cantInviteIncognitoAlert
 import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit, close: () -> Unit) {

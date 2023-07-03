@@ -21,7 +21,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.usersettings.ProfilePreview
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 @Composable

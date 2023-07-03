@@ -18,7 +18,7 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.launch
 
 @Composable

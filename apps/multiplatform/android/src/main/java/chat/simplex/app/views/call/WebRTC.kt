@@ -6,7 +6,7 @@ import chat.simplex.app.*
 import chat.simplex.app.model.Contact
 import chat.simplex.app.model.User
 import chat.simplex.app.views.helpers.generalGetString
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

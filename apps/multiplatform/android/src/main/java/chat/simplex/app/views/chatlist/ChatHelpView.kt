@@ -20,7 +20,7 @@ import chat.simplex.app.views.helpers.annotatedStringResource
 import chat.simplex.app.views.onboarding.ReadableTextWithLink
 import chat.simplex.app.views.usersettings.MarkdownHelpView
 import chat.simplex.app.views.usersettings.simplexTeamUri
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 val bold = SpanStyle(fontWeight = FontWeight.Bold)
 

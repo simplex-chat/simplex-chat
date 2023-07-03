@@ -15,7 +15,7 @@ import androidx.compose.ui.window.Dialog
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import com.sd.lib.compose.wheel_picker.*
 
 @Composable

@@ -8,7 +8,7 @@ import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.generalGetString
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import java.security.KeyStore
 import javax.crypto.*
 import javax.crypto.spec.GCMParameterSpec

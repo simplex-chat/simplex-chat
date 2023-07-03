@@ -31,7 +31,7 @@ import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 @Composable

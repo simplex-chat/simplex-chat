@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.usersettings.SettingsActionItemWithContent
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun <T> ExposedDropDownSettingRow(

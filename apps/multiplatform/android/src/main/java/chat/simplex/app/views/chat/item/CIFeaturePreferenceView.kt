@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.generalGetString
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun CIFeaturePreferenceView(

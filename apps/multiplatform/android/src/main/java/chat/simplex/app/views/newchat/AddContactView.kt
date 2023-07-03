@@ -20,7 +20,7 @@ import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun AddContactView(connReqInvitation: String, connIncognito: Boolean) {

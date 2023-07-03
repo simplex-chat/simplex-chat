@@ -20,7 +20,7 @@ import chat.simplex.app.model.UserContactLinkRec
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun CreateSimpleXAddress(m: ChatModel) {

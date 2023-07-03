@@ -129,7 +129,7 @@ android {
 }
 
 multiplatformResources {
-  multiplatformResourcesPackage = "com.icerockdev.library"
+  multiplatformResourcesPackage = "chat.simplex.res"
   //  multiplatformResourcesClassName = "MR"
 }
 

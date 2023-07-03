@@ -22,7 +22,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chatlist.UserProfileRow
 import chat.simplex.app.views.database.PassphraseField
 import chat.simplex.app.views.helpers.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun HiddenProfileView(

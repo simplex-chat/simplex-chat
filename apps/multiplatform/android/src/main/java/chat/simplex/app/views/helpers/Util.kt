@@ -39,7 +39,7 @@ import chat.simplex.app.*
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.ThemeOverrides
 import com.charleskorn.kaml.decodeFromStream
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString

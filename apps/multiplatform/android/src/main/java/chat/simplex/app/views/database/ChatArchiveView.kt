@@ -26,7 +26,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.datetime.*
 import java.io.BufferedOutputStream
 import java.io.File

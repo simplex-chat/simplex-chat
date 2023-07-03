@@ -7,7 +7,7 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.AppPreferences
 import chat.simplex.app.views.helpers.generalGetString
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 object ThemeManager {
   private val appPrefs: AppPreferences by lazy {

@@ -12,7 +12,7 @@ import androidx.compose.ui.res.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.ui.theme.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun DefaultTopAppBar(

@@ -41,7 +41,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.AppBarHeight
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock

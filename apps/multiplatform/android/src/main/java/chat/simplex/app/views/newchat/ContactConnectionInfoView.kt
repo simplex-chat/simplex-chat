@@ -21,7 +21,7 @@ import chat.simplex.app.views.chat.LocalAliasEditor
 import chat.simplex.app.views.chatlist.deleteContactConnectionAlert
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun ContactConnectionInfoView(

@@ -31,7 +31,7 @@ import chat.simplex.app.views.onboarding.WhatsNewView
 import chat.simplex.app.views.onboarding.shouldShowWhatsNew
 import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.simplexTeamUri
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch

@@ -19,7 +19,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.PreferenceToggleWithIcon
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {

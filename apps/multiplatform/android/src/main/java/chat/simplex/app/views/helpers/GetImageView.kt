@@ -33,7 +33,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.json
 import chat.simplex.app.views.chat.PickFromGallery
 import chat.simplex.app.views.newchat.ActionButton
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.serialization.builtins.*
 import java.io.ByteArrayOutputStream
 import java.io.File

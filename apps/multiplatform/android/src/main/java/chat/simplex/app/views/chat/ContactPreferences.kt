@@ -20,7 +20,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.PreferenceToggle
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun ContactPreferencesView(

@@ -41,7 +41,7 @@ import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.usersettings.NotificationsMode
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString

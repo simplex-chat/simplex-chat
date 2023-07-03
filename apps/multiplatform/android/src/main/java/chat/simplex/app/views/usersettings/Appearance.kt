@@ -43,7 +43,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import com.godaddy.android.colorpicker.*
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.serialization.encodeToString
 import java.io.BufferedOutputStream

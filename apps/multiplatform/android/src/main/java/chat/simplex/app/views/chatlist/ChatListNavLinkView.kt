@@ -26,7 +26,7 @@ import chat.simplex.app.views.chat.item.InvalidJSONView
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ContactConnectionInfoView
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 

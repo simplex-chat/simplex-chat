@@ -14,7 +14,7 @@ import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ChatHelpView
 import chat.simplex.app.views.helpers.AppBarTitle
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun HelpView(userDisplayName: String) {

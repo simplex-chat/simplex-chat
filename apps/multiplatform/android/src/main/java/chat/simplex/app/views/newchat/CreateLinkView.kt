@@ -15,7 +15,7 @@ import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.usersettings.UserAddressView
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 enum class CreateLinkTab {
   ONE_TIME, LONG_TERM

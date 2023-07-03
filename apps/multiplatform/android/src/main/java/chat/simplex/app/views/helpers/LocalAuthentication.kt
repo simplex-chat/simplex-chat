@@ -16,7 +16,7 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.app.views.localauth.LocalAuthView
 import chat.simplex.app.views.usersettings.LAMode
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 sealed class LAResult {
   object Success: LAResult()

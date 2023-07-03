@@ -10,7 +10,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 enum class ConnectViaLinkTab {
   SCAN, PASTE

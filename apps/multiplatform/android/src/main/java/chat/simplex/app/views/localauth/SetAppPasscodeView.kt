@@ -7,7 +7,7 @@ import chat.simplex.app.R
 import chat.simplex.app.views.helpers.DatabaseUtils
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.app.views.helpers.generalGetString
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun SetAppPasscodeView(

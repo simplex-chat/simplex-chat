@@ -32,7 +32,7 @@ import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.InfoAboutIncognito
 import chat.simplex.app.views.usersettings.SettingsActionItem
-import com.icerockdev.library.MR
+import chat.simplex.res.MR
 
 @Composable
 fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
