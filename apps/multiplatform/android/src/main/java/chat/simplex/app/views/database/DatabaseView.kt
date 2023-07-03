@@ -514,6 +514,7 @@ private fun rememberSaveArchiveLauncher(chatArchiveFile: MutableState<String?>):
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
+      val cxt = SimplexApp.context
       try {
         destination?.let {
           val filePath = chatArchiveFile.value
@@ -523,14 +524,14 @@ private fun rememberSaveArchiveLauncher(chatArchiveFile: MutableState<String?>):
               val outputStream = BufferedOutputStream(stream)
               File(filePath).inputStream().use { it.copyTo(outputStream) }
               outputStream.close()
-              Toast.makeText(SimplexApp.context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+              Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
             }
           } else {
-            Toast.makeText(SimplexApp.context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+            Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
           }
         }
       } catch (e: Error) {
-        Toast.makeText(SimplexApp.context, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
         Log.e(TAG, "rememberSaveArchiveLauncher error saving archive $e")
       } finally {
         chatArchiveFile.value = null

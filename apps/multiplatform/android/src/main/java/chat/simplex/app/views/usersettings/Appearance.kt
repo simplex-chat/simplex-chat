@@ -378,21 +378,22 @@ private fun rememberSaveThemeLauncher(theme: MutableState<String?>): ManagedActi
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
+      val cxt = SimplexApp.context
       try {
         destination?.let {
           val theme = theme.value
           if (theme != null) {
-            val contentResolver = SimplexApp.context.contentResolver
+            val contentResolver = cxt.contentResolver
             contentResolver.openOutputStream(destination)?.let { stream ->
               BufferedOutputStream(stream).use { outputStream ->
                 theme.byteInputStream().use { it.copyTo(outputStream) }
               }
-              Toast.makeText(SimplexApp.context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+              Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
             }
           }
         }
       } catch (e: Error) {
-        Toast.makeText(SimplexApp.context, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
         Log.e(TAG, "rememberSaveThemeLauncher error saving theme $e")
       } finally {
         theme.value = null

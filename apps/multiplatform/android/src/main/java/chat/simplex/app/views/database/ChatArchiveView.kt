@@ -85,18 +85,19 @@ private fun rememberSaveArchiveLauncher(chatArchivePath: String): ManagedActivit
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
+      val cxt = SimplexApp.context
       try {
         destination?.let {
-          val contentResolver = SimplexApp.context.contentResolver
+          val contentResolver = cxt.contentResolver
           contentResolver.openOutputStream(destination)?.let { stream ->
             val outputStream = BufferedOutputStream(stream)
             File(chatArchivePath).inputStream().use { it.copyTo(outputStream) }
             outputStream.close()
-            Toast.makeText(SimplexApp.context, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
           }
         }
       } catch (e: Error) {
-        Toast.makeText(SimplexApp.context, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
         Log.e(TAG, "rememberSaveArchiveLauncher error saving archive $e")
       }
     }
