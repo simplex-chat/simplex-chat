@@ -2,7 +2,6 @@ package chat.simplex.app.views.onboarding
 
 import android.Manifest
 import android.os.Build
-import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape

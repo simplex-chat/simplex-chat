@@ -7,7 +7,6 @@ import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*

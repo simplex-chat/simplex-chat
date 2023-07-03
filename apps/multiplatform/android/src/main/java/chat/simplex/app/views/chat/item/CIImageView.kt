@@ -2,7 +2,6 @@ package chat.simplex.app.views.chat.item
 
 import android.graphics.Bitmap
 import android.os.Build.VERSION.SDK_INT
-import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*

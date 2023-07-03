@@ -3,7 +3,6 @@ package chat.simplex.app.views.chat.item
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.net.Uri
-import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
