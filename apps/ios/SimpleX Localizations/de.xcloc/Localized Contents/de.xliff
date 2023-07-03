@@ -2585,7 +2585,7 @@
       </trans-unit>
       <trans-unit id="KeyChain error" xml:space="preserve" approved="no">
         <source>KeyChain error</source>
-        <target state="translated">KeyStore Fehler</target>
+        <target state="translated">KeyChain Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keychain error" xml:space="preserve">
@@ -4448,7 +4448,7 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       </trans-unit>
       <trans-unit id="Unfav." xml:space="preserve" approved="no">
         <source>Unfav.</source>
-        <target state="translated">Favorit löschen</target>
+        <target state="translated">Unfav.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
