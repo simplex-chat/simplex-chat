@@ -181,7 +181,7 @@
     <string name="privacy_redefined">重新定义隐私</string>
     <string name="v4_3_improved_privacy_and_security">改进的隐私和安全</string>
     <string name="incognito">隐身聊天</string>
-    <string name="joining_group">加入群组</string>
+    <string name="joining_group">加入群组中</string>
     <string name="join_group_incognito_button">加入隐身聊天</string>
     <string name="settings_section_title_incognito">隐身模式</string>
     <string name="group_unsupported_incognito_main_profile_sent">此处不支持隐身模式——您的主要个人资料将发送给群组成员</string>
@@ -747,7 +747,7 @@
     <string name="member_role_will_be_changed_with_invitation">角色将更改为“%s”。 该成员将收到新的邀请。</string>
     <string name="enable_automatic_deletion_message">此操作无法撤消——早于所选的发送和接收的消息将被删除。 这可能需要几分钟时间。</string>
     <string name="this_QR_code_is_not_a_link">此二维码不是链接！</string>
-    <string name="switch_receiving_address_desc">此功能是实验性的！ 它仅在其他客户端安装了 4.2 版时才有效。 地址更改完成后，您应该会在对话中看到该消息——请检查您是否仍能收到来自该联系人（或群组成员）的消息。</string>
+    <string name="switch_receiving_address_desc">接收地址将变更到不同的服务器。地址更改将在发件人上线后完成。</string>
     <string name="this_link_is_not_a_valid_connection_link">此链接不是有效的连接链接！</string>
     <string name="to_start_a_new_chat_help_header">开始新的聊天</string>
     <string name="to_verify_compare">要与您的联系人验证端到端加密，请比较（或扫描）您设备上的代码。</string>
@@ -762,7 +762,7 @@
     <string name="icon_descr_sent_msg_status_unauthorized_send">未经授权发送</string>
     <string name="images_limit_title">太多图片！</string>
     <string name="icon_descr_server_status_pending">待办的</string>
-    <string name="switch_receiving_address_question">切换接收地址吗？</string>
+    <string name="switch_receiving_address_question">更改接收地址？</string>
     <string name="ask_your_contact_to_enable_voice">请让您的联系人启用发送语音消息。</string>
     <string name="icon_descr_record_voice_message">录制语音消息</string>
     <string name="icon_descr_send_message">发消息</string>
@@ -795,7 +795,7 @@
     <string name="receiving_via">接收通过</string>
     <string name="sending_via">发送通过</string>
     <string name="conn_stats_section_title_servers">服务器</string>
-    <string name="switch_receiving_address">切换接收地址</string>
+    <string name="switch_receiving_address">更改接收地址</string>
     <string name="v4_5_message_draft_descr">保留最后的消息草稿及其附件。</string>
     <string name="v4_5_private_filenames">私密文件名</string>
     <string name="v4_4_french_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
@@ -1267,4 +1267,19 @@
     <string name="shutdown_alert_desc">通知将停止工作直到您重启应用程序</string>
     <string name="shutdown_alert_question">关闭？</string>
     <string name="settings_shutdown">关闭</string>
+    <string name="error_aborting_address_change">中止地址更改错误</string>
+    <string name="abort_switch_receiving_address_question">中止地址更改？</string>
+    <string name="abort_switch_receiving_address_desc">将中止地址更改。将使用旧接收地址。</string>
+    <string name="abort_switch_receiving_address_confirm">中止</string>
+    <string name="abort_switch_receiving_address">中止地址更改</string>
+    <string name="allow_to_send_files">允许发送文件和媒体。</string>
+    <string name="files_and_media">文件和媒体</string>
+    <string name="only_owners_can_enable_files_and_media">只有组主可以启用文件和媒体。</string>
+    <string name="files_are_prohibited_in_group">此群组中禁止文件和媒体。</string>
+    <string name="group_members_can_send_files">群组成员可以发送文件和媒体。</string>
+    <string name="prohibit_sending_files">禁止发送文件和媒体。</string>
+    <string name="files_and_media_prohibited">禁止文件和媒体！</string>
+    <string name="no_filtered_chats">无过滤聊天</string>
+    <string name="unfavorite_chat">取消最喜欢</string>
+    <string name="favorite_chat">最喜欢</string>
 </resources>
