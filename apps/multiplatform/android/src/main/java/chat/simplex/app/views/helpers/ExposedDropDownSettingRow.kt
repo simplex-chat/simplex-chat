@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.usersettings.SettingsActionItemWithContent
+import com.icerockdev.library.MR
 
 @Composable
 fun <T> ExposedDropDownSettingRow(
@@ -51,7 +52,7 @@ fun <T> ExposedDropDownSettingRow(
         Spacer(Modifier.size(12.dp))
         Icon(
           if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
-          generalGetString(R.string.icon_descr_more_button),
+          generalGetString(MR.strings.icon_descr_more_button),
           tint = MaterialTheme.colors.secondary
         )
       }

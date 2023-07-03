@@ -21,7 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
@@ -41,6 +41,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.AppBarHeight
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
+import com.icerockdev.library.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
@@ -421,7 +422,7 @@ fun ChatInfoToolbar(
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   menuItems.add {
-    ItemAction(stringResource(android.R.string.search_go).capitalize(Locale.current), painterResource(R.drawable.ic_search), onClick = {
+    ItemAction(stringResource(MR.strings.search_verb).capitalize(Locale.current), painterResource(R.drawable.ic_search), onClick = {
       showMenu.value = false
       showSearch = true
     })
@@ -433,11 +434,11 @@ fun ChatInfoToolbar(
         showMenu.value = false
         startCall(CallMediaType.Audio)
       }) {
-        Icon(painterResource(R.drawable.ic_call_500), stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_call_500), stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
       }
     }
     menuItems.add {
-      ItemAction(stringResource(R.string.icon_descr_video_call).capitalize(Locale.current), painterResource(R.drawable.ic_videocam), onClick = {
+      ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(R.drawable.ic_videocam), onClick = {
         showMenu.value = false
         startCall(CallMediaType.Video)
       })
@@ -448,14 +449,14 @@ fun ChatInfoToolbar(
         showMenu.value = false
         addMembers(chat.chatInfo.groupInfo)
       }) {
-        Icon(painterResource(R.drawable.ic_person_add_500), stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_person_add_500), stringResource(MR.strings.icon_descr_add_members), tint = MaterialTheme.colors.primary)
       }
     }
   }
   val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
   menuItems.add {
     ItemAction(
-      if (ntfsEnabled.value) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
+      if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
       if (ntfsEnabled.value) painterResource(R.drawable.ic_notifications_off) else painterResource(R.drawable.ic_notifications),
       onClick = {
         showMenu.value = false
@@ -470,7 +471,7 @@ fun ChatInfoToolbar(
 
   barButtons.add {
     IconButton({ showMenu.value = true }) {
-      Icon(MoreVertFilled, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+      Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
     }
   }
 
@@ -828,7 +829,7 @@ fun BoxWithConstraintsScope.FloatingButtons(
 
   DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
     ItemAction(
-      generalGetString(R.string.mark_read),
+      generalGetString(MR.strings.mark_read),
       painterResource(R.drawable.ic_check),
       onClick = {
         markRead(

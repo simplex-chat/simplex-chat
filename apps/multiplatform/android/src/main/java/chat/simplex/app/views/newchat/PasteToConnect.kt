@@ -13,7 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
@@ -22,6 +22,7 @@ import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import com.icerockdev.library.MR
 
 @Composable
 fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
@@ -46,17 +47,17 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
           }
           if (linkType == ConnectionLinkType.GROUP) {
             AlertManager.shared.showAlertDialog(
-              title = generalGetString(R.string.connect_via_group_link),
-              text = generalGetString(R.string.you_will_join_group),
-              confirmText = generalGetString(R.string.connect_via_link_verb),
+              title = generalGetString(MR.strings.connect_via_group_link),
+              text = generalGetString(MR.strings.you_will_join_group),
+              confirmText = generalGetString(MR.strings.connect_via_link_verb),
               onConfirm = { withApi { action() } }
             )
           } else action()
         }
       } catch (e: RuntimeException) {
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(R.string.invalid_connection_link),
-          text = generalGetString(R.string.this_string_is_not_a_connection_link)
+          title = generalGetString(MR.strings.invalid_connection_link),
+          text = generalGetString(MR.strings.this_string_is_not_a_connection_link)
         )
       }
     },
@@ -74,14 +75,14 @@ fun PasteToConnectLayout(
     Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.SpaceBetween,
   ) {
-    AppBarTitle(stringResource(R.string.connect_via_link), false)
-    Text(stringResource(R.string.paste_connection_link_below_to_connect))
+    AppBarTitle(stringResource(MR.strings.connect_via_link), false)
+    Text(stringResource(MR.strings.paste_connection_link_below_to_connect))
 
     InfoAboutIncognito(
       chatModelIncognito,
       true,
-      generalGetString(R.string.incognito_random_profile_from_contact_description),
-      generalGetString(R.string.profile_will_be_sent_to_contact_sending_link)
+      generalGetString(MR.strings.incognito_random_profile_from_contact_description),
+      generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link)
     )
 
     Box(Modifier.padding(top = DEFAULT_PADDING, bottom = 6.dp)) {
@@ -93,21 +94,21 @@ fun PasteToConnectLayout(
       horizontalArrangement = Arrangement.Start,
     ) {
       if (connectionLink.value == "") {
-        SimpleButton(text = stringResource(R.string.paste_button), icon = painterResource(R.drawable.ic_content_paste)) {
+        SimpleButton(text = stringResource(MR.strings.paste_button), icon = painterResource(R.drawable.ic_content_paste)) {
           pasteFromClipboard()
         }
       } else {
-        SimpleButton(text = stringResource(R.string.clear_verb), icon = painterResource(R.drawable.ic_close)) {
+        SimpleButton(text = stringResource(MR.strings.clear_verb), icon = painterResource(R.drawable.ic_close)) {
           connectionLink.value = ""
         }
       }
       Spacer(Modifier.weight(1f).fillMaxWidth())
-      SimpleButton(text = stringResource(R.string.connect_button), icon = painterResource(R.drawable.ic_link)) {
+      SimpleButton(text = stringResource(MR.strings.connect_button), icon = painterResource(R.drawable.ic_link)) {
         connectViaLink(connectionLink.value)
       }
     }
 
-    Text(annotatedStringResource(R.string.you_can_also_connect_by_clicking_the_link))
+    Text(annotatedStringResource(MR.strings.you_can_also_connect_by_clicking_the_link))
     SectionBottomSpacer()
   }
 }

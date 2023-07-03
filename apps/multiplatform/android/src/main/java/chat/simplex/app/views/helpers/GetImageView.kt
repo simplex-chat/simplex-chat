@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -33,6 +33,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.json
 import chat.simplex.app.views.chat.PickFromGallery
 import chat.simplex.app.views.newchat.ActionButton
+import com.icerockdev.library.MR
 import kotlinx.serialization.builtins.*
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -228,7 +229,7 @@ fun GetImageBottomSheet(
       cameraLauncher.launchWithFallback()
       hideBottomSheet()
     } else {
-      Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, generalGetString(MR.strings.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
 
@@ -246,7 +247,7 @@ fun GetImageBottomSheet(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, stringResource(R.string.use_camera_button), icon = painterResource(R.drawable.ic_photo_camera)) {
+      ActionButton(null, stringResource(MR.strings.use_camera_button), icon = painterResource(R.drawable.ic_photo_camera)) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launchWithFallback()
@@ -257,7 +258,7 @@ fun GetImageBottomSheet(
           }
         }
       }
-      ActionButton(null, stringResource(R.string.from_gallery_button), icon = painterResource(R.drawable.ic_image)) {
+      ActionButton(null, stringResource(MR.strings.from_gallery_button), icon = painterResource(R.drawable.ic_image)) {
         try {
           galleryLauncher.launch(0)
         } catch (e: ActivityNotFoundException) {

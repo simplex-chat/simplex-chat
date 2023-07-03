@@ -13,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -23,6 +23,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.parseRTCIceServers
 import chat.simplex.app.views.helpers.*
+import com.icerockdev.library.MR
 
 @Composable
 fun RTCServersView(
@@ -42,8 +43,8 @@ fun RTCServersView(
       editRTCServers = false
     } else {
       AlertManager.shared.showAlertMsg(
-        generalGetString(R.string.error_saving_ICE_servers),
-        generalGetString(R.string.ensure_ICE_server_address_are_correct_format_and_unique)
+        generalGetString(MR.strings.error_saving_ICE_servers),
+        generalGetString(MR.strings.ensure_ICE_server_address_are_correct_format_and_unique)
       )
     }
   }
@@ -63,9 +64,9 @@ fun RTCServersView(
         isUserRTCServers = true
       } else if (userRTCServers.isNotEmpty()) {
           AlertManager.shared.showAlertDialog(
-            title = generalGetString(R.string.use_simplex_chat_servers__question),
-            text = generalGetString(R.string.saved_ICE_servers_will_be_removed),
-            confirmText = generalGetString(R.string.confirm_verb),
+            title = generalGetString(MR.strings.use_simplex_chat_servers__question),
+            text = generalGetString(MR.strings.saved_ICE_servers_will_be_removed),
+            confirmText = generalGetString(MR.strings.confirm_verb),
             onConfirm = {
               resetRTCServers()
               isUserRTCServers = false
@@ -99,7 +100,7 @@ fun RTCServersLayout(
   editOn: () -> Unit,
 ) {
   Column {
-    AppBarTitle(stringResource(R.string.your_ICE_servers))
+    AppBarTitle(stringResource(MR.strings.your_ICE_servers))
     Column(
       Modifier
         .fillMaxWidth()
@@ -108,7 +109,7 @@ fun RTCServersLayout(
       verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
       SectionItemViewSpaceBetween(padding = PaddingValues()) {
-        Text(stringResource(R.string.configure_ICE_servers), Modifier.padding(end = 24.dp))
+        Text(stringResource(MR.strings.configure_ICE_servers), Modifier.padding(end = 24.dp))
         DefaultSwitch(
           checked = isUserRTCServers,
           onCheckedChange = isUserRTCServersOnOff,
@@ -116,9 +117,9 @@ fun RTCServersLayout(
       }
 
       if (!isUserRTCServers) {
-        Text(stringResource(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
+        Text(stringResource(MR.strings.using_simplex_chat_servers), lineHeight = 22.sp)
       } else {
-        Text(stringResource(R.string.enter_one_ICE_server_per_line))
+        Text(stringResource(MR.strings.enter_one_ICE_server_per_line))
         if (editRTCServers) {
           TextEditor(userRTCServersStr, Modifier.height(160.dp), contentPadding = PaddingValues())
 
@@ -130,14 +131,14 @@ fun RTCServersLayout(
             Column {
               Row {
                 Text(
-                  stringResource(R.string.cancel_verb),
+                  stringResource(MR.strings.cancel_verb),
                   color = MaterialTheme.colors.primary,
                   modifier = Modifier
                     .clickable(onClick = cancelEdit)
                 )
                 Spacer(Modifier.padding(horizontal = 8.dp))
                 Text(
-                  stringResource(R.string.save_servers_button),
+                  stringResource(MR.strings.save_servers_button),
                   color = MaterialTheme.colors.primary,
                   modifier = Modifier.clickable(onClick = {
                     saveRTCServers()
@@ -175,7 +176,7 @@ fun RTCServersLayout(
           ) {
             Column {
               Text(
-                stringResource(R.string.edit_verb),
+                stringResource(MR.strings.edit_verb),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier
                   .clickable(onClick = editOn)
@@ -199,9 +200,9 @@ private fun howToButton() {
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.clickable { uriHandler.openUriCatching("https://simplex.chat/docs/webrtc.html#configure-mobile-apps") }
   ) {
-    Text(stringResource(R.string.how_to), color = MaterialTheme.colors.primary)
+    Text(stringResource(MR.strings.how_to), color = MaterialTheme.colors.primary)
     Icon(
-      painterResource(R.drawable.ic_open_in_new), stringResource(R.string.how_to), tint = MaterialTheme.colors.primary,
+      painterResource(R.drawable.ic_open_in_new), stringResource(MR.strings.how_to), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 5.dp)
     )
   }

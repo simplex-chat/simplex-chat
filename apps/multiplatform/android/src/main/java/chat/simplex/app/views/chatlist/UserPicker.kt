@@ -26,6 +26,7 @@ import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import com.icerockdev.library.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -217,7 +218,7 @@ fun UserProfileRow(u: User) {
 @Composable
 private fun SettingsPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
-    val text = generalGetString(R.string.settings_section_title_settings).lowercase().capitalize(Locale.current)
+    val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(R.drawable.ic_settings), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(
@@ -230,7 +231,7 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
 @Composable
 private fun CancelPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
-    val text = generalGetString(R.string.cancel_verb)
+    val text = generalGetString(MR.strings.cancel_verb)
     Icon(painterResource(R.drawable.ic_close), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(

@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.model.CIFile
+import com.icerockdev.library.MR
 import java.io.BufferedOutputStream
 import java.io.File
 
@@ -80,10 +81,10 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): ManagedActivityResultLauncher<Str
             val outputStream = BufferedOutputStream(stream)
             File(filePath).inputStream().use { it.copyTo(outputStream) }
             outputStream.close()
-            Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            Toast.makeText(cxt, generalGetString(MR.strings.file_saved), Toast.LENGTH_SHORT).show()
           }
         } else {
-          Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+          Toast.makeText(cxt, generalGetString(MR.strings.file_not_found), Toast.LENGTH_SHORT).show()
         }
       }
     }
@@ -118,10 +119,10 @@ fun saveImage(ciFile: CIFile?) {
         val outputStream = BufferedOutputStream(stream)
         File(filePath).inputStream().use { it.copyTo(outputStream) }
         outputStream.close()
-        Toast.makeText(cxt, generalGetString(R.string.image_saved), Toast.LENGTH_SHORT).show()
+        Toast.makeText(cxt, generalGetString(MR.strings.image_saved), Toast.LENGTH_SHORT).show()
       }
     }
   } else {
-    Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+    Toast.makeText(cxt, generalGetString(MR.strings.file_not_found), Toast.LENGTH_SHORT).show()
   }
 }

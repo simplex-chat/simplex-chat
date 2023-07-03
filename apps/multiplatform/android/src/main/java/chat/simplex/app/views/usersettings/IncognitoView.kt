@@ -6,12 +6,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.helpers.AppBarTitle
 import chat.simplex.app.views.helpers.generalGetString
+import com.icerockdev.library.MR
 
 @Composable
 fun IncognitoView() {
@@ -21,17 +22,17 @@ fun IncognitoView() {
 @Composable
 fun IncognitoLayout() {
   Column {
-    AppBarTitle(stringResource(R.string.settings_section_title_incognito))
+    AppBarTitle(stringResource(MR.strings.settings_section_title_incognito))
     Column(
       Modifier
         .verticalScroll(rememberScrollState())
         .padding(horizontal = DEFAULT_PADDING),
       verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-      Text(generalGetString(R.string.incognito_info_protects))
-      Text(generalGetString(R.string.incognito_info_allows))
-      Text(generalGetString(R.string.incognito_info_share))
-      Text(generalGetString(R.string.incognito_info_find))
+      Text(generalGetString(MR.strings.incognito_info_protects))
+      Text(generalGetString(MR.strings.incognito_info_allows))
+      Text(generalGetString(MR.strings.incognito_info_share))
+      Text(generalGetString(MR.strings.incognito_info_find))
       SectionBottomSpacer()
     }
   }

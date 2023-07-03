@@ -15,6 +15,8 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationPreviewMode
 import chat.simplex.app.views.usersettings.NotificationsMode
+import com.icerockdev.library.MR
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
@@ -693,7 +695,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val localAlias get() = ""
 
     companion object {
-      private val invalidChatName = generalGetString(R.string.invalid_chat)
+      private val invalidChatName = generalGetString(MR.strings.invalid_chat)
     }
   }
 
@@ -709,15 +711,15 @@ sealed class ChatInfo: SomeChat, NamedChat {
 sealed class NetworkStatus {
   val statusString: String get() =
     when (this) {
-      is Connected -> generalGetString(R.string.server_connected)
-      is Error -> generalGetString(R.string.server_error)
-      else -> generalGetString(R.string.server_connecting)
+      is Connected -> generalGetString(MR.strings.server_connected)
+      is Error -> generalGetString(MR.strings.server_error)
+      else -> generalGetString(MR.strings.server_connecting)
     }
   val statusExplanation: String get() =
     when (this) {
-      is Connected -> generalGetString(R.string.connected_to_server_to_receive_messages_from_contact)
-      is Error -> String.format(generalGetString(R.string.trying_to_connect_to_server_to_receive_messages_with_error), error)
-      else -> generalGetString(R.string.trying_to_connect_to_server_to_receive_messages)
+      is Connected -> generalGetString(MR.strings.connected_to_server_to_receive_messages_from_contact)
+      is Error -> String.format(generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages_with_error), error)
+      else -> generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages)
     }
 
   @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
@@ -1062,10 +1064,10 @@ enum class GroupMemberRole(val memberRole: String) {
   @SerialName("owner") Owner("owner");
 
   val text: String get() = when (this) {
-    Observer -> generalGetString(R.string.group_member_role_observer)
-    Member -> generalGetString(R.string.group_member_role_member)
-    Admin -> generalGetString(R.string.group_member_role_admin)
-    Owner -> generalGetString(R.string.group_member_role_owner)
+    Observer -> generalGetString(MR.strings.group_member_role_observer)
+    Member -> generalGetString(MR.strings.group_member_role_member)
+    Admin -> generalGetString(MR.strings.group_member_role_admin)
+    Owner -> generalGetString(MR.strings.group_member_role_owner)
   }
 }
 
@@ -1093,31 +1095,31 @@ enum class GroupMemberStatus {
   @SerialName("creator") MemCreator;
 
   val text: String get() = when (this) {
-    MemRemoved -> generalGetString(R.string.group_member_status_removed)
-    MemLeft -> generalGetString(R.string.group_member_status_left)
-    MemGroupDeleted -> generalGetString(R.string.group_member_status_group_deleted)
-    MemInvited -> generalGetString(R.string.group_member_status_invited)
-    MemIntroduced -> generalGetString(R.string.group_member_status_introduced)
-    MemIntroInvited -> generalGetString(R.string.group_member_status_intro_invitation)
-    MemAccepted -> generalGetString(R.string.group_member_status_accepted)
-    MemAnnounced -> generalGetString(R.string.group_member_status_announced)
-    MemConnected -> generalGetString(R.string.group_member_status_connected)
-    MemComplete -> generalGetString(R.string.group_member_status_complete)
-    MemCreator -> generalGetString(R.string.group_member_status_creator)
+    MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
+    MemLeft -> generalGetString(MR.strings.group_member_status_left)
+    MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
+    MemInvited -> generalGetString(MR.strings.group_member_status_invited)
+    MemIntroduced -> generalGetString(MR.strings.group_member_status_introduced)
+    MemIntroInvited -> generalGetString(MR.strings.group_member_status_intro_invitation)
+    MemAccepted -> generalGetString(MR.strings.group_member_status_accepted)
+    MemAnnounced -> generalGetString(MR.strings.group_member_status_announced)
+    MemConnected -> generalGetString(MR.strings.group_member_status_connected)
+    MemComplete -> generalGetString(MR.strings.group_member_status_complete)
+    MemCreator -> generalGetString(MR.strings.group_member_status_creator)
   }
 
   val shortText: String get() = when (this) {
-    MemRemoved -> generalGetString(R.string.group_member_status_removed)
-    MemLeft -> generalGetString(R.string.group_member_status_left)
-    MemGroupDeleted -> generalGetString(R.string.group_member_status_group_deleted)
-    MemInvited -> generalGetString(R.string.group_member_status_invited)
-    MemIntroduced -> generalGetString(R.string.group_member_status_connecting)
-    MemIntroInvited -> generalGetString(R.string.group_member_status_connecting)
-    MemAccepted -> generalGetString(R.string.group_member_status_connecting)
-    MemAnnounced -> generalGetString(R.string.group_member_status_connecting)
-    MemConnected -> generalGetString(R.string.group_member_status_connected)
-    MemComplete -> generalGetString(R.string.group_member_status_complete)
-    MemCreator -> generalGetString(R.string.group_member_status_creator)
+    MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
+    MemLeft -> generalGetString(MR.strings.group_member_status_left)
+    MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
+    MemInvited -> generalGetString(MR.strings.group_member_status_invited)
+    MemIntroduced -> generalGetString(MR.strings.group_member_status_connecting)
+    MemIntroInvited -> generalGetString(MR.strings.group_member_status_connecting)
+    MemAccepted -> generalGetString(MR.strings.group_member_status_connecting)
+    MemAnnounced -> generalGetString(MR.strings.group_member_status_connecting)
+    MemConnected -> generalGetString(MR.strings.group_member_status_connected)
+    MemComplete -> generalGetString(MR.strings.group_member_status_complete)
+    MemCreator -> generalGetString(MR.strings.group_member_status_creator)
   }
 }
 
@@ -1206,17 +1208,17 @@ class PendingContactConnection(
   override val incognito get() = customUserProfileId != null
   override fun featureEnabled(feature: ChatFeature) = false
   override val timedMessagesTTL: Int? get() = null
-  override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
+  override val localDisplayName get() = String.format(generalGetString(MR.strings.connection_local_display_name), pccConnId)
   override val displayName: String get() {
     if (localAlias.isNotEmpty()) return localAlias
     val initiated = pccConnStatus.initiated
     return if (initiated == null) {
       // this should not be in the chat list
-      generalGetString(R.string.display_name_connection_established)
+      generalGetString(MR.strings.display_name_connection_established)
     } else {
       generalGetString(
-        if (initiated && !viaContactUri) R.string.display_name_invited_to_connect
-        else R.string.display_name_connecting
+        if (initiated && !viaContactUri) MR.strings.display_name_invited_to_connect
+        else MR.strings.display_name_connecting
       )
     }
   }
@@ -1229,14 +1231,14 @@ class PendingContactConnection(
     val initiated = pccConnStatus.initiated
     return if (initiated == null) "" else generalGetString(
       if (initiated && !viaContactUri)
-        if (incognito) R.string.description_you_shared_one_time_link_incognito else R.string.description_you_shared_one_time_link
+        if (incognito) MR.strings.description_you_shared_one_time_link_incognito else MR.strings.description_you_shared_one_time_link
       else if (viaContactUri)
         if (groupLinkId != null)
-          if (incognito) R.string.description_via_group_link_incognito else R.string.description_via_group_link
+          if (incognito) MR.strings.description_via_group_link_incognito else MR.strings.description_via_group_link
         else
-          if (incognito) R.string.description_via_contact_address_link_incognito else R.string.description_via_contact_address_link
+          if (incognito) MR.strings.description_via_contact_address_link_incognito else MR.strings.description_via_contact_address_link
       else
-        if (incognito) R.string.description_via_one_time_link_incognito else R.string.description_via_one_time_link
+        if (incognito) MR.strings.description_via_one_time_link_incognito else MR.strings.description_via_one_time_link
     )
   }
 
@@ -1312,7 +1314,7 @@ data class ChatItem (
   val text: String get() {
     val mc = content.msgContent
     return when {
-      content.text == "" && file != null && mc is MsgContent.MCVoice -> String.format(generalGetString(R.string.voice_message_with_duration), durationText(mc.duration))
+      content.text == "" && file != null && mc is MsgContent.MCVoice -> String.format(generalGetString(MR.strings.voice_message_with_duration), durationText(mc.duration))
       content.text == "" && file != null -> file.fileName
       else -> content.text
     }
@@ -1491,7 +1493,7 @@ data class ChatItem (
         meta = CIMeta(
           itemId = TEMP_DELETED_CHAT_ITEM_ID,
           itemTs = Clock.System.now(),
-          itemText = generalGetString(R.string.deleted_description),
+          itemText = generalGetString(MR.strings.deleted_description),
           itemStatus = CIStatus.RcvRead(),
           createdAt = Clock.System.now(),
           updatedAt = Clock.System.now(),
@@ -1718,8 +1720,8 @@ sealed class CIContent: ItemContent {
   override val text: String get() = when (this) {
       is SndMsgContent -> msgContent.text
       is RcvMsgContent -> msgContent.text
-      is SndDeleted -> generalGetString(R.string.deleted_description)
-      is RcvDeleted -> generalGetString(R.string.deleted_description)
+      is SndDeleted -> generalGetString(MR.strings.deleted_description)
+      is RcvDeleted -> generalGetString(MR.strings.deleted_description)
       is SndCall -> status.text(duration)
       is RcvCall -> status.text(duration)
       is RcvIntegrityError -> msgError.text
@@ -1736,10 +1738,10 @@ sealed class CIContent: ItemContent {
       is SndChatPreference -> preferenceText(feature, allowed, param)
       is RcvGroupFeature -> featureText(groupFeature, preference.enable.text, param)
       is SndGroupFeature -> featureText(groupFeature, preference.enable.text, param)
-      is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
-      is RcvGroupFeatureRejected -> "${groupFeature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
-      is SndModerated -> generalGetString(R.string.moderated_description)
-      is RcvModerated -> generalGetString(R.string.moderated_description)
+      is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(MR.strings.feature_received_prohibited)}"
+      is RcvGroupFeatureRejected -> "${groupFeature.text}: ${generalGetString(MR.strings.feature_received_prohibited)}"
+      is SndModerated -> generalGetString(MR.strings.moderated_description)
+      is RcvModerated -> generalGetString(MR.strings.moderated_description)
       is InvalidJSON -> "invalid data"
     }
 
@@ -1753,11 +1755,11 @@ sealed class CIContent: ItemContent {
 
     fun preferenceText(feature: Feature, allowed: FeatureAllowed, param: Int?): String = when {
       allowed != FeatureAllowed.NO && feature.hasParam && param != null ->
-        String.format(generalGetString(R.string.feature_offered_item_with_param), feature.text, timeText(param))
+        String.format(generalGetString(MR.strings.feature_offered_item_with_param), feature.text, timeText(param))
       allowed != FeatureAllowed.NO ->
-        String.format(generalGetString(R.string.feature_offered_item), feature.text, timeText(param))
+        String.format(generalGetString(MR.strings.feature_offered_item), feature.text, timeText(param))
       else ->
-        String.format(generalGetString(R.string.feature_cancelled_item), feature.text, timeText(param))
+        String.format(generalGetString(MR.strings.feature_cancelled_item), feature.text, timeText(param))
     }
   }
 }
@@ -1768,8 +1770,8 @@ enum class MsgDecryptError {
   @SerialName("tooManySkipped") TooManySkipped;
 
   val text: String get() = when (this) {
-    RatchetHeader -> generalGetString(R.string.decryption_error)
-    TooManySkipped -> generalGetString(R.string.decryption_error)
+    RatchetHeader -> generalGetString(MR.strings.decryption_error)
+    TooManySkipped -> generalGetString(MR.strings.decryption_error)
   }
 }
 
@@ -1791,7 +1793,7 @@ class CIQuote (
 
 
   fun sender(membership: GroupMember?): String? = when (chatDir) {
-    is CIDirection.DirectSnd -> generalGetString(R.string.sender_you_pronoun)
+    is CIDirection.DirectSnd -> generalGetString(MR.strings.sender_you_pronoun)
     is CIDirection.DirectRcv -> null
     is CIDirection.GroupSnd -> membership?.displayName
     is CIDirection.GroupRcv -> chatDir.groupMember.displayName
@@ -1896,6 +1898,7 @@ class CIFile(
     is CIFileStatus.RcvError -> false
   }
 
+  @Transient
   val cancelAction: CancelAction? = when (fileStatus) {
     is CIFileStatus.SndStored -> sndCancelAction
     is CIFileStatus.SndTransfer -> sndCancelAction
@@ -1927,41 +1930,39 @@ class CIFile(
   }
 }
 
-@Serializable
 class CancelAction(
-  val uiActionId: Int,
+  val uiActionId: StringResource,
   val alert: AlertInfo
 )
 
-@Serializable
 class AlertInfo(
-  val titleId: Int,
-  val messageId: Int,
-  val confirmId: Int
+  val titleId: StringResource,
+  val messageId: StringResource,
+  val confirmId: StringResource
 )
 
 private val sndCancelAction: CancelAction = CancelAction(
-  uiActionId = R.string.stop_file__action,
+  uiActionId = MR.strings.stop_file__action,
   alert = AlertInfo(
-    titleId = R.string.stop_snd_file__title,
-    messageId = R.string.stop_snd_file__message,
-    confirmId = R.string.stop_file__confirm
+    titleId = MR.strings.stop_snd_file__title,
+    messageId = MR.strings.stop_snd_file__message,
+    confirmId = MR.strings.stop_file__confirm
   )
 )
 private val revokeCancelAction: CancelAction = CancelAction(
-  uiActionId = R.string.revoke_file__action,
+  uiActionId = MR.strings.revoke_file__action,
   alert = AlertInfo(
-    titleId = R.string.revoke_file__title,
-    messageId = R.string.revoke_file__message,
-    confirmId = R.string.revoke_file__confirm
+    titleId = MR.strings.revoke_file__title,
+    messageId = MR.strings.revoke_file__message,
+    confirmId = MR.strings.revoke_file__confirm
   )
 )
 private val rcvCancelAction: CancelAction = CancelAction(
-  uiActionId = R.string.stop_file__action,
+  uiActionId = MR.strings.stop_file__action,
   alert = AlertInfo(
-    titleId = R.string.stop_rcv_file__title,
-    messageId = R.string.stop_rcv_file__message,
-    confirmId = R.string.stop_file__confirm
+    titleId = MR.strings.stop_rcv_file__title,
+    messageId = MR.strings.stop_rcv_file__message,
+    confirmId = MR.strings.stop_file__confirm
   )
 )
 
@@ -2012,7 +2013,7 @@ class CIGroupInvitation (
   val status: CIGroupInvitationStatus,
   ) {
   val text: String get() = String.format(
-    generalGetString(R.string.group_invitation_item_description),
+    generalGetString(MR.strings.group_invitation_item_description),
     groupProfile.displayName)
 
   companion object {
@@ -2065,7 +2066,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     return if (json is JsonObject) {
       if ("type" in json) {
         val t = json["type"]?.jsonPrimitive?.content ?: ""
-        val text = json["text"]?.jsonPrimitive?.content ?: generalGetString(R.string.unknown_message_format)
+        val text = json["text"]?.jsonPrimitive?.content ?: generalGetString(MR.strings.unknown_message_format)
         when (t) {
           "text" -> MsgContent.MCText(text)
           "link" -> {
@@ -2089,10 +2090,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           else -> MsgContent.MCUnknown(t, text, json)
         }
       } else {
-        MsgContent.MCUnknown(text = generalGetString(R.string.invalid_message_format), json = json)
+        MsgContent.MCUnknown(text = generalGetString(MR.strings.invalid_message_format), json = json)
       }
     } else {
-      MsgContent.MCUnknown(text = generalGetString(R.string.invalid_message_format), json = json)
+      MsgContent.MCUnknown(text = generalGetString(MR.strings.invalid_message_format), json = json)
     }
   }
 
@@ -2156,7 +2157,7 @@ class FormattedText(val text: String, val format: Format? = null) {
     if (format is Format.SimplexLink && mode == SimplexLinkMode.DESCRIPTION) simplexLinkText(format.linkType, format.smpHosts) else text
 
   fun simplexLinkText(linkType: SimplexLinkType, smpHosts: List<String>): String =
-    "${linkType.description} (${String.format(generalGetString(R.string.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
+    "${linkType.description} (${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
 }
 
 @Serializable
@@ -2197,9 +2198,9 @@ enum class SimplexLinkType(val linkType: String) {
   group("group");
 
   val description: String get() = generalGetString(when (this) {
-      contact -> R.string.simplex_link_contact
-      invitation -> R.string.simplex_link_invitation
-      group -> R.string.simplex_link_group
+      contact -> MR.strings.simplex_link_contact
+      invitation -> MR.strings.simplex_link_invitation
+      group -> MR.strings.simplex_link_group
   })
 }
 
@@ -2247,14 +2248,14 @@ enum class CICallStatus {
   @SerialName("error") Error;
 
   fun text(sec: Int): String = when (this) {
-    Pending -> generalGetString(R.string.callstatus_calling)
-    Missed -> generalGetString(R.string.callstatus_missed)
-    Rejected -> generalGetString(R.string.callstatus_rejected)
-    Accepted -> generalGetString(R.string.callstatus_accepted)
-    Negotiated -> generalGetString(R.string.callstatus_connecting)
-    Progress -> generalGetString(R.string.callstatus_in_progress)
-    Ended -> String.format(generalGetString(R.string.callstatus_ended), durationText(sec))
-    Error -> generalGetString(R.string.callstatus_error)
+    Pending -> generalGetString(MR.strings.callstatus_calling)
+    Missed -> generalGetString(MR.strings.callstatus_missed)
+    Rejected -> generalGetString(MR.strings.callstatus_rejected)
+    Accepted -> generalGetString(MR.strings.callstatus_accepted)
+    Negotiated -> generalGetString(MR.strings.callstatus_connecting)
+    Progress -> generalGetString(MR.strings.callstatus_in_progress)
+    Ended -> String.format(generalGetString(MR.strings.callstatus_ended), durationText(sec))
+    Error -> generalGetString(MR.strings.callstatus_error)
   }
 }
 
@@ -2272,10 +2273,10 @@ sealed class MsgErrorType() {
   @Serializable @SerialName("msgDuplicate") class MsgDuplicate(): MsgErrorType()
 
   val text: String get() = when (this) {
-    is MsgSkipped -> String.format(generalGetString(R.string.integrity_msg_skipped), toMsgId - fromMsgId + 1)
-    is MsgBadHash -> generalGetString(R.string.integrity_msg_bad_hash) // not used now
-    is MsgBadId -> generalGetString(R.string.integrity_msg_bad_id) // not used now
-    is MsgDuplicate -> generalGetString(R.string.integrity_msg_duplicate) // not used now
+    is MsgSkipped -> String.format(generalGetString(MR.strings.integrity_msg_skipped), toMsgId - fromMsgId + 1)
+    is MsgBadHash -> generalGetString(MR.strings.integrity_msg_bad_hash) // not used now
+    is MsgBadId -> generalGetString(MR.strings.integrity_msg_bad_id) // not used now
+    is MsgDuplicate -> generalGetString(MR.strings.integrity_msg_duplicate) // not used now
   }
 }
 
@@ -2293,16 +2294,16 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("invitedViaGroupLink") class InvitedViaGroupLink(): RcvGroupEvent()
 
   val text: String get() = when (this) {
-    is MemberAdded -> String.format(generalGetString(R.string.rcv_group_event_member_added), profile.profileViewName)
-    is MemberConnected -> generalGetString(R.string.rcv_group_event_member_connected)
-    is MemberLeft -> generalGetString(R.string.rcv_group_event_member_left)
-    is MemberRole -> String.format(generalGetString(R.string.rcv_group_event_changed_member_role), profile.profileViewName, role.text)
-    is UserRole -> String.format(generalGetString(R.string.rcv_group_event_changed_your_role), role.text)
-    is MemberDeleted -> String.format(generalGetString(R.string.rcv_group_event_member_deleted), profile.profileViewName)
-    is UserDeleted -> generalGetString(R.string.rcv_group_event_user_deleted)
-    is GroupDeleted -> generalGetString(R.string.rcv_group_event_group_deleted)
-    is GroupUpdated -> generalGetString(R.string.rcv_group_event_updated_group_profile)
-    is InvitedViaGroupLink -> generalGetString(R.string.rcv_group_event_invited_via_your_group_link)
+    is MemberAdded -> String.format(generalGetString(MR.strings.rcv_group_event_member_added), profile.profileViewName)
+    is MemberConnected -> generalGetString(MR.strings.rcv_group_event_member_connected)
+    is MemberLeft -> generalGetString(MR.strings.rcv_group_event_member_left)
+    is MemberRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_member_role), profile.profileViewName, role.text)
+    is UserRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_your_role), role.text)
+    is MemberDeleted -> String.format(generalGetString(MR.strings.rcv_group_event_member_deleted), profile.profileViewName)
+    is UserDeleted -> generalGetString(MR.strings.rcv_group_event_user_deleted)
+    is GroupDeleted -> generalGetString(MR.strings.rcv_group_event_group_deleted)
+    is GroupUpdated -> generalGetString(MR.strings.rcv_group_event_updated_group_profile)
+    is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
   }
 }
 
@@ -2315,11 +2316,11 @@ sealed class SndGroupEvent() {
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): SndGroupEvent()
 
   val text: String get() = when (this) {
-    is MemberRole -> String.format(generalGetString(R.string.snd_group_event_changed_member_role), profile.profileViewName, role.text)
-    is UserRole -> String.format(generalGetString(R.string.snd_group_event_changed_role_for_yourself), role.text)
-    is MemberDeleted -> String.format(generalGetString(R.string.snd_group_event_member_deleted), profile.profileViewName)
-    is UserLeft -> generalGetString(R.string.snd_group_event_user_left)
-    is GroupUpdated -> generalGetString(R.string.snd_group_event_group_profile_updated)
+    is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text)
+    is UserRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_role_for_yourself), role.text)
+    is MemberDeleted -> String.format(generalGetString(MR.strings.snd_group_event_member_deleted), profile.profileViewName)
+    is UserLeft -> generalGetString(MR.strings.snd_group_event_user_left)
+    is GroupUpdated -> generalGetString(MR.strings.snd_group_event_group_profile_updated)
   }
 }
 
@@ -2329,8 +2330,8 @@ sealed class RcvConnEvent {
 
   val text: String get() = when (this) {
     is SwitchQueue -> when (phase) {
-      SwitchPhase.Completed -> generalGetString(R.string.rcv_conn_event_switch_queue_phase_completed)
-      else -> generalGetString(R.string.rcv_conn_event_switch_queue_phase_changing)
+      SwitchPhase.Completed -> generalGetString(MR.strings.rcv_conn_event_switch_queue_phase_completed)
+      else -> generalGetString(MR.strings.rcv_conn_event_switch_queue_phase_changing)
     }
   }
 }
@@ -2344,13 +2345,13 @@ sealed class SndConnEvent {
       is SwitchQueue -> {
         member?.profile?.profileViewName?.let {
           return when (phase) {
-            SwitchPhase.Completed -> String.format(generalGetString(R.string.snd_conn_event_switch_queue_phase_completed_for_member), it)
-            else -> String.format(generalGetString(R.string.snd_conn_event_switch_queue_phase_changing_for_member), it)
+            SwitchPhase.Completed -> String.format(generalGetString(MR.strings.snd_conn_event_switch_queue_phase_completed_for_member), it)
+            else -> String.format(generalGetString(MR.strings.snd_conn_event_switch_queue_phase_changing_for_member), it)
           }
         }
         when (phase) {
-          SwitchPhase.Completed -> generalGetString(R.string.snd_conn_event_switch_queue_phase_completed)
-          else -> generalGetString(R.string.snd_conn_event_switch_queue_phase_changing)
+          SwitchPhase.Completed -> generalGetString(MR.strings.snd_conn_event_switch_queue_phase_completed)
+          else -> generalGetString(MR.strings.snd_conn_event_switch_queue_phase_changing)
         }
       }
     }

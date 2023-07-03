@@ -7,13 +7,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ChatHelpView
 import chat.simplex.app.views.helpers.AppBarTitle
+import com.icerockdev.library.MR
 
 @Composable
 fun HelpView(userDisplayName: String) {
@@ -28,7 +29,7 @@ fun HelpLayout(userDisplayName: String) {
       .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING),
   ){
-    AppBarTitle(String.format(stringResource(R.string.personal_welcome), userDisplayName), false)
+    AppBarTitle(String.format(stringResource(MR.strings.personal_welcome), userDisplayName), false)
     ChatHelpView()
   }
 }

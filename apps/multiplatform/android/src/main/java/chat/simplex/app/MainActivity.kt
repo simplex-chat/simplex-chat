@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
@@ -30,7 +29,6 @@ import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
-import chat.simplex.app.views.chat.group.ProgressIndicator
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
@@ -40,6 +38,8 @@ import chat.simplex.app.views.localauth.SetAppPasscodeView
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import chat.simplex.app.views.usersettings.LAMode
+import com.icerockdev.library.MR
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.lang.ref.WeakReference
@@ -94,7 +94,7 @@ class MainActivity: FragmentActivity() {
             destroyedAfterBackPress,
             ::runAuthenticate,
             ::setPerformLA,
-            showLANotice = { showLANotice(m.controller.appPrefs.laNoticeShown, this) }
+            showLANotice = { showLANotice(m.controller.appPrefs.laNoticeShown) }
           )
         }
       }
@@ -175,13 +175,13 @@ class MainActivity: FragmentActivity() {
         withContext(Dispatchers.Main) {
           authenticate(
             if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-              generalGetString(R.string.auth_unlock)
+              generalGetString(MR.strings.auth_unlock)
             else
-              generalGetString(R.string.la_enter_app_passcode),
+              generalGetString(MR.strings.la_enter_app_passcode),
             if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-              generalGetString(R.string.auth_log_in_using_credential)
+              generalGetString(MR.strings.auth_log_in_using_credential)
             else
-              generalGetString(R.string.auth_unlock),
+              generalGetString(MR.strings.auth_unlock),
             selfDestruct = true,
             completed = { laResult ->
               when (laResult) {
@@ -208,49 +208,49 @@ class MainActivity: FragmentActivity() {
     }
   }
 
-  private fun showLANotice(laNoticeShown: SharedPreference<Boolean>, activity: FragmentActivity) {
+  private fun showLANotice(laNoticeShown: SharedPreference<Boolean>) {
     Log.d(TAG, "showLANotice")
     if (!laNoticeShown.get()) {
       laNoticeShown.set(true)
       AlertManager.shared.showAlertDialog(
-        title = generalGetString(R.string.la_notice_title_simplex_lock),
-        text = generalGetString(R.string.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
-        confirmText = generalGetString(R.string.la_notice_turn_on),
+        title = generalGetString(MR.strings.la_notice_title_simplex_lock),
+        text = generalGetString(MR.strings.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
+        confirmText = generalGetString(MR.strings.la_notice_turn_on),
         onConfirm = {
           withBGApi { // to remove this call, change ordering of onConfirm call in AlertManager
-            showChooseLAMode(laNoticeShown, activity)
+            showChooseLAMode(laNoticeShown)
           }
         }
       )
     }
   }
 
-  private fun showChooseLAMode(laNoticeShown: SharedPreference<Boolean>, activity: FragmentActivity) {
+  private fun showChooseLAMode(laNoticeShown: SharedPreference<Boolean>) {
     Log.d(TAG, "showLANotice")
     laNoticeShown.set(true)
     AlertManager.shared.showAlertDialogStacked(
-      title = generalGetString(R.string.la_lock_mode),
+      title = generalGetString(MR.strings.la_lock_mode),
       text = null,
-      confirmText = generalGetString(R.string.la_lock_mode_passcode),
-      dismissText = generalGetString(R.string.la_lock_mode_system),
+      confirmText = generalGetString(MR.strings.la_lock_mode_passcode),
+      dismissText = generalGetString(MR.strings.la_lock_mode_system),
       onConfirm = {
         AlertManager.shared.hideAlert()
         setPasscode()
       },
       onDismiss = {
         AlertManager.shared.hideAlert()
-        initialEnableLA(activity)
+        initialEnableLA()
       }
     )
   }
 
-  private fun initialEnableLA(activity: FragmentActivity) {
+  private fun initialEnableLA() {
     val m = vm.chatModel
     val appPrefs = m.controller.appPrefs
     m.controller.appPrefs.laMode.set(LAMode.SYSTEM)
     authenticate(
-      generalGetString(R.string.auth_enable_simplex_lock),
-      generalGetString(R.string.auth_confirm_credential),
+      generalGetString(MR.strings.auth_enable_simplex_lock),
+      generalGetString(MR.strings.auth_confirm_credential),
       completed = { laResult ->
         when (laResult) {
           LAResult.Success -> {
@@ -297,24 +297,24 @@ class MainActivity: FragmentActivity() {
     }
   }
 
-  private fun setPerformLA(on: Boolean, activity: FragmentActivity) {
+  private fun setPerformLA(on: Boolean) {
     vm.chatModel.controller.appPrefs.laNoticeShown.set(true)
     if (on) {
-      enableLA(activity)
+      enableLA()
     } else {
-      disableLA(activity)
+      disableLA()
     }
   }
 
-  private fun enableLA(activity: FragmentActivity) {
+  private fun enableLA() {
     val m = vm.chatModel
     authenticate(
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(R.string.auth_enable_simplex_lock)
+        generalGetString(MR.strings.auth_enable_simplex_lock)
       else
-        generalGetString(R.string.new_passcode),
+        generalGetString(MR.strings.new_passcode),
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(R.string.auth_confirm_credential)
+        generalGetString(MR.strings.auth_confirm_credential)
       else
         "",
       completed = { laResult ->
@@ -341,17 +341,17 @@ class MainActivity: FragmentActivity() {
     )
   }
 
-  private fun disableLA(activity: FragmentActivity) {
+  private fun disableLA() {
     val m = vm.chatModel
     authenticate(
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(R.string.auth_disable_simplex_lock)
+        generalGetString(MR.strings.auth_disable_simplex_lock)
       else
-        generalGetString(R.string.la_enter_app_passcode),
+        generalGetString(MR.strings.la_enter_app_passcode),
       if (m.controller.appPrefs.laMode.get() == LAMode.SYSTEM)
-        generalGetString(R.string.auth_confirm_credential)
+        generalGetString(MR.strings.auth_confirm_credential)
       else
-        generalGetString(R.string.auth_disable_simplex_lock),
+        generalGetString(MR.strings.auth_disable_simplex_lock),
       completed = { laResult ->
         val prefPerformLA = m.controller.appPrefs.performLA
         val selfDestructPref = m.controller.appPrefs.selfDestruct
@@ -392,7 +392,7 @@ fun MainPage(
   laFailed: MutableState<Boolean>,
   destroyedAfterBackPress: MutableState<Boolean>,
   runAuthenticate: () -> Unit,
-  setPerformLA: (Boolean, FragmentActivity) -> Unit,
+  setPerformLA: (Boolean) -> Unit,
   showLANotice: () -> Unit
 ) {
   var showChatDatabaseError by rememberSaveable {
@@ -434,7 +434,7 @@ fun MainPage(
         contentAlignment = Alignment.Center
       ) {
         SimpleButton(
-          stringResource(R.string.auth_unlock),
+          stringResource(MR.strings.auth_unlock),
           icon = painterResource(R.drawable.ic_lock),
           click = {
             laFailed.value = false
@@ -561,7 +561,7 @@ private fun InitializationView() {
         color = MaterialTheme.colors.secondary,
         strokeWidth = 2.5.dp
       )
-      Text(stringResource(R.string.opening_database))
+      Text(stringResource(MR.strings.opening_database))
     }
   }
 }
@@ -602,7 +602,7 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       chatModel.clearOverlays.value = true
       val invitation = chatModel.callInvitations[chatId]
       if (invitation == null) {
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended))
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_already_ended))
       } else {
         chatModel.callManager.acceptIncomingCall(invitation = invitation)
       }
@@ -674,17 +674,17 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
   } else {
     withUriAction(uri) { linkType ->
       val title = when (linkType) {
-        ConnectionLinkType.CONTACT -> generalGetString(R.string.connect_via_contact_link)
-        ConnectionLinkType.INVITATION -> generalGetString(R.string.connect_via_invitation_link)
-        ConnectionLinkType.GROUP -> generalGetString(R.string.connect_via_group_link)
+        ConnectionLinkType.CONTACT -> generalGetString(MR.strings.connect_via_contact_link)
+        ConnectionLinkType.INVITATION -> generalGetString(MR.strings.connect_via_invitation_link)
+        ConnectionLinkType.GROUP -> generalGetString(MR.strings.connect_via_group_link)
       }
       AlertManager.shared.showAlertDialog(
         title = title,
         text = if (linkType == ConnectionLinkType.GROUP)
-          generalGetString(R.string.you_will_join_group)
+          generalGetString(MR.strings.you_will_join_group)
         else
-          generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
-        confirmText = generalGetString(R.string.connect_via_link_verb),
+          generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link),
+        confirmText = generalGetString(MR.strings.connect_via_link_verb),
         onConfirm = {
           withApi {
             Log.d(TAG, "connectIfOpenedViaUri: connecting")

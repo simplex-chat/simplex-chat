@@ -19,7 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -32,6 +32,8 @@ import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
+import com.icerockdev.library.MR
+import dev.icerock.moko.resources.StringResource
 import java.io.File
 
 @Composable
@@ -52,7 +54,7 @@ fun CIImageView(
   }
 
   @Composable
-  fun fileIcon(icon: Painter, @StringRes stringId: Int) {
+  fun fileIcon(icon: Painter, stringId: StringResource) {
     Icon(
       icon,
       stringResource(stringId),
@@ -77,14 +79,14 @@ fun CIImageView(
               FileProtocol.SMP -> {}
             }
           is CIFileStatus.SndTransfer -> progressIndicator()
-          is CIFileStatus.SndComplete -> fileIcon(painterResource(R.drawable.ic_check_filled), R.string.icon_descr_image_snd_complete)
-          is CIFileStatus.SndCancelled -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
-          is CIFileStatus.SndError -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
-          is CIFileStatus.RcvInvitation -> fileIcon(painterResource(R.drawable.ic_arrow_downward), R.string.icon_descr_asked_to_receive)
-          is CIFileStatus.RcvAccepted -> fileIcon(painterResource(R.drawable.ic_more_horiz), R.string.icon_descr_waiting_for_image)
+          is CIFileStatus.SndComplete -> fileIcon(painterResource(R.drawable.ic_check_filled), MR.strings.icon_descr_image_snd_complete)
+          is CIFileStatus.SndCancelled -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
+          is CIFileStatus.SndError -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
+          is CIFileStatus.RcvInvitation -> fileIcon(painterResource(R.drawable.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
+          is CIFileStatus.RcvAccepted -> fileIcon(painterResource(R.drawable.ic_more_horiz), MR.strings.icon_descr_waiting_for_image)
           is CIFileStatus.RcvTransfer -> progressIndicator()
-          is CIFileStatus.RcvCancelled -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
-          is CIFileStatus.RcvError -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
+          is CIFileStatus.RcvCancelled -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
+          is CIFileStatus.RcvError -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
           else -> {}
         }
       }
@@ -101,7 +103,7 @@ fun CIImageView(
   fun imageView(imageBitmap: Bitmap, onClick: () -> Unit) {
     Image(
       imageBitmap.asImageBitmap(),
-      contentDescription = stringResource(R.string.image_descr),
+      contentDescription = stringResource(MR.strings.image_descr),
       // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
@@ -118,7 +120,7 @@ fun CIImageView(
   fun imageView(painter: Painter, onClick: () -> Unit) {
     Image(
       painter,
-      contentDescription = stringResource(R.string.image_descr),
+      contentDescription = stringResource(MR.strings.image_descr),
       // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
@@ -175,21 +177,21 @@ fun CIImageView(
                 receiveFile(file.fileId)
               } else {
                 AlertManager.shared.showAlertMsg(
-                  generalGetString(R.string.large_file),
-                  String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
+                  generalGetString(MR.strings.large_file),
+                  String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
                 )
               }
             CIFileStatus.RcvAccepted ->
               when (file.fileProtocol) {
                 FileProtocol.XFTP ->
                   AlertManager.shared.showAlertMsg(
-                    generalGetString(R.string.waiting_for_image),
-                    generalGetString(R.string.image_will_be_received_when_contact_completes_uploading)
+                    generalGetString(MR.strings.waiting_for_image),
+                    generalGetString(MR.strings.image_will_be_received_when_contact_completes_uploading)
                   )
                 FileProtocol.SMP ->
                   AlertManager.shared.showAlertMsg(
-                    generalGetString(R.string.waiting_for_image),
-                    generalGetString(R.string.image_will_be_received_when_contact_is_online)
+                    generalGetString(MR.strings.waiting_for_image),
+                    generalGetString(MR.strings.image_will_be_received_when_contact_is_online)
                   )
               }
             CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?

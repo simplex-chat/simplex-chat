@@ -9,13 +9,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.*
+import com.icerockdev.library.MR
 import kotlinx.datetime.Clock
 
 @Composable
@@ -46,7 +47,7 @@ fun ContextItemView(
           .padding(horizontal = 8.dp)
           .height(20.dp)
           .width(20.dp),
-        contentDescription = stringResource(R.string.icon_descr_context),
+        contentDescription = stringResource(MR.strings.icon_descr_context),
         tint = MaterialTheme.colors.secondary,
       )
       MarkdownText(
@@ -59,7 +60,7 @@ fun ContextItemView(
     IconButton(onClick = cancelContextItem) {
       Icon(
         painterResource(R.drawable.ic_close),
-        contentDescription = stringResource(R.string.cancel_verb),
+        contentDescription = stringResource(MR.strings.cancel_verb),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
       )

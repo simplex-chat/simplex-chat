@@ -12,10 +12,11 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.*
+import com.icerockdev.library.MR
 
 @Composable
 fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
@@ -60,7 +61,7 @@ private fun PreferencesLayout(
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.your_preferences))
+    AppBarTitle(stringResource(MR.strings.your_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.allow) }
     TimedMessagesFeatureSection(timedMessages) {
       applyPrefs(preferences.copy(timedMessages = TimedMessagesPreference(allow = if (it) FeatureAllowed.YES else FeatureAllowed.NO)))
@@ -128,19 +129,19 @@ private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onS
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(R.string.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Text(stringResource(MR.strings.save_and_notify_contacts), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
-    title = generalGetString(R.string.save_preferences_question),
-    confirmText = generalGetString(R.string.save_and_notify_contacts),
-    dismissText = generalGetString(R.string.exit_without_saving),
+    title = generalGetString(MR.strings.save_preferences_question),
+    confirmText = generalGetString(MR.strings.save_and_notify_contacts),
+    dismissText = generalGetString(MR.strings.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
   )

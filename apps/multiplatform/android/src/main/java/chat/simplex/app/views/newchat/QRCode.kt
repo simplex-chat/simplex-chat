@@ -7,7 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.graphics.*
 import androidx.core.graphics.drawable.toBitmap
@@ -18,6 +18,7 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
+import com.icerockdev.library.MR
 import kotlinx.coroutines.launch
 
 @Composable
@@ -38,7 +39,7 @@ fun QRCode(
     }
     Image(
       bitmap = qr,
-      contentDescription = stringResource(R.string.image_descr_qr_code),
+      contentDescription = stringResource(MR.strings.image_descr_qr_code),
       modifier
         .clickable {
           scope.launch {

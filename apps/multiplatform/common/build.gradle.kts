@@ -48,6 +48,8 @@ kotlin {
         implementation("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")
         // Link Previews
         implementation("org.jsoup:jsoup:1.13.1")
+        // Resources
+        implementation("dev.icerock.moko:resources:0.22.3")
       }
     }
     val commonTest by getting {
@@ -57,6 +59,7 @@ kotlin {
     }
     // LALAL CHANGE TO IMPLEMENTATION
     val androidMain by getting {
+      kotlin.srcDir("./build/generated/moko/commonMain/src/")
       dependencies {
         api("androidx.appcompat:appcompat:1.5.1")
         api("androidx.core:core-ktx:1.9.0")
@@ -105,7 +108,6 @@ kotlin {
     }
     val desktopMain by getting {
       dependencies {
-        implementation("dev.icerock.moko:resources:0.22.3")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.1")
       }
     }

@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,6 +31,7 @@ import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
+import com.icerockdev.library.MR
 import kotlinx.datetime.Clock
 
 @Composable
@@ -144,9 +145,9 @@ fun GroupMemberInfoView(
 
 fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.button_remove_member),
-    text = generalGetString(R.string.member_will_be_removed_from_group_cannot_be_undone),
-    confirmText = generalGetString(R.string.remove_member_confirmation),
+    title = generalGetString(MR.strings.button_remove_member),
+    text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
+    confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
       withApi {
         val removedMember = chatModel.controller.apiRemoveMember(member.groupId, member.groupMemberId)
@@ -218,7 +219,7 @@ fun GroupMemberInfoLayout(
 
     if (member.contactLink != null) {
       val context = LocalContext.current
-      SectionView(stringResource(R.string.address_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
         QRCode(member.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
         ShareAddressButton { shareText(member.contactLink) }
         if (contactId != null) {
@@ -228,30 +229,30 @@ fun GroupMemberInfoLayout(
         } else {
           ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
         }
-        SectionTextFooter(stringResource(R.string.you_can_share_this_address_with_your_contacts).format(member.displayName))
+        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(member.displayName))
       }
       SectionDividerSpaced()
     }
 
-    SectionView(title = stringResource(R.string.member_info_section_title_member)) {
-      InfoRow(stringResource(R.string.info_row_group), groupInfo.displayName)
+    SectionView(title = stringResource(MR.strings.member_info_section_title_member)) {
+      InfoRow(stringResource(MR.strings.info_row_group), groupInfo.displayName)
       val roles = remember { member.canChangeRoleTo(groupInfo) }
       if (roles != null) {
         RoleSelectionRow(roles, newRole, onRoleSelected)
       } else {
-        InfoRow(stringResource(R.string.role_in_group), member.memberRole.text)
+        InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text)
       }
       val conn = member.activeConn
       if (conn != null) {
         val connLevelDesc =
-          if (conn.connLevel == 0) stringResource(R.string.conn_level_desc_direct)
-          else String.format(generalGetString(R.string.conn_level_desc_indirect), conn.connLevel)
-        InfoRow(stringResource(R.string.info_row_connection), connLevelDesc)
+          if (conn.connLevel == 0) stringResource(MR.strings.conn_level_desc_direct)
+          else String.format(generalGetString(MR.strings.conn_level_desc_indirect), conn.connLevel)
+        InfoRow(stringResource(MR.strings.info_row_connection), connLevelDesc)
       }
     }
     if (cStats != null) {
       SectionDividerSpaced()
-      SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+      SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
         SwitchAddressButton(
           disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null },
           switchAddress = switchMemberAddress
@@ -264,11 +265,11 @@ fun GroupMemberInfoLayout(
         }
         val rcvServers = cStats.rcvQueuesInfo.map { it.rcvServer }
         if (rcvServers.isNotEmpty()) {
-          SimplexServers(stringResource(R.string.receiving_via), rcvServers)
+          SimplexServers(stringResource(MR.strings.receiving_via), rcvServers)
         }
         val sndServers = cStats.sndQueuesInfo.map { it.sndServer }
         if (sndServers.isNotEmpty()) {
-          SimplexServers(stringResource(R.string.sending_via), sndServers)
+          SimplexServers(stringResource(MR.strings.sending_via), sndServers)
         }
       }
     }
@@ -282,9 +283,9 @@ fun GroupMemberInfoLayout(
 
     if (developerTools) {
       SectionDividerSpaced()
-      SectionView(title = stringResource(R.string.section_title_for_console)) {
-        InfoRow(stringResource(R.string.info_row_local_name), member.localDisplayName)
-        InfoRow(stringResource(R.string.info_row_database_id), member.groupMemberId.toString())
+      SectionView(title = stringResource(MR.strings.section_title_for_console)) {
+        InfoRow(stringResource(MR.strings.info_row_local_name), member.localDisplayName)
+        InfoRow(stringResource(MR.strings.info_row_database_id), member.groupMemberId.toString())
       }
     }
     SectionBottomSpacer()
@@ -324,7 +325,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
 fun RemoveMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_delete),
-    stringResource(R.string.button_remove_member),
+    stringResource(MR.strings.button_remove_member),
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
@@ -335,7 +336,7 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 fun OpenChatButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_chat),
-    stringResource(R.string.button_send_direct_message),
+    stringResource(MR.strings.button_send_direct_message),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
@@ -346,7 +347,7 @@ fun OpenChatButton(onClick: () -> Unit) {
 fun ConnectViaAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_link),
-    stringResource(R.string.connect_button),
+    stringResource(MR.strings.connect_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
@@ -366,7 +367,7 @@ private fun RoleSelectionRow(
   ) {
     val values = remember { roles.map { it to it.text } }
     ExposedDropDownSettingRow(
-      generalGetString(R.string.change_role),
+      generalGetString(MR.strings.change_role),
       values,
       selectedRole,
       icon = null,
@@ -383,12 +384,12 @@ private fun updateMemberRoleDialog(
   onConfirm: () -> Unit
 ) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.change_member_role_question),
+    title = generalGetString(MR.strings.change_member_role_question),
     text = if (member.memberCurrent)
-      String.format(generalGetString(R.string.member_role_will_be_changed_with_notification), newRole.text)
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
     else
-      String.format(generalGetString(R.string.member_role_will_be_changed_with_invitation), newRole.text),
-    confirmText = generalGetString(R.string.change_verb),
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation), newRole.text),
+    confirmText = generalGetString(MR.strings.change_verb),
     onDismiss = onDismiss,
     onConfirm = onConfirm,
     onDismissRequest = onDismiss

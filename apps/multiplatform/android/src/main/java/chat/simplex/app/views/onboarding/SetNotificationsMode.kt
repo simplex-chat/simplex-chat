@@ -11,7 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,6 +25,8 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.NotificationsMode
 import chat.simplex.app.views.usersettings.changeNotificationsMode
 import com.google.accompanist.permissions.rememberPermissionState
+import com.icerockdev.library.MR
+import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun SetNotificationsMode(m: ChatModel) {
@@ -35,18 +37,18 @@ fun SetNotificationsMode(m: ChatModel) {
       .padding(vertical = 14.dp)
   ) {
     //CloseSheetBar(null)
-    AppBarTitle(stringResource(R.string.onboarding_notifications_mode_title))
+    AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title))
     val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
     Column(Modifier.padding(horizontal = DEFAULT_PADDING * 1f)) {
-      Text(stringResource(R.string.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+      Text(stringResource(MR.strings.onboarding_notifications_mode_subtitle), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
       Spacer(Modifier.height(DEFAULT_PADDING * 2f))
-      NotificationButton(currentMode, NotificationsMode.OFF, R.string.onboarding_notifications_mode_off, R.string.onboarding_notifications_mode_off_desc)
-      NotificationButton(currentMode, NotificationsMode.PERIODIC, R.string.onboarding_notifications_mode_periodic, R.string.onboarding_notifications_mode_periodic_desc)
-      NotificationButton(currentMode, NotificationsMode.SERVICE, R.string.onboarding_notifications_mode_service, R.string.onboarding_notifications_mode_service_desc)
+      NotificationButton(currentMode, NotificationsMode.OFF, MR.strings.onboarding_notifications_mode_off, MR.strings.onboarding_notifications_mode_off_desc)
+      NotificationButton(currentMode, NotificationsMode.PERIODIC, MR.strings.onboarding_notifications_mode_periodic, MR.strings.onboarding_notifications_mode_periodic_desc)
+      NotificationButton(currentMode, NotificationsMode.SERVICE, MR.strings.onboarding_notifications_mode_service, MR.strings.onboarding_notifications_mode_service_desc)
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
     Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), contentAlignment = Alignment.Center) {
-      OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
+      OnboardingActionButton(MR.strings.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
         changeNotificationsMode(currentMode.value, m)
       }
     }
@@ -74,7 +76,7 @@ fun SetNotificationsModeAdditions() {
 }
 
 @Composable
-private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mode: NotificationsMode, @StringRes title: Int, @StringRes description: Int) {
+private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mode: NotificationsMode, title: StringResource, description: StringResource) {
   TextButton(
     onClick = { currentMode.value = mode },
     border = BorderStroke(1.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)),

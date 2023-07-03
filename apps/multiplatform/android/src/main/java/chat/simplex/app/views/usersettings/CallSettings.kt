@@ -12,11 +12,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.*
+import com.icerockdev.library.MR
 
 @Composable
 fun CallSettingsView(m: ChatModel,
@@ -39,20 +40,20 @@ fun CallSettingsLayout(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    AppBarTitle(stringResource(R.string.your_calls))
+    AppBarTitle(stringResource(MR.strings.your_calls))
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
-    SectionView(stringResource(R.string.settings_section_title_settings)) {
-      SectionItemView(editIceServers) { Text(stringResource(R.string.webrtc_ice_servers)) }
+    SectionView(stringResource(MR.strings.settings_section_title_settings)) {
+      SectionItemView(editIceServers) { Text(stringResource(MR.strings.webrtc_ice_servers)) }
 
       val enabled = remember { mutableStateOf(true) }
       LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it })
-      SettingsPreferenceItem(null, stringResource(R.string.always_use_relay), webrtcPolicyRelay)
+      SettingsPreferenceItem(null, stringResource(MR.strings.always_use_relay), webrtcPolicyRelay)
     }
     SectionTextFooter(
       if (remember { webrtcPolicyRelay.state }.value) {
-        generalGetString(R.string.relay_server_protects_ip)
+        generalGetString(MR.strings.relay_server_protects_ip)
       } else {
-        generalGetString(R.string.relay_server_if_necessary)
+        generalGetString(MR.strings.relay_server_if_necessary)
       }
     )
     SectionBottomSpacer()
@@ -64,14 +65,14 @@ private fun LockscreenOpts(lockscreenOpts: State<CallOnLockScreen>, enabled: Sta
   val values = remember {
     CallOnLockScreen.values().map {
       when (it) {
-        CallOnLockScreen.DISABLE -> it to generalGetString(R.string.no_call_on_lock_screen)
-        CallOnLockScreen.SHOW -> it to generalGetString(R.string.show_call_on_lock_screen)
-        CallOnLockScreen.ACCEPT -> it to generalGetString(R.string.accept_call_on_lock_screen)
+        CallOnLockScreen.DISABLE -> it to generalGetString(MR.strings.no_call_on_lock_screen)
+        CallOnLockScreen.SHOW -> it to generalGetString(MR.strings.show_call_on_lock_screen)
+        CallOnLockScreen.ACCEPT -> it to generalGetString(MR.strings.accept_call_on_lock_screen)
       }
     }
   }
   ExposedDropDownSettingRow(
-    generalGetString(R.string.call_on_lock_screen),
+    generalGetString(MR.strings.call_on_lock_screen),
     values,
     lockscreenOpts,
     icon = null,

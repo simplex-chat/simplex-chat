@@ -12,7 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -21,6 +21,7 @@ import chat.simplex.app.views.chat.LocalAliasEditor
 import chat.simplex.app.views.chatlist.deleteContactConnectionAlert
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
+import com.icerockdev.library.MR
 
 @Composable
 fun ContactConnectionInfoView(
@@ -84,16 +85,16 @@ private fun ContactConnectionInfoLayout(
   ) {
     AppBarTitle(
       stringResource(
-        if (contactConnection.initiated) R.string.you_invited_your_contact
-        else R.string.you_accepted_connection
+        if (contactConnection.initiated) MR.strings.you_invited_your_contact
+        else MR.strings.you_accepted_connection
       )
     )
     Text(
       stringResource(
         if (contactConnection.viaContactUri)
-          if (contactConnection.groupLinkId != null) R.string.you_will_be_connected_when_group_host_device_is_online
-          else R.string.you_will_be_connected_when_your_connection_request_is_accepted
-        else R.string.you_will_be_connected_when_your_contacts_device_is_online
+          if (contactConnection.groupLinkId != null) MR.strings.you_will_be_connected_when_group_host_device_is_online
+          else MR.strings.you_will_be_connected_when_your_connection_request_is_accepted
+        else MR.strings.you_will_be_connected_when_your_contacts_device_is_online
       ),
       Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
     )
@@ -123,7 +124,7 @@ private fun ContactConnectionInfoLayout(
 fun DeleteButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_delete),
-    stringResource(R.string.delete_verb),
+    stringResource(MR.strings.delete_verb),
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
