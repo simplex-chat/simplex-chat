@@ -33,7 +33,7 @@ root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
 for ((i = 0 ; i < ${#arches[@]}; i++)); do
     arch="${arches[$i]}"
     output_arch="${output_arches[$i]}"
-    output_dir="$root_dir/apps/android/app/src/main/cpp/libs/$output_arch/"
+    output_dir="$root_dir/apps/multiplatform/common/src/commonMain/cpp/android/libs/$output_arch/"
 
     mkdir -p "$output_dir" 2> /dev/null
 

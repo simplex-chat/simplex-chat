@@ -8,7 +8,7 @@ cp ./src/webcall.html ./dist/webcall.html
 cp ./src/ui.js ./dist/ui.js
 
 # copy to android app
-cp ./src/call.html ../../apps/android/app/src/main/assets/www/call.html
-cp ./src/style.css ../../apps/android/app/src/main/assets/www/style.css
-cp ./dist/call.js ../../apps/android/app/src/main/assets/www/call.js
-cp ./node_modules/lz-string/libs/lz-string.min.js ../../apps/android/app/src/main/assets/www/lz-string.min.js
+cp ./src/call.html ../../apps/multiplatform/android/src/main/assets/www/call.html
+cp ./src/style.css ../../apps/multiplatform/android/src/main/assets/www/style.css
+cp ./dist/call.js ../../apps/multiplatform/android/src/main/assets/www/call.js
+cp ./node_modules/lz-string/libs/lz-string.min.js ../../apps/multiplatform/android/src/main/assets/www/lz-string.min.js

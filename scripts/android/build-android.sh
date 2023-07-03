@@ -81,21 +81,21 @@ checks() {
 
 build() {
   # Build preparations
-  sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/android/app/src/main/AndroidManifest.xml"
-  sed -i.bak '/android {/a lint {abortOnError false}' "$folder/apps/android/app/build.gradle"
+  sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/multiplatform/android/src/main/AndroidManifest.xml"
+  sed -i.bak '/android {/a lint {abortOnError false}' "$folder/apps/multiplatform/android/build.gradle.kts"
 
   for arch in $arches; do
     android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
     android_support_lib="${folder}#hydraJobs.${arch}-android:lib:support.x86_64-linux"
     android_simplex_lib_output="${PWD}/result/pkg-${arch}-android-libsimplex.zip"
     android_support_lib_output="${PWD}/result/pkg-${arch}-android-libsupport.zip"
-    
+
     arch_map "$arch"
 
     android_tmp_folder="${tmp}/android-${arch}"
-    android_apk_output="${folder}/apps/android/app/build/outputs/apk/release/app-${android_arch}-release-unsigned.apk"
+    android_apk_output="${folder}/apps/multiplatform/android/build/outputs/apk/release/android-${android_arch}-release-unsigned.apk"
     android_apk_output_final="simplex-chat-${android_arch}.apk"
-    libs_folder="$folder/apps/android/app/src/main/cpp/libs"
+    libs_folder="$folder/apps/multiplatform/common/src/commonMain/cpp/android/libs"
 
     # Create missing folders
     mkdir -p "$libs_folder/$android_arch"
@@ -107,12 +107,12 @@ build() {
     unzip -o "$android_support_lib_output" -d "$libs_folder/$android_arch"
 
     # Build only one arch
-    sed -i.bak "s/include '.*/include '${android_arch}'/" "$folder/apps/android/app/build.gradle"
-    gradle -p "$folder/apps/android/" clean assembleRelease
-    
+    sed -i.bak "s/include '.*/include '${android_arch}'/" "$folder/apps/multiplatform/android/build.gradle.kts"
+    gradle -p "$folder/apps/multiplatform/" clean assembleRelease
+
     mkdir -p "$android_tmp_folder"
     unzip -oqd "$android_tmp_folder" "$android_apk_output"
-    
+
     (
      cd "$android_tmp_folder" && \
      zip -rq5 "$tmp/$android_apk_output_final" . && \
