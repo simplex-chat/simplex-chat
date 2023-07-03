@@ -248,6 +248,15 @@
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Er wordt een aparte TCP-verbinding gebruikt **voor elk contact en groepslid**.\n**Let op**: als u veel verbindingen heeft, kan uw batterij- en verkeersverbruik aanzienlijk hoger zijn en kunnen sommige verbindingen uitvallen.";
 
 /* No comment provided by engineer. */
+"Abort" = "Afbreken";
+
+/* No comment provided by engineer. */
+"Abort changing address" = "Annuleer het wijzigen van het adres";
+
+/* No comment provided by engineer. */
+"Abort changing address?" = "Adres wijziging afbreken?";
+
+/* No comment provided by engineer. */
 "About SimpleX" = "Over SimpleX";
 
 /* No comment provided by engineer. */
@@ -301,6 +310,9 @@
 
 /* No comment provided by engineer. */
 "Address" = "Adres";
+
+/* No comment provided by engineer. */
+"Address change will be aborted. Old receiving address will be used." = "Adres wijziging wordt afgebroken. Het oude ontvangstadres wordt gebruikt.";
 
 /* member role */
 "admin" = "Beheerder";
@@ -1219,6 +1231,9 @@
 "Error" = "Fout";
 
 /* No comment provided by engineer. */
+"Error aborting address change" = "Fout bij het afbreken van adres wijziging";
+
+/* No comment provided by engineer. */
 "Error accepting contact request" = "Fout bij het accepteren van een contactverzoek";
 
 /* No comment provided by engineer. */
@@ -1373,6 +1388,9 @@
 
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "Snel en niet wachten tot de afzender online is!";
+
+/* No comment provided by engineer. */
+"Favorite" = "Favoriet";
 
 /* No comment provided by engineer. */
 "File will be deleted from servers." = "Het bestand wordt van de servers verwijderd.";
@@ -2315,6 +2333,9 @@
 "Received message" = "Ontvangen bericht";
 
 /* No comment provided by engineer. */
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.";
+
+/* No comment provided by engineer. */
 "Receiving file will be stopped." = "Het ontvangen van het bestand wordt gestopt.";
 
 /* No comment provided by engineer. */
@@ -2949,6 +2970,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Onverwachte migratiestatus";
+
+/* No comment provided by engineer. */
+"Unfav." = "Niet fav.";
 
 /* No comment provided by engineer. */
 "Unhide" = "zichtbaar maken";

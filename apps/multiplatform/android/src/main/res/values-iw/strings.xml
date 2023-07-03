@@ -991,7 +991,7 @@
     <string name="lock_not_enabled">נעילת SimpleX לא מופעלת!</string>
     <string name="auth_stop_chat">עצירת צ׳אט</string>
     <string name="stop_rcv_file__title">לעצור קבלת קובץ\?</string>
-    <string name="switch_receiving_address_question">להחליף כתובת מקבלת\?</string>
+    <string name="switch_receiving_address_question">לשנות כתובת קבלה\?</string>
     <string name="simplex_address">כתובת SimpleX</string>
     <string name="smp_servers">שרתי SMP</string>
     <string name="share_with_contacts">שתף עם אנשי קשר</string>
@@ -1012,7 +1012,7 @@
     <string name="non_fatal_errors_occured_during_import">כמה שגיאות לא קטלניות התרחשו במהלך הייבוא – ניתן לראות את מסוף הצ׳אט לקבלת פרטים נוספים.</string>
     <string name="chat_item_ttl_seconds">%s שניות</string>
     <string name="switch_verb">החלף</string>
-    <string name="switch_receiving_address">החלף כתובת קבלה</string>
+    <string name="switch_receiving_address">שנה כתובת קבלה</string>
     <string name="v5_0_polish_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
     <string name="v4_4_french_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
     <string name="v4_5_italian_interface_descr">בזכות המשתמשים – תרמו באמצעות Weblate!</string>
@@ -1262,4 +1262,22 @@
     <string name="group_info_member_you">את/ה: <xliff:g id="group_info_you">%1$s</xliff:g></string>
     <string name="your_preferences">ההעדפות שלך</string>
     <string name="you_will_still_receive_calls_and_ntfs">עדיין תקבלו שיחות והתראות מפרופילים מושתקים כאשר הם פעילים.</string>
+    <string name="abort_switch_receiving_address_confirm">בטל</string>
+    <string name="abort_switch_receiving_address_question">בטל שינוי כתובת\?</string>
+    <string name="abort_switch_receiving_address_desc">שינוי הכתובת יבוטל. ייעשה שימוש בכתובת הקבלה הישנה.</string>
+    <string name="shutdown_alert_desc">ההתראות יפסיקו לפעול עד שתפעיל את האפליקציה מחדש</string>
+    <string name="abort_switch_receiving_address">בטל שינוי כתובת</string>
+    <string name="error_aborting_address_change">שגיאה בביטול שינוי הכתובת</string>
+    <string name="settings_shutdown">כיבוי</string>
+    <string name="settings_section_title_app">אפליקציה</string>
+    <string name="allow_to_send_files">אפשר לשלוח קבצים ומדיה.</string>
+    <string name="favorite_chat">מועדף</string>
+    <string name="files_and_media">קבצים ומדיה</string>
+    <string name="no_filtered_chats">אין צ\'אטים מסוננים</string>
+    <string name="shutdown_alert_question">לכבות\?</string>
+    <string name="files_and_media_prohibited">קבצים ומדיה אסורים!</string>
+    <string name="files_are_prohibited_in_group">קבצים ומדיה אסורים בקבוצה זו.</string>
+    <string name="group_members_can_send_files">חברי הקבוצה יכולים לשלוח קבצים ומדיה.</string>
+    <string name="settings_restart_app">איתחול</string>
+    <string name="unfavorite_chat">שנוא</string>
 </resources>
