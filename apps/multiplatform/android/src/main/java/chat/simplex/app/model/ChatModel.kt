@@ -70,7 +70,7 @@ object ChatModel {
   val notificationPreviewMode by lazy { mutableStateOf(NotificationPreviewMode.values().firstOrNull { it.name == ChatController.appPrefs.notificationPreviewMode.get() } ?: NotificationPreviewMode.default) }
   val performLA by lazy { mutableStateOf(controller.appPrefs.performLA.get()) }
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
-  val incognito by lazy { mutableStateOf(ChatController.appPrefs.incognito.get()) }
+  val incognito by lazy { mutableStateOf(controller.appPrefs.incognito.get()) }
 
   // current WebRTC call
   val callManager = CallManager(this)
