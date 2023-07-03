@@ -248,6 +248,15 @@
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Verrà usata una connessione TCP separata **per ogni contatto e membro del gruppo**.\n** Nota**: se hai molte connessioni, il consumo di batteria e traffico può essere notevolmente superiore e alcune connessioni potrebbero fallire.";
 
 /* No comment provided by engineer. */
+"Abort" = "Interrompi";
+
+/* No comment provided by engineer. */
+"Abort changing address" = "Interrompi il cambio di indirizzo";
+
+/* No comment provided by engineer. */
+"Abort changing address?" = "Interrompere il cambio di indirizzo?";
+
+/* No comment provided by engineer. */
 "About SimpleX" = "Riguardo SimpleX";
 
 /* No comment provided by engineer. */
@@ -301,6 +310,9 @@
 
 /* No comment provided by engineer. */
 "Address" = "Indirizzo";
+
+/* No comment provided by engineer. */
+"Address change will be aborted. Old receiving address will be used." = "Il cambio di indirizzo verrà interrotto. Verrà usato il vecchio indirizzo di ricezione.";
 
 /* member role */
 "admin" = "amministratore";
@@ -1219,6 +1231,9 @@
 "Error" = "Errore";
 
 /* No comment provided by engineer. */
+"Error aborting address change" = "Errore nell'interruzione del cambio di indirizzo";
+
+/* No comment provided by engineer. */
 "Error accepting contact request" = "Errore nell'accettazione della richiesta di contatto";
 
 /* No comment provided by engineer. */
@@ -1373,6 +1388,9 @@
 
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "Veloce e senza aspettare che il mittente sia in linea!";
+
+/* No comment provided by engineer. */
+"Favorite" = "Preferito";
 
 /* No comment provided by engineer. */
 "File will be deleted from servers." = "Il file verrà eliminato dai server.";
@@ -2315,6 +2333,9 @@
 "Received message" = "Messaggio ricevuto";
 
 /* No comment provided by engineer. */
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "L'indirizzo di ricezione verrà cambiato in un server diverso. La modifica dell'indirizzo verrà completata dopo che il mittente sarà in linea.";
+
+/* No comment provided by engineer. */
 "Receiving file will be stopped." = "La ricezione del file verrà interrotta.";
 
 /* No comment provided by engineer. */
@@ -2949,6 +2970,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Stato di migrazione imprevisto";
+
+/* No comment provided by engineer. */
+"Unfav." = "Non pref.";
 
 /* No comment provided by engineer. */
 "Unhide" = "Svela";

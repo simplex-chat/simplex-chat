@@ -400,19 +400,19 @@
 **Bitte beachten Sie**: Wenn Sie viele Verbindungen haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort" xml:space="preserve" approved="no">
+      <trans-unit id="Abort" xml:space="preserve">
         <source>Abort</source>
-        <target state="translated">Abbrechen</target>
+        <target>Abbrechen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
+      <trans-unit id="Abort changing address" xml:space="preserve">
         <source>Abort changing address</source>
-        <target state="translated">Wechsel der Adresse abbrechen</target>
+        <target>Wechsel der Adresse abbrechen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
+      <trans-unit id="Abort changing address?" xml:space="preserve">
         <source>Abort changing address?</source>
-        <target state="translated">Wechsel der Adresse abbrechen?</target>
+        <target>Wechsel der Adresse abbrechen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -496,9 +496,9 @@
         <target>Adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve" approved="no">
+      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
         <source>Address change will be aborted. Old receiving address will be used.</source>
-        <target state="translated">Der Wechsel der Adresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</target>
+        <target>Der Wechsel der Adresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -589,6 +589,10 @@
       <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve">
         <source>Allow to irreversibly delete sent messages.</source>
         <target>Unwiederbringliches löschen von gesendeten Nachrichten erlauben.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow to send files and media." xml:space="preserve">
+        <source>Allow to send files and media.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send voice messages." xml:space="preserve">
@@ -1800,9 +1804,9 @@
         <target>Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error aborting address change" xml:space="preserve" approved="no">
+      <trans-unit id="Error aborting address change" xml:space="preserve">
         <source>Error aborting address change</source>
-        <target state="translated">Fehler beim Abbrechen des Adresswechsels</target>
+        <target>Fehler beim Abbrechen des Adresswechsels</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
@@ -2065,9 +2069,9 @@
         <target>Schnell und ohne warten auf den Absender, bis er online ist!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Favorite" xml:space="preserve" approved="no">
+      <trans-unit id="Favorite" xml:space="preserve">
         <source>Favorite</source>
-        <target state="translated">Favorit</target>
+        <target>Favorit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
@@ -2093,6 +2097,18 @@
       <trans-unit id="Files &amp; media" xml:space="preserve">
         <source>Files &amp; media</source>
         <target>Dateien &amp; Medien</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files and media" xml:space="preserve">
+        <source>Files and media</source>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve">
+        <source>Files and media are prohibited in this group.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files and media prohibited!" xml:space="preserve">
+        <source>Files and media prohibited!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
@@ -2203,6 +2219,10 @@
       <trans-unit id="Group members can send disappearing messages." xml:space="preserve">
         <source>Group members can send disappearing messages.</source>
         <target>Gruppenmitglieder können verschwindende Nachrichten senden.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group members can send files and media." xml:space="preserve">
+        <source>Group members can send files and media.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send voice messages." xml:space="preserve">
@@ -2583,9 +2603,9 @@
         <target>Der Gruppe beitreten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="KeyChain error" xml:space="preserve" approved="no">
+      <trans-unit id="KeyChain error" xml:space="preserve">
         <source>KeyChain error</source>
-        <target state="translated">KeyChain Fehler</target>
+        <target>KeyChain Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keychain error" xml:space="preserve">
@@ -2933,6 +2953,10 @@
         <target>Kein Geräte-Token!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No filtered chats" xml:space="preserve">
+        <source>No filtered chats</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No group!" xml:space="preserve">
         <source>Group not found!</source>
         <target>Die Gruppe wurde nicht gefunden!</target>
@@ -3020,6 +3044,10 @@
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
         <source>Only group owners can change group preferences.</source>
         <target>Gruppenpräferenzen können nur von Gruppen-Eigentümern geändert werden.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
+        <source>Only group owners can enable files and media.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable voice messages." xml:space="preserve">
@@ -3342,6 +3370,10 @@
         <target>Das Senden von verschwindenden Nachrichten verbieten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Prohibit sending files and media." xml:space="preserve">
+        <source>Prohibit sending files and media.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
         <source>Prohibit sending voice messages.</source>
         <target>Das Senden von Sprachnachrichten nicht erlauben.</target>
@@ -3427,9 +3459,9 @@
         <target>Empfangene Nachricht</target>
         <note>message info title</note>
       </trans-unit>
-      <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve" approved="no">
+      <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
         <source>Receiving address will be changed to a different server. Address change will complete after sender comes online.</source>
-        <target state="translated">Die Empfängeradresse wird auf einen anderen Server geändert. Der Adresswechsel wird abgeschlossen, wenn der Absender wieder online ist.</target>
+        <target>Die Empfängeradresse wird auf einen anderen Server geändert. Der Adresswechsel wird abgeschlossen, wenn der Absender wieder online ist.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -4446,9 +4478,9 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target>Unerwarteter Migrationsstatus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unfav." xml:space="preserve" approved="no">
+      <trans-unit id="Unfav." xml:space="preserve">
         <source>Unfav.</source>
-        <target state="translated">Unfav.</target>
+        <target>Unfav.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
