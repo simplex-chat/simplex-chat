@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="allow_voice_messages_only_if">Povolit hlasové zprávy, pokud je váš kontakt povolí.</string>
     <string name="allow_to_send_disappearing">Mizící zprávy povoleny.</string>
     <string name="allow_to_send_voice">Hlasové zprávy povoleny.</string>
@@ -12,7 +12,7 @@
     <string name="network_enable_socks_info">Přistupovat k serverům přes SOCKS proxy na portu %d\? Před povolením této možnosti musí být spuštěna proxy.</string>
     <string name="accept_feature">Přijmout</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Povolte svým kontaktům odesílat mizící zprávy.</string>
-    <string name="about_simplex_chat">O <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">O SimpleX Chat</string>
     <string name="smp_servers_add_to_another_device">Přidat do jiného zařízení</string>
     <string name="allow_verb">Povolit</string>
     <string name="allow_voice_messages_question">Povolit hlasové zprávy\?</string>
@@ -43,7 +43,7 @@
     <string name="member_info_section_title_member">ČLEN</string>
     <string name="change_member_role_question">Změnit roli ve skupině\?</string>
     <string name="info_row_connection">Připoj</string>
-    <string name="conn_level_desc_indirect">nepřímé (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+    <string name="conn_level_desc_indirect">nepřímé (%1$s)</string>
     <string name="conn_stats_section_title_servers">SERVERY</string>
     <string name="receiving_via">Příjímáno přez</string>
     <string name="create_secret_group_title">Vytvoření tajné skupiny</string>
@@ -84,7 +84,7 @@
     <string name="v4_3_irreversible_message_deletion_desc">Vaše kontakty mohou povolit úplné mazání zpráv.</string>
     <string name="v4_4_disappearing_messages">Mizící zprávy</string>
     <string name="v4_4_verify_connection_security_desc">Porovnejte bezpečnostní kódy se svými kontakty.</string>
-    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="app_name">SimpleX</string>
     <string name="thousand_abbreviation">k</string>
     <string name="connect_via_contact_link">Připojit se odkazem\?</string>
     <string name="connect_via_invitation_link">Připojit se pozvánkou\?</string>
@@ -97,7 +97,7 @@
     <string name="deleted_description">smazáno</string>
     <string name="invalid_chat">neplatný chat</string>
     <string name="invalid_data">neplatná data</string>
-    <string name="connection_local_display_name">spojení <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="connection_local_display_name">spojení %1$d</string>
     <string name="display_name_connection_established">spojení navázáno</string>
     <string name="display_name_invited_to_connect">pozvánka k připojení</string>
     <string name="display_name_connecting">připojování…</string>
@@ -111,7 +111,7 @@
     <string name="simplex_link_contact">SimpleX adresa</string>
     <string name="simplex_link_invitation">Jednorázová pozvánka SimpleX</string>
     <string name="simplex_link_group">Skupinový odkaz SimpleX</string>
-    <string name="simplex_link_connection">prostřednictvím <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_connection">prostřednictvím %1$s</string>
     <string name="simplex_link_mode">Odkazy na SimpleX</string>
     <string name="simplex_link_mode_description">Popis</string>
     <string name="simplex_link_mode_full">Úplný odkaz</string>
@@ -124,11 +124,11 @@
     <string name="contact_developers">Aktualizujte aplikaci a kontaktujte vývojáře.</string>
     <string name="connection_timeout">Časový limit připojení</string>
     <string name="connection_error">Chyba připojení</string>
-    <string name="network_error_desc">Zkontrolujte prosím své síťové připojení pomocí <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> a zkuste to znovu.</string>
+    <string name="network_error_desc">Zkontrolujte prosím své síťové připojení pomocí %1$s a zkuste to znovu.</string>
     <string name="error_sending_message">Chyba odesílání zprávy</string>
     <string name="error_adding_members">Chyba přidávání členů</string>
     <string name="contact_already_exists">Kontakt již existuje</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Jste již připojeni k <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Jste již připojeni k %1$s.</string>
     <string name="invalid_connection_link">Neplatný odkaz na spojení</string>
     <string name="error_accepting_contact_request">Chyba příjmu požadavku od kontaktu</string>
     <string name="error_changing_address">Chyba změny adresy</string>
@@ -146,7 +146,7 @@
     <string name="share_verb">Sdílet</string>
     <string name="copy_verb">Kopírovat</string>
     <string name="icon_descr_received_msg_status_unread">nepřečteno</string>
-    <string name="personal_welcome">Vítejte <xliff:g>%1$s</xliff:g>!</string>
+    <string name="personal_welcome">Vítejte %1$s!</string>
     <string name="welcome">Vítejte!</string>
     <string name="this_text_is_available_in_settings">Tento text je k dispozici v nastavení</string>
     <string name="icon_descr_sent_msg_status_send_failed">odeslání se nezdařilo</string>
@@ -160,8 +160,8 @@
     <string name="icon_descr_image_snd_complete">Obrázek odeslán</string>
     <string name="waiting_for_image">Čekám na obrázek</string>
     <string name="image_will_be_received_when_contact_is_online">Obrázek bude přijat, až bude váš kontakt online, vyčkejte prosím nebo se podívejte později!</string>
-    <string name="contact_sent_large_file">Váš kontakt odeslal soubor, který je větší než aktuálně podporovaná maximální velikost (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
-    <string name="maximum_supported_file_size">V současné době je maximální podporovaná velikost souboru <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
+    <string name="contact_sent_large_file">Váš kontakt odeslal soubor, který je větší než aktuálně podporovaná maximální velikost (%1$s).</string>
+    <string name="maximum_supported_file_size">V současné době je maximální podporovaná velikost souboru %1$s.</string>
     <string name="error_saving_file">Chyba ukládání souboru</string>
     <string name="voice_message">Hlasová zpráva</string>
     <string name="voice_message_send_text">Hlasová zpráva…</string>
@@ -206,8 +206,8 @@
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Kontakt, se kterým jste tento odkaz sdíleli, se NEBUDE moci připojit!</string>
     <string name="connection_you_accepted_will_be_cancelled">Připojení, které jste přijali, bude zrušeno!</string>
     <string name="icon_descr_help">help</string>
-    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> Tým</string>
-    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> Adresa</string>
+    <string name="icon_descr_simplex_team">SimpleX Tým</string>
+    <string name="icon_descr_address">SimpleX Adresa</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Ke skupině budete připojeni, až bude zařízení hostitele skupiny online, vyčkejte prosím nebo se podívejte později!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Budete připojeni, jakmile bude vaše žádost o připojení přijata, vyčkejte prosím nebo se podívejte později!</string>
     <string name="connection_request_sent">Požadavek na připojení byl odeslán!</string>
@@ -250,7 +250,7 @@
     <string name="callstatus_in_progress">probíhající hovor</string>
     <string name="decentralized">Decentralizovaná</string>
     <string name="how_it_works">Jak to funguje</string>
-    <string name="how_simplex_works">Jak funguje <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="how_simplex_works">Jak funguje SimpleX</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy odesílané pomocí <b>2 vrstvého koncového šifrování</b>.</string>
     <string name="onboarding_notifications_mode_title">Oznámení</string>
     <string name="onboarding_notifications_mode_periodic">Pravidelné</string>
@@ -260,7 +260,7 @@
     <string name="icon_descr_audio_call">audio hovor</string>
     <string name="settings_audio_video_calls">Audio a video hovory</string>
     <string name="call_on_lock_screen">Hovory na uzamčené obrazovce:</string>
-    <string name="open_simplex_chat_to_accept_call">Otevřete <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pro přijetí hovoru</string>
+    <string name="open_simplex_chat_to_accept_call">Otevřete SimpleX Chat pro přijetí hovoru</string>
     <string name="allow_accepting_calls_from_lock_screen">Povolte volání ze zamčené obrazovky prostřednictvím Nastavení.</string>
     <string name="open_verb">Otevřený</string>
     <string name="icon_descr_audio_on">Zvuk zapnut</string>
@@ -321,7 +321,7 @@
     <string name="alert_title_cant_invite_contacts">Nelze pozvat kontakty!</string>
     <string name="snd_group_event_changed_member_role">změnili jste roli %s na %s</string>
     <string name="snd_group_event_changed_role_for_yourself">změnili jste svou roli na %s</string>
-    <string name="snd_group_event_member_deleted">odebrali jste <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_group_event_member_deleted">odebrali jste %1$s</string>
     <string name="snd_group_event_user_left">odešli jste</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">změnila se vaše adresa</string>
     <string name="icon_descr_expand_role">Rozšířit výběr rolí</string>
@@ -331,7 +331,7 @@
     <string name="smp_server_test_secure_queue">Zabezpečit frontu</string>
     <string name="service_notifications">Okamžitá oznámení!</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>V nastavení ji lze vypnout</b> - oznámení se budou zobrazovat pokud aplikace běží.</string>
-    <string name="turn_off_battery_optimization">Chcete-li ji používat, <b>vypněte optimalizaci baterie</b> pro <xliff:g id="appName">SimpleX</xliff:g> v dalším dialogu. V opačném případě budou oznámení vypnuta.</string>
+    <string name="turn_off_battery_optimization">Chcete-li ji používat, <b>vypněte optimalizaci baterie</b> pro SimpleX v dalším dialogu. V opačném případě budou oznámení vypnuta.</string>
     <string name="periodic_notifications_desc">Aplikace pravidelně načítá nové zprávy - denně spotřebuje několik procent baterie. Aplikace nepoužívá push oznámení - data ze zařízení nejsou odesílána na servery.</string>
     <string name="enter_passphrase_notification_title">Je vyžadována přístupová fráze</string>
     <string name="enter_passphrase_notification_desc">Chcete-li dostávat oznámení, zadejte přístupovou frázi do databáze.</string>
@@ -344,7 +344,7 @@
     <string name="confirm_verb">Potvrdit</string>
     <string name="send_us_an_email">Pošlete nám e-mail</string>
     <string name="chat_lock">Zámek SimpleX</string>
-    <string name="install_simplex_chat_for_terminal">Instalovat <xliff:g id="appNameFull">SimpleX Chat</xliff:g> terminál</string>
+    <string name="install_simplex_chat_for_terminal">Instalovat SimpleX Chat terminál</string>
     <string name="star_on_github">Hvězdu na GitHubu</string>
     <string name="rate_the_app">Ohodnoťte aplikaci</string>
     <string name="your_SMP_servers">Vaše servery SMP</string>
@@ -396,9 +396,9 @@
     <string name="delete_address">Smazat adresu</string>
     <string name="full_name__field">Celé jméno:</string>
     <string name="your_current_profile">Váš současný profil</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Pro zachování vašeho soukromí používá aplikace místo push oznámení <b><xliff:g id="appName">SimpleX</xliff:g> službu na pozadí</b> - denně využije několik procent baterie.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Pro zachování vašeho soukromí používá aplikace místo push oznámení <b>SimpleX službu na pozadí</b> - denně využije několik procent baterie.</string>
     <string name="periodic_notifications">Pravidelná oznámení</string>
-    <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> služba</string>
+    <string name="simplex_service_notification_title">SimpleX Chat služba</string>
     <string name="simplex_service_notification_text">Příjem zpráv…</string>
     <string name="ntf_channel_messages">Zprávy SimpleX Chat</string>
     <string name="settings_notification_preview_mode_title">Zobrazení náhledu</string>
@@ -427,7 +427,7 @@
     <string name="file_will_be_received_when_contact_is_online">Soubor bude přijat, až bude váš kontakt online, vyčkejte prosím, nebo se podívejte později!</string>
     <string name="file_saved">Soubor uložen</string>
     <string name="file_not_found">Soubor nenalezen</string>
-    <string name="voice_message_with_duration">Hlasová zpráva (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="voice_message_with_duration">Hlasová zpráva (%1$s)</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Kontakt a všechny zprávy budou smazány - nelze to vzít zpět!</string>
     <string name="button_delete_contact">Smazat kontakt</string>
     <string name="text_field_set_contact_placeholder">Nastavení jména kontaktu…</string>
@@ -505,7 +505,7 @@
     <string name="you_will_join_group">Připojíte se ke skupině, na kterou odkazuje tento odkaz, a spojíte se s jejími členy.</string>
     <string name="connect_via_link_verb">Připojení</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Jste připojeni k serveru, který se používá k přijímání zpráv od tohoto kontaktu.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Pokoušíte se připojit k serveru používaném pro příjem zpráv od tohoto kontaktu (chyba: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Pokoušíte se připojit k serveru používaném pro příjem zpráv od tohoto kontaktu (chyba: %1$s).</string>
     <string name="marked_deleted_description">označit jako smazáno</string>
     <string name="sending_files_not_yet_supported">Odesílání souborů zatím není podporováno</string>
     <string name="receiving_files_not_yet_supported">Přijímání souborů zatím není podporováno</string>
@@ -581,10 +581,10 @@
     <string name="send_live_message">Odeslat živou zprávu</string>
     <string name="live_message">Živá zpráva!</string>
     <string name="connect_via_link_or_qr">Připojit se prostřednictvím odkazu / QR kódu</string>
-    <string name="thank_you_for_installing_simplex">Děkujeme za instalaci <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Můžete se <font color="#0088ff">připojit k <xliff:g id="appNameFull">SimpleX Chat</xliff:g> vývojářům, položit jim případné dotazy a získat aktualizace</font>.</string>
+    <string name="thank_you_for_installing_simplex">Děkujeme za instalaci SimpleX Chat!</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Můžete se <font color="#0088ff">připojit k SimpleX Chat vývojářům, položit jim případné dotazy a získat aktualizace</font>.</string>
     <string name="to_connect_via_link_title">Připojení prostřednictvím odkazu</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Pokud jste dostali <xliff:g id="appName">SimpleX Chat</xliff:g> pozvánku, můžete ji otevřít v prohlížeči:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Pokud jste dostali SimpleX Chat pozvánku, můžete ji otevřít v prohlížeči:</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Pokud zvolíte odmítnutí, odesílatel NEBUDE upozorněn.</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 telefon: <b>Otevřete v mobilní aplikaci</b>, potom klikněte na <b>Připojit</b>.</string>
     <string name="reject_contact_button">Odmítnout</string>
@@ -602,7 +602,7 @@
     <string name="alert_title_contact_connection_pending">Kontakt ještě není připojen!</string>
     <string name="image_descr_link_preview">náhled odkazu</string>
     <string name="icon_descr_cancel_link_preview">Zrušit náhled odkazu</string>
-    <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> Logo</string>
+    <string name="image_descr_simplex_logo">SimpleX Logo</string>
     <string name="icon_descr_email">E-mail</string>
     <string name="icon_descr_more_button">Více</string>
     <string name="show_QR_code">Zobrazit QR kód</string>
@@ -628,8 +628,8 @@
     <string name="smp_servers_use_server">Použít server</string>
     <string name="smp_servers_use_server_for_new_conn">Použít pro nová připojení</string>
     <string name="smp_servers_per_user">Servery pro nová připojení vašeho aktuálního chat profilu.</string>
-    <string name="use_simplex_chat_servers__question">Použít <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servery\?</string>
-    <string name="using_simplex_chat_servers">Použití <xliff:g id="appNameFull">SimpleX Chat</xliff:g> serverů.</string>
+    <string name="use_simplex_chat_servers__question">Použít SimpleX Chat servery\?</string>
+    <string name="using_simplex_chat_servers">Použití SimpleX Chat serverů.</string>
     <string name="saved_ICE_servers_will_be_removed">Uložené servery WebRTC ICE budou odstraněny.</string>
     <string name="error_saving_ICE_servers">Chyba ukládání serverů ICE</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Ujistěte se, že adresy serverů WebRTC ICE jsou ve správném formátu, oddělené na řádcích a nejsou duplicitní.</string>
@@ -654,7 +654,7 @@
     <string name="delete_address__question">Smazat adresu\?</string>
     <string name="all_your_contacts_will_remain_connected">Všechny vaše kontakty zůstanou připojeny.</string>
     <string name="display_name__field">Zobrazované jméno:</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Váš profil je uložen v zařízení a je sdílen pouze s vašimi kontakty. <xliff:g id="appName">SimpleX</xliff:g> servery váš profil vidět nemohou.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Váš profil je uložen v zařízení a je sdílen pouze s vašimi kontakty. SimpleX servery váš profil vidět nemohou.</string>
     <string name="save_preferences_question">Uložit předvolby\?</string>
     <string name="save_and_notify_contact">Uložit a upozornit kontakt</string>
     <string name="save_and_notify_contacts">Uložit a upozornit kontakty</string>
@@ -671,7 +671,7 @@
     <string name="callstatus_missed">zmeškané volání</string>
     <string name="callstatus_rejected">odmítnutý hovor</string>
     <string name="callstatus_connecting">spojovací hovor…</string>
-    <string name="callstatus_ended">hovor ukončen <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="callstatus_ended">hovor ukončen %1$s</string>
     <string name="callstate_starting">začíná…</string>
     <string name="callstate_waiting_for_answer">čeká na odpověď…</string>
     <string name="callstate_waiting_for_confirmation">čekání na potvrzení…</string>
@@ -681,8 +681,8 @@
     <string name="privacy_redefined">Nové vymezení soukromí</string>
     <string name="first_platform_without_user_ids">1. platforma bez jakýchkoliv uživatelských identifikátorů – soukromá již od návrhu.</string>
     <string name="immune_to_spam_and_abuse">Odolná vůči spamu a zneužití</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">K ochraně soukromí, místo uživatelských ID užívaných všemi ostatními platformami, <xliff:g id="appName">SimpleX</xliff:g> používá identifikátory pro fronty zpráv, zvlášť pro každý z vašich kontaktů.</string>
-    <string name="many_people_asked_how_can_it_deliver">Mnoho lidí se ptá: <i>když <xliff:g id="appName">SimpleX</xliff:g> nemá žádný identifikátor uživatelů, jak může doručovat zprávy\?</i></string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">K ochraně soukromí, místo uživatelských ID užívaných všemi ostatními platformami, SimpleX používá identifikátory pro fronty zpráv, zvlášť pro každý z vašich kontaktů.</string>
+    <string name="many_people_asked_how_can_it_deliver">Mnoho lidí se ptá: <i>když SimpleX nemá žádný identifikátor uživatelů, jak může doručovat zprávy\?</i></string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">Vy určujete, přes které servery <b>přijímat</b> zprávy, vaše kontakty – servery, které používáte k zasílání zpráv.</string>
     <string name="read_more_in_github">Další informace najdete v našem repozitáři na GitHubu.</string>
     <string name="read_more_in_github_with_link">Další informace najdete v našem <font color="#0088ff">úložišti GitHub</font>.</string>
@@ -696,7 +696,7 @@
     <string name="paste_the_link_you_received">Vložení přijatého odkazu</string>
     <string name="incoming_video_call">Příchozí videohovor</string>
     <string name="incoming_audio_call">Příchozí zvukový hovor</string>
-    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> se s vámi chce spojit prostřednictvím</string>
+    <string name="contact_wants_to_connect_via_call">%1$s se s vámi chce spojit prostřednictvím</string>
     <string name="video_call_no_encryption">videohovoru (nešifrovaného e2e).</string>
     <string name="audio_call_no_encryption">zvukový hovor (nešifrováno e2e)</string>
     <string name="reject">Odmítnout</string>
@@ -716,7 +716,7 @@
     <string name="icon_descr_call_connecting">Spojování hovoru</string>
     <string name="icon_descr_call_ended">Skončený hovor</string>
     <string name="answer_call">Přijmout hovor</string>
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> přeskočená zpráva (zprávy)</string>
+    <string name="integrity_msg_skipped">%1$d přeskočená zpráva (zprávy)</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Může se to stát, když:
 \n1. Zprávy vypršely v odesílajícím klientovi po 2 dnech nebo na serveru po 30 dnech.
 \n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze.
@@ -790,8 +790,8 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Chat můžete spustit v Nastavení / Databáze nebo restartováním aplikace.</string>
     <string name="save_archive">Uložit archiv</string>
     <string name="delete_archive">Smazat archiv</string>
-    <string name="group_invitation_item_description">pozvánka do skupiny <xliff:g id="group_name">%1$s</xliff:g></string>
-    <string name="archive_created_on_ts">Vytvořeno dne <xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="group_invitation_item_description">pozvánka do skupiny %1$s</string>
+    <string name="archive_created_on_ts">Vytvořeno dne %1$s</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Jste zváni do skupiny. Připojte se k členům skupiny.</string>
     <string name="join_group_incognito_button">Připojit se inkognito</string>
     <string name="joining_group">Připojit ke skupině</string>
@@ -808,11 +808,11 @@
     <string name="you_joined_this_group">Připojili jste se k této skupině</string>
     <string name="you_rejected_group_invitation">Odmítli jste pozvánku do skupiny</string>
     <string name="group_invitation_expired">Platnost pozvánky do skupiny vypršela</string>
-    <string name="rcv_group_event_member_added">pozval <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_added">pozval %1$s</string>
     <string name="rcv_group_event_member_connected">připojen</string>
     <string name="rcv_group_event_changed_member_role">změnil roli %s na %s</string>
     <string name="rcv_group_event_changed_your_role">změnil svou roli na %s</string>
-    <string name="rcv_group_event_member_deleted">odstraněn <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_deleted">odstraněn %1$s</string>
     <string name="rcv_group_event_user_deleted">odstranil vás</string>
     <string name="rcv_group_event_group_deleted">skupina odstraněna</string>
     <string name="rcv_group_event_updated_group_profile">aktualizoval profil skupiny</string>
@@ -845,8 +845,8 @@
     <string name="icon_descr_contact_checked">Zkontrolované kontakty</string>
     <string name="num_contacts_selected">%d kontakt(y) vybrán(y)</string>
     <string name="button_add_members">Pozvat členy</string>
-    <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBERS</string>
-    <string name="group_info_member_you">vy: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="group_info_section_title_num_members">%1$s MEMBERS</string>
+    <string name="group_info_member_you">vy: %1$s</string>
     <string name="button_delete_group">Smazat skupinu</string>
     <string name="delete_group_question">Smazat skupinu\?</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">Skupina bude smazána pro všechny členy - nelze to vzít zpět!</string>
@@ -1096,8 +1096,8 @@
     <string name="alert_text_msg_bad_hash">Hash předchozí zprávy se liší.</string>
     <string name="alert_text_msg_bad_id">ID další zprávy je nesprávné (menší nebo rovno předchozí).
 \nMůže se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitováno.</string>
-    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> zprávy se nepodařilo dešifrovat.</string>
-    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> zprývy přeskočeny.</string>
+    <string name="alert_text_decryption_error_header">%1$d zprávy se nepodařilo dešifrovat.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d zprývy přeskočeny.</string>
     <string name="alert_text_fragment_please_report_to_developers">Nahlaste to prosím vývojářům.</string>
     <string name="alert_text_fragment_permanent_error_reconnect">Tato chyba je pro toto připojení trvalá, připojte se znovu.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.</string>

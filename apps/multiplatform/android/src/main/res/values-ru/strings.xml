@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+<resources>
+    <string name="app_name">SimpleX</string>
     <string name="thousand_abbreviation">т</string>
     <!-- Connect via Link - MainActivity.kt -->
     <string name="connect_via_contact_link">Соединиться через ссылку-контакт?</string>
@@ -14,7 +14,7 @@
     <string name="server_error">ошибка</string>
     <string name="server_connecting">соединяется</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Установлено соединение с сервером, через который Вы получаете сообщения от этого контакта.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта.</string>
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">удалено</string>
@@ -25,7 +25,7 @@
     <string name="unknown_message_format">неизвестный формат сообщения</string>
     <string name="invalid_message_format">неверный формат сообщения</string>
     <!-- PendingContactConnection - ChatModel.kt -->
-    <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="connection_local_display_name">connection %1$d</string>
     <string name="display_name_connection_established">соединение установлено</string>
     <string name="display_name_invited_to_connect">приглашение соединиться</string>
     <string name="display_name_connecting">соединяется…</string>
@@ -41,7 +41,7 @@
     <string name="simplex_link_contact">SimpleX ссылка-контакт</string>
     <string name="simplex_link_invitation">SimpleX одноразовая ссылка</string>
     <string name="simplex_link_group">SimpleX ссылка группы</string>
-    <string name="simplex_link_connection">через <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_connection">через %1$s</string>
     <string name="simplex_link_mode">SimpleX ссылки</string>
     <string name="simplex_link_mode_description">Описание</string>
     <string name="simplex_link_mode_full">Полная ссылка</string>
@@ -54,7 +54,7 @@
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Превышено время соединения</string>
     <string name="connection_error">Ошибка соединения</string>
-    <string name="network_error_desc">Пожалуйста, проверьте Ваше соединение с сервером <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> и попробуйте еще раз.</string>
+    <string name="network_error_desc">Пожалуйста, проверьте Ваше соединение с сервером %1$s и попробуйте еще раз.</string>
     <string name="error_sending_message">Ошибка при отправке сообщения</string>
     <string name="error_adding_members">Ошибка при добавлении членов группы</string>
     <string name="error_joining_group">Ошибка при вступлении в группу</string>
@@ -63,7 +63,7 @@
     <string name="error_receiving_file">Ошибка при получении файла</string>
     <string name="error_creating_address">Ошибка при создании адреса</string>
     <string name="contact_already_exists">Существующий контакт</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Вы уже соединены с контактом <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Вы уже соединены с контактом %1$s.</string>
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что Вы использовали правильную ссылку, или попросите Ваш контакт отправить Вам новую.</string>
     <string name="connection_error_auth">Ошибка соединения (AUTH)</string>
@@ -88,9 +88,9 @@
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
     <string name="service_notifications">Мгновенные уведомления!</string>
     <string name="service_notifications_disabled">Мгновенные уведомления выключены!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить Ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис <xliff:g id="appName">SimpleX</xliff:g></b>, который потребляет несколько процентов батареи в день.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить Ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис SimpleX</b>, который потребляет несколько процентов батареи в день.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Он может быть выключен через Настройки</b> – Вы продолжите получать уведомления о сообщениях пока приложение запущено.</string>
-    <string name="turn_off_battery_optimization">Для использования этой функции, пожалуйста, отключите оптимизацию батареи для <xliff:g id="appName">SimpleX</xliff:g> в следующем диалоге. Иначе уведомления будут выключены.</string>
+    <string name="turn_off_battery_optimization">Для использования этой функции, пожалуйста, отключите оптимизацию батареи для SimpleX в следующем диалоге. Иначе уведомления будут выключены.</string>
     <string name="turning_off_service_and_periodic">Оптимизация батареи включена, поэтому сервис уведомлений выключен. Вы можете снова включить его через Настройки.</string>
     <string name="periodic_notifications">Периодические уведомления</string>
     <string name="periodic_notifications_disabled">Периодические уведомления выключены!</string>
@@ -100,7 +100,7 @@
     <string name="database_initialization_error_title">Ошибка базы данных</string>
     <string name="database_initialization_error_desc">Ошибка при инициализации базы данных. Нажмите чтобы узнать больше</string>
     <!-- SimpleX Chat foreground Service -->
-    <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
+    <string name="simplex_service_notification_title">SimpleX Chat сервис</string>
     <string name="simplex_service_notification_text">Приём сообщений…</string>
     <string name="hide_notification">Скрыть</string>
     <!-- Notification channels -->
@@ -128,7 +128,7 @@
     <string name="notification_contact_connected">Соединен(а)</string>
     <!-- local authentication notice - SimpleXAPI.kt -->
     <string name="la_notice_title_simplex_lock">Блокировка SimpleX</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Чтобы защитить Вашу информацию, включите блокировку <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Чтобы защитить Вашу информацию, включите блокировку SimpleX Chat.
 \nВам будет нужно пройти аутентификацию для включения блокировки.</string>
     <string name="la_notice_turn_on">Включить</string>
     <!-- LocalAuthentication.kt -->
@@ -169,7 +169,7 @@
     <string name="icon_descr_sent_msg_status_send_failed">ошибка при отправке</string>
     <string name="icon_descr_received_msg_status_unread">не прочитано</string>
     <!-- ChatListView.kt -->
-    <string name="personal_welcome">Здравствуйте <xliff:g>%1$s</xliff:g>!</string>
+    <string name="personal_welcome">Здравствуйте %1$s!</string>
     <string name="welcome">Здравствуйте!</string>
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Чаты</string>
@@ -204,8 +204,8 @@
     <!-- Files - CIFileView.kt -->
     <string name="icon_descr_file">Файл</string>
     <string name="large_file">Большой файл!</string>
-    <string name="contact_sent_large_file">Ваш контакт отправил файл, размер которого превышает поддерживаемый в настоящее время максимальный размер (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
-    <string name="maximum_supported_file_size">В настоящее время максимальный поддерживаемый размер файла составляет <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
+    <string name="contact_sent_large_file">Ваш контакт отправил файл, размер которого превышает поддерживаемый в настоящее время максимальный размер (%1$s).</string>
+    <string name="maximum_supported_file_size">В настоящее время максимальный поддерживаемый размер файла составляет %1$s.</string>
     <string name="waiting_for_file">Ожидается прием файла</string>
     <string name="file_will_be_received_when_contact_is_online">Файл будет принят, когда Ваш контакт будет в сети, подождите или проверьте позже!</string>
     <string name="file_saved">Файл сохранен</string>
@@ -213,7 +213,7 @@
     <string name="error_saving_file">Ошибка сохранения файла</string>
     <!-- Voice messages -->
     <string name="voice_message">Голосовое сообщение</string>
-    <string name="voice_message_with_duration">Голосовое сообщение (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="voice_message_with_duration">Голосовое сообщение (%1$s)</string>
     <string name="voice_message_send_text">Голосовое сообщение…</string>
     <!-- Chat Info Settings - ChatInfoView.kt -->
     <string name="notifications">Уведомления</string>
@@ -262,7 +262,7 @@
     <string name="gallery_video_button">Видео</string>
     <string name="choose_file">Файл</string>
     <!-- help - ChatHelpView.kt -->
-    <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="thank_you_for_installing_simplex">Спасибо, что установили SimpleX Chat!</string>
     <string name="you_can_connect_to_simplex_chat_founder">Вы можете <font color="#0088ff">соединиться с разработчиками</font>, чтобы задать любые вопросы или получать уведомления о новых версиях.</string>
     <string name="to_start_a_new_chat_help_header">Чтобы начать новый чат</string>
     <string name="chat_help_tap_button">Нажмите кнопку</string>
@@ -270,7 +270,7 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Добавить новый контакт</b>: чтобы создать одноразовый QR код/ссылку для Вашего контакта.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Сканировать QR код</b>: чтобы соединиться с контактом, который показывает Вам QR код.</string>
     <string name="to_connect_via_link_title">Чтобы соединиться через ссылку</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из <xliff:g id="appName">SimpleX Chat</xliff:g>, Вы можете открыть ее в браузере:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из SimpleX Chat, Вы можете открыть ее в браузере:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 на компьютере: сосканируйте показанный QR код из приложения через <b>Сканировать QR код</b>.</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 на мобильном: намжите кнопку <b>Open in mobile app</b> на веб странице, затем нажмите <b>Соединиться</b> в приложении.</string>
     <!-- Contact Request Alert Dialogue - CharListNavLinkView.kt -->
@@ -313,10 +313,10 @@
     <string name="icon_descr_cancel_link_preview">удалить превью ссылки</string>
     <string name="icon_descr_settings">Настройки</string>
     <string name="image_descr_qr_code">QR код</string>
-    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> адрес</string>
+    <string name="icon_descr_address">SimpleX адрес</string>
     <string name="icon_descr_help">Помощь</string>
-    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> команда</string>
-    <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> логотип</string>
+    <string name="icon_descr_simplex_team">SimpleX команда</string>
+    <string name="image_descr_simplex_logo">SimpleX логотип</string>
     <string name="icon_descr_email">Email</string>
     <string name="icon_descr_more_button">Больше</string>
     <!-- Connection info - ContactConnectionInfoView.kt -->
@@ -347,7 +347,7 @@
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш адрес SimpleX</string>
     <string name="database_passphrase_and_export">Пароль и экспорт базы</string>
-    <string name="about_simplex_chat">Информация о <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">Информация о SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
     <string name="markdown_in_messages">Форматирование сообщений</string>
@@ -375,13 +375,13 @@
     <string name="smp_servers_invalid_address">Ошибка в адресе сервера!</string>
     <string name="smp_servers_check_address">Проверьте адрес сервера и попробуйте снова.</string>
     <string name="smp_servers_delete_server">Удалить сервер</string>
-    <string name="install_simplex_chat_for_terminal"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</string>
+    <string name="install_simplex_chat_for_terminal">SimpleX Chat для терминала</string>
     <string name="star_on_github">Поставить звездочку в GitHub</string>
     <string name="contribute">Внести свой вклад</string>
     <string name="rate_the_app">Оценить приложение</string>
-    <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>?</string>
+    <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные SimpleX Chat?</string>
     <string name="your_SMP_servers">Ваши SMP серверы</string>
-    <string name="using_simplex_chat_servers">Используются серверы предоставленные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
+    <string name="using_simplex_chat_servers">Используются серверы предоставленные SimpleX Chat.</string>
     <string name="how_to">Инфо</string>
     <string name="how_to_use_your_servers">Как использовать серверы</string>
     <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE серверы будут удалены.</string>
@@ -420,7 +420,7 @@
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">"Полное имя:</string>
     <string name="your_current_profile">Ваш активный профиль</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. <xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к Вашему профилю.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
     <string name="save_preferences_question">Сохранить предпочтения?</string>
@@ -459,7 +459,7 @@
     <string name="callstatus_accepted">принятый звонок</string>
     <string name="callstatus_connecting">звонок соединяется…</string>
     <string name="callstatus_in_progress">активный звонок</string>
-    <string name="callstatus_ended">звонок завершён <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="callstatus_ended">звонок завершён %1$s</string>
     <string name="callstatus_error">ошибка звонка</string>
     <!-- CallState -->
     <string name="callstate_starting">инициализация…</string>
@@ -482,9 +482,9 @@
     <string name="make_private_connection">Добавьте контакт</string>
     <string name="how_it_works">Как это работает</string>
     <!-- How SimpleX Works -->
-    <string name="how_simplex_works">Как <xliff:g id="appName">SimpleX</xliff:g> работает</string>
-    <string name="many_people_asked_how_can_it_deliver">Много пользователей спросили: <i>как <xliff:g id="appName">SimpleX</xliff:g> доставляет сообщения без идентификаторов пользователей?</i></string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Чтобы защитить Вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, <xliff:g id="appName">SimpleX</xliff:g> использует ID для очередей сообщений, разные для каждого контакта.</string>
+    <string name="how_simplex_works">Как SimpleX работает</string>
+    <string name="many_people_asked_how_can_it_deliver">Много пользователей спросили: <i>как SimpleX доставляет сообщения без идентификаторов пользователей?</i></string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Чтобы защитить Вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, SimpleX использует ID для очередей сообщений, разные для каждого контакта.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">Вы определяете через какие серверы Вы <b>получаете сообщения</b>, Ваши контакты - серверы, которые Вы используете для отправки.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются <b>с двухуровневым end-to-end шифрованием</b>.</string>
     <string name="read_more_in_github">Узнайте больше из нашего GitHub репозитория.</string>
@@ -496,7 +496,7 @@
     <!-- Call -->
     <string name="incoming_video_call">Входящий видеозвонок</string>
     <string name="incoming_audio_call">Входящий аудиозвонок</string>
-    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> хочет связаться с Вами через </string>
+    <string name="contact_wants_to_connect_via_call">%1$s хочет связаться с Вами через </string>
     <string name="video_call_no_encryption">видеозвонок (не e2e зашифрованный)</string>
     <string name="encrypted_video_call">e2e зашифрованный видеозвонок</string>
     <string name="audio_call_no_encryption">аудиозвонок (не e2e зашифрованный)</string>
@@ -520,7 +520,7 @@
     <string name="relay_server_protects_ip">Relay сервер защищает Ваш IP адрес, но может отслеживать продолжительность звонка.</string>
     <string name="relay_server_if_necessary">Relay сервер используется только при необходимости. Другая сторона может видеть Ваш IP адрес.</string>
     <!-- Call Lock Screen -->
-    <string name="open_simplex_chat_to_accept_call">Откройте <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\nчтобы принять звонок</string>
+    <string name="open_simplex_chat_to_accept_call">Откройте SimpleX Chat\nчтобы принять звонок</string>
     <string name="allow_accepting_calls_from_lock_screen">Вы можете разрешить принимать звонки на экране блокировки через Настройки.</string>
     <string name="open_verb">Открыть</string>
     <!-- Call overlay -->
@@ -547,7 +547,7 @@
     <string name="icon_descr_call_ended">Звонок завершен</string>
     <string name="answer_call">Принять звонок</string>
     <!-- Message integrity -->
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> пропущенных сообщений</string>
+    <string name="integrity_msg_skipped">%1$d пропущенных сообщений</string>
     <string name="integrity_msg_bad_hash">ошибка хэш сообщения</string>
     <string name="integrity_msg_bad_id">ошибка ID сообщения</string>
     <string name="integrity_msg_duplicate">повторное сообщение</string>
@@ -688,10 +688,10 @@
     <string name="chat_archive_section">АРХИВ ЧАТА</string>
     <string name="save_archive">Сохранить архив</string>
     <string name="delete_archive">Удалить архив</string>
-    <string name="archive_created_on_ts">Дата создания <xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="archive_created_on_ts">Дата создания %1$s</string>
     <string name="delete_chat_archive_question">Удалить архив чата?</string>
     <!-- Groups -->
-    <string name="group_invitation_item_description">приглашение в группу <xliff:g id="group_name">%1$s</xliff:g></string>
+    <string name="group_invitation_item_description">приглашение в группу %1$s</string>
     <string name="join_group_question">Вступить в группу?</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Вы приглашены в группу. Вступите, чтобы соединиться с членами группы.</string>
     <string name="join_group_button">Вступить</string>
@@ -718,19 +718,19 @@
     <string name="you_rejected_group_invitation">Вы отклонили приглашение в группу</string>
     <string name="group_invitation_expired">Приглашение в группу истекло</string>
     <!-- Group event chat items -->
-    <string name="rcv_group_event_member_added">пригласил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_added">пригласил(а) %1$s</string>
     <string name="rcv_group_event_member_connected">соединен(а)</string>
     <string name="rcv_group_event_member_left">покинул(а) группу</string>
     <string name="rcv_group_event_changed_member_role">поменял(а) роль члена %s на: %s</string>
     <string name="rcv_group_event_changed_your_role">поменял(а) Вашу роль на: %s</string>
-    <string name="rcv_group_event_member_deleted">удалил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_deleted">удалил(а) %1$s</string>
     <string name="rcv_group_event_user_deleted">удалил(а) Вас из группы</string>
     <string name="rcv_group_event_group_deleted">удалил(а) группу</string>
     <string name="rcv_group_event_updated_group_profile">обновил(а) профиль группы</string>
     <string name="rcv_group_event_invited_via_your_group_link">приглашен(а) через Вашу ссылку группы</string>
     <string name="snd_group_event_changed_member_role">Вы поменяли роль члена %s на: %s</string>
     <string name="snd_group_event_changed_role_for_yourself">Вы поменяли роль себе на: %s</string>
-    <string name="snd_group_event_member_deleted">Вы удалили <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_group_event_member_deleted">Вы удалили %1$s</string>
     <string name="snd_group_event_user_left">Вы покинули группу</string>
     <string name="snd_group_event_group_profile_updated">профиль группы обновлен</string>
     <!-- Conn event chat items -->
@@ -772,8 +772,8 @@
     <string name="invite_prohibited_description">Вы пытаетесь пригласить инкогнито контакт в группу, где Вы используете свой основной профиль</string>
     <!-- GroupChatInfoView.kt -->
     <string name="button_add_members">Пригласить членов группы</string>
-    <string name="group_info_section_title_num_members">ЧЛЕНОВ ГРУППЫ: <xliff:g id="num_members">%1$s</xliff:g></string>
-    <string name="group_info_member_you">Вы: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="group_info_section_title_num_members">ЧЛЕНОВ ГРУППЫ: %1$s</string>
+    <string name="group_info_member_you">Вы: %1$s</string>
     <string name="button_delete_group">Удалить группу</string>
     <string name="delete_group_question">Удалить группу?</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех членов - это действие нельзя отменить!</string>
@@ -811,7 +811,7 @@
     <string name="info_row_group">Группа</string>
     <string name="info_row_connection">Соединение</string>
     <string name="conn_level_desc_direct">прямое</string>
-    <string name="conn_level_desc_indirect">непрямое (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+    <string name="conn_level_desc_indirect">непрямое (%1$s)</string>
     <!-- ConnectionStats -->
     <string name="conn_stats_section_title_servers">СЕРВЕРЫ</string>
     <string name="receiving_via">Получение через</string>
@@ -1156,7 +1156,7 @@
     <string name="authentication_cancelled">Аутентификация отменена</string>
     <string name="la_mode_system">Системная</string>
     <string name="la_seconds">%d секунд</string>
-    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> сообщений не удалось расшифровать.</string>
+    <string name="alert_text_decryption_error_header">%1$d сообщений не удалось расшифровать.</string>
     <string name="decryption_error">Ошибка расшифровки</string>
     <string name="lock_not_enabled">Блокировка SimpleX не включена!</string>
     <string name="alert_title_msg_bad_hash">Ошибка хэш сообщения</string>
@@ -1185,7 +1185,7 @@
     <string name="alert_text_msg_bad_id">Неправильный ID предыдущего сообщения (меньше или равен предыдущему).
 \nЭто может произойти из-за ошибки программы, или когда соединение компроментировано.</string>
     <string name="alert_text_fragment_permanent_error_reconnect">Эта ошибка постоянная для этого соединения, пожалуйста, соединитесь снова.</string>
-    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> сообщений пропущено.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d сообщений пропущено.</string>
     <string name="allow_calls_only_if">Разрешить звонки, только если их разрешает Ваш контакт.</string>
     <string name="allow_your_contacts_to_call">Разрешить Вашим контактам звонить Вам.</string>
     <string name="audio_video_calls">Аудио/видео звонки</string>

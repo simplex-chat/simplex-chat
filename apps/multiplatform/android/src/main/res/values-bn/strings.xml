@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="color_primary">রং</string>
     <string name="chat_item_ttl_day">১ দিন</string>
     <string name="send_disappearing_message_1_minute">১ মিনিট</string>
@@ -17,7 +17,7 @@
     <string name="accept_feature">গ্রহণ করুন</string>
     <string name="chat_item_ttl_month">১ মাস</string>
     <string name="chat_item_ttl_week">১ সপ্তাহ</string>
-    <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">About SimpleX Chat</string>
     <string name="accept_contact_button">গ্রহণ করুন</string>
     <string name="accept_connection_request__question">সংযোগের অনুরোধটি গ্রহণ করবেন কি\?</string>
     <string name="callstatus_accepted">কলটি গৃহীত হয়েছে</string>

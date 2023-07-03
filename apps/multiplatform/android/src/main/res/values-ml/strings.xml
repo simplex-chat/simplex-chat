@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="server_connecting">ബന്ധിപ്പിക്കുന്നു</string>
     <string name="la_immediately">ഉടനെ</string>
     <string name="allow_verb">അനുവദിക്കുക</string>
@@ -146,13 +146,13 @@
     <string name="v4_6_group_welcome_message_descr">പുതിയ അംഗങ്ങൾക്ക് കാണിക്കുന്ന സന്ദേശം സജ്ജമാക്കുക!</string>
     <string name="v4_6_group_welcome_message">സംഘത്തിലെ സ്വാഗത സന്ദേശം</string>
     <string name="v5_1_message_reactions_descr">അവസാനമായി, ഞങ്ങൾക്ക് അവയുണ്ട്! 🚀</string>
-    <string name="voice_message_with_duration">ശബ്ദ സന്ദേശം (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="voice_message_with_duration">ശബ്ദ സന്ദേശം (%1$s)</string>
     <string name="user_hide">മറയ്ക്കുക</string>
     <string name="share_verb">പങ്കിടുക</string>
     <string name="icon_descr_settings">ക്രമീകരണങ്ങൾ</string>
     <string name="group_welcome_title">സ്വാഗത സന്ദേശം</string>
     <string name="network_use_onion_hosts_no">ഇല്ല</string>
-    <string name="personal_welcome">സ്വാഗതം <xliff:g>%1$s</xliff:g>!</string>
+    <string name="personal_welcome">സ്വാഗതം %1$s!</string>
     <string name="share_message">സന്ദേശം പങ്കിടുക…</string>
     <string name="hide_dev_options">മറയ്ക്കുക:</string>
     <string name="show_dev_options">കാണിക്കുക:</string>
@@ -175,7 +175,7 @@
     <string name="color_sent_message">സന്ദേശം അയച്ചു</string>
     <string name="conn_level_desc_direct">നേരിട്ട്</string>
     <string name="error_changing_message_deletion">ക്രമീകരണം മാറ്റുന്നതിൽ പിശക്</string>
-    <string name="group_info_member_you">നിങ്ങൾ: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="group_info_member_you">നിങ്ങൾ: %1$s</string>
     <string name="delete_group_for_self_cannot_undo_warning">നിങ്ങൾക്കായി സംഘം ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
     <string name="appearance_settings">രൂപം</string>
     <string name="network_use_onion_hosts_required">ആവശ്യമാണ്</string>
@@ -260,7 +260,7 @@
     <string name="feature_cancelled_item">%s റദ്ദാക്കി</string>
     <string name="v4_6_audio_video_calls_descr">ബ്ലൂടൂത്തും മറ്റ് മെച്ചപ്പെടുത്തലുകളും പിന്തുണയ്ക്കുക.</string>
     <string name="v5_1_better_messages">മികച്ച സന്ദേശങ്ങൾ</string>
-    <string name="rcv_group_event_member_deleted"><xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> നീക്കം ചെയ്തു</string>
+    <string name="rcv_group_event_member_deleted">%1$s നീക്കം ചെയ്തു</string>
     <string name="send_disappearing_message">അപ്രത്യക്ഷമാകുന്ന സന്ദേശം അയയ്ക്കുക</string>
     <string name="notifications_mode_periodic_desc">ഓരോ 10 നിമിഷവും ഒരു നിമിഷം വരെ പുതിയ സന്ദേശങ്ങൾ പരിശോധിക്കുന്നു</string>
     <string name="you_can_create_it_later">നിങ്ങൾക്ക് ഇത് പിന്നീട് സൃഷ്ടിക്കാൻ കഴിയും</string>
@@ -275,7 +275,7 @@
     <string name="smp_servers_your_server_address">നിങ്ങളുടെ സെർവർ വിലാസം</string>
     <string name="info_row_sent_at">എന്ന വിലാസത്തിൽ അയച്ചു</string>
     <string name="your_XFTP_servers">നിങ്ങളുടെ XFTP സെർവറുകൾ</string>
-    <string name="about_simplex_chat">കുറിച്ച് <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">കുറിച്ച് SimpleX Chat</string>
     <string name="users_delete_all_chats_deleted">എല്ലാ സംഭാഷണങ്ങളും സന്ദേശങ്ങളും ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
     <string name="all_group_members_will_remain_connected">സംഘത്തിലെ എല്ലാ അംഗങ്ങളുടെ ബന്ധം നിലനിർത്തും.</string>
     <string name="la_could_not_be_verified">നിങ്ങളെ പരിശോധിക്കാൻ കഴിഞ്ഞില്ല; ദയവായി വീണ്ടും ശ്രമിക്കുക.</string>
@@ -357,7 +357,7 @@
     <string name="enter_welcome_message_optional">സ്വാഗത സന്ദേശം നൽകുക... (ഇച്ഛാനുസൃതമായ)</string>
     <string name="exit_without_saving">സംരക്ഷിക്കാതെ പുറത്ത് പോവുക</string>
     <string name="how_it_works">ഇത് എങ്ങനെ പ്രവർത്തിക്കുന്നു</string>
-    <string name="how_simplex_works"><xliff:g id="appName">SimpleX</xliff:g> എങ്ങനെ പ്രവർത്തിക്കുന്നു</string>
+    <string name="how_simplex_works">SimpleX എങ്ങനെ പ്രവർത്തിക്കുന്നു</string>
     <string name="onboarding_notifications_mode_service">കൃത്യസമയം</string>
     <string name="no_call_on_lock_screen">പ്രവർത്തനരഹിതമാക്കുക</string>
     <string name="info_row_deleted_at">എന്നതിൽ ഇല്ലാതാക്കി</string>
@@ -413,7 +413,7 @@
     <string name="v4_5_reduced_battery_usage_descr">കൂടുതൽ മെച്ചപ്പെടുത്തലുകൾ ഉടൻ വരുന്നു!</string>
     <string name="custom_time_unit_minutes">നിമിഷങ്ങള്‍</string>
     <string name="custom_time_unit_months">മാസങ്ങൾ</string>
-    <string name="rcv_group_event_member_added"><xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> ക്ഷണിച്ചു</string>
+    <string name="rcv_group_event_member_added">%1$s ക്ഷണിച്ചു</string>
     <string name="delete_message_mark_deleted_warning">സന്ദേശം ഇല്ലാതാക്കാൻ അടയാളപ്പെടുത്തും. സ്വീകർത്താവിന്(കൾക്ക്) ഈ സന്ദേശം വെളിപ്പെടുത്താൻ കഴിയും.</string>
     <string name="marked_deleted_description">അടയാളപ്പെടുത്തിയത് ഇല്ലാതാക്കി</string>
     <string name="mark_unread">വായിച്ചിട്ടില്ല എന്ന് അടയാളപ്പെടുത്തുക</string>

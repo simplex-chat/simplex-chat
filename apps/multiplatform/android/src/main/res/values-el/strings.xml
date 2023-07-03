@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="chat_item_ttl_day">1 μέρα</string>
     <string name="chat_item_ttl_month">1 μήνας</string>
     <string name="about_simplex">Για το SimpleX</string>
     <string name="scan_QR_code">Σαρώστε τον QR κωδικό</string>
     <string name="a_plus_b">α + β</string>
-    <string name="about_simplex_chat">Για το <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">Για το SimpleX Chat</string>
     <string name="scan_code_from_contacts_app">Σαρώστε τον κωδικό ασφαλείας από την εφαρμογή επαφών σας</string>
     <string name="smp_server_test_secure_queue">Ασφαλή ουρά</string>
     <string name="network_option_seconds_label">δε</string>
@@ -37,7 +37,7 @@
     <string name="allow_direct_messages">Να επιτρέπεται η αποστολή άμεσων μηνυμάτων στα μέλη.</string>
     <string name="allow_to_send_disappearing">Επιτρέπεται η αποστολή μηνυμάτων που εξαφανίζονται.</string>
     <string name="allow_to_send_voice">Επιτρέπεται η αποστολή φωνητικών μηνυμάτων.</string>
-    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="app_name">SimpleX</string>
     <string name="accept">Αποδοχή</string>
     <string name="accept_connection_request__question">Αποδοχή αιτήματος σύνδεσης;</string>
     <string name="callstatus_accepted">αποδεκτή κλήση</string>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="auth_unavailable">Autenticación no disponible</string>
     <string name="accept_contact_button">Aceptar</string>
     <string name="network_settings">Configuración avanzada de red</string>
@@ -72,7 +72,7 @@
     <string name="group_member_role_admin">administrador</string>
     <string name="allow_voice_messages_question">¿Permites los mensajes de voz\?</string>
     <string name="back">Volver</string>
-    <string name="about_simplex_chat">Sobre <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">Sobre SimpleX Chat</string>
     <string name="smp_servers_add_to_another_device">Añadir a otro dispositivo</string>
     <string name="app_version_name">Versión de la aplicación: v%s</string>
     <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
@@ -108,7 +108,7 @@
     <string name="notification_contact_connected">Conectado</string>
     <string name="auth_disable_simplex_lock">Desactivar Bloqueo SimpleX</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Autenticación de dispositivo desactivada. Bloqueo SimpleX deshabilitado.</string>
-    <string name="maximum_supported_file_size">El tamaño máximo de archivo admitido es <xliff:g id="maxFileSize">%1$s</xliff:g></string>
+    <string name="maximum_supported_file_size">El tamaño máximo de archivo admitido es %1$s</string>
     <string name="clear_verification">Eliminar verificación</string>
     <string name="create_profile">Crear perfil</string>
     <string name="encrypted_audio_call">Llamada con cifrado de extremo a extremo</string>
@@ -140,7 +140,7 @@
     <string name="group_member_status_intro_invitation">conectando (invitación de presentación )</string>
     <string name="group_member_status_accepted">conectando (aceptado)</string>
     <string name="group_member_status_announced">conectando (anunciado)</string>
-    <string name="connection_local_display_name">conexión <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="connection_local_display_name">conexión %1$d</string>
     <string name="connect_via_link_or_qr">Conecta vía enlace / Código QR</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No podrá deshacerse!</string>
     <string name="icon_descr_contact_checked">Contacto verificado</string>
@@ -220,7 +220,7 @@
     <string name="ttl_d">%dd</string>
     <string name="ttl_days">%d días</string>
     <string name="delete_files_and_media_question">¿Eliminar archivos y multimedia\?</string>
-    <string name="archive_created_on_ts">Creado: <xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="archive_created_on_ts">Creado: %1$s</string>
     <string name="delete_archive">Eliminar archivo</string>
     <string name="group_member_status_connected">conectado</string>
     <string name="conn_level_desc_direct">directa</string>
@@ -263,7 +263,7 @@
     <string name="clear_verb">Vaciar</string>
     <string name="clear_chat_button">Vaciar chat</string>
     <string name="configure_ICE_servers">Configurar servidores ICE</string>
-    <string name="callstatus_ended">Llamada terminada <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="callstatus_ended">Llamada terminada %1$s</string>
     <string name="callstatus_error">error en la llamada</string>
     <string name="callstatus_calling">llamando</string>
     <string name="callstatus_in_progress">llamada en curso</string>
@@ -357,7 +357,7 @@
     <string name="from_gallery_button">De la Galería</string>
     <string name="gallery_image_button">Imagen</string>
     <string name="gallery_video_button">Vídeo</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si has recibido un enlace de invitación a <xliff:g id="appName">SimpleX Chat</xliff:g> puedes abrirlo en tu navegador:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si has recibido un enlace de invitación a SimpleX Chat puedes abrirlo en tu navegador:</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Si eliges rechazar, el remitente NO será notificado.</string>
     <string name="invalid_contact_link">¡Enlace no válido!</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Si no puedes reunirte en persona, puedes <b>escanear el código QR en la videollamada</b>, o tu contacto puede compartir un enlace de invitación.</string>
@@ -393,7 +393,7 @@
     <string name="enter_one_ICE_server_per_line">Servidores ICE (uno por línea)</string>
     <string name="full_name__field">Nombre completo:</string>
     <string name="people_can_connect_only_via_links_you_share">Las personas pueden conectarse contigo sólo mediante los enlaces que compartes.</string>
-    <string name="how_simplex_works">Cómo funciona <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="how_simplex_works">Cómo funciona SimpleX</string>
     <string name="icon_descr_hang_up">Colgar</string>
     <string name="files_and_media_section">Archivos y multimedia</string>
     <string name="alert_title_no_group">¡Grupo no encontrado!</string>
@@ -443,10 +443,10 @@
     <string name="how_it_works">Cómo funciona</string>
     <string name="delete_message_cannot_be_undone_warning">El mensaje se eliminará. ¡No podrá deshacerse!</string>
     <string name="incognito_info_protects">La función del modo incógnito es proteger la identidad del perfil principal: por cada contacto nuevo se genera un perfil aleatorio.</string>
-    <string name="turn_off_battery_optimization">Para poder usarse <b>deshabilita la optimización de batería</b> para <xliff:g id="appName">SimpleX</xliff:g> en el siguiente cuadro de diálogo. De lo contrario las notificaciones estarán desactivadas.</string>
-    <string name="install_simplex_chat_for_terminal">Instalar terminal para <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
-    <string name="group_invitation_item_description">invitación al grupo <xliff:g id="group_name">%1$s</xliff:g></string>
-    <string name="rcv_group_event_member_added">ha invitado a <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="turn_off_battery_optimization">Para poder usarse <b>deshabilita la optimización de batería</b> para SimpleX en el siguiente cuadro de diálogo. De lo contrario las notificaciones estarán desactivadas.</string>
+    <string name="install_simplex_chat_for_terminal">Instalar terminal para SimpleX Chat</string>
+    <string name="group_invitation_item_description">invitación al grupo %1$s</string>
+    <string name="rcv_group_event_member_added">ha invitado a %1$s</string>
     <string name="incognito_info_allows">Permite tener varias conexiones anónimas sin datos compartidos entre estas dentro del mismo perfil.</string>
     <string name="invite_to_group_button">Invitar al grupo</string>
     <string name="to_verify_compare">Para comprobar el cifrado de extremo a extremo con tu contacto compara (o escanea) el código en tus dispositivos.</string>
@@ -460,7 +460,7 @@
     <string name="onboarding_notifications_mode_service">Instantánea</string>
     <string name="join_group_button">Únete</string>
     <string name="join_group_incognito_button">Únete en modo incógnito</string>
-    <string name="conn_level_desc_indirect">indirecta (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+    <string name="conn_level_desc_indirect">indirecta (%1$s)</string>
     <string name="theme_light">Claro</string>
     <string name="chat_preferences_on">Activado</string>
     <string name="message_deletion_prohibited">La eliminación irreversible de mensajes no está permitida en este chat.</string>
@@ -519,7 +519,7 @@
     <string name="network_use_onion_hosts_required_desc">Se requieren hosts .onion para la conexión</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Se usarán hosts .onion si están disponibles.</string>
     <string name="immune_to_spam_and_abuse">Inmune a spam y abuso</string>
-    <string name="many_people_asked_how_can_it_deliver">Muchos se preguntarán: <i>si <xliff:g id="appName">SimpleX</xliff:g> no tiene identificadores de usuario, ¿cómo puede entregar los mensajes\?</i></string>
+    <string name="many_people_asked_how_can_it_deliver">Muchos se preguntarán: <i>si SimpleX no tiene identificadores de usuario, ¿cómo puede entregar los mensajes\?</i></string>
     <string name="incoming_video_call">Videollamada entrante</string>
     <string name="snd_group_event_user_left">has salido</string>
     <string name="snd_conn_event_switch_queue_phase_completed">has cambiado la dirección</string>
@@ -587,7 +587,7 @@
     <string name="mark_code_verified">Marcar como verificado</string>
     <string name="smp_servers_invalid_address">¡Dirección de servidor no válida!</string>
     <string name="make_private_connection">Establecer una conexión privada</string>
-    <string name="network_error_desc">Comprueba tu conexión de red con <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> e inténtalo de nuevo.</string>
+    <string name="network_error_desc">Comprueba tu conexión de red con %1$s e inténtalo de nuevo.</string>
     <string name="sender_may_have_deleted_the_connection_request">El remitente puede haber eliminado la solicitud de conexión.</string>
     <string name="error_smp_test_certificate">Posiblemente la huella digital del certificado en la dirección del servidor es incorrecta</string>
     <string name="reply_verb">Responder</string>
@@ -612,7 +612,7 @@
     <string name="saved_ICE_servers_will_be_removed">Se eliminarán los servidores WebRTC ICE guardados.</string>
     <string name="callstatus_rejected">llamada rechazada</string>
     <string name="secret">secreto</string>
-    <string name="open_simplex_chat_to_accept_call">Abrir <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para aceptar llamada</string>
+    <string name="open_simplex_chat_to_accept_call">Abrir SimpleX Chat para aceptar llamada</string>
     <string name="network_options_reset_to_defaults">Restablecer valores por defecto</string>
     <string name="save_color">Guardar color</string>
     <string name="icon_descr_server_status_pending">Pendiente</string>
@@ -626,7 +626,7 @@
     <string name="protect_app_screen">Proteger la pantalla de la aplicación</string>
     <string name="read_more_in_github_with_link">Más información en nuestro <font color="#0088ff">repositorio GitHub</font> .</string>
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
-    <string name="rcv_group_event_member_deleted">ha expulsado a <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_deleted">ha expulsado a %1$s</string>
     <string name="send_link_previews">Enviar previsualizacion de enlaces</string>
     <string name="send_live_message_desc">Envía un mensaje en vivo: se actualizará para el(los) destinatario(s) a medida que se escribe</string>
     <string name="icon_descr_sent_msg_status_send_failed">error de envío</string>
@@ -723,7 +723,7 @@
     <string name="this_text_is_available_in_settings">Este texto está disponible en Configuración</string>
     <string name="switch_receiving_address_desc">¡Experimental! Sólo funcionará si el otro cliente tiene instalada la versión 4.2. Deberías ver el mensaje en la conversación una vez completado el cambio de dirección. Comprueba que puedes seguir recibiendo mensajes de este contacto (o miembro del grupo).</string>
     <string name="chat_lock">Bloqueo SimpleX</string>
-    <string name="using_simplex_chat_servers">Usando servidores <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
+    <string name="using_simplex_chat_servers">Usando servidores SimpleX Chat.</string>
     <string name="network_session_mode_transport_isolation">Aislamiento de transporte</string>
     <string name="strikethrough">tachado</string>
     <string name="use_chat">Usar Chat</string>
@@ -762,17 +762,17 @@
     <string name="enable_automatic_deletion_message">Esta acción no se puede deshacer. Se eliminarán los mensajes enviados y recibidos anteriores a la selección. Puede tardar varios minutos.</string>
     <string name="messages_section_description">Esta configuración se aplica a los mensajes del perfil actual</string>
     <string name="this_string_is_not_a_connection_link">¡Esta cadena no es un enlace de conexión!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Para preservar tu privacidad, en lugar de notificaciones automáticas la aplicación cuenta con un <b>servicio en segundo plano<xliff:g id="appName">SimpleX</xliff:g></b>, utiliza un pequeño porcentaje de la batería al día.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Para preservar tu privacidad, en lugar de notificaciones automáticas la aplicación cuenta con un <b>servicio en segundo planoSimpleX</b>, utiliza un pequeño porcentaje de la batería al día.</string>
     <string name="icon_descr_settings">Configuración</string>
     <string name="icon_descr_speaker_off">Altavoz desactivado</string>
     <string name="add_contact_or_create_group">Inciar chat nuevo</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Para poder exportar, importar o eliminar la base de datos primero debes detener Chat. Durante el tiempo que esté detenido no podrás recibir ni enviar mensajes.</string>
-    <string name="thank_you_for_installing_simplex">Gracias por instalar <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger la privacidad, en lugar de los identificadores de usuario que utilizan el resto de plataformas, <xliff:g id="appName">SimpleX</xliff:g> dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
+    <string name="thank_you_for_installing_simplex">Gracias por instalar SimpleX Chat!</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger la privacidad, en lugar de los identificadores de usuario que utilizan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa Bloqueo SimpleX.
 \nSe te pedirá que completes la autenticación antes de activar esta función.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Al actualizar la configuración, el cliente se reconectará a todos los servidores.</string>
-    <string name="use_simplex_chat_servers__question">¿Usar servidores <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\?</string>
+    <string name="use_simplex_chat_servers__question">¿Usar servidores SimpleX Chat\?</string>
     <string name="simplex_link_group">Enlace de grupo SimpleX</string>
     <string name="simplex_link_invitation">Invitación única SimpleX</string>
     <string name="simplex_link_mode">Enlaces SimpleX</string>
@@ -832,7 +832,7 @@
     <string name="update_network_settings_question">¿Actualizar la configuración de red\?</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Intentando conectar con el servidor utilizado para recibir mensajes de este contacto.</string>
     <string name="unknown_message_format">formato de mensaje desconocido</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Intentando conectar con el servidor utilizado para recibir mensajes de este contacto (error: <xliff:g id="errorMsg">%1$s</xliff:g> ).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Intentando conectar con el servidor utilizado para recibir mensajes de este contacto (error: %1$s ).</string>
     <string name="error_smp_test_failed_at_step">Prueba fallida en el paso %s.</string>
     <string name="tap_to_start_new_chat">Pulsa para iniciar chat nuevo</string>
     <string name="share_message">Compartir mensaje…</string>
@@ -866,7 +866,7 @@
     <string name="voice_messages">Mensajes de voz</string>
     <string name="voice_messages_are_prohibited">Los mensajes de voz no están permitidos en este grupo.</string>
     <string name="v4_4_verify_connection_security">Comprobar la seguridad de la conexión</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">¡Ya estás conectado a <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">¡Ya estás conectado a %1$s.</string>
     <string name="welcome">¡Bienvenido!</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Tu perfil Chat será enviado
 \na tu contacto</string>
@@ -878,10 +878,10 @@
     <string name="voice_message">Mensaje de voz</string>
     <string name="waiting_for_image">Esperando imagen</string>
     <string name="webrtc_ice_servers">Servidores WebRTC ICE</string>
-    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> quiere conectarse contigo mediante</string>
+    <string name="contact_wants_to_connect_via_call">%1$s quiere conectarse contigo mediante</string>
     <string name="failed_to_create_user_duplicate_desc">Tienes un perfil de chat con el mismo nombre mostrado. Debes elegir otro nombre.</string>
     <string name="you_can_also_connect_by_clicking_the_link">También puedes conectarte pulsando el enlace. Si se abre en el navegador, pulsa en <b>Abrir en aplicación móvil</b>.</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Puedes <font color="#0088ff">ponerte en contacto con los desarrolladores de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para consultas y para recibir actualizaciones</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Puedes <font color="#0088ff">ponerte en contacto con los desarrolladores de SimpleX Chat para consultas y para recibir actualizaciones</font>.</string>
     <string name="observer_cant_send_message_title">¡No puedes enviar mensajes!</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Puedes usar la sintaxis markdown para dar formato a tus mensajes:</string>
     <string name="you_must_use_the_most_recent_version_of_database">Debes usar la versión más reciente de tu base de datos ÚNICAMENTE en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</string>
@@ -895,18 +895,18 @@
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Se te pedirá identificarte cuándo inicies o continues usando la aplicación tras 30 segundos en segundo plano.</string>
     <string name="invite_prohibited_description">Estás intentando invitar a un contacto con el que compartes un perfil incógnito a un grupo en el que usas tu perfil principal</string>
     <string name="simplex_link_mode_browser">Mediante navegador</string>
-    <string name="simplex_link_connection">mediante <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
-    <string name="simplex_service_notification_title">Servicio <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
-    <string name="personal_welcome">¡Bienvenido <xliff:g>%1$s</xliff:g> !</string>
+    <string name="simplex_link_connection">mediante %1$s</string>
+    <string name="simplex_service_notification_title">Servicio SimpleX Chat</string>
+    <string name="personal_welcome">¡Bienvenido %1$s !</string>
     <string name="group_preview_you_are_invited">has sido invitado al grupo</string>
     <string name="waiting_for_file">Esperando archivo</string>
     <string name="icon_descr_waiting_for_image">Esperando imagen</string>
-    <string name="voice_message_with_duration">Mensaje de voz (<xliff:g id="duration">%1$s</xliff:g> )</string>
+    <string name="voice_message_with_duration">Mensaje de voz (%1$s )</string>
     <string name="network_use_onion_hosts_prefer">Si disponibles</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">No almacenamos ninguno de tus contactos o mensajes (una vez entregados) en los servidores.</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Has sido invitado al grupo. Únete para conectarte con los miembros del grupo.</string>
-    <string name="snd_group_event_member_deleted">has expulsado a <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
-    <string name="group_info_member_you">Tú: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="snd_group_event_member_deleted">has expulsado a %1$s</string>
+    <string name="group_info_member_you">Tú: %1$s</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Puedes compartir un enlace o un código QR: cualquiera podrá unirse al grupo. Si lo eliminas más tarde los miembros del grupo no se perderán.</string>
     <string name="incognito_info_share">Cuando compartes un perfil incógnito con alguien, este perfil también se usará para los grupos a los que te inviten.</string>
     <string name="your_preferences">Mis preferencias</string>
@@ -932,14 +932,14 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puedes iniciar el chat en Configuración / Base de datos o reiniciando la aplicación.</string>
     <string name="you_sent_group_invitation">Has enviado una invitación de grupo</string>
     <string name="num_contacts_selected">%d contacto(s) seleccionado(s)</string>
-    <string name="group_info_section_title_num_members"><xliff:g id="num_members"> %1$s </xliff:g> MIEMBROS</string>
+    <string name="group_info_section_title_num_members"> %1$s  MIEMBROS</string>
     <string name="voice_prohibited_in_this_chat">Los mensajes de voz no están permitidos en este chat.</string>
     <string name="whats_new">Novedades</string>
     <string name="you_have_to_enter_passphrase_every_time">La contraseña no se almacena en el dispositivo, tienes que introducirla cada vez que inicies la aplicación.</string>
     <string name="you_joined_this_group">Te has unido a este grupo</string>
     <string name="chat_preferences_yes">sí</string>
     <string name="chat_preferences_you_allow">Permites</string>
-    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="app_name">SimpleX</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Tu perfil se enviará al contacto del que has recibido este enlace.</string>
     <string name="you_will_join_group">Te unirás al grupo al que hace referencia este enlace y te conectarás con sus miembros.</string>
     <string name="sender_you_pronoun">tú</string>
@@ -949,23 +949,23 @@
     <string name="description_you_shared_one_time_link">has compartido enlace de un solo uso</string>
     <string name="description_you_shared_one_time_link_incognito">has compartido enlace de un solo uso en módo incógnito</string>
     <string name="you_have_no_chats">No tienes chats</string>
-    <string name="contact_sent_large_file">El contacto ha enviado un archivo mayor al máximo admitido (<xliff:g id="maxFileSize">%1$s</xliff:g> ).</string>
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> mensaje(s) omitido(s)</string>
+    <string name="contact_sent_large_file">El contacto ha enviado un archivo mayor al máximo admitido (%1$s ).</string>
+    <string name="integrity_msg_skipped">%1$d mensaje(s) omitido(s)</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Dejarás de recibir mensajes de este grupo. El historial del chat se conservará.</string>
     <string name="view_security_code">Mostrar código de seguridad</string>
     <string name="you_need_to_allow_to_send_voice">Para poder enviar mensajes de voz antes debes permitir que tu contacto pueda enviarlos.</string>
     <string name="voice_messages_prohibited">¡Mensajes de voz prohibidos!</string>
     <string name="group_main_profile_sent">Tu perfil Chat será enviado a los miembros del grupo</string>
-    <string name="icon_descr_address">Dirección <xliff:g id="appName">SimpleX</xliff:g></string>
-    <string name="image_descr_simplex_logo">Logo <xliff:g id="appName">SimpleX</xliff:g></string>
-    <string name="icon_descr_simplex_team">Equipo <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="icon_descr_address">Dirección SimpleX</string>
+    <string name="image_descr_simplex_logo">Logo SimpleX</string>
+    <string name="icon_descr_simplex_team">Equipo SimpleX</string>
     <string name="your_profile_will_be_sent">Tu perfil Chat se enviará a tu contacto</string>
     <string name="your_chat_profiles">Mis perfiles</string>
     <string name="your_simplex_contact_address">Mi dirección SimpleX</string>
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
     <string name="your_current_profile">Tu perfil actual</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores <xliff:g id="appName">SimpleX</xliff:g> no pueden ver tu perfil.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
     <string name="language_system">Sistema</string>
     <string name="button_add_welcome_message">Añadir mensaje de bienvenida</string>
     <string name="v4_6_audio_video_calls">Llamadas y videollamadas</string>
@@ -1095,13 +1095,13 @@
     <string name="alert_text_msg_bad_id">El ID del siguiente mensaje es incorrecto (menor o igual que el anterior).
 \nPuede ocurrir por algún bug o cuando la conexión está comprometida.</string>
     <string name="alert_text_fragment_please_report_to_developers">Por favor, informa a los desarrolladores.</string>
-    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> mensajes omitidos.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d mensajes omitidos.</string>
     <string name="alert_title_msg_bad_hash">Hash de mensaje incorrecto</string>
     <string name="alert_title_msg_bad_id">ID de mensaje incorrecto</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</string>
     <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
     <string name="alert_text_fragment_permanent_error_reconnect">El error es permanente para esta conexión, por favor vuelve a conectarte.</string>
-    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> mensajes no pudieron ser descifrados.</string>
+    <string name="alert_text_decryption_error_header">%1$d mensajes no pudieron ser descifrados.</string>
     <string name="no_spaces">¡Sin espacios!</string>
     <string name="stop_file__action">Detener archivo</string>
     <string name="revoke_file__message">El archivo será eliminado de los servidores.</string>

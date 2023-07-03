@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="share_image">चित्र साझा करें…</string>
     <string name="chat_preferences_off">बंद</string>
     <string name="accept_feature_set_1_day">1 दिन निर्धारित करें</string>
@@ -27,7 +27,7 @@
     <string name="chat_item_ttl_day">1 दिन</string>
     <string name="chat_item_ttl_week">1 सप्ताह</string>
     <string name="about_simplex">सिंपलएक्स के बारे में</string>
-    <string name="about_simplex_chat">बारे में <xliff:g id="appNameFull">सिंप्लेक्स चैट</xliff:g></string>
+    <string name="about_simplex_chat">बारे में सिंप्लेक्स चैट</string>
     <string name="accept_call_on_lock_screen">स्वीकार करना</string>
     <string name="accept">स्वीकार करना</string>
     <string name="accept_feature">स्वीकार करना</string>
@@ -57,7 +57,7 @@
     <string name="group_member_status_connected">जुड़े हुए</string>
     <string name="notification_contact_connected">जुड़े हुए</string>
     <string name="you_joined_this_group">आप इस समूह में शामिल हो गए</string>
-    <string name="group_info_member_you">तुम: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="group_info_member_you">तुम: %1$s</string>
     <string name="you_are_invited_to_group">आपको समूह में आमंत्रित किया जाता है</string>
     <string name="snd_conn_event_switch_queue_phase_completed">तुमने पता बदल लिया</string>
     <string name="snd_group_event_user_left">आप चले गए</string>
@@ -66,7 +66,7 @@
     <string name="welcome">स्वागत!</string>
     <string name="la_notice_turn_on">चालू करो</string>
     <string name="unknown_message_format">अज्ञात संदेश प्रारूप</string>
-    <string name="personal_welcome">स्वागत <xliff:g>%1$s</xliff:g>!</string>
+    <string name="personal_welcome">स्वागत %1$s!</string>
     <string name="callstate_starting">शुरुआत</string>
     <string name="send_verb">भेजना</string>
     <string name="save_color">रंग बचाओ</string>
@@ -76,7 +76,7 @@
     <string name="reject">अस्वीकार</string>
     <string name="open_verb">खुला</string>
     <string name="group_member_status_removed">निकाला गया</string>
-    <string name="rcv_group_event_member_deleted">निकाला गया <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_deleted">निकाला गया %1$s</string>
     <string name="reply_verb">जवाब दे दो</string>
     <string name="leave_group_button">छोड़ना</string>
     <string name="mark_read">पढ़ा हुआ चिह्नित करें</string>
@@ -87,7 +87,7 @@
     <string name="delete_after">बाद मिटा दें</string>
     <string name="display_name_invited_to_connect">जुड़ने के लिए आमंत्रित किया</string>
     <string name="rcv_group_event_invited_via_your_group_link">आपके समूह लिंक के माध्यम से आमंत्रित किया गया</string>
-    <string name="rcv_group_event_member_added">आमंत्रित <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_added">आमंत्रित %1$s</string>
     <string name="icon_descr_add_members">सदस्यों को आमंत्रित करो</string>
     <string name="v4_3_irreversible_message_deletion">अपरिवर्तनीय संदेश विलोपन</string>
     <string name="button_add_members">सदस्यों को आमंत्रित करो</string>

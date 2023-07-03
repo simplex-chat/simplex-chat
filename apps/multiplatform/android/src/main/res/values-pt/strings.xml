@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="image_descr_qr_code">Código QR</string>
     <string name="paste_button">Colar</string>
     <string name="paste_connection_link_below_to_connect">Cole a ligação que você recebeu na caixa abaixo para se conectar ao seu contato.</string>
@@ -100,7 +100,7 @@
     <string name="you_accepted_connection">Você aceitou a conexão</string>
     <string name="about_simplex">Sobre o SimpleX</string>
     <string name="network_settings">Definições de rede avançadas</string>
-    <string name="about_simplex_chat">Sobre o <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">Sobre o SimpleX Chat</string>
     <string name="above_then_preposition_continuation">acima, então:</string>
     <string name="users_delete_all_chats_deleted">Todas as conversas e mensagens serão apagadas - esta ação não pode ser revertida!</string>
     <string name="all_group_members_will_remain_connected">Todos os membros do grupo permanecerão conectados.</string>
@@ -173,7 +173,7 @@
     <string name="voice_prohibited_in_this_chat">Mensagens de voz são proibidas neste chat.</string>
     <string name="voice_messages_are_prohibited">Mensagens de voz são proibidas neste grupo.</string>
     <string name="voice_messages_prohibited">Mensagens de voz proibidas!</string>
-    <string name="voice_message_with_duration">Mensagem de voz (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="voice_message_with_duration">Mensagem de voz (%1$s)</string>
     <string name="app_version_name">Versão da aplicação: v%s</string>
     <string name="keychain_is_storing_securely">O Android Keystore é usado para armazenar com segurança a senha - permite que o serviço de notificações funcione.</string>
     <string name="keychain_allows_to_receive_ntfs">O Android Keystore será usado para armazenar com segurança a senha depois de voçê reiniciar a aplicação ou alterar a senha - irá permitir receber notificações.</string>
@@ -229,7 +229,7 @@
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="la_authenticate">Autenticar</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Leia o código QR </b>: para se conectar ao seu contato que lhe mostra o código QR.</string>
-    <string name="callstatus_ended">chamada finalizada <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="callstatus_ended">chamada finalizada %1$s</string>
     <string name="callstatus_calling">a chamar…</string>
     <string name="callstatus_error">erro de chamada</string>
     <string name="callstatus_in_progress">chamada em curso</string>
@@ -278,7 +278,7 @@
     <string name="error_changing_role">Erro ao alterar função</string>
     <string name="chat_preferences_contact_allows">O contato permite</string>
     <string name="chat_preferences">Preferências de conversa</string>
-    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="app_name">SimpleX</string>
     <string name="thousand_abbreviation">m</string>
     <string name="connect_via_contact_link">Conectar através da ligação de contato\?</string>
     <string name="connect_via_invitation_link">Conectar via convite de ligação\?</string>
@@ -361,13 +361,13 @@
     <string name="contribute">Contribuir</string>
     <string name="copy_verb">Copiar</string>
     <string name="core_version">Versão principal: v%s</string>
-    <string name="archive_created_on_ts">Criado a <xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="archive_created_on_ts">Criado a %1$s</string>
     <string name="create_group_link">Criar ligação de grupo</string>
     <string name="v4_2_group_links">Ligações de grupo</string>
     <string name="callstatus_connecting">conectando chamada…</string>
     <string name="connect_via_link">Conectar via ligação</string>
     <string name="connection_error">Erro de conexão</string>
-    <string name="connection_local_display_name">conexão <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="connection_local_display_name">conexão %1$d</string>
     <string name="contact_already_exists">O contato já existe</string>
     <string name="create_one_time_link">Criar convite de ligação de utilização única</string>
     <string name="one_time_link">Convite de ligação de utilização única</string>
@@ -382,7 +382,7 @@
     <string name="description_you_shared_one_time_link_incognito">você partilhou ligação anónima de utilização única</string>
     <string name="invalid_connection_link">Ligação de conexão inválida</string>
     <string name="save_verb">Salvar</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Se você recebeu convite de ligação do <xliff:g id="appName">SimpleX Chat</xliff:g>, você pode abri-lo no seu navegador:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Se você recebeu convite de ligação do SimpleX Chat, você pode abri-lo no seu navegador:</string>
     <string name="group_invitation_tap_to_join_incognito">Toque para entrar em modo anónimo</string>
     <string name="save_passphrase_in_keychain">Salvar senha na Keystore</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Se não se poderem encontrar pessoalmente, <b>mostre o código QR na chamada de vídeo </b> ou partilhe a ligação.</string>
@@ -475,7 +475,7 @@
     <string name="smp_server_test_create_queue">Criar fila</string>
     <string name="for_me_only">Eliminar para mim</string>
     <string name="auth_disable_simplex_lock">Desabilitar o bloqueio do SimpleX</string>
-    <string name="maximum_supported_file_size">Atualmente o tamanho máximo de ficheiro suportado é <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
+    <string name="maximum_supported_file_size">Atualmente o tamanho máximo de ficheiro suportado é %1$s.</string>
     <string name="button_delete_contact">Eliminar contato</string>
     <string name="create_group">Criar grupo secreto</string>
     <string name="smp_servers_delete_server">Eliminar servidor</string>
@@ -493,7 +493,7 @@
     <string name="decentralized">Descentralizado</string>
     <string name="integrity_msg_duplicate">mensagem duplicada</string>
     <string name="file_with_path">Ficheiro: %s</string>
-    <string name="group_info_member_you">você: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="group_info_member_you">você: %1$s</string>
     <string name="ttl_s">%ds</string>
     <string name="ttl_sec">%d seg</string>
     <string name="ttl_w">%dw</string>
@@ -513,12 +513,12 @@
     <string name="you_can_hide_or_mute_user_profile">Você pode esconder ou silenciar um perfil de utilizador - pressione-o para o menu.</string>
     <string name="icon_descr_video_on">Vídeo ligado</string>
     <string name="xftp_servers">Servidores XFTP</string>
-    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice"> %1$s </xliff:g> quer conectar-se consigo via</string>
+    <string name="contact_wants_to_connect_via_call"> %1$s  quer conectar-se consigo via</string>
     <string name="join_group_button">Junte-se</string>
     <string name="leave_group_button">Sair</string>
     <string name="leave_group_question">Deixar o grupo\?</string>
     <string name="rcv_group_event_member_left">esquerda</string>
-    <string name="group_info_section_title_num_members"><xliff:g id="num_members"> %1$s </xliff:g> MEMBROS</string>
+    <string name="group_info_section_title_num_members"> %1$s  MEMBROS</string>
     <string name="button_leave_group">Deixar o grupo</string>
     <string name="chat_preferences_yes">sim</string>
     <string name="description_via_group_link">via ligação de grupo</string>
@@ -538,23 +538,23 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Você deixará de receber mensagens deste grupo. O histórico de mensagens será preservado.</string>
     <string name="join_group_question">Juntar-se ao grupo\?</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Com mensagem de boas-vindas opcional.</string>
-    <string name="simplex_link_connection">via <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Já está conectado a <xliff:g id="contactName" example="Alice">%1$s</xliff:g>.</string>
-    <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
+    <string name="simplex_link_connection">via %1$s</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Já está conectado a %1$s.</string>
+    <string name="simplex_service_notification_title">SimpleX Chat service</string>
     <string name="large_file">Ficheiro grande!</string>
     <string name="icon_descr_image_snd_complete">Imagem enviada</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Você pode <font color="#0088ff">conectar-se com os desenvolvedores do <xliff:g id="appNameFull">SimpleX Chat</xliff:g> para fazer quaisquer perguntas e receber atualizações</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Você pode <font color="#0088ff">conectar-se com os desenvolvedores do SimpleX Chat para fazer quaisquer perguntas e receber atualizações</font>.</string>
     <string name="gallery_image_button">Imagem</string>
     <string name="gallery_video_button">Vídeo</string>
-    <string name="icon_descr_address">Endereço <xliff:g id="appName">SimpleX</xliff:g></string>
-    <string name="icon_descr_simplex_team">Equipa <xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="icon_descr_address">Endereço SimpleX</string>
+    <string name="icon_descr_simplex_team">Equipa SimpleX</string>
     <string name="learn_more">Saiba mais</string>
     <string name="you_can_accept_or_reject_connection">Quando as pessoas solicitam conexão, você pode aceitá-la ou rejeitá-la.</string>
     <string name="you_can_create_it_later">Você pode criá-lo mais tarde</string>
     <string name="email_invite_subject">Vamos conversar no SimpleX Chat</string>
     <string name="icon_descr_video_off">Vídeo desligado</string>
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> mensagem(s) ignoradas</string>
-    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> mensagens ignoradas.</string>
+    <string name="integrity_msg_skipped">%1$d mensagem(s) ignoradas</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d mensagens ignoradas.</string>
     <string name="import_database">Importar base de dados</string>
     <string name="your_settings">As suas definições</string>
     <string name="settings_section_title_settings">DEFINIÇÕES</string>

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="send_disappearing_message_1_minute">1 นาที</string>
     <string name="send_disappearing_message_30_seconds">30 วินาที</string>
     <string name="above_then_preposition_continuation">ด้านบน, จากนั้น:</string>
     <string name="accept_contact_button">รับ</string>
     <string name="accept_contact_incognito_button">ยอมรับโหมดไม่ระบุตัวตน</string>
-    <string name="about_simplex_chat">เกี่ยวกับ <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">เกี่ยวกับ SimpleX Chat</string>
     <string name="callstatus_accepted">รับสาย</string>
     <string name="accept_call_on_lock_screen">รับ</string>
     <string name="chat_item_ttl_week">1 สัปดาห์</string>
@@ -105,7 +105,7 @@
     <string name="both_you_and_your_contact_can_send_voice">ทั้งคุณและผู้ติดต่อของคุณสามารถส่งข้อความเสียงได้</string>
     <string name="callstatus_error">การโทรล้มเหลว</string>
     <string name="v4_5_transport_isolation_descr">ตามโปรไฟล์แชท (การตั้งค่าเริ่มต้น) หรือโดยการเชื่อมต่อ (เบต้า)</string>
-    <string name="callstatus_ended">สิ้นสุดการโทร <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="callstatus_ended">สิ้นสุดการโทร %1$s</string>
     <string name="icon_descr_call_progress">กําลังโทร</string>
     <string name="settings_section_title_calls">โทร</string>
     <string name="turning_off_service_and_periodic">การเพิ่มประสิทธิภาพแบตเตอรี่ทํางานอยู่ บริการพื้นหลังและคําขอข้อความใหม่เป็นระยะจะถูกปิด คุณสามารถเปิดใช้งานอีกครั้งผ่านการตั้งค่า</string>
@@ -166,8 +166,8 @@
     <string name="connection_timeout">หมดเวลาการเชื่อมต่อ</string>
     <string name="connect_via_group_link">เชื่อมต่อผ่านลิงค์กลุ่ม\?</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">ผู้ติดต่อและข้อความทั้งหมดจะถูกลบ - ไม่สามารถยกเลิกได้!</string>
-    <string name="archive_created_on_ts">สร้างเมื่อ <xliff:g id="archive_ts">%1$s</xliff:g></string>
-    <string name="maximum_supported_file_size">ขนาดไฟล์สูงสุดที่รองรับในปัจจุบันคือ <xliff:g id="maxFileSize">%1$s</xliff:g></string>
+    <string name="archive_created_on_ts">สร้างเมื่อ %1$s</string>
+    <string name="maximum_supported_file_size">ขนาดไฟล์สูงสุดที่รองรับในปัจจุบันคือ %1$s</string>
     <string name="v5_1_custom_themes">ธีมที่กำหนดเอง</string>
     <string name="developer_options">ID ฐานข้อมูลและตัวเลือกการแยกการส่งผ่าน</string>
     <string name="info_row_database_id">ID ฐานข้อมูล</string>
@@ -177,7 +177,7 @@
     <string name="connect_via_invitation_link">เชื่อมต่อผ่านลิงค์เชิญ\?</string>
     <string name="display_name_connecting">กำลังเชื่อมต่อ…</string>
     <string name="display_name_connection_established">สร้างการเชื่อมต่อแล้ว</string>
-    <string name="connection_local_display_name">การเชื่อมต่อ <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="connection_local_display_name">การเชื่อมต่อ %1$d</string>
     <string name="contact_already_exists">ผู้ติดต่อรายนี้มีอยู่แล้ว</string>
     <string name="connection_error_auth">การเชื่อมต่อล้มเหลว (AUTH)</string>
     <string name="smp_server_test_compare_file">เปรียบเทียบไฟล์</string>
@@ -387,7 +387,7 @@
     <string name="how_to_use_markdown">วิธีใช้มาร์กดาวน์</string>
     <string name="callstate_ended">สิ้นสุดลงแล้ว</string>
     <string name="how_it_works">มันทำงานอย่างไร</string>
-    <string name="how_simplex_works">วิธีการ <xliff:g id="appName">SimpleX</xliff:g> ทํางานอย่างไร</string>
+    <string name="how_simplex_works">วิธีการ SimpleX ทํางานอย่างไร</string>
     <string name="decentralized">กระจายอำนาจ</string>
     <string name="encrypted_audio_call">การโทรเสียงแบบ encrypt จากต้นจนจบ</string>
     <string name="encrypted_video_call">การโทรวิดีแบบ encrypt จากต้นจนจบ</string>
@@ -538,8 +538,8 @@
     <string name="if_you_enter_self_destruct_code">หากคุณใส่รหัสทำลายตัวเองขณะเปิดแอป:</string>
     <string name="group_unsupported_incognito_main_profile_sent">ไม่รองรับโหมดไม่ระบุตัวตนที่นี่ - โปรไฟล์หลักของคุณจะถูกส่งไปยังสมาชิกกลุ่ม</string>
     <string name="incognito_info_protects">โหมดไม่ระบุตัวตนปกป้องความเป็นส่วนตัวของชื่อและรูปภาพโปรไฟล์หลักของคุณ — สำหรับผู้ติดต่อใหม่แต่ละราย จะมีการสร้างโปรไฟล์ใหม่แบบสุ่ม</string>
-    <string name="conn_level_desc_indirect">ทางอ้อม (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
-    <string name="install_simplex_chat_for_terminal">ติดตั้ง <xliff:g id="appNameFull">SimpleX Chat</xliff:g> สำหรับเทอร์มินัล</string>
+    <string name="conn_level_desc_indirect">ทางอ้อม (%1$s)</string>
+    <string name="install_simplex_chat_for_terminal">ติดตั้ง SimpleX Chat สำหรับเทอร์มินัล</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">มันสามารถเกิดขึ้นได้เมื่อ:
 \n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 30 วัน
 \n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า
@@ -558,7 +558,7 @@
     <string name="icon_descr_instant_notifications">การแจ้งเตือนทันที</string>
     <string name="service_notifications">แจ้งเตือนทันที!</string>
     <string name="service_notifications_disabled">ปิดการแจ้งเตือนทันทีแล้ว!</string>
-    <string name="turn_off_battery_optimization">เพื่อให้สามารถใช้งานได้ โปรด &lt;b xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\"&gt;ปิดการใช้งานการเพิ่มประสิทธิภาพแบตเตอรี่&lt;/b&gt; สำหรับ &lt;xliff:g xmlns:xliff=\"urn:oasis: ชื่อ:tc:xliff:document:1.2\" id=\"appName\"&gt;SimpleX&lt;/xliff:g&gt; ในกล่องโต้ตอบถัดไป มิฉะนั้น การแจ้งเตือนจะถูกปิดใช้งาน</string>
+    <string name="turn_off_battery_optimization">เพื่อให้สามารถใช้งานได้ โปรด <b>ปิดการใช้งานการเพิ่มประสิทธิภาพแบตเตอรี่</b> สำหรับ SimpleX ในกล่องโต้ตอบถัดไป มิฉะนั้น การแจ้งเตือนจะถูกปิดใช้งาน</string>
     <string name="la_immediately">โดยทันที</string>
     <string name="auth_log_in_using_credential">เข้าสู่ระบบโดยใช้ข้อมูลประจำตัวของคุณ</string>
     <string name="info_menu">ข้อมูล</string>
@@ -571,7 +571,7 @@
     <string name="large_file">ไฟล์ขนาดใหญ่!</string>
     <string name="live_message">ข้อความสด!</string>
     <string name="gallery_image_button">ภาพ</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">หากคุณได้รับลิงก์เชิญ <xliff:g id="appName">SimpleX Chat</xliff:g> คุณสามารถเปิดได้ในเบราว์เซอร์ของคุณ:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">หากคุณได้รับลิงก์เชิญ SimpleX Chat คุณสามารถเปิดได้ในเบราว์เซอร์ของคุณ:</string>
     <string name="image_descr_link_preview">ภาพตัวอย่างลิงค์</string>
     <string name="invalid_QR_code">รหัส QR ไม่ถูกต้อง</string>
     <string name="invalid_contact_link">ลิงค์ไม่ถูกต้อง!</string>
@@ -599,7 +599,7 @@
     <string name="keychain_error">ข้อผิดพลาดของ Keychain</string>
     <string name="incompatible_database_version">เวอร์ชันฐานข้อมูลที่เข้ากันไม่ได้</string>
     <string name="invalid_migration_confirmation">การยืนยันการย้ายไม่ถูกต้อง</string>
-    <string name="group_invitation_item_description">คำเชิญเข้าร่วมกลุ่ม <xliff:g id="group_name">%1$s</xliff:g></string>
+    <string name="group_invitation_item_description">คำเชิญเข้าร่วมกลุ่ม %1$s</string>
     <string name="join_group_button">เข้าร่วม</string>
     <string name="join_group_question">เข้าร่วมกลุ่ม\?</string>
     <string name="joining_group">กำลังจะเข้าร่วมกลุ่ม</string>
@@ -607,7 +607,7 @@
     <string name="leave_group_question">ออกจากกลุ่ม\?</string>
     <string name="alert_title_group_invitation_expired">คำเชิญหมดอายุแล้ว!</string>
     <string name="icon_descr_add_members">เชิญสมาชิก</string>
-    <string name="rcv_group_event_member_added">เชิญแล้ว <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_added">เชิญแล้ว %1$s</string>
     <string name="rcv_group_event_member_left">ออกแล้ว</string>
     <string name="rcv_group_event_invited_via_your_group_link">เชิญผ่านลิงค์กลุ่มของคุณ</string>
     <string name="group_member_status_invited">เชิญ</string>
@@ -689,7 +689,7 @@
     <string name="paste_the_link_you_received">แปะลิงก์ที่ได้รับ</string>
     <string name="status_no_e2e_encryption">ไม่มีการ encrypt จากต้นจนจบ</string>
     <string name="open_verb">เปิด</string>
-    <string name="open_simplex_chat_to_accept_call">เปิด <xliff:g id="appNameFull">SimpleX Chat</xliff:g> เพื่อรับสาย</string>
+    <string name="open_simplex_chat_to_accept_call">เปิด SimpleX Chat เพื่อรับสาย</string>
     <string name="call_connection_peer_to_peer">เพื่อนต่อเพื่อน</string>
     <string name="icon_descr_call_pending_sent">รอสาย</string>
     <string name="icon_descr_call_missed">สายที่ไม่ได้รับ</string>
@@ -765,12 +765,12 @@
     <string name="message_delivery_error_desc">เป็นไปได้มากว่าผู้ติดต่อนี้ได้ลบการเชื่อมต่อกับคุณ</string>
     <string name="message_delivery_error_title">ข้อผิดพลาดในการส่งข้อความ</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">ตรวจสอบให้แน่ใจว่าที่อยู่เซิร์ฟเวอร์ SMP อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน</string>
-    <string name="many_people_asked_how_can_it_deliver">หลายคนถามว่า: <i>ถ้า <xliff:g id="appName">SimpleX</xliff:g> ไม่มีตัวระบุผู้ใช้ จะส่งข้อความได้อย่างไร\?</i></string>
+    <string name="many_people_asked_how_can_it_deliver">หลายคนถามว่า: <i>ถ้า SimpleX ไม่มีตัวระบุผู้ใช้ จะส่งข้อความได้อย่างไร\?</i></string>
     <string name="network_use_onion_hosts_prefer_desc">โฮสต์หัวหอมจะถูกใช้เมื่อมี</string>
     <string name="only_your_contact_can_send_voice">ผู้ติดต่อของคุณเท่านั้นที่สามารถส่งข้อความเสียงได้</string>
     <string name="simplex_link_mode_browser_warning">การเปิดลิงก์ในเบราว์เซอร์อาจลดความเป็นส่วนตัวและความปลอดภัยของการเชื่อมต่อ ลิงก์ SimpleX ที่ไม่น่าเชื่อถือจะเป็นสีแดง</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">โปรดตรวจสอบว่าคุณใช้ลิงก์ที่ถูกต้องหรือขอให้ผู้ติดต่อของคุณส่งลิงก์ใหม่ให้คุณ</string>
-    <string name="network_error_desc">โปรดตรวจสอบการเชื่อมต่อเครือข่ายของคุณกับ <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> แล้วลองอีกครั้ง</string>
+    <string name="network_error_desc">โปรดตรวจสอบการเชื่อมต่อเครือข่ายของคุณกับ %1$s แล้วลองอีกครั้ง</string>
     <string name="contact_developers">โปรดอัปเดตแอปและติดต่อนักพัฒนาแอป</string>
     <string name="error_smp_test_certificate">อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง</string>
     <string name="received_message">ได้รับข้อความ</string>
@@ -852,7 +852,7 @@
     <string name="restore_database_alert_title">คืนค่าฐานข้อมูลสำรองไหม\?</string>
     <string name="database_restore_error">กู้คืนข้อผิดพลาดของฐานข้อมูล</string>
     <string name="save_archive">บันทึกไฟล์เก็บถาวร</string>
-    <string name="rcv_group_event_member_deleted">ลบแล้ว <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_deleted">ลบแล้ว %1$s</string>
     <string name="rcv_group_event_user_deleted">ลบคุณออกแล้ว</string>
     <string name="group_member_status_removed">ถูกลบแล้ว</string>
     <string name="info_row_updated_at">บันทึกถูกอัปเดตเมื่อ</string>
@@ -1000,7 +1000,7 @@
     <string name="tap_to_start_new_chat">แตะเพื่อเริ่มแชทใหม่</string>
     <string name="switch_receiving_address_question">เปลี่ยนที่อยู่ผู้รับ\?</string>
     <string name="add_contact_or_create_group">เริ่มแชทใหม่</string>
-    <string name="thank_you_for_installing_simplex">ขอบคุณสำหรับการติดตั้ง <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="thank_you_for_installing_simplex">ขอบคุณสำหรับการติดตั้ง SimpleX Chat!</string>
     <string name="chat_help_tap_button">แตะปุ่ม</string>
     <string name="connection_you_accepted_will_be_cancelled">การเชื่อมต่อที่คุณยอมรับจะถูกยกเลิก!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">ผู้ติดต่อที่คุณแชร์ลิงก์นี้ด้วยจะไม่สามารถเชื่อมต่อได้!</string>
@@ -1041,9 +1041,9 @@
     <string name="network_session_mode_transport_isolation">การแยกการขนส่ง</string>
     <string name="unhide_chat_profile">ยกเลิกการซ่อนโปรไฟล์การแชท</string>
     <string name="update_database">อัปเดต</string>
-    <string name="use_simplex_chat_servers__question">ใช้เซิร์ฟเวอร์ <xliff:g id="appNameFull">SimpleX Chat</xliff:g> ไหม\?</string>
+    <string name="use_simplex_chat_servers__question">ใช้เซิร์ฟเวอร์ SimpleX Chat ไหม\?</string>
     <string name="video_call_no_encryption">การสนทนาทางวิดีโอ (ไม่ได้ encrypt จากต้นจนจบ)</string>
-    <string name="using_simplex_chat_servers">กำลังใช้เซิร์ฟเวอร์ <xliff:g id="appNameFull">SimpleX Chat</xliff:g>อยู่</string>
+    <string name="using_simplex_chat_servers">กำลังใช้เซิร์ฟเวอร์ SimpleX Chatอยู่</string>
     <string name="v5_1_better_messages_descr">- ข้อความเสียงสูงสุด 5 นาที
 \n- เวลาที่กำหนดเองที่จะหายไป
 \n- ประวัติการแก้ไข</string>
@@ -1052,23 +1052,23 @@
     <string name="onboarding_notifications_mode_off">เมื่อแอพกำลังทำงาน</string>
     <string name="v4_4_verify_connection_security">ตรวจสอบความปลอดภัยในการเชื่อมต่อ</string>
     <string name="incognito_info_share">เมื่อคุณแชร์โปรไฟล์ที่ไม่ระบุตัวตนกับใครสักคน โปรไฟล์นี้จะใช้สำหรับกลุ่มที่พวกเขาเชิญคุณ</string>
-    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> ต้องการเชื่อมต่อกับคุณผ่านทาง</string>
-    <string name="alert_text_decryption_error_header">ข้อความ <xliff:g id="message count" example="1">%1$d</xliff:g> ไม่สามารถ decrypt ได้</string>
-    <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> สมาชิก</string>
-    <string name="you_can_connect_to_simplex_chat_founder">คุณสามารถ <font color="#0088ff">เชื่อมต่อกับ <xliff:g id="appNameFull">SimpleX Chat</xliff:g> นักพัฒนาแอปเพื่อถามคำถามและรับการอัปเดต</font></string>
+    <string name="contact_wants_to_connect_via_call">%1$s ต้องการเชื่อมต่อกับคุณผ่านทาง</string>
+    <string name="alert_text_decryption_error_header">ข้อความ %1$d ไม่สามารถ decrypt ได้</string>
+    <string name="group_info_section_title_num_members">%1$s สมาชิก</string>
+    <string name="you_can_connect_to_simplex_chat_founder">คุณสามารถ <font color="#0088ff">เชื่อมต่อกับ SimpleX Chat นักพัฒนาแอปเพื่อถามคำถามและรับการอัปเดต</font></string>
     <string name="you_can_share_your_address">คุณสามารถแชร์ที่อยู่ของคุณเป็นลิงก์หรือรหัสคิวอาร์ - ใคร ๆ ก็สามารถเชื่อมต่อกับคุณได้</string>
     <string name="snd_conn_event_switch_queue_phase_completed">คุณเปลี่ยนที่อยู่</string>
     <string name="snd_group_event_changed_role_for_yourself">คุณเปลี่ยนบทบาทของตัวเองเป็น %s</string>
     <string name="your_current_profile">โปรไฟล์ปัจจุบันของคุณ</string>
     <string name="invite_prohibited_description">คุณกำลังพยายามเชิญผู้ติดต่อที่คุณแบ่งปันโปรไฟล์ที่ไม่ระบุตัวตนไปยังกลุ่มที่คุณใช้โปรไฟล์หลักของคุณ</string>
     <string name="your_privacy">ความเป็นส่วนตัวของคุณ</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น <xliff:g id="appName"> เซิร์ฟเวอร์ SimpleX </xliff:g> ไม่สามารถดูโปรไฟล์ของคุณได้</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น  เซิร์ฟเวอร์ SimpleX  ไม่สามารถดูโปรไฟล์ของคุณได้</string>
     <string name="settings_section_title_you">คุณ</string>
     <string name="you_are_invited_to_group">คุณได้รับเชิญให้เข้าร่วมกลุ่ม</string>
     <string name="incognito_random_profile">โปรไฟล์แบบสุ่มของคุณ</string>
     <string name="theme">ธีม</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: <xliff:g id="errorMsg">%1$s</xliff:g>)</string>
-    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: %1$s)</string>
+    <string name="app_name">SimpleX</string>
     <string name="connected_to_server_to_receive_messages_from_contact">คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
     <string name="profile_will_be_sent_to_contact_sending_link">โปรไฟล์ของคุณจะถูกส่งไปยังผู้ติดต่อที่ส่งลิงก์นี้มาให้คุณ</string>
     <string name="trying_to_connect_to_server_to_receive_messages">พยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
@@ -1080,14 +1080,14 @@
     <string name="description_you_shared_one_time_link">คุณแชร์ลิงก์แบบใช้ครั้งเดียว</string>
     <string name="description_you_shared_one_time_link_incognito">คุณแชร์ลิงก์แบบใช้ครั้งเดียวโดยไม่ระบุตัวตน</string>
     <string name="simplex_link_mode_browser">ผ่านเบราว์เซอร์</string>
-    <string name="simplex_link_connection">ผ่าน <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_connection">ผ่าน %1$s</string>
     <string name="failed_to_create_user_duplicate_desc">คุณมีโปรไฟล์แชทที่ใช้ชื่อแสดงเดียวกันอยู่แล้ว กรุณาเลือกชื่ออื่น</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">คุณเชื่อมต่อกับ <xliff:g id="contactName" example="Alice">%1$s</xliff:g> แล้ว</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">คุณเชื่อมต่อกับ %1$s แล้ว</string>
     <string name="connection_error_auth_desc">เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน
 \nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร</string>
     <string name="smp_server_test_upload_file">อัปโหลดไฟล์</string>
     <string name="enter_passphrase_notification_desc">หากต้องการรับการแจ้งเตือน โปรดป้อนรหัสผ่านของฐานข้อมูล</string>
-    <string name="simplex_service_notification_title">บริการ <xliff:g id="appNameFull"> SimpleX Chat </xliff:g></string>
+    <string name="simplex_service_notification_title">บริการ  SimpleX Chat </string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">เพื่อปกป้องข้อมูลของคุณ ให้เปิด SimpleX Lock
 \nคุณจะได้รับแจ้งให้ยืนยันตัวตนให้เสร็จสมบูรณ์ก่อนที่จะเปิดใช้งานคุณลักษณะนี้</string>
     <string name="la_notice_turn_on">เปิด</string>
@@ -1099,7 +1099,7 @@
     <string name="icon_descr_received_msg_status_unread">เปลี่ยนเป็นยังไม่ได้อ่าน</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">ส่งโดยไม่ได้รับอนุญาต</string>
     <string name="welcome">ยินดีต้อนรับ!</string>
-    <string name="personal_welcome">ยินดีต้อนรับ <xliff:g>%1$s</xliff:g>!</string>
+    <string name="personal_welcome">ยินดีต้อนรับ %1$s!</string>
     <string name="group_preview_you_are_invited">คุณได้รับเชิญให้เข้าร่วมกลุ่ม</string>
     <string name="you_have_no_chats">คุณไม่มีการแชท</string>
     <string name="your_chats">แชท</string>
@@ -1114,10 +1114,10 @@
     <string name="icon_descr_waiting_for_video">กำลังรอวิดีโอ</string>
     <string name="waiting_for_video">กําลังรอวิดีโอ</string>
     <string name="video_will_be_received_when_contact_is_online">จะได้รับวิดีโอเมื่อผู้ติดต่อของคุณออนไลน์ โปรดรอหรือตรวจสอบในภายหลัง!</string>
-    <string name="contact_sent_large_file">ผู้ติดต่อของคุณส่งไฟล์ที่ใหญ่กว่าขนาดสูงสุดที่รองรับในปัจจุบัน (<xliff:g id="maxFileSize">%1$s</xliff:g>)</string>
+    <string name="contact_sent_large_file">ผู้ติดต่อของคุณส่งไฟล์ที่ใหญ่กว่าขนาดสูงสุดที่รองรับในปัจจุบัน (%1$s)</string>
     <string name="voice_message">ข้อความเสียง</string>
     <string name="voice_message_send_text">ข้อความเสียง…</string>
-    <string name="voice_message_with_duration">ข้อความเสียง (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="voice_message_with_duration">ข้อความเสียง (%1$s)</string>
     <string name="waiting_for_file">กำลังรอไฟล์</string>
     <string name="verify_security_code">ตรวจสอบรหัสความปลอดภัย</string>
     <string name="view_security_code">ดูรหัสความปลอดภัย</string>
@@ -1132,9 +1132,9 @@
     <string name="contact_wants_to_connect_with_you">ต้องการเชื่อมต่อกับคุณ!</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">ผู้ติดต่อของคุณจะต้องออนไลน์เพื่อให้การเชื่อมต่อเสร็จสมบูรณ์
 \nคุณสามารถยกเลิกการเชื่อมต่อนี้และลบผู้ติดต่อออก (และลองใหม่ในภายหลังด้วยลิงก์ใหม่)</string>
-    <string name="icon_descr_address">ที่อยู่ <xliff:g id="appName">SimpleX</xliff:g></string>
-    <string name="image_descr_simplex_logo">โลโก้ <xliff:g id="appName">SimpleX</xliff:g></string>
-    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> ทีม</string>
+    <string name="icon_descr_address">ที่อยู่ SimpleX</string>
+    <string name="image_descr_simplex_logo">โลโก้ SimpleX</string>
+    <string name="icon_descr_simplex_team">SimpleX ทีม</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">คุณจะเชื่อมต่อกับกลุ่มเมื่ออุปกรณ์โฮสต์ของกลุ่มออนไลน์อยู่ โปรดรอหรือตรวจสอบภายหลัง!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">คุณจะเชื่อมต่อเมื่อคำขอเชื่อมต่อของคุณได้รับการยอมรับ โปรดรอหรือตรวจสอบในภายหลัง!</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">โปรไฟล์แชทของคุณจะถูกส่ง
@@ -1183,10 +1183,10 @@
     <string name="call_connection_via_relay">ผ่านรีเลย์</string>
     <string name="icon_descr_video_off">ปิดวิดีโอ</string>
     <string name="icon_descr_video_on">เปิดวิดีโอ</string>
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> ข้อความที่ถูกข้าม</string>
+    <string name="integrity_msg_skipped">%1$d ข้อความที่ถูกข้าม</string>
     <string name="alert_text_msg_bad_id">ID ของข้อความถัดไปไม่ถูกต้อง (น้อยกว่าหรือเท่ากับข้อความก่อนหน้า)
 \nอาจเกิดขึ้นได้เนื่องจากข้อบกพร่องบางอย่างหรือเมื่อการเชื่อมต่อถูกบุกรุก</string>
-    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1"> %1$d ข้อความ </xliff:g> ถูกข้ามไป</string>
+    <string name="alert_text_decryption_error_too_many_skipped"> %1$d ข้อความ  ถูกข้ามไป</string>
     <string name="settings_section_title_themes">ธีม</string>
     <string name="your_chat_database">ฐานข้อมูลการแชทของคุณ</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">ฐานข้อมูลแชทปัจจุบันของคุณจะถูกลบและแทนที่ด้วยฐานข้อมูลที่นำเข้า
@@ -1212,7 +1212,7 @@
     <string name="rcv_group_event_updated_group_profile">อัปเดตโปรไฟล์กลุ่มแล้ว</string>
     <string name="snd_group_event_changed_member_role">คุณเปลี่ยนบทบาทของ %s เป็น %s</string>
     <string name="snd_group_event_user_left">คุณออกไปแล้ว</string>
-    <string name="snd_group_event_member_deleted">คุณลบ <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_group_event_member_deleted">คุณลบ %1$s</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">คุณเปลี่ยนที่อยู่สำหรับ %s</string>
     <string name="button_welcome_message">ข้อความต้อนรับ</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">คุณสามารถแชร์ลิงก์หรือคิวอาร์โค้ดได้ ทุกคนจะสามารถเข้าร่วมกลุ่มได้ คุณจะไม่สูญเสียสมาชิกของกลุ่มหากคุณลบในภายหลัง</string>
@@ -1244,9 +1244,9 @@
     <string name="custom_time_unit_weeks">สัปดาห์</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">การดำเนินการนี้ไม่สามารถยกเลิกได้ - โปรไฟล์ ผู้ติดต่อ ข้อความ และไฟล์ของคุณจะสูญหายไปอย่างถาวร</string>
     <string name="incognito_info_find">หากต้องการค้นหาโปรไฟล์ที่ใช้สำหรับการเชื่อมต่อแบบไม่ระบุตัวตน ให้แตะชื่อผู้ติดต่อหรือชื่อกลุ่มที่ด้านบนของแชท</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">เพื่อรักษาความเป็นส่วนตัวของคุณ แทนที่จะใช้การแจ้งเตือนแบบพุช แอปมีบริการพื้นหลัง <b><xliff:g id="appName">SimpleX</xliff:g> </b> – ใช้แบตเตอรี่เพียงไม่กี่เปอร์เซ็นต์ต่อวัน</string>
-    <string name="group_info_member_you">คุณ: <xliff:g id="group_info_you">%1$s</xliff:g></string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">เพื่อปกป้องความเป็นส่วนตัว แทนที่จะใช้ ID ผู้ใช้เหมือนที่แพลตฟอร์มอื่นๆใช้ <xliff:g id="appName">SimpleX</xliff:g> มีตัวระบุสำหรับคิวข้อความ โดยแยกจากกันสำหรับผู้ติดต่อแต่ละราย</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">เพื่อรักษาความเป็นส่วนตัวของคุณ แทนที่จะใช้การแจ้งเตือนแบบพุช แอปมีบริการพื้นหลัง <b>SimpleX </b> – ใช้แบตเตอรี่เพียงไม่กี่เปอร์เซ็นต์ต่อวัน</string>
+    <string name="group_info_member_you">คุณ: %1$s</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">เพื่อปกป้องความเป็นส่วนตัว แทนที่จะใช้ ID ผู้ใช้เหมือนที่แพลตฟอร์มอื่นๆใช้ SimpleX มีตัวระบุสำหรับคิวข้อความ โดยแยกจากกันสำหรับผู้ติดต่อแต่ละราย</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">คุณจะต้องยืนยันตัวตนเมื่อคุณเริ่มหรือกลับมาใช้แอปพลิเคชันอีกครั้งหลังจากผ่านไป 30 วินาทีในพื้นหลัง</string>
     <string name="you_will_join_group">คุณจะเข้าร่วมกลุ่มที่ลิงก์นี้อ้างถึงและเชื่อมต่อกับสมาชิกในกลุ่ม</string>
     <string name="this_text_is_available_in_settings">ตัวบทนี้มีอยู่ในการตั้งค่า</string>

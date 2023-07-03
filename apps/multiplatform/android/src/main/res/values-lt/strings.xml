@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="chat_item_ttl_month">1 mėnuo</string>
     <string name="chat_item_ttl_week">1 savaitė</string>
-    <string name="about_simplex_chat">Apie <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">Apie SimpleX Chat</string>
     <string name="chat_item_ttl_day">1 diena</string>
     <string name="a_plus_b">a + b</string>
     <string name="about_simplex">Apie SimpleX</string>
@@ -29,7 +29,7 @@
     <string name="allow_verb">Leisti</string>
     <string name="allow_voice_messages_question">Leisti balso žinutes\?</string>
     <string name="bold">pusjuodis</string>
-    <string name="callstatus_ended">skambutis baigtas <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="callstatus_ended">skambutis baigtas %1$s</string>
     <string name="icon_descr_audio_call">garso skambutis</string>
     <string name="settings_audio_video_calls">Garso ir vaizdo skambučiai</string>
     <string name="integrity_msg_bad_hash">bloga žinutės maiša</string>
@@ -108,7 +108,7 @@
     <string name="reply_verb">Atsakyti</string>
     <string name="delete_message__question">Ištrinti žinutę\?</string>
     <string name="icon_descr_file">Failas</string>
-    <string name="maximum_supported_file_size">Šiuo metu didžiausias palaikomas failo dydis yra <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
+    <string name="maximum_supported_file_size">Šiuo metu didžiausias palaikomas failo dydis yra %1$s.</string>
     <string name="file_not_found">Failas nerastas</string>
     <string name="file_saved">Failas įrašytas</string>
     <string name="icon_descr_server_status_disconnected">Atsijungta</string>
@@ -186,7 +186,7 @@
     <string name="info_row_database_id">Duomenų bazės ID</string>
     <string name="error_changing_role">Klaida keičiant vaidmenį</string>
     <string name="conn_level_desc_direct">tiesioginis</string>
-    <string name="conn_level_desc_indirect">netiesioginis (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+    <string name="conn_level_desc_indirect">netiesioginis (%1$s)</string>
     <string name="create_secret_group_title">Sukurti slaptą grupę</string>
     <string name="error_saving_group_profile">Klaida įrašant grupės profilį</string>
     <string name="dont_show_again">Daugiau neberodyti</string>
@@ -221,7 +221,7 @@
     <string name="delete_link">Ištrinti nuorodą</string>
     <string name="delete_link_question">Ištrinti nuorodą\?</string>
     <string name="error_creating_link_for_group">Klaida kuriant grupės nuorodą</string>
-    <string name="how_simplex_works">Kaip <xliff:g id="appName">SimpleX</xliff:g> veikia</string>
+    <string name="how_simplex_works">Kaip SimpleX veikia</string>
     <string name="database_encrypted">Duomenų bazė šifruota!</string>
     <string name="group_member_status_creator">kūrėjas</string>
     <string name="delete_group_question">Ištrinti grupę\?</string>
@@ -265,7 +265,7 @@
     <string name="show_QR_code">Rodyti QR kodą</string>
     <string name="share_invitation_link">Bendrinti pakvietimo nuorodą</string>
     <string name="smp_servers">SMP serveriai</string>
-    <string name="use_simplex_chat_servers__question">Naudoti <xliff:g id="appNameFull">SimpleX Chat</xliff:g> serverius\?</string>
+    <string name="use_simplex_chat_servers__question">Naudoti SimpleX Chat serverius\?</string>
     <string name="network_disable_socks">Naudoti tiesioginį interneto ryšį\?</string>
     <string name="update_network_settings_confirmation">Atnaujinti</string>
     <string name="update_network_settings_question">Atnaujinti tinklo nustatymus\?</string>
@@ -276,7 +276,7 @@
     <string name="auth_stop_chat">Stabdyti pokalbį</string>
     <string name="share_message">Bendrinti žinutę…</string>
     <string name="use_camera_button">Kamera</string>
-    <string name="thank_you_for_installing_simplex">Dėkojame, kad įdiegėte <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+    <string name="thank_you_for_installing_simplex">Dėkojame, kad įdiegėte SimpleX Chat!</string>
     <string name="smp_servers_use_server">Naudoti serverį</string>
     <string name="network_enable_socks">Naudoti SOCKS įgaliotąjį serverį\?</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
@@ -302,18 +302,18 @@
     <string name="your_privacy">Jūsų privatumas</string>
     <string name="settings_section_title_you">JŪS</string>
     <string name="wrong_passphrase_title">Neteisinga slaptafrazė!</string>
-    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="app_name">SimpleX</string>
     <string name="sender_you_pronoun">jūs</string>
     <string name="description_via_group_link">per grupės nuorodą</string>
     <string name="description_via_contact_address_link">per adresato adreso nuorodą</string>
     <string name="description_via_one_time_link">per vienkartinę nuorodą</string>
-    <string name="simplex_link_connection">per <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_connection">per %1$s</string>
     <string name="simplex_link_mode_browser">Per naršyklę</string>
     <string name="waiting_for_file">Laukiama failo</string>
-    <string name="voice_message_with_duration">Balso žinutė (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="voice_message_with_duration">Balso žinutė (%1$s)</string>
     <string name="voice_message_send_text">Balso žinutė…</string>
     <string name="view_security_code">Rodyti saugumo kodą</string>
-    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> adresas</string>
+    <string name="icon_descr_address">SimpleX adresas</string>
     <string name="your_SMP_servers">Jūsų SMP serveriai</string>
     <string name="your_ICE_servers">Jūsų ICE serveriai</string>
     <string name="users_add">Pridėti profilį</string>
@@ -321,15 +321,15 @@
     <string name="welcome">Sveiki!</string>
     <string name="attach">Pridėti</string>
     <string name="observer_cant_send_message_title">Jūs negalite siųsti žinučių!</string>
-    <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> logotipas</string>
+    <string name="image_descr_simplex_logo">SimpleX logotipas</string>
     <string name="your_settings">Jūsų nustatymai</string>
     <string name="smp_servers_your_server">Jūsų serveris</string>
     <string name="smp_servers_your_server_address">Jūsų serverio adresas</string>
     <string name="smp_servers_add_to_another_device">Pridėti į kitą įrenginį</string>
-    <string name="using_simplex_chat_servers">Naudojami <xliff:g id="appNameFull">SimpleX Chat</xliff:g> serveriai.</string>
+    <string name="using_simplex_chat_servers">Naudojami SimpleX Chat serveriai.</string>
     <string name="network_settings">Išplėstiniai tinklo nustatymai</string>
     <string name="your_current_profile">Jūsų dabartinis profilis</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Jūsų profilis yra saugomas jūsų įrenginyje ir bendrinamas tik su jūsų adresatais. <xliff:g id="appName">SimpleX</xliff:g> serveriai negali matyti jūsų profilio.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Jūsų profilis yra saugomas jūsų įrenginyje ir bendrinamas tik su jūsų adresatais. SimpleX serveriai negali matyti jūsų profilio.</string>
     <string name="icon_descr_video_call">vaizdo skambutis</string>
     <string name="your_calls">Jūsų skambučiai</string>
     <string name="webrtc_ice_servers">WebRTC ICE serveriai</string>
@@ -345,13 +345,13 @@
     <string name="you_joined_this_group">Jūs prisijungėte prie šios grupės</string>
     <string name="database_downgrade_warning">Įspėjimas: galite prarasti tam tikrus duomenis!</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Jūs nustosite gauti žinutes iš šios grupės. Pokalbio istorija bus išsaugota.</string>
-    <string name="group_info_member_you">jūs: <xliff:g id="group_info_you">%1$s</xliff:g></string>
-    <string name="personal_welcome">Sveiki, <xliff:g>%1$s</xliff:g>!</string>
+    <string name="group_info_member_you">jūs: %1$s</string>
+    <string name="personal_welcome">Sveiki, %1$s!</string>
     <string name="your_chats">Pokalbiai</string>
     <string name="wrong_passphrase">Neteisinga duomenų bazės slaptafrazė</string>
     <string name="icon_descr_video_snd_complete">Vaizdo įrašas išsiųstas</string>
     <string name="voice_message">Balso žinutė</string>
-    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> komanda</string>
+    <string name="icon_descr_simplex_team">SimpleX komanda</string>
     <string name="whats_new">Kas naujo</string>
     <string name="save_and_notify_group_members">Įrašyti ir pranešti grupės nariams</string>
     <string name="callstate_received_confirmation">gautas patvirtinimas…</string>
@@ -437,7 +437,7 @@
     <string name="save_passphrase_and_open_chat">Įrašyti slaptafrazę ir atverti pokalbį</string>
     <string name="restore_database">Atkurti atsarginę duomenų bazės kopiją</string>
     <string name="restore_database_alert_title">Atkurti atsarginę duomenų bazės kopiją\?</string>
-    <string name="group_invitation_item_description">pakvietimas į <xliff:g id="group_name">%1$s</xliff:g> grupę</string>
+    <string name="group_invitation_item_description">pakvietimas į %1$s grupę</string>
     <string name="leave_group_button">Išeiti</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">keičiamas adresas…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">keičiamas %s adresas…</string>

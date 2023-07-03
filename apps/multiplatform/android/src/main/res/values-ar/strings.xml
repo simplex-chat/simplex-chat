@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="accept_contact_button">اقبل</string>
-    <string name="about_simplex_chat">عن <xliff:g id="appNameFull"> ٍSimpleX </xliff:g></string>
+    <string name="about_simplex_chat">عن  ٍSimpleX </string>
     <string name="a_plus_b">a + b</string>
     <string name="accept">اقبل</string>
     <string name="chat_item_ttl_week">اسبوع 1</string>
@@ -150,7 +150,7 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><b> إضافة جهة اتصال جديدة </b>: لإنشاء رمز الاستجابة السريعة الخاص بك لمرة واحدة لجهة الاتصال الخاصة بك.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b> امسح رمز الاستجابة السريعة </b>: للاتصال بجهة الاتصال التي تعرض لك رمز الاستجابة السريعة.</string>
     <string name="callstatus_in_progress">مكالمتك تحت الإجراء</string>
-    <string name="callstatus_ended">انتهت المكالمة &lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"duration\" example=\"01:15\"&gt;</string>
+    <string name="callstatus_ended">انتهت المكالمة</string>
     <string name="change_database_passphrase_question">تغيير عبارة مرور قاعدة البيانات؟</string>
     <string name="cannot_access_keychain">لا يمكن الوصول إلى Keystore لحفظ كلمة مرور قاعدة البيانات</string>
     <string name="icon_descr_cancel_file_preview">إلغاء معاينة الملف</string>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="chat_item_ttl_week">1 個星期</string>
     <string name="a_plus_b">a + b</string>
     <string name="about_simplex">關於 SimpleX</string>
@@ -8,7 +8,7 @@
     <string name="chat_item_ttl_day">1天</string>
     <string name="chat_item_ttl_month">1 個月</string>
     <string name="accept_contact_button">接受</string>
-    <string name="about_simplex_chat">關於 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">關於 SimpleX Chat</string>
     <string name="accept_connection_request__question">接受連接請求？</string>
     <string name="callstatus_accepted">已接受通話</string>
     <string name="network_enable_socks_info">要在端口啟用 SOCKS 代理伺服器嗎？在啟用這個選項之前，必須先啟用代理伺服器。</string>
@@ -63,7 +63,7 @@
     <string name="share_invitation_link">分享一次性連結</string>
     <string name="chat_with_the_founder">傳送問題和想法給開發者</string>
     <string name="how_to_use_simplex_chat">如何使用</string>
-    <string name="install_simplex_chat_for_terminal">使用終端機安裝 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="install_simplex_chat_for_terminal">使用終端機安裝 SimpleX Chat</string>
     <string name="app_version_title">應用程式版本</string>
     <string name="all_your_contacts_will_remain_connected">你的所有聯絡人會保持連接。</string>
     <string name="app_version_code">應用程式建構：%s</string>
@@ -143,7 +143,7 @@
     <string name="group_members_can_send_dms">群組內的成員可以私訊群組內的成員。</string>
     <string name="ttl_min">%d 分鐘</string>
     <string name="ttl_month">%d 月</string>
-    <string name="callstatus_ended">通話結束 <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="callstatus_ended">通話結束 %1$s</string>
     <string name="icon_descr_cancel_file_preview">取消檔案預覽</string>
     <string name="cannot_receive_file">無法接收檔案</string>
     <string name="failed_to_create_user_duplicate_title">重複的顯示名稱！</string>
@@ -175,7 +175,7 @@
     <string name="share_one_time_link">建立一次性邀請連結</string>
     <string name="to_share_with_your_contact">（分享給你的聯絡人）</string>
     <string name="chat_help_tap_button">點擊按鈕</string>
-    <string name="thank_you_for_installing_simplex">感謝你安裝 <xliff:g id="appNameFull">SimpleX Chat</xliff:g>！</string>
+    <string name="thank_you_for_installing_simplex">感謝你安裝 SimpleX Chat！</string>
     <string name="mute_chat">靜音</string>
     <string name="unmute_chat">解除靜音</string>
     <string name="your_settings">你的設定</string>
@@ -215,7 +215,7 @@
     <string name="live">實況</string>
     <string name="invalid_chat">無效對話</string>
     <string name="invalid_data">無效數據</string>
-    <string name="connection_local_display_name">連接 <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="connection_local_display_name">連接 %1$d</string>
     <string name="display_name_connection_established">已建立連接</string>
     <string name="display_name_invited_to_connect">已邀請連接</string>
     <string name="display_name_connecting">連接中…</string>
@@ -224,17 +224,17 @@
     <string name="simplex_link_contact">SimpleX 聯絡人地址</string>
     <string name="simplex_link_invitation">SimpleX 一次性邀請連結</string>
     <string name="simplex_link_mode">SimpleX 連結</string>
-    <string name="simplex_link_connection">透過 <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_connection">透過 %1$s</string>
     <string name="simplex_link_mode_browser">透過瀏覽器</string>
     <string name="error_sending_message">傳送訊息時出錯</string>
     <string name="contact_already_exists">聯絡人已存在</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">你已經連接到 <xliff:g id="contactName" example="Alice">%1$s</xliff:g>。</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">你已經連接到 %1$s。</string>
     <string name="v4_5_transport_isolation_descr">使用個人檔案（預設值）或使用連接（測試版）。</string>
     <string name="v4_5_reduced_battery_usage">減少電量使用</string>
     <string name="v4_5_reduced_battery_usage_descr">更多改進即將推出！</string>
     <string name="v4_5_italian_interface">意大利語言界面</string>
     <string name="v4_5_italian_interface_descr">感謝用戶 - 使用 Weblate 的翻譯貢獻！</string>
-    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="app_name">SimpleX</string>
     <string name="thousand_abbreviation">k</string>
     <string name="connect_via_contact_link">透過連結連接聯絡人？</string>
     <string name="connect_via_invitation_link">透過邀請連結連接？</string>
@@ -245,7 +245,7 @@
     <string name="server_error">錯誤</string>
     <string name="server_connecting">連接中</string>
     <string name="connected_to_server_to_receive_messages_from_contact">你已連接到此聯絡人使用的伺服器以接收訊息。</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">嘗試連接至用於接收此聯絡人訊息的伺服器 (錯誤：<xliff:g id="errorMsg">%1$s</xliff:g>)。</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">嘗試連接至用於接收此聯絡人訊息的伺服器 (錯誤：%1$s)。</string>
     <string name="trying_to_connect_to_server_to_receive_messages">正在嘗試連接到用於接收此聯絡人訊息伺服器。</string>
     <string name="deleted_description">已刪除</string>
     <string name="marked_deleted_description">已標記為刪除</string>
@@ -258,7 +258,7 @@
     <string name="contact_developers">請更新應用程式或聯絡開發人員。</string>
     <string name="connection_timeout">連接超時</string>
     <string name="connection_error">連接失敗</string>
-    <string name="network_error_desc">請使用 <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> 檢查你的網路連接並且再試一次。</string>
+    <string name="network_error_desc">請使用 %1$s 檢查你的網路連接並且再試一次。</string>
     <string name="smp_server_test_connect">連接</string>
     <string name="periodic_notifications_disabled">定期通知已禁用！</string>
     <string name="enter_passphrase_notification_title">需要使用密碼</string>
@@ -299,7 +299,7 @@
     <string name="icon_descr_sent_msg_status_sent">已傳送</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">未經授權傳送</string>
     <string name="icon_descr_sent_msg_status_send_failed">傳送失敗</string>
-    <string name="personal_welcome">歡迎 <xliff:g>%1$s</xliff:g>！</string>
+    <string name="personal_welcome">歡迎 %1$s！</string>
     <string name="welcome">歡迎！</string>
     <string name="this_text_is_available_in_settings">在設定中可用這文字</string>
     <string name="contact_connection_pending">連接中…</string>
@@ -308,7 +308,7 @@
     <string name="group_connection_pending">連接中…</string>
     <string name="tap_to_start_new_chat">點擊以開啟新的對話</string>
     <string name="file_not_found">找不到檔案</string>
-    <string name="voice_message_with_duration">語音訊息 (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="voice_message_with_duration">語音訊息 (%1$s)</string>
     <string name="voice_message_send_text">語音訊息…</string>
     <string name="icon_descr_record_voice_message">錄製語音訊息</string>
     <string name="you_need_to_allow_to_send_voice">你需要在設定上開放權限允許你的聯絡人傳送語音訊息。</string>
@@ -327,10 +327,10 @@
     <string name="smp_server_test_secure_queue">安全佇列</string>
     <string name="smp_server_test_delete_queue">刪除佇列</string>
     <string name="smp_server_test_disconnect">斷開連接</string>
-    <string name="turn_off_battery_optimization">為了使用它，請 <b>禁用電量優化</b> 為了 <xliff:g id="appName">SimpleX</xliff:g> 在下一個對話中。否則，將禁用通知功能。</string>
+    <string name="turn_off_battery_optimization">為了使用它，請 <b>禁用電量優化</b> 為了 SimpleX 在下一個對話中。否則，將禁用通知功能。</string>
     <string name="enter_passphrase_notification_desc">在接收通知之前，請你輸入數據庫的密碼</string>
     <string name="periodic_notifications_desc">應用程式會定期取得新的訊息 — 它每天會消耗百分之幾的電量。應用程式將不使用推送通知 — 你裝置中的數據不會傳送至伺服器。</string>
-    <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> 服務</string>
+    <string name="simplex_service_notification_title">SimpleX Chat 服務</string>
     <string name="simplex_service_notification_text">正在接收訊息…</string>
     <string name="hide_notification">隱藏</string>
     <string name="ntf_channel_messages">SimpleX Chat 訊息</string>
@@ -356,9 +356,9 @@
     <string name="icon_descr_received_msg_status_unread">未讀</string>
     <string name="you_have_no_chats">你沒有對話記錄</string>
     <string name="image_decoding_exception_title">解碼錯誤</string>
-    <string name="contact_sent_large_file">你的聯絡人傳送的檔案大於目前支援的最大上限 (<xliff:g id="maxFileSize">%1$s</xliff:g>)。</string>
+    <string name="contact_sent_large_file">你的聯絡人傳送的檔案大於目前支援的最大上限 (%1$s)。</string>
     <string name="images_limit_desc">只能同一時間傳送十張圖片</string>
-    <string name="maximum_supported_file_size">目前支援的最大檔案大小為 <xliff:g id="maxFileSize">%1$s</xliff:g>。</string>
+    <string name="maximum_supported_file_size">目前支援的最大檔案大小為 %1$s。</string>
     <string name="file_will_be_received_when_contact_is_online">下載檔案需要傳送者上線的時候才能下載檔案，請等待對方上線！</string>
     <string name="voice_message">語音訊息</string>
     <string name="send_live_message">傳送實況的訊息</string>
@@ -366,7 +366,7 @@
     <string name="send_live_message_desc">傳送實況訊息 - 這會即時顯示你在輸入中的文字</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">（掃描或使用剪貼薄貼上）</string>
     <string name="toast_permission_denied">權限被拒絕！</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">為了保護你的私隱，<b><xliff:g id="appName">SimpleX</xliff:g></b> 有一個後台通知服務 – 它每天使用百分之幾的電量。</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">為了保護你的私隱，<b>SimpleX</b> 有一個後台通知服務 – 它每天使用百分之幾的電量。</string>
     <string name="periodic_notifications">定期通知</string>
     <string name="notifications_mode_periodic_desc">每十分鐘會檢查一次訊息，最快可設為每分鐘檢查一次</string>
     <string name="notification_preview_mode_message">訊息文字</string>
@@ -408,7 +408,7 @@
     <string name="scan_QR_code">掃描二維碼</string>
     <string name="only_stored_on_members_devices">(僅由群組成員儲存)</string>
     <string name="contact_wants_to_connect_with_you">想和你對話！</string>
-    <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> 徽標</string>
+    <string name="image_descr_simplex_logo">SimpleX 徽標</string>
     <string name="connect_via_link">透過連結連接</string>
     <string name="smp_servers_preset_server">預設伺服器</string>
     <string name="smp_servers_your_server_address">你的伺服器地址</string>
@@ -447,7 +447,7 @@
     <string name="delete_image">刪除圖片</string>
     <string name="callstate_starting">開始中 …</string>
     <string name="callstate_waiting_for_answer">等待對方回應…</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">如果你收到 <xliff:g id="appName">SimepleX Chat</xliff:g> 邀請連結，你可以使用瀏覧器開啟：</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">如果你收到 SimepleX Chat 邀請連結，你可以使用瀏覧器開啟：</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 電話版： 點擊 <b>使用電話程式開啟</b>, 然後在程式內點擊 <b>連接</b>。</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">如果你選擇拒絕，傳送者將不會收到通知。</string>
     <string name="reject_contact_button">拒絕</string>
@@ -460,9 +460,9 @@
     <string name="image_descr_qr_code">二維碼</string>
     <string name="image_descr_profile_image">個人檔案頭像</string>
     <string name="image_descr_link_preview">預覧連結圖片</string>
-    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> 地址</string>
+    <string name="icon_descr_address">SimpleX 地址</string>
     <string name="icon_descr_help">幫助</string>
-    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> 團隊</string>
+    <string name="icon_descr_simplex_team">SimpleX 團隊</string>
     <string name="icon_descr_email">電郵</string>
     <string name="icon_descr_more_button">查看更多</string>
     <string name="show_QR_code">顯示二維碼</string>
@@ -494,9 +494,9 @@
     <string name="smp_servers_use_server_for_new_conn">用於新的連接</string>
     <string name="smp_servers_invalid_address">無效的伺服器地址</string>
     <string name="smp_servers_per_user">此伺服器用於你目前的個人檔案</string>
-    <string name="use_simplex_chat_servers__question">使用 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 伺服器？</string>
+    <string name="use_simplex_chat_servers__question">使用 SimpleX Chat 伺服器？</string>
     <string name="your_SMP_servers">你的 SMP 伺服器</string>
-    <string name="using_simplex_chat_servers">目前使用 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 伺服器。</string>
+    <string name="using_simplex_chat_servers">目前使用 SimpleX Chat 伺服器。</string>
     <string name="how_to">如何</string>
     <string name="configure_ICE_servers">配置 ICE 伺服器</string>
     <string name="saved_ICE_servers_will_be_removed">已儲存的 WebRTC ICE 伺服器將移除。</string>
@@ -506,7 +506,7 @@
     <string name="network_use_onion_hosts_prefer_desc">Onion 主機會在可用時啟用。</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">連接時將需要使用 Onion 主機。</string>
     <string name="delete_address__question">刪除聯絡地址？</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">你的個人檔案只會儲存於你的裝置和只會分享給你的聯絡人。 <xliff:g id="appName">SimpleX</xliff:g> 伺服器並不會看到你的個人檔案。</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">你的個人檔案只會儲存於你的裝置和只會分享給你的聯絡人。 SimpleX 伺服器並不會看到你的個人檔案。</string>
     <string name="save_and_notify_contact">儲存並通知你的聯絡人</string>
     <string name="save_and_notify_contacts">儲存並通知你的多個聯絡人</string>
     <string name="your_profile_is_stored_on_your_device">你的個人檔案，聯絡人和傳送的訊息只會儲存於你的個人裝置內。</string>
@@ -530,7 +530,7 @@
     <string name="we_do_not_store_contacts_or_messages_on_servers">我們不會在伺服器內儲存你的任何聯絡人和訊息（一旦傳送）。</string>
     <string name="create_profile">建立個人檔案</string>
     <string name="callstate_received_confirmation">已確認回應…</string>
-    <string name="you_can_connect_to_simplex_chat_founder">你可以透過 <font color="#0088ff">連接到 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 開發人員提出任何問題並同意更新</font>。</string>
+    <string name="you_can_connect_to_simplex_chat_founder">你可以透過 <font color="#0088ff">連接到 SimpleX Chat 開發人員提出任何問題並同意更新</font>。</string>
     <string name="to_start_a_new_chat_help_header">開啟新的對話</string>
     <string name="set_contact_name">設定聯絡人名稱</string>
     <string name="you_invited_your_contact">你已邀請了你的聯絡人</string>
@@ -565,13 +565,13 @@
     <string name="description_via_group_link_incognito">透過群組連結使用匿名聊天模式</string>
     <string name="description_via_contact_address_link_incognito">一個使用了匿名聊天模式的人透過連結加入了群組</string>
     <string name="description_via_one_time_link_incognito">透過使用一次性連結匿名聊天模式連接</string>
-    <string name="many_people_asked_how_can_it_deliver">有很多人問：<i>如果 <xliff:g id="appName">SimpleX</xliff:g> 沒有任何的用戶標識符，它如何傳送訊息？</i></string>
+    <string name="many_people_asked_how_can_it_deliver">有很多人問：<i>如果 SimpleX 沒有任何的用戶標識符，它如何傳送訊息？</i></string>
     <string name="onboarding_notifications_mode_service">即時</string>
     <string name="onboarding_notifications_mode_periodic">定期的</string>
     <string name="no_call_on_lock_screen">關閉</string>
     <string name="icon_descr_call_missed">你錯過了通話</string>
     <string name="open_verb">開啟</string>
-    <string name="open_simplex_chat_to_accept_call">開啟 <xliff:g id="appNameFull"> SimpleX Chat</xliff:g> 以接受通話</string>
+    <string name="open_simplex_chat_to_accept_call">開啟  SimpleX Chat 以接受通話</string>
     <string name="icon_descr_call_rejected">已拒絕通話</string>
     <string name="show_call_on_lock_screen">顯示</string>
     <string name="icon_descr_call_connecting">連接通話中</string>
@@ -594,7 +594,7 @@
     <string name="group_invitation_tap_to_join">點擊以加入</string>
     <string name="group_invitation_tap_to_join_incognito">點擊以使用匿名聊天模式加入</string>
     <string name="rcv_group_event_changed_member_role">%s 的身份已修改為 %s</string>
-    <string name="rcv_group_event_member_added">已經邀請 <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_added">已經邀請 %1$s</string>
     <string name="rcv_group_event_changed_your_role">已修改你的身份為 %s</string>
     <string name="group_member_status_accepted">連接中（已接受）</string>
     <string name="group_member_status_left">退出</string>
@@ -604,7 +604,7 @@
     <string name="group_member_status_connecting">連接中</string>
     <string name="group_member_status_creator">創建人</string>
     <string name="new_member_role">新的成員身份</string>
-    <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> 位成員</string>
+    <string name="group_info_section_title_num_members">%1$s 位成員</string>
     <string name="button_edit_group_profile">修改群組內的設定</string>
     <string name="create_group_link">建立群組連結</string>
     <string name="button_create_group_link">建立連結</string>
@@ -643,7 +643,7 @@
     <string name="chat_item_ttl_seconds">%s 秒(s)</string>
     <string name="error_encrypting_database">加密數據庫時出錯</string>
     <string name="save_passphrase_in_keychain">在金鑰庫儲存密碼</string>
-    <string name="archive_created_on_ts">建立於 <xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="archive_created_on_ts">建立於 %1$s</string>
     <string name="restore_database">還原數據庫的備份</string>
     <string name="icon_descr_group_inactive">群組為不活躍狀態</string>
     <string name="alert_title_group_invitation_expired">邀請連結過時！</string>
@@ -791,10 +791,10 @@
     <string name="database_passphrase_will_be_updated">受加密的數據庫密碼會再次更新。</string>
     <string name="delete_chat_archive_question">刪除封存對話？</string>
     <string name="encrypt_database_question">加密數據庫？</string>
-    <string name="group_invitation_item_description">邀請至群組 <xliff:g id="group_name">%1$s</xliff:g></string>
+    <string name="group_invitation_item_description">邀請至群組 %1$s</string>
     <string name="icon_descr_add_members">邀請成員</string>
     <string name="alert_title_no_group">群組找不到！</string>
-    <string name="rcv_group_event_member_deleted">已移除 <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_deleted">已移除 %1$s</string>
     <string name="rcv_group_event_group_deleted">已刪除群組</string>
     <string name="group_member_status_group_deleted">群組已經刪除</string>
     <string name="group_member_status_invited">已邀請</string>
@@ -814,7 +814,7 @@
     <string name="chat_archive_section">封存對話</string>
     <string name="snd_group_event_group_profile_updated">群組資料已經更新</string>
     <string name="group_member_role_member">成員</string>
-    <string name="group_info_member_you">你：<xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="group_info_member_you">你：%1$s</string>
     <string name="button_delete_group">刪除群組</string>
     <string name="v4_4_live_messages">即時訊息</string>
     <string name="chat_archive_header">封存對話</string>
@@ -823,7 +823,7 @@
     <string name="info_row_group">群組</string>
     <string name="info_row_connection">連接</string>
     <string name="conn_level_desc_direct">直接</string>
-    <string name="conn_level_desc_indirect">間接 (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+    <string name="conn_level_desc_indirect">間接 (%1$s)</string>
     <string name="conn_stats_section_title_servers">伺服器</string>
     <string name="receiving_via">接收訊息透過</string>
     <string name="sending_via">傳送訊息透過</string>
@@ -873,7 +873,7 @@
     <string name="v4_4_french_interface_descr">感謝用戶 - 使用 Weblate 的翻譯貢獻！</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">正在修改聯絡地址為 %s …</string>
     <string name="database_encryption_will_be_updated">受加密的數據庫密碼會再次更新和儲存於金鑰庫。</string>
-    <string name="how_simplex_works"><xliff:g id="appName">SimpleX</xliff:g> 是怎樣運作</string>
+    <string name="how_simplex_works">SimpleX 是怎樣運作</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">當發生：
 \n1. 訊息將在傳送至客戶端後兩天或在伺服器內三十天時過時。
 \n2. 訊息解密失敗，因為你或你的聯絡人用了舊的數據庫備份
@@ -883,7 +883,7 @@
     <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天室以匯出對話，匯入或刪除對話數據庫。當聊天室停止後你將不能接收或傳送訊息。</string>
     <string name="alert_title_cant_invite_contacts_descr">你正在使用匿名聊天模式進入此群組 - 為了避免分享你的真實個人檔案，邀請聯絡人是不允許的。</string>
     <string name="you_sent_group_invitation">你傳送了一個群組連結</string>
-    <string name="snd_group_event_member_deleted">你移除了 <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_group_event_member_deleted">你移除了 %1$s</string>
     <string name="snd_group_event_user_left">你退出了群組</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">你修改了聯絡地址為 %s</string>
     <string name="group_member_status_intro_invitation">連接中（邀請介紹階段）</string>
@@ -893,7 +893,7 @@
     <string name="description_via_one_time_link">透過一次性連結連接</string>
     <string name="network_session_mode_transport_isolation">傳輸隔離</string>
     <string name="update_network_session_mode_question">更新傳輸隔離模式？</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">為了保護隱私，而不像是其他平台般需要提取和存儲用戶的 IDs 資料， <xliff:g id="appName">SimpleX</xliff:g> 平台有自家佇列的標識符，這對於你的每個聯絡人也是獨一無二的。</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">為了保護隱私，而不像是其他平台般需要提取和存儲用戶的 IDs 資料， SimpleX 平台有自家佇列的標識符，這對於你的每個聯絡人也是獨一無二的。</string>
     <string name="onboarding_notifications_mode_off">當應用程式是運行中</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">你可以控制通過哪一個伺服器 <b>來接收</b> 你的聯絡人訊息 – 這些伺服器用來接收他們傳送給你的訊息。</string>
     <string name="allow_accepting_calls_from_lock_screen">透過設定啟用於上鎖畫面顯示來電通知。</string>
@@ -916,7 +916,7 @@
     <string name="icon_descr_context">聯絡人頭像</string>
     <string name="icon_descr_profile_image_placeholder">個人檔案頭像占位符</string>
     <string name="immune_to_spam_and_abuse">不受垃圾郵件和濫用行為影響</string>
-    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> 希望透過以下方式聯絡你</string>
+    <string name="contact_wants_to_connect_via_call">%1$s 希望透過以下方式聯絡你</string>
     <string name="icon_descr_video_on">開啟視訊</string>
     <string name="icon_descr_flip_camera">翻轉相機</string>
     <string name="icon_descr_call_pending_sent">待確認通話</string>
@@ -924,7 +924,7 @@
     <string name="your_calls">你的通話</string>
     <string name="always_use_relay">經由分程傳遞連接</string>
     <string name="call_on_lock_screen">在上鎖畫面顯示來電通知：</string>
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> 你錯過了多個訊息</string>
+    <string name="integrity_msg_skipped">%1$d 你錯過了多個訊息</string>
     <string name="integrity_msg_bad_hash">錯誤的訊息雜湊值</string>
     <string name="alert_title_skipped_messages">你錯過了多個訊息</string>
     <string name="settings_section_title_you">你</string>
@@ -1120,11 +1120,11 @@
     <string name="la_mode_system">系統</string>
     <string name="alert_text_msg_bad_id">此ID的下一則訊息是錯誤（小於或等於上一則的）。
 \n當一些錯誤出現或你的連結被破壞時會發生。</string>
-    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> 訊息解密失敗。</string>
+    <string name="alert_text_decryption_error_header">%1$d 訊息解密失敗。</string>
     <string name="network_socks_toggle_use_socks_proxy">使用SOCKS 代理伺服器</string>
     <string name="your_XFTP_servers">你的 XFTP 伺服器</string>
     <string name="alert_text_fragment_permanent_error_reconnect">這個連結錯誤是永久性的，請重新連接。</string>
-    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> 錯過了多個訊息。</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d 錯過了多個訊息。</string>
     <string name="v5_0_large_files_support">影片和檔案和最大上限為1gb</string>
     <string name="gallery_video_button">影片</string>
     <string name="submit_passcode">呈交</string>

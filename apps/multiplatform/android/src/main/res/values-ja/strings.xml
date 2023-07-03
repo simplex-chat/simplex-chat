@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources>
     <string name="chat_item_ttl_day">1日</string>
     <string name="chat_item_ttl_week">1週間</string>
     <string name="callstatus_accepted">受けた通話</string>
@@ -10,7 +10,7 @@
     <string name="chat_item_ttl_month">1ヶ月</string>
     <string name="about_simplex">SimpleXについて</string>
     <string name="a_plus_b">a + b</string>
-    <string name="about_simplex_chat"><xliff:g id="appNameFull">SimpleX Chat</xliff:g>について</string>
+    <string name="about_simplex_chat">SimpleX Chatについて</string>
     <string name="color_primary">アクセントカラー</string>
     <string name="accept_contact_button">承諾</string>
     <string name="accept_connection_request__question">接続リクエストを承認しますか？</string>
@@ -160,12 +160,12 @@
     <string name="icon_descr_instant_notifications">即時通知</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMPサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICEサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
-    <string name="many_people_asked_how_can_it_deliver">よく聞かれるのは、 <i>if <xliff:g id="appName">SimpleX</xliff:g> にユーザIDがなければ、メッセージをどうやって届けるのでしょうかと。</i></string>
-    <string name="how_simplex_works"><xliff:g id="appName">SimpleX</xliff:g> の仕様</string>
+    <string name="many_people_asked_how_can_it_deliver">よく聞かれるのは、 <i>if SimpleX にユーザIDがなければ、メッセージをどうやって届けるのでしょうかと。</i></string>
+    <string name="how_simplex_works">SimpleX の仕様</string>
     <string name="icon_descr_call_progress">通話中</string>
     <string name="onboarding_notifications_mode_service_desc"><b>電池消費がより高い</b>！非アクティブ時でもバックグラウンドのサービスが常に稼働します（着信次第に通知がすぐに出ます）。</string>
     <string name="callstatus_calling">発信中</string>
-    <string name="callstatus_ended">通話終了 <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+    <string name="callstatus_ended">通話終了 %1$s</string>
     <string name="icon_descr_call_ended">通話が終了しました。</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">直接会えない時は、 <b>ビデオ通話中にQRコードを見せてもらうか</b>、招待リンクを送ってもらえば相手に繋がります。</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">メンバーをグループから除名する (※元に戻せません※)！</string>
@@ -192,7 +192,7 @@
     <string name="clear_chat_menu_action">消す</string>
     <string name="image_will_be_received_when_contact_is_online">連絡先がオンラインになったら受信されます。しばらくお待ちください。</string>
     <string name="v4_4_verify_connection_security_desc">連絡先とセキュリティコードを確認</string>
-    <string name="install_simplex_chat_for_terminal">ターミナル版の <xliff:g id="appNameFull">SimpleX Chat</xliff:g> をインストール</string>
+    <string name="install_simplex_chat_for_terminal">ターミナル版の SimpleX Chat をインストール</string>
     <string name="v4_3_improved_server_configuration">サーバ設定の向上</string>
     <string name="v4_3_improved_privacy_and_security">プライバシーとセキュリティ強化</string>
     <string name="settings_section_title_incognito">シークレットモード</string>
@@ -215,7 +215,7 @@
     <string name="connection_error_auth">接続エラー (AUTH)</string>
     <string name="connection_timeout">接続タイムアウト</string>
     <string name="connection_request_sent">接続リクエストを送信しました！</string>
-    <string name="connection_local_display_name">接続 <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="connection_local_display_name">接続 %1$d</string>
     <string name="connect_via_contact_link">連絡先リンク経由で繋がりますか？</string>
     <string name="connect_via_group_link">グループリンク経由で繋がりますか？</string>
     <string name="connect_via_invitation_link">招待リンク経由で繋がりますか？</string>
@@ -248,13 +248,13 @@
     <string name="delete_group_menu_action">削除</string>
     <string name="incoming_audio_call">音声通話着信</string>
     <string name="button_delete_contact">連絡先を削除</string>
-    <string name="open_simplex_chat_to_accept_call">通話を受けるには <xliff:g id="appNameFull">SimpleX Chat</xliff:g> を開きます。</string>
+    <string name="open_simplex_chat_to_accept_call">通話を受けるには SimpleX Chat を開きます。</string>
     <string name="deleted_description">削除完了</string>
     <string name="delete_files_and_media_for_all_users">全チャットプロフィールのファイルを削除</string>
     <string name="full_deletion">全員分を削除</string>
     <string name="for_me_only">自分側で削除</string>
     <string name="delete_image">画像を削除</string>
-    <string name="group_invitation_item_description">グループへの招待 <xliff:g id="group_name">%1$s</xliff:g></string>
+    <string name="group_invitation_item_description">グループへの招待 %1$s</string>
     <string name="invalid_connection_link">無効な繋がりリンク</string>
     <string name="smp_servers_invalid_address">無効なサーバアドレス</string>
     <string name="invalid_message_format">無効なメッセージのフォーマット</string>
@@ -273,7 +273,7 @@
     <string name="icon_descr_profile_image_placeholder">仮のプロフィール画像</string>
     <string name="image_descr_qr_code">QRコード</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">リンクが正しいかどうかご確認ください。または、連絡相手にもう一度リンクをお求めください。</string>
-    <string name="network_error_desc"><xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> との接続を確認し、もう一度お試しください。</string>
+    <string name="network_error_desc">%1$s との接続を確認し、もう一度お試しください。</string>
     <string name="enter_correct_current_passphrase">現在の正しい暗証フレーズを入力してください。</string>
     <string name="smp_servers_preset_server">プレセットサーバ</string>
     <string name="smp_servers_preset_address">プレセットサーバのアドレス</string>
@@ -379,7 +379,7 @@
     <string name="database_passphrase_will_be_updated">データベース暗号化のパスフレーズが更新されます。</string>
     <string name="database_passphrase_is_required">チャットを開くにはデータベース暗証フレーズが必要です。</string>
     <string name="file_with_path">ファイル： %s</string>
-    <string name="archive_created_on_ts">作成日時 <xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="archive_created_on_ts">作成日時 %1$s</string>
     <string name="delete_archive">アーカイブを削除</string>
     <string name="join_group_button">参加</string>
     <string name="join_group_question">グループに参加しますか？</string>
@@ -480,7 +480,7 @@
     <string name="v4_3_improved_privacy_and_security_desc">起動中アプリリストに出ないようにする。</string>
     <string name="v4_4_live_messages">ライブメッセージ</string>
     <string name="remove_member_confirmation">除名</string>
-    <string name="rcv_group_event_member_deleted">除名されました： <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_deleted">除名されました： %1$s</string>
     <string name="reply_verb">返信する</string>
     <string name="failed_to_create_user_duplicate_title">表示の名前が重複してます！</string>
     <string name="failed_to_create_user_title">プロフィール作成にエラー発生</string>
@@ -489,7 +489,7 @@
     <string name="smp_server_test_create_queue">サーバの待ち行列を作成する</string>
     <string name="smp_server_test_delete_queue">待ち行列を削除</string>
     <string name="smp_server_test_disconnect">切断</string>
-    <string name="turn_off_battery_optimization">利用するには次の画面にてSimpleXに対する <b>電気省電力の設定をオフ</b> for <xliff:g id="appName">SimpleX</xliff:g> してください。そうしないと通知が無効になります。</string>
+    <string name="turn_off_battery_optimization">利用するには次の画面にてSimpleXに対する <b>電気省電力の設定をオフ</b> for SimpleX してください。そうしないと通知が無効になります。</string>
     <string name="database_initialization_error_title">データベースを起動できません。</string>
     <string name="settings_notification_preview_title">通知のプレビュー</string>
     <string name="simplex_service_notification_text">メッセージ受信中…</string>
@@ -505,7 +505,7 @@
     <string name="group_connection_pending">接続待ち…</string>
     <string name="group_preview_join_as">%s として参加</string>
     <string name="icon_descr_image_snd_complete">画像送信済み</string>
-    <string name="maximum_supported_file_size">現在、ファイルサイズの最上限は <xliff:g id="maxFileSize">%1$s</xliff:g>。</string>
+    <string name="maximum_supported_file_size">現在、ファイルサイズの最上限は %1$s。</string>
     <string name="large_file">大型ファイル！</string>
     <string name="file_not_found">ファイルが見つかりません</string>
     <string name="file_will_be_received_when_contact_is_online">連絡先がオンラインになったら受信されます。しばらくお待ちください。</string>
@@ -519,7 +519,7 @@
     <string name="create_group">シークレットグループを作成する</string>
     <string name="only_stored_on_members_devices">(グループのメンバーのみに保存されてます)</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 デスクトップ： <b>「QRコードを読み取る」</b>経由でアプリに表示されるQRコードを読み取る</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser"><xliff:g id="appName">SimpleX Chat</xliff:g> の招待リンクをもらったら、ブラウザで開けます：</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">SimpleX Chat の招待リンクをもらったら、ブラウザで開けます：</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 携帯： <b>「アプリで開く」</b>をタップし、 アプリ内で<b>「接続」</b>をタップする。</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">拒否しても、相手には知らされません。</string>
     <string name="reject_contact_button">拒否</string>
@@ -590,7 +590,7 @@
     <string name="v4_5_private_filenames">プライベートなファイル名</string>
     <string name="v4_5_reduced_battery_usage">電池使用量低減</string>
     <string name="error_removing_member">メンバー除名にエラー発生</string>
-    <string name="conn_level_desc_indirect">関節 (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+    <string name="conn_level_desc_indirect">関節 (%1$s)</string>
     <string name="incognito">シークレットモード</string>
     <string name="incognito_info_protects">シークレットモードとは、メインのプロフィールとプロフィール画像を守るために、新しい連絡先を追加する時に、その連絡先に対してランダムなプロフィールが作成されるという対策です。</string>
     <string name="chat_preferences_no">いいえ</string>
@@ -627,7 +627,7 @@
     <string name="rcv_group_event_member_left">脱退しました。</string>
     <string name="rcv_group_event_changed_member_role">%s の役割を %s に変えました。</string>
     <string name="rcv_group_event_changed_your_role">役割を %s に変えました。</string>
-    <string name="rcv_group_event_member_added">招待された <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_added">招待された %1$s</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">アドレスを変更いたします： %s</string>
     <string name="group_member_role_owner">オーナー</string>
     <string name="group_member_status_connecting">接続待ち</string>
@@ -644,14 +644,14 @@
     <string name="rcv_group_event_updated_group_profile">グループプロフィールを更新しました</string>
     <string name="snd_group_event_user_left">脱退しました。</string>
     <string name="invite_prohibited_description">あなたのメインプロフィールで参加してるグループにシークレットモードのプロフィールで繋がってる連絡先を招待しようとしてます。</string>
-    <string name="group_info_member_you">あなた： <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="group_info_member_you">あなた： %1$s</string>
     <string name="role_in_group">役割</string>
     <string name="sending_via">経由で送信</string>
     <string name="theme_system">システム</string>
     <string name="incognito_info_share">連絡相手にシークレットモードのプロフィールを共有すると、その連絡相手に招待されたグループでも同じプロフィールが使われます。</string>
     <string name="theme">テーマ</string>
     <string name="voice_messages">音声メッセージ</string>
-    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="app_name">SimpleX</string>
     <string name="you_will_join_group">このリンクのグループに参加し、そのメンバーに繋がります。</string>
     <string name="connected_to_server_to_receive_messages_from_contact">この連絡先から受信するメッセージのサーバに既に接続してます。</string>
     <string name="sending_files_not_yet_supported">ファイル送信機能がまだ実装されてません</string>
@@ -663,7 +663,7 @@
     <string name="auth_stop_chat">チャットを閉じる</string>
     <string name="icon_descr_received_msg_status_unread">未読</string>
     <string name="icon_descr_sent_msg_status_send_failed">送信失敗</string>
-    <string name="personal_welcome">ようこそ <xliff:g>%1$s</xliff:g>！</string>
+    <string name="personal_welcome">ようこそ %1$s！</string>
     <string name="voice_message">音声メッセージ</string>
     <string name="view_security_code">セキュリティコードを確認</string>
     <string name="send_live_message">ライブメッセージを送信</string>
@@ -695,7 +695,7 @@
     <string name="periodic_notifications_desc">アプリが定期的に新しいメッセージを受信します。一日の電池使用量が約3%で、プッシュ通知に頼らずに、あなたの端末のデータをサーバに送ることはありません。</string>
     <string name="la_notice_title_simplex_lock">SimpleXロック</string>
     <string name="enter_passphrase_notification_desc">通知を受けるには、データベースの暗証フレーズを入力してください。</string>
-    <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> サービス</string>
+    <string name="simplex_service_notification_title">SimpleX Chat サービス</string>
     <string name="auth_simplex_lock_turned_on">SimpleXロック：オン</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">起動時、または非アクティブ状態で30秒が経った後に戻ると、認証する必要となります。</string>
     <string name="share_verb">共有する</string>
@@ -712,13 +712,13 @@
     <string name="send_live_message_desc">ライブメッセージを送信 (入力しながら宛先の画面で更新される)</string>
     <string name="to_share_with_your_contact">(連絡先に共有)</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(クリップボードから読み込むか、貼り付ける)</string>
-    <string name="thank_you_for_installing_simplex"><xliff:g id="appNameFull">SimpleX Chat</xliff:g>をご利用いただきありがとうございます！</string>
+    <string name="thank_you_for_installing_simplex">SimpleX Chatをご利用いただきありがとうございます！</string>
     <string name="use_camera_button">カメラ</string>
     <string name="you_accepted_connection">繋がりを承認しました</string>
     <string name="you_invited_your_contact">連絡先に招待を送りました</string>
     <string name="connection_you_accepted_will_be_cancelled">承認ずみの接続がキャンセルされます！</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">あなたからリンクを受けた連絡先が接続できなくなります！</string>
-    <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g>アドレス</string>
+    <string name="icon_descr_address">SimpleXアドレス</string>
     <string name="show_QR_code">QRコードを表示</string>
     <string name="this_link_is_not_a_valid_connection_link">このリンクは有効な接続リンクではありません！</string>
     <string name="this_QR_code_is_not_a_link">このQRコードはリンクではありません！</string>
@@ -793,7 +793,7 @@
     <string name="snd_group_event_changed_member_role">%sの役割を次に変えました：%s</string>
     <string name="button_send_direct_message">ダイレクトメッセージを送信</string>
     <string name="num_contacts_selected">%d 連絡先が選択中</string>
-    <string name="snd_group_event_member_deleted">除名しました： <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_group_event_member_deleted">除名しました： %1$s</string>
     <string name="switch_verb">切り替える</string>
     <string name="member_role_will_be_changed_with_notification">役割が「%s」となります。グループの全員に通知が出ます。</string>
     <string name="conn_stats_section_title_servers">サーバ</string>
@@ -826,16 +826,16 @@
     <string name="share_message">メッセージを送る…</string>
     <string name="share_file">ファイル共有…</string>
     <string name="voice_message_send_text">音声メッセージ…</string>
-    <string name="voice_message_with_duration">音声メッセージ (<xliff:g id="duration">%1$s</xliff:g>)</string>
+    <string name="voice_message_with_duration">音声メッセージ (%1$s)</string>
     <string name="icon_descr_send_message">メッセージを送信</string>
     <string name="icon_descr_settings">設定</string>
-    <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g>開発チーム</string>
+    <string name="icon_descr_simplex_team">SimpleX開発チーム</string>
     <string name="this_string_is_not_a_connection_link">このストリングは接続リンクではありません！</string>
     <string name="chat_with_the_founder">質問やアイデアを送る</string>
     <string name="star_on_github">GithubでStar</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">あなたのプロフィールはご自分の端末に保存され、あなたの連絡先のみに共有されます。 <xliff:g id="appName">SimpleX</xliff:g>のサーバには開示されません。</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">あなたのプロフィールはご自分の端末に保存され、あなたの連絡先のみに共有されます。 SimpleXのサーバには開示されません。</string>
     <string name="your_calls">あなたの通話</string>
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g>飛ばしたメッセージ</string>
+    <string name="integrity_msg_skipped">%1$d飛ばしたメッセージ</string>
     <string name="send_link_previews">リンクのプレビューを送信</string>
     <string name="set_password_to_export">暗証フレーズを設定してからエキスポート</string>
     <string name="stop_chat_question">チャットを閉じますか？</string>
@@ -864,10 +864,10 @@
     <string name="image_decoding_exception_desc">画像が解読できません。別のイメージで試すか、開発者に伝えてください。</string>
     <string name="icon_descr_waiting_for_image">画像待ち</string>
     <string name="waiting_for_image">画像待ち</string>
-    <string name="contact_sent_large_file">向こうが最上限の大きさを超えるファイルを送ろうとしました (<xliff:g id="maxFileSize">%1$s</xliff:g>)。</string>
+    <string name="contact_sent_large_file">向こうが最上限の大きさを超えるファイルを送ろうとしました (%1$s)。</string>
     <string name="voice_messages_prohibited">音声メッセージは使用禁止です！</string>
     <string name="add_contact_or_create_group">新しいチャットを始める</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g>の開発者と繋がれば、質問したり、速報を受けたりすることができます</font>。</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><font color="#0088ff">SimpleX Chatの開発者と繋がれば、質問したり、速報を受けたりすることができます</font>。</string>
     <string name="to_start_a_new_chat_help_header">新しいチャットを始めるには</string>
     <string name="chat_help_tap_button">ボタンをタップ</string>
     <string name="unmute_chat">ミュート解除</string>
@@ -877,15 +877,15 @@
     <string name="your_chat_profiles">あなたのチャットプロフィール</string>
     <string name="smp_servers_scan_qr">サーバのQRコードを読み込む</string>
     <string name="smp_servers_test_some_failed">テストに失敗したサーバがあります：</string>
-    <string name="use_simplex_chat_servers__question"><xliff:g id="appNameFull">SimpleX Chat</xliff:g>サーバを使いますか？</string>
-    <string name="using_simplex_chat_servers"><xliff:g id="appNameFull">SimpleX Chat</xliff:g>を使っています。</string>
+    <string name="use_simplex_chat_servers__question">SimpleX Chatサーバを使いますか？</string>
+    <string name="using_simplex_chat_servers">SimpleX Chatを使っています。</string>
     <string name="share_link">リンクを送る</string>
     <string name="core_simplexmq_version">simplexmq: バージョン%s (%2s)</string>
     <string name="callstate_waiting_for_answer">応答待ち…</string>
     <string name="callstate_waiting_for_confirmation">確認待ち…</string>
     <string name="first_platform_without_user_ids">世界初のユーザーIDのないプラットフォーム｜設計も元からプライベート</string>
     <string name="use_chat">チャット</string>
-    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g>は次の方法であなたと繋がりたいです：</string>
+    <string name="contact_wants_to_connect_via_call">%1$sは次の方法であなたと繋がりたいです：</string>
     <string name="video_call_no_encryption">ビデオ通話 (非エンドツーエンド暗号化)</string>
     <string name="show_call_on_lock_screen">表示</string>
     <string name="icon_descr_speaker_on">スピーカーオン</string>
@@ -910,21 +910,21 @@
     <string name="settings_section_title_support">SIMPLEX CHATを支援</string>
     <string name="smp_servers_test_servers">テストサーバ</string>
     <string name="switch_receiving_address_desc">開発中の機能です！相手のクライアントが4.2でなければ機能しません。アドレス変更が完了すると、会話にメッセージが出ます。連絡相手 (またはグループのメンバー) からメッセージを受信できないかをご確認ください。</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">あなたのプライバシーを守るために、このアプリはプッシュ通知の変わりに <b><xliff:g id="appName">SimpleX</xliff:g> バックグラウンド・サービス</b> を使ってます。一日の電池使用量は約3%です。</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">あなたのプライバシーを守るために、他のアプリと違って、ユーザーIDの変わりに <xliff:g id="appName">SimpleX</xliff:g> メッセージ束毎にIDを配布し、各連絡先が別々と扱います。</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">あなたのプライバシーを守るために、このアプリはプッシュ通知の変わりに <b>SimpleX バックグラウンド・サービス</b> を使ってます。一日の電池使用量は約3%です。</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">あなたのプライバシーを守るために、他のアプリと違って、ユーザーIDの変わりに SimpleX メッセージ束毎にIDを配布し、各連絡先が別々と扱います。</string>
     <string name="group_main_profile_sent">あなたのチャットプロフィールが他のグループメンバーに送られます。</string>
     <string name="to_verify_compare">エンドツーエンド暗号化を確認するには、ご自分の端末と連絡先の端末のコードを比べます (スキャンします)。</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">このコンタクトから受信するメッセージのサーバに接続しようとしてます。(エラー： <xliff:g id="errorMsg">%1$s</xliff:g>)。</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">このコンタクトから受信するメッセージのサーバに接続しようとしてます。(エラー： %1$s)。</string>
     <string name="connection_error_auth_desc">使用済みリンク、または連絡先による接続の削除ではなければ、バッグの可能性があります。開発者にお伝えください。
 \n繋がるには、連絡先に新しくリンクを発行してもらって、電波が安定かどうかご確認ください。</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">接続を完了するには、連絡相手がオンラインになる必要があります。
 \nこの接続をキャンセルして、連絡先を削除をすることもできます (後でやり直すこともできます)。</string>
     <string name="verify_security_code">セキュリティコードを確認</string>
-    <string name="simplex_link_connection"><xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g>経由</string>
-    <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g>ロゴ</string>
+    <string name="simplex_link_connection">%1$s経由</string>
+    <string name="image_descr_simplex_logo">SimpleXロゴ</string>
     <string name="you_need_to_allow_to_send_voice">音声メッセージを送るには、連絡相手からの音声メッセージを許可しなければなりません。</string>
     <string name="you_must_use_the_most_recent_version_of_database">あなたの最新データベースを1つの端末にしか使わなければ、一部の連絡先からメッセージが届きかねます。</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">既に繋がってます： <xliff:g id="contactName" example="Alice">%1$s</xliff:g></string>
+    <string name="you_are_already_connected_to_vName_via_this_link">既に繋がってます： %1$s</string>
     <string name="alert_title_cant_invite_contacts_descr">シークレットモードのプロフィールでこのグループに参加しています。メインのプロフィールを守るために、招待することができません。</string>
     <string name="description_you_shared_one_time_link">使い捨てリンクを送りました</string>
     <string name="profile_will_be_sent_to_contact_sending_link">リンクを送ってくれた連絡先にあなたのプロフィールを送ります。</string>
@@ -945,7 +945,7 @@
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">%sのアドレスを変えました</string>
     <string name="select_contacts">連絡先を選択</string>
     <string name="skip_inviting_button">今はメンバーを招待しません</string>
-    <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g>メンバー</string>
+    <string name="group_info_section_title_num_members">%1$sメンバー</string>
     <string name="xftp_servers">XFTPサーバ</string>
     <string name="save_welcome_message_question">ウェルカムメッセージを保存しますか？</string>
     <string name="dont_show_again">次から表示しない</string>
@@ -1072,8 +1072,8 @@
     <string name="alert_text_fragment_please_report_to_developers">開発者に報告してください。</string>
     <string name="alert_text_fragment_permanent_error_reconnect">このエラーはこの接続では永続的なものです。再接続してください。</string>
     <string name="v5_0_large_files_support">1GBまでのビデオとファイル</string>
-    <string name="alert_text_decryption_error_header"><xliff:g id="message count" example="1">%1$d</xliff:g> メッセージの復号化に失敗しました。</string>
-    <string name="alert_text_decryption_error_too_many_skipped"><xliff:g id="message count" example="1">%1$d</xliff:g> メッセージをスキップしました</string>
+    <string name="alert_text_decryption_error_header">%1$d メッセージの復号化に失敗しました。</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d メッセージをスキップしました</string>
     <string name="error_loading_smp_servers">SMP サーバーのロード中にエラーが発生しました</string>
     <string name="error_saving_user_password">ユーザーパスワード保存エラー</string>
     <string name="error_loading_xftp_servers">XFTP サーバーのロード中にエラーが発生しました</string>
