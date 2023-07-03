@@ -32,7 +32,7 @@ fun CIFileView(
   receiveFile: (Long) -> Unit
 ) {
   val context = LocalContext.current
-  val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = file)
+  val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
 
   @Composable
   fun fileIcon(
@@ -95,7 +95,7 @@ fun CIFileView(
               )
           }
         is CIFileStatus.RcvComplete -> {
-          val filePath = getLoadedFilePath(context, file)
+          val filePath = getLoadedFilePath(file)
           if (filePath != null) {
             saveFileLauncher.launch(file.fileName)
           } else {

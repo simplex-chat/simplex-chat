@@ -111,7 +111,7 @@ fun base64ToBitmap(base64ImageString: String): Bitmap {
 class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Uri?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
-    tmpFile = File.createTempFile("image", ".bmp", File(getAppFilesDirectory(SimplexApp.context)))
+    tmpFile = File.createTempFile("image", ".bmp", File(getAppFilesDirectory()))
     // Since the class should return Uri, the file should be deleted somewhere else. And in order to be sure, delegate this to system
     tmpFile?.deleteOnExit()
     uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", tmpFile!!)

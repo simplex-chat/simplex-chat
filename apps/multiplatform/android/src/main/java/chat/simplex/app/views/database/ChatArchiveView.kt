@@ -14,15 +14,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
@@ -36,8 +35,8 @@ import java.util.*
 @Composable
 fun ChatArchiveView(m: ChatModel, title: String, archiveName: String, archiveTime: Instant) {
   val context = LocalContext.current
-  val archivePath = "${getFilesDirectory(context)}/$archiveName"
-  val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, archivePath)
+  val archivePath = "${getFilesDirectory()}/$archiveName"
+  val saveArchiveLauncher = rememberSaveArchiveLauncher(archivePath)
   ChatArchiveLayout(
     title,
     archiveTime,
@@ -82,10 +81,11 @@ fun ChatArchiveLayout(
 }
 
 @Composable
-private fun rememberSaveArchiveLauncher(cxt: Context, chatArchivePath: String): ManagedActivityResultLauncher<String, Uri?> =
+private fun rememberSaveArchiveLauncher(chatArchivePath: String): ManagedActivityResultLauncher<String, Uri?> =
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
+      val cxt = SimplexApp.context
       try {
         destination?.let {
           val contentResolver = cxt.contentResolver

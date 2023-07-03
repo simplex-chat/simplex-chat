@@ -57,11 +57,11 @@ fun DatabaseView(
   val chatArchiveTime = remember { mutableStateOf(prefs.chatArchiveTime.get()) }
   val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
-  val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, chatArchiveFile)
-  val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(getAppFilesDirectory(context))) }
+  val saveArchiveLauncher = rememberSaveArchiveLauncher(chatArchiveFile)
+  val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(getAppFilesDirectory())) }
   val importArchiveLauncher = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null) {
-      importArchiveAlert(m, context, uri, appFilesCountAndSize, progressIndicator)
+      importArchiveAlert(m, uri, appFilesCountAndSize, progressIndicator)
     }
   }
   LaunchedEffect(m.chatRunning) {
@@ -88,17 +88,17 @@ fun DatabaseView(
       m.currentUser.value,
       m.users,
       startChat = { startChat(m, runChat, chatLastStart, m.chatDbChanged) },
-      stopChatAlert = { stopChatAlert(m, runChat, context) },
-      exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
+      stopChatAlert = { stopChatAlert(m, runChat) },
+      exportArchive = { exportArchive(m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
-      deleteAppFilesAndMedia = { deleteFilesAndMediaAlert(context, appFilesCountAndSize) },
+      deleteAppFilesAndMedia = { deleteFilesAndMediaAlert(appFilesCountAndSize) },
       onChatItemTTLSelected = {
         val oldValue = chatItemTTL.value
         chatItemTTL.value = it
         if (it < oldValue) {
-          setChatItemTTLAlert(m, chatItemTTL, progressIndicator, appFilesCountAndSize, context)
+          setChatItemTTLAlert(m, chatItemTTL, progressIndicator, appFilesCountAndSize)
         } else if (it != oldValue) {
-          setCiTTL(m, chatItemTTL, progressIndicator, appFilesCountAndSize, context)
+          setCiTTL(m, chatItemTTL, progressIndicator, appFilesCountAndSize)
         }
       },
       showSettingsModal
@@ -283,13 +283,12 @@ private fun setChatItemTTLAlert(
   m: ChatModel, selectedChatItemTTL: MutableState<ChatItemTTL>,
   progressIndicator: MutableState<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
-  context: Context
 ) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.enable_automatic_deletion_question),
     text = generalGetString(R.string.enable_automatic_deletion_message),
     confirmText = generalGetString(R.string.delete_messages),
-    onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator, appFilesCountAndSize, context) },
+    onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator, appFilesCountAndSize) },
     onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value },
     destructive = true,
   )
@@ -387,12 +386,12 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastSta
   }
 }
 
-private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
+private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean?>) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.stop_chat_question),
     text = generalGetString(R.string.stop_chat_to_export_import_or_delete_chat_database),
     confirmText = generalGetString(R.string.stop_chat_confirmation),
-    onConfirm = { authStopChat(m, runChat, context) },
+    onConfirm = { authStopChat(m, runChat) },
     onDismiss = { runChat.value = true }
   )
 }
@@ -404,16 +403,15 @@ private fun exportProhibitedAlert() {
   )
 }
 
-private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
+private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
       generalGetString(R.string.auth_stop_chat),
       generalGetString(R.string.auth_log_in_using_credential),
-      activity = context as FragmentActivity,
       completed = { laResult ->
         when (laResult) {
           LAResult.Success, is LAResult.Unavailable -> {
-            stopChat(m, runChat, context)
+            stopChat(m, runChat)
           }
           is LAResult.Error -> {
             runChat.value = true
@@ -425,11 +423,11 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>, context:
       }
     )
   } else {
-    stopChat(m, runChat, context)
+    stopChat(m, runChat)
   }
 }
 
-private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>, context: Context) {
+private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
   withApi {
     try {
       runChat.value = false
@@ -455,7 +453,6 @@ suspend fun deleteChatAsync(m: ChatModel) {
 }
 
 private fun exportArchive(
-  context: Context,
   m: ChatModel,
   progressIndicator: MutableState<Boolean>,
   chatArchiveName: MutableState<String?>,
@@ -466,7 +463,7 @@ private fun exportArchive(
   progressIndicator.value = true
   withApi {
     try {
-      val archiveFile = exportChatArchive(m, context, chatArchiveName, chatArchiveTime, chatArchiveFile)
+      val archiveFile = exportChatArchive(m, chatArchiveName, chatArchiveTime, chatArchiveFile)
       chatArchiveFile.value = archiveFile
       saveArchiveLauncher.launch(archiveFile.substringAfterLast("/"))
       progressIndicator.value = false
@@ -479,7 +476,6 @@ private fun exportArchive(
 
 private suspend fun exportChatArchive(
   m: ChatModel,
-  context: Context,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatArchiveFile: MutableState<String?>
@@ -487,10 +483,10 @@ private suspend fun exportChatArchive(
   val archiveTime = Clock.System.now()
   val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
   val archiveName = "simplex-chat.$ts.zip"
-  val archivePath = "${getFilesDirectory(context)}/$archiveName"
-  val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
+  val archivePath = "${getFilesDirectory()}/$archiveName"
+  val config = ArchiveConfig(archivePath, parentTempDirectory = SimplexApp.context.cacheDir.toString())
   m.controller.apiExportArchive(config)
-  deleteOldArchive(m, context)
+  deleteOldArchive(m)
   m.controller.appPrefs.chatArchiveName.set(archiveName)
   chatArchiveName.value = archiveName
   m.controller.appPrefs.chatArchiveTime.set(archiveTime)
@@ -499,10 +495,10 @@ private suspend fun exportChatArchive(
   return archivePath
 }
 
-private fun deleteOldArchive(m: ChatModel, context: Context) {
+private fun deleteOldArchive(m: ChatModel) {
   val chatArchiveName = m.controller.appPrefs.chatArchiveName.get()
   if (chatArchiveName != null) {
-    val file = File("${getFilesDirectory(context)}/$chatArchiveName")
+    val file = File("${getFilesDirectory()}/$chatArchiveName")
     val fileDeleted = file.delete()
     if (fileDeleted) {
       m.controller.appPrefs.chatArchiveName.set(null)
@@ -514,15 +510,16 @@ private fun deleteOldArchive(m: ChatModel, context: Context) {
 }
 
 @Composable
-private fun rememberSaveArchiveLauncher(cxt: Context, chatArchiveFile: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
+private fun rememberSaveArchiveLauncher(chatArchiveFile: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
+      val cxt = SimplexApp.context
       try {
         destination?.let {
           val filePath = chatArchiveFile.value
           if (filePath != null) {
-            val contentResolver = cxt.contentResolver
+            val contentResolver = SimplexApp.context.contentResolver
             contentResolver.openOutputStream(destination)?.let { stream ->
               val outputStream = BufferedOutputStream(stream)
               File(filePath).inputStream().use { it.copyTo(outputStream) }
@@ -544,7 +541,6 @@ private fun rememberSaveArchiveLauncher(cxt: Context, chatArchiveFile: MutableSt
 
 private fun importArchiveAlert(
   m: ChatModel,
-  context: Context,
   importedArchiveUri: Uri,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   progressIndicator: MutableState<Boolean>
@@ -553,29 +549,28 @@ private fun importArchiveAlert(
     title = generalGetString(R.string.import_database_question),
     text = generalGetString(R.string.your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one),
     confirmText = generalGetString(R.string.import_database_confirmation),
-    onConfirm = { importArchive(m, context, importedArchiveUri, appFilesCountAndSize, progressIndicator) },
+    onConfirm = { importArchive(m, importedArchiveUri, appFilesCountAndSize, progressIndicator) },
     destructive = true,
   )
 }
 
 private fun importArchive(
   m: ChatModel,
-  context: Context,
   importedArchiveUri: Uri,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   progressIndicator: MutableState<Boolean>
 ) {
   progressIndicator.value = true
-  val archivePath = saveArchiveFromUri(context, importedArchiveUri)
+  val archivePath = saveArchiveFromUri(importedArchiveUri)
   if (archivePath != null) {
     withApi {
       try {
         m.controller.apiDeleteStorage()
         try {
-          val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
+          val config = ArchiveConfig(archivePath, parentTempDirectory = SimplexApp.context.cacheDir.toString())
           val archiveErrors = m.controller.apiImportArchive(config)
           DatabaseUtils.ksDatabasePassword.remove()
-          appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
+          appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory())
           if (archiveErrors.isEmpty()) {
             operationEnded(m, progressIndicator) {
               AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), text = generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
@@ -601,12 +596,12 @@ private fun importArchive(
   }
 }
 
-private fun saveArchiveFromUri(context: Context, importedArchiveUri: Uri): String? {
+private fun saveArchiveFromUri(importedArchiveUri: Uri): String? {
   return try {
-    val inputStream = context.contentResolver.openInputStream(importedArchiveUri)
-    val archiveName = getFileName(context, importedArchiveUri)
+    val inputStream = SimplexApp.context.contentResolver.openInputStream(importedArchiveUri)
+    val archiveName = getFileName(importedArchiveUri)
     if (inputStream != null && archiveName != null) {
-      val archivePath = "${context.cacheDir}/$archiveName"
+      val archivePath = "${SimplexApp.context.cacheDir}/$archiveName"
       val destFile = File(archivePath)
       IOUtils.copy(inputStream, FileOutputStream(destFile))
       archivePath
@@ -651,7 +646,6 @@ private fun setCiTTL(
   chatItemTTL: MutableState<ChatItemTTL>,
   progressIndicator: MutableState<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
-  context: Context
 ) {
   Log.d(TAG, "DatabaseView setChatItemTTL ${chatItemTTL.value.seconds ?: -1}")
   progressIndicator.value = true
@@ -660,11 +654,11 @@ private fun setCiTTL(
       m.controller.setChatItemTTL(chatItemTTL.value)
       // Update model on success
       m.chatItemTTL.value = chatItemTTL.value
-      afterSetCiTTL(m, progressIndicator, appFilesCountAndSize, context)
+      afterSetCiTTL(m, progressIndicator, appFilesCountAndSize)
     } catch (e: Exception) {
       // Rollback to model's value
       chatItemTTL.value = m.chatItemTTL.value
-      afterSetCiTTL(m, progressIndicator, appFilesCountAndSize, context)
+      afterSetCiTTL(m, progressIndicator, appFilesCountAndSize)
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_changing_message_deletion), e.stackTraceToString())
     }
   }
@@ -673,11 +667,10 @@ private fun setCiTTL(
 private fun afterSetCiTTL(
   m: ChatModel,
   progressIndicator: MutableState<Boolean>,
-  appFilesCountAndSize: MutableState<Pair<Int, Long>>,
-  context: Context
+  appFilesCountAndSize: MutableState<Pair<Int, Long>>
 ) {
   progressIndicator.value = false
-  appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
+  appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory())
   withApi {
     try {
       val chats = m.controller.apiGetChats()
@@ -688,19 +681,19 @@ private fun afterSetCiTTL(
   }
 }
 
-private fun deleteFilesAndMediaAlert(context: Context, appFilesCountAndSize: MutableState<Pair<Int, Long>>) {
+private fun deleteFilesAndMediaAlert(appFilesCountAndSize: MutableState<Pair<Int, Long>>) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.delete_files_and_media_question),
     text = generalGetString(R.string.delete_files_and_media_desc),
     confirmText = generalGetString(R.string.delete_verb),
-    onConfirm = { deleteFiles(appFilesCountAndSize, context) },
+    onConfirm = { deleteFiles(appFilesCountAndSize) },
     destructive = true
   )
 }
 
-private fun deleteFiles(appFilesCountAndSize: MutableState<Pair<Int, Long>>, context: Context) {
-  deleteAppFiles(context)
-  appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
+private fun deleteFiles(appFilesCountAndSize: MutableState<Pair<Int, Long>>) {
+  deleteAppFiles()
+  appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory())
 }
 
 private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean>, alert: () -> Unit) {

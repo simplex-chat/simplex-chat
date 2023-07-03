@@ -236,9 +236,8 @@ fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
     }
     SectionSpacer()
     SectionView {
-      val context = LocalContext.current
       val theme = remember { mutableStateOf(null as String?) }
-      val exportThemeLauncher = rememberSaveThemeLauncher(context, theme)
+      val exportThemeLauncher = rememberSaveThemeLauncher(theme)
       SectionItemView({
         val overrides = ThemeManager.currentThemeOverridesForExport(isInDarkTheme)
         theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
@@ -375,10 +374,11 @@ private fun DarkThemeSelector(state: State<String?>, onSelected: (String) -> Uni
 //}
 
 @Composable
-private fun rememberSaveThemeLauncher(cxt: Context, theme: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
+private fun rememberSaveThemeLauncher(theme: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
+      val cxt = SimplexApp.context
       try {
         destination?.let {
           val theme = theme.value

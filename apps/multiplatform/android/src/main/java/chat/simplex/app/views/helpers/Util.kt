@@ -247,30 +247,30 @@ const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
-fun getFilesDirectory(context: Context): String {
-  return context.filesDir.toString()
+fun getFilesDirectory(): String {
+  return SimplexApp.context.filesDir.toString()
 }
 
-fun getTempFilesDirectory(context: Context): String {
-  return "${getFilesDirectory(context)}/temp_files"
+fun getTempFilesDirectory(): String {
+  return "${getFilesDirectory()}/temp_files"
 }
 
-fun getAppFilesDirectory(context: Context): String {
-  return "${getFilesDirectory(context)}/app_files"
+fun getAppFilesDirectory(): String {
+  return "${getFilesDirectory()}/app_files"
 }
 
-fun getAppFilePath(context: Context, fileName: String): String {
-  return "${getAppFilesDirectory(context)}/$fileName"
+fun getAppFilePath(fileName: String): String {
+  return "${getAppFilesDirectory()}/$fileName"
 }
 
 fun getAppFileUri(fileName: String): Uri {
-  return Uri.parse("${getAppFilesDirectory(SimplexApp.context)}/$fileName")
+  return Uri.parse("${getAppFilesDirectory()}/$fileName")
 }
 
 
-fun getLoadedFilePath(context: Context, file: CIFile?): String? {
+fun getLoadedFilePath(file: CIFile?): String? {
   return if (file?.filePath != null && file.loaded) {
-    val filePath = getAppFilePath(context, file.filePath)
+    val filePath = getAppFilePath(file.filePath)
     if (File(filePath).exists()) filePath else null
   } else {
     null
@@ -278,12 +278,12 @@ fun getLoadedFilePath(context: Context, file: CIFile?): String? {
 }
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
-  val filePath = getLoadedFilePath(context, file)
+fun getLoadedImage(file: CIFile?): Bitmap? {
+  val filePath = getLoadedFilePath(file)
   return if (filePath != null) {
     try {
-      val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
-      val parcelFileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")
+      val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+      val parcelFileDescriptor = SimplexApp.context.contentResolver.openFileDescriptor(uri, "r")
       val fileDescriptor = parcelFileDescriptor?.fileDescriptor
       val image = decodeSampledBitmapFromFileDescriptor(fileDescriptor, 1000, 1000)
       parcelFileDescriptor?.close()
@@ -329,24 +329,24 @@ private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int,
   return inSampleSize
 }
 
-fun getFileName(context: Context, uri: Uri): String? {
-  return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+fun getFileName(uri: Uri): String? {
+  return SimplexApp.context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
     val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
     cursor.moveToFirst()
     cursor.getString(nameIndex)
   }
 }
 
-fun getAppFilePath(context: Context, uri: Uri): String? {
-  return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+fun getAppFilePath(uri: Uri): String? {
+  return SimplexApp.context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
     val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
     cursor.moveToFirst()
-    getAppFilePath(context, cursor.getString(nameIndex))
+    getAppFilePath(cursor.getString(nameIndex))
   }
 }
 
-fun getFileSize(context: Context, uri: Uri): Long? {
-  return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+fun getFileSize(uri: Uri): Long? {
+  return SimplexApp.context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
     val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
     cursor.moveToFirst()
     cursor.getLong(sizeIndex)
@@ -369,7 +369,7 @@ fun getBitmapFromUri(uri: Uri, withAlertOnException: Boolean = true): Bitmap? {
       null
     }
   } else {
-    BitmapFactory.decodeFile(getAppFilePath(SimplexApp.context, uri))
+    BitmapFactory.decodeFile(getAppFilePath(uri))
   }
 }
 
@@ -389,7 +389,7 @@ fun getDrawableFromUri(uri: Uri, withAlertOnException: Boolean = true): Drawable
       null
     }
   } else {
-    Drawable.createFromPath(getAppFilePath(SimplexApp.context, uri))
+    Drawable.createFromPath(getAppFilePath(uri))
   }
 }
 
@@ -409,17 +409,17 @@ fun getThemeFromUri(uri: Uri, withAlertOnException: Boolean = true): ThemeOverri
   return null
 }
 
-fun saveImage(context: Context, uri: Uri): String? {
+fun saveImage(uri: Uri): String? {
   val bitmap = getBitmapFromUri(uri) ?: return null
-  return saveImage(context, bitmap)
+  return saveImage(bitmap)
 }
 
-fun saveImage(context: Context, image: Bitmap): String? {
+fun saveImage(image: Bitmap): String? {
   return try {
     val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
-    val fileToSave = generateNewFileName(context, "IMG", ext)
-    val file = File(getAppFilePath(context, fileToSave))
+    val fileToSave = generateNewFileName("IMG", ext)
+    val file = File(getAppFilePath(fileToSave))
     val output = FileOutputStream(file)
     dataResized.writeTo(output)
     output.flush()
@@ -431,9 +431,9 @@ fun saveImage(context: Context, image: Bitmap): String? {
   }
 }
 
-fun saveAnimImage(context: Context, uri: Uri): String? {
+fun saveAnimImage(uri: Uri): String? {
   return try {
-    val filename = getFileName(context, uri)?.lowercase()
+    val filename = getFileName(uri)?.lowercase()
     var ext = when {
       // remove everything but extension
       filename?.contains(".") == true -> filename.replaceBeforeLast('.', "").replace(".", "")
@@ -441,10 +441,10 @@ fun saveAnimImage(context: Context, uri: Uri): String? {
     }
     // Just in case the image has a strange extension
     if (ext.length < 3 || ext.length > 4) ext = "gif"
-    val fileToSave = generateNewFileName(context, "IMG", ext)
-    val file = File(getAppFilePath(context, fileToSave))
+    val fileToSave = generateNewFileName("IMG", ext)
+    val file = File(getAppFilePath(fileToSave))
     val output = FileOutputStream(file)
-    context.contentResolver.openInputStream(uri)!!.use { input ->
+    SimplexApp.context.contentResolver.openInputStream(uri)!!.use { input ->
       output.use { output ->
         input.copyTo(output)
       }
@@ -460,7 +460,7 @@ fun saveTempImageUncompressed(image: Bitmap, asPng: Boolean): File? {
   return try {
     val ext = if (asPng) "png" else "jpg"
     val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
-    return File(tmpDir.absolutePath + File.separator + generateNewFileName(SimplexApp.context, "IMG", ext)).apply {
+    return File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", ext)).apply {
       outputStream().use { out ->
         image.compress(if (asPng) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 85, out)
         out.flush()
@@ -474,13 +474,13 @@ fun saveTempImageUncompressed(image: Bitmap, asPng: Boolean): File? {
   }
 }
 
-fun saveFileFromUri(context: Context, uri: Uri): String? {
+fun saveFileFromUri(uri: Uri): String? {
   return try {
-    val inputStream = context.contentResolver.openInputStream(uri)
-    val fileToSave = getFileName(context, uri)
+    val inputStream = SimplexApp.context.contentResolver.openInputStream(uri)
+    val fileToSave = getFileName(uri)
     if (inputStream != null && fileToSave != null) {
-      val destFileName = uniqueCombine(context, fileToSave)
-      val destFile = File(getAppFilePath(context, destFileName))
+      val destFileName = uniqueCombine(fileToSave)
+      val destFile = File(getAppFilePath(destFileName))
       IOUtils.copy(inputStream, FileOutputStream(destFile))
       destFileName
     } else {
@@ -493,21 +493,21 @@ fun saveFileFromUri(context: Context, uri: Uri): String? {
   }
 }
 
-fun generateNewFileName(context: Context, prefix: String, ext: String): String {
+fun generateNewFileName(prefix: String, ext: String): String {
   val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
   sdf.timeZone = TimeZone.getTimeZone("GMT")
   val timestamp = sdf.format(Date())
-  return uniqueCombine(context, "${prefix}_$timestamp.$ext")
+  return uniqueCombine("${prefix}_$timestamp.$ext")
 }
 
-fun uniqueCombine(context: Context, fileName: String): String {
+fun uniqueCombine(fileName: String): String {
   val orig = File(fileName)
   val name = orig.nameWithoutExtension
   val ext = orig.extension
   fun tryCombine(n: Int): String {
     val suffix = if (n == 0) "" else "_$n"
     val f = "$name$suffix.$ext"
-    return if (File(getAppFilePath(context, f)).exists()) tryCombine(n + 1) else f
+    return if (File(getAppFilePath(f)).exists()) tryCombine(n + 1) else f
   }
   return tryCombine(0)
 }
@@ -530,8 +530,8 @@ fun formatBytes(bytes: Long): String {
   }
 }
 
-fun removeFile(context: Context, fileName: String): Boolean {
-  val file = File(getAppFilePath(context, fileName))
+fun removeFile(fileName: String): Boolean {
+  val file = File(getAppFilePath(fileName))
   val fileDeleted = file.delete()
   if (!fileDeleted) {
     Log.e(chat.simplex.app.TAG, "Util.kt removeFile error")
@@ -539,11 +539,11 @@ fun removeFile(context: Context, fileName: String): Boolean {
   return fileDeleted
 }
 
-fun deleteAppFiles(context: Context) {
-  val dir = File(getAppFilesDirectory(context))
+fun deleteAppFiles() {
+  val dir = File(getAppFilesDirectory())
   try {
     dir.list()?.forEach {
-      removeFile(context, it)
+      removeFile(it)
     }
   } catch (e: java.lang.Exception) {
     Log.e(TAG, "Util deleteAppFiles error: ${e.stackTraceToString()}")

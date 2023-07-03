@@ -14,6 +14,7 @@ import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import java.io.*
+import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -37,13 +38,20 @@ external fun chatParseServer(str: String): String
 external fun chatPasswordHash(pwd: String, salt: String): String
 
 class SimplexApp: Application(), LifecycleEventObserver {
+  var mainActivity: WeakReference<MainActivity> = WeakReference(null)
+  val chatModel: ChatModel
+    get() = chatController.chatModel
+  val appPreferences: AppPreferences
+    get() = chatController.appPrefs
+
+  val chatController: ChatController = ChatController
   var isAppOnForeground: Boolean = false
 
   val defaultLocale: Locale = Locale.getDefault()
 
   suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: Boolean = true) {
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
-    val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
+    val dbAbsolutePathPrefix = getFilesDirectory()
     val confirm = confirmMigrations ?: if (appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
     val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey, confirm.value)
     val res: DBMigrationResult = kotlin.runCatching {
@@ -82,21 +90,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
       }
     }
-  }
-
-  val chatModel: ChatModel
-    get() = chatController.chatModel
-
-  private val ntfManager: NtfManager by lazy {
-    NtfManager(applicationContext, appPreferences)
-  }
-
-  private val appPreferences: AppPreferences by lazy {
-    AppPreferences(applicationContext)
-  }
-
-  val chatController: ChatController by lazy {
-    ChatController(0L, ntfManager, applicationContext, appPreferences)
   }
 
 
@@ -162,12 +155,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   fun allowToStartServiceAfterAppExit() = with(chatModel.controller) {
     appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name &&
-        (!NotificationsMode.SERVICE.requiresIgnoringBattery || isIgnoringBatteryOptimizations(chatModel.controller.appContext))
+        (!NotificationsMode.SERVICE.requiresIgnoringBattery || isIgnoringBatteryOptimizations())
   }
 
   private fun allowToStartPeriodically() = with(chatModel.controller) {
     appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC.name &&
-        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || isIgnoringBatteryOptimizations(chatModel.controller.appContext))
+        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || isIgnoringBatteryOptimizations())
   }
 
   /*

@@ -46,7 +46,7 @@ fun CIVideoView(
     contentAlignment = Alignment.TopEnd
   ) {
     val context = LocalContext.current
-    val filePath = remember(file) { getLoadedFilePath(SimplexApp.context, file) }
+    val filePath = remember(file) { getLoadedFilePath(file) }
     val preview = remember(image) { base64ToBitmap(image) }
     if (file != null && filePath != null) {
       val uri = remember(filePath) { FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))  }
@@ -100,7 +100,7 @@ fun CIVideoView(
 @Composable
 private fun VideoView(uri: Uri, file: CIFile, defaultPreview: Bitmap, defaultDuration: Long, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
   val context = LocalContext.current
-  val player = remember(uri) { VideoPlayer.getOrCreate(uri, false, defaultPreview, defaultDuration, true, context) }
+  val player = remember(uri) { VideoPlayer.getOrCreate(uri, false, defaultPreview, defaultDuration, true) }
   val videoPlaying = remember(uri.path) { player.videoPlaying }
   val progress = remember(uri.path) { player.progress }
   val duration = remember(uri.path) { player.duration }

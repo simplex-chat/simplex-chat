@@ -11,7 +11,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,7 +44,6 @@ fun ContactConnectionInfoView(
       }
     }
   }
-  val context = LocalContext.current
   ContactConnectionInfoLayout(
     connReq = connReqInvitation,
     contactConnection,
@@ -53,7 +51,7 @@ fun ContactConnectionInfoView(
     focusAlias,
     deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
-    share = { if (connReqInvitation != null) shareText(context, connReqInvitation) },
+    share = { if (connReqInvitation != null) shareText(connReqInvitation) },
     learnMore = {
       ModalManager.shared.showModal {
         Column(
