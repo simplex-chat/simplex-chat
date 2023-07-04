@@ -464,6 +464,10 @@ func setNetworkConfig(_ cfg: NetCfg) throws {
     throw r
 }
 
+func reconnectAllServers() async throws {
+    try await sendCommandOkResp(.reconnectAllServers)
+}
+
 func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) async throws {
     try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
 }
