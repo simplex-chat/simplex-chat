@@ -32,6 +32,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   val currentCfgVal = currentCfg.value // used only on initialization
   val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
   val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
+  val networkTCPTimeoutPerKb = remember { mutableStateOf(currentCfgVal.tcpTimeoutPerKb) }
   val networkSMPPingInterval = remember { mutableStateOf(currentCfgVal.smpPingInterval) }
   val networkSMPPingCount = remember { mutableStateOf(currentCfgVal.smpPingCount) }
   val networkEnableKeepAlive = remember { mutableStateOf(currentCfgVal.enableKeepAlive) }
@@ -65,6 +66,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       sessionMode = currentCfg.value.sessionMode,
       tcpConnectTimeout = networkTCPConnectTimeout.value,
       tcpTimeout = networkTCPTimeout.value,
+      tcpTimeoutPerKb = networkTCPTimeoutPerKb.value,
       tcpKeepAlive = tcpKeepAlive,
       smpPingInterval = networkSMPPingInterval.value,
       smpPingCount = networkSMPPingCount.value
@@ -74,6 +76,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   fun updateView(cfg: NetCfg) {
     networkTCPConnectTimeout.value = cfg.tcpConnectTimeout
     networkTCPTimeout.value = cfg.tcpTimeout
+    networkTCPTimeoutPerKb.value = cfg.tcpTimeoutPerKb
     networkSMPPingInterval.value = cfg.smpPingInterval
     networkSMPPingCount.value = cfg.smpPingCount
     networkEnableKeepAlive.value = cfg.enableKeepAlive
@@ -105,6 +108,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   AdvancedNetworkSettingsLayout(
     networkTCPConnectTimeout,
     networkTCPTimeout,
+    networkTCPTimeoutPerKb,
     networkSMPPingInterval,
     networkSMPPingCount,
     networkEnableKeepAlive,
@@ -122,6 +126,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
 @Composable fun AdvancedNetworkSettingsLayout(
   networkTCPConnectTimeout: MutableState<Long>,
   networkTCPTimeout: MutableState<Long>,
+  networkTCPTimeoutPerKb: MutableState<Long>,
   networkSMPPingInterval: MutableState<Long>,
   networkSMPPingCount: MutableState<Int>,
   networkEnableKeepAlive: MutableState<Boolean>,
@@ -156,6 +161,12 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeout,
           listOf(1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000), secondsLabel
+        )
+      }
+      SectionItemView {
+        TimeoutSettingRow(
+          stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
+          listOf(5_000, 10_000, 20_000, 40_000), secondsLabel
         )
       }
       SectionItemView {
@@ -403,6 +414,7 @@ fun PreviewAdvancedNetworkSettingsLayout() {
     AdvancedNetworkSettingsLayout(
       networkTCPConnectTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeout = remember { mutableStateOf(10_000000) },
+      networkTCPTimeoutPerKb = remember { mutableStateOf(10_000) },
       networkSMPPingInterval = remember { mutableStateOf(10_000000) },
       networkSMPPingCount = remember { mutableStateOf(3) },
       networkEnableKeepAlive = remember { mutableStateOf(true) },

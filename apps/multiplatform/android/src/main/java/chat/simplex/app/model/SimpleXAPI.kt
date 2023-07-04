@@ -131,6 +131,7 @@ class AppPreferences {
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
   val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
+  val networkTCPTimeoutPerKb = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB, NetCfg.defaults.tcpTimeoutPerKb, NetCfg.proxyDefaults.tcpTimeoutPerKb)
   val networkSMPPingInterval = mkLongPreference(SHARED_PREFS_NETWORK_SMP_PING_INTERVAL, NetCfg.defaults.smpPingInterval)
   val networkSMPPingCount = mkIntPreference(SHARED_PREFS_NETWORK_SMP_PING_COUNT, NetCfg.defaults.smpPingCount)
   val networkEnableKeepAlive = mkBoolPreference(SHARED_PREFS_NETWORK_ENABLE_KEEP_ALIVE, NetCfg.defaults.enableKeepAlive)
@@ -266,6 +267,7 @@ class AppPreferences {
     private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
     private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT = "NetworkTCPTimeout"
+    private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
     private const val SHARED_PREFS_NETWORK_SMP_PING_INTERVAL = "NetworkSMPPingInterval"
     private const val SHARED_PREFS_NETWORK_SMP_PING_COUNT = "NetworkSMPPingCount"
     private const val SHARED_PREFS_NETWORK_ENABLE_KEEP_ALIVE = "NetworkEnableKeepAlive"
@@ -1834,6 +1836,7 @@ object ChatController {
     val sessionMode = appPrefs.networkSessionMode.get()
     val tcpConnectTimeout = appPrefs.networkTCPConnectTimeout.get()
     val tcpTimeout = appPrefs.networkTCPTimeout.get()
+    val tcpTimeoutPerKb = appPrefs.networkTCPTimeoutPerKb.get()
     val smpPingInterval = appPrefs.networkSMPPingInterval.get()
     val smpPingCount = appPrefs.networkSMPPingCount.get()
     val enableKeepAlive = appPrefs.networkEnableKeepAlive.get()
@@ -1852,6 +1855,7 @@ object ChatController {
       sessionMode = sessionMode,
       tcpConnectTimeout = tcpConnectTimeout,
       tcpTimeout = tcpTimeout,
+      tcpTimeoutPerKb = tcpTimeoutPerKb,
       tcpKeepAlive = tcpKeepAlive,
       smpPingInterval = smpPingInterval,
       smpPingCount = smpPingCount
@@ -1868,6 +1872,7 @@ object ChatController {
     appPrefs.networkSessionMode.set(cfg.sessionMode)
     appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
     appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
+    appPrefs.networkTCPTimeoutPerKb.set(cfg.tcpTimeoutPerKb)
     appPrefs.networkSMPPingInterval.set(cfg.smpPingInterval)
     appPrefs.networkSMPPingCount.set(cfg.smpPingCount)
     if (cfg.tcpKeepAlive != null) {
@@ -2421,6 +2426,7 @@ data class NetCfg(
   val sessionMode: TransportSessionMode,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
+  val tcpTimeoutPerKb: Long, // microseconds
   val tcpKeepAlive: KeepAliveOpts?,
   val smpPingInterval: Long, // microseconds
   val smpPingCount: Int,
@@ -2447,6 +2453,7 @@ data class NetCfg(
         sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 10_000_000,
         tcpTimeout = 7_000_000,
+        tcpTimeoutPerKb = 10_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3
@@ -2460,6 +2467,7 @@ data class NetCfg(
         sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 20_000_000,
         tcpTimeout = 15_000_000,
+        tcpTimeoutPerKb = 20_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3
