@@ -420,8 +420,8 @@ data ChatResponse
   | CRGroupMemberSwitch {user :: User, groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
   | CRContactRatchetSyncStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberRatchetSyncStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
-  | CRContactRatchetSync {user :: User, contact :: Contact, ratchetSyncStatus :: RatchetSyncStatus}
-  | CRGroupMemberRatchetSync {user :: User, groupInfo :: GroupInfo, member :: GroupMember, ratchetSyncStatus :: RatchetSyncStatus}
+  | CRContactRatchetSync {user :: User, contact :: Contact, ratchetSyncProgress :: RatchetSyncProgress}
+  | CRGroupMemberRatchetSync {user :: User, groupInfo :: GroupInfo, member :: GroupMember, ratchetSyncProgress :: RatchetSyncProgress}
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
@@ -725,6 +725,14 @@ data SwitchProgress = SwitchProgress
   deriving (Show, Generic)
 
 instance ToJSON SwitchProgress where toEncoding = J.genericToEncoding J.defaultOptions
+
+data RatchetSyncProgress = RatchetSyncProgress
+  { ratchetSyncStatus :: RatchetSyncStatus,
+    connectionStats :: ConnectionStats
+  }
+  deriving (Show, Generic)
+
+instance ToJSON RatchetSyncProgress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ParsedServerAddress = ParsedServerAddress
   { serverAddress :: Maybe ServerAddress,

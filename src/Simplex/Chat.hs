@@ -1135,7 +1135,6 @@ processChatCommand = \case
       _ -> throwChatError CEGroupMemberNotActive
   APISyncContactRatchet contactId force -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
-    -- TODO check allowed
     cStats@ConnectionStats {ratchetSyncState} <- withAgent $ \a -> synchronizeRatchet a (contactConnId ct) force
     let rss' = toRatchetSyncStatus ratchetSyncState
     createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCERatchetSync rss' Nothing) Nothing
@@ -1144,7 +1143,6 @@ processChatCommand = \case
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
       Just connId -> do
-        -- TODO check allowed
         cStats@ConnectionStats {ratchetSyncState} <- withAgent $ \a -> synchronizeRatchet a connId force
         let rss' = toRatchetSyncStatus ratchetSyncState
         createInternalChatItem user (CDGroupSnd g) (CISndConnEvent . SCERatchetSync rss' . Just $ groupMemberRef m) Nothing
@@ -2867,14 +2865,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
             QDRcv -> createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCESwitchQueue phase Nothing) Nothing
             QDSnd -> createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
-        RSYNC rss _cStats -> do
-          -- TODO update contact connection stats
+        RSYNC rss cStats -> do
           (ct', rss') <- case (rss, connectionCode) of
             (RSAgreed, Just _) -> do
               withStore' $ \db -> setConnectionVerified db user connId Nothing
               pure (ct {activeConn = conn {connectionCode = Nothing}} :: Contact, RSSAgreed True)
             _ -> pure (ct, toRatchetSyncStatus rss)
-          toView $ CRContactRatchetSync user ct' rss'
+          toView $ CRContactRatchetSync user ct' (RatchetSyncProgress rss' cStats)
           createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCERatchetSync rss') Nothing
         OK ->
           -- [async agent commands] continuation on receiving OK
@@ -3055,14 +3052,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
-      RSYNC rss _cStats -> do
-        -- TODO update group member connection stats
+      RSYNC rss cStats -> do
         (m', rss') <- case (rss, connectionCode) of
           (RSAgreed, Just _) -> do
             withStore' $ \db -> setConnectionVerified db user connId Nothing
             pure (m {activeConn = Just (conn {connectionCode = Nothing} :: Connection)} :: GroupMember, RSSAgreed True)
           _ -> pure (m, toRatchetSyncStatus rss)
-        toView $ CRGroupMemberRatchetSync user gInfo m' rss'
+        toView $ CRGroupMemberRatchetSync user gInfo m' (RatchetSyncProgress rss' cStats)
         createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCERatchetSync rss') Nothing
       OK ->
         -- [async agent commands] continuation on receiving OK

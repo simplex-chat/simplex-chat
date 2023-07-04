@@ -972,15 +972,15 @@ viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
   QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
   QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
 
-viewContactRatchetSync :: Contact -> RatchetSyncStatus -> [StyledString]
-viewContactRatchetSync ct@Contact {localDisplayName = c} rss =
+viewContactRatchetSync :: Contact -> RatchetSyncProgress -> [StyledString]
+viewContactRatchetSync ct@Contact {localDisplayName = c} RatchetSyncProgress {ratchetSyncStatus = rss} =
   [ttyContact' ct <> ": " <> (plain . ratchetSyncStatusToText) rss]
     <> help
   where
     help = ["use " <> highlight ("/sync " <> c) <> " to synchronize" | rss `elem` [RSSAllowed, RSSRequired]]
 
-viewGroupMemberRatchetSync :: GroupInfo -> GroupMember -> RatchetSyncStatus -> [StyledString]
-viewGroupMemberRatchetSync g m@GroupMember {localDisplayName = n} rss =
+viewGroupMemberRatchetSync :: GroupInfo -> GroupMember -> RatchetSyncProgress -> [StyledString]
+viewGroupMemberRatchetSync g m@GroupMember {localDisplayName = n} RatchetSyncProgress {ratchetSyncStatus = rss} =
   [ttyGroup' g <> " " <> ttyMember m <> ": " <> (plain . ratchetSyncStatusToText) rss]
     <> help
   where
