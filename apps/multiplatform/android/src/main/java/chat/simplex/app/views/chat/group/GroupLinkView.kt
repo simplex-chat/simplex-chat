@@ -10,7 +10,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -113,7 +113,7 @@ fun GroupLinkLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (groupLink == null) {
-        SimpleButton(stringResource(MR.strings.button_create_group_link), icon = painterResource(R.drawable.ic_add_link), disabled = creatingLink, click = createLink)
+        SimpleButton(stringResource(MR.strings.button_create_group_link), icon = painterResource(MR.images.ic_add_link), disabled = creatingLink, click = createLink)
       } else {
         RoleSelectionRow(groupInfo, groupLinkMemberRole)
         var initialLaunch by remember { mutableStateOf(true) }
@@ -131,12 +131,12 @@ fun GroupLinkLayout(
         ) {
           SimpleButton(
             stringResource(MR.strings.share_link),
-            icon = painterResource(R.drawable.ic_share),
+            icon = painterResource(MR.images.ic_share),
             click = share
           )
           SimpleButton(
             stringResource(MR.strings.delete_link),
-            icon = painterResource(R.drawable.ic_delete),
+            icon = painterResource(MR.images.ic_delete),
             color = Color.Red,
             click = deleteLink
           )

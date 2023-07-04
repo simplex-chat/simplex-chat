@@ -13,16 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
-import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -89,7 +86,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           contentColor = Color.White
         ) {
-          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(R.drawable.ic_edit_filled) else painterResource(R.drawable.ic_close), stringResource(MR.strings.add_contact_or_create_group))
+          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(MR.images.ic_edit_filled) else painterResource(MR.images.ic_close), stringResource(MR.strings.add_contact_or_create_group))
         }
       }
     }
@@ -181,7 +178,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
   if (chatModel.chats.size > 0) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(painterResource(R.drawable.ic_search_500), stringResource(MR.strings.search_verb).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search_verb).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -194,7 +191,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
         )
       }) {
         Icon(
-          painterResource(R.drawable.ic_report_filled),
+          painterResource(MR.images.ic_report_filled),
           generalGetString(MR.strings.chat_is_stopped_indication),
           tint = Color.Red,
         )
@@ -226,7 +223,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
       Row(verticalAlignment = Alignment.CenterVertically) {
         if (chatModel.incognito.value) {
           Icon(
-            painterResource(R.drawable.ic_theater_comedy_filled),
+            painterResource(MR.images.ic_theater_comedy_filled),
             stringResource(MR.strings.incognito),
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)
@@ -285,7 +282,7 @@ private fun ToggleFilterButton() {
   val pref = remember { SimplexApp.context.chatModel.controller.appPrefs.showUnreadAndFavorites }
   IconButton(onClick = { pref.set(!pref.get()) }) {
     Icon(
-      painterResource(R.drawable.ic_filter_list),
+      painterResource(MR.images.ic_filter_list),
       null,
       tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.primary,
       modifier = Modifier

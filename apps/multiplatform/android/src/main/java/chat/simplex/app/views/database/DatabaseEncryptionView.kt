@@ -18,7 +18,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -291,7 +291,7 @@ fun SavePassphraseSetting(
   SectionItemView(minHeight = minHeight) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
-        if (storedKey) painterResource(R.drawable.ic_vpn_key_filled) else painterResource(R.drawable.ic_vpn_key_off_filled),
+        if (storedKey) painterResource(MR.images.ic_vpn_key_filled) else painterResource(MR.images.ic_vpn_key_off_filled),
         stringResource(MR.strings.save_passphrase_in_keychain),
         tint = if (storedKey) SimplexGreen else MaterialTheme.colors.secondary
       )
@@ -358,8 +358,8 @@ fun PassphraseField(
   var valid by remember { mutableStateOf(validKey(key.value)) }
   var showKey by remember { mutableStateOf(false) }
   val icon = if (valid) {
-    if (showKey) painterResource(R.drawable.ic_visibility_off_filled) else painterResource(R.drawable.ic_visibility_filled)
-  } else painterResource(R.drawable.ic_error)
+    if (showKey) painterResource(MR.images.ic_visibility_off_filled) else painterResource(MR.images.ic_visibility_filled)
+  } else painterResource(MR.images.ic_error)
   val iconColor = if (valid) {
     if (showStrength && key.value.isNotEmpty()) PassphraseStrength.check(key.value).color else MaterialTheme.colors.secondary
   } else Color.Red

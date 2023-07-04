@@ -23,7 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -247,7 +247,7 @@ fun GetImageBottomSheet(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, stringResource(MR.strings.use_camera_button), icon = painterResource(R.drawable.ic_photo_camera)) {
+      ActionButton(null, stringResource(MR.strings.use_camera_button), icon = painterResource(MR.images.ic_photo_camera)) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launchWithFallback()
@@ -258,7 +258,7 @@ fun GetImageBottomSheet(
           }
         }
       }
-      ActionButton(null, stringResource(MR.strings.from_gallery_button), icon = painterResource(R.drawable.ic_image)) {
+      ActionButton(null, stringResource(MR.strings.from_gallery_button), icon = painterResource(MR.images.ic_image)) {
         try {
           galleryLauncher.launch(0)
         } catch (e: ActivityNotFoundException) {

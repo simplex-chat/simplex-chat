@@ -15,17 +15,16 @@ import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
 import chat.simplex.app.views.database.PassphraseStrength
 import chat.simplex.app.views.database.validKey
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
@@ -133,8 +132,8 @@ fun DefaultConfigurableTextField(
   var valid by remember { mutableStateOf(validKey(state.value.text)) }
   var showKey by remember { mutableStateOf(false) }
   val icon = if (valid) {
-    if (showKey) painterResource(R.drawable.ic_visibility_off_filled) else painterResource(R.drawable.ic_visibility_filled)
-  } else painterResource(R.drawable.ic_error)
+    if (showKey) painterResource(MR.images.ic_visibility_off_filled) else painterResource(MR.images.ic_visibility_filled)
+  } else painterResource(MR.images.ic_error)
   val iconColor = if (valid) {
     if (showPasswordStrength && state.value.text.isNotEmpty()) PassphraseStrength.check(state.value.text).color else MaterialTheme.colors.secondary
   } else Color.Red

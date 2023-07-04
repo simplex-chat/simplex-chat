@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -25,7 +25,7 @@ fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boo
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
-      painterResource(R.drawable.ic_draft_filled),
+      painterResource(MR.images.ic_draft_filled),
       stringResource(MR.strings.icon_descr_file),
       Modifier
         .padding(start = 4.dp, end = 2.dp)
@@ -37,7 +37,7 @@ fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boo
     if (cancelEnabled) {
       IconButton(onClick = cancelFile, modifier = Modifier.padding(0.dp)) {
         Icon(
-          painterResource(R.drawable.ic_close),
+          painterResource(MR.images.ic_close),
           contentDescription = stringResource(MR.strings.icon_descr_cancel_file_preview),
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)

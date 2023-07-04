@@ -7,7 +7,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -32,7 +32,7 @@ fun InvalidJSONView(json: String) {
   Column {
     Spacer(Modifier.height(DEFAULT_PADDING))
     SectionView {
-      SettingsActionItem(painterResource(R.drawable.ic_share), generalGetString(MR.strings.share_verb), click = {
+      SettingsActionItem(painterResource(MR.images.ic_share), generalGetString(MR.strings.share_verb), click = {
         shareText(json)
       })
     }

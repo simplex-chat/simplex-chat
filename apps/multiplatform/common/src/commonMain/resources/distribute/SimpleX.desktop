@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=SimpleX
+Comment=Messenger for the future
+Exec=simplex
+Icon=simplex.png
+Categories=Messenger;

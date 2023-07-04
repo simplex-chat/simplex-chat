@@ -27,7 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -660,10 +660,10 @@ fun ComposeView(
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
-      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_reply)) {
+      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_reply)) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
-      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_edit_filled)) {
+      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_edit_filled)) {
         clearState()
       }
     }
@@ -728,7 +728,7 @@ fun ComposeView(
       }
       IconButton(attachmentClicked, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
         Icon(
-          painterResource(R.drawable.ic_attach_file_filled_500),
+          painterResource(MR.images.ic_attach_file_filled_500),
           contentDescription = stringResource(MR.strings.attach),
           tint = if (!composeState.value.attachmentDisabled && userCanSend.value && !isGroupAndProhibitedFiles) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           modifier = Modifier

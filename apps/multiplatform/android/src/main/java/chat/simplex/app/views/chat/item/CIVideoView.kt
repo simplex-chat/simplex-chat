@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
@@ -162,7 +162,7 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        painterResource(R.drawable.ic_play_arrow_filled),
+        painterResource(MR.images.ic_play_arrow_filled),
         contentDescription = null,
         tint = if (error) WarningOrange else Color.White
       )
@@ -190,7 +190,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
           color = Color.White
         )
         /*if (!soundEnabled.value) {
-        Icon(painterResource(R.drawable.ic_volume_off_filled), null,
+        Icon(painterResource(MR.images.ic_volume_off_filled), null,
           Modifier.padding(start = 5.dp).size(10.dp),
           tint = Color.White
         )
@@ -296,19 +296,19 @@ private fun loadingIndicator(file: CIFile?) {
             FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
             FileProtocol.SMP -> progressIndicator()
           }
-        is CIFileStatus.SndComplete -> fileIcon(painterResource(R.drawable.ic_check_filled), MR.strings.icon_descr_video_snd_complete)
-        is CIFileStatus.SndCancelled -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
-        is CIFileStatus.SndError -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
-        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(R.drawable.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
-        is CIFileStatus.RcvAccepted -> fileIcon(painterResource(R.drawable.ic_more_horiz), MR.strings.icon_descr_waiting_for_video)
+        is CIFileStatus.SndComplete -> fileIcon(painterResource(MR.images.ic_check_filled), MR.strings.icon_descr_video_snd_complete)
+        is CIFileStatus.SndCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.SndError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
+        is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
           if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
             progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
           } else {
             progressIndicator()
           }
-        is CIFileStatus.RcvCancelled -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
-        is CIFileStatus.RcvError -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.RcvCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.RcvError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
         else -> {}
       }
     }

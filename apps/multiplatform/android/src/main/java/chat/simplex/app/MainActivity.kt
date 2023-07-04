@@ -17,7 +17,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
@@ -39,6 +38,7 @@ import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import chat.simplex.app.views.usersettings.LAMode
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -435,7 +435,7 @@ fun MainPage(
       ) {
         SimpleButton(
           stringResource(MR.strings.auth_unlock),
-          icon = painterResource(R.drawable.ic_lock),
+          icon = painterResource(MR.images.ic_lock),
           click = {
             laFailed.value = false
             runAuthenticate()

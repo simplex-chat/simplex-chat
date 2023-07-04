@@ -22,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -178,8 +178,8 @@ fun DatabaseLayout(
     SectionView(stringResource(MR.strings.chat_database_section)) {
       val unencrypted = chatDbEncrypted == false
       SettingsActionItem(
-        if (unencrypted) painterResource(R.drawable.ic_lock_open) else if (useKeyChain) painterResource(R.drawable.ic_vpn_key_filled)
-        else painterResource(R.drawable.ic_lock),
+        if (unencrypted) painterResource(MR.images.ic_lock_open) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
+        else painterResource(MR.images.ic_lock),
         stringResource(MR.strings.database_passphrase),
         click = showSettingsModal() { DatabaseEncryptionView(it) },
         iconColor = if (unencrypted) WarningOrange else MaterialTheme.colors.secondary,
@@ -188,7 +188,7 @@ fun DatabaseLayout(
       AppDataBackupPreference(privacyFullBackup, initialRandomDBPassphrase)
       SectionDividerSpaced(maxBottomPadding = false)
       SettingsActionItem(
-        painterResource(R.drawable.ic_ios_share),
+        painterResource(MR.images.ic_ios_share),
         stringResource(MR.strings.export_database),
         click = {
           if (initialRandomDBPassphrase.get()) {
@@ -202,7 +202,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
       SettingsActionItem(
-        painterResource(R.drawable.ic_download),
+        painterResource(MR.images.ic_download),
         stringResource(MR.strings.import_database),
         { importArchiveLauncher.launch("application/zip") },
         textColor = Color.Red,
@@ -215,14 +215,14 @@ fun DatabaseLayout(
       if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
         val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
         SettingsActionItem(
-          painterResource(R.drawable.ic_inventory_2),
+          painterResource(MR.images.ic_inventory_2),
           title,
           click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
           disabled = operationsDisabled
         )
       }
       SettingsActionItem(
-        painterResource(R.drawable.ic_delete_forever),
+        painterResource(MR.images.ic_delete_forever),
         stringResource(MR.strings.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
@@ -266,7 +266,7 @@ fun DatabaseLayout(
 @Composable
 private fun AppDataBackupPreference(privacyFullBackup: SharedPreference<Boolean>, initialRandomDBPassphrase: SharedPreference<Boolean>) {
   SettingsPreferenceItem(
-    painterResource(R.drawable.ic_backup),
+    painterResource(MR.images.ic_backup),
     iconColor = MaterialTheme.colors.secondary,
     pref = privacyFullBackup,
     text = stringResource(MR.strings.full_backup)
@@ -331,7 +331,7 @@ fun RunChatSetting(
 ) {
   val chatRunningText = if (stopped) stringResource(MR.strings.chat_is_stopped) else stringResource(MR.strings.chat_is_running)
   SettingsActionItemWithContent(
-    icon = if (stopped) painterResource(R.drawable.ic_report_filled) else painterResource(R.drawable.ic_play_arrow_filled),
+    icon = if (stopped) painterResource(MR.images.ic_report_filled) else painterResource(MR.images.ic_play_arrow_filled),
     text = chatRunningText,
     iconColor = if (stopped) Color.Red else MaterialTheme.colors.primary,
   ) {

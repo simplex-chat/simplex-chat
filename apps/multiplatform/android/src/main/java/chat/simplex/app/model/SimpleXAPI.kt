@@ -14,7 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -1707,7 +1707,7 @@ object ChatController {
       title = {
         Row {
           Icon(
-            painterResource(R.drawable.ic_bolt),
+            painterResource(MR.images.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
           )
@@ -1744,7 +1744,7 @@ object ChatController {
       title = {
         Row {
           Icon(
-            painterResource(R.drawable.ic_bolt),
+            painterResource(MR.images.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
           )
@@ -1775,7 +1775,7 @@ object ChatController {
       title = {
         Row {
           Icon(
-            painterResource(R.drawable.ic_bolt),
+            painterResource(MR.images.ic_bolt),
             contentDescription =
             if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
           )
@@ -2856,20 +2856,20 @@ enum class ChatFeature: Feature {
 
   val icon: Painter
     @Composable get() = when(this) {
-      TimedMessages -> painterResource(R.drawable.ic_timer)
-      FullDelete -> painterResource(R.drawable.ic_delete_forever)
-      Reactions -> painterResource(R.drawable.ic_add_reaction)
-      Voice -> painterResource(R.drawable.ic_keyboard_voice)
-      Calls -> painterResource(R.drawable.ic_call)
+      TimedMessages -> painterResource(MR.images.ic_timer)
+      FullDelete -> painterResource(MR.images.ic_delete_forever)
+      Reactions -> painterResource(MR.images.ic_add_reaction)
+      Voice -> painterResource(MR.images.ic_keyboard_voice)
+      Calls -> painterResource(MR.images.ic_call)
     }
 
   @Composable
   override fun iconFilled(): Painter = when(this) {
-      TimedMessages -> painterResource(R.drawable.ic_timer_filled)
-      FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
-      Reactions -> painterResource(R.drawable.ic_add_reaction_filled)
-      Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
-      Calls -> painterResource(R.drawable.ic_call_filled)
+      TimedMessages -> painterResource(MR.images.ic_timer_filled)
+      FullDelete -> painterResource(MR.images.ic_delete_forever_filled)
+      Reactions -> painterResource(MR.images.ic_add_reaction_filled)
+      Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
+      Calls -> painterResource(MR.images.ic_call_filled)
   }
 
   fun allowDescription(allowed: FeatureAllowed): String =
@@ -2962,22 +2962,22 @@ enum class GroupFeature: Feature {
 
   val icon: Painter
     @Composable get() = when(this) {
-      TimedMessages -> painterResource(R.drawable.ic_timer)
-      DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle)
-      FullDelete -> painterResource(R.drawable.ic_delete_forever)
-      Reactions -> painterResource(R.drawable.ic_add_reaction)
-      Voice -> painterResource(R.drawable.ic_keyboard_voice)
-      Files -> painterResource(R.drawable.ic_draft)
+      TimedMessages -> painterResource(MR.images.ic_timer)
+      DirectMessages -> painterResource(MR.images.ic_swap_horizontal_circle)
+      FullDelete -> painterResource(MR.images.ic_delete_forever)
+      Reactions -> painterResource(MR.images.ic_add_reaction)
+      Voice -> painterResource(MR.images.ic_keyboard_voice)
+      Files -> painterResource(MR.images.ic_draft)
     }
 
   @Composable
   override fun iconFilled(): Painter = when(this) {
-    TimedMessages -> painterResource(R.drawable.ic_timer_filled)
-    DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle_filled)
-    FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
-    Reactions -> painterResource(R.drawable.ic_add_reaction_filled)
-    Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
-    Files -> painterResource(R.drawable.ic_draft_filled)
+    TimedMessages -> painterResource(MR.images.ic_timer_filled)
+    DirectMessages -> painterResource(MR.images.ic_swap_horizontal_circle_filled)
+    FullDelete -> painterResource(MR.images.ic_delete_forever_filled)
+    Reactions -> painterResource(MR.images.ic_add_reaction_filled)
+    Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
+    Files -> painterResource(MR.images.ic_draft_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =

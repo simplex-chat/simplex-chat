@@ -20,7 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -275,7 +275,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
       if (contact.verified) {
-        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
       }
       Text(
         contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
@@ -320,7 +320,7 @@ fun LocalAliasEditor(
         )
       },
       leadingIcon = if (leadingIcon) {
-        { Icon(painterResource(R.drawable.ic_edit_filled), null, Modifier.padding(start = 7.dp)) }
+        { Icon(painterResource(MR.images.ic_edit_filled), null, Modifier.padding(start = 7.dp)) }
       } else null,
       color = MaterialTheme.colors.secondary,
       focus = focus,
@@ -357,7 +357,7 @@ private fun NetworkStatusRow(networkStatus: NetworkStatus) {
     ) {
       Text(stringResource(MR.strings.network_status))
       Icon(
-        painterResource(R.drawable.ic_info),
+        painterResource(MR.images.ic_info),
         stringResource(MR.strings.network_status),
         tint = MaterialTheme.colors.primary
       )
@@ -381,12 +381,12 @@ private fun ServerImage(networkStatus: NetworkStatus) {
   Box(Modifier.size(18.dp)) {
     when (networkStatus) {
       is NetworkStatus.Connected ->
-        Icon(painterResource(R.drawable.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = Color.Green)
+        Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = Color.Green)
       is NetworkStatus.Disconnected ->
-        Icon(painterResource(R.drawable.ic_pending_filled), stringResource(MR.strings.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(MR.images.ic_pending_filled), stringResource(MR.strings.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
       is NetworkStatus.Error ->
-        Icon(painterResource(R.drawable.ic_error_filled), stringResource(MR.strings.icon_descr_server_status_error), tint = MaterialTheme.colors.secondary)
-      else -> Icon(painterResource(R.drawable.ic_circle), stringResource(MR.strings.icon_descr_server_status_pending), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(MR.images.ic_error_filled), stringResource(MR.strings.icon_descr_server_status_error), tint = MaterialTheme.colors.secondary)
+      else -> Icon(painterResource(MR.images.ic_circle), stringResource(MR.strings.icon_descr_server_status_pending), tint = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -424,7 +424,7 @@ fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) 
 @Composable
 fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
   SettingsActionItem(
-    if (contactVerified) painterResource(R.drawable.ic_verified_user) else painterResource(R.drawable.ic_shield),
+    if (contactVerified) painterResource(MR.images.ic_verified_user) else painterResource(MR.images.ic_shield),
     stringResource(if (contactVerified) MR.strings.view_security_code else MR.strings.verify_security_code),
     click = onClick,
     iconColor = MaterialTheme.colors.secondary,
@@ -434,7 +434,7 @@ fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
 @Composable
 private fun ContactPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_toggle_on),
+    painterResource(MR.images.ic_toggle_on),
     stringResource(MR.strings.contact_preferences),
     click = onClick
   )
@@ -443,7 +443,7 @@ private fun ContactPreferencesButton(onClick: () -> Unit) {
 @Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_settings_backup_restore),
+    painterResource(MR.images.ic_settings_backup_restore),
     stringResource(MR.strings.clear_chat_button),
     click = onClick,
     textColor = WarningOrange,
@@ -454,7 +454,7 @@ fun ClearChatButton(onClick: () -> Unit) {
 @Composable
 private fun DeleteContactButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_delete),
+    painterResource(MR.images.ic_delete),
     stringResource(MR.strings.button_delete_contact),
     click = onClick,
     textColor = Color.Red,
@@ -465,7 +465,7 @@ private fun DeleteContactButton(onClick: () -> Unit) {
 @Composable
 fun ShareAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_share_filled),
+    painterResource(MR.images.ic_share_filled),
     stringResource(MR.strings.share_address),
     onClick,
     iconColor = MaterialTheme.colors.primary,

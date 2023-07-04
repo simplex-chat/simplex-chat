@@ -13,7 +13,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -204,7 +204,7 @@ private fun ProtocolServersLayout(
         }
       }
       SettingsActionItem(
-        painterResource(R.drawable.ic_add),
+        painterResource(MR.images.ic_add),
         stringResource(MR.strings.smp_servers_add),
         addServer,
         disabled = testing,
@@ -249,7 +249,7 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
-    !srv.enabled -> Icon(painterResource(R.drawable.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
+    !srv.enabled -> Icon(painterResource(MR.images.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
     else -> ShowTestStatus(srv)
   }
   Spacer(Modifier.padding(horizontal = 4.dp))
@@ -265,7 +265,7 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
 private fun HowToButton() {
   val uriHandler = LocalUriHandler.current
   SettingsActionItem(
-    painterResource(R.drawable.ic_open_in_new),
+    painterResource(MR.images.ic_open_in_new),
     stringResource(MR.strings.how_to_use_your_servers),
     { uriHandler.openUriCatching("https://simplex.chat/docs/server.html") },
     textColor = MaterialTheme.colors.primary,
@@ -275,7 +275,7 @@ private fun HowToButton() {
 
 @Composable
 fun InvalidServer() {
-  Icon(painterResource(R.drawable.ic_error), null, tint = MaterialTheme.colors.error)
+  Icon(painterResource(MR.images.ic_error), null, tint = MaterialTheme.colors.error)
 }
 
 private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<ServerCfg>): Boolean = servers.all { srv ->
