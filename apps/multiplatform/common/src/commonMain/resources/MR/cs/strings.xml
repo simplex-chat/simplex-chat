@@ -1145,6 +1145,7 @@
     <string name="custom_time_picker_select">Vybrat</string>
     <string name="error_loading_details">Chyba načítání podrobností</string>
     <string name="info_menu">Info</string>
+    <string name="search_verb">Hledat</string>
     <string name="auth_open_chat_profiles">Otevřít chat profily</string>
     <string name="edit_history">Historie</string>
     <string name="received_message">Přijatá zpráva</string>

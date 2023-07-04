@@ -1211,6 +1211,7 @@
     <string name="error_loading_details">詳細読み込みエラー</string>
     <string name="edit_history">履歴</string>
     <string name="info_menu">情報</string>
+    <string name="search_verb">検索</string>
     <string name="received_message">受信したメッセージ</string>
     <string name="sent_message">送信済みメッセージ</string>
     <string name="send_disappearing_message_custom_time">カスタム時間</string>

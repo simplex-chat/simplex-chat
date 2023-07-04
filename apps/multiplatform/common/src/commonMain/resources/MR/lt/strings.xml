@@ -528,4 +528,5 @@
 \nPrieinama versijoje v5.1"</string>
     <string name="gallery_video_button">Vaizdo įrašas</string>
     <string name="v5_0_large_files_support">Vaizdo įrašai ir failai iki 1GB</string>
+    <string name="search_verb">Ieškoti</string>
 </resources>

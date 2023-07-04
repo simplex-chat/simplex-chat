@@ -1282,4 +1282,5 @@
     <string name="no_filtered_chats">无过滤聊天</string>
     <string name="unfavorite_chat">取消最喜欢</string>
     <string name="favorite_chat">最喜欢</string>
+    <string name="search_verb">搜索</string>
 </resources>

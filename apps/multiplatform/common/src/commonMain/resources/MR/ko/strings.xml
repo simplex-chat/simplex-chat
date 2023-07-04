@@ -943,4 +943,5 @@
     <string name="alert_title_msg_bad_id">잘못된 메시지 아이디</string>
     <string name="both_you_and_your_contact_can_make_calls">당신과 대화 상대 모두 전화를 걸 수 있습니다.</string>
     <string name="v5_0_app_passcode">앱 패스코드</string>
+    <string name="search_verb">검색</string>
 </resources>

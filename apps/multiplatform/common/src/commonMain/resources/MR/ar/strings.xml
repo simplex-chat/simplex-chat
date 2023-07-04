@@ -162,4 +162,5 @@
     <string name="v5_1_better_messages">رسائل أفضل</string>
     <string name="both_you_and_your_contact_can_send_voice">يمكنك أنت وجهة الاتصال الخاصة بك إرسال رسائل صوتية.</string>
     <string name="both_you_and_your_contact_can_make_calls">يمكنك أنت وجهة الاتصال إجراء مكالمات.</string>
+    <string name="search_verb">بحث</string>
 </resources>

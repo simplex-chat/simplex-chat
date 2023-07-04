@@ -439,6 +439,7 @@
     <string name="service_notifications">Välittömät ilmoitukset!</string>
     <string name="service_notifications_disabled">Välittömät ilmoitukset on poistettu käytöstä!</string>
     <string name="info_menu">Tiedot</string>
+    <string name="search_verb">Haku</string>
     <string name="hide_verb">Piilota</string>
     <string name="edit_history">Historia</string>
     <string name="large_file">Suuri tiedosto!</string>

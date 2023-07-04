@@ -1284,6 +1284,7 @@
     <string name="error_loading_details">Fehler beim Laden von Details</string>
     <string name="received_message">Empfangene Nachricht</string>
     <string name="info_menu">Information</string>
+    <string name="search_verb">Suchen</string>
     <string name="sent_message">Gesendete Nachricht</string>
     <string name="send_disappearing_message_custom_time">Zeit anpassen</string>
     <string name="disappearing_message">Verschwindende Nachricht</string>

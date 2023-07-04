@@ -1265,4 +1265,5 @@
     <string name="restore_passphrase_not_found_desc">Пароль не знайдено у сховищі ключів, будь ласка, введіть його вручну. Це могло статися, якщо ви відновили дані програми за допомогою інструменту резервного копіювання. Якщо це не так, зверніться до розробників.</string>
     <string name="delete_chat_profile">Видалити профіль чату</string>
     <string name="ttl_sec">%d сек</string>
+    <string name="search_verb">Пошук</string>
 </resources>

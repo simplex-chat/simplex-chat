@@ -837,6 +837,7 @@
     <string name="reply_verb">הגב</string>
     <string name="edit_history">היסטוריה</string>
     <string name="info_menu">מידע</string>
+    <string name="search_verb">חיפוש</string>
     <string name="moderate_message_will_be_deleted_warning">ההודעה תימחק עבור כל חברי הקבוצה.</string>
     <string name="received_message">הודעה שהתקבלה</string>
     <string name="network_use_onion_hosts_required">נדרש</string>

@@ -54,4 +54,5 @@
     <string name="allow_voice_messages_question">Να επιτρέπονται τα φωνητικά μηνύματα;</string>
     <string name="notifications_mode_service">Πάντα ενεργό</string>
     <string name="always_use_relay">Να χρησιμοποιείται πάντα αναμεταδότη</string>
+    <string name="search_verb">Αναζήτηση</string>
 </resources>

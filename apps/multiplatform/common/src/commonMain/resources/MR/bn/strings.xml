@@ -41,4 +41,5 @@
     <string name="connect_via_contact_link">যোগাযোগের সংযোগ-সূত্র দ্বারা যুক্ত হতে চান\?</string>
     <string name="connect_via_group_link">গ্রুপের সংযোগ-সূত্র দ্বারা যুুক্ত হতে চান\?</string>
     <string name="accept_contact_incognito_button">গুপ্ত-পরিচয় গ্রহণ করুন</string>
+    <string name="search_verb">সার্চ</string>
 </resources>

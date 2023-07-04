@@ -1206,6 +1206,7 @@
     <string name="custom_time_picker_custom">personalizado</string>
     <string name="edit_history">Historial</string>
     <string name="info_menu">Detalles</string>
+    <string name="search_verb">Buscar</string>
     <string name="received_message">Mensaje entrante</string>
     <string name="sent_message">Mensaje saliente</string>
     <string name="disappearing_message">Mensaje temporal</string>

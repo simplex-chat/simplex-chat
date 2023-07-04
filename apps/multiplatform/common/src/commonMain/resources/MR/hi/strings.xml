@@ -290,4 +290,5 @@
     <string name="member_will_be_removed_from_group_cannot_be_undone">सदस्य को समूह से निकाल दिया जाएगा - इसे पूर्ववत नहीं किया जा सकता!</string>
     <string name="member_info_section_title_member">सदस्य</string>
     <string name="group_member_role_member">सदस्य</string>
+    <string name="search_verb">खोजें</string>
 </resources>

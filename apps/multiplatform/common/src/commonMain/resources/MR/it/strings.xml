@@ -1229,6 +1229,7 @@
     <string name="disappearing_message">Messaggio a tempo</string>
     <string name="error_loading_details">Errore caricamento dettagli</string>
     <string name="info_menu">Informazioni</string>
+    <string name="search_verb">Cerca</string>
     <string name="edit_history">Cronologia</string>
     <string name="received_message">Messaggio ricevuto</string>
     <string name="sent_message">Messaggio inviato</string>

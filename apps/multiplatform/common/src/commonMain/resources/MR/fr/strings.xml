@@ -1228,6 +1228,7 @@
     <string name="error_loading_details">Erreur de chargement des détails</string>
     <string name="edit_history">Historique</string>
     <string name="info_menu">Info</string>
+    <string name="search_verb">Rechercher</string>
     <string name="received_message">Message reçu</string>
     <string name="custom_time_picker_custom">personnalisé</string>
     <string name="custom_time_picker_select">Choisir</string>
