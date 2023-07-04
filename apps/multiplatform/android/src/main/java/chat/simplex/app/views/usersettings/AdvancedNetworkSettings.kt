@@ -318,15 +318,14 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
         expanded.value = !expanded.value
       }
     ) {
-      val df = DecimalFormat("#.#")
-
+      val df = DecimalFormat("#.###")
       Row(
         Modifier.width(140.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.End
       ) {
         Text(
-          "${df.format(selection.value / 1_000_000.toDouble())} $label",
+          "${df.format(selection.value / 1_000_000.0)} $label",
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
           color = MaterialTheme.colors.secondary
@@ -351,7 +350,7 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
             contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
-              "${df.format(selectionOption / 1_000_000.toDouble())} $label",
+              "${df.format(selectionOption / 1_000_000.0)} $label",
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
             )
