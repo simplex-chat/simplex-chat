@@ -22,8 +22,6 @@ import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.inputmethod.InputMethodManager
-import androidx.annotation.StringRes
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.graphics.Color
@@ -38,10 +36,11 @@ import androidx.core.content.FileProvider
 import androidx.core.graphics.ColorUtils
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.ThemeOverrides
 import com.charleskorn.kaml.decodeFromStream
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -94,9 +93,9 @@ fun hideKeyboard(view: View) =
 
 // Resource to annotated string from
 // https://stackoverflow.com/questions/68549248/android-jetpack-compose-how-to-show-styled-text-from-string-resources
-fun generalGetString(id: Int): String {
+fun generalGetString(id: StringResource): String {
   // prefer stringResource in Composable items to retain preview abilities
-  return SimplexApp.context.getString(id)
+  return id.getString(SimplexApp.context)
 }
 
 @Composable
@@ -111,7 +110,7 @@ fun Spanned.toHtmlWithoutParagraphs(): String {
     .substringAfter("<p dir=\"ltr\">").substringBeforeLast("</p>")
 }
 
-fun Resources.getText(@StringRes id: Int, vararg args: Any): CharSequence {
+fun Resources.getText(id: StringResource, vararg args: Any): CharSequence {
   val escapedArgs = args.map {
     if (it is Spanned) it.toHtmlWithoutParagraphs() else it
   }.toTypedArray()
@@ -121,13 +120,16 @@ fun Resources.getText(@StringRes id: Int, vararg args: Any): CharSequence {
   return HtmlCompat.fromHtml(formattedHtml, HtmlCompat.FROM_HTML_MODE_LEGACY)
 }
 
+fun escapedHtmlToAnnotatedString(text: String, density: Density): AnnotatedString {
+  return spannableStringToAnnotatedString(HtmlCompat.fromHtml(text, HtmlCompat.FROM_HTML_MODE_LEGACY), density)
+}
+
 @Composable
-fun annotatedStringResource(@StringRes id: Int): AnnotatedString {
-  val resources = resources()
+fun annotatedStringResource(id: StringResource): AnnotatedString {
   val density = LocalDensity.current
   return remember(id) {
-    val text = resources.getText(id)
-    spannableStringToAnnotatedString(text, density)
+    val text = id.getString(SimplexApp.context)
+    escapedHtmlToAnnotatedString(text, density)
   }
 }
 
@@ -362,8 +364,8 @@ fun getBitmapFromUri(uri: Uri, withAlertOnException: Boolean = true): Bitmap? {
       Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(R.string.image_decoding_exception_title),
-          text = generalGetString(R.string.image_decoding_exception_desc)
+          title = generalGetString(MR.strings.image_decoding_exception_title),
+          text = generalGetString(MR.strings.image_decoding_exception_desc)
         )
       }
       null
@@ -381,8 +383,8 @@ fun getDrawableFromUri(uri: Uri, withAlertOnException: Boolean = true): Drawable
     } catch (e: android.graphics.ImageDecoder.DecodeException) {
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(R.string.image_decoding_exception_title),
-          text = generalGetString(R.string.image_decoding_exception_desc)
+          title = generalGetString(MR.strings.image_decoding_exception_title),
+          text = generalGetString(MR.strings.image_decoding_exception_desc)
         )
       }
       Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
@@ -400,8 +402,8 @@ fun getThemeFromUri(uri: Uri, withAlertOnException: Boolean = true): ThemeOverri
     }.onFailure {
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(R.string.import_theme_error),
-          text = generalGetString(R.string.import_theme_error_desc),
+          title = generalGetString(MR.strings.import_theme_error),
+          text = generalGetString(MR.strings.import_theme_error_desc),
         )
       }
     }

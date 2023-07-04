@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,6 +23,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 import java.text.DecimalFormat
 
 @Composable
@@ -138,45 +139,45 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   revert: () -> Unit,
   save: () -> Unit
 ) {
-  val secondsLabel = stringResource(R.string.network_option_seconds_label)
+  val secondsLabel = stringResource(MR.strings.network_option_seconds_label)
 
   Column(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.network_settings_title))
+    AppBarTitle(stringResource(MR.strings.network_settings_title))
     SectionView {
       SectionItemView {
         ResetToDefaultsButton(reset, disabled = resetDisabled)
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(R.string.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
+          stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
           listOf(2_500000, 5_000000, 7_500000, 10_000000, 15_000000, 20_000000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(R.string.network_option_protocol_timeout), networkTCPTimeout,
+          stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeout,
           listOf(1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(R.string.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
+          stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
           listOf(5_000, 10_000, 20_000, 40_000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(R.string.network_option_ping_interval), networkSMPPingInterval,
+          stringResource(MR.strings.network_option_ping_interval), networkSMPPingInterval,
           listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
         )
       }
       SectionItemView {
         IntSettingRow(
-          stringResource(R.string.network_option_ping_count), networkSMPPingCount,
+          stringResource(MR.strings.network_option_ping_count), networkSMPPingCount,
           listOf(1, 2, 3, 5, 8), ""
         )
       }
@@ -220,7 +221,7 @@ fun ResetToDefaultsButton(reset: () -> Unit, disabled: Boolean) {
     verticalAlignment = Alignment.CenterVertically
   ) {
     val color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-    Text(stringResource(R.string.network_options_reset_to_defaults), color = color)
+    Text(stringResource(MR.strings.network_options_reset_to_defaults), color = color)
   }
 }
 
@@ -233,7 +234,7 @@ fun EnableKeepAliveSwitch(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    Text(stringResource(R.string.network_option_enable_tcp_keep_alive))
+    Text(stringResource(MR.strings.network_option_enable_tcp_keep_alive))
     DefaultSwitch(
       checked = networkEnableKeepAlive.value,
       onCheckedChange = { networkEnableKeepAlive.value = it },
@@ -272,7 +273,7 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
         Spacer(Modifier.size(4.dp))
         Icon(
           if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
-          generalGetString(R.string.invite_to_group_button),
+          generalGetString(MR.strings.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )
@@ -333,7 +334,7 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
         Spacer(Modifier.size(4.dp))
         Icon(
           if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
-          generalGetString(R.string.invite_to_group_button),
+          generalGetString(MR.strings.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )
@@ -368,8 +369,8 @@ fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit, disabled: Boolea
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(painterResource(R.drawable.ic_replay), stringResource(R.string.network_options_revert), revert, disabled)
-    FooterButton(painterResource(R.drawable.ic_check), stringResource(R.string.network_options_save), save, disabled)
+    FooterButton(painterResource(R.drawable.ic_replay), stringResource(MR.strings.network_options_revert), revert, disabled)
+    FooterButton(painterResource(R.drawable.ic_check), stringResource(MR.strings.network_options_save), save, disabled)
   }
 }
 
@@ -399,9 +400,9 @@ fun FooterButton(icon: Painter, title: String, action: () -> Unit, disabled: Boo
 
 fun showUpdateNetworkSettingsDialog(action: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.update_network_settings_question),
-    text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
-    confirmText = generalGetString(R.string.update_network_settings_confirmation),
+    title = generalGetString(MR.strings.update_network_settings_question),
+    text = generalGetString(MR.strings.updating_settings_will_reconnect_client_to_all_servers),
+    confirmText = generalGetString(MR.strings.update_network_settings_confirmation),
     onConfirm = action
   )
 }

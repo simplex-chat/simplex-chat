@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.LinkPreview
 import chat.simplex.app.ui.theme.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
@@ -98,7 +99,7 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
       val imageBitmap = base64ToBitmap(linkPreview.image).asImageBitmap()
       Image(
         imageBitmap,
-        stringResource(R.string.image_descr_link_preview),
+        stringResource(MR.strings.image_descr_link_preview),
         modifier = Modifier.width(80.dp).height(60.dp).padding(end = 8.dp)
       )
       Column(Modifier.fillMaxWidth().weight(1F)) {
@@ -113,7 +114,7 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
       IconButton(onClick = cancelPreview, modifier = Modifier.padding(0.dp)) {
         Icon(
           painterResource(R.drawable.ic_close),
-          contentDescription = stringResource(R.string.icon_descr_cancel_link_preview),
+          contentDescription = stringResource(MR.strings.icon_descr_cancel_link_preview),
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )
@@ -127,7 +128,7 @@ fun ChatItemLinkView(linkPreview: LinkPreview) {
   Column {
     Image(
       base64ToBitmap(linkPreview.image).asImageBitmap(),
-      stringResource(R.string.image_descr_link_preview),
+      stringResource(MR.strings.image_descr_link_preview),
       modifier = Modifier.fillMaxWidth(),
       contentScale = ContentScale.FillWidth,
     )

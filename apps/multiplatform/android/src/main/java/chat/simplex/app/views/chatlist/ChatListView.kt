@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
@@ -31,12 +31,13 @@ import chat.simplex.app.views.onboarding.WhatsNewView
 import chat.simplex.app.views.onboarding.shouldShowWhatsNew
 import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.simplexTeamUri
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @Composable
-fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity) -> Unit, stopped: Boolean) {
+fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val newChatSheetState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
   val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
   val showNewChatSheet = {
@@ -88,7 +89,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           contentColor = Color.White
         ) {
-          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(R.drawable.ic_edit_filled) else painterResource(R.drawable.ic_close), stringResource(R.string.add_contact_or_create_group))
+          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(R.drawable.ic_edit_filled) else painterResource(R.drawable.ic_close), stringResource(MR.strings.add_contact_or_create_group))
         }
       }
     }
@@ -105,7 +106,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
             }
-            Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+            Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
           }
         }
       }
@@ -131,11 +132,11 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean, FragmentActivity)
 private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
     val uriHandler = LocalUriHandler.current
-    ConnectButton(generalGetString(R.string.chat_with_developers)) {
+    ConnectButton(generalGetString(MR.strings.chat_with_developers)) {
       uriHandler.openUriCatching(simplexTeamUri)
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
-    ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatSheet)
+    ConnectButton(generalGetString(MR.strings.tap_to_start_new_chat), openNewChatSheet)
     val color = MaterialTheme.colors.primaryVariant
     Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
       val trianglePath = Path().apply {
@@ -180,7 +181,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
   if (chatModel.chats.size > 0) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(painterResource(R.drawable.ic_search_500), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(R.drawable.ic_search_500), stringResource(MR.strings.search_verb).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -188,13 +189,13 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
     barButtons.add {
       IconButton(onClick = {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.chat_is_stopped_indication),
-          generalGetString(R.string.you_can_start_chat_via_setting_or_by_restarting_the_app)
+          generalGetString(MR.strings.chat_is_stopped_indication),
+          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
         )
       }) {
         Icon(
           painterResource(R.drawable.ic_report_filled),
-          generalGetString(R.string.chat_is_stopped_indication),
+          generalGetString(MR.strings.chat_is_stopped_indication),
           tint = Color.Red,
         )
       }
@@ -226,13 +227,13 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
         if (chatModel.incognito.value) {
           Icon(
             painterResource(R.drawable.ic_theater_comedy_filled),
-            stringResource(R.string.incognito),
+            stringResource(MR.strings.incognito),
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)
           )
         }
         Text(
-          stringResource(R.string.your_chats),
+          stringResource(MR.strings.your_chats),
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
@@ -328,7 +329,7 @@ private fun ChatList(chatModel: ChatModel, search: String) {
   }
   if (chats.isEmpty() && !chatModel.chats.isEmpty()) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-      Text(generalGetString(R.string.no_filtered_chats), color = MaterialTheme.colors.secondary)
+      Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
     }
   }
 }

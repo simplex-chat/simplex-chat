@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,6 +35,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.*
 import org.apache.commons.io.IOUtils
@@ -151,15 +152,15 @@ fun DatabaseLayout(
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.your_chat_database))
+    AppBarTitle(stringResource(MR.strings.your_chat_database))
 
-    SectionView(stringResource(R.string.messages_section_title).uppercase()) {
+    SectionView(stringResource(MR.strings.messages_section_title).uppercase()) {
       TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
     }
     SectionTextFooter(
       remember(currentUser?.displayName) {
         buildAnnotatedString {
-          append(generalGetString(R.string.messages_section_description) + " ")
+          append(generalGetString(MR.strings.messages_section_description) + " ")
           withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
             append(currentUser?.displayName ?: "")
           }
@@ -169,17 +170,17 @@ fun DatabaseLayout(
     )
     SectionDividerSpaced(maxTopPadding = true)
 
-    SectionView(stringResource(R.string.run_chat_section)) {
+    SectionView(stringResource(MR.strings.run_chat_section)) {
       RunChatSetting(runChat, stopped, startChat, stopChatAlert)
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(R.string.chat_database_section)) {
+    SectionView(stringResource(MR.strings.chat_database_section)) {
       val unencrypted = chatDbEncrypted == false
       SettingsActionItem(
         if (unencrypted) painterResource(R.drawable.ic_lock_open) else if (useKeyChain) painterResource(R.drawable.ic_vpn_key_filled)
         else painterResource(R.drawable.ic_lock),
-        stringResource(R.string.database_passphrase),
+        stringResource(MR.strings.database_passphrase),
         click = showSettingsModal() { DatabaseEncryptionView(it) },
         iconColor = if (unencrypted) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
@@ -188,7 +189,7 @@ fun DatabaseLayout(
       SectionDividerSpaced(maxBottomPadding = false)
       SettingsActionItem(
         painterResource(R.drawable.ic_ios_share),
-        stringResource(R.string.export_database),
+        stringResource(MR.strings.export_database),
         click = {
           if (initialRandomDBPassphrase.get()) {
             exportProhibitedAlert()
@@ -202,7 +203,7 @@ fun DatabaseLayout(
       )
       SettingsActionItem(
         painterResource(R.drawable.ic_download),
-        stringResource(R.string.import_database),
+        stringResource(MR.strings.import_database),
         { importArchiveLauncher.launch("application/zip") },
         textColor = Color.Red,
         iconColor = Color.Red,
@@ -222,7 +223,7 @@ fun DatabaseLayout(
       }
       SettingsActionItem(
         painterResource(R.drawable.ic_delete_forever),
-        stringResource(R.string.delete_database),
+        stringResource(MR.strings.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
         iconColor = Color.Red,
@@ -231,21 +232,21 @@ fun DatabaseLayout(
     }
     SectionTextFooter(
       if (stopped) {
-        stringResource(R.string.you_must_use_the_most_recent_version_of_database)
+        stringResource(MR.strings.you_must_use_the_most_recent_version_of_database)
       } else {
-        stringResource(R.string.stop_chat_to_enable_database_actions)
+        stringResource(MR.strings.stop_chat_to_enable_database_actions)
       }
     )
     SectionDividerSpaced(maxTopPadding = true)
 
-    SectionView(stringResource(R.string.files_and_media_section).uppercase()) {
+    SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,
         disabled = deleteFilesDisabled
       ) {
         Text(
-          stringResource(if (users.size > 1) R.string.delete_files_and_media_for_all_users else R.string.delete_files_and_media_all),
+          stringResource(if (users.size > 1) MR.strings.delete_files_and_media_for_all_users else MR.strings.delete_files_and_media_all),
           color = if (deleteFilesDisabled) MaterialTheme.colors.secondary else Color.Red
         )
       }
@@ -253,9 +254,9 @@ fun DatabaseLayout(
     val (count, size) = appFilesCountAndSize.value
     SectionTextFooter(
       if (count == 0) {
-        stringResource(R.string.no_received_app_files)
+        stringResource(MR.strings.no_received_app_files)
       } else {
-        String.format(stringResource(R.string.total_files_count_and_size), count, formatBytes(size))
+        String.format(stringResource(MR.strings.total_files_count_and_size), count, formatBytes(size))
       }
     )
     SectionBottomSpacer()
@@ -268,7 +269,7 @@ private fun AppDataBackupPreference(privacyFullBackup: SharedPreference<Boolean>
     painterResource(R.drawable.ic_backup),
     iconColor = MaterialTheme.colors.secondary,
     pref = privacyFullBackup,
-    text = stringResource(R.string.full_backup)
+    text = stringResource(MR.strings.full_backup)
   ) {
     if (initialRandomDBPassphrase.get()) {
       exportProhibitedAlert()
@@ -285,9 +286,9 @@ private fun setChatItemTTLAlert(
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
 ) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.enable_automatic_deletion_question),
-    text = generalGetString(R.string.enable_automatic_deletion_message),
-    confirmText = generalGetString(R.string.delete_messages),
+    title = generalGetString(MR.strings.enable_automatic_deletion_question),
+    text = generalGetString(MR.strings.enable_automatic_deletion_message),
+    confirmText = generalGetString(MR.strings.delete_messages),
     onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator, appFilesCountAndSize) },
     onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value },
     destructive = true,
@@ -303,16 +304,16 @@ private fun TtlOptions(current: State<ChatItemTTL>, enabled: State<Boolean>, onS
     }
     all.map {
       when (it) {
-        is ChatItemTTL.None -> it to generalGetString(R.string.chat_item_ttl_none)
-        is ChatItemTTL.Day -> it to generalGetString(R.string.chat_item_ttl_day)
-        is ChatItemTTL.Week -> it to generalGetString(R.string.chat_item_ttl_week)
-        is ChatItemTTL.Month -> it to generalGetString(R.string.chat_item_ttl_month)
-        is ChatItemTTL.Seconds -> it to String.format(generalGetString(R.string.chat_item_ttl_seconds), it.secs)
+        is ChatItemTTL.None -> it to generalGetString(MR.strings.chat_item_ttl_none)
+        is ChatItemTTL.Day -> it to generalGetString(MR.strings.chat_item_ttl_day)
+        is ChatItemTTL.Week -> it to generalGetString(MR.strings.chat_item_ttl_week)
+        is ChatItemTTL.Month -> it to generalGetString(MR.strings.chat_item_ttl_month)
+        is ChatItemTTL.Seconds -> it to String.format(generalGetString(MR.strings.chat_item_ttl_seconds), it.secs)
       }
     }
   }
   ExposedDropDownSettingRow(
-    generalGetString(R.string.delete_messages_after),
+    generalGetString(MR.strings.delete_messages_after),
     values,
     current,
     icon = null,
@@ -328,7 +329,7 @@ fun RunChatSetting(
   startChat: () -> Unit,
   stopChatAlert: () -> Unit
 ) {
-  val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
+  val chatRunningText = if (stopped) stringResource(MR.strings.chat_is_stopped) else stringResource(MR.strings.chat_is_running)
   SettingsActionItemWithContent(
     icon = if (stopped) painterResource(R.drawable.ic_report_filled) else painterResource(R.drawable.ic_play_arrow_filled),
     text = chatRunningText,
@@ -349,7 +350,7 @@ fun RunChatSetting(
 
 @Composable
 fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
-  return stringResource(if (chatArchiveTime < chatLastStart) R.string.old_database_archive else R.string.new_database_archive)
+  return stringResource(if (chatArchiveTime < chatLastStart) MR.strings.old_database_archive else MR.strings.new_database_archive)
 }
 
 private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
@@ -381,16 +382,16 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastSta
       }
     } catch (e: Error) {
       runChat.value = false
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
     }
   }
 }
 
 private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean?>) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.stop_chat_question),
-    text = generalGetString(R.string.stop_chat_to_export_import_or_delete_chat_database),
-    confirmText = generalGetString(R.string.stop_chat_confirmation),
+    title = generalGetString(MR.strings.stop_chat_question),
+    text = generalGetString(MR.strings.stop_chat_to_export_import_or_delete_chat_database),
+    confirmText = generalGetString(MR.strings.stop_chat_confirmation),
     onConfirm = { authStopChat(m, runChat) },
     onDismiss = { runChat.value = true }
   )
@@ -398,16 +399,16 @@ private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean?>) {
 
 private fun exportProhibitedAlert() {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.set_password_to_export),
-    text = generalGetString(R.string.set_password_to_export_desc),
+    title = generalGetString(MR.strings.set_password_to_export),
+    text = generalGetString(MR.strings.set_password_to_export_desc),
   )
 }
 
 private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
-      generalGetString(R.string.auth_stop_chat),
-      generalGetString(R.string.auth_log_in_using_credential),
+      generalGetString(MR.strings.auth_stop_chat),
+      generalGetString(MR.strings.auth_log_in_using_credential),
       completed = { laResult ->
         when (laResult) {
           LAResult.Success, is LAResult.Unavailable -> {
@@ -436,7 +437,7 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
       MessagesFetcherWorker.cancelAll()
     } catch (e: Error) {
       runChat.value = true
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.error_stopping_chat), e.toString())
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_stopping_chat), e.toString())
     }
   }
 }
@@ -468,7 +469,7 @@ private fun exportArchive(
       saveArchiveLauncher.launch(archiveFile.substringAfterLast("/"))
       progressIndicator.value = false
     } catch (e: Error) {
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.error_exporting_chat_database), e.toString())
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_exporting_chat_database), e.toString())
       progressIndicator.value = false
     }
   }
@@ -524,14 +525,14 @@ private fun rememberSaveArchiveLauncher(chatArchiveFile: MutableState<String?>):
               val outputStream = BufferedOutputStream(stream)
               File(filePath).inputStream().use { it.copyTo(outputStream) }
               outputStream.close()
-              Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+              Toast.makeText(cxt, generalGetString(MR.strings.file_saved), Toast.LENGTH_SHORT).show()
             }
           } else {
-            Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+            Toast.makeText(cxt, generalGetString(MR.strings.file_not_found), Toast.LENGTH_SHORT).show()
           }
         }
       } catch (e: Error) {
-        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Toast.makeText(cxt, generalGetString(MR.strings.error_saving_file), Toast.LENGTH_SHORT).show()
         Log.e(TAG, "rememberSaveArchiveLauncher error saving archive $e")
       } finally {
         chatArchiveFile.value = null
@@ -546,9 +547,9 @@ private fun importArchiveAlert(
   progressIndicator: MutableState<Boolean>
 ) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.import_database_question),
-    text = generalGetString(R.string.your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one),
-    confirmText = generalGetString(R.string.import_database_confirmation),
+    title = generalGetString(MR.strings.import_database_question),
+    text = generalGetString(MR.strings.your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one),
+    confirmText = generalGetString(MR.strings.import_database_confirmation),
     onConfirm = { importArchive(m, importedArchiveUri, appFilesCountAndSize, progressIndicator) },
     destructive = true,
   )
@@ -573,21 +574,21 @@ private fun importArchive(
           appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory())
           if (archiveErrors.isEmpty()) {
             operationEnded(m, progressIndicator) {
-              AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), text = generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database))
             }
           } else {
             operationEnded(m, progressIndicator) {
-              AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), text = generalGetString(R.string.restart_the_app_to_use_imported_chat_database) + "\n" + generalGetString(R.string.non_fatal_errors_occured_during_import))
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database) + "\n" + generalGetString(MR.strings.non_fatal_errors_occured_during_import))
             }
           }
         } catch (e: Error) {
           operationEnded(m, progressIndicator) {
-            AlertManager.shared.showAlertMsg(generalGetString(R.string.error_importing_database), e.toString())
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
           }
         }
       } catch (e: Error) {
         operationEnded(m, progressIndicator) {
-          AlertManager.shared.showAlertMsg(generalGetString(R.string.error_deleting_database), e.toString())
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.toString())
         }
       } finally {
         File(archivePath).delete()
@@ -617,9 +618,9 @@ private fun saveArchiveFromUri(importedArchiveUri: Uri): String? {
 
 private fun deleteChatAlert(m: ChatModel, progressIndicator: MutableState<Boolean>) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.delete_chat_profile_question),
-    text = generalGetString(R.string.delete_chat_profile_action_cannot_be_undone_warning),
-    confirmText = generalGetString(R.string.delete_verb),
+    title = generalGetString(MR.strings.delete_chat_profile_question),
+    text = generalGetString(MR.strings.delete_chat_profile_action_cannot_be_undone_warning),
+    confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = { deleteChat(m, progressIndicator) },
     destructive = true,
   )
@@ -631,11 +632,11 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
     try {
       deleteChatAsync(m)
       operationEnded(m, progressIndicator) {
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_deleted), generalGetString(R.string.restart_the_app_to_create_a_new_chat_profile))
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_deleted), generalGetString(MR.strings.restart_the_app_to_create_a_new_chat_profile))
       }
     } catch (e: Error) {
       operationEnded(m, progressIndicator) {
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_deleting_database), e.toString())
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.toString())
       }
     }
   }
@@ -659,7 +660,7 @@ private fun setCiTTL(
       // Rollback to model's value
       chatItemTTL.value = m.chatItemTTL.value
       afterSetCiTTL(m, progressIndicator, appFilesCountAndSize)
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.error_changing_message_deletion), e.stackTraceToString())
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_message_deletion), e.stackTraceToString())
     }
   }
 }
@@ -683,9 +684,9 @@ private fun afterSetCiTTL(
 
 private fun deleteFilesAndMediaAlert(appFilesCountAndSize: MutableState<Pair<Int, Long>>) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.delete_files_and_media_question),
-    text = generalGetString(R.string.delete_files_and_media_desc),
-    confirmText = generalGetString(R.string.delete_verb),
+    title = generalGetString(MR.strings.delete_files_and_media_question),
+    text = generalGetString(MR.strings.delete_files_and_media_desc),
+    confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = { deleteFiles(appFilesCountAndSize) },
     destructive = true
   )

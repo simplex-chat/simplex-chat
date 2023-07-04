@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,6 +23,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 @Composable
@@ -44,14 +45,14 @@ fun CIFileView(
     ) {
       Icon(
         painterResource(R.drawable.ic_draft_filled),
-        stringResource(R.string.icon_descr_file),
+        stringResource(MR.strings.icon_descr_file),
         Modifier.fillMaxSize(),
         tint = color
       )
       if (innerIcon != null) {
         Icon(
           innerIcon,
-          stringResource(R.string.icon_descr_file),
+          stringResource(MR.strings.icon_descr_file),
           Modifier
             .size(32.dp)
             .padding(top = 12.dp),
@@ -76,8 +77,8 @@ fun CIFileView(
             receiveFile(file.fileId)
           } else {
             AlertManager.shared.showAlertMsg(
-              generalGetString(R.string.large_file),
-              String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
+              generalGetString(MR.strings.large_file),
+              String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
             )
           }
         }
@@ -85,13 +86,13 @@ fun CIFileView(
           when (file.fileProtocol) {
             FileProtocol.XFTP ->
               AlertManager.shared.showAlertMsg(
-                generalGetString(R.string.waiting_for_file),
-                generalGetString(R.string.file_will_be_received_when_contact_completes_uploading)
+                generalGetString(MR.strings.waiting_for_file),
+                generalGetString(MR.strings.file_will_be_received_when_contact_completes_uploading)
               )
             FileProtocol.SMP ->
               AlertManager.shared.showAlertMsg(
-                generalGetString(R.string.waiting_for_file),
-                generalGetString(R.string.file_will_be_received_when_contact_is_online)
+                generalGetString(MR.strings.waiting_for_file),
+                generalGetString(MR.strings.file_will_be_received_when_contact_is_online)
               )
           }
         is CIFileStatus.RcvComplete -> {
@@ -99,7 +100,7 @@ fun CIFileView(
           if (filePath != null) {
             saveFileLauncher.launch(file.fileName)
           } else {
-            Toast.makeText(context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, generalGetString(MR.strings.file_not_found), Toast.LENGTH_SHORT).show()
           }
         }
         else -> {}

@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +36,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
 import chat.simplex.app.views.usersettings.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
@@ -125,9 +126,9 @@ fun ChatInfoView(
 
 fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.delete_contact_question),
-    text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
-    confirmText = generalGetString(R.string.delete_verb),
+    title = generalGetString(MR.strings.delete_contact_question),
+    text = generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning),
+    confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withApi {
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
@@ -145,9 +146,9 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
 
 fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.clear_chat_question),
-    text = generalGetString(R.string.clear_chat_warning),
-    confirmText = generalGetString(R.string.clear_verb),
+    title = generalGetString(MR.strings.clear_chat_question),
+    text = generalGetString(MR.strings.clear_chat_warning),
+    confirmText = generalGetString(MR.strings.clear_verb),
     onConfirm = {
       withApi {
         val updatedChatInfo = chatModel.controller.apiClearChat(chatInfo.chatType, chatInfo.apiId)
@@ -196,8 +197,8 @@ fun ChatInfoLayout(
     LocalAliasEditor(localAlias, updateValue = onLocalAliasChanged)
     SectionSpacer()
     if (customUserProfile != null) {
-      SectionView(generalGetString(R.string.incognito).uppercase()) {
-        InfoRow(generalGetString(R.string.incognito_random_profile), customUserProfile.chatViewName)
+      SectionView(generalGetString(MR.strings.incognito).uppercase()) {
+        InfoRow(generalGetString(MR.strings.incognito_random_profile), customUserProfile.chatViewName)
       }
       SectionDividerSpaced()
     }
@@ -211,18 +212,18 @@ fun ChatInfoLayout(
 
     SectionDividerSpaced()
     if (contact.contactLink != null) {
-      SectionView(stringResource(R.string.address_section_title).uppercase()) {
+      SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
         QRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
         ShareAddressButton { shareText(contact.contactLink) }
-        SectionTextFooter(stringResource(R.string.you_can_share_this_address_with_your_contacts).format(contact.displayName))
+        SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
       SectionDividerSpaced()
     }
 
-    SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+    SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
       SectionItemView({
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.network_status),
+          generalGetString(MR.strings.network_status),
           contactNetworkStatus.statusExplanation
         )}) {
         NetworkStatusRow(contactNetworkStatus)
@@ -240,11 +241,11 @@ fun ChatInfoLayout(
         }
         val rcvServers = cStats.rcvQueuesInfo.map { it.rcvServer }
         if (rcvServers.isNotEmpty()) {
-          SimplexServers(stringResource(R.string.receiving_via), rcvServers)
+          SimplexServers(stringResource(MR.strings.receiving_via), rcvServers)
         }
         val sndServers = cStats.sndQueuesInfo.map { it.sndServer }
         if (sndServers.isNotEmpty()) {
-          SimplexServers(stringResource(R.string.sending_via), sndServers)
+          SimplexServers(stringResource(MR.strings.sending_via), sndServers)
         }
       }
     }
@@ -256,9 +257,9 @@ fun ChatInfoLayout(
 
     if (developerTools) {
       SectionDividerSpaced()
-      SectionView(title = stringResource(R.string.section_title_for_console)) {
-        InfoRow(stringResource(R.string.info_row_local_name), chat.chatInfo.localDisplayName)
-        InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
+      SectionView(title = stringResource(MR.strings.section_title_for_console)) {
+        InfoRow(stringResource(MR.strings.info_row_local_name), chat.chatInfo.localDisplayName)
+        InfoRow(stringResource(MR.strings.info_row_database_id), chat.chatInfo.apiId.toString())
       }
     }
     SectionBottomSpacer()
@@ -313,7 +314,7 @@ fun LocalAliasEditor(
       value,
       {
         Text(
-          generalGetString(R.string.text_field_set_contact_placeholder),
+          generalGetString(MR.strings.text_field_set_contact_placeholder),
           textAlign = if (center) TextAlign.Center else TextAlign.Start,
           color = MaterialTheme.colors.secondary
         )
@@ -354,10 +355,10 @@ private fun NetworkStatusRow(networkStatus: NetworkStatus) {
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      Text(stringResource(R.string.network_status))
+      Text(stringResource(MR.strings.network_status))
       Icon(
         painterResource(R.drawable.ic_info),
-        stringResource(R.string.network_status),
+        stringResource(MR.strings.network_status),
         tint = MaterialTheme.colors.primary
       )
     }
@@ -380,12 +381,12 @@ private fun ServerImage(networkStatus: NetworkStatus) {
   Box(Modifier.size(18.dp)) {
     when (networkStatus) {
       is NetworkStatus.Connected ->
-        Icon(painterResource(R.drawable.ic_circle_filled), stringResource(R.string.icon_descr_server_status_connected), tint = Color.Green)
+        Icon(painterResource(R.drawable.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = Color.Green)
       is NetworkStatus.Disconnected ->
-        Icon(painterResource(R.drawable.ic_pending_filled), stringResource(R.string.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(R.drawable.ic_pending_filled), stringResource(MR.strings.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
       is NetworkStatus.Error ->
-        Icon(painterResource(R.drawable.ic_error_filled), stringResource(R.string.icon_descr_server_status_error), tint = MaterialTheme.colors.secondary)
-      else -> Icon(painterResource(R.drawable.ic_circle), stringResource(R.string.icon_descr_server_status_pending), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(R.drawable.ic_error_filled), stringResource(MR.strings.icon_descr_server_status_error), tint = MaterialTheme.colors.secondary)
+      else -> Icon(painterResource(R.drawable.ic_circle), stringResource(MR.strings.icon_descr_server_status_pending), tint = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -396,7 +397,7 @@ fun SimplexServers(text: String, servers: List<String>) {
   val clipboardManager: ClipboardManager = LocalClipboardManager.current
   InfoRowEllipsis(text, info) {
     clipboardManager.setText(AnnotatedString(servers.joinToString(separator = ",")))
-    Toast.makeText(SimplexApp.context, generalGetString(R.string.copied), Toast.LENGTH_SHORT).show()
+    Toast.makeText(SimplexApp.context, generalGetString(MR.strings.copied), Toast.LENGTH_SHORT).show()
   }
 }
 
@@ -404,7 +405,7 @@ fun SimplexServers(text: String, servers: List<String>) {
 fun SwitchAddressButton(disabled: Boolean, switchAddress: () -> Unit) {
   SectionItemView(switchAddress) {
     Text(
-      stringResource(R.string.switch_receiving_address),
+      stringResource(MR.strings.switch_receiving_address),
       color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
     )
   }
@@ -414,7 +415,7 @@ fun SwitchAddressButton(disabled: Boolean, switchAddress: () -> Unit) {
 fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) {
   SectionItemView(abortSwitchAddress) {
     Text(
-      stringResource(R.string.abort_switch_receiving_address),
+      stringResource(MR.strings.abort_switch_receiving_address),
       color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
     )
   }
@@ -424,7 +425,7 @@ fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) 
 fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
   SettingsActionItem(
     if (contactVerified) painterResource(R.drawable.ic_verified_user) else painterResource(R.drawable.ic_shield),
-    stringResource(if (contactVerified) R.string.view_security_code else R.string.verify_security_code),
+    stringResource(if (contactVerified) MR.strings.view_security_code else MR.strings.verify_security_code),
     click = onClick,
     iconColor = MaterialTheme.colors.secondary,
   )
@@ -434,7 +435,7 @@ fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
 private fun ContactPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_toggle_on),
-    stringResource(R.string.contact_preferences),
+    stringResource(MR.strings.contact_preferences),
     click = onClick
   )
 }
@@ -443,7 +444,7 @@ private fun ContactPreferencesButton(onClick: () -> Unit) {
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_settings_backup_restore),
-    stringResource(R.string.clear_chat_button),
+    stringResource(MR.strings.clear_chat_button),
     click = onClick,
     textColor = WarningOrange,
     iconColor = WarningOrange,
@@ -454,7 +455,7 @@ fun ClearChatButton(onClick: () -> Unit) {
 private fun DeleteContactButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_delete),
-    stringResource(R.string.button_delete_contact),
+    stringResource(MR.strings.button_delete_contact),
     click = onClick,
     textColor = Color.Red,
     iconColor = Color.Red,
@@ -465,7 +466,7 @@ private fun DeleteContactButton(onClick: () -> Unit) {
 fun ShareAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_share_filled),
-    stringResource(R.string.share_address),
+    stringResource(MR.strings.share_address),
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
@@ -480,18 +481,18 @@ private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: C
 
 fun showSwitchAddressAlert(switchAddress: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.switch_receiving_address_question),
-    text = generalGetString(R.string.switch_receiving_address_desc),
-    confirmText = generalGetString(R.string.change_verb),
+    title = generalGetString(MR.strings.switch_receiving_address_question),
+    text = generalGetString(MR.strings.switch_receiving_address_desc),
+    confirmText = generalGetString(MR.strings.change_verb),
     onConfirm = switchAddress
   )
 }
 
 fun showAbortSwitchAddressAlert(abortSwitchAddress: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.abort_switch_receiving_address_question),
-    text = generalGetString(R.string.abort_switch_receiving_address_desc),
-    confirmText = generalGetString(R.string.abort_switch_receiving_address_confirm),
+    title = generalGetString(MR.strings.abort_switch_receiving_address_question),
+    text = generalGetString(MR.strings.abort_switch_receiving_address_desc),
+    confirmText = generalGetString(MR.strings.abort_switch_receiving_address_confirm),
     onConfirm = abortSwitchAddress,
     destructive = true,
   )

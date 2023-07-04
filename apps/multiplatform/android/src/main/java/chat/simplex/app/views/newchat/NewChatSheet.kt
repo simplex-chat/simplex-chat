@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,6 +28,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -55,7 +56,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
   )
 }
 
-private val titles = listOf(R.string.share_one_time_link, R.string.connect_via_link_or_qr, R.string.create_group)
+private val titles = listOf(MR.strings.share_one_time_link, MR.strings.connect_via_link_or_qr, MR.strings.create_group)
 private val icons = listOf(R.drawable.ic_add_link, R.drawable.ic_qr_code, R.drawable.ic_group)
 
 @Composable
@@ -154,11 +155,11 @@ private fun NewChatSheetLayout(
       contentColor = Color.White
     ) {
       Icon(
-        painterResource(R.drawable.ic_edit_filled), stringResource(R.string.add_contact_or_create_group),
+        painterResource(R.drawable.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group),
         Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }
       )
       Icon(
-        painterResource(R.drawable.ic_close), stringResource(R.string.add_contact_or_create_group),
+        painterResource(R.drawable.ic_close), stringResource(MR.strings.add_contact_or_create_group),
         Modifier.graphicsLayer { alpha = animatedFloat.value }
       )
     }

@@ -3,7 +3,6 @@ package chat.simplex.app.views.chat.item
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.net.Uri
-import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -18,7 +17,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.FileProvider
@@ -30,6 +29,8 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
 import com.google.android.exoplayer2.ui.StyledPlayerView
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 import java.io.File
 
 @Composable
@@ -68,14 +69,14 @@ fun CIVideoView(
                 when (file.fileProtocol) {
                   FileProtocol.XFTP ->
                     AlertManager.shared.showAlertMsg(
-                      generalGetString(R.string.waiting_for_video),
-                      generalGetString(R.string.video_will_be_received_when_contact_completes_uploading)
+                      generalGetString(MR.strings.waiting_for_video),
+                      generalGetString(MR.strings.video_will_be_received_when_contact_completes_uploading)
                     )
 
                   FileProtocol.SMP ->
                     AlertManager.shared.showAlertMsg(
-                      generalGetString(R.string.waiting_for_video),
-                      generalGetString(R.string.video_will_be_received_when_contact_is_online)
+                      generalGetString(MR.strings.waiting_for_video),
+                      generalGetString(MR.strings.video_will_be_received_when_contact_is_online)
                     )
                 }
               CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
@@ -220,7 +221,7 @@ private fun ImageView(preview: Bitmap, showMenu: MutableState<Boolean>, onClick:
   val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 1000.dp }
   Image(
     preview.asImageBitmap(),
-    contentDescription = stringResource(R.string.video_descr),
+    contentDescription = stringResource(MR.strings.video_descr),
     modifier = Modifier
       .width(width)
       .combinedClickable(
@@ -252,7 +253,7 @@ private fun progressIndicator() {
 }
 
 @Composable
-private fun fileIcon(icon: Painter, @StringRes stringId: Int) {
+private fun fileIcon(icon: Painter, stringId: StringResource) {
   Icon(
     icon,
     stringResource(stringId),
@@ -295,19 +296,19 @@ private fun loadingIndicator(file: CIFile?) {
             FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
             FileProtocol.SMP -> progressIndicator()
           }
-        is CIFileStatus.SndComplete -> fileIcon(painterResource(R.drawable.ic_check_filled), R.string.icon_descr_video_snd_complete)
-        is CIFileStatus.SndCancelled -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
-        is CIFileStatus.SndError -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
-        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(R.drawable.ic_arrow_downward), R.string.icon_descr_video_asked_to_receive)
-        is CIFileStatus.RcvAccepted -> fileIcon(painterResource(R.drawable.ic_more_horiz), R.string.icon_descr_waiting_for_video)
+        is CIFileStatus.SndComplete -> fileIcon(painterResource(R.drawable.ic_check_filled), MR.strings.icon_descr_video_snd_complete)
+        is CIFileStatus.SndCancelled -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.SndError -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(R.drawable.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
+        is CIFileStatus.RcvAccepted -> fileIcon(painterResource(R.drawable.ic_more_horiz), MR.strings.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
           if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
             progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
           } else {
             progressIndicator()
           }
-        is CIFileStatus.RcvCancelled -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
-        is CIFileStatus.RcvError -> fileIcon(painterResource(R.drawable.ic_close), R.string.icon_descr_file)
+        is CIFileStatus.RcvCancelled -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.RcvError -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
         else -> {}
       }
     }
@@ -326,8 +327,8 @@ private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
     receiveFile(file.fileId)
   } else {
     AlertManager.shared.showAlertMsg(
-      generalGetString(R.string.large_file),
-      String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
+      generalGetString(MR.strings.large_file),
+      String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
     )
   }
 }

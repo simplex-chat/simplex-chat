@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +25,7 @@ import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 
 @Composable
 fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
@@ -48,7 +49,7 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
         )
       } else {
         Text(
-          generalGetString(R.string.item_info_no_text),
+          generalGetString(MR.strings.item_info_no_text),
           style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp, fontStyle = FontStyle.Italic)
         )
       }
@@ -72,7 +73,7 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
         )
         if (current && ci.meta.itemDeleted == null) {
           Text(
-            stringResource(R.string.item_info_current),
+            stringResource(MR.strings.item_info_current),
             fontSize = 12.sp,
             color = MaterialTheme.colors.secondary
           )
@@ -80,11 +81,11 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
       }
       if (text != "") {
         DefaultDropdownMenu(showMenu) {
-          ItemAction(stringResource(R.string.share_verb), painterResource(R.drawable.ic_share), onClick = {
+          ItemAction(stringResource(MR.strings.share_verb), painterResource(R.drawable.ic_share), onClick = {
             shareText(text)
             showMenu.value = false
           })
-          ItemAction(stringResource(R.string.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
+          ItemAction(stringResource(MR.strings.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
             copyText(text)
             showMenu.value = false
           })
@@ -94,37 +95,37 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   }
 
   Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-    AppBarTitle(stringResource(if (sent) R.string.sent_message else R.string.received_message))
+    AppBarTitle(stringResource(if (sent) MR.strings.sent_message else MR.strings.received_message))
     SectionView {
-      InfoRow(stringResource(R.string.info_row_sent_at), localTimestamp(ci.meta.itemTs))
+      InfoRow(stringResource(MR.strings.info_row_sent_at), localTimestamp(ci.meta.itemTs))
       if (!sent) {
-        InfoRow(stringResource(R.string.info_row_received_at), localTimestamp(ci.meta.createdAt))
+        InfoRow(stringResource(MR.strings.info_row_received_at), localTimestamp(ci.meta.createdAt))
       }
       when (val itemDeleted = ci.meta.itemDeleted) {
         is CIDeleted.Deleted ->
           if (itemDeleted.deletedTs != null) {
-            InfoRow(stringResource(R.string.info_row_deleted_at), localTimestamp(itemDeleted.deletedTs))
+            InfoRow(stringResource(MR.strings.info_row_deleted_at), localTimestamp(itemDeleted.deletedTs))
           }
         is CIDeleted.Moderated ->
           if (itemDeleted.deletedTs != null) {
-            InfoRow(stringResource(R.string.info_row_moderated_at), localTimestamp(itemDeleted.deletedTs))
+            InfoRow(stringResource(MR.strings.info_row_moderated_at), localTimestamp(itemDeleted.deletedTs))
           }
         else -> {}
       }
       val deleteAt = ci.meta.itemTimed?.deleteAt
       if (deleteAt != null) {
-        InfoRow(stringResource(R.string.info_row_disappears_at), localTimestamp(deleteAt))
+        InfoRow(stringResource(MR.strings.info_row_disappears_at), localTimestamp(deleteAt))
       }
       if (devTools) {
-        InfoRow(stringResource(R.string.info_row_database_id), ci.meta.itemId.toString())
-        InfoRow(stringResource(R.string.info_row_updated_at), localTimestamp(ci.meta.updatedAt))
+        InfoRow(stringResource(MR.strings.info_row_database_id), ci.meta.itemId.toString())
+        InfoRow(stringResource(MR.strings.info_row_updated_at), localTimestamp(ci.meta.updatedAt))
       }
     }
     val versions = ciInfo.itemVersions
     if (versions.isNotEmpty()) {
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
       SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-        Text(stringResource(R.string.edit_history), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
+        Text(stringResource(MR.strings.edit_history), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         versions.forEachIndexed { i, ciVersion ->
           ItemVersionView(ciVersion, current = i == 0)
         }
@@ -137,47 +138,47 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
 fun itemInfoShareText(ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolean): String {
   val meta = ci.meta
   val sent = ci.chatDir.sent
-  val shareText = mutableListOf<String>(generalGetString(if (sent) R.string.sent_message else R.string.received_message), "")
+  val shareText = mutableListOf<String>(generalGetString(if (sent) MR.strings.sent_message else MR.strings.received_message), "")
 
-  shareText.add(String.format(generalGetString(R.string.share_text_sent_at), localTimestamp(meta.itemTs)))
+  shareText.add(String.format(generalGetString(MR.strings.share_text_sent_at), localTimestamp(meta.itemTs)))
   if (!ci.chatDir.sent) {
-    shareText.add(String.format(generalGetString(R.string.share_text_received_at), localTimestamp(meta.createdAt)))
+    shareText.add(String.format(generalGetString(MR.strings.share_text_received_at), localTimestamp(meta.createdAt)))
   }
   when (val itemDeleted = ci.meta.itemDeleted) {
     is CIDeleted.Deleted ->
       if (itemDeleted.deletedTs != null) {
-        shareText.add(String.format(generalGetString(R.string.share_text_deleted_at), localTimestamp(itemDeleted.deletedTs)))
+        shareText.add(String.format(generalGetString(MR.strings.share_text_deleted_at), localTimestamp(itemDeleted.deletedTs)))
       }
     is CIDeleted.Moderated ->
       if (itemDeleted.deletedTs != null) {
-        shareText.add(String.format(generalGetString(R.string.share_text_moderated_at), localTimestamp(itemDeleted.deletedTs)))
+        shareText.add(String.format(generalGetString(MR.strings.share_text_moderated_at), localTimestamp(itemDeleted.deletedTs)))
       }
     else -> {}
   }
   val deleteAt = ci.meta.itemTimed?.deleteAt
   if (deleteAt != null) {
-    shareText.add(String.format(generalGetString(R.string.share_text_disappears_at), localTimestamp(deleteAt)))
+    shareText.add(String.format(generalGetString(MR.strings.share_text_disappears_at), localTimestamp(deleteAt)))
   }
   if (devTools) {
-    shareText.add(String.format(generalGetString(R.string.share_text_database_id), meta.itemId))
-    shareText.add(String.format(generalGetString(R.string.share_text_updated_at), meta.updatedAt))
+    shareText.add(String.format(generalGetString(MR.strings.share_text_database_id), meta.itemId))
+    shareText.add(String.format(generalGetString(MR.strings.share_text_updated_at), meta.updatedAt))
   }
   val versions = chatItemInfo.itemVersions
   if (versions.isNotEmpty()) {
     shareText.add("")
-    shareText.add(generalGetString(R.string.edit_history))
+    shareText.add(generalGetString(MR.strings.edit_history))
     versions.forEachIndexed { index, itemVersion ->
       val ts = localTimestamp(itemVersion.itemVersionTs)
       shareText.add("")
       shareText.add(
         if (index == 0 && ci.meta.itemDeleted == null) {
-          String.format(generalGetString(R.string.current_version_timestamp), ts)
+          String.format(generalGetString(MR.strings.current_version_timestamp), ts)
         } else {
           localTimestamp(itemVersion.itemVersionTs)
         }
       )
       val t = itemVersion.msgContent.text
-      shareText.add(if (t != "") t else generalGetString(R.string.item_info_no_text))
+      shareText.add(if (t != "") t else generalGetString(MR.strings.item_info_no_text))
     }
   }
   return shareText.joinToString(separator = "\n")

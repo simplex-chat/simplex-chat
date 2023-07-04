@@ -15,6 +15,7 @@ import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -125,7 +126,7 @@ class VideoPlayer private constructor(
         player.setMediaSource(source, seek ?: 0L)
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
         brokenVideo.value = true
         return false
       }
@@ -134,7 +135,7 @@ class VideoPlayer private constructor(
       runCatching { player.prepare() }.onFailure {
         // Can happen when video file is broken
         Log.e(TAG, it.stackTraceToString())
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.unknown_error), it.message)
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
         brokenVideo.value = true
         return false
       }

@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="server_connecting">ബന്ധിപ്പിക്കുന്നു</string>
+    <string name="la_immediately">ഉടനെ</string>
+    <string name="allow_verb">അനുവദിക്കുക</string>
+    <string name="notifications">അറിയിപ്പുകൾ</string>
+    <string name="icon_descr_server_status_connected">ബന്ധിപ്പിച്ചിരിക്കുന്നു</string>
+    <string name="ok">ശരി</string>
+    <string name="above_then_preposition_continuation">മുകളിൽ, പിന്നെ:</string>
+    <string name="delete_contact_menu_action">ഇല്ലാതാക്കുക</string>
+    <string name="invite_friends">സുഹൃത്തുക്കളെ ക്ഷണിക്കുക</string>
+    <string name="delete_address">വിലാസം ഇല്ലാതാക്കുക</string>
+    <string name="italic_text">ഇറ്റാലിക്</string>
+    <string name="about_simplex">SimpleX-നെ കുറിച്ച്</string>
+    <string name="callstate_connected">ബന്ധിപ്പിച്ചിരിക്കുന്നു</string>
+    <string name="callstate_connecting">ബന്ധിപ്പിക്കുന്നു…</string>
+    <string name="onboarding_notifications_mode_periodic">ആനുകാലികം</string>
+    <string name="enable_lock">താഴ് പ്രവർത്തനക്ഷമമാക്കുക</string>
+    <string name="chat_item_ttl_month">1 മാസം</string>
+    <string name="chat_item_ttl_week">1 ആഴ്ച</string>
+    <string name="icon_descr_add_members">അംഗങ്ങളെ ക്ഷണിക്കുക</string>
+    <string name="you_sent_group_invitation">നിങ്ങൾ ഗ്രൂപ്പ് ക്ഷണം അയച്ചു</string>
+    <string name="group_member_status_accepted">ബന്ധിപ്പിക്കുന്നു (അംഗീകരിച്ചു)</string>
+    <string name="group_member_status_invited">ക്ഷണിച്ചു</string>
+    <string name="group_member_role_observer">നിരീക്ഷകൻ</string>
+    <string name="accept_feature">സ്വീകരിക്കുക</string>
+    <string name="delete_after">ശേഷം ഇല്ലാതാക്കുക</string>
+    <string name="ttl_week">%d ആഴ്ച</string>
+    <string name="ttl_weeks">%d ആഴ്ചകൾ</string>
+    <string name="display_name">പ്രദർശന നാമം</string>
+    <string name="send_disappearing_message_1_minute">1 നിമിഷം</string>
+    <string name="send_disappearing_message_5_minutes">5 നിമിഷങ്ങൾ</string>
+    <string name="send_disappearing_message_30_seconds">30 ഞൊടികൾ</string>
+    <string name="feature_enabled_for_you">നിങ്ങൾക്കായി പ്രവർത്തനക്ഷമമാക്കി</string>
+    <string name="learn_more_about_address">SimpleX വിലാസത്തെക്കുറിച്ച്</string>
+    <string name="feature_enabled">പ്രവർത്തനക്ഷമമാക്കി</string>
+    <string name="auth_enable_simplex_lock">SimpleX താഴ് പ്രവർത്തനക്ഷമമാക്കുക</string>
+    <string name="feature_enabled_for_contact">ബന്ധപ്പെടാൻ പ്രവർത്തനക്ഷമമാക്കി</string>
+    <string name="enable_self_destruct">സ്വയം നശിപ്പിക്കൽ പ്രവർത്തനക്ഷമമാക്കുക</string>
+    <string name="button_add_welcome_message">സ്വാഗത സന്ദേശം ചേർക്കുക</string>
+    <string name="chat_preferences_you_allow">നിങ്ങൾ അനുവദിക്കൂ</string>
+    <string name="messages_section_title">സന്ദേശങ്ങൾ</string>
+    <string name="settings_section_title_you">നിങ്ങൾ</string>
+    <string name="failed_to_create_user_duplicate_title">തനിപ്പകർപ്പ് പ്രദർശന നാമം</string>
+    <string name="integrity_msg_duplicate">തനിപ്പകർപ്പ് സന്ദേശം</string>
+    <string name="periodic_notifications_disabled">ആനുകാലിക അറിയിപ്പുകൾ പ്രവർത്തനരഹിതമാക്കി!</string>
+    <string name="toast_permission_denied">അനുമതി നിഷേധിച്ചു!</string>
+    <string name="periodic_notifications">ആനുകാലിക അറിയിപ്പുകൾ</string>
+    <string name="v5_1_message_reactions">സന്ദേശ പ്രതികരണങ്ങൾ</string>
+    <string name="color_secondary_variant">അധിക ദ്വിതീയ</string>
+    <string name="address_section_title">വിലാസം</string>
+    <string name="reject">നിരസിക്കുക</string>
+    <string name="accept_call_on_lock_screen">സ്വീകരിക്കുക</string>
+    <string name="accept_contact_button">സ്വീകരിക്കുക</string>
+    <string name="accept">സ്വീകരിക്കുക</string>
+    <string name="reject_contact_button">നിരസിക്കുക</string>
+    <string name="full_name_optional__prompt">മുഴുവൻ പേര് (ഇഷ്ടാനുസൃതമായ)</string>
+    <string name="v4_6_chinese_spanish_interface_descr">ഉപയോക്താക്കൾക്ക് നന്ദി - Weblate വഴി സംഭാവന ചെയ്യുക!</string>
+    <string name="v5_0_polish_interface_descr">ഉപയോക്താക്കൾക്ക് നന്ദി - Weblate വഴി സംഭാവന ചെയ്യുക!</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">ഉപയോക്താക്കൾക്ക് നന്ദി - Weblate വഴി സംഭാവന ചെയ്യുക!</string>
+    <string name="privacy_and_security">സ്വകാര്യതയും സുരക്ഷയും</string>
+    <string name="notification_contact_connected">ബന്ധിപ്പിച്ചിരിക്കുന്നു</string>
+    <string name="privacy_redefined">സ്വകാര്യത പുനർ നിർവചിച്ചു</string>
+    <string name="group_member_status_announced">ബന്ധിപ്പിക്കുന്നു (പ്രഖ്യാപിച്ചു)</string>
+    <string name="create_address">വിലാസം സൃഷ്ടിക്കുക</string>
+    <string name="unknown_error">അജ്ഞാത പിശക്</string>
+    <string name="create_address_and_let_people_connect">നിങ്ങളുമായി ബന്ധപ്പെടാൻ ആളുകളെ അനുവദിക്കുന്നതിന് ഒരു വിലാസം സൃഷ്‌ടിക്കുക.</string>
+    <string name="group_member_status_connecting">ബന്ധിപ്പിക്കുന്നു</string>
+    <string name="restore_database_alert_confirm">പുനഃസ്ഥാപിക്കുക</string>
+    <string name="connect_via_link_verb">ബന്ധിപ്പിക്കുക</string>
+    <string name="smp_server_test_connect">ബന്ധിപ്പിക്കുക</string>
+    <string name="server_connected">ബന്ധിപ്പിച്ചിരിക്കുന്നു</string>
+    <string name="connect_button">ബന്ധിപ്പിക്കുക</string>
+    <string name="rcv_group_event_member_connected">ബന്ധിപ്പിച്ചിരിക്കുന്നു</string>
+    <string name="display_name_invited_to_connect">ബന്ധിപ്പിക്കാൻ ക്ഷണിച്ചു</string>
+    <string name="group_member_status_connected">ബന്ധിപ്പിച്ചിരിക്കുന്നു</string>
+    <string name="contact_connection_pending">ബന്ധിപ്പിക്കുന്നു…</string>
+    <string name="group_connection_pending">ബന്ധിപ്പിക്കുന്നു…</string>
+    <string name="display_name_connecting">ബന്ധിപ്പിക്കുന്നു…</string>
+    <string name="button_add_members">അംഗങ്ങളെ ക്ഷണിക്കുക</string>
+    <string name="v4_3_irreversible_message_deletion">മാറ്റാനാവാത്ത സന്ദേശം ഇല്ലാതാക്കൽ</string>
+    <string name="message_deletion_prohibited_in_chat">ഈ ഗ്രൂപ്പിൽ മാറ്റാനാവാത്ത സന്ദേശം ഇല്ലാതാക്കുന്നത് നിരോധിച്ചിരിക്കുന്നു.</string>
+    <string name="message_deletion_prohibited">ഈ ചാറ്റിൽ മാറ്റാനാവാത്ത സന്ദേശം ഇല്ലാതാക്കുന്നത് നിരോധിച്ചിരിക്കുന്നു.</string>
+    <string name="onboarding_notifications_mode_subtitle">ഇത് പിന്നീട് ക്രമീകരണങ്ങൾ വഴി മാറ്റാവുന്നതാണ്.</string>
+    <string name="your_settings">നിങ്ങളുടെ ക്രമീകരണങ്ങൾ</string>
+    <string name="your_privacy">നിങ്ങളുടെ സ്വകാര്യത</string>
+    <string name="your_simplex_contact_address">നിങ്ങളുടെ SimpleX വിലാസം</string>
+    <string name="chat_item_ttl_day">1 ദിവസം</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">പിന്നീട് നിങ്ങളുടെ വിലാസം ഇല്ലാതാക്കിയാൽ നിങ്ങളുടെ കോൺടാക്റ്റുകൾ നഷ്‌ടമാകില്ല.</string>
+    <string name="stop_chat_confirmation">നിർത്തുക</string>
+    <string name="delete_group_menu_action">ഇല്ലാതാക്കുക</string>
+    <string name="delete_address__question">വിലാസം ഇല്ലാതാക്കണോ\?</string>
+    <string name="settings_notifications_mode_title">അറിയിപ്പ് സേവനം</string>
+    <string name="secret_text">രഹസ്യം</string>
+    <string name="error_creating_address">വിലാസം സൃഷ്ടിക്കുന്നതിൽ പിശക്</string>
+    <string name="error_changing_address">വിലാസം മാറ്റുന്നതിൽ പിശക്</string>
+    <string name="hide_notification">മറയ്ക്കുക</string>
+    <string name="notification_preview_mode_hidden">മറച്ചിരിക്കുന്നു</string>
+    <string name="notification_preview_new_message">പുതിയ സന്ദേശം</string>
+    <string name="auth_unlock">പൂട്ടുതുറക്കുക</string>
+    <string name="sent_message">സന്ദേശം അയച്ചു</string>
+    <string name="hide_verb">മറയ്ക്കുക</string>
+    <string name="icon_descr_received_msg_status_unread">വായിക്കാത്തത്</string>
+    <string name="image_descr">ചിത്രം</string>
+    <string name="icon_descr_server_status_error">പിശക്</string>
+    <string name="allow_voice_messages_question">ശബ്ദ സന്ദേശങ്ങൾ അനുവദിക്കണോ\?</string>
+    <string name="send_disappearing_message_custom_time">ഇഷ്ടാനുസൃത സമയം</string>
+    <string name="no_details">വിശദാംശങ്ങളില്ല</string>
+    <string name="reset_verb">പുനഃസജ്ജമാക്കുക</string>
+    <string name="back">തിരികെ</string>
+    <string name="mute_chat">നിശബ്ദമാക്കുക</string>
+    <string name="icon_descr_help">സഹായം</string>
+    <string name="smp_servers_add">സെർവർ ചേർക്കുക…</string>
+    <string name="smp_servers_add_to_another_device">മറ്റൊരു ഉപകരണത്തിലേക്ക് ചേർക്കുക</string>
+    <string name="auto_accept_contact">സ്വയമേവ സ്വീകരിക്കുക</string>
+    <string name="no_spaces">സ്ഥലമില്ല!</string>
+    <string name="callstate_waiting_for_confirmation">സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു…</string>
+    <string name="ignore">അവഗണിക്കുക</string>
+    <string name="open_verb">തുറക്കുക</string>
+    <string name="auto_accept_images">ചിത്രങ്ങൾ സ്വയമേവ സ്വീകരിക്കുക</string>
+    <string name="lock_after">ശേഷം പൂട്ടുക</string>
+    <string name="settings_section_title_settings">ക്രമീകരണങ്ങൾ</string>
+    <string name="settings_section_title_help">സഹായം</string>
+    <string name="settings_section_title_device">ഉപകരണം</string>
+    <string name="chat_item_ttl_none">ഒരിക്കലും</string>
+    <string name="snd_group_event_user_left">നിങ്ങൾ പോയി</string>
+    <string name="button_welcome_message">സ്വാഗത സന്ദേശം</string>
+    <string name="share_address">വിലാസം പങ്കിടുക</string>
+    <string name="item_info_no_text">വാചകം ഇല്ല</string>
+    <string name="user_mute">നിശബ്ദമാക്കുക</string>
+    <string name="reset_color">നിറങ്ങൾ പുനഃസജ്ജമാക്കുക</string>
+    <string name="color_background">പശ്ചാത്തലം</string>
+    <string name="chat_preferences_no">ഇല്ല</string>
+    <string name="direct_messages">നേരിട്ടുള്ള സന്ദേശങ്ങൾ</string>
+    <string name="available_in_v51">"
+\nപ5.1-ൽ ലഭ്യമാണ്"</string>
+    <string name="chat_preferences_always">എപ്പോഴും</string>
+    <string name="only_you_can_send_voice">നിങ്ങൾക്ക് മാത്രമേ ശബ്ദ സന്ദേശങ്ങൾ അയയ്ക്കാൻ കഴിയൂ.</string>
+    <string name="allow_to_delete_messages">അയച്ച സന്ദേശങ്ങൾ മാറ്റാനാവാത്തവിധം ഇല്ലാതാക്കാൻ അനുവദിക്കുക.</string>
+    <string name="allow_to_send_disappearing">അപ്രത്യക്ഷമാകുന്ന സന്ദേശങ്ങൾ അയയ്ക്കാൻ അനുവദിക്കുക.</string>
+    <string name="whats_new">പുതിയതെന്താണ്</string>
+    <string name="new_in_version">%s-ൽ പുതിയത്</string>
+    <string name="v4_3_voice_messages">ശബ്ദ സന്ദേശങ്ങൾ</string>
+    <string name="v4_3_improved_privacy_and_security">മെച്ചപ്പെട്ട സ്വകാര്യതയും സുരക്ഷയും</string>
+    <string name="v4_6_reduced_battery_usage_descr">കൂടുതൽ മെച്ചപ്പെടുത്തലുകൾ ഉടൻ വരുന്നു!</string>
+    <string name="v4_6_group_welcome_message_descr">പുതിയ അംഗങ്ങൾക്ക് കാണിക്കുന്ന സന്ദേശം സജ്ജമാക്കുക!</string>
+    <string name="v4_6_group_welcome_message">സംഘത്തിലെ സ്വാഗത സന്ദേശം</string>
+    <string name="v5_1_message_reactions_descr">അവസാനമായി, ഞങ്ങൾക്ക് അവയുണ്ട്! 🚀</string>
+    <string name="voice_message_with_duration">ശബ്ദ സന്ദേശം (%1$s)</string>
+    <string name="user_hide">മറയ്ക്കുക</string>
+    <string name="share_verb">പങ്കിടുക</string>
+    <string name="icon_descr_settings">ക്രമീകരണങ്ങൾ</string>
+    <string name="group_welcome_title">സ്വാഗത സന്ദേശം</string>
+    <string name="network_use_onion_hosts_no">ഇല്ല</string>
+    <string name="personal_welcome">സ്വാഗതം %1$s!</string>
+    <string name="share_message">സന്ദേശം പങ്കിടുക…</string>
+    <string name="hide_dev_options">മറയ്ക്കുക:</string>
+    <string name="show_dev_options">കാണിക്കുക:</string>
+    <string name="decentralized">വികേന്ദ്രീകൃതം</string>
+    <string name="voice_message">ശബ്ദ സന്ദേശം</string>
+    <string name="voice_messages">ശബ്ദ സന്ദേശങ്ങൾ</string>
+    <string name="voice_message_send_text">ശബ്ദ സന്ദേശം…</string>
+    <string name="callstate_waiting_for_answer">ഉത്തരത്തിനായി കാത്തിരിക്കുന്നു…</string>
+    <string name="icon_descr_waiting_for_image">ചിത്രത്തിനായി കാത്തിരിക്കുന്നു</string>
+    <string name="voice_messages_prohibited">ശബ്ദ സന്ദേശങ്ങൾ നിരോധിച്ചിരിക്കുന്നു!</string>
+    <string name="waiting_for_image">ചിത്രത്തിനായി കാത്തിരിക്കുന്നു</string>
+    <string name="muted_when_inactive">നിഷ്‌ക്രിയമായിരിക്കുമ്പോൾ നിശബ്ദമാക്കി!</string>
+    <string name="contribute">സംഭാവന ചെയ്യുക</string>
+    <string name="v4_4_disappearing_messages_desc">അയച്ച സന്ദേശങ്ങൾ നിശ്ചിത സമയത്തിന് ശേഷം ഇല്ലാതാക്കപ്പെടും.</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">എല്ലാ അംഗങ്ങൾക്കും സംഘം ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
+    <string name="delete_messages_after">അതിനുശേഷം സന്ദേശങ്ങൾ ഇല്ലാതാക്കുക</string>
+    <string name="simplex_service_notification_text">സന്ദേശങ്ങൾ സ്വീകരിക്കുന്നു…</string>
+    <string name="allow_message_reactions">സന്ദേശ പ്രതികരണങ്ങൾ അനുവദിക്കുക.</string>
+    <string name="receiving_via">വഴി സ്വീകരിക്കുന്നു</string>
+    <string name="color_sent_message">സന്ദേശം അയച്ചു</string>
+    <string name="conn_level_desc_direct">നേരിട്ട്</string>
+    <string name="error_changing_message_deletion">ക്രമീകരണം മാറ്റുന്നതിൽ പിശക്</string>
+    <string name="group_info_member_you">നിങ്ങൾ: %1$s</string>
+    <string name="delete_group_for_self_cannot_undo_warning">നിങ്ങൾക്കായി സംഘം ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
+    <string name="appearance_settings">രൂപം</string>
+    <string name="network_use_onion_hosts_required">ആവശ്യമാണ്</string>
+    <string name="settings_restart_app">പുനരാരംഭിക്കുക</string>
+    <string name="reply_verb">മറുപടി</string>
+    <string name="network_options_reset_to_defaults">സ്ഥിരസ്ഥിതികളിലേക്ക് പുനഃസജ്ജമാക്കുക</string>
+    <string name="import_database_confirmation">ഇറക്കുമതി ചെയ്യുക</string>
+    <string name="gallery_image_button">ചിത്രം</string>
+    <string name="show_call_on_lock_screen">കാണിക്കുക</string>
+    <string name="attach">ഘടിപ്പിക്കുക</string>
+    <string name="only_you_can_send_disappearing">നിങ്ങൾക്ക് മാത്രമേ അപ്രത്യക്ഷമാകുന്ന സന്ദേശങ്ങൾ അയയ്ക്കാൻ കഴിയൂ.</string>
+    <string name="observer_cant_send_message_title">നിങ്ങൾക്ക് സന്ദേശങ്ങൾ അയയ്ക്കാൻ കഴിയില്ല!</string>
+    <string name="message_reactions">സന്ദേശ പ്രതികരണങ്ങൾ</string>
+    <string name="auth_unavailable">പ്രാമാണീകരണം ലഭ്യമല്ല</string>
+    <string name="la_auth_failed">പ്രാമാണീകരണം പരാജയപ്പെട്ടു</string>
+    <string name="authentication_cancelled">പ്രാമാണീകരണം റദ്ദാക്കി</string>
+    <string name="network_settings">വിപുലമായ ശൃംഖല ക്രമീകരണങ്ങൾ</string>
+    <string name="clear_chat_warning">എല്ലാ സന്ദേശങ്ങളും ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാൻ കഴിയില്ല! നിങ്ങൾക്കായി മാത്രം സന്ദേശങ്ങൾ ഇല്ലാതാക്കും.</string>
+    <string name="allow_direct_messages">അംഗങ്ങൾക്ക് നേരിട്ട് സന്ദേശങ്ങൾ അയക്കാൻ അനുവദിക്കുക.</string>
+    <string name="allow_to_send_voice">ശബ്ദ സന്ദേശങ്ങൾ അയയ്ക്കാൻ അനുവദിക്കുക.</string>
+    <string name="callstatus_accepted">സ്വീകരിച്ച വിളി</string>
+    <string name="live">തത്സമയം</string>
+    <string name="server_error">പിശക്</string>
+    <string name="error_adding_members">അംഗത്തെ(കളെ) ചേർക്കുന്നതിൽ പിശക്</string>
+    <string name="auth_confirm_credential">നിങ്ങളുടെ യോഗ്യത സ്ഥിരീകരിക്കുക</string>
+    <string name="copy_verb">പകർത്തുക</string>
+    <string name="edit_history">ചരിത്രം</string>
+    <string name="icon_descr_sent_msg_status_send_failed">അയയ്‌ക്കാനായില്ല</string>
+    <string name="icon_descr_asked_to_receive">ചിത്രം സ്വീകരിക്കാൻ ആവശ്യപ്പെട്ടു</string>
+    <string name="send_disappearing_message_send">അയക്കുക</string>
+    <string name="send_verb">അയക്കുക</string>
+    <string name="send_live_message_desc">ഒരു തത്സമയ സന്ദേശം അയയ്‌ക്കുക - നിങ്ങൾ അത് ടൈപ്പുചെയ്യുമ്പോൾ സ്വീകർത്താക്കൾക്കായി അത് അപ്‌ഡേറ്റ് ചെയ്യും</string>
+    <string name="use_camera_button">ക്യാമറ</string>
+    <string name="cancel_verb">റദ്ദാക്കുക</string>
+    <string name="confirm_verb">സ്ഥിരീകരിക്കുക</string>
+    <string name="clear_verb">വൃത്തിയാക്കുക</string>
+    <string name="clear_chat_menu_action">വൃത്തിയാക്കുക</string>
+    <string name="learn_more">കൂടുതലറിയുക</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">ഉപയോക്തൃ മാര്‍ഗ്ഗദര്‍ശിയിൽ</font> കൂടുതൽ വായിക്കുക.]]></string>
+    <string name="smp_servers_check_address">സെർവർ വിലാസം പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.</string>
+    <string name="your_SMP_servers">നിങ്ങളുടെ SMP സെർവറുകൾ</string>
+    <string name="network_session_mode_entity">ബന്ധം</string>
+    <string name="stop_sharing_address">വിലാസം പങ്കിടുന്നത് നിർത്തണോ\?</string>
+    <string name="continue_to_next_step">തുടരുക</string>
+    <string name="create_simplex_address">SimpleX വിലാസം സൃഷ്ടിക്കുക</string>
+    <string name="create_profile_button">സൃഷ്ടിക്കുക</string>
+    <string name="colored_text">നിറമുള്ള</string>
+    <string name="callstate_ended">അവസാനിച്ചു</string>
+    <string name="your_calls">നിങ്ങളുടെ വിളികൾ</string>
+    <string name="submit_passcode">സമർപ്പിക്കുക</string>
+    <string name="leave_group_button">വിടവാങ്ങുക</string>
+    <string name="leave_group_question">സംഘം വിടണോ\?</string>
+    <string name="rcv_group_event_member_left">ഉപേക്ഷിച്ച</string>
+    <string name="rcv_group_event_changed_member_role">%s-ന്റെ കര്‍ത്തവ്യം %s-ലേക്ക് മാറ്റി</string>
+    <string name="rcv_group_event_changed_your_role">നിങ്ങളുടെ കര്‍ത്തവ്യം %s ആയി മാറ്റി</string>
+    <string name="snd_group_event_changed_member_role">നിങ്ങൾ %s-ന്റെ കര്‍ത്തവ്യം %s ആക്കി മാറ്റി</string>
+    <string name="group_member_status_left">ഉപേക്ഷിച്ച</string>
+    <string name="group_member_status_removed">നീക്കം ചെയ്തു</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">നിങ്ങൾക്കായി വിലാസം മാറ്റി</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">വിലാസം മാറ്റുന്നു…</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">വിലാസം മാറ്റുന്നു…</string>
+    <string name="snd_conn_event_switch_queue_phase_changing_for_member">%s-ന്റെ വിലാസം മാറ്റുന്നു…</string>
+    <string name="group_member_status_complete">പൂർണ്ണമായി</string>
+    <string name="group_member_status_creator">സ്രഷ്ടാവ്</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">നിങ്ങൾ വിലാസം മാറ്റി</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">നിങ്ങൾ %s എന്ന വിലാസം മാറ്റി</string>
+    <string name="clear_contacts_selection_button">വൃത്തിയാക്കുക</string>
+    <string name="button_leave_group">സംഘം വിടുക</string>
+    <string name="remove_member_confirmation">നീക്കം ചെയ്യുക</string>
+    <string name="button_remove_member">അംഗത്തെ നീക്കം ചെയ്യുക</string>
+    <string name="button_send_direct_message">നേരിട്ട് സന്ദേശം അയക്കുക</string>
+    <string name="info_row_local_name">പ്രാദേശിക നാമം</string>
+    <string name="role_in_group">കര്‍ത്തവ്യം</string>
+    <string name="change_verb">മാറ്റുക</string>
+    <string name="change_role">കര്‍ത്തവ്യം മാറ്റുക</string>
+    <string name="item_info_current">(നിലവിലെ)</string>
+    <string name="info_row_connection">ബന്ധം</string>
+    <string name="sending_via">വഴി അയയ്ക്കുന്നു</string>
+    <string name="your_preferences">നിങ്ങളുടെ മുൻഗണനകൾ</string>
+    <string name="feature_received_prohibited">സ്വീകരിച്ചു, നിരോധിച്ചു</string>
+    <string name="v4_4_live_messages">തത്സമയ സന്ദേശങ്ങൾ</string>
+    <string name="feature_cancelled_item">%s റദ്ദാക്കി</string>
+    <string name="v4_6_audio_video_calls_descr">ബ്ലൂടൂത്തും മറ്റ് മെച്ചപ്പെടുത്തലുകളും പിന്തുണയ്ക്കുക.</string>
+    <string name="v5_1_better_messages">മികച്ച സന്ദേശങ്ങൾ</string>
+    <string name="rcv_group_event_member_deleted">%1$s നീക്കം ചെയ്തു</string>
+    <string name="send_disappearing_message">അപ്രത്യക്ഷമാകുന്ന സന്ദേശം അയയ്ക്കുക</string>
+    <string name="notifications_mode_periodic_desc">ഓരോ 10 നിമിഷവും ഒരു നിമിഷം വരെ പുതിയ സന്ദേശങ്ങൾ പരിശോധിക്കുന്നു</string>
+    <string name="you_can_create_it_later">നിങ്ങൾക്ക് ഇത് പിന്നീട് സൃഷ്ടിക്കാൻ കഴിയും</string>
+    <string name="snd_group_event_changed_role_for_yourself">നിങ്ങൾ സ്വയം %s എന്ന കര്‍ത്തവ്യം മാറ്റി</string>
+    <string name="icon_descr_video_asked_to_receive">വീഡിയോ സ്വീകരിക്കാൻ ആവശ്യപ്പെട്ടു</string>
+    <string name="icon_descr_cancel_live_message">തത്സമയ സന്ദേശം റദ്ദാക്കുക</string>
+    <string name="callstatus_calling">വിളിക്കുന്നു…</string>
+    <string name="live_message">തത്സമയ സന്ദേശം!</string>
+    <string name="send_us_an_email">ഞങ്ങൾക്ക് ഇമെയിൽ അയയ്ക്കുക</string>
+    <string name="smp_servers_your_server">നിങ്ങളുടെ സെർവർ</string>
+    <string name="icon_descr_sent_msg_status_sent">അയച്ചു</string>
+    <string name="smp_servers_your_server_address">നിങ്ങളുടെ സെർവർ വിലാസം</string>
+    <string name="info_row_sent_at">എന്ന വിലാസത്തിൽ അയച്ചു</string>
+    <string name="your_XFTP_servers">നിങ്ങളുടെ XFTP സെർവറുകൾ</string>
+    <string name="about_simplex_chat">കുറിച്ച് SimpleX Chat</string>
+    <string name="users_delete_all_chats_deleted">എല്ലാ സംഭാഷണങ്ങളും സന്ദേശങ്ങളും ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
+    <string name="all_group_members_will_remain_connected">സംഘത്തിലെ എല്ലാ അംഗങ്ങളുടെ ബന്ധം നിലനിർത്തും.</string>
+    <string name="la_could_not_be_verified">നിങ്ങളെ പരിശോധിക്കാൻ കഴിഞ്ഞില്ല; ദയവായി വീണ്ടും ശ്രമിക്കുക.</string>
+    <string name="custom_time_unit_weeks">ആഴ്ചകൾ</string>
+    <string name="icon_descr_sent_msg_status_unauthorized_send">അനധികൃത അയക്കുക</string>
+    <string name="switch_receiving_address_question">സ്വീകരിക്കുന്ന വിലാസം മാറണോ\?</string>
+    <string name="member_role_will_be_changed_with_invitation">കര്‍ത്തവ്യം \"%s\" ആയി മാറ്റും. അംഗത്തിന് പുതിയ ക്ഷണം ലഭിക്കും.</string>
+    <string name="la_lock_mode_system">സംവിധാനം പ്രാമാണീകരണം</string>
+    <string name="skip_inviting_button">അംഗങ്ങളെ ക്ഷണിക്കുന്നത് ഒഴിവാക്കുക</string>
+    <string name="save_welcome_message_question">സ്വാഗത സന്ദേശം സംരക്ഷിക്കണോ\?</string>
+    <string name="remove_passphrase">നീക്കം ചെയ്യുക</string>
+    <string name="sender_you_pronoun">നിങ്ങൾ</string>
+    <string name="notifications_mode_periodic">ഇടയ്ക്കിടെ ആരംഭിക്കുന്നു</string>
+    <string name="message_delivery_error_title">സന്ദേശ വിതരണ പിശക്</string>
+    <string name="save_verb">സംരക്ഷിക്കുക</string>
+    <string name="moderate_message_will_be_deleted_warning">എല്ലാ അംഗങ്ങൾക്കും സന്ദേശം ഇല്ലാതാക്കപ്പെടും.</string>
+    <string name="reveal_verb">വെളിപ്പെടുത്തുക</string>
+    <string name="stop_file__confirm">നിർത്തുക</string>
+    <string name="welcome">സ്വാഗതം!</string>
+    <string name="this_text_is_available_in_settings">ഈ വാചകം ക്രമീകരണങ്ങളിൽ ലഭ്യമാണ്</string>
+    <string name="you_are_observer">നിങ്ങൾ നിരീക്ഷകനാണ്</string>
+    <string name="icon_descr_server_status_pending">തീർപ്പാക്കാത്തത്</string>
+    <string name="icon_descr_send_message">സന്ദേശം അയയ്ക്കുക</string>
+    <string name="send_live_message">തത്സമയ സന്ദേശം അയയ്ക്കുക</string>
+    <string name="is_not_verified">%s സ്ഥിരീകരിച്ചിട്ടില്ല</string>
+    <string name="chat_with_the_founder">ചോദ്യങ്ങളും ആശയങ്ങളും അയയ്ക്കുക</string>
+    <string name="save_servers_button">സംരക്ഷിക്കുക</string>
+    <string name="network_use_onion_hosts_prefer">ലഭ്യമാകുമ്പോൾ</string>
+    <string name="network_session_mode_transport_isolation">ഗതാഗത ഒറ്റപ്പെടൽ</string>
+    <string name="stop_sharing">പങ്കിടുന്നത് നിർത്തുക</string>
+    <string name="save_settings_question">ക്രമീകരണങ്ങൾ സംരക്ഷിക്കണോ\?</string>
+    <string name="save_preferences_question">മുൻഗണനകൾ സംരക്ഷിക്കണോ\?</string>
+    <string name="callstate_starting">ആരംഭിക്കുന്നു</string>
+    <string name="callstate_received_answer">ഉത്തരം ലഭിച്ചു…</string>
+    <string name="next_generation_of_private_messaging">സ്വകാര്യ സന്ദേശമയയ്ക്കലിന്റെ അടുത്ത തലമുറ</string>
+    <string name="alert_title_skipped_messages">ഒഴിവാക്കിയ സന്ദേശങ്ങൾ</string>
+    <string name="la_mode_system">സംവിധാനം</string>
+    <string name="self_destruct">സ്വയം നശിപ്പിക്കുക</string>
+    <string name="group_member_role_member">അംഗം</string>
+    <string name="member_info_section_title_member">അംഗം</string>
+    <string name="share_text_sent_at">അയച്ച സമയം: %s</string>
+    <string name="info_row_received_at">എന്ന സ്ഥലത്ത് ലഭിച്ചു</string>
+    <string name="share_text_received_at">ലഭിച്ചത്: %s</string>
+    <string name="switch_receiving_address">സ്വീകരിക്കുന്ന വിലാസം മാറുക</string>
+    <string name="conn_stats_section_title_servers">സെർവറുകൾ</string>
+    <string name="network_options_save">സംരക്ഷിക്കുക</string>
+    <string name="network_options_revert">പഴയപടിയാക്കുക</string>
+    <string name="theme_system">സംവിധാനം</string>
+    <string name="language_system">സംവിധാനം</string>
+    <string name="save_color">നിറം സംരക്ഷിക്കുക</string>
+    <string name="color_title">ശീർഷകം</string>
+    <string name="color_secondary">രണ്ടാംതരമായ</string>
+    <string name="chat_preferences_yes">അതെ</string>
+    <string name="prohibit_sending_voice_messages">ശബ്ദ സന്ദേശങ്ങൾ അയക്കുന്നത് നിരോധിക്കുക.</string>
+    <string name="prohibit_message_reactions">സന്ദേശ പ്രതികരണങ്ങൾ നിരോധിക്കുക.</string>
+    <string name="prohibit_sending_voice">ശബ്ദ സന്ദേശങ്ങൾ അയക്കുന്നത് നിരോധിക്കുക.</string>
+    <string name="prohibit_message_deletion">മാറ്റാനാവാത്ത സന്ദേശം ഇല്ലാതാക്കുന്നത് നിരോധിക്കുക.</string>
+    <string name="v4_2_security_assessment">സുരക്ഷാ വിലയിരുത്തൽ</string>
+    <string name="whats_new_read_more">കൂടുതൽ വായിക്കുക</string>
+    <string name="v4_5_transport_isolation">ഗതാഗത ഒറ്റപ്പെടൽ</string>
+    <string name="custom_time_picker_select">തിരഞ്ഞെടുക്കുക</string>
+    <string name="abort_switch_receiving_address_question">വിലാസം മാറ്റുന്നത് നിർത്തണോ\?</string>
+    <string name="enter_welcome_message">സ്വാഗത സന്ദേശം നൽകുക…</string>
+    <string name="error_with_info">പിശക്: %s</string>
+    <string name="service_notifications">തൽക്ഷണ അറിയിപ്പുകൾ!</string>
+    <string name="full_name__field">പൂർണ്ണമായ പേര്:</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">നിങ്ങൾ നിരസിക്കാൻ തിരഞ്ഞെടുക്കുകയാണെങ്കിൽ അയച്ചയാളെ അറിയിക്കില്ല.</string>
+    <string name="icon_descr_image_snd_complete">ചിത്രം അയച്ചു</string>
+    <string name="how_to_use_simplex_chat">ഇതെങ്ങനെ ഉപയോഗിക്കണം</string>
+    <string name="error_aborting_address_change">വിലാസ മാറ്റം നിർത്തുന്നതിൽ പിശക്</string>
+    <string name="edit_verb">തിരുത്തുക</string>
+    <string name="info_menu">വിവരം</string>
+    <string name="delete_verb">ഇല്ലാതാക്കുക</string>
+    <string name="for_everybody">എല്ലാവർക്കും</string>
+    <string name="abort_switch_receiving_address_confirm">നിഷ്‌ഫലമാക്കുക</string>
+    <string name="disappearing_message">അപ്രത്യക്ഷമാകുന്ന സന്ദേശം</string>
+    <string name="smp_servers_delete_server">സെർവർ ഇല്ലാതാക്കുക</string>
+    <string name="how_to_use_your_servers">നിങ്ങളുടെ സെർവറുകൾ എങ്ങനെ ഉപയോഗിക്കാം</string>
+    <string name="enter_welcome_message_optional">സ്വാഗത സന്ദേശം നൽകുക... (ഇച്ഛാനുസൃതമായ)</string>
+    <string name="exit_without_saving">സംരക്ഷിക്കാതെ പുറത്ത് പോവുക</string>
+    <string name="how_it_works">ഇത് എങ്ങനെ പ്രവർത്തിക്കുന്നു</string>
+    <string name="how_simplex_works">SimpleX എങ്ങനെ പ്രവർത്തിക്കുന്നു</string>
+    <string name="onboarding_notifications_mode_service">കൃത്യസമയം</string>
+    <string name="no_call_on_lock_screen">പ്രവർത്തനരഹിതമാക്കുക</string>
+    <string name="info_row_deleted_at">എന്നതിൽ ഇല്ലാതാക്കി</string>
+    <string name="ttl_day">%d ദിവസം</string>
+    <string name="ttl_days">%d ദിവസങ്ങൾ</string>
+    <string name="deleted_description">ഇല്ലാതാക്കി</string>
+    <string name="simplex_link_mode_description">വിവരണം</string>
+    <string name="error_sending_message">സന്ദേശം അയയ്ക്കുന്നതിൽ പിശക്</string>
+    <string name="error_setting_address">വിലാസം ക്രമീകരിക്കുന്നതിൽ പിശക്</string>
+    <string name="icon_descr_instant_notifications">തൽക്ഷണ അറിയിപ്പുകൾ</string>
+    <string name="delete_message__question">സന്ദേശം ഇല്ലാതാക്കണോ\?</string>
+    <string name="icon_descr_email">ഇമെയിൽ</string>
+    <string name="how_to">എങ്ങനെ</string>
+    <string name="delete_messages">സന്ദേശങ്ങൾ ഇല്ലാതാക്കുക</string>
+    <string name="icon_descr_expand_role">കര്‍ത്തവ്യം തിരഞ്ഞെടുക്കൽ വിപുലീകരിക്കുക</string>
+    <string name="initial_member_role">പ്രാരംഭ കര്‍ത്തവ്യം</string>
+    <string name="error_changing_role">കര്‍ത്തവ്യം മാറ്റുന്നതിൽ പിശക്</string>
+    <string name="error_removing_member">അംഗത്തെ നീക്കം ചെയ്യുന്നതിൽ പിശക്</string>
+    <string name="dont_show_again">വീണ്ടും കാണിക്കരുത്</string>
+    <string name="timed_messages">അപ്രത്യക്ഷമാകുന്ന സന്ദേശങ്ങൾ</string>
+    <string name="ttl_month">%d മാസം</string>
+    <string name="ttl_hour">%d മണിക്കൂർ</string>
+    <string name="ttl_months">%d മാസങ്ങള്‍</string>
+    <string name="custom_time_unit_hours">മണിക്കൂറുകൾ</string>
+    <string name="dont_create_address">വിലാസം സൃഷ്ടിക്കരുത്</string>
+    <string name="edit_image">ചിത്രം തിരുത്തുക</string>
+    <string name="settings_experimental_features">പരീക്ഷണാത്മക സവിശേഷതകൾ</string>
+    <string name="abort_switch_receiving_address">വിലാസം മാറ്റുന്നത് നിർത്തുക</string>
+    <string name="custom_time_unit_days">ദിവസങ്ങൾ</string>
+    <string name="v4_4_disappearing_messages">അപ്രത്യക്ഷമാകുന്ന സന്ദേശങ്ങൾ</string>
+    <string name="share_text_disappears_at">ഈ സമയത്ത് അപ്രത്യക്ഷമാകുന്നു: %s</string>
+    <string name="display_name__field">പ്രദർശന നാമം:</string>
+    <string name="settings_section_title_experimenta">പരീക്ഷണാത്മകം</string>
+    <string name="service_notifications_disabled">തൽക്ഷണ അറിയിപ്പുകൾ പ്രവർത്തനരഹിതമാക്കി!</string>
+    <string name="alert_text_fragment_please_report_to_developers">ദയവായി അത് വികസിപ്പിക്കുന്നവരെ അറിയിക്കുക.</string>
+    <string name="alert_title_group_invitation_expired">ക്ഷണം കാലഹരണപ്പെട്ടു!</string>
+    <string name="notification_preview_mode_message">സന്ദേശ വാചകം</string>
+    <string name="favorite_chat">പ്രിയപ്പെട്ടത്</string>
+    <string name="mark_read">വായിച്ചു എന്ന് അടയാളപ്പെടുത്തുക</string>
+    <string name="network_settings_title">ശൃംഖലയുടെ ക്രമീകരണങ്ങൾ</string>
+    <string name="network_status">ശൃംഖലയുടെ നില</string>
+    <string name="delete_message_cannot_be_undone_warning">സന്ദേശം ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
+    <string name="join_group_button">ചേരുക</string>
+    <string name="group_preview_join_as">%s ആയി ചേരുക</string>
+    <string name="images_limit_desc">ഒരേ സമയം 10 ചിത്രങ്ങൾ മാത്രമേ അയക്കാൻ കഴിയൂ</string>
+    <string name="icon_descr_more_button">കൂടുതൽ</string>
+    <string name="mark_code_verified">പരിശോധിച്ചു എന്ന് അടയാളപ്പെടുത്തുക</string>
+    <string name="self_destruct_new_display_name">പുതിയ പ്രദർശന നാമം:</string>
+    <string name="new_member_role">പുതിയ അംഗ കർത്തവ്യം</string>
+    <string name="group_member_role_owner">ഉടമ</string>
+    <string name="group_welcome_preview">പൂര്‍വ്വദര്‍ശനം</string>
+    <string name="only_you_can_add_message_reactions">നിങ്ങൾക്ക് മാത്രമേ സന്ദേശ പ്രതികരണങ്ങൾ ചേർക്കാൻ കഴിയൂ.</string>
+    <string name="v4_5_reduced_battery_usage_descr">കൂടുതൽ മെച്ചപ്പെടുത്തലുകൾ ഉടൻ വരുന്നു!</string>
+    <string name="custom_time_unit_minutes">നിമിഷങ്ങള്‍</string>
+    <string name="custom_time_unit_months">മാസങ്ങൾ</string>
+    <string name="rcv_group_event_member_added">%1$s ക്ഷണിച്ചു</string>
+    <string name="delete_message_mark_deleted_warning">സന്ദേശം ഇല്ലാതാക്കാൻ അടയാളപ്പെടുത്തും. സ്വീകർത്താവിന്(കൾക്ക്) ഈ സന്ദേശം വെളിപ്പെടുത്താൻ കഴിയും.</string>
+    <string name="marked_deleted_description">അടയാളപ്പെടുത്തിയത് ഇല്ലാതാക്കി</string>
+    <string name="mark_unread">വായിച്ചിട്ടില്ല എന്ന് അടയാളപ്പെടുത്തുക</string>
+    <string name="feature_offered_item">%s വാഗ്ദാനം ചെയ്തു</string>
+    <string name="search_verb">തിരയുക</string>
+    <string name="la_mode_off">ഓഫാണ്</string>
+</resources>

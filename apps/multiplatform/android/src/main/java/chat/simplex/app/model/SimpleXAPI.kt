@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
@@ -27,6 +27,8 @@ import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.*
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -357,7 +359,7 @@ object ChatController {
       changeActiveUser_(toUserId, viewPwd)
     } catch (e: Exception) {
       Log.e(TAG, "Unable to set active user: ${e.stackTraceToString()}")
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_active_user_title), e.stackTraceToString())
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_active_user_title), e.stackTraceToString())
     }
   }
 
@@ -450,9 +452,9 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.UserExists
     ) {
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_duplicate_title), generalGetString(R.string.failed_to_create_user_duplicate_desc))
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
     } else {
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_title), r.details)
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_title), r.details)
     }
     Log.d(TAG, "apiCreateActiveUser: ${r.responseType} ${r.details}")
     return null
@@ -568,7 +570,7 @@ object ChatController {
     val r = sendCmd(CC.ApiGetChats(userId))
     if (r is CR.ApiChats) return r.chats
     Log.e(TAG, "failed getting the list of chats: ${r.responseType} ${r.details}")
-    AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_parse_chats_title), generalGetString(R.string.contact_developers))
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chats_title), generalGetString(MR.strings.contact_developers))
     return emptyList()
   }
 
@@ -576,7 +578,7 @@ object ChatController {
     val r = sendCmd(CC.ApiGetChat(type, id, pagination, search))
     if (r is CR.ApiChat) return r.chat
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
-    AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_parse_chat_title), generalGetString(R.string.contact_developers))
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
     return null
   }
 
@@ -587,7 +589,7 @@ object ChatController {
       is CR.NewChatItem -> r.chatItem
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiSendMessage", generalGetString(R.string.error_sending_message), r)
+          apiErrorAlert("apiSendMessage", generalGetString(MR.strings.error_sending_message), r)
         }
         null
       }
@@ -598,7 +600,7 @@ object ChatController {
     return when (val r = sendCmd(CC.ApiGetChatItemInfo(type, id, itemId))) {
       is CR.ApiChatItemInfo -> r.chatItemInfo
       else -> {
-        apiErrorAlert("apiGetChatItemInfo", generalGetString(R.string.error_loading_details), r)
+        apiErrorAlert("apiGetChatItemInfo", generalGetString(MR.strings.error_loading_details), r)
         null
       }
     }
@@ -639,7 +641,7 @@ object ChatController {
     else {
       Log.e(TAG, "getUserProtoServers bad response: ${r.responseType} ${r.details}")
       AlertManager.shared.showAlertMsg(
-        generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.error_loading_smp_servers else R.string.error_loading_xftp_servers),
+        generalGetString(if (serverProtocol == ServerProtocol.SMP) MR.strings.error_loading_smp_servers else MR.strings.error_loading_xftp_servers),
         "${r.responseType}: ${r.details}"
       )
       null
@@ -654,8 +656,8 @@ object ChatController {
       else -> {
         Log.e(TAG, "setUserProtoServers bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
-          generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.error_saving_smp_servers else R.string.error_saving_xftp_servers),
-          generalGetString(if (serverProtocol == ServerProtocol.SMP) R.string.ensure_smp_server_address_are_correct_format_and_unique else R.string.ensure_xftp_server_address_are_correct_format_and_unique)
+          generalGetString(if (serverProtocol == ServerProtocol.SMP) MR.strings.error_saving_smp_servers else MR.strings.error_saving_xftp_servers),
+          generalGetString(if (serverProtocol == ServerProtocol.SMP) MR.strings.ensure_smp_server_address_are_correct_format_and_unique else MR.strings.ensure_xftp_server_address_are_correct_format_and_unique)
         )
         false
       }
@@ -702,7 +704,7 @@ object ChatController {
       else -> {
         Log.e(TAG, "apiSetNetworkConfig bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.error_setting_network_config),
+          generalGetString(MR.strings.error_setting_network_config),
           "${r.responseType}: ${r.details}"
         )
         false
@@ -738,28 +740,28 @@ object ChatController {
   suspend fun apiSwitchContact(contactId: Long): ConnectionStats? {
     val r = sendCmd(CC.APISwitchContact(contactId))
     if (r is CR.ContactSwitchStarted) return r.connectionStats
-    apiErrorAlert("apiSwitchContact", generalGetString(R.string.error_changing_address), r)
+    apiErrorAlert("apiSwitchContact", generalGetString(MR.strings.error_changing_address), r)
     return null
   }
 
   suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long): ConnectionStats? {
     val r = sendCmd(CC.APISwitchGroupMember(groupId, groupMemberId))
     if (r is CR.GroupMemberSwitchStarted) return r.connectionStats
-    apiErrorAlert("apiSwitchGroupMember", generalGetString(R.string.error_changing_address), r)
+    apiErrorAlert("apiSwitchGroupMember", generalGetString(MR.strings.error_changing_address), r)
     return null
   }
 
   suspend fun apiAbortSwitchContact(contactId: Long): ConnectionStats? {
     val r = sendCmd(CC.APIAbortSwitchContact(contactId))
     if (r is CR.ContactSwitchAborted) return r.connectionStats
-    apiErrorAlert("apiAbortSwitchContact", generalGetString(R.string.error_aborting_address_change), r)
+    apiErrorAlert("apiAbortSwitchContact", generalGetString(MR.strings.error_aborting_address_change), r)
     return null
   }
 
   suspend fun apiAbortSwitchGroupMember(groupId: Long, groupMemberId: Long): ConnectionStats? {
     val r = sendCmd(CC.APIAbortSwitchGroupMember(groupId, groupMemberId))
     if (r is CR.GroupMemberSwitchAborted) return r.connectionStats
-    apiErrorAlert("apiAbortSwitchGroupMember", generalGetString(R.string.error_aborting_address_change), r)
+    apiErrorAlert("apiAbortSwitchGroupMember", generalGetString(MR.strings.error_aborting_address_change), r)
     return null
   }
 
@@ -801,7 +803,7 @@ object ChatController {
       is CR.Invitation -> r.connReqInvitation
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiAddContact", generalGetString(R.string.connection_error), r)
+          apiErrorAlert("apiAddContact", generalGetString(MR.strings.connection_error), r)
         }
         null
       }
@@ -818,16 +820,16 @@ object ChatController {
       r is CR.SentConfirmation || r is CR.SentInvitation -> return true
       r is CR.ContactAlreadyExists -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.contact_already_exists),
-          String.format(generalGetString(R.string.you_are_already_connected_to_vName_via_this_link), r.contact.displayName)
+          generalGetString(MR.strings.contact_already_exists),
+          String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), r.contact.displayName)
         )
         return false
       }
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
           && r.chatError.errorType is ChatErrorType.InvalidConnReq -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.invalid_connection_link),
-          generalGetString(R.string.please_check_correct_link_and_maybe_ask_for_a_new_one)
+          generalGetString(MR.strings.invalid_connection_link),
+          generalGetString(MR.strings.please_check_correct_link_and_maybe_ask_for_a_new_one)
         )
         return false
       }
@@ -835,14 +837,14 @@ object ChatController {
           && r.chatError.agentError is AgentErrorType.SMP
           && r.chatError.agentError.smpErr is SMPErrorType.AUTH -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.connection_error_auth),
-          generalGetString(R.string.connection_error_auth_desc)
+          generalGetString(MR.strings.connection_error_auth),
+          generalGetString(MR.strings.connection_error_auth_desc)
         )
         return false
       }
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiConnect", generalGetString(R.string.connection_error), r)
+          apiErrorAlert("apiConnect", generalGetString(MR.strings.connection_error), r)
         }
         return false
       }
@@ -857,10 +859,10 @@ object ChatController {
       r is CR.GroupDeletedUser && type == ChatType.Group -> return true
       else -> {
         val titleId = when (type) {
-          ChatType.Direct -> R.string.error_deleting_contact
-          ChatType.Group -> R.string.error_deleting_group
-          ChatType.ContactRequest -> R.string.error_deleting_contact_request
-          ChatType.ContactConnection -> R.string.error_deleting_pending_contact_connection
+          ChatType.Direct -> MR.strings.error_deleting_contact
+          ChatType.Group -> MR.strings.error_deleting_group
+          ChatType.ContactRequest -> MR.strings.error_deleting_contact_request
+          ChatType.ContactConnection -> MR.strings.error_deleting_pending_contact_connection
         }
         apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
       }
@@ -929,7 +931,7 @@ object ChatController {
       is CR.UserContactLinkCreated -> r.connReqContact
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiCreateUserAddress", generalGetString(R.string.error_creating_address), r)
+          apiErrorAlert("apiCreateUserAddress", generalGetString(MR.strings.error_creating_address), r)
         }
         null
       }
@@ -976,14 +978,14 @@ object ChatController {
           && r.chatError.agentError is AgentErrorType.SMP
           && r.chatError.agentError.smpErr is SMPErrorType.AUTH -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.connection_error_auth),
-          generalGetString(R.string.sender_may_have_deleted_the_connection_request)
+          generalGetString(MR.strings.connection_error_auth),
+          generalGetString(MR.strings.sender_may_have_deleted_the_connection_request)
         )
         null
       }
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiAcceptContactRequest", generalGetString(R.string.error_accepting_contact_request), r)
+          apiErrorAlert("apiAcceptContactRequest", generalGetString(MR.strings.error_accepting_contact_request), r)
         }
         null
       }
@@ -1056,8 +1058,8 @@ object ChatController {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.cannot_receive_file),
-          generalGetString(R.string.sender_cancelled_file_transfer)
+          generalGetString(MR.strings.cannot_receive_file),
+          generalGetString(MR.strings.sender_cancelled_file_transfer)
         )
         null
       }
@@ -1068,7 +1070,7 @@ object ChatController {
           ) {
             Log.d(TAG, "apiReceiveFile ignoring FileAlreadyReceiving error")
           } else {
-            apiErrorAlert("apiReceiveFile", generalGetString(R.string.error_receiving_file), r)
+            apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
           }
         }
         null
@@ -1110,7 +1112,7 @@ object ChatController {
       is CR.SentGroupInvitation -> r.member
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiAddMember", generalGetString(R.string.error_adding_members), r)
+          apiErrorAlert("apiAddMember", generalGetString(MR.strings.error_adding_members), r)
         }
         null
       }
@@ -1127,15 +1129,15 @@ object ChatController {
         suspend fun deleteGroup() { if (apiDeleteChat(ChatType.Group, groupId)) { chatModel.removeChat("#$groupId") } }
         if (e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH) {
           deleteGroup()
-          AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_group_invitation_expired), generalGetString(R.string.alert_message_group_invitation_expired))
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.alert_title_group_invitation_expired), generalGetString(MR.strings.alert_message_group_invitation_expired))
         } else if (e is ChatError.ChatErrorStore && e.storeError is StoreError.GroupNotFound) {
           deleteGroup()
-          AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_no_group), generalGetString(R.string.alert_message_no_group))
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.alert_title_no_group), generalGetString(MR.strings.alert_message_no_group))
         } else if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiJoinGroup", generalGetString(R.string.error_joining_group), r)
+          apiErrorAlert("apiJoinGroup", generalGetString(MR.strings.error_joining_group), r)
         }
       }
-      else -> apiErrorAlert("apiJoinGroup", generalGetString(R.string.error_joining_group), r)
+      else -> apiErrorAlert("apiJoinGroup", generalGetString(MR.strings.error_joining_group), r)
     }
   }
 
@@ -1144,7 +1146,7 @@ object ChatController {
       is CR.UserDeletedMember -> r.member
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiRemoveMember", generalGetString(R.string.error_removing_member), r)
+          apiErrorAlert("apiRemoveMember", generalGetString(MR.strings.error_removing_member), r)
         }
         null
       }
@@ -1155,7 +1157,7 @@ object ChatController {
       is CR.MemberRoleUser -> r.member
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiMemberRole", generalGetString(R.string.error_changing_role), r)
+          apiErrorAlert("apiMemberRole", generalGetString(MR.strings.error_changing_role), r)
         }
         throw Exception("failed to change member role: ${r.responseType} ${r.details}")
       }
@@ -1179,13 +1181,13 @@ object ChatController {
     return when (val r = sendCmd(CC.ApiUpdateGroupProfile(groupId, groupProfile))) {
       is CR.GroupUpdated -> r.toGroup
       is CR.ChatCmdError -> {
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_saving_group_profile), "$r.chatError")
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_group_profile), "$r.chatError")
         null
       }
       else -> {
         Log.e(TAG, "apiUpdateGroup bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.error_saving_group_profile),
+          generalGetString(MR.strings.error_saving_group_profile),
           "${r.responseType}: ${r.details}"
         )
         null
@@ -1198,7 +1200,7 @@ object ChatController {
       is CR.GroupLinkCreated -> r.connReqContact to r.memberRole
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiCreateGroupLink", generalGetString(R.string.error_creating_link_for_group), r)
+          apiErrorAlert("apiCreateGroupLink", generalGetString(MR.strings.error_creating_link_for_group), r)
         }
         null
       }
@@ -1210,7 +1212,7 @@ object ChatController {
       is CR.GroupLink -> r.connReqContact to r.memberRole
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiGroupLinkMemberRole", generalGetString(R.string.error_updating_link_for_group), r)
+          apiErrorAlert("apiGroupLinkMemberRole", generalGetString(MR.strings.error_updating_link_for_group), r)
         }
         null
       }
@@ -1222,7 +1224,7 @@ object ChatController {
       is CR.GroupLinkDeleted -> true
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiDeleteGroupLink", generalGetString(R.string.error_deleting_link_for_group), r)
+          apiErrorAlert("apiDeleteGroupLink", generalGetString(MR.strings.error_deleting_link_for_group), r)
         }
         false
       }
@@ -1270,8 +1272,8 @@ object ChatController {
           && r.chatError.agentError is AgentErrorType.BROKER
           && r.chatError.agentError.brokerErr is BrokerErrorType.TIMEOUT -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.connection_timeout),
-          String.format(generalGetString(R.string.network_error_desc), serverHostname(r.chatError.agentError.brokerAddress))
+          generalGetString(MR.strings.connection_timeout),
+          String.format(generalGetString(MR.strings.network_error_desc), serverHostname(r.chatError.agentError.brokerAddress))
         )
         true
       }
@@ -1279,8 +1281,8 @@ object ChatController {
           && r.chatError.agentError is AgentErrorType.BROKER
           && r.chatError.agentError.brokerErr is BrokerErrorType.NETWORK -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.connection_error),
-          String.format(generalGetString(R.string.network_error_desc), serverHostname(r.chatError.agentError.brokerAddress))
+          generalGetString(MR.strings.connection_error),
+          String.format(generalGetString(MR.strings.network_error_desc), serverHostname(r.chatError.agentError.brokerAddress))
         )
         true
       }
@@ -1429,7 +1431,7 @@ object ChatController {
             r.user,
             cInfo.id,
             cInfo.displayName,
-            generalGetString(if (r.toChatItem != null) R.string.marked_deleted_description else R.string.deleted_description)
+            generalGetString(if (r.toChatItem != null) MR.strings.marked_deleted_description else MR.strings.deleted_description)
           )
         }
         if (r.toChatItem == null) {
@@ -1707,10 +1709,10 @@ object ChatController {
           Icon(
             painterResource(R.drawable.ic_bolt),
             contentDescription =
-            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
+            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
           )
           Text(
-            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
+            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
             fontWeight = FontWeight.Bold
           )
         }
@@ -1718,16 +1720,16 @@ object ChatController {
       text = {
         Column {
           Text(
-            if (mode == NotificationsMode.SERVICE) annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(R.string.periodic_notifications_desc),
+            if (mode == NotificationsMode.SERVICE) annotatedStringResource(MR.strings.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(MR.strings.periodic_notifications_desc),
             Modifier.padding(bottom = 8.dp)
           )
           Text(
-            annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown)
+            annotatedStringResource(MR.strings.it_can_disabled_via_settings_notifications_still_shown)
           )
         }
       },
       confirmButton = {
-        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
       }
     )
   }
@@ -1744,10 +1746,10 @@ object ChatController {
           Icon(
             painterResource(R.drawable.ic_bolt),
             contentDescription =
-            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
+            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
           )
           Text(
-            if (mode == NotificationsMode.SERVICE) stringResource(R.string.service_notifications) else stringResource(R.string.periodic_notifications),
+            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.service_notifications) else stringResource(MR.strings.periodic_notifications),
             fontWeight = FontWeight.Bold
           )
         }
@@ -1755,14 +1757,14 @@ object ChatController {
       text = {
         Column {
           Text(
-            if (mode == NotificationsMode.SERVICE) annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(R.string.periodic_notifications_desc),
+            if (mode == NotificationsMode.SERVICE) annotatedStringResource(MR.strings.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(MR.strings.periodic_notifications_desc),
             Modifier.padding(bottom = 8.dp)
           )
-          Text(annotatedStringResource(R.string.turn_off_battery_optimization))
+          Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
         }
       },
       confirmButton = {
-        TextButton(onClick = ignoreOptimization) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.ok)) }
       }
     )
   }
@@ -1775,10 +1777,10 @@ object ChatController {
           Icon(
             painterResource(R.drawable.ic_bolt),
             contentDescription =
-            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
+            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
           )
           Text(
-            if (mode == NotificationsMode.SERVICE) stringResource(R.string.service_notifications_disabled) else stringResource(R.string.periodic_notifications_disabled),
+            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.service_notifications_disabled) else stringResource(MR.strings.periodic_notifications_disabled),
             fontWeight = FontWeight.Bold
           )
         }
@@ -1786,13 +1788,13 @@ object ChatController {
       text = {
         Column {
           Text(
-            annotatedStringResource(R.string.turning_off_service_and_periodic),
+            annotatedStringResource(MR.strings.turning_off_service_and_periodic),
             Modifier.padding(bottom = 8.dp)
           )
         }
       },
       confirmButton = {
-        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
       }
     )
   }
@@ -2329,16 +2331,16 @@ enum class ProtocolTestStep {
   @SerialName("deleteFile") DeleteFile;
 
   val text: String get() = when (this) {
-    Connect -> generalGetString(R.string.smp_server_test_connect)
-    Disconnect -> generalGetString(R.string.smp_server_test_disconnect)
-    CreateQueue -> generalGetString(R.string.smp_server_test_create_queue)
-    SecureQueue -> generalGetString(R.string.smp_server_test_secure_queue)
-    DeleteQueue -> generalGetString(R.string.smp_server_test_delete_queue)
-    CreateFile -> generalGetString(R.string.smp_server_test_create_file)
-    UploadFile -> generalGetString(R.string.smp_server_test_upload_file)
-    DownloadFile -> generalGetString(R.string.smp_server_test_download_file)
-    CompareFile -> generalGetString(R.string.smp_server_test_compare_file)
-    DeleteFile -> generalGetString(R.string.smp_server_test_delete_file)
+    Connect -> generalGetString(MR.strings.smp_server_test_connect)
+    Disconnect -> generalGetString(MR.strings.smp_server_test_disconnect)
+    CreateQueue -> generalGetString(MR.strings.smp_server_test_create_queue)
+    SecureQueue -> generalGetString(MR.strings.smp_server_test_secure_queue)
+    DeleteQueue -> generalGetString(MR.strings.smp_server_test_delete_queue)
+    CreateFile -> generalGetString(MR.strings.smp_server_test_create_file)
+    UploadFile -> generalGetString(MR.strings.smp_server_test_upload_file)
+    DownloadFile -> generalGetString(MR.strings.smp_server_test_download_file)
+    CompareFile -> generalGetString(MR.strings.smp_server_test_compare_file)
+    DeleteFile -> generalGetString(MR.strings.smp_server_test_delete_file)
   }
 }
 
@@ -2357,14 +2359,14 @@ data class ProtocolTestFailure(
   }
 
   val localizedDescription: String get() {
-    val err = String.format(generalGetString(R.string.error_smp_test_failed_at_step), testStep.text)
+    val err = String.format(generalGetString(MR.strings.error_smp_test_failed_at_step), testStep.text)
     return when  {
       testError is AgentErrorType.SMP && testError.smpErr is SMPErrorType.AUTH ->
-        err + " " + generalGetString(R.string.error_smp_test_server_auth)
+        err + " " + generalGetString(MR.strings.error_smp_test_server_auth)
       testError is AgentErrorType.XFTP && testError.xftpErr is XFTPErrorType.AUTH ->
-        err + " " + generalGetString(R.string.error_xftp_test_server_auth)
+        err + " " + generalGetString(MR.strings.error_xftp_test_server_auth)
       testError is AgentErrorType.BROKER && testError.brokerErr is BrokerErrorType.NETWORK ->
-        err + " " + generalGetString(R.string.error_smp_test_certificate)
+        err + " " + generalGetString(MR.strings.error_smp_test_certificate)
       else -> err
     }
   }
@@ -2629,12 +2631,12 @@ sealed class CustomTimeUnit {
   val text: String
     get() =
       when (this) {
-        Second -> generalGetString(R.string.custom_time_unit_seconds)
-        Minute -> generalGetString(R.string.custom_time_unit_minutes)
-        Hour -> generalGetString(R.string.custom_time_unit_hours)
-        Day -> generalGetString(R.string.custom_time_unit_days)
-        Week -> generalGetString(R.string.custom_time_unit_weeks)
-        Month -> generalGetString(R.string.custom_time_unit_months)
+        Second -> generalGetString(MR.strings.custom_time_unit_seconds)
+        Minute -> generalGetString(MR.strings.custom_time_unit_minutes)
+        Hour -> generalGetString(MR.strings.custom_time_unit_hours)
+        Day -> generalGetString(MR.strings.custom_time_unit_days)
+        Week -> generalGetString(MR.strings.custom_time_unit_weeks)
+        Month -> generalGetString(MR.strings.custom_time_unit_months)
       }
 
   companion object {
@@ -2657,24 +2659,24 @@ sealed class CustomTimeUnit {
     fun toText(seconds: Int): String {
       val (unit, value) = toTimeUnit(seconds)
       return when (unit) {
-        Second -> String.format(generalGetString(R.string.ttl_sec), value)
-        Minute -> String.format(generalGetString(R.string.ttl_min), value)
-        Hour -> if (value == 1) String.format(generalGetString(R.string.ttl_hour), 1) else String.format(generalGetString(R.string.ttl_hours), value)
-        Day -> if (value == 1) String.format(generalGetString(R.string.ttl_day), 1) else String.format(generalGetString(R.string.ttl_days), value)
-        Week -> if (value == 1) String.format(generalGetString(R.string.ttl_week), 1) else String.format(generalGetString(R.string.ttl_weeks), value)
-        Month -> if (value == 1) String.format(generalGetString(R.string.ttl_month), 1) else String.format(generalGetString(R.string.ttl_months), value)
+        Second -> String.format(generalGetString(MR.strings.ttl_sec), value)
+        Minute -> String.format(generalGetString(MR.strings.ttl_min), value)
+        Hour -> if (value == 1) String.format(generalGetString(MR.strings.ttl_hour), 1) else String.format(generalGetString(MR.strings.ttl_hours), value)
+        Day -> if (value == 1) String.format(generalGetString(MR.strings.ttl_day), 1) else String.format(generalGetString(MR.strings.ttl_days), value)
+        Week -> if (value == 1) String.format(generalGetString(MR.strings.ttl_week), 1) else String.format(generalGetString(MR.strings.ttl_weeks), value)
+        Month -> if (value == 1) String.format(generalGetString(MR.strings.ttl_month), 1) else String.format(generalGetString(MR.strings.ttl_months), value)
       }
     }
 
     fun toShortText(seconds: Int): String {
       val (unit, value) = toTimeUnit(seconds)
       return when (unit) {
-        Second -> String.format(generalGetString(R.string.ttl_s), value)
-        Minute -> String.format(generalGetString(R.string.ttl_m), value)
-        Hour -> String.format(generalGetString(R.string.ttl_h), value)
-        Day -> String.format(generalGetString(R.string.ttl_d), value)
-        Week -> String.format(generalGetString(R.string.ttl_w), value)
-        Month -> String.format(generalGetString(R.string.ttl_mth), value)
+        Second -> String.format(generalGetString(MR.strings.ttl_s), value)
+        Minute -> String.format(generalGetString(MR.strings.ttl_m), value)
+        Hour -> String.format(generalGetString(MR.strings.ttl_h), value)
+        Day -> String.format(generalGetString(MR.strings.ttl_d), value)
+        Week -> String.format(generalGetString(MR.strings.ttl_w), value)
+        Month -> String.format(generalGetString(MR.strings.ttl_mth), value)
       }
     }
   }
@@ -2682,20 +2684,20 @@ sealed class CustomTimeUnit {
 
 fun timeText(seconds: Int?): String {
   if (seconds == null) {
-    return generalGetString(R.string.feature_off)
+    return generalGetString(MR.strings.feature_off)
   }
   if (seconds == 0) {
-    String.format(generalGetString(R.string.ttl_sec), 0)
+    String.format(generalGetString(MR.strings.ttl_sec), 0)
   }
   return CustomTimeUnit.toText(seconds)
 }
 
 fun shortTimeText(seconds: Int?): String {
   if (seconds == null) {
-    return generalGetString(R.string.feature_off)
+    return generalGetString(MR.strings.feature_off)
   }
   if (seconds == 0) {
-    String.format(generalGetString(R.string.ttl_s), 0)
+    String.format(generalGetString(MR.strings.ttl_s), 0)
   }
   return CustomTimeUnit.toShortText(seconds)
 }
@@ -2768,10 +2770,10 @@ data class FeatureEnabled(
 ) {
   val text: String
     get() = when {
-      forUser && forContact -> generalGetString(R.string.feature_enabled)
-      forUser -> generalGetString(R.string.feature_enabled_for_you)
-      forContact -> generalGetString(R.string.feature_enabled_for_contact)
-      else -> generalGetString(R.string.feature_off)
+      forUser && forContact -> generalGetString(MR.strings.feature_enabled)
+      forUser -> generalGetString(MR.strings.feature_enabled_for_you)
+      forContact -> generalGetString(MR.strings.feature_enabled_for_contact)
+      else -> generalGetString(MR.strings.feature_off)
     }
 
   val iconColor: Color
@@ -2845,11 +2847,11 @@ enum class ChatFeature: Feature {
 
   override val text: String
     get() = when(this) {
-      TimedMessages -> generalGetString(R.string.timed_messages)
-      FullDelete -> generalGetString(R.string.full_deletion)
-      Reactions -> generalGetString(R.string.message_reactions)
-      Voice -> generalGetString(R.string.voice_messages)
-      Calls -> generalGetString(R.string.audio_video_calls)
+      TimedMessages -> generalGetString(MR.strings.timed_messages)
+      FullDelete -> generalGetString(MR.strings.full_deletion)
+      Reactions -> generalGetString(MR.strings.message_reactions)
+      Voice -> generalGetString(MR.strings.voice_messages)
+      Calls -> generalGetString(MR.strings.audio_video_calls)
     }
 
   val icon: Painter
@@ -2873,63 +2875,63 @@ enum class ChatFeature: Feature {
   fun allowDescription(allowed: FeatureAllowed): String =
     when (this) {
       TimedMessages -> when (allowed) {
-        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_send_disappearing_messages)
-        FeatureAllowed.YES -> generalGetString(R.string.allow_disappearing_messages_only_if)
-        FeatureAllowed.NO -> generalGetString(R.string.prohibit_sending_disappearing_messages)
+        FeatureAllowed.ALWAYS -> generalGetString(MR.strings.allow_your_contacts_to_send_disappearing_messages)
+        FeatureAllowed.YES -> generalGetString(MR.strings.allow_disappearing_messages_only_if)
+        FeatureAllowed.NO -> generalGetString(MR.strings.prohibit_sending_disappearing_messages)
       }
       FullDelete -> when (allowed) {
-        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_irreversibly_delete)
-        FeatureAllowed.YES -> generalGetString(R.string.allow_irreversible_message_deletion_only_if)
-        FeatureAllowed.NO -> generalGetString(R.string.contacts_can_mark_messages_for_deletion)
+        FeatureAllowed.ALWAYS -> generalGetString(MR.strings.allow_your_contacts_irreversibly_delete)
+        FeatureAllowed.YES -> generalGetString(MR.strings.allow_irreversible_message_deletion_only_if)
+        FeatureAllowed.NO -> generalGetString(MR.strings.contacts_can_mark_messages_for_deletion)
       }
       Reactions -> when (allowed) {
-        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_adding_message_reactions)
-        FeatureAllowed.YES -> generalGetString(R.string.allow_message_reactions_only_if)
-        FeatureAllowed.NO -> generalGetString(R.string.prohibit_message_reactions)
+        FeatureAllowed.ALWAYS -> generalGetString(MR.strings.allow_your_contacts_adding_message_reactions)
+        FeatureAllowed.YES -> generalGetString(MR.strings.allow_message_reactions_only_if)
+        FeatureAllowed.NO -> generalGetString(MR.strings.prohibit_message_reactions)
       }
         Voice -> when (allowed) {
-        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_send_voice_messages)
-        FeatureAllowed.YES -> generalGetString(R.string.allow_voice_messages_only_if)
-        FeatureAllowed.NO -> generalGetString(R.string.prohibit_sending_voice_messages)
+        FeatureAllowed.ALWAYS -> generalGetString(MR.strings.allow_your_contacts_to_send_voice_messages)
+        FeatureAllowed.YES -> generalGetString(MR.strings.allow_voice_messages_only_if)
+        FeatureAllowed.NO -> generalGetString(MR.strings.prohibit_sending_voice_messages)
       }
       Calls -> when (allowed) {
-        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_call)
-        FeatureAllowed.YES -> generalGetString(R.string.allow_calls_only_if)
-        FeatureAllowed.NO -> generalGetString(R.string.prohibit_calls)
+        FeatureAllowed.ALWAYS -> generalGetString(MR.strings.allow_your_contacts_to_call)
+        FeatureAllowed.YES -> generalGetString(MR.strings.allow_calls_only_if)
+        FeatureAllowed.NO -> generalGetString(MR.strings.prohibit_calls)
       }
     }
 
   fun enabledDescription(enabled: FeatureEnabled): String =
     when (this) {
       TimedMessages -> when {
-        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_send_disappearing)
-        enabled.forUser -> generalGetString(R.string.only_you_can_send_disappearing)
-        enabled.forContact -> generalGetString(R.string.only_your_contact_can_send_disappearing)
-        else -> generalGetString(R.string.disappearing_prohibited_in_this_chat)
+        enabled.forUser && enabled.forContact -> generalGetString(MR.strings.both_you_and_your_contact_can_send_disappearing)
+        enabled.forUser -> generalGetString(MR.strings.only_you_can_send_disappearing)
+        enabled.forContact -> generalGetString(MR.strings.only_your_contact_can_send_disappearing)
+        else -> generalGetString(MR.strings.disappearing_prohibited_in_this_chat)
       }
       FullDelete -> when {
-        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contacts_can_delete)
-        enabled.forUser -> generalGetString(R.string.only_you_can_delete_messages)
-        enabled.forContact -> generalGetString(R.string.only_your_contact_can_delete)
-        else -> generalGetString(R.string.message_deletion_prohibited)
+        enabled.forUser && enabled.forContact -> generalGetString(MR.strings.both_you_and_your_contacts_can_delete)
+        enabled.forUser -> generalGetString(MR.strings.only_you_can_delete_messages)
+        enabled.forContact -> generalGetString(MR.strings.only_your_contact_can_delete)
+        else -> generalGetString(MR.strings.message_deletion_prohibited)
       }
       Reactions -> when {
-        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_add_message_reactions)
-        enabled.forUser -> generalGetString(R.string.only_you_can_add_message_reactions)
-        enabled.forContact -> generalGetString(R.string.only_your_contact_can_add_message_reactions)
-        else -> generalGetString(R.string.message_reactions_prohibited_in_this_chat)
+        enabled.forUser && enabled.forContact -> generalGetString(MR.strings.both_you_and_your_contact_can_add_message_reactions)
+        enabled.forUser -> generalGetString(MR.strings.only_you_can_add_message_reactions)
+        enabled.forContact -> generalGetString(MR.strings.only_your_contact_can_add_message_reactions)
+        else -> generalGetString(MR.strings.message_reactions_prohibited_in_this_chat)
       }
       Voice -> when {
-        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_send_voice)
-        enabled.forUser -> generalGetString(R.string.only_you_can_send_voice)
-        enabled.forContact -> generalGetString(R.string.only_your_contact_can_send_voice)
-        else -> generalGetString(R.string.voice_prohibited_in_this_chat)
+        enabled.forUser && enabled.forContact -> generalGetString(MR.strings.both_you_and_your_contact_can_send_voice)
+        enabled.forUser -> generalGetString(MR.strings.only_you_can_send_voice)
+        enabled.forContact -> generalGetString(MR.strings.only_your_contact_can_send_voice)
+        else -> generalGetString(MR.strings.voice_prohibited_in_this_chat)
       }
       Calls -> when {
-        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_make_calls)
-        enabled.forUser -> generalGetString(R.string.only_you_can_make_calls)
-        enabled.forContact -> generalGetString(R.string.only_your_contact_can_make_calls)
-        else -> generalGetString(R.string.calls_prohibited_with_this_contact)
+        enabled.forUser && enabled.forContact -> generalGetString(MR.strings.both_you_and_your_contact_can_make_calls)
+        enabled.forUser -> generalGetString(MR.strings.only_you_can_make_calls)
+        enabled.forContact -> generalGetString(MR.strings.only_your_contact_can_make_calls)
+        else -> generalGetString(MR.strings.calls_prohibited_with_this_contact)
       }
     }
 }
@@ -2950,12 +2952,12 @@ enum class GroupFeature: Feature {
 
   override val text: String
     get() = when(this) {
-      TimedMessages -> generalGetString(R.string.timed_messages)
-      DirectMessages -> generalGetString(R.string.direct_messages)
-      FullDelete -> generalGetString(R.string.full_deletion)
-      Reactions -> generalGetString(R.string.message_reactions)
-      Voice -> generalGetString(R.string.voice_messages)
-      Files -> generalGetString(R.string.files_and_media)
+      TimedMessages -> generalGetString(MR.strings.timed_messages)
+      DirectMessages -> generalGetString(MR.strings.direct_messages)
+      FullDelete -> generalGetString(MR.strings.full_deletion)
+      Reactions -> generalGetString(MR.strings.message_reactions)
+      Voice -> generalGetString(MR.strings.voice_messages)
+      Files -> generalGetString(MR.strings.files_and_media)
     }
 
   val icon: Painter
@@ -2982,55 +2984,55 @@ enum class GroupFeature: Feature {
     if (canEdit) {
       when(this) {
         TimedMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_disappearing)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_disappearing)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_disappearing)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_disappearing)
         }
         DirectMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_direct_messages)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_direct_messages)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_direct_messages)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_direct_messages)
         }
         FullDelete -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_delete_messages)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_deletion)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_delete_messages)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_message_deletion)
         }
         Reactions -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_message_reactions)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_reactions_group)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_message_reactions)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_message_reactions_group)
         }
         Voice -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_voice)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_voice)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_voice)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_voice)
         }
         Files -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_files)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_files)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_files)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_files)
         }
       }
     } else {
       when(this) {
         TimedMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_disappearing)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.disappearing_messages_are_prohibited)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_disappearing)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disappearing_messages_are_prohibited)
         }
         DirectMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_dms)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.direct_messages_are_prohibited_in_chat)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_dms)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.direct_messages_are_prohibited_in_chat)
         }
         FullDelete -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_delete)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.message_deletion_prohibited_in_chat)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_delete)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.message_deletion_prohibited_in_chat)
         }
         Reactions -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_add_message_reactions)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.message_reactions_are_prohibited)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_add_message_reactions)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.message_reactions_are_prohibited)
         }
         Voice -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_voice)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.voice_messages_are_prohibited)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_voice)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.voice_messages_are_prohibited)
         }
         Files -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_files)
-          GroupFeatureEnabled.OFF -> generalGetString(R.string.files_are_prohibited_in_group)
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_files)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.files_are_prohibited_in_group)
         }
       }
     }
@@ -3056,10 +3058,10 @@ sealed class ContactFeatureAllowed {
     }
   val text: String
     get() = when (this) {
-      is UserDefault -> String.format(generalGetString(R.string.chat_preferences_default), default.text)
-      is Always -> generalGetString(R.string.chat_preferences_always)
-      is Yes -> generalGetString(R.string.chat_preferences_yes)
-      is No -> generalGetString(R.string.chat_preferences_no)
+      is UserDefault -> String.format(generalGetString(MR.strings.chat_preferences_default), default.text)
+      is Always -> generalGetString(MR.strings.chat_preferences_always)
+      is Yes -> generalGetString(MR.strings.chat_preferences_yes)
+      is No -> generalGetString(MR.strings.chat_preferences_no)
     }
 }
 
@@ -3132,9 +3134,9 @@ enum class FeatureAllowed {
 
   val text: String
     get() = when(this) {
-      ALWAYS -> generalGetString(R.string.chat_preferences_always)
-      YES -> generalGetString(R.string.chat_preferences_yes)
-      NO -> generalGetString(R.string.chat_preferences_no)
+      ALWAYS -> generalGetString(MR.strings.chat_preferences_always)
+      YES -> generalGetString(MR.strings.chat_preferences_yes)
+      NO -> generalGetString(MR.strings.chat_preferences_no)
     }
 }
 
@@ -3212,8 +3214,8 @@ enum class GroupFeatureEnabled {
 
   val text: String
     get() = when (this) {
-      ON -> generalGetString(R.string.chat_preferences_on)
-      OFF -> generalGetString(R.string.chat_preferences_off)
+      ON -> generalGetString(MR.strings.chat_preferences_on)
+      OFF -> generalGetString(MR.strings.chat_preferences_off)
     }
 
   val iconColor: Color
@@ -3656,7 +3658,7 @@ sealed class CR {
     is Invalid -> str
   }
 
-  fun noDetails(): String ="${responseType}: " + generalGetString(R.string.no_details)
+  fun noDetails(): String ="${responseType}: " + generalGetString(MR.strings.no_details)
 
   private fun withUser(u: User?, s: String): String = if (u != null) "userId: ${u.userId}\n$s" else s
 }

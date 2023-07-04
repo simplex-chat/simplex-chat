@@ -18,13 +18,14 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -33,7 +34,7 @@ fun SearchTextField(
   modifier: Modifier,
   alwaysVisible: Boolean,
   searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) },
-  placeholder: String = stringResource(android.R.string.search_go),
+  placeholder: String = stringResource(MR.strings.search_verb),
   onValueChange: (String) -> Unit
 ) {
   val focusRequester = remember { FocusRequester() }
@@ -103,7 +104,7 @@ fun SearchTextField(
             searchText.value = TextFieldValue("");
             onValueChange("")
           }) {
-            Icon(painterResource(R.drawable.ic_close), stringResource(R.string.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
+            Icon(painterResource(R.drawable.ic_close), stringResource(MR.strings.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
           }
         }} else null,
         singleLine = true,

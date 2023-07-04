@@ -11,13 +11,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatInfo
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.res.MR
 
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
@@ -31,7 +32,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
 fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   Box(Modifier.size(size)) {
     Icon(
-      painterResource(R.drawable.ic_theater_comedy_filled), stringResource(R.string.incognito),
+      painterResource(R.drawable.ic_theater_comedy_filled), stringResource(MR.strings.incognito),
       modifier = Modifier.size(size).padding(size / 12),
       iconColor
     )
@@ -55,14 +56,14 @@ fun ProfileImage(
       if (iconToReplace != null) {
         Icon(
           iconToReplace,
-          contentDescription = stringResource(R.string.icon_descr_profile_image_placeholder),
+          contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
           modifier = Modifier.fillMaxSize()
         )
       } else {
         Icon(
           painterResource(icon),
-          contentDescription = stringResource(R.string.icon_descr_profile_image_placeholder),
+          contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
           modifier = Modifier.fillMaxSize()
         )
@@ -71,7 +72,7 @@ fun ProfileImage(
       val imageBitmap = base64ToBitmap(image).asImageBitmap()
       Image(
         imageBitmap,
-        stringResource(R.string.image_descr_profile_image),
+        stringResource(MR.strings.image_descr_profile_image),
         contentScale = ContentScale.Crop,
         modifier = Modifier.size(size).padding(size / 12).clip(CircleShape)
       )

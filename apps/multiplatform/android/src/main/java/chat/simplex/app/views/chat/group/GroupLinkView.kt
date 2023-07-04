@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
@@ -19,6 +19,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
+import chat.simplex.res.MR
 
 @Composable
 fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?, memberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit) {
@@ -64,9 +65,9 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
     },
     deleteLink = {
       AlertManager.shared.showAlertDialog(
-        title = generalGetString(R.string.delete_link_question),
-        text = generalGetString(R.string.all_group_members_will_remain_connected),
-        confirmText = generalGetString(R.string.delete_verb),
+        title = generalGetString(MR.strings.delete_link_question),
+        text = generalGetString(MR.strings.all_group_members_will_remain_connected),
+        confirmText = generalGetString(MR.strings.delete_verb),
         onConfirm = {
           withApi {
             val r = chatModel.controller.apiDeleteGroupLink(groupInfo.groupId)
@@ -100,9 +101,9 @@ fun GroupLinkLayout(
     Modifier
       .verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.group_link))
+    AppBarTitle(stringResource(MR.strings.group_link))
     Text(
-      stringResource(R.string.you_can_share_group_link_anybody_will_be_able_to_connect),
+      stringResource(MR.strings.you_can_share_group_link_anybody_will_be_able_to_connect),
       Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 12.dp),
       lineHeight = 22.sp
     )
@@ -112,7 +113,7 @@ fun GroupLinkLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (groupLink == null) {
-        SimpleButton(stringResource(R.string.button_create_group_link), icon = painterResource(R.drawable.ic_add_link), disabled = creatingLink, click = createLink)
+        SimpleButton(stringResource(MR.strings.button_create_group_link), icon = painterResource(R.drawable.ic_add_link), disabled = creatingLink, click = createLink)
       } else {
         RoleSelectionRow(groupInfo, groupLinkMemberRole)
         var initialLaunch by remember { mutableStateOf(true) }
@@ -129,12 +130,12 @@ fun GroupLinkLayout(
           modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 10.dp)
         ) {
           SimpleButton(
-            stringResource(R.string.share_link),
+            stringResource(MR.strings.share_link),
             icon = painterResource(R.drawable.ic_share),
             click = share
           )
           SimpleButton(
-            stringResource(R.string.delete_link),
+            stringResource(MR.strings.delete_link),
             icon = painterResource(R.drawable.ic_delete),
             color = Color.Red,
             click = deleteLink
@@ -155,7 +156,7 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
   ) {
     val values = listOf(GroupMemberRole.Member, GroupMemberRole.Observer).map { it to it.text }
     ExposedDropDownSettingRow(
-      generalGetString(R.string.initial_member_role),
+      generalGetString(MR.strings.initial_member_role),
       values,
       selectedRole,
       icon = null,

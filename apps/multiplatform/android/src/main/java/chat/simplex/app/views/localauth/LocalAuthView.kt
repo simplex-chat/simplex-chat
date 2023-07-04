@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.app.*
 import chat.simplex.app.model.*
 import chat.simplex.app.views.database.deleteChatAsync
@@ -13,12 +13,13 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.DatabaseUtils.ksSelfDestructPassword
 import chat.simplex.app.views.helpers.DatabaseUtils.ksAppPassword
 import chat.simplex.app.views.onboarding.OnboardingStage
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 @Composable
 fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
   val passcode = rememberSaveable { mutableStateOf("") }
-  PasscodeView(passcode, authRequest.title ?: stringResource(R.string.la_enter_app_passcode), authRequest.reason, stringResource(R.string.submit_passcode),
+  PasscodeView(passcode, authRequest.title ?: stringResource(MR.strings.la_enter_app_passcode), authRequest.reason, stringResource(MR.strings.submit_passcode),
     submit = {
       val sdPassword = ksSelfDestructPassword.get()
       if (sdPassword == passcode.value && authRequest.selfDestruct) {
@@ -26,12 +27,12 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
           authRequest.completed(r)
         }
       } else {
-        val r: LAResult = if (passcode.value == authRequest.password) LAResult.Success else LAResult.Error(generalGetString(R.string.incorrect_passcode))
+        val r: LAResult = if (passcode.value == authRequest.password) LAResult.Success else LAResult.Error(generalGetString(MR.strings.incorrect_passcode))
         authRequest.completed(r)
       }
     },
     cancel = {
-      authRequest.completed(LAResult.Error(generalGetString(R.string.authentication_cancelled)))
+      authRequest.completed(LAResult.Error(generalGetString(MR.strings.authentication_cancelled)))
     })
 }
 
@@ -74,7 +75,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       AlertManager.shared.hideAlert()
       completed(LAResult.Success)
     } catch (e: Exception) {
-      completed(LAResult.Error(generalGetString(R.string.incorrect_passcode)))
+      completed(LAResult.Error(generalGetString(MR.strings.incorrect_passcode)))
     }
   }
 }

@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import androidx.work.*
 import chat.simplex.app.model.ChatController
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 
 // based on:
@@ -41,8 +42,8 @@ class SimplexService: Service() {
   override fun onCreate() {
     super.onCreate()
     Log.d(TAG, "Simplex service created")
-    val title = getString(R.string.simplex_service_notification_title)
-    val text = getString(R.string.simplex_service_notification_text)
+    val title = generalGetString(MR.strings.simplex_service_notification_title)
+    val text = generalGetString(MR.strings.simplex_service_notification_text)
     notificationManager = createNotificationChannel()
     serviceNotification = createNotification(title, text)
     startForeground(SIMPLEX_SERVICE_ID, serviceNotification)
@@ -142,7 +143,7 @@ class SimplexService: Service() {
       setupIntent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
       setupIntent.putExtra(Settings.EXTRA_CHANNEL_ID, NOTIFICATION_CHANNEL_ID)
       val setup = PendingIntent.getActivity(this, 0, setupIntent, flags)
-      builder.addAction(0, getString(R.string.hide_notification), setup)
+      builder.addAction(0, generalGetString(MR.strings.hide_notification), setup)
     }
 
     return builder.build()
@@ -295,15 +296,15 @@ class SimplexService: Service() {
       }
 
       val title = when(chatDbStatus) {
-        is DBMigrationResult.ErrorNotADatabase -> generalGetString(R.string.enter_passphrase_notification_title)
+        is DBMigrationResult.ErrorNotADatabase -> generalGetString(MR.strings.enter_passphrase_notification_title)
         is DBMigrationResult.OK -> return
-        else -> generalGetString(R.string.database_initialization_error_title)
+        else -> generalGetString(MR.strings.database_initialization_error_title)
       }
 
       val description = when(chatDbStatus) {
-        is DBMigrationResult.ErrorNotADatabase -> generalGetString(R.string.enter_passphrase_notification_desc)
+        is DBMigrationResult.ErrorNotADatabase -> generalGetString(MR.strings.enter_passphrase_notification_desc)
         is DBMigrationResult.OK -> return
-        else -> generalGetString(R.string.database_initialization_error_desc)
+        else -> generalGetString(MR.strings.database_initialization_error_desc)
       }
 
       val builder =  NotificationCompat.Builder(SimplexApp.context, NOTIFICATION_CHANNEL_ID)

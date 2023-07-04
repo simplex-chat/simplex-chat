@@ -5,7 +5,6 @@ import SectionSpacer
 import SectionView
 import android.content.Context
 import android.util.Log
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -25,6 +24,8 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.AppVersionText
 import chat.simplex.app.views.usersettings.NotificationsMode
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import java.io.File
@@ -59,7 +60,7 @@ fun DatabaseErrorView(
   }
 
   @Composable
-  fun DatabaseErrorDetails(@StringRes title: Int, content: @Composable ColumnScope.() -> Unit) {
+  fun DatabaseErrorDetails(title: StringResource, content: @Composable ColumnScope.() -> Unit) {
     Text(
       generalGetString(title),
       Modifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
@@ -70,12 +71,12 @@ fun DatabaseErrorView(
 
   @Composable
   fun FileNameText(dbFile: String) {
-    Text(String.format(generalGetString(R.string.file_with_path), dbFile.split("/").lastOrNull() ?: dbFile))
+    Text(String.format(generalGetString(MR.strings.file_with_path), dbFile.split("/").lastOrNull() ?: dbFile))
   }
 
   @Composable
   fun MigrationsText(ms: List<String>) {
-    Text(String.format(generalGetString(R.string.database_migrations), ms.joinToString(", ")))
+    Text(String.format(generalGetString(MR.strings.database_migrations), ms.joinToString(", ")))
   }
 
   Column(
@@ -86,8 +87,8 @@ fun DatabaseErrorView(
     when (val status = chatDbStatus.value) {
       is DBMigrationResult.ErrorNotADatabase ->
         if (useKeychain && !storedDBKey.isNullOrEmpty()) {
-          DatabaseErrorDetails(R.string.wrong_passphrase) {
-            Text(generalGetString(R.string.passphrase_is_different))
+          DatabaseErrorDetails(MR.strings.wrong_passphrase) {
+            Text(generalGetString(MR.strings.passphrase_is_different))
             DatabaseKeyField(dbKey, buttonEnabled) {
               saveAndRunChatOnClick()
             }
@@ -96,8 +97,8 @@ fun DatabaseErrorView(
             FileNameText(status.dbFile)
           }
         } else {
-          DatabaseErrorDetails(R.string.encrypted_database) {
-            Text(generalGetString(R.string.database_passphrase_is_required))
+          DatabaseErrorDetails(MR.strings.encrypted_database) {
+            Text(generalGetString(MR.strings.database_passphrase_is_required))
             if (useKeychain) {
               DatabaseKeyField(dbKey, buttonEnabled, ::saveAndRunChatOnClick)
               SaveAndOpenButton(buttonEnabled, ::saveAndRunChatOnClick)
@@ -109,9 +110,9 @@ fun DatabaseErrorView(
         }
       is DBMigrationResult.ErrorMigration -> when (val err = status.migrationError) {
         is MigrationError.Upgrade ->
-          DatabaseErrorDetails(R.string.database_upgrade) {
+          DatabaseErrorDetails(MR.strings.database_upgrade) {
             TextButton({ callRunChat(confirmMigrations = MigrationConfirmation.YesUp) }, Modifier.align(Alignment.CenterHorizontally), enabled = !progressIndicator.value) {
-              Text(generalGetString(R.string.upgrade_and_open_chat))
+              Text(generalGetString(MR.strings.upgrade_and_open_chat))
             }
             Spacer(Modifier.height(20.dp))
             FileNameText(status.dbFile)
@@ -119,51 +120,51 @@ fun DatabaseErrorView(
             AppVersionText()
           }
         is MigrationError.Downgrade ->
-          DatabaseErrorDetails(R.string.database_downgrade) {
+          DatabaseErrorDetails(MR.strings.database_downgrade) {
             TextButton({ callRunChat(confirmMigrations = MigrationConfirmation.YesUpDown) }, Modifier.align(Alignment.CenterHorizontally), enabled = !progressIndicator.value) {
-              Text(generalGetString(R.string.downgrade_and_open_chat))
+              Text(generalGetString(MR.strings.downgrade_and_open_chat))
             }
             Spacer(Modifier.height(20.dp))
-            Text(generalGetString(R.string.database_downgrade_warning), fontWeight = FontWeight.Bold)
+            Text(generalGetString(MR.strings.database_downgrade_warning), fontWeight = FontWeight.Bold)
             FileNameText(status.dbFile)
             MigrationsText(err.downMigrations)
             AppVersionText()
           }
         is MigrationError.Error ->
-          DatabaseErrorDetails(R.string.incompatible_database_version) {
+          DatabaseErrorDetails(MR.strings.incompatible_database_version) {
             FileNameText(status.dbFile)
-            Text(String.format(generalGetString(R.string.error_with_info), mtrErrorDescription(err.mtrError)))
+            Text(String.format(generalGetString(MR.strings.error_with_info), mtrErrorDescription(err.mtrError)))
           }
       }
       is DBMigrationResult.ErrorSQL ->
-        DatabaseErrorDetails(R.string.database_error) {
+        DatabaseErrorDetails(MR.strings.database_error) {
           FileNameText(status.dbFile)
-          Text(String.format(generalGetString(R.string.error_with_info), status.migrationSQLError))
+          Text(String.format(generalGetString(MR.strings.error_with_info), status.migrationSQLError))
         }
       is DBMigrationResult.ErrorKeychain ->
-        DatabaseErrorDetails(R.string.keychain_error) {
-          Text(generalGetString(R.string.cannot_access_keychain))
+        DatabaseErrorDetails(MR.strings.keychain_error) {
+          Text(generalGetString(MR.strings.cannot_access_keychain))
         }
       is DBMigrationResult.InvalidConfirmation ->
-        DatabaseErrorDetails(R.string.invalid_migration_confirmation) {
+        DatabaseErrorDetails(MR.strings.invalid_migration_confirmation) {
           // this can only happen if incorrect parameter is passed
         }
       is DBMigrationResult.Unknown ->
-        DatabaseErrorDetails(R.string.database_error) {
-          Text(String.format(generalGetString(R.string.unknown_database_error_with_info), status.json))
+        DatabaseErrorDetails(MR.strings.database_error) {
+          Text(String.format(generalGetString(MR.strings.unknown_database_error_with_info), status.json))
         }
       is DBMigrationResult.OK -> {}
       null -> {}
     }
     if (restoreDbFromBackup.value) {
       SectionSpacer()
-      Text(generalGetString(R.string.database_backup_can_be_restored))
+      Text(generalGetString(MR.strings.database_backup_can_be_restored))
       Spacer(Modifier.size(DEFAULT_PADDING))
       RestoreDbButton {
         AlertManager.shared.showAlertDialog(
-          title = generalGetString(R.string.restore_database_alert_title),
-          text = generalGetString(R.string.restore_database_alert_desc),
-          confirmText = generalGetString(R.string.restore_database_alert_confirm),
+          title = generalGetString(MR.strings.restore_database_alert_title),
+          text = generalGetString(MR.strings.restore_database_alert_desc),
+          confirmText = generalGetString(MR.strings.restore_database_alert_confirm),
           onConfirm = { restoreDb(restoreDbFromBackup, appPreferences) },
           destructive = true,
         )
@@ -212,15 +213,15 @@ private fun runChat(
       }
     }
     is DBMigrationResult.ErrorNotADatabase ->
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.wrong_passphrase_title), generalGetString(R.string.enter_correct_passphrase))
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.wrong_passphrase_title), generalGetString(MR.strings.enter_correct_passphrase))
     is DBMigrationResult.ErrorSQL ->
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.database_error), status.migrationSQLError)
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_error), status.migrationSQLError)
     is DBMigrationResult.ErrorKeychain ->
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.keychain_error))
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.keychain_error))
     is DBMigrationResult.Unknown ->
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.unknown_error), status.json)
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), status.json)
     is DBMigrationResult.InvalidConfirmation ->
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.invalid_migration_confirmation))
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.invalid_migration_confirmation))
     is DBMigrationResult.ErrorMigration -> {}
     null -> {}
   }
@@ -249,23 +250,23 @@ private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPref
     restoreDbFromBackup.value = false
     prefs.encryptionStartedAt.set(null)
   } catch (e: Exception) {
-    AlertManager.shared.showAlertMsg(generalGetString(R.string.database_restore_error), e.stackTraceToString())
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_restore_error), e.stackTraceToString())
   }
 }
 
 private fun mtrErrorDescription(err: MTRError): String =
   when (err) {
     is MTRError.NoDown ->
-      String.format(generalGetString(R.string.mtr_error_no_down_migration), err.dbMigrations.joinToString(", "))
+      String.format(generalGetString(MR.strings.mtr_error_no_down_migration), err.dbMigrations.joinToString(", "))
     is MTRError.Different ->
-      String.format(generalGetString(R.string.mtr_error_different), err.appMigration, err.dbMigration)
+      String.format(generalGetString(MR.strings.mtr_error_different), err.appMigration, err.dbMigration)
   }
 
 @Composable
 private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onClick: (() -> Unit)? = null) {
   PassphraseField(
     text,
-    generalGetString(R.string.enter_passphrase),
+    generalGetString(MR.strings.enter_passphrase),
     isValid = ::validKey,
     keyboardActions = KeyboardActions(onDone = if (enabled) {
       { onClick?.invoke() }
@@ -277,21 +278,21 @@ private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onCli
 @Composable
 private fun ColumnScope.SaveAndOpenButton(enabled: Boolean, onClick: () -> Unit) {
   TextButton(onClick, Modifier.align(Alignment.CenterHorizontally), enabled = enabled) {
-    Text(generalGetString(R.string.save_passphrase_and_open_chat))
+    Text(generalGetString(MR.strings.save_passphrase_and_open_chat))
   }
 }
 
 @Composable
 private fun ColumnScope.OpenChatButton(enabled: Boolean, onClick: () -> Unit) {
   TextButton(onClick, Modifier.align(Alignment.CenterHorizontally), enabled = enabled) {
-    Text(generalGetString(R.string.open_chat))
+    Text(generalGetString(MR.strings.open_chat))
   }
 }
 
 @Composable
 private fun ColumnScope.RestoreDbButton(onClick: () -> Unit) {
   TextButton(onClick, Modifier.align(Alignment.CenterHorizontally)) {
-    Text(generalGetString(R.string.restore_database), color = MaterialTheme.colors.error)
+    Text(generalGetString(MR.strings.restore_database), color = MaterialTheme.colors.error)
   }
 }
 
