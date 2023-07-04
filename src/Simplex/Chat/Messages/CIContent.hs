@@ -253,7 +253,9 @@ instance ToJSON DBSndGroupEvent where
   toJSON (SGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
   toEncoding (SGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
 
-data RcvConnEvent = RCESwitchQueue {phase :: SwitchPhase}
+data RcvConnEvent
+  = RCESwitchQueue {phase :: SwitchPhase}
+  | RCERatchetSync {syncStatus :: RatchetSyncStatus}
   deriving (Show, Generic)
 
 data SndConnEvent = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
@@ -290,6 +292,21 @@ instance FromJSON DBSndConnEvent where
 instance ToJSON DBSndConnEvent where
   toJSON (SCE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SCE") v
   toEncoding (SCE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SCE") v
+
+data RatchetSyncStatus
+  = RSSOk
+  | RSSAllowed
+  | RSSRequired
+  | RSSStarted
+  | RSSAgreed {connectionCodeReset :: Bool}
+  deriving (Eq, Show, Generic)
+
+instance FromJSON RatchetSyncStatus where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RSS"
+
+instance ToJSON RatchetSyncStatus where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RSS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RSS"
 
 newtype DBMsgErrorType = DBME MsgErrorType
 
@@ -387,6 +404,15 @@ rcvConnEventToText = \case
     SPConfirmed -> "confirmed changing address for you..."
     SPSecured -> "secured new address for you..."
     SPCompleted -> "changed address for you"
+  RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
+
+ratchetSyncStatusToText :: RatchetSyncStatus -> Text
+ratchetSyncStatusToText = \case
+  RSSOk -> "connection synchronized"
+  RSSAllowed -> "decryption error (connection may be out of sync), synchronization allowed"
+  RSSRequired -> "decryption error (connection out of sync), synchronization required"
+  RSSStarted -> "connection synchronization started"
+  RSSAgreed connectionCodeReset -> "connection synchronization agreed" <> (if connectionCodeReset then " (connection code changed)" else "")
 
 sndConnEventToText :: SndConnEvent -> Text
 sndConnEventToText = \case

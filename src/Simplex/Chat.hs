@@ -1133,6 +1133,19 @@ processChatCommand = \case
         connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
         pure $ CRGroupMemberSwitchAborted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
+  APISyncContactRatchet contactId force -> withUser $ \user -> do
+    ct <- withStore $ \db -> getContact db user contactId
+    -- TODO check allowed
+    connectionStats <- withAgent $ \a -> synchronizeRatchet a (contactConnId ct) force
+    pure $ CRContactRatchetSyncStarted user ct connectionStats
+  APISyncGroupMemberRatchet gId gMemberId force -> withUser $ \user -> do
+    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
+    case memberConnId m of
+      Just connId -> do
+        -- TODO check allowed
+        connectionStats <- withAgent $ \a -> synchronizeRatchet a connId force
+        pure $ CRGroupMemberRatchetSyncStarted user g m connectionStats
+      _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
     ct@Contact {activeConn = conn@Connection {connId}} <- withStore $ \db -> getContact db user contactId
     code <- getConnectionCode (contactConnId ct)
@@ -1195,6 +1208,8 @@ processChatCommand = \case
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
   AbortSwitchContact cName -> withContactName cName APIAbortSwitchContact
   AbortSwitchGroupMember gName mName -> withMemberName gName mName APIAbortSwitchGroupMember
+  SyncContactRatchet cName force -> withContactName cName $ \ctId -> APISyncContactRatchet ctId force
+  SyncGroupMemberRatchet gName mName force -> withMemberName gName mName $ \gId mId -> APISyncGroupMemberRatchet gId mId force
   GetContactCode cName -> withContactName cName APIGetContactCode
   GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
   VerifyContact cName code -> withContactName cName (`APIVerifyContact` code)
@@ -2715,7 +2730,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId} = \case
+    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId, connectionCode} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
@@ -2848,6 +2863,15 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
             QDRcv -> createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCESwitchQueue phase Nothing) Nothing
             QDSnd -> createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
+        RSYNC rss _cStats -> do
+          -- TODO update contact connection stats
+          (ct', rss') <- case (rss, connectionCode) of
+            (RSAgreed, Just _) -> do
+              withStore' $ \db -> setConnectionVerified db user connId Nothing
+              pure (ct {activeConn = conn {connectionCode = Nothing}} :: Contact, RSSAgreed True)
+            _ -> pure (ct, toRatchetSyncStatus rss)
+          toView $ CRContactRatchetSync user ct' rss'
+          createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCERatchetSync rss') Nothing
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -2879,7 +2903,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, connectionCode} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -3027,6 +3051,15 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
+      RSYNC rss _cStats -> do
+        -- TODO update group member connection stats
+        (m', rss') <- case (rss, connectionCode) of
+          (RSAgreed, Just _) -> do
+            withStore' $ \db -> setConnectionVerified db user connId Nothing
+            pure (m {activeConn = Just (conn {connectionCode = Nothing} :: Connection)} :: GroupMember, RSSAgreed True)
+          _ -> pure (m, toRatchetSyncStatus rss)
+        toView $ CRGroupMemberRatchetSync user gInfo m' rss'
+        createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCERatchetSync rss') Nothing
       OK ->
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -3048,6 +3081,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError mde n) Nothing
       -- TODO add debugging output
       _ -> pure ()
+
+    toRatchetSyncStatus :: RatchetSyncState -> RatchetSyncStatus
+    toRatchetSyncStatus = \case
+      RSOk -> RSSOk
+      RSAllowed -> RSSAllowed
+      RSRequired -> RSSRequired
+      RSStarted -> RSSStarted
+      RSAgreed -> RSSAgreed False
 
     agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
     agentMsgDecryptError = \case
@@ -4917,10 +4958,14 @@ chatCommandP =
       "/_switch @" *> (APISwitchContact <$> A.decimal),
       "/_abort switch #" *> (APIAbortSwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_abort switch @" *> (APIAbortSwitchContact <$> A.decimal),
+      "/_sync #" *> (APISyncGroupMemberRatchet <$> A.decimal <* A.space <*> A.decimal <*> (" force=on" $> True <|> pure False)),
+      "/_sync @" *> (APISyncContactRatchet <$> A.decimal <*> (" force=on" $> True <|> pure False)),
       "/switch #" *> (SwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       "/switch " *> char_ '@' *> (SwitchContact <$> displayName),
       "/abort switch #" *> (AbortSwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       "/abort switch " *> char_ '@' *> (AbortSwitchContact <$> displayName),
+      "/sync #" *> (SyncGroupMemberRatchet <$> displayName <* A.space <* char_ '@' <*> displayName <*> (" force=on" $> True <|> pure False)),
+      "/sync " *> char_ '@' *> (SyncContactRatchet <$> displayName <*> (" force=on" $> True <|> pure False)),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
       "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> textP)),

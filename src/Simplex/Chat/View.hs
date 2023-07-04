@@ -86,6 +86,10 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
   CRGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
+  CRContactRatchetSyncStarted {} -> ["ratchet synchronization started"]
+  CRGroupMemberRatchetSyncStarted {} -> ["ratchet synchronization started"]
+  CRContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
+  CRGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
@@ -967,6 +971,20 @@ viewGroupMemberSwitch _ _ (SwitchProgress _ SPSecured _) = []
 viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
   QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
   QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
+
+viewContactRatchetSync :: Contact -> RatchetSyncStatus -> [StyledString]
+viewContactRatchetSync ct@Contact {localDisplayName = c} rss =
+  [ttyContact' ct <> ": " <> (plain . ratchetSyncStatusToText) rss]
+    <> help
+  where
+    help = ["use " <> highlight ("/sync " <> c) <> " to synchronize" | rss `elem` [RSSAllowed, RSSRequired]]
+
+viewGroupMemberRatchetSync :: GroupInfo -> GroupMember -> RatchetSyncStatus -> [StyledString]
+viewGroupMemberRatchetSync g m@GroupMember {localDisplayName = n} rss =
+  [ttyGroup' g <> " " <> ttyMember m <> ": " <> (plain . ratchetSyncStatusToText) rss]
+    <> help
+  where
+    help = ["use " <> highlight ("/sync #" <> groupName' g <> " " <> n) <> " to synchronize" | rss `elem` [RSSAllowed, RSSRequired]]
 
 viewContactCode :: Contact -> Text -> Bool -> [StyledString]
 viewContactCode ct@Contact {localDisplayName = c} = viewSecurityCode (ttyContact' ct) ("/verify " <> c <> " <code from your contact>")
