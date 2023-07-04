@@ -2226,9 +2226,8 @@ setupDesynchronizedRatchet tmp alice cath = do
   withTestChat tmp "bob_old" $ \bob -> do
     bob <## "2 contacts connected (use /cs for the list)"
     bob <## "#team: connected to server(s)"
-    -- sync prohibited
     bob ##> "/sync #team alice"
-    bob <## "error: command is prohibited" -- chat error - prohibited
+    bob <## "error: command is prohibited"
     alice #> "#team 1"
     bob <## "#team alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync #team alice to synchronize"
