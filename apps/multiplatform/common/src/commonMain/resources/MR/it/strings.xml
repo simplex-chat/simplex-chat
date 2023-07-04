@@ -1280,4 +1280,5 @@
     <string name="abort_switch_receiving_address_desc">Il cambio di indirizzo verrà interrotto. Verrà usato il vecchio indirizzo di ricezione.</string>
     <string name="files_are_prohibited_in_group">File e contenuti multimediali sono vietati in questo gruppo.</string>
     <string name="files_and_media_prohibited">File e contenuti multimediali vietati!</string>
+    <string name="la_mode_off">Off</string>
 </resources>

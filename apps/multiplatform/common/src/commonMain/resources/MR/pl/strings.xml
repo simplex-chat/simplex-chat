@@ -1283,4 +1283,5 @@
     <string name="files_are_prohibited_in_group">Pliki i media są zabronione w tej grupie.</string>
     <string name="only_owners_can_enable_files_and_media">Tylko właściciele grup mogą włączać pliki i media.</string>
     <string name="search_verb">Szukaj</string>
+    <string name="la_mode_off">Wyłączono</string>
 </resources>

@@ -1261,4 +1261,5 @@
     <string name="whats_new_thanks_to_users_contribute_weblate">ユーザーに感謝します – Weblate 経由で貢献してください!</string>
     <string name="v5_1_message_reactions_descr">ついに、私たちはそれらを手に入れました! 🚀</string>
     <string name="v5_1_better_messages">より良いメッセージ</string>
+    <string name="la_mode_off">オフ</string>
 </resources>

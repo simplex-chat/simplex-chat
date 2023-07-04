@@ -1267,4 +1267,5 @@
     <string name="shutdown_alert_desc">Oznámení přestanou fungovat až do nového spuštění aplikace</string>
     <string name="settings_shutdown">Vypnout</string>
     <string name="settings_restart_app">Restartovat</string>
+    <string name="la_mode_off">Vypnuto</string>
 </resources>

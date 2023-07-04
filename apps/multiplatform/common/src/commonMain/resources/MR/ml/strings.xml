@@ -419,4 +419,5 @@
     <string name="mark_unread">വായിച്ചിട്ടില്ല എന്ന് അടയാളപ്പെടുത്തുക</string>
     <string name="feature_offered_item">%s വാഗ്ദാനം ചെയ്തു</string>
     <string name="search_verb">തിരയുക</string>
+    <string name="la_mode_off">ഓഫാണ്</string>
 </resources>

@@ -1265,4 +1265,5 @@
     <string name="you_will_still_receive_calls_and_ntfs">คุณจะยังได้รับสายเรียกเข้าและการแจ้งเตือนจากโปรไฟล์ที่ปิดเสียงเมื่อโปรไฟล์ของเขามีการใช้งาน</string>
     <string name="color_title">ชื่อ</string>
     <string name="search_verb">ค้นหา</string>
+    <string name="la_mode_off">ปิด</string>
 </resources>

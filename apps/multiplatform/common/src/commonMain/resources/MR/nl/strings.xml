@@ -1282,4 +1282,5 @@
     <string name="allow_to_send_files">Sta toe om bestanden en media te verzenden.</string>
     <string name="group_members_can_send_files">Groepsleden kunnen bestanden en media verzenden.</string>
     <string name="search_verb">Zoeken</string>
+    <string name="la_mode_off">Uit</string>
 </resources>

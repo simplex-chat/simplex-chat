@@ -1266,4 +1266,5 @@
     <string name="delete_chat_profile">Видалити профіль чату</string>
     <string name="ttl_sec">%d сек</string>
     <string name="search_verb">Пошук</string>
+    <string name="la_mode_off">Вимкнено</string>
 </resources>

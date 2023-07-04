@@ -1363,4 +1363,5 @@
     <string name="unfavorite_chat">Favorit löschen</string>
     <string name="favorite_chat">Favorit</string>
     <string name="no_filtered_chats">Keine gefilterten Chats</string>
+    <string name="la_mode_off">Aus</string>
 </resources>

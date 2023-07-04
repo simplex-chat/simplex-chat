@@ -944,4 +944,5 @@
     <string name="both_you_and_your_contact_can_make_calls">당신과 대화 상대 모두 전화를 걸 수 있습니다.</string>
     <string name="v5_0_app_passcode">앱 패스코드</string>
     <string name="search_verb">검색</string>
+    <string name="la_mode_off">꺼짐</string>
 </resources>

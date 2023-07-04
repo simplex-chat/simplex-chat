@@ -1281,4 +1281,5 @@
     <string name="group_members_can_send_files">חברי הקבוצה יכולים לשלוח קבצים ומדיה.</string>
     <string name="settings_restart_app">איתחול</string>
     <string name="unfavorite_chat">שנוא</string>
+    <string name="la_mode_off">כבוי</string>
 </resources>

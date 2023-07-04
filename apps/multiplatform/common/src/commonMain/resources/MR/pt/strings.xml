@@ -744,4 +744,5 @@
     <string name="feature_enabled_for_contact">activado para contacto</string>
     <string name="feature_enabled_for_you">activado para si</string>
     <string name="search_verb">Pesquisar</string>
+    <string name="la_mode_off">Desativado</string>
 </resources>

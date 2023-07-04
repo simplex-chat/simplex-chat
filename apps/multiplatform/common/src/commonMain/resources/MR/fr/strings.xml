@@ -1273,4 +1273,5 @@
     <string name="abort_switch_receiving_address_question">Abandonner le changement d\'adresse \?</string>
     <string name="abort_switch_receiving_address">Annuler le changement d\'adresse</string>
     <string name="abort_switch_receiving_address_desc">Le changement d\'adresse sera annulé. L\'ancienne adresse de réception sera utilisée.</string>
+    <string name="la_mode_off">Désactivé</string>
 </resources>

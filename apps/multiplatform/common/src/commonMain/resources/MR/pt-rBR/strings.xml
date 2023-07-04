@@ -1260,4 +1260,5 @@
     <string name="item_info_no_text">Sem texto</string>
     <string name="non_fatal_errors_occured_during_import">Alguns erros não-fatais ocurreram durante importação - pode ver o console de Chat para mais detalhes.</string>
     <string name="search_verb">Pesquisar</string>
+    <string name="la_mode_off">Desativado</string>
 </resources>

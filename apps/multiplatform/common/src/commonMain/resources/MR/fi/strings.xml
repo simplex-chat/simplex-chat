@@ -1266,4 +1266,5 @@
     <string name="settings_section_title_app">SOVELLUS</string>
     <string name="settings_restart_app">Käynnistä uudelleen</string>
     <string name="shutdown_alert_question">Sulje\?</string>
+    <string name="la_mode_off">Pois</string>
 </resources>

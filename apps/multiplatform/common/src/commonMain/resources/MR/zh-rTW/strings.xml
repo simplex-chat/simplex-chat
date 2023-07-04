@@ -1263,4 +1263,5 @@
 \n- 自定義銷毀時間。
 \n- 編輯紀錄。</string>
     <string name="search_verb">搜尋</string>
+    <string name="la_mode_off">已關閉</string>
 </resources>

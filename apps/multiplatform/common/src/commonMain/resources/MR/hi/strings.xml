@@ -291,4 +291,5 @@
     <string name="member_info_section_title_member">सदस्य</string>
     <string name="group_member_role_member">सदस्य</string>
     <string name="search_verb">खोजें</string>
+    <string name="la_mode_off">बंद है</string>
 </resources>

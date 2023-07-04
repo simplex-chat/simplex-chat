@@ -1269,4 +1269,5 @@
     <string name="settings_restart_app">Reiniciar</string>
     <string name="settings_shutdown">Cerrar</string>
     <string name="shutdown_alert_desc">Las notificaciones dejarán de funcionar hasta que reinicies la aplicación</string>
+    <string name="la_mode_off">Desactivado</string>
 </resources>
