@@ -122,11 +122,11 @@ fun Resources.getText(id: StringResource, vararg args: Any): CharSequence {
 
 fun escapedHtmlToAnnotatedString(text: String, density: Density): AnnotatedString {
   val text = if (text.contains("&lt;")) {
-    "<![CDATA[" + text
+    text
       .replace("&lt;", "<")
       .replace("&gt;", ">")
       .replace("&quot;", "\"")
-      .replace("\\\"", "\"") + "]]>"
+      .replace("\\\"", "\"")
   } else text
   return spannableStringToAnnotatedString(HtmlCompat.fromHtml(text, HtmlCompat.FROM_HTML_MODE_LEGACY), density)
 }
