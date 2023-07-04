@@ -1136,15 +1136,19 @@ processChatCommand = \case
   APISyncContactRatchet contactId force -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
     -- TODO check allowed
-    connectionStats <- withAgent $ \a -> synchronizeRatchet a (contactConnId ct) force
-    pure $ CRContactRatchetSyncStarted user ct connectionStats
+    cStats@ConnectionStats {ratchetSyncState} <- withAgent $ \a -> synchronizeRatchet a (contactConnId ct) force
+    let rss' = toRatchetSyncStatus ratchetSyncState
+    createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCERatchetSync rss' Nothing) Nothing
+    pure $ CRContactRatchetSyncStarted user ct cStats
   APISyncGroupMemberRatchet gId gMemberId force -> withUser $ \user -> do
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
       Just connId -> do
         -- TODO check allowed
-        connectionStats <- withAgent $ \a -> synchronizeRatchet a connId force
-        pure $ CRGroupMemberRatchetSyncStarted user g m connectionStats
+        cStats@ConnectionStats {ratchetSyncState} <- withAgent $ \a -> synchronizeRatchet a connId force
+        let rss' = toRatchetSyncStatus ratchetSyncState
+        createInternalChatItem user (CDGroupSnd g) (CISndConnEvent . SCERatchetSync rss' . Just $ groupMemberRef m) Nothing
+        pure $ CRGroupMemberRatchetSyncStarted user g m cStats
       _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
     ct@Contact {activeConn = conn@Connection {connId}} <- withStore $ \db -> getContact db user contactId
@@ -3081,14 +3085,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError mde n) Nothing
       -- TODO add debugging output
       _ -> pure ()
-
-    toRatchetSyncStatus :: RatchetSyncState -> RatchetSyncStatus
-    toRatchetSyncStatus = \case
-      RSOk -> RSSOk
-      RSAllowed -> RSSAllowed
-      RSRequired -> RSSRequired
-      RSStarted -> RSSStarted
-      RSAgreed -> RSSAgreed False
 
     agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
     agentMsgDecryptError = \case

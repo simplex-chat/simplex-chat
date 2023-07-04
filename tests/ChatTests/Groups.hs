@@ -2278,11 +2278,15 @@ testGroupSyncRatchet tmp =
         cath <# "#team bob> 3"
         -- synchronize bob and alice
         bob ##> "/sync #team alice"
-        bob <## "ratchet synchronization started"
+        bob <## "connection synchronization started"
         alice <## "#team bob: connection synchronization agreed"
         bob <## "#team alice: connection synchronization agreed"
         alice <## "#team bob: connection synchronized"
         bob <## "#team alice: connection synchronized"
+
+        bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
+        alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+
         alice #> "#team hello again"
         [bob, cath] *<# "#team alice> hello again"
         bob #> "#team received!"
@@ -2317,11 +2321,14 @@ testGroupSyncRatchetCodeReset tmp =
         bob <## "2 contacts connected (use /cs for the list)"
         bob <## "#team: connected to server(s)"
         bob ##> "/sync #team alice"
-        bob <## "ratchet synchronization started"
+        bob <## "connection synchronization started"
         alice <## "#team bob: connection synchronization agreed"
         bob <## "#team alice: connection synchronization agreed (connection code changed)"
         alice <## "#team bob: connection synchronized"
         bob <## "#team alice: connection synchronized"
+
+        bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed (connection code changed)"), (0, "connection synchronized")])
+        alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
         -- connection not verified
         bob ##> "/i #team alice"

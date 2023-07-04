@@ -29,7 +29,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), SwitchPhase (..))
+import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), RatchetSyncState (..), SwitchPhase (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -258,7 +258,9 @@ data RcvConnEvent
   | RCERatchetSync {syncStatus :: RatchetSyncStatus}
   deriving (Show, Generic)
 
-data SndConnEvent = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
+data SndConnEvent
+  = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
+  | SCERatchetSync {syncStatus :: RatchetSyncStatus, member :: Maybe GroupMemberRef}
   deriving (Show, Generic)
 
 instance FromJSON RcvConnEvent where
@@ -307,6 +309,14 @@ instance FromJSON RatchetSyncStatus where
 instance ToJSON RatchetSyncStatus where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RSS"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RSS"
+
+toRatchetSyncStatus :: RatchetSyncState -> RatchetSyncStatus
+toRatchetSyncStatus = \case
+  RSOk -> RSSOk
+  RSAllowed -> RSSAllowed
+  RSRequired -> RSSRequired
+  RSStarted -> RSSStarted
+  RSAgreed -> RSSAgreed False
 
 newtype DBMsgErrorType = DBME MsgErrorType
 
@@ -421,6 +431,7 @@ sndConnEventToText = \case
     SPConfirmed -> "confirmed changing address" <> forMember m <> "..."
     SPSecured -> "secured new address" <> forMember m <> "..."
     SPCompleted -> "you changed address" <> forMember m
+  SCERatchetSync syncStatus m -> ratchetSyncStatusToText syncStatus <> forMember m
   where
     forMember member_ =
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_

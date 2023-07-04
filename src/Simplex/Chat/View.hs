@@ -86,8 +86,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
   CRGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
-  CRContactRatchetSyncStarted {} -> ["ratchet synchronization started"]
-  CRGroupMemberRatchetSyncStarted {} -> ["ratchet synchronization started"]
+  CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
+  CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
   CRGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]

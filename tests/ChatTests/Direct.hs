@@ -2048,11 +2048,15 @@ testSyncRatchet tmp =
     withTestChat tmp "bob_old" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob ##> "/sync alice"
-      bob <## "ratchet synchronization started"
+      bob <## "connection synchronization started"
       alice <## "bob: connection synchronization agreed"
       bob <## "alice: connection synchronization agreed"
       alice <## "bob: connection synchronized"
       bob <## "alice: connection synchronized"
+
+      bob #$> ("/_get chat @2 count=3", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
+      alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+
       alice #> "@bob hello again"
       bob <# "alice> hello again"
       bob #> "@alice received!"
@@ -2084,11 +2088,14 @@ testSyncRatchetCodeReset tmp =
     withTestChat tmp "bob_old" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob ##> "/sync alice"
-      bob <## "ratchet synchronization started"
+      bob <## "connection synchronization started"
       alice <## "bob: connection synchronization agreed"
       bob <## "alice: connection synchronization agreed (connection code changed)"
       alice <## "bob: connection synchronized"
       bob <## "alice: connection synchronized"
+
+      bob #$> ("/_get chat @2 count=3", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed (connection code changed)"), (0, "connection synchronized")])
+      alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
       -- connection not verified
       bob ##> "/i alice"
