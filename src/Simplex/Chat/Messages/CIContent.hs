@@ -255,12 +255,13 @@ instance ToJSON DBSndGroupEvent where
 
 data RcvConnEvent
   = RCESwitchQueue {phase :: SwitchPhase}
-  | RCERatchetSync {syncStatus :: RatchetSyncStatus}
+  | RCERatchetSync {syncStatus :: RatchetSyncState}
+  | RCEConnectionCodeChanged
   deriving (Show, Generic)
 
 data SndConnEvent
   = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
-  | SCERatchetSync {syncStatus :: RatchetSyncStatus, member :: Maybe GroupMemberRef}
+  | SCERatchetSync {syncStatus :: RatchetSyncState, member :: Maybe GroupMemberRef}
   deriving (Show, Generic)
 
 instance FromJSON RcvConnEvent where
@@ -294,29 +295,6 @@ instance FromJSON DBSndConnEvent where
 instance ToJSON DBSndConnEvent where
   toJSON (SCE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SCE") v
   toEncoding (SCE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SCE") v
-
-data RatchetSyncStatus
-  = RSSOk
-  | RSSAllowed
-  | RSSRequired
-  | RSSStarted
-  | RSSAgreed {connectionCodeReset :: Bool}
-  deriving (Eq, Show, Generic)
-
-instance FromJSON RatchetSyncStatus where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RSS"
-
-instance ToJSON RatchetSyncStatus where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RSS"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RSS"
-
-toRatchetSyncStatus :: RatchetSyncState -> RatchetSyncStatus
-toRatchetSyncStatus = \case
-  RSOk -> RSSOk
-  RSAllowed -> RSSAllowed
-  RSRequired -> RSSRequired
-  RSStarted -> RSSStarted
-  RSAgreed -> RSSAgreed False
 
 newtype DBMsgErrorType = DBME MsgErrorType
 
@@ -415,14 +393,15 @@ rcvConnEventToText = \case
     SPSecured -> "secured new address for you..."
     SPCompleted -> "changed address for you"
   RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
+  RCEConnectionCodeChanged -> "security code changed"
 
-ratchetSyncStatusToText :: RatchetSyncStatus -> Text
+ratchetSyncStatusToText :: RatchetSyncState -> Text
 ratchetSyncStatusToText = \case
-  RSSOk -> "connection synchronized"
-  RSSAllowed -> "decryption error (connection may be out of sync), synchronization allowed"
-  RSSRequired -> "decryption error (connection out of sync), synchronization required"
-  RSSStarted -> "connection synchronization started"
-  RSSAgreed connectionCodeReset -> "connection synchronization agreed" <> (if connectionCodeReset then " (connection code changed)" else "")
+  RSOk -> "connection synchronized"
+  RSAllowed -> "decryption error (connection may be out of sync), synchronization allowed"
+  RSRequired -> "decryption error (connection out of sync), synchronization required"
+  RSStarted -> "connection synchronization started"
+  RSAgreed -> "connection synchronization agreed"
 
 sndConnEventToText :: SndConnEvent -> Text
 sndConnEventToText = \case

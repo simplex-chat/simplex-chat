@@ -90,6 +90,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
   CRGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
+  CRContactConnectionCodeChanged u ct -> ttyUser u $ viewContactCodeChanged ct
+  CRGroupMemberConnectionCodeChanged u g m -> ttyUser u $ viewGroupMemberCodeChanged g m
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
@@ -977,14 +979,22 @@ viewContactRatchetSync ct@Contact {localDisplayName = c} RatchetSyncProgress {ra
   [ttyContact' ct <> ": " <> (plain . ratchetSyncStatusToText) rss]
     <> help
   where
-    help = ["use " <> highlight ("/sync " <> c) <> " to synchronize" | rss `elem` [RSSAllowed, RSSRequired]]
+    help = ["use " <> highlight ("/sync " <> c) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
 
 viewGroupMemberRatchetSync :: GroupInfo -> GroupMember -> RatchetSyncProgress -> [StyledString]
 viewGroupMemberRatchetSync g m@GroupMember {localDisplayName = n} RatchetSyncProgress {ratchetSyncStatus = rss} =
   [ttyGroup' g <> " " <> ttyMember m <> ": " <> (plain . ratchetSyncStatusToText) rss]
     <> help
   where
-    help = ["use " <> highlight ("/sync #" <> groupName' g <> " " <> n) <> " to synchronize" | rss `elem` [RSSAllowed, RSSRequired]]
+    help = ["use " <> highlight ("/sync #" <> groupName' g <> " " <> n) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
+
+viewContactCodeChanged :: Contact -> [StyledString]
+viewContactCodeChanged ct =
+  [ttyContact' ct <> ": security code changed"]
+
+viewGroupMemberCodeChanged :: GroupInfo -> GroupMember -> [StyledString]
+viewGroupMemberCodeChanged g m =
+  [ttyGroup' g <> " " <> ttyMember m <> ": security code changed"]
 
 viewContactCode :: Contact -> Text -> Bool -> [StyledString]
 viewContactCode ct@Contact {localDisplayName = c} = viewSecurityCode (ttyContact' ct) ("/verify " <> c <> " <code from your contact>")

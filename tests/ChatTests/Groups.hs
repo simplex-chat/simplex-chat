@@ -2322,11 +2322,12 @@ testGroupSyncRatchetCodeReset tmp =
         bob ##> "/sync #team alice"
         bob <## "connection synchronization started"
         alice <## "#team bob: connection synchronization agreed"
-        bob <## "#team alice: connection synchronization agreed (connection code changed)"
+        bob <## "#team alice: connection synchronization agreed"
+        bob <## "#team alice: security code changed"
         alice <## "#team bob: connection synchronized"
         bob <## "#team alice: connection synchronized"
 
-        bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed (connection code changed)"), (0, "connection synchronized")])
+        bob #$> ("/_get chat #1 count=4", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
         alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
         -- connection not verified
