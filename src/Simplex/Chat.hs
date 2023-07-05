@@ -2863,17 +2863,36 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
             QDRcv -> createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCESwitchQueue phase Nothing) Nothing
             QDSnd -> createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
-        RSYNC rss cStats -> do
-          (ct', reset) <- case (rss, connectionCode) of
-            (RSAgreed, Just _) -> do
+        RSYNC rss cryptoErr_ cStats ->
+          case (rss, connectionCode, cryptoErr_) of
+            (RSRequired, _, Just cryptoErr) -> processErr cryptoErr True
+            (RSAllowed, _, Just cryptoErr) -> processErr cryptoErr False
+            (RSAgreed, Just _, _) -> do
               withStore' $ \db -> setConnectionVerified db user connId Nothing
-              pure (ct {activeConn = conn {connectionCode = Nothing}} :: Contact, True)
-            _ -> pure (ct, False)
-          toView $ CRContactRatchetSync user ct' (RatchetSyncProgress rss cStats)
-          createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCERatchetSync rss) Nothing
-          when reset $ do
-            toView $ CRContactConnectionCodeChanged user ct'
-            createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent RCEConnectionCodeChanged) Nothing
+              let ct' = ct {activeConn = conn {connectionCode = Nothing}} :: Contact
+              ratchetSyncEventItem ct'
+              toView $ CRContactConnectionCodeChanged user ct'
+              createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent RCEConnectionCodeChanged) Nothing
+            _ -> ratchetSyncEventItem ct
+          where
+            processErr cryptoErr syncRequired = do
+              let e@(mde, n) = agentMsgDecryptError cryptoErr
+              ci_ <- withStore $ \db ->
+                getDirectChatItemsLast db user contactId 1 ""
+                  >>= liftIO
+                    . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False Nothing)
+                    . (mdeUpdatedCI e syncRequired <=< headMaybe)
+              case ci_ of
+                Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
+                _ -> do
+                  toView $ CRContactRatchetSync user ct (RatchetSyncProgress rss cStats)
+                  createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError mde n $ Just syncRequired) Nothing
+            headMaybe = \case
+              x : _ -> Just x
+              _ -> Nothing
+            ratchetSyncEventItem ct' = do
+              toView $ CRContactRatchetSync user ct' (RatchetSyncProgress rss cStats)
+              createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCERatchetSync rss) Nothing
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -2888,19 +2907,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-          forM_ (agentMsgDecryptError err) $ \e@(mde, n) -> do
-            ci_ <- withStore $ \db ->
-              getDirectChatItemsLast db user contactId 1 ""
-                >>= liftIO
-                  . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False Nothing)
-                  . (mdeUpdatedCI e <=< headMaybe)
-            case ci_ of
-              Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
-              _ -> createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError mde n) Nothing
-          where
-            headMaybe = \case
-              x : _ -> Just x
-              _ -> Nothing
         -- TODO add debugging output
         _ -> pure ()
 
@@ -3053,17 +3059,33 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
-      RSYNC rss cStats -> do
-        (m', reset) <- case (rss, connectionCode) of
-          (RSAgreed, Just _) -> do
+      RSYNC rss cryptoErr_ cStats ->
+        case (rss, connectionCode, cryptoErr_) of
+          (RSRequired, _, Just cryptoErr) -> processErr cryptoErr True
+          (RSAllowed, _, Just cryptoErr) -> processErr cryptoErr False
+          (RSAgreed, Just _, _) -> do
             withStore' $ \db -> setConnectionVerified db user connId Nothing
-            pure (m {activeConn = Just (conn {connectionCode = Nothing} :: Connection)} :: GroupMember, True)
-          _ -> pure (m, False)
-        toView $ CRGroupMemberRatchetSync user gInfo m' (RatchetSyncProgress rss cStats)
-        createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent $ RCERatchetSync rss) Nothing
-        when reset $ do
-          toView $ CRGroupMemberConnectionCodeChanged user gInfo m'
-          createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent RCEConnectionCodeChanged) Nothing
+            let m' = m {activeConn = Just (conn {connectionCode = Nothing} :: Connection)} :: GroupMember
+            ratchetSyncEventItem m'
+            toView $ CRGroupMemberConnectionCodeChanged user gInfo m'
+            createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent RCEConnectionCodeChanged) Nothing
+          _ -> ratchetSyncEventItem m
+        where
+          processErr cryptoErr syncRequired = do
+            let e@(mde, n) = agentMsgDecryptError cryptoErr
+            ci_ <- withStore $ \db ->
+              getGroupMemberChatItemLast db user groupId (groupMemberId' m)
+                >>= liftIO
+                  . mapM (\(ci, content') -> updateGroupChatItem db user groupId ci content' False Nothing)
+                  . mdeUpdatedCI e syncRequired
+            case ci_ of
+              Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
+              _ -> do
+                toView $ CRGroupMemberRatchetSync user gInfo m (RatchetSyncProgress rss cStats)
+                createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError mde n $ Just syncRequired) Nothing
+          ratchetSyncEventItem m' = do
+            toView $ CRGroupMemberRatchetSync user gInfo m' (RatchetSyncProgress rss cStats)
+            createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent $ RCERatchetSync rss) Nothing
       OK ->
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -3074,39 +3096,28 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       ERR err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        forM_ (agentMsgDecryptError err) $ \e@(mde, n) -> do
-          ci_ <- withStore $ \db ->
-            getGroupMemberChatItemLast db user groupId (groupMemberId' m)
-              >>= liftIO
-                . mapM (\(ci, content') -> updateGroupChatItem db user groupId ci content' False Nothing)
-                . mdeUpdatedCI e
-          case ci_ of
-            Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
-            _ -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError mde n) Nothing
       -- TODO add debugging output
       _ -> pure ()
 
-    agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
+    agentMsgDecryptError :: AgentCryptoError -> (MsgDecryptError, Word32)
     agentMsgDecryptError = \case
-      AGENT (A_CRYPTO RATCHET_HEADER) -> Just (MDERatchetHeader, 1)
-      AGENT (A_CRYPTO (RATCHET_SKIPPED n)) -> Just (MDETooManySkipped, n)
-      -- we are not treating this as decryption error, as in many cases it happens as the result of duplicate or redundant delivery,
-      -- and we don't have a way to differentiate.
-      -- we could store the hashes of past messages in the agent, or delaying message deletion after ACK
-      -- A_DUPLICATE -> Nothing
-      -- earlier messages may be received in case of redundant delivery, and do not necessarily indicate an error
-      -- AGENT (A_CRYPTO (RATCHET_EARLIER n)) -> Nothing
-      _ -> Nothing
+      DECRYPT_AES -> (MDEOther, 1)
+      DECRYPT_CB -> (MDEOther, 1)
+      RATCHET_HEADER -> (MDERatchetHeader, 1)
+      RATCHET_EARLIER _ -> (MDERatchetEarlier, 1)
+      RATCHET_SKIPPED n -> (MDETooManySkipped, n)
 
-    mdeUpdatedCI :: (MsgDecryptError, Word32) -> CChatItem c -> Maybe (ChatItem c 'MDRcv, CIContent 'MDRcv)
-    mdeUpdatedCI (mde', n') (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n})
+    mdeUpdatedCI :: (MsgDecryptError, Word32) -> Bool -> CChatItem c -> Maybe (ChatItem c 'MDRcv, CIContent 'MDRcv)
+    mdeUpdatedCI (mde', n') syncRequired (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n _})
       | mde == mde' = case mde of
         MDERatchetHeader -> r (n + n')
         MDETooManySkipped -> r n' -- the numbers are not added as sequential MDETooManySkipped will have it incremented by 1
+        MDERatchetEarlier -> r (n + n')
+        MDEOther -> r (n + n')
       | otherwise = Nothing
       where
-        r n'' = Just (ci, CIRcvDecryptionError mde n'')
-    mdeUpdatedCI _ _ = Nothing
+        r n'' = Just (ci, CIRcvDecryptionError mde n'' $ Just syncRequired)
+    mdeUpdatedCI _ _ _ = Nothing
 
     processSndFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> SndFileTransfer -> m ()
     processSndFileConn agentMsg connEntity conn ft@SndFileTransfer {fileId, fileName, fileStatus} =

@@ -2026,7 +2026,7 @@ setupDesynchronizedRatchet tmp alice = do
     alice #> "@bob 3"
     (bob </)
     bob ##> "/tail @alice 1"
-    bob <# "alice> decryption error (connection out of sync), synchronization required"
+    bob <# "alice> decryption error, possibly due to the device change (header, 3 messages), synchronization required"
     bob ##> "@alice 1"
     bob <## "error: command is prohibited"
     (alice </)
