@@ -1303,6 +1303,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Disappearing messages: off"
       alice <## "Direct messages: on"
       alice <## "Full deletion: off"
+      alice <## "Delivery receipts: off"
       alice <## "Message reactions: on"
       alice <## "Voice messages: on"
       alice <## "Files and media: on"
