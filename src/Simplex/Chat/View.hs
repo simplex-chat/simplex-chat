@@ -28,7 +28,6 @@ import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Data.Word (Word32)
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
@@ -86,6 +85,12 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
   CRGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
+  CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
+  CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
+  CRContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
+  CRGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
+  CRContactVerificationReset u ct -> ttyUser u $ viewContactVerificationReset ct
+  CRGroupMemberVerificationReset u g m -> ttyUser u $ viewGroupMemberVerificationReset g m
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
@@ -385,7 +390,6 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIDirectRcv -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
-        CIRcvDecryptionError err n -> viewRcvDecryptionError from err n ts tz meta
         CIRcvGroupEvent {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
@@ -402,7 +406,6 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIGroupRcv m -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
-        CIRcvDecryptionError err n -> viewRcvDecryptionError from err n ts tz meta
         CIRcvGroupInvitation {} -> showRcvItemProhibited from
         CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g m) quote meta [plainContent content] False
         _ -> showRcvItem from
@@ -586,9 +589,6 @@ msgPreview = msgPlain . preview . msgContentText
 
 viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> TimeZone -> CIMeta c 'MDRcv -> [StyledString]
 viewRcvIntegrityError from msgErr ts tz meta = receivedWithTime_ ts tz from [] meta (viewMsgIntegrityError msgErr) False
-
-viewRcvDecryptionError :: StyledString -> MsgDecryptError -> Word32 -> CurrentTime -> TimeZone -> CIMeta c 'MDRcv -> [StyledString]
-viewRcvDecryptionError from err n ts tz meta = receivedWithTime_ ts tz from [] meta [ttyError $ msgDecryptErrorText err n] False
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
 viewMsgIntegrityError err = [ttyError $ msgIntegrityError err]
@@ -967,6 +967,28 @@ viewGroupMemberSwitch _ _ (SwitchProgress _ SPSecured _) = []
 viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
   QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
   QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
+
+viewContactRatchetSync :: Contact -> RatchetSyncProgress -> [StyledString]
+viewContactRatchetSync ct@Contact {localDisplayName = c} RatchetSyncProgress {ratchetSyncStatus = rss} =
+  [ttyContact' ct <> ": " <> (plain . ratchetSyncStatusToText) rss]
+    <> help
+  where
+    help = ["use " <> highlight ("/sync " <> c) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
+
+viewGroupMemberRatchetSync :: GroupInfo -> GroupMember -> RatchetSyncProgress -> [StyledString]
+viewGroupMemberRatchetSync g m@GroupMember {localDisplayName = n} RatchetSyncProgress {ratchetSyncStatus = rss} =
+  [ttyGroup' g <> " " <> ttyMember m <> ": " <> (plain . ratchetSyncStatusToText) rss]
+    <> help
+  where
+    help = ["use " <> highlight ("/sync #" <> groupName' g <> " " <> n) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
+
+viewContactVerificationReset :: Contact -> [StyledString]
+viewContactVerificationReset ct =
+  [ttyContact' ct <> ": security code changed"]
+
+viewGroupMemberVerificationReset :: GroupInfo -> GroupMember -> [StyledString]
+viewGroupMemberVerificationReset g m =
+  [ttyGroup' g <> " " <> ttyMember m <> ": security code changed"]
 
 viewContactCode :: Contact -> Text -> Bool -> [StyledString]
 viewContactCode ct@Contact {localDisplayName = c} = viewSecurityCode (ttyContact' ct) ("/verify " <> c <> " <code from your contact>")
