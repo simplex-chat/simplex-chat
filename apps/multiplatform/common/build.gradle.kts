@@ -96,10 +96,6 @@ kotlin {
         api("androidx.camera:camera-lifecycle:${camerax_version}")
         api("androidx.camera:camera-view:${camerax_version}")
 
-        // LALAL REPLACE IT WITH SOURCE
-        // Wheel picker
-        api("com.github.zj565061763:compose-wheel-picker:1.0.0-alpha10")
-
         // LALAL REMOVE
         api("org.jsoup:jsoup:1.13.1")
         api("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")
