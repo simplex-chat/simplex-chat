@@ -720,9 +720,16 @@ defaultChatPrefs =
       calls = CallsPreference {allow = FAYes}
     }
 
--- TODO this should be used when creating new profiles and contacts
-newDefaultChatPrefs :: FullPreferences
-newDefaultChatPrefs = defaultChatPrefs {receiveReceipts = ReceiveReceiptsPreference {allow = FAYes, activated = True}}
+newDefaultChatPrefs :: Preferences
+newDefaultChatPrefs = toChatPrefs defaultChatPrefs {receiveReceipts = defReceiveReceiptsPref}
+
+defReceiveReceiptsPref :: ReceiveReceiptsPreference
+defReceiveReceiptsPref = ReceiveReceiptsPreference {allow = FAYes, activated = True}
+
+activateReceiveReceipts :: Preferences -> Preferences
+activateReceiveReceipts prefs@Preferences {receiveReceipts} =
+  let receiveReceipts' = maybe defReceiveReceiptsPref (\rr -> rr {activated = True}) receiveReceipts 
+   in (prefs :: Preferences) {receiveReceipts = Just receiveReceipts'}
 
 emptyChatPrefs :: Preferences
 emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing

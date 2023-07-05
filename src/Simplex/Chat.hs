@@ -338,7 +338,7 @@ processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
-    p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
+    p@Profile {displayName, preferences} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
     (smp, smpServers) <- chooseServers SPSMP
     (xftp, xftpServers) <- chooseServers SPXFTP
@@ -350,7 +350,9 @@ processChatCommand = \case
             throwChatError $ CEUserExists displayName
           withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
-    user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
+    let prefs' = maybe newDefaultChatPrefs activateReceiveReceipts preferences
+        p' = (p :: Profile) {preferences = Just prefs'}
+    user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p' True ts
     storeServers user smpServers
     storeServers user xftpServers
     setActive ActiveNone
@@ -4704,7 +4706,7 @@ getCreateActiveUser st = do
         loop = do
           displayName <- getContactName
           fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing} True) >>= \case
+          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName, image = Nothing, contactLink = Nothing, preferences = Just newDefaultChatPrefs} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
