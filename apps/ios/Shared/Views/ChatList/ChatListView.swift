@@ -57,8 +57,8 @@ struct ChatListView: View {
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
-                title: Text("Reconnect?"),
-                message: Text("Reconnect all relays"),
+                title: Text("Reconnect servers?"),
+                message: Text("Reconnect all connected servers to force message delivery. It uses additional traffic."),
                 primaryButton: .default(Text("Ok")) {
                     Task {
                         do {
