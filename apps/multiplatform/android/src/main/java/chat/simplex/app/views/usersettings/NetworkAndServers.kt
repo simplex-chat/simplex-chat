@@ -16,7 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -29,6 +29,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ClickableText
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 
 @Composable
 fun NetworkAndServersView(
@@ -61,9 +62,9 @@ fun NetworkAndServersView(
     toggleSocksProxy = { enable ->
       if (enable) {
         AlertManager.shared.showAlertDialog(
-          title = generalGetString(R.string.network_enable_socks),
-          text = generalGetString(R.string.network_enable_socks_info).format(proxyPort.value),
-          confirmText = generalGetString(R.string.confirm_verb),
+          title = generalGetString(MR.strings.network_enable_socks),
+          text = generalGetString(MR.strings.network_enable_socks_info).format(proxyPort.value),
+          confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
             withApi {
               val conf = NetCfg.proxyDefaults.withHostPort(chatModel.controller.appPrefs.networkProxyHostPort.get())
@@ -76,9 +77,9 @@ fun NetworkAndServersView(
         )
       } else {
         AlertManager.shared.showAlertDialog(
-          title = generalGetString(R.string.network_disable_socks),
-          text = generalGetString(R.string.network_disable_socks_info),
-          confirmText = generalGetString(R.string.confirm_verb),
+          title = generalGetString(MR.strings.network_disable_socks),
+          text = generalGetString(MR.strings.network_disable_socks_info),
+          confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
             withApi {
               val conf = NetCfg.defaults
@@ -96,12 +97,12 @@ fun NetworkAndServersView(
       val prevValue = onionHosts.value
       onionHosts.value = it
       val startsWith = when (it) {
-        OnionHosts.NEVER -> generalGetString(R.string.network_use_onion_hosts_no_desc_in_alert)
-        OnionHosts.PREFER -> generalGetString(R.string.network_use_onion_hosts_prefer_desc_in_alert)
-        OnionHosts.REQUIRED -> generalGetString(R.string.network_use_onion_hosts_required_desc_in_alert)
+        OnionHosts.NEVER -> generalGetString(MR.strings.network_use_onion_hosts_no_desc_in_alert)
+        OnionHosts.PREFER -> generalGetString(MR.strings.network_use_onion_hosts_prefer_desc_in_alert)
+        OnionHosts.REQUIRED -> generalGetString(MR.strings.network_use_onion_hosts_required_desc_in_alert)
       }
       showUpdateNetworkSettingsDialog(
-        title = generalGetString(R.string.update_onion_hosts_settings_question),
+        title = generalGetString(MR.strings.update_onion_hosts_settings_question),
         startsWith,
         onDismiss = {
           onionHosts.value = prevValue
@@ -124,11 +125,11 @@ fun NetworkAndServersView(
       val prevValue = sessionMode.value
       sessionMode.value = it
       val startsWith = when (it) {
-        TransportSessionMode.User -> generalGetString(R.string.network_session_mode_user_description)
-        TransportSessionMode.Entity -> generalGetString(R.string.network_session_mode_entity_description)
+        TransportSessionMode.User -> generalGetString(MR.strings.network_session_mode_user_description)
+        TransportSessionMode.Entity -> generalGetString(MR.strings.network_session_mode_entity_description)
       }
       showUpdateNetworkSettingsDialog(
-        title = generalGetString(R.string.update_network_session_mode_question),
+        title = generalGetString(MR.strings.update_network_session_mode_question),
         startsWith,
         onDismiss = { sessionMode.value = prevValue }
       ) {
@@ -164,28 +165,28 @@ fun NetworkAndServersView(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    AppBarTitle(stringResource(R.string.network_and_servers))
-    SectionView(generalGetString(R.string.settings_section_title_messages)) {
-      SettingsActionItem(painterResource(R.drawable.ic_dns), stringResource(R.string.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
+    AppBarTitle(stringResource(MR.strings.network_and_servers))
+    SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
+      SettingsActionItem(painterResource(R.drawable.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
 
-      SettingsActionItem(painterResource(R.drawable.ic_dns), stringResource(R.string.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
+      SettingsActionItem(painterResource(R.drawable.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
 
       UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
       UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
       if (developerTools) {
         SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
       }
-      SettingsActionItem(painterResource(R.drawable.ic_cable), stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
+      SettingsActionItem(painterResource(R.drawable.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
     if (networkUseSocksProxy.value) {
-      SectionCustomFooter { Text(annotatedStringResource(R.string.disable_onion_hosts_when_not_supported)) }
+      SectionCustomFooter { Text(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported)) }
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     } else {
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     }
 
-    SectionView(generalGetString(R.string.settings_section_title_calls)) {
-      SettingsActionItem(painterResource(R.drawable.ic_electrical_services), stringResource(R.string.webrtc_ice_servers), showModal { RTCServersView(it) })
+    SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
+      SettingsActionItem(painterResource(R.drawable.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), showModal { RTCServersView(it) })
     }
     SectionBottomSpacer()
   }
@@ -209,15 +210,15 @@ fun UseSocksProxySwitch(
     ) {
       Icon(
         painterResource(R.drawable.ic_settings_ethernet),
-        stringResource(R.string.network_socks_toggle_use_socks_proxy),
+        stringResource(MR.strings.network_socks_toggle_use_socks_proxy),
         tint = MaterialTheme.colors.secondary
       )
       TextIconSpaced(false)
       val text = buildAnnotatedString {
-        append(generalGetString(R.string.network_socks_toggle_use_socks_proxy) + " (")
+        append(generalGetString(MR.strings.network_socks_toggle_use_socks_proxy) + " (")
         val style = SpanStyle(color = MaterialTheme.colors.primary)
-        withAnnotation(tag = "PORT", annotation = generalGetString(R.string.network_proxy_port).format(proxyPort.value)) {
-          withStyle(style) { append(generalGetString(R.string.network_proxy_port).format(proxyPort.value)) }
+        withAnnotation(tag = "PORT", annotation = generalGetString(MR.strings.network_proxy_port).format(proxyPort.value)) {
+          withStyle(style) { append(generalGetString(MR.strings.network_proxy_port).format(proxyPort.value)) }
         }
         append(")")
       }
@@ -250,7 +251,7 @@ fun SockProxySettings(m: ChatModel) {
       .verticalScroll(rememberScrollState())
   ) {
     val defaultHostPort = remember { "localhost:9050" }
-    AppBarTitle(generalGetString(R.string.network_socks_proxy_settings))
+    AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
     val hostPort by remember { m.controller.appPrefs.networkProxyHostPort.state }
     val hostUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
       mutableStateOf(TextFieldValue(hostPort?.split(":")?.firstOrNull() ?: "localhost"))
@@ -289,7 +290,7 @@ fun SockProxySettings(m: ChatModel) {
       SectionItemView {
         DefaultConfigurableTextField(
           hostUnsaved,
-          stringResource(R.string.host_verb),
+          stringResource(MR.strings.host_verb),
           modifier = Modifier,
           isValid = ::validHost,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
@@ -299,7 +300,7 @@ fun SockProxySettings(m: ChatModel) {
       SectionItemView {
         DefaultConfigurableTextField(
           portUnsaved,
-          stringResource(R.string.port_verb),
+          stringResource(MR.strings.port_verb),
           modifier = Modifier,
           isValid = ::validPort,
           keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done); save() }),
@@ -336,9 +337,9 @@ private fun UseOnionHosts(
   val values = remember {
     OnionHosts.values().map {
       when (it) {
-        OnionHosts.NEVER -> ValueTitleDesc(OnionHosts.NEVER, generalGetString(R.string.network_use_onion_hosts_no), generalGetString(R.string.network_use_onion_hosts_no_desc))
-        OnionHosts.PREFER -> ValueTitleDesc(OnionHosts.PREFER, generalGetString(R.string.network_use_onion_hosts_prefer), generalGetString(R.string.network_use_onion_hosts_prefer_desc))
-        OnionHosts.REQUIRED -> ValueTitleDesc(OnionHosts.REQUIRED, generalGetString(R.string.network_use_onion_hosts_required), generalGetString(R.string.network_use_onion_hosts_required_desc))
+        OnionHosts.NEVER -> ValueTitleDesc(OnionHosts.NEVER, generalGetString(MR.strings.network_use_onion_hosts_no), generalGetString(MR.strings.network_use_onion_hosts_no_desc))
+        OnionHosts.PREFER -> ValueTitleDesc(OnionHosts.PREFER, generalGetString(MR.strings.network_use_onion_hosts_prefer), generalGetString(MR.strings.network_use_onion_hosts_prefer_desc))
+        OnionHosts.REQUIRED -> ValueTitleDesc(OnionHosts.REQUIRED, generalGetString(MR.strings.network_use_onion_hosts_required), generalGetString(MR.strings.network_use_onion_hosts_required_desc))
       }
     }
   }
@@ -346,13 +347,13 @@ private fun UseOnionHosts(
     Column(
       Modifier.fillMaxWidth(),
     ) {
-      AppBarTitle(stringResource(R.string.network_use_onion_hosts))
+      AppBarTitle(stringResource(MR.strings.network_use_onion_hosts))
       SectionViewSelectable(null, onionHosts, values, useOnion)
     }
   }
 
   SectionItemWithValue(
-    generalGetString(R.string.network_use_onion_hosts),
+    generalGetString(MR.strings.network_use_onion_hosts),
     onionHosts,
     values,
     icon = painterResource(R.drawable.ic_security),
@@ -370,14 +371,14 @@ private fun SessionModePicker(
   val values = remember {
     TransportSessionMode.values().map {
       when (it) {
-        TransportSessionMode.User -> ValueTitleDesc(TransportSessionMode.User, generalGetString(R.string.network_session_mode_user), generalGetString(R.string.network_session_mode_user_description))
-        TransportSessionMode.Entity -> ValueTitleDesc(TransportSessionMode.Entity, generalGetString(R.string.network_session_mode_entity), generalGetString(R.string.network_session_mode_entity_description))
+        TransportSessionMode.User -> ValueTitleDesc(TransportSessionMode.User, generalGetString(MR.strings.network_session_mode_user), generalGetString(MR.strings.network_session_mode_user_description))
+        TransportSessionMode.Entity -> ValueTitleDesc(TransportSessionMode.Entity, generalGetString(MR.strings.network_session_mode_entity), generalGetString(MR.strings.network_session_mode_entity_description))
       }
     }
   }
 
   SectionItemWithValue(
-    generalGetString(R.string.network_session_mode_transport_isolation),
+    generalGetString(MR.strings.network_session_mode_transport_isolation),
     sessionMode,
     values,
     icon = painterResource(R.drawable.ic_safety_divider),
@@ -385,7 +386,7 @@ private fun SessionModePicker(
       Column(
         Modifier.fillMaxWidth(),
       ) {
-        AppBarTitle(stringResource(R.string.network_session_mode_transport_isolation))
+        AppBarTitle(stringResource(MR.strings.network_session_mode_transport_isolation))
         SectionViewSelectable(null, sessionMode, values, updateSessionMode)
       }
     }
@@ -399,8 +400,8 @@ private fun NetworkSectionFooter(revert: () -> Unit, save: () -> Unit, revertDis
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(painterResource(R.drawable.ic_replay), stringResource(R.string.network_options_revert), revert, revertDisabled)
-    FooterButton(painterResource(R.drawable.ic_check), stringResource(R.string.network_options_save), save, saveDisabled)
+    FooterButton(painterResource(R.drawable.ic_replay), stringResource(MR.strings.network_options_revert), revert, revertDisabled)
+    FooterButton(painterResource(R.drawable.ic_check), stringResource(MR.strings.network_options_save), save, saveDisabled)
   }
 }
 
@@ -420,14 +421,14 @@ private fun validPort(s: String): Boolean {
 private fun showUpdateNetworkSettingsDialog(
   title: String,
   startsWith: String = "",
-  message: String = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
+  message: String = generalGetString(MR.strings.updating_settings_will_reconnect_client_to_all_servers),
   onDismiss: () -> Unit,
   onConfirm: () -> Unit
 ) {
   AlertManager.shared.showAlertDialog(
     title = title,
     text = startsWith + "\n\n" + message,
-    confirmText = generalGetString(R.string.update_network_settings_confirmation),
+    confirmText = generalGetString(MR.strings.update_network_settings_confirmation),
     onDismiss = onDismiss,
     onConfirm = onConfirm,
     onDismissRequest = onDismiss

@@ -14,12 +14,13 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.PreferenceToggle
+import chat.simplex.res.MR
 
 @Composable
 fun ContactPreferencesView(
@@ -81,7 +82,7 @@ private fun ContactPreferencesLayout(
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.contact_preferences))
+    AppBarTitle(stringResource(MR.strings.contact_preferences))
     val timedMessages: MutableState<Boolean> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.timedMessagesAllowed) }
     val onTTLUpdated = { ttl: Int? ->
       applyPrefs(featuresAllowed.copy(timedMessagesTTL = ttl))
@@ -140,14 +141,14 @@ private fun FeatureSection(
     leadingIcon = true,
   ) {
     ExposedDropDownSettingRow(
-      generalGetString(R.string.chat_preferences_you_allow),
+      generalGetString(MR.strings.chat_preferences_you_allow),
       ContactFeatureAllowed.values(userDefault).map { it to it.text },
       allowFeature,
       icon = null,
       onSelected = onSelected
     )
     InfoRow(
-      generalGetString(R.string.chat_preferences_contact_allows),
+      generalGetString(MR.strings.chat_preferences_contact_allows),
       pref.contactPreference.allow.text
     )
   }
@@ -175,13 +176,13 @@ private fun TimedMessagesFeatureSection(
     leadingIcon = true,
   ) {
     PreferenceToggle(
-      generalGetString(R.string.chat_preferences_you_allow),
+      generalGetString(MR.strings.chat_preferences_you_allow),
       checked = allowFeature.value,
     ) { allow ->
       onSelected(allow, if (allow) featuresAllowed.timedMessagesTTL ?: 86400 else null)
     }
     InfoRow(
-      generalGetString(R.string.chat_preferences_contact_allows),
+      generalGetString(MR.strings.chat_preferences_contact_allows),
       pref.contactPreference.allow.text
     )
     if (featuresAllowed.timedMessagesAllowed) {
@@ -189,14 +190,14 @@ private fun TimedMessagesFeatureSection(
       DropdownCustomTimePickerSettingRow(
         selection = ttl,
         propagateExternalSelectionUpdate = true, // for Reset
-        label = generalGetString(R.string.delete_after),
+        label = generalGetString(MR.strings.delete_after),
         dropdownValues = TimedMessagesPreference.ttlValues,
-        customPickerTitle = generalGetString(R.string.delete_after),
-        customPickerConfirmButtonText = generalGetString(R.string.custom_time_picker_select),
+        customPickerTitle = generalGetString(MR.strings.delete_after),
+        customPickerConfirmButtonText = generalGetString(MR.strings.custom_time_picker_select),
         onSelected = onTTLUpdated
       )
     } else if (pref.contactPreference.allow == FeatureAllowed.YES || pref.contactPreference.allow == FeatureAllowed.ALWAYS) {
-      InfoRow(generalGetString(R.string.delete_after), timeText(pref.contactPreference.ttl))
+      InfoRow(generalGetString(MR.strings.delete_after), timeText(pref.contactPreference.ttl))
     }
   }
   SectionTextFooter(ChatFeature.TimedMessages.enabledDescription(enabled))
@@ -206,19 +207,19 @@ private fun TimedMessagesFeatureSection(
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
-      Text(stringResource(R.string.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Text(stringResource(MR.strings.save_and_notify_contact), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
-    title = generalGetString(R.string.save_preferences_question),
-    confirmText = generalGetString(R.string.save_and_notify_contact),
-    dismissText = generalGetString(R.string.exit_without_saving),
+    title = generalGetString(MR.strings.save_preferences_question),
+    confirmText = generalGetString(MR.strings.save_and_notify_contact),
+    dismissText = generalGetString(MR.strings.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
   )

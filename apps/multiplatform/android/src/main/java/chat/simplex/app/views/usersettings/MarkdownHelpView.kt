@@ -9,7 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -18,6 +18,7 @@ import chat.simplex.app.model.Format
 import chat.simplex.app.model.FormatColor
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.res.MR
 
 @Composable
 fun MarkdownHelpView() {
@@ -25,14 +26,14 @@ fun MarkdownHelpView() {
     Modifier
       .fillMaxWidth()
   ) {
-    Text(stringResource(R.string.you_can_use_markdown_to_format_messages__prompt))
+    Text(stringResource(MR.strings.you_can_use_markdown_to_format_messages__prompt))
     Spacer(Modifier.height(DEFAULT_PADDING))
-    val bold = stringResource(R.string.bold)
-    val italic = stringResource(R.string.italic)
-    val strikethrough = stringResource(R.string.strikethrough)
-    val equation = stringResource(R.string.a_plus_b)
-    val colored = stringResource(R.string.colored)
-    val secret = stringResource(R.string.secret)
+    val bold = stringResource(MR.strings.bold_text)
+    val italic = stringResource(MR.strings.italic_text)
+    val strikethrough = stringResource(MR.strings.strikethrough_text)
+    val equation = stringResource(MR.strings.a_plus_b)
+    val colored = stringResource(MR.strings.colored_text)
+    val secret = stringResource(MR.strings.secret_text)
 
     MdFormat("*$bold*", bold, Format.Bold())
     MdFormat("_${italic}_", italic, Format.Italic())

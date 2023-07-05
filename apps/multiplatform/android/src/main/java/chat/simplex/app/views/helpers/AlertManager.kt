@@ -17,6 +17,8 @@ import androidx.compose.ui.window.Dialog
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.ui.theme.*
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 
 class AlertManager {
   var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
@@ -78,9 +80,9 @@ class AlertManager {
   fun showAlertDialog(
     title: String,
     text: String? = null,
-    confirmText: String = generalGetString(R.string.ok),
+    confirmText: String = generalGetString(MR.strings.ok),
     onConfirm: (() -> Unit)? = null,
-    dismissText: String = generalGetString(R.string.cancel_verb),
+    dismissText: String = generalGetString(MR.strings.cancel_verb),
     onDismiss: (() -> Unit)? = null,
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false
@@ -113,9 +115,9 @@ class AlertManager {
   fun showAlertDialogStacked(
     title: String,
     text: String? = null,
-    confirmText: String = generalGetString(R.string.ok),
+    confirmText: String = generalGetString(MR.strings.ok),
     onConfirm: (() -> Unit)? = null,
-    dismissText: String = generalGetString(R.string.cancel_verb),
+    dismissText: String = generalGetString(MR.strings.cancel_verb),
     onDismiss: (() -> Unit)? = null,
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false
@@ -147,7 +149,7 @@ class AlertManager {
 
   fun showAlertMsg(
     title: String, text: String? = null,
-    confirmText: String = generalGetString(R.string.ok)
+    confirmText: String = generalGetString(MR.strings.ok)
   ) {
     showAlert {
       AlertDialog(
@@ -169,9 +171,9 @@ class AlertManager {
     }
   }
   fun showAlertMsg(
-    title: Int,
-    text: Int? = null,
-    confirmText: Int = R.string.ok,
+    title: StringResource,
+    text: StringResource? = null,
+    confirmText: StringResource = MR.strings.ok,
   ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText))
 
   @Composable

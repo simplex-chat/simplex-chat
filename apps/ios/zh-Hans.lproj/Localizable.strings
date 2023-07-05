@@ -248,6 +248,15 @@
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "每个联系人和群成员将使用一个独立的 TCP 连接。\n请注意：如果您有许多连接，将会消耗更多的电量和流量，并且某些连接可能会失败。";
 
 /* No comment provided by engineer. */
+"Abort" = "中止";
+
+/* No comment provided by engineer. */
+"Abort changing address" = "中止地址更改";
+
+/* No comment provided by engineer. */
+"Abort changing address?" = "中止地址更改？";
+
+/* No comment provided by engineer. */
 "About SimpleX" = "关于SimpleX";
 
 /* No comment provided by engineer. */
@@ -301,6 +310,9 @@
 
 /* No comment provided by engineer. */
 "Address" = "地址";
+
+/* No comment provided by engineer. */
+"Address change will be aborted. Old receiving address will be used." = "将中止地址更改。将使用旧接收地址。";
 
 /* member role */
 "admin" = "管理员";
@@ -426,7 +438,7 @@
 "Audio & video calls" = "语音和视频通话";
 
 /* No comment provided by engineer. */
-"Audio and video calls" = "音视频通话";
+"Audio and video calls" = "语音和视频通话";
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "语音通话（非端到端加密）";
@@ -1219,6 +1231,9 @@
 "Error" = "错误";
 
 /* No comment provided by engineer. */
+"Error aborting address change" = "中止地址更改错误";
+
+/* No comment provided by engineer. */
 "Error accepting contact request" = "接受联系人请求错误";
 
 /* No comment provided by engineer. */
@@ -1373,6 +1388,9 @@
 
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "快速且无需等待发件人在线！";
+
+/* No comment provided by engineer. */
+"Favorite" = "最喜欢";
 
 /* No comment provided by engineer. */
 "File will be deleted from servers." = "文件将从服务器中删除。";
@@ -1732,7 +1750,7 @@
 "Join incognito" = "加入隐身聊天";
 
 /* No comment provided by engineer. */
-"Joining group" = "加入群组";
+"Joining group" = "加入群组中";
 
 /* No comment provided by engineer. */
 "Keychain error" = "钥匙串错误";
@@ -2313,6 +2331,9 @@
 
 /* message info title */
 "Received message" = "收到的信息";
+
+/* No comment provided by engineer. */
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "接收地址将变更到不同的服务器。地址更改将在发件人上线后完成。";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "即将停止接收文件。";
@@ -2949,6 +2970,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "未预料的迁移状态";
+
+/* No comment provided by engineer. */
+"Unfav." = "取消最喜欢";
 
 /* No comment provided by engineer. */
 "Unhide" = "取消隐藏";

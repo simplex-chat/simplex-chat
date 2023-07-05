@@ -248,6 +248,15 @@
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Oddzielne połączenie TCP będzie używane **dla każdego kontaktu i członka grupy**.\n**Uwaga**: jeśli masz wiele połączeń, zużycie baterii i ruchu może być znacznie wyższe, a niektóre połączenia mogą się nie udać.";
 
 /* No comment provided by engineer. */
+"Abort" = "Przerwij";
+
+/* No comment provided by engineer. */
+"Abort changing address" = "Przerwij zmianę adresu";
+
+/* No comment provided by engineer. */
+"Abort changing address?" = "Przerwać zmianę adresu?";
+
+/* No comment provided by engineer. */
 "About SimpleX" = "O SimpleX";
 
 /* No comment provided by engineer. */
@@ -301,6 +310,9 @@
 
 /* No comment provided by engineer. */
 "Address" = "Adres";
+
+/* No comment provided by engineer. */
+"Address change will be aborted. Old receiving address will be used." = "Zmiana adresu zostanie przerwana. Użyty zostanie stary adres odbiorczy.";
 
 /* member role */
 "admin" = "administrator";
@@ -1219,6 +1231,9 @@
 "Error" = "Błąd";
 
 /* No comment provided by engineer. */
+"Error aborting address change" = "Błąd przerwania zmiany adresu";
+
+/* No comment provided by engineer. */
 "Error accepting contact request" = "Błąd przyjmowania prośby o kontakt";
 
 /* No comment provided by engineer. */
@@ -1373,6 +1388,9 @@
 
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "Szybko i bez czekania aż nadawca będzie online!";
+
+/* No comment provided by engineer. */
+"Favorite" = "Ulubione";
 
 /* No comment provided by engineer. */
 "File will be deleted from servers." = "Plik zostanie usunięty z serwerów.";
@@ -2315,6 +2333,9 @@
 "Received message" = "Otrzymano wiadomość";
 
 /* No comment provided by engineer. */
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Adres odbiorczy zostanie zmieniony na inny serwer. Zmiana adresu zostanie zakończona gdy nadawca będzie online.";
+
+/* No comment provided by engineer. */
 "Receiving file will be stopped." = "Odbieranie pliku zostanie przerwane.";
 
 /* No comment provided by engineer. */
@@ -2698,6 +2719,9 @@
 /* No comment provided by engineer. */
 "SMP servers" = "Serwery SMP";
 
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Podczas importu wystąpiły niekrytyczne błędy - więcej szczegółów można znaleźć w konsoli czatu.";
+
 /* notification title */
 "Somebody" = "Ktoś";
 
@@ -2946,6 +2970,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Nieoczekiwany stan migracji";
+
+/* No comment provided by engineer. */
+"Unfav." = "Nie ulub.";
 
 /* No comment provided by engineer. */
 "Unhide" = "Odkryj";

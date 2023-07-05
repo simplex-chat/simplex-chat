@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -27,6 +27,7 @@ import chat.simplex.app.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
+import chat.simplex.res.MR
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
@@ -83,7 +84,7 @@ private fun ProtocolServerLayout(
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
   ) {
-    AppBarTitle(stringResource(if (server.preset) R.string.smp_servers_preset_server else R.string.smp_servers_your_server))
+    AppBarTitle(stringResource(if (server.preset) MR.strings.smp_servers_preset_server else MR.strings.smp_servers_your_server))
 
     if (server.preset) {
       PresetServer(testing, server, testServer, onUpdate, onDelete)
@@ -102,7 +103,7 @@ private fun PresetServer(
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
 ) {
-  SectionView(stringResource(R.string.smp_servers_preset_address).uppercase()) {
+  SectionView(stringResource(MR.strings.smp_servers_preset_address).uppercase()) {
     SelectionContainer {
       Text(
         server.server,
@@ -136,7 +137,7 @@ private fun CustomServer(
     }
   }
   SectionView(
-    stringResource(R.string.smp_servers_your_server_address).uppercase(),
+    stringResource(MR.strings.smp_servers_your_server_address).uppercase(),
     icon = painterResource(R.drawable.ic_error),
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
@@ -159,7 +160,7 @@ private fun CustomServer(
 
   if (valid.value) {
     SectionDividerSpaced()
-    SectionView(stringResource(R.string.smp_servers_add_to_another_device).uppercase()) {
+    SectionView(stringResource(MR.strings.smp_servers_add_to_another_device).uppercase()) {
       QRCode(serverAddress.value, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
     }
   }
@@ -174,15 +175,15 @@ private fun UseServerSection(
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
 ) {
-  SectionView(stringResource(R.string.smp_servers_use_server).uppercase()) {
+  SectionView(stringResource(MR.strings.smp_servers_use_server).uppercase()) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
-      Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+      Text(stringResource(MR.strings.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server)
     }
     val enabled = rememberUpdatedState(server.enabled)
-    PreferenceToggle(stringResource(R.string.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
+    PreferenceToggle(stringResource(MR.strings.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
     SectionItemView(onDelete, disabled = testing) {
-      Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
+      Text(stringResource(MR.strings.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
     }
   }
 }

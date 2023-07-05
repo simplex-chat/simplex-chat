@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -26,6 +26,7 @@ import chat.simplex.app.views.chat.ComposePreview
 import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 
 @Composable
 fun ChatPreviewView(
@@ -44,7 +45,7 @@ fun ChatPreviewView(
   fun groupInactiveIcon() {
     Icon(
       painterResource(R.drawable.ic_cancel_filled),
-      stringResource(R.string.icon_descr_group_inactive),
+      stringResource(MR.strings.icon_descr_group_inactive),
       Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
       tint = MaterialTheme.colors.secondary
     )
@@ -143,7 +144,7 @@ fun ChatPreviewView(
       val (text: CharSequence, inlineTextContent) = when {
         chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { messageDraft(chatModelDraft) }
         ci.meta.itemDeleted == null -> ci.text to null
-        else -> generalGetString(R.string.marked_deleted_description) to null
+        else -> generalGetString(MR.strings.marked_deleted_description) to null
       }
       val formattedText = when {
         chatModelDraftChatId == chat.id && chatModelDraft != null -> null
@@ -170,12 +171,12 @@ fun ChatPreviewView(
       when (cInfo) {
         is ChatInfo.Direct ->
           if (!cInfo.ready) {
-            Text(stringResource(R.string.contact_connection_pending), color = MaterialTheme.colors.secondary)
+            Text(stringResource(MR.strings.contact_connection_pending), color = MaterialTheme.colors.secondary)
           }
         is ChatInfo.Group ->
           when (cInfo.groupInfo.membership.memberStatus) {
             GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(chatModelIncognito, currentUserProfileDisplayName, cInfo.groupInfo))
-            GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = MaterialTheme.colors.secondary)
+            GroupMemberStatus.MemAccepted -> Text(stringResource(MR.strings.group_connection_pending), color = MaterialTheme.colors.secondary)
             else -> {}
           }
         else -> {}
@@ -237,7 +238,7 @@ fun ChatPreviewView(
         ) {
           Icon(
             painterResource(R.drawable.ic_notifications_off_filled),
-            contentDescription = generalGetString(R.string.notifications),
+            contentDescription = generalGetString(MR.strings.notifications),
             tint = MaterialTheme.colors.secondary,
             modifier = Modifier
               .padding(horizontal = 3.dp)
@@ -252,7 +253,7 @@ fun ChatPreviewView(
         ) {
           Icon(
             painterResource(R.drawable.ic_star_filled),
-            contentDescription = generalGetString(R.string.favorite_chat),
+            contentDescription = generalGetString(MR.strings.favorite_chat),
             tint = MaterialTheme.colors.secondary,
             modifier = Modifier
               .padding(horizontal = 3.dp)
@@ -276,16 +277,16 @@ fun ChatPreviewView(
 @Composable
 private fun groupInvitationPreviewText(chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, groupInfo: GroupInfo): String {
   return if (groupInfo.membership.memberIncognito)
-    String.format(stringResource(R.string.group_preview_join_as), groupInfo.membership.memberProfile.displayName)
+    String.format(stringResource(MR.strings.group_preview_join_as), groupInfo.membership.memberProfile.displayName)
   else if (chatModelIncognito)
-    String.format(stringResource(R.string.group_preview_join_as), currentUserProfileDisplayName ?: "")
+    String.format(stringResource(MR.strings.group_preview_join_as), currentUserProfileDisplayName ?: "")
   else
-    stringResource(R.string.group_preview_you_are_invited)
+    stringResource(MR.strings.group_preview_you_are_invited)
 }
 
 @Composable
 fun unreadCountStr(n: Int): String {
-  return if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation)
+  return if (n < 1000) "$n" else "${n / 1000}" + stringResource(MR.strings.thousand_abbreviation)
 }
 
 @Composable

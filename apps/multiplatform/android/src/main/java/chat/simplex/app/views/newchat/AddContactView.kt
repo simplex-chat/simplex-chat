@@ -12,7 +12,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -20,6 +20,7 @@ import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
+import chat.simplex.res.MR
 
 @Composable
 fun AddContactView(connReqInvitation: String, connIncognito: Boolean) {
@@ -49,11 +50,11 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit,
       .verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.SpaceBetween,
   ) {
-    AppBarTitle(stringResource(R.string.add_contact))
+    AppBarTitle(stringResource(MR.strings.add_contact))
     OneTimeLinkProfileText(connIncognito)
 
     SectionSpacer()
-    SectionView(stringResource(R.string.one_time_link_short).uppercase()) {
+    SectionView(stringResource(MR.strings.one_time_link_short).uppercase()) {
       OneTimeLinkSection(connReq, share, learnMore)
     }
     SectionBottomSpacer()
@@ -66,8 +67,8 @@ fun OneTimeLinkProfileText(connIncognito: Boolean) {
     InfoAboutIncognito(
       connIncognito,
       true,
-      generalGetString(R.string.incognito_random_profile_description),
-      generalGetString(R.string.your_profile_will_be_sent)
+      generalGetString(MR.strings.incognito_random_profile_description),
+      generalGetString(MR.strings.your_profile_will_be_sent)
     )
   }
 }
@@ -98,7 +99,7 @@ fun ColumnScope.OneTimeLinkSection(connReq: String, share: () -> Unit, learnMore
 fun ShareLinkButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_share),
-    stringResource(R.string.share_invitation_link),
+    stringResource(MR.strings.share_invitation_link),
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
@@ -109,7 +110,7 @@ fun ShareLinkButton(onClick: () -> Unit) {
 fun OneTimeLinkLearnMoreButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(R.drawable.ic_info),
-    stringResource(R.string.learn_more),
+    stringResource(MR.strings.learn_more),
     onClick,
   )
 }
@@ -126,7 +127,7 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
     ) {
       Icon(
         if (supportedIncognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_info),
-        stringResource(R.string.incognito),
+        stringResource(MR.strings.incognito),
         tint = if (supportedIncognito) Indigo else WarningOrange,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
@@ -142,7 +143,7 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
     ) {
       Icon(
         painterResource(R.drawable.ic_info),
-        stringResource(R.string.incognito),
+        stringResource(MR.strings.incognito),
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )

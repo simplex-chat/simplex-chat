@@ -11,7 +11,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -19,6 +19,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.durationText
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
@@ -58,7 +59,7 @@ fun ComposeVoiceView(
         ) {
           Icon(
             if (audioPlaying.value) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
-            stringResource(R.string.icon_descr_file),
+            stringResource(MR.strings.icon_descr_file),
             Modifier
               .padding(start = 4.dp, end = 2.dp)
               .size(36.dp),
@@ -90,7 +91,7 @@ fun ComposeVoiceView(
           ) {
             Icon(
               painterResource(R.drawable.ic_close),
-              contentDescription = stringResource(R.string.icon_descr_cancel_file_preview),
+              contentDescription = stringResource(MR.strings.icon_descr_cancel_file_preview),
               tint = MaterialTheme.colors.primary,
               modifier = Modifier.padding(10.dp)
             )

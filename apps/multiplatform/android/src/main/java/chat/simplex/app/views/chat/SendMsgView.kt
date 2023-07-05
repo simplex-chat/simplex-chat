@@ -48,6 +48,9 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import java.lang.reflect.Field
 
@@ -96,8 +99,8 @@ fun SendMsgView(
           .matchParentSize()
           .clickable(enabled = !userCanSend, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
             AlertManager.shared.showAlertMsg(
-              title = generalGetString(R.string.observer_cant_send_message_title),
-              text = generalGetString(R.string.observer_cant_send_message_desc)
+              title = generalGetString(MR.strings.observer_cant_send_message_title),
+              text = generalGetString(MR.strings.observer_cant_send_message_desc)
             )
           })
       )
@@ -175,7 +178,7 @@ fun SendMsgView(
               ) {
                 menuItems.add {
                   ItemAction(
-                    generalGetString(R.string.send_live_message),
+                    generalGetString(MR.strings.send_live_message),
                     BoltFilled,
                     onClick = {
                       startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
@@ -187,7 +190,7 @@ fun SendMsgView(
               if (timedMessageAllowed) {
                 menuItems.add {
                   ItemAction(
-                    generalGetString(R.string.disappearing_message),
+                    generalGetString(MR.strings.disappearing_message),
                     painterResource(R.drawable.ic_timer),
                     onClick = {
                       showCustomDisappearingMessageDialog.value = true
@@ -230,8 +233,8 @@ private fun CustomDisappearingMessageDialog(
     }
     CustomTimePickerDialog(
       selectedDisappearingMessageTime,
-      title = generalGetString(R.string.delete_after),
-      confirmButtonText = generalGetString(R.string.send_disappearing_message_send),
+      title = generalGetString(MR.strings.delete_after),
+      confirmButtonText = generalGetString(MR.strings.send_disappearing_message_send),
       confirmButtonAction = { ttl ->
         sendMessage(ttl)
         customDisappearingMessageTimePref?.set?.invoke(ttl)
@@ -273,13 +276,13 @@ private fun CustomDisappearingMessageDialog(
             ) {
               Text(" ") // centers title
               Text(
-                generalGetString(R.string.send_disappearing_message),
+                generalGetString(MR.strings.send_disappearing_message),
                 fontSize = 16.sp,
                 color = MaterialTheme.colors.secondary
               )
               Icon(
                 painterResource(R.drawable.ic_close),
-                generalGetString(R.string.icon_descr_close_button),
+                generalGetString(MR.strings.icon_descr_close_button),
                 tint = MaterialTheme.colors.secondary,
                 modifier = Modifier
                   .size(25.dp)
@@ -287,19 +290,19 @@ private fun CustomDisappearingMessageDialog(
               )
             }
 
-            ChoiceButton(generalGetString(R.string.send_disappearing_message_30_seconds)) {
+            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_30_seconds)) {
               sendMessage(30)
               setShowDialog(false)
             }
-            ChoiceButton(generalGetString(R.string.send_disappearing_message_1_minute)) {
+            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_1_minute)) {
               sendMessage(60)
               setShowDialog(false)
             }
-            ChoiceButton(generalGetString(R.string.send_disappearing_message_5_minutes)) {
+            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_5_minutes)) {
               sendMessage(300)
               setShowDialog(false)
             }
-            ChoiceButton(generalGetString(R.string.send_disappearing_message_custom_time)) {
+            ChoiceButton(generalGetString(MR.strings.send_disappearing_message_custom_time)) {
               showCustomTimePicker.value = true
             }
           }
@@ -411,14 +414,14 @@ private fun NativeKeyboard(
     showDeleteTextButton.value = it.lineCount >= 4 && !cs.inProgress
   }
   if (composeState.value.preview is ComposePreview.VoicePreview) {
-    ComposeOverlay(R.string.voice_message_send_text, textStyle, padding)
+    ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
   } else if (userIsObserver) {
-    ComposeOverlay(R.string.you_are_observer, textStyle, padding)
+    ComposeOverlay(MR.strings.you_are_observer, textStyle, padding)
   }
 }
 
 @Composable
-private fun ComposeOverlay(textId: Int, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
+private fun ComposeOverlay(textId: StringResource, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
   Text(
     generalGetString(textId),
     Modifier.padding(padding),
@@ -491,7 +494,7 @@ private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp), enabled = enabled) {
     Icon(
       painterResource(R.drawable.ic_keyboard_voice),
-      stringResource(R.string.icon_descr_record_voice_message),
+      stringResource(MR.strings.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.secondary,
       modifier = Modifier
         .size(36.dp)
@@ -505,7 +508,7 @@ private fun VoiceButtonWithoutPermission(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
       painterResource(R.drawable.ic_keyboard_voice_filled),
-      stringResource(R.string.icon_descr_record_voice_message),
+      stringResource(MR.strings.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(34.dp)
@@ -537,7 +540,7 @@ private fun StopRecordButton(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
       painterResource(R.drawable.ic_stop_filled),
-      stringResource(R.string.icon_descr_record_voice_message),
+      stringResource(MR.strings.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(36.dp)
@@ -551,7 +554,7 @@ private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
   IconButton({}, Modifier.size(36.dp), interactionSource = interactionSource) {
     Icon(
       painterResource(R.drawable.ic_keyboard_voice_filled),
-      stringResource(R.string.icon_descr_record_voice_message),
+      stringResource(MR.strings.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(34.dp)
@@ -572,7 +575,7 @@ private fun CancelLiveMessageButton(
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
       painterResource(R.drawable.ic_close),
-      stringResource(R.string.icon_descr_cancel_live_message),
+      stringResource(MR.strings.icon_descr_cancel_live_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(36.dp)
@@ -605,7 +608,7 @@ private fun SendMsgButton(
   ) {
     Icon(
       icon,
-      stringResource(R.string.icon_descr_send_message),
+      stringResource(MR.strings.icon_descr_send_message),
       tint = Color.White,
       modifier = Modifier
         .size(sizeDp.value.dp)
@@ -634,7 +637,7 @@ private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
   ) {
     Icon(
       BoltFilled,
-      stringResource(R.string.icon_descr_send_message),
+      stringResource(MR.strings.icon_descr_send_message),
       tint = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       modifier = Modifier
         .size(36.dp)
@@ -685,9 +688,9 @@ private fun startLiveMessage(
     start()
   } else {
     AlertManager.shared.showAlertDialog(
-      title = generalGetString(R.string.live_message),
-      text = generalGetString(R.string.send_live_message_desc),
-      confirmText = generalGetString(R.string.send_verb),
+      title = generalGetString(MR.strings.live_message),
+      text = generalGetString(MR.strings.send_live_message_desc),
+      confirmText = generalGetString(MR.strings.send_verb),
       onConfirm = {
         liveMessageAlertShown.set(true)
         start()
@@ -697,22 +700,22 @@ private fun startLiveMessage(
 
 private fun showNeedToAllowVoiceAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.allow_voice_messages_question),
-    text = generalGetString(R.string.you_need_to_allow_to_send_voice),
-    confirmText = generalGetString(R.string.allow_verb),
-    dismissText = generalGetString(R.string.cancel_verb),
+    title = generalGetString(MR.strings.allow_voice_messages_question),
+    text = generalGetString(MR.strings.you_need_to_allow_to_send_voice),
+    confirmText = generalGetString(MR.strings.allow_verb),
+    dismissText = generalGetString(MR.strings.cancel_verb),
     onConfirm = onConfirm,
   )
 }
 
 private fun showDisabledVoiceAlert(isDirectChat: Boolean) {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.voice_messages_prohibited),
+    title = generalGetString(MR.strings.voice_messages_prohibited),
     text = generalGetString(
       if (isDirectChat)
-        R.string.ask_your_contact_to_enable_voice
+        MR.strings.ask_your_contact_to_enable_voice
       else
-        R.string.only_group_owners_can_enable_voice
+        MR.strings.only_group_owners_can_enable_voice
     )
   )
 }

@@ -19,7 +19,7 @@ import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.isVisible
@@ -35,6 +35,7 @@ import coil.size.Size
 import com.google.accompanist.pager.*
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.StyledPlayerView
+import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
@@ -159,7 +160,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
               placeholder = BitmapPainter(imageBitmap.asImageBitmap()), // show original image while it's still loading by coil
               imageLoader = imageLoader
             ),
-            contentDescription = stringResource(R.string.image_descr),
+            contentDescription = stringResource(MR.strings.image_descr),
             contentScale = ContentScale.Fit,
             modifier = modifier,
           )

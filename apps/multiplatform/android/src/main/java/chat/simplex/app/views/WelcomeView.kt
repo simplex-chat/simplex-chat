@@ -15,7 +15,7 @@ import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -31,6 +31,8 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.navigationBarsWithImePadding
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -55,18 +57,18 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
       }
     })*/
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-      AppBarTitle(stringResource(R.string.create_profile), bottomPadding = DEFAULT_PADDING)
-      ReadableText(R.string.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1)
-      ReadableText(R.string.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1)
+      AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
+      ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1)
+      ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1)
       Spacer(Modifier.height(DEFAULT_PADDING))
       Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(
-          stringResource(R.string.display_name),
+          stringResource(MR.strings.display_name),
           fontSize = 16.sp
         )
         if (!isValidDisplayName(displayName.value)) {
           Text(
-            stringResource(R.string.no_spaces),
+            stringResource(MR.strings.no_spaces),
             fontSize = 16.sp,
             color = Color.Red
           )
@@ -75,7 +77,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
       ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
       Spacer(Modifier.height(DEFAULT_PADDING))
       Text(
-        stringResource(R.string.full_name_optional__prompt),
+        stringResource(MR.strings.full_name_optional__prompt),
         fontSize = 16.sp,
         modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
       )
@@ -85,7 +87,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
     Row {
       if (chatModel.users.isEmpty()) {
         SimpleButtonDecorated(
-          text = stringResource(R.string.about_simplex),
+          text = stringResource(MR.strings.about_simplex),
           icon = painterResource(R.drawable.ic_arrow_back_ios_new),
           textDecoration = TextDecoration.None,
           fontWeight = FontWeight.Medium
@@ -104,8 +106,8 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
       }
       Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
-          Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
-          Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(R.string.create_profile_button), tint = createColor)
+          Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
+          Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = createColor)
         }
       }
     }

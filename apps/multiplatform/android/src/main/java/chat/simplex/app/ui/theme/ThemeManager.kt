@@ -7,6 +7,7 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.AppPreferences
 import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.res.MR
 
 object ThemeManager {
   private val appPrefs: AppPreferences by lazy {
@@ -62,28 +63,28 @@ object ThemeManager {
       Triple(
         if (darkForSystemTheme) systemDarkThemeColors().first else LightColorPalette,
         DefaultTheme.SYSTEM,
-        generalGetString(R.string.theme_system)
+        generalGetString(MR.strings.theme_system)
       )
     )
     allThemes.add(
       Triple(
         LightColorPalette,
         DefaultTheme.LIGHT,
-        generalGetString(R.string.theme_light)
+        generalGetString(MR.strings.theme_light)
       )
     )
     allThemes.add(
       Triple(
         DarkColorPalette,
         DefaultTheme.DARK,
-        generalGetString(R.string.theme_dark)
+        generalGetString(MR.strings.theme_dark)
       )
     )
     allThemes.add(
       Triple(
         SimplexColorPalette,
         DefaultTheme.SIMPLEX,
-        generalGetString(R.string.theme_simplex)
+        generalGetString(MR.strings.theme_simplex)
       )
     )
     return allThemes
