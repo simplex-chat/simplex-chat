@@ -127,7 +127,7 @@ data CIContent (d :: MsgDirection) where
   CISndCall :: CICallStatus -> Int -> CIContent 'MDSnd
   CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
   CIRcvIntegrityError :: MsgErrorType -> CIContent 'MDRcv
-  CIRcvDecryptionError :: MsgDecryptError -> Word32 -> Maybe Bool -> CIContent 'MDRcv
+  CIRcvDecryptionError :: MsgDecryptError -> Word32 -> CIContent 'MDRcv
   CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
@@ -256,7 +256,7 @@ instance ToJSON DBSndGroupEvent where
 data RcvConnEvent
   = RCESwitchQueue {phase :: SwitchPhase}
   | RCERatchetSync {syncStatus :: RatchetSyncState}
-  | RCEConnectionCodeChanged
+  | RCEVerificationCodeReset
   deriving (Show, Generic)
 
 data SndConnEvent
@@ -341,7 +341,7 @@ ciContentToText = \case
   CISndCall status duration -> "outgoing call: " <> ciCallInfoText status duration
   CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
   CIRcvIntegrityError err -> msgIntegrityError err
-  CIRcvDecryptionError err n syncRequired -> msgDecryptErrorText err n syncRequired
+  CIRcvDecryptionError err n -> msgDecryptErrorText err n
   CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
   CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
   CIRcvGroupEvent event -> rcvGroupEventToText event
@@ -393,7 +393,7 @@ rcvConnEventToText = \case
     SPSecured -> "secured new address for you..."
     SPCompleted -> "changed address for you"
   RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
-  RCEConnectionCodeChanged -> "security code changed"
+  RCEVerificationCodeReset -> "security code changed"
 
 ratchetSyncStatusToText :: RatchetSyncState -> Text
 ratchetSyncStatusToText = \case
@@ -427,11 +427,10 @@ msgIntegrityError = \case
   MsgBadHash -> "incorrect message hash"
   MsgDuplicate -> "duplicate message ID"
 
-msgDecryptErrorText :: MsgDecryptError -> Word32 -> Maybe Bool -> Text
-msgDecryptErrorText err n syncRequired =
+msgDecryptErrorText :: MsgDecryptError -> Word32 -> Text
+msgDecryptErrorText err n =
   "decryption error, possibly due to the device change"
     <> maybe "" (\ed -> " (" <> ed <> ")") errDesc
-    <> (", " <> syncRequiredText)
   where
     errDesc = case err of
       MDERatchetHeader -> Just $ "header" <> counter
@@ -440,9 +439,6 @@ msgDecryptErrorText err n syncRequired =
       MDEOther -> counter_
     counter_ = if n == 1 then Nothing else Just $ tshow n <> " messages"
     counter = maybe "" (", " <>) counter_
-    syncRequiredText = case syncRequired of
-      Just True -> "synchronization required"
-      _ -> "synchronization allowed"
 
 msgDirToModeratedContent_ :: SMsgDirection d -> CIContent d
 msgDirToModeratedContent_ = \case
@@ -482,7 +478,7 @@ data JSONCIContent
   | JCISndCall {status :: CICallStatus, duration :: Int} -- duration in seconds
   | JCIRcvCall {status :: CICallStatus, duration :: Int}
   | JCIRcvIntegrityError {msgError :: MsgErrorType}
-  | JCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32, syncRequired :: Maybe Bool}
+  | JCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
   | JCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCIRcvGroupEvent {rcvGroupEvent :: RcvGroupEvent}
@@ -518,7 +514,7 @@ jsonCIContent = \case
   CISndCall status duration -> JCISndCall {status, duration}
   CIRcvCall status duration -> JCIRcvCall {status, duration}
   CIRcvIntegrityError err -> JCIRcvIntegrityError err
-  CIRcvDecryptionError err n syncRequired -> JCIRcvDecryptionError err n syncRequired
+  CIRcvDecryptionError err n -> JCIRcvDecryptionError err n
   CIRcvGroupInvitation groupInvitation memberRole -> JCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rcvGroupEvent -> JCIRcvGroupEvent {rcvGroupEvent}
@@ -546,7 +542,7 @@ aciContentJSON = \case
   JCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   JCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   JCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
-  JCIRcvDecryptionError err n syncRequired -> ACIContent SMDRcv $ CIRcvDecryptionError err n syncRequired
+  JCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
   JCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   JCIRcvGroupEvent {rcvGroupEvent} -> ACIContent SMDRcv $ CIRcvGroupEvent rcvGroupEvent
@@ -575,7 +571,7 @@ data DBJSONCIContent
   | DBJCISndCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvIntegrityError {msgError :: DBMsgErrorType}
-  | DBJCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32, syncRequired :: Maybe Bool}
+  | DBJCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}
@@ -611,7 +607,7 @@ dbJsonCIContent = \case
   CISndCall status duration -> DBJCISndCall {status, duration}
   CIRcvCall status duration -> DBJCIRcvCall {status, duration}
   CIRcvIntegrityError err -> DBJCIRcvIntegrityError $ DBME err
-  CIRcvDecryptionError err n syncRequired -> DBJCIRcvDecryptionError err n syncRequired
+  CIRcvDecryptionError err n -> DBJCIRcvDecryptionError err n
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
@@ -639,7 +635,7 @@ aciContentDBJSON = \case
   DBJCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   DBJCIRcvIntegrityError (DBME err) -> ACIContent SMDRcv $ CIRcvIntegrityError err
-  DBJCIRcvDecryptionError err n syncRequired -> ACIContent SMDRcv $ CIRcvDecryptionError err n syncRequired
+  DBJCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge

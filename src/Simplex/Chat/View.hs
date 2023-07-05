@@ -90,8 +90,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
   CRGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
-  CRContactConnectionCodeChanged u ct -> ttyUser u $ viewContactCodeChanged ct
-  CRGroupMemberConnectionCodeChanged u g m -> ttyUser u $ viewGroupMemberCodeChanged g m
+  CRContactVerificationReset u ct -> ttyUser u $ viewContactVerificationReset ct
+  CRGroupMemberVerificationReset u g m -> ttyUser u $ viewGroupMemberVerificationReset g m
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
@@ -983,12 +983,12 @@ viewGroupMemberRatchetSync g m@GroupMember {localDisplayName = n} RatchetSyncPro
   where
     help = ["use " <> highlight ("/sync #" <> groupName' g <> " " <> n) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
 
-viewContactCodeChanged :: Contact -> [StyledString]
-viewContactCodeChanged ct =
+viewContactVerificationReset :: Contact -> [StyledString]
+viewContactVerificationReset ct =
   [ttyContact' ct <> ": security code changed"]
 
-viewGroupMemberCodeChanged :: GroupInfo -> GroupMember -> [StyledString]
-viewGroupMemberCodeChanged g m =
+viewGroupMemberVerificationReset :: GroupInfo -> GroupMember -> [StyledString]
+viewGroupMemberVerificationReset g m =
   [ttyGroup' g <> " " <> ttyMember m <> ": security code changed"]
 
 viewContactCode :: Contact -> Text -> Bool -> [StyledString]

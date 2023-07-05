@@ -2238,7 +2238,7 @@ setupDesynchronizedRatchet tmp alice cath = do
     cath <# "#team alice> 3"
     (bob </)
     bob ##> "/tail #team 1"
-    bob <# "#team alice> decryption error, possibly due to the device change (header, 3 messages), synchronization required"
+    bob <# "#team alice> decryption error, possibly due to the device change (header, 3 messages)"
   where
     copyDb from to = do
       copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
