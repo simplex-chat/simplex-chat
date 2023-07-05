@@ -28,7 +28,6 @@ import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import Data.Word (Word32)
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
