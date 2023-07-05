@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,7 +98,7 @@ fun ColumnScope.OneTimeLinkSection(connReq: String, share: () -> Unit, learnMore
 @Composable
 fun ShareLinkButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_share),
+    painterResource(MR.images.ic_share),
     stringResource(MR.strings.share_invitation_link),
     onClick,
     iconColor = MaterialTheme.colors.primary,
@@ -109,7 +109,7 @@ fun ShareLinkButton(onClick: () -> Unit) {
 @Composable
 fun OneTimeLinkLearnMoreButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_info),
+    painterResource(MR.images.ic_info),
     stringResource(MR.strings.learn_more),
     onClick,
   )
@@ -126,7 +126,7 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
       horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start
     ) {
       Icon(
-        if (supportedIncognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_info),
+        if (supportedIncognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_info),
         stringResource(MR.strings.incognito),
         tint = if (supportedIncognito) Indigo else WarningOrange,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
@@ -142,7 +142,7 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
       horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start
     ) {
       Icon(
-        painterResource(R.drawable.ic_info),
+        painterResource(MR.images.ic_info),
         stringResource(MR.strings.incognito),
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)

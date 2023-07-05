@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -273,14 +273,14 @@ private fun ActiveCallOverlayLayout(
           ToggleAudioButton(call, toggleAudio)
           Spacer(Modifier.size(40.dp))
           IconButton(onClick = dismiss) {
-            Icon(painterResource(R.drawable.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+            Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
           }
           if (call.videoEnabled) {
-            ControlButton(call, painterResource(R.drawable.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, flipCamera)
-            ControlButton(call, painterResource(R.drawable.ic_videocam_filled), MR.strings.icon_descr_video_off, toggleVideo)
+            ControlButton(call, painterResource(MR.images.ic_flip_camera_android_filled), MR.strings.icon_descr_flip_camera, flipCamera)
+            ControlButton(call, painterResource(MR.images.ic_videocam_filled), MR.strings.icon_descr_video_off, toggleVideo)
           } else {
             Spacer(Modifier.size(48.dp))
-            ControlButton(call, painterResource(R.drawable.ic_videocam_off), MR.strings.icon_descr_video_on, toggleVideo)
+            ControlButton(call, painterResource(MR.images.ic_videocam_off), MR.strings.icon_descr_video_on, toggleVideo)
           }
         }
       }
@@ -298,7 +298,7 @@ private fun ActiveCallOverlayLayout(
         Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
           Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             IconButton(onClick = dismiss) {
-              Icon(painterResource(R.drawable.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+              Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
             }
           }
           Box(Modifier.padding(start = 32.dp)) {
@@ -329,18 +329,18 @@ private fun ControlButton(call: Call, icon: Painter, iconText: StringResource, a
 @Composable
 private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
   if (call.audioEnabled) {
-    ControlButton(call, painterResource(R.drawable.ic_mic), MR.strings.icon_descr_audio_off, toggleAudio)
+    ControlButton(call, painterResource(MR.images.ic_mic), MR.strings.icon_descr_audio_off, toggleAudio)
   } else {
-    ControlButton(call, painterResource(R.drawable.ic_mic_off), MR.strings.icon_descr_audio_on, toggleAudio)
+    ControlButton(call, painterResource(MR.images.ic_mic_off), MR.strings.icon_descr_audio_on, toggleAudio)
   }
 }
 
 @Composable
 private fun ToggleSoundButton(call: Call, enabled: Boolean, toggleSound: () -> Unit) {
   if (call.soundSpeaker) {
-    ControlButton(call, painterResource(R.drawable.ic_volume_up), MR.strings.icon_descr_speaker_off, toggleSound, enabled)
+    ControlButton(call, painterResource(MR.images.ic_volume_up), MR.strings.icon_descr_speaker_off, toggleSound, enabled)
   } else {
-    ControlButton(call, painterResource(R.drawable.ic_volume_down), MR.strings.icon_descr_speaker_on, toggleSound, enabled)
+    ControlButton(call, painterResource(MR.images.ic_volume_down), MR.strings.icon_descr_speaker_on, toggleSound, enabled)
   }
 }
 

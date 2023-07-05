@@ -8,7 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -174,7 +174,7 @@ fun CustomTimePickerDialog(
               color = MaterialTheme.colors.secondary
             )
             Icon(
-              painterResource(R.drawable.ic_close),
+              painterResource(MR.images.ic_close),
               generalGetString(MR.strings.icon_descr_close_button),
               tint = MaterialTheme.colors.secondary,
               modifier = Modifier

@@ -10,7 +10,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -65,7 +65,7 @@ private fun VerifyCodeLayout(
     val splitCode = splitToParts(connectionCode, 24)
     Row(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), horizontalArrangement = Arrangement.Center) {
       if (connectionVerified) {
-        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 4.dp).size(22.dp), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 4.dp).size(22.dp), tint = MaterialTheme.colors.secondary)
         Text(String.format(stringResource(MR.strings.is_verified), displayName))
       } else {
         Text(String.format(stringResource(MR.strings.is_not_verified), displayName))
@@ -88,7 +88,7 @@ private fun VerifyCodeLayout(
       }
       Box(Modifier.weight(1f)) {
         IconButton({ shareText(connectionCode) }, Modifier.size(20.dp).align(Alignment.CenterStart)) {
-          Icon(painterResource(R.drawable.ic_share_filled), null, tint = MaterialTheme.colors.primary)
+          Icon(painterResource(MR.images.ic_share_filled), null, tint = MaterialTheme.colors.primary)
         }
       }
       Spacer(Modifier.weight(1f))
@@ -104,16 +104,16 @@ private fun VerifyCodeLayout(
       horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       if (connectionVerified) {
-        SimpleButton(generalGetString(MR.strings.clear_verification), painterResource(R.drawable.ic_shield)) {
+        SimpleButton(generalGetString(MR.strings.clear_verification), painterResource(MR.images.ic_shield)) {
           verifyCode(null) {}
         }
       } else {
-        SimpleButton(generalGetString(MR.strings.scan_code), painterResource(R.drawable.ic_qr_code)) {
+        SimpleButton(generalGetString(MR.strings.scan_code), painterResource(MR.images.ic_qr_code)) {
           ModalManager.shared.showModal {
             ScanCodeView(verifyCode) { }
           }
         }
-        SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(R.drawable.ic_verified_user)) {
+        SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(MR.images.ic_verified_user)) {
           verifyCode(connectionCode) { verified ->
             if (!verified) {
               AlertManager.shared.showAlertMsg(

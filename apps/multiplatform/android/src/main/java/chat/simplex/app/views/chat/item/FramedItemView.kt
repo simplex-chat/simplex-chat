@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.UriHandler
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
@@ -141,7 +141,7 @@ fun FramedItemView(
             ciQuotedMsgView(qi)
           }
           Icon(
-            if (qi.content is MsgContent.MCFile) painterResource(R.drawable.ic_draft_filled) else painterResource(R.drawable.ic_mic_filled),
+            if (qi.content is MsgContent.MCFile) painterResource(MR.images.ic_draft_filled) else painterResource(MR.images.ic_mic_filled),
             if (qi.content is MsgContent.MCFile) stringResource(MR.strings.icon_descr_file) else stringResource(MR.strings.voice_message),
             Modifier
               .padding(top = 6.dp, end = 4.dp)
@@ -182,9 +182,9 @@ fun FramedItemView(
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
             if (ci.meta.itemDeleted is CIDeleted.Moderated) {
-              FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(R.drawable.ic_flag))
+              FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
             } else {
-              FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(R.drawable.ic_delete))
+              FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
             }
           } else if (ci.meta.isLive) {
             FramedItemHeader(stringResource(MR.strings.live), false)

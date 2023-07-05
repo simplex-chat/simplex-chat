@@ -10,7 +10,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,7 +58,7 @@ fun ComposeVoiceView(
           enabled = finishedRecording
         ) {
           Icon(
-            if (audioPlaying.value) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
+            if (audioPlaying.value) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
             stringResource(MR.strings.icon_descr_file),
             Modifier
               .padding(start = 4.dp, end = 2.dp)
@@ -90,7 +90,7 @@ fun ComposeVoiceView(
             modifier = Modifier.padding(0.dp)
           ) {
             Icon(
-              painterResource(R.drawable.ic_close),
+              painterResource(MR.images.ic_close),
               contentDescription = stringResource(MR.strings.icon_descr_cancel_file_preview),
               tint = MaterialTheme.colors.primary,
               modifier = Modifier.padding(10.dp)

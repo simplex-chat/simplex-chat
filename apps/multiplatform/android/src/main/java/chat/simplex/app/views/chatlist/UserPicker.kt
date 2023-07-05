@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
@@ -168,9 +168,9 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
   ) {
     UserProfileRow(u)
     if (u.activeUser) {
-        Icon(painterResource(R.drawable.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (u.hidden) {
-        Icon(painterResource(R.drawable.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     } else if (unreadCount > 0) {
       Box(
         contentAlignment = Alignment.Center
@@ -186,7 +186,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
         )
       }
     } else if (!u.showNtfs) {
-      Icon(painterResource(R.drawable.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+      Icon(painterResource(MR.images.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
     }  else {
       Box(Modifier.size(20.dp))
     }
@@ -219,7 +219,7 @@ fun UserProfileRow(u: User) {
 private fun SettingsPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-    Icon(painterResource(R.drawable.ic_settings), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_settings), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(
       text,
@@ -232,7 +232,7 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
 private fun CancelPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.cancel_verb)
-    Icon(painterResource(R.drawable.ic_close), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_close), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(
       text,

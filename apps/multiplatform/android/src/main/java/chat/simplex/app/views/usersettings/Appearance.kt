@@ -31,7 +31,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -186,47 +186,47 @@ fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
       SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY, currentTheme.colors.primary) }) {
         val title = generalGetString(MR.strings.color_primary)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primary)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.primary)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT, currentTheme.colors.primaryVariant) }) {
         val title = generalGetString(MR.strings.color_primary_variant)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primaryVariant)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.primaryVariant)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY, currentTheme.colors.secondary) }) {
         val title = generalGetString(MR.strings.color_secondary)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.secondary)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.secondary)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY_VARIANT, currentTheme.colors.secondaryVariant) }) {
         val title = generalGetString(MR.strings.color_secondary_variant)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.secondaryVariant)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.secondaryVariant)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.BACKGROUND, currentTheme.colors.background) }) {
         val title = generalGetString(MR.strings.color_background)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.background)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.background)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SURFACE, currentTheme.colors.surface) }) {
         val title = generalGetString(MR.strings.color_surface)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.surface)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.surface)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.TITLE, currentTheme.appColors.title) }) {
         val title = generalGetString(MR.strings.color_title)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = currentTheme.appColors.title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.title)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE, currentTheme.appColors.sentMessage) }) {
         val title = generalGetString(MR.strings.color_sent_message)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE, currentTheme.appColors.receivedMessage) }) {
         val title = generalGetString(MR.strings.color_received_message)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
       }
     }
     val isInDarkTheme = isInDarkTheme()

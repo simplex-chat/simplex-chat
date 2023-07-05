@@ -9,7 +9,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -109,7 +109,7 @@ private fun CreateAddressButton(onClick: () -> Unit) {
 fun ShareAddressButton(onClick: () -> Unit) {
   SimpleButtonFrame(onClick) {
     Icon(
-      painterResource(R.drawable.ic_share_filled), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
+      painterResource(MR.images.ic_share_filled), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(end = 8.dp).size(18.dp)
     )
     Text(stringResource(MR.strings.share_verb), style = MaterialTheme.typography.caption, color = MaterialTheme.colors.primary)
@@ -120,7 +120,7 @@ fun ShareAddressButton(onClick: () -> Unit) {
 fun ShareViaEmailButton(onClick: () -> Unit) {
   SimpleButtonFrame(onClick) {
     Icon(
-      painterResource(R.drawable.ic_mail), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
+      painterResource(MR.images.ic_mail), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(end = 8.dp).size(30.dp)
     )
     Text(stringResource(MR.strings.invite_friends), style = MaterialTheme.typography.h6, color = MaterialTheme.colors.primary)
@@ -129,12 +129,12 @@ fun ShareViaEmailButton(onClick: () -> Unit) {
 
 @Composable
 private fun ContinueButton(onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.continue_to_next_step), painterResource(R.drawable.ic_chevron_right), click = onClick)
+  SimpleButtonIconEnded(stringResource(MR.strings.continue_to_next_step), painterResource(MR.images.ic_chevron_right), click = onClick)
 }
 
 @Composable
 private fun SkipButton(onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.dont_create_address), painterResource(R.drawable.ic_chevron_right), click = onClick)
+  SimpleButtonIconEnded(stringResource(MR.strings.dont_create_address), painterResource(MR.images.ic_chevron_right), click = onClick)
   TextBelowButton(stringResource(MR.strings.you_can_create_it_later))
 }
 

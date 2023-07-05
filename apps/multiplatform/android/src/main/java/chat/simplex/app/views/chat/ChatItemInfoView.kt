@@ -13,7 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -81,11 +81,11 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
       }
       if (text != "") {
         DefaultDropdownMenu(showMenu) {
-          ItemAction(stringResource(MR.strings.share_verb), painterResource(R.drawable.ic_share), onClick = {
+          ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
             shareText(text)
             showMenu.value = false
           })
-          ItemAction(stringResource(MR.strings.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
+          ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
             copyText(text)
             showMenu.value = false
           })

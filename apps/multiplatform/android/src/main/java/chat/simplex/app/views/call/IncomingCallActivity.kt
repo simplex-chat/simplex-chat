@@ -24,7 +24,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -171,18 +171,18 @@ fun IncomingCallLockScreenAlertLayout(
       Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Row {
-        LockScreenCallButton(stringResource(MR.strings.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
+        LockScreenCallButton(stringResource(MR.strings.reject), painterResource(MR.images.ic_call_end_filled), Color.Red, rejectCall)
         Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(MR.strings.ignore), painterResource(R.drawable.ic_close), MaterialTheme.colors.primary, ignoreCall)
+        LockScreenCallButton(stringResource(MR.strings.ignore), painterResource(MR.images.ic_close), MaterialTheme.colors.primary, ignoreCall)
         Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(MR.strings.accept), painterResource(R.drawable.ic_check_filled), SimplexGreen, acceptCall)
+        LockScreenCallButton(stringResource(MR.strings.accept), painterResource(MR.images.ic_check_filled), SimplexGreen, acceptCall)
       }
     } else if (callOnLockScreen == CallOnLockScreen.SHOW) {
       SimpleXLogo()
       Text(stringResource(MR.strings.open_simplex_chat_to_accept_call), textAlign = TextAlign.Center, lineHeight = 22.sp)
       Text(stringResource(MR.strings.allow_accepting_calls_from_lock_screen), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2, lineHeight = 22.sp)
       Spacer(Modifier.fillMaxHeight().weight(1f))
-      SimpleButton(text = stringResource(MR.strings.open_verb), icon = painterResource(R.drawable.ic_check_filled), click = openApp)
+      SimpleButton(text = stringResource(MR.strings.open_verb), icon = painterResource(MR.images.ic_check_filled), click = openApp)
     }
   }
 }
@@ -190,7 +190,7 @@ fun IncomingCallLockScreenAlertLayout(
 @Composable
 private fun SimpleXLogo() {
   Image(
-    painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
+    painter = painterResource(if (isInDarkTheme()) MR.images.logo_light else MR.images.logo),
     contentDescription = stringResource(MR.strings.image_descr_simplex_logo),
     modifier = Modifier
       .padding(vertical = DEFAULT_PADDING)

@@ -12,7 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +27,7 @@ import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 
 @Composable
 fun ChatPreviewView(
@@ -44,7 +45,7 @@ fun ChatPreviewView(
   @Composable
   fun groupInactiveIcon() {
     Icon(
-      painterResource(R.drawable.ic_cancel_filled),
+      painterResource(MR.images.ic_cancel_filled),
       stringResource(MR.strings.icon_descr_group_inactive),
       Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
       tint = MaterialTheme.colors.secondary
@@ -77,15 +78,15 @@ fun ChatPreviewView(
 
   @Composable
   fun VerifiedIcon() {
-    Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
   }
 
   fun messageDraft(draft: ComposeState): Pair<AnnotatedString, Map<String, InlineTextContent>> {
-    fun attachment(): Pair<Int, String?>? =
+    fun attachment(): Pair<ImageResource, String?>? =
       when (draft.preview) {
-        is ComposePreview.FilePreview -> R.drawable.ic_draft_filled to draft.preview.fileName
-        is ComposePreview.MediaPreview -> R.drawable.ic_image to null
-        is ComposePreview.VoicePreview -> R.drawable.ic_play_arrow_filled to durationText(draft.preview.durationMs / 1000)
+        is ComposePreview.FilePreview -> MR.images.ic_draft_filled to draft.preview.fileName
+        is ComposePreview.MediaPreview -> MR.images.ic_image to null
+        is ComposePreview.VoicePreview -> MR.images.ic_play_arrow_filled to durationText(draft.preview.durationMs / 1000)
         else -> null
       }
 
@@ -106,12 +107,12 @@ fun ChatPreviewView(
       "editIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(painterResource(R.drawable.ic_edit_note), null, tint = MaterialTheme.colors.primary)
+        Icon(painterResource(MR.images.ic_edit_note), null, tint = MaterialTheme.colors.primary)
       },
       "attachmentIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(if (attachment?.first != null) painterResource(attachment.first) else painterResource(R.drawable.ic_edit_note), null, tint = MaterialTheme.colors.secondary)
+        Icon(if (attachment?.first != null) painterResource(attachment.first) else painterResource(MR.images.ic_edit_note), null, tint = MaterialTheme.colors.secondary)
       }
     )
     return text to inlineContent
@@ -237,7 +238,7 @@ fun ChatPreviewView(
           contentAlignment = Alignment.Center
         ) {
           Icon(
-            painterResource(R.drawable.ic_notifications_off_filled),
+            painterResource(MR.images.ic_notifications_off_filled),
             contentDescription = generalGetString(MR.strings.notifications),
             tint = MaterialTheme.colors.secondary,
             modifier = Modifier
@@ -252,7 +253,7 @@ fun ChatPreviewView(
           contentAlignment = Alignment.Center
         ) {
           Icon(
-            painterResource(R.drawable.ic_star_filled),
+            painterResource(MR.images.ic_star_filled),
             contentDescription = generalGetString(MR.strings.favorite_chat),
             tint = MaterialTheme.colors.secondary,
             modifier = Modifier
@@ -294,7 +295,7 @@ fun ChatStatusImage(s: NetworkStatus?) {
   val descr = s?.statusString
   if (s is NetworkStatus.Error) {
     Icon(
-      painterResource(R.drawable.ic_error),
+      painterResource(MR.images.ic_error),
       contentDescription = descr,
       tint = MaterialTheme.colors.secondary,
       modifier = Modifier

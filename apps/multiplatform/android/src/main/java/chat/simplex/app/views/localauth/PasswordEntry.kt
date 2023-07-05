@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
-import chat.simplex.app.R
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -17,6 +16,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
+import chat.simplex.res.MR
 
 @Composable
 fun PasscodeEntry(
@@ -56,13 +56,13 @@ private fun BoxWithConstraintsScope.VerticalPasswordGrid(password: MutableState<
     DigitsRow(s, 7, 8, 9, password)
     Divider()
     Row(Modifier.requiredHeight(s)) {
-      PasswordEdit(s, painterResource(R.drawable.ic_close)) {
+      PasswordEdit(s, painterResource(MR.images.ic_close)) {
         password.value = ""
       }
       VerticalDivider()
       PasswordDigit(s, 0, password)
       VerticalDivider()
-      PasswordEdit(s, painterResource(R.drawable.ic_backspace)) {
+      PasswordEdit(s, painterResource(MR.images.ic_backspace)) {
         password.value = password.value.dropLast(1)
       }
     }
@@ -76,7 +76,7 @@ private fun BoxWithConstraintsScope.HorizontalPasswordGrid(password: MutableStat
     Row(Modifier.height(IntrinsicSize.Min)) {
       DigitsRow(s, 1, 2, 3, password);
       VerticalDivider()
-      PasswordEdit(s, painterResource(R.drawable.ic_close)) {
+      PasswordEdit(s, painterResource(MR.images.ic_close)) {
         password.value = ""
       }
     }
@@ -90,7 +90,7 @@ private fun BoxWithConstraintsScope.HorizontalPasswordGrid(password: MutableStat
     Row(Modifier.height(IntrinsicSize.Min)) {
       DigitsRow(s, 7, 8, 9, password)
       VerticalDivider()
-      PasswordEdit(s, painterResource(R.drawable.ic_backspace)) {
+      PasswordEdit(s, painterResource(MR.images.ic_backspace)) {
         password.value = password.value.dropLast(1)
       }
     }

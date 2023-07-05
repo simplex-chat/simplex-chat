@@ -10,15 +10,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ValueTitleDesc
 import chat.simplex.app.views.helpers.ValueTitle
 import chat.simplex.app.views.usersettings.SettingsActionItemWithContent
+import chat.simplex.res.MR
 
 @Composable
 fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(), content: (@Composable ColumnScope.() -> Unit)) {
@@ -67,7 +67,7 @@ fun <T> SectionViewSelectable(
         SectionItemViewSpaceBetween({ onSelected(item.value) }) {
           Text(item.title)
           if (currentValue.value == item.value) {
-            Icon(painterResource(R.drawable.ic_check), item.title, tint = MaterialTheme.colors.primary)
+            Icon(painterResource(MR.images.ic_check), item.title, tint = MaterialTheme.colors.primary)
           }
         }
         Spacer(Modifier.padding(horizontal = 4.dp))

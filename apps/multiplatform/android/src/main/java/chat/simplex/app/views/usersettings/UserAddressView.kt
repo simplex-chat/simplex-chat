@@ -16,7 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -231,7 +231,7 @@ private fun UserAddressLayout(
 @Composable
 private fun CreateAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_qr_code),
+    painterResource(MR.images.ic_qr_code),
     stringResource(MR.strings.create_simplex_address),
     onClick,
     iconColor = MaterialTheme.colors.primary,
@@ -242,7 +242,7 @@ private fun CreateAddressButton(onClick: () -> Unit) {
 @Composable
 private fun LearnMoreButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_info),
+    painterResource(MR.images.ic_info),
     stringResource(MR.strings.learn_more_about_address),
     onClick,
   )
@@ -251,7 +251,7 @@ private fun LearnMoreButton(onClick: () -> Unit) {
 @Composable
 fun ShareViaEmailButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_mail),
+    painterResource(MR.images.ic_mail),
     stringResource(MR.strings.invite_friends),
     onClick,
     iconColor = MaterialTheme.colors.primary,
@@ -263,7 +263,7 @@ fun ShareViaEmailButton(onClick: () -> Unit) {
 fun ShareWithContactsButton(shareViaProfile: MutableState<Boolean>, setProfileAddress: (Boolean) -> Unit) {
   PreferenceToggleWithIcon(
     stringResource(MR.strings.share_with_contacts),
-    painterResource(R.drawable.ic_person),
+    painterResource(MR.images.ic_person),
     checked = shareViaProfile.value,
   ) { on ->
     shareViaProfile.value = on
@@ -301,7 +301,7 @@ fun ShareWithContactsButton(shareViaProfile: MutableState<Boolean>, setProfileAd
 
 @Composable
 private fun AutoAcceptToggle(autoAcceptState: MutableState<AutoAcceptState>, saveAas: (AutoAcceptState) -> Unit) {
-  PreferenceToggleWithIcon(stringResource(MR.strings.auto_accept_contact), painterResource(R.drawable.ic_check), checked = autoAcceptState.value.enable) {
+  PreferenceToggleWithIcon(stringResource(MR.strings.auto_accept_contact), painterResource(MR.images.ic_check), checked = autoAcceptState.value.enable) {
     autoAcceptState.value = if (!it)
       AutoAcceptState()
     else
@@ -313,7 +313,7 @@ private fun AutoAcceptToggle(autoAcceptState: MutableState<AutoAcceptState>, sav
 @Composable
 private fun DeleteAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_delete),
+    painterResource(MR.images.ic_delete),
     stringResource(MR.strings.delete_address),
     onClick,
     iconColor = MaterialTheme.colors.error,
@@ -390,7 +390,7 @@ private fun AutoAcceptSection(
 private fun AcceptIncognitoToggle(autoAcceptState: MutableState<AutoAcceptState>) {
   PreferenceToggleWithIcon(
     stringResource(MR.strings.accept_contact_incognito_button),
-    if (autoAcceptState.value.incognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_theater_comedy),
+    if (autoAcceptState.value.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_theater_comedy),
     if (autoAcceptState.value.incognito) Indigo else MaterialTheme.colors.secondary,
     autoAcceptState.value.incognito,
   ) {

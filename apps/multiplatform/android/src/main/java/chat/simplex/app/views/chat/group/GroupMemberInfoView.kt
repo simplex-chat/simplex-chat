@@ -17,7 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -301,7 +301,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Row(verticalAlignment = Alignment.CenterVertically) {
       if (member.verified) {
-        Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
       }
       Text(
         member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
@@ -324,7 +324,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
 @Composable
 fun RemoveMemberButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_delete),
+    painterResource(MR.images.ic_delete),
     stringResource(MR.strings.button_remove_member),
     click = onClick,
     textColor = Color.Red,
@@ -335,7 +335,7 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_chat),
+    painterResource(MR.images.ic_chat),
     stringResource(MR.strings.button_send_direct_message),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
@@ -346,7 +346,7 @@ fun OpenChatButton(onClick: () -> Unit) {
 @Composable
 fun ConnectViaAddressButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_link),
+    painterResource(MR.images.ic_link),
     stringResource(MR.strings.connect_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,

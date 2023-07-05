@@ -14,7 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
@@ -159,7 +159,7 @@ private fun UserProfilesLayout(
   ) {
     if (profileHidden.value) {
       SectionView {
-        SettingsActionItem(painterResource(R.drawable.ic_lock_open), stringResource(MR.strings.enter_password_to_show), click = {
+        SettingsActionItem(painterResource(MR.images.ic_lock_open), stringResource(MR.strings.enter_password_to_show), click = {
           profileHidden.value = false
         }
         )
@@ -175,7 +175,7 @@ private fun UserProfilesLayout(
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
         SectionItemView(addUser, minHeight = 68.dp) {
-          Icon(painterResource(R.drawable.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
+          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
           Spacer(Modifier.padding(horizontal = 4.dp))
           Text(stringResource(MR.strings.users_add), color = MaterialTheme.colors.primary)
         }
@@ -218,30 +218,30 @@ private fun UserView(
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
-        ItemAction(stringResource(MR.strings.user_unhide), painterResource(R.drawable.ic_lock_open), onClick = {
+        ItemAction(stringResource(MR.strings.user_unhide), painterResource(MR.images.ic_lock_open), onClick = {
           showMenu.value = false
           unhideUser(user)
         })
       } else {
         if (visibleUsersCount > 1) {
-          ItemAction(stringResource(MR.strings.user_hide), painterResource(R.drawable.ic_lock), onClick = {
+          ItemAction(stringResource(MR.strings.user_hide), painterResource(MR.images.ic_lock), onClick = {
             showMenu.value = false
             showHiddenProfile(user)
           })
         }
         if (user.showNtfs) {
-          ItemAction(stringResource(MR.strings.user_mute), painterResource(R.drawable.ic_notifications_off), onClick = {
+          ItemAction(stringResource(MR.strings.user_mute), painterResource(MR.images.ic_notifications_off), onClick = {
             showMenu.value = false
             muteUser(user)
           })
         } else {
-          ItemAction(stringResource(MR.strings.user_unmute), painterResource(R.drawable.ic_notifications), onClick = {
+          ItemAction(stringResource(MR.strings.user_unmute), painterResource(MR.images.ic_notifications), onClick = {
             showMenu.value = false
             unmuteUser(user)
           })
         }
       }
-      ItemAction(stringResource(MR.strings.delete_verb), painterResource(R.drawable.ic_delete), color = Color.Red, onClick = {
+      ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, onClick = {
         removeUser(user)
         showMenu.value = false
       })

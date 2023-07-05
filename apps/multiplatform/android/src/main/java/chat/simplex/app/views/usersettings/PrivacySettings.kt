@@ -13,7 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,7 +55,7 @@ fun PrivacySettingsView(
     SectionView(stringResource(MR.strings.settings_section_title_device)) {
       ChatLockItem(chatModel, showSettingsModal, setPerformLA)
       val context = LocalContext.current
-      SettingsPreferenceItem(painterResource(R.drawable.ic_visibility_off), stringResource(MR.strings.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
+      SettingsPreferenceItem(painterResource(MR.images.ic_visibility_off), stringResource(MR.strings.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
         if (on) {
           (context as? FragmentActivity)?.window?.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
@@ -69,8 +69,8 @@ fun PrivacySettingsView(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
-      SettingsPreferenceItem(painterResource(R.drawable.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
-      SettingsPreferenceItem(painterResource(R.drawable.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
+      SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
@@ -322,7 +322,7 @@ fun SimplexLockView(
           SettingsActionItemWithContent(null, null, click = openInfo) {
             SharedPreferenceToggleWithIcon(
               stringResource(MR.strings.enable_self_destruct),
-              painterResource(R.drawable.ic_info),
+              painterResource(MR.images.ic_info),
               openInfo,
               remember { selfDestructPref.state }.value
             ) {

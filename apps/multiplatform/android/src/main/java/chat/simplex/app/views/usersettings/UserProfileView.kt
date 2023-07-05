@@ -13,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -188,7 +188,7 @@ fun EditImageButton(click: () -> Unit) {
     modifier = Modifier.size(30.dp)
   ) {
     Icon(
-      painterResource(R.drawable.ic_photo_camera),
+      painterResource(MR.images.ic_photo_camera),
       contentDescription = stringResource(MR.strings.edit_image),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.size(30.dp)
@@ -200,7 +200,7 @@ fun EditImageButton(click: () -> Unit) {
 fun DeleteImageButton(click: () -> Unit) {
   IconButton(onClick = click) {
     Icon(
-      painterResource(R.drawable.ic_close),
+      painterResource(MR.images.ic_close),
       contentDescription = stringResource(MR.strings.delete_image),
       tint = MaterialTheme.colors.primary,
     )
