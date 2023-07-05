@@ -31,8 +31,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -43,6 +43,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import com.godaddy.android.colorpicker.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.serialization.encodeToString
 import java.io.BufferedOutputStream
@@ -100,14 +101,14 @@ fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> 
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.appearance_settings))
-    SectionView(stringResource(R.string.settings_section_title_language), padding = PaddingValues()) {
+    AppBarTitle(stringResource(MR.strings.appearance_settings))
+    SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {
       val context = LocalContext.current
 //      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
 //        SectionItemWithValue(
-//          generalGetString(R.string.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
+//          generalGetString(MR.strings.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
 //          remember { mutableStateOf("system") },
-//          listOf(ValueTitleDesc("system", generalGetString(R.string.change_verb), "")),
+//          listOf(ValueTitleDesc("system", generalGetString(MR.strings.change_verb), "")),
 //          onSelected = { openSystemLangPicker(context as? Activity ?: return@SectionItemWithValue) }
 //        )
 //      } else {
@@ -130,7 +131,7 @@ fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> 
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(R.string.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+    SectionView(stringResource(MR.strings.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
@@ -155,7 +156,7 @@ fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> 
 
     SectionDividerSpaced(maxTopPadding = true)
     val currentTheme by CurrentColors.collectAsState()
-    SectionView(stringResource(R.string.settings_section_title_themes)) {
+    SectionView(stringResource(MR.strings.settings_section_title_themes)) {
       val darkTheme = isSystemInDarkTheme()
       val state = remember { derivedStateOf { currentTheme.name } }
       ThemeSelector(state) {
@@ -167,7 +168,7 @@ fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> 
         }
       }
     }
-    SectionItemView(showSettingsModal { _ -> CustomizeThemeView(editColor) }) { Text(stringResource(R.string.customize_theme_title)) }
+    SectionItemView(showSettingsModal { _ -> CustomizeThemeView(editColor) }) { Text(stringResource(MR.strings.customize_theme_title)) }
     SectionBottomSpacer()
   }
 }
@@ -179,59 +180,59 @@ fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
   ) {
     val currentTheme by CurrentColors.collectAsState()
 
-    AppBarTitle(stringResource(R.string.customize_theme_title))
+    AppBarTitle(stringResource(MR.strings.customize_theme_title))
 
-    SectionView(stringResource(R.string.theme_colors_section_title)) {
+    SectionView(stringResource(MR.strings.theme_colors_section_title)) {
       SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY, currentTheme.colors.primary) }) {
-        val title = generalGetString(R.string.color_primary)
+        val title = generalGetString(MR.strings.color_primary)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primary)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.primary)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY_VARIANT, currentTheme.colors.primaryVariant) }) {
-        val title = generalGetString(R.string.color_primary_variant)
+        val title = generalGetString(MR.strings.color_primary_variant)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.primaryVariant)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.primaryVariant)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY, currentTheme.colors.secondary) }) {
-        val title = generalGetString(R.string.color_secondary)
+        val title = generalGetString(MR.strings.color_secondary)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.secondary)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.secondary)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SECONDARY_VARIANT, currentTheme.colors.secondaryVariant) }) {
-        val title = generalGetString(R.string.color_secondary_variant)
+        val title = generalGetString(MR.strings.color_secondary_variant)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.secondaryVariant)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.secondaryVariant)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.BACKGROUND, currentTheme.colors.background) }) {
-        val title = generalGetString(R.string.color_background)
+        val title = generalGetString(MR.strings.color_background)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.background)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.background)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SURFACE, currentTheme.colors.surface) }) {
-        val title = generalGetString(R.string.color_surface)
+        val title = generalGetString(MR.strings.color_surface)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = colors.surface)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = colors.surface)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.TITLE, currentTheme.appColors.title) }) {
-        val title = generalGetString(R.string.color_title)
+        val title = generalGetString(MR.strings.color_title)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = currentTheme.appColors.title)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.title)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.SENT_MESSAGE, currentTheme.appColors.sentMessage) }) {
-        val title = generalGetString(R.string.color_sent_message)
+        val title = generalGetString(MR.strings.color_sent_message)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.sentMessage)
       }
       SectionItemViewSpaceBetween({ editColor(ThemeColor.RECEIVED_MESSAGE, currentTheme.appColors.receivedMessage) }) {
-        val title = generalGetString(R.string.color_received_message)
+        val title = generalGetString(MR.strings.color_received_message)
         Text(title)
-        Icon(painterResource(R.drawable.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
+        Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.appColors.receivedMessage)
       }
     }
     val isInDarkTheme = isInDarkTheme()
     if (currentTheme.base.hasChangedAnyColor(currentTheme.colors, currentTheme.appColors)) {
       SectionItemView({ ThemeManager.resetAllThemeColors(darkForSystemTheme = isInDarkTheme) }) {
-        Text(generalGetString(R.string.reset_color), color = colors.primary)
+        Text(generalGetString(MR.strings.reset_color), color = colors.primary)
       }
     }
     SectionSpacer()
@@ -243,7 +244,7 @@ fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
         theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
         exportThemeLauncher.launch("simplex.theme")
       }) {
-        Text(generalGetString(R.string.export_theme), color = colors.primary)
+        Text(generalGetString(MR.strings.export_theme), color = colors.primary)
       }
 
       val importThemeLauncher = rememberGetContentLauncher { uri: Uri? ->
@@ -256,7 +257,7 @@ fun CustomizeThemeView(editColor: (ThemeColor, Color) -> Unit) {
       }
       // Can not limit to YAML mime type since it's unsupported by Android
       SectionItemView({ importThemeLauncher.launch("*/*") }) {
-        Text(generalGetString(R.string.import_theme), color = colors.primary)
+        Text(generalGetString(MR.strings.import_theme), color = colors.primary)
       }
     }
     SectionBottomSpacer()
@@ -289,7 +290,7 @@ fun ColorEditor(
       Modifier.align(Alignment.CenterHorizontally),
       colors = ButtonDefaults.textButtonColors(contentColor = currentColor)
     ) {
-      Text(generalGetString(R.string.save_color))
+      Text(generalGetString(MR.strings.save_color))
     }
   }
 }
@@ -312,7 +313,7 @@ fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
 private fun LangSelector(state: State<String>, onSelected: (String) -> Unit) {
   // Should be the same as in app/build.gradle's `android.defaultConfig.resConfigs`
   val supportedLanguages = mapOf(
-    "system" to generalGetString(R.string.language_system),
+    "system" to generalGetString(MR.strings.language_system),
     "en" to "English",
     "cs" to "Čeština",
     "de" to "Deutsch",
@@ -328,7 +329,7 @@ private fun LangSelector(state: State<String>, onSelected: (String) -> Unit) {
   )
   val values by remember { mutableStateOf(supportedLanguages.map { it.key to it.value }) }
   ExposedDropDownSettingRow(
-    generalGetString(R.string.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
+    generalGetString(MR.strings.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
     values,
     state,
     icon = null,
@@ -342,7 +343,7 @@ private fun ThemeSelector(state: State<String>, onSelected: (String) -> Unit) {
   val darkTheme = isSystemInDarkTheme()
   val values by remember { mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second.name to it.third }) }
   ExposedDropDownSettingRow(
-    generalGetString(R.string.theme),
+    generalGetString(MR.strings.theme),
     values,
     state,
     icon = null,
@@ -355,12 +356,12 @@ private fun ThemeSelector(state: State<String>, onSelected: (String) -> Unit) {
 private fun DarkThemeSelector(state: State<String?>, onSelected: (String) -> Unit) {
   val values by remember {
     val darkThemes = ArrayList<Pair<String, String>>()
-    darkThemes.add(DefaultTheme.DARK.name to generalGetString(R.string.theme_dark))
-    darkThemes.add(DefaultTheme.SIMPLEX.name to generalGetString(R.string.theme_simplex))
+    darkThemes.add(DefaultTheme.DARK.name to generalGetString(MR.strings.theme_dark))
+    darkThemes.add(DefaultTheme.SIMPLEX.name to generalGetString(MR.strings.theme_simplex))
     mutableStateOf(darkThemes.toList())
   }
   ExposedDropDownSettingRow(
-    generalGetString(R.string.dark_theme),
+    generalGetString(MR.strings.dark_theme),
     values,
     state,
     icon = null,
@@ -388,12 +389,12 @@ private fun rememberSaveThemeLauncher(theme: MutableState<String?>): ManagedActi
               BufferedOutputStream(stream).use { outputStream ->
                 theme.byteInputStream().use { it.copyTo(outputStream) }
               }
-              Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+              Toast.makeText(cxt, generalGetString(MR.strings.file_saved), Toast.LENGTH_SHORT).show()
             }
           }
         }
       } catch (e: Error) {
-        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Toast.makeText(cxt, generalGetString(MR.strings.error_saving_file), Toast.LENGTH_SHORT).show()
         Log.e(TAG, "rememberSaveThemeLauncher error saving theme $e")
       } finally {
         theme.value = null

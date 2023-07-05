@@ -5,11 +5,12 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.res.MR
 
 enum class ConnectViaLinkTab {
   SCAN, PASTE
@@ -24,8 +25,8 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
   }
   val tabTitles = ConnectViaLinkTab.values().map {
     when (it) {
-      ConnectViaLinkTab.SCAN -> stringResource(R.string.scan_QR_code)
-      ConnectViaLinkTab.PASTE -> stringResource(R.string.paste_the_link_you_received)
+      ConnectViaLinkTab.SCAN -> stringResource(MR.strings.scan_QR_code)
+      ConnectViaLinkTab.PASTE -> stringResource(MR.strings.paste_the_link_you_received)
     }
   }
   Column(
@@ -57,7 +58,7 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
           text = { Text(it, fontSize = 13.sp) },
           icon = {
             Icon(
-              if (ConnectViaLinkTab.SCAN.ordinal == index) painterResource(R.drawable.ic_qr_code) else painterResource(R.drawable.ic_article),
+              if (ConnectViaLinkTab.SCAN.ordinal == index) painterResource(MR.images.ic_qr_code) else painterResource(MR.images.ic_article),
               it
             )
           },

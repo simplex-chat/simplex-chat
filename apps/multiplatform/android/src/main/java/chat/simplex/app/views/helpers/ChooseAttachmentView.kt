@@ -8,11 +8,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.views.newchat.ActionButton
+import chat.simplex.res.MR
 
 sealed class AttachmentOption {
   object CameraPhoto: AttachmentOption()
@@ -40,19 +41,19 @@ fun ChooseAttachmentView(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(Modifier.fillMaxWidth(0.25f), null, stringResource(R.string.use_camera_button), icon = painterResource(R.drawable.ic_camera_enhance)) {
+      ActionButton(Modifier.fillMaxWidth(0.25f), null, stringResource(MR.strings.use_camera_button), icon = painterResource(MR.images.ic_camera_enhance)) {
         attachmentOption.value = AttachmentOption.CameraPhoto
         hide()
       }
-      ActionButton(Modifier.fillMaxWidth(0.33f), null, stringResource(R.string.gallery_image_button), icon = painterResource(R.drawable.ic_add_photo)) {
+      ActionButton(Modifier.fillMaxWidth(0.33f), null, stringResource(MR.strings.gallery_image_button), icon = painterResource(MR.images.ic_add_photo)) {
         attachmentOption.value = AttachmentOption.GalleryImage
         hide()
       }
-      ActionButton(Modifier.fillMaxWidth(0.50f), null, stringResource(R.string.gallery_video_button), icon = painterResource(R.drawable.ic_smart_display)) {
+      ActionButton(Modifier.fillMaxWidth(0.50f), null, stringResource(MR.strings.gallery_video_button), icon = painterResource(MR.images.ic_smart_display)) {
         attachmentOption.value = AttachmentOption.GalleryVideo
         hide()
       }
-      ActionButton(Modifier.fillMaxWidth(1f), null, stringResource(R.string.choose_file), icon = painterResource(R.drawable.ic_note_add)) {
+      ActionButton(Modifier.fillMaxWidth(1f), null, stringResource(MR.strings.choose_file), icon = painterResource(MR.images.ic_note_add)) {
         attachmentOption.value = AttachmentOption.File
         hide()
       }

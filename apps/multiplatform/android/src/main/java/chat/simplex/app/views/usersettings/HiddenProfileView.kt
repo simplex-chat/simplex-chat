@@ -13,7 +13,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
@@ -22,6 +22,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chatlist.UserProfileRow
 import chat.simplex.app.views.database.PassphraseField
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 
 @Composable
 fun HiddenProfileView(
@@ -39,7 +40,7 @@ fun HiddenProfileView(
           close()
         } catch (e: Exception) {
           AlertManager.shared.showAlertMsg(
-            title = generalGetString(R.string.error_saving_user_password),
+            title = generalGetString(MR.strings.error_saving_user_password),
             text = e.stackTraceToString()
           )
         }
@@ -58,7 +59,7 @@ private fun HiddenProfileLayout(
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.hide_profile))
+    AppBarTitle(stringResource(MR.strings.hide_profile))
     SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
       UserProfileRow(user)
     }
@@ -69,18 +70,18 @@ private fun HiddenProfileLayout(
     val passwordValid by remember { derivedStateOf { hidePassword.value == hidePassword.value.trim() } }
     val confirmValid by remember { derivedStateOf { confirmHidePassword.value == "" || hidePassword.value == confirmHidePassword.value } }
     val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || !passwordValid || confirmHidePassword.value == "" || !confirmValid } }
-    SectionView(stringResource(R.string.hidden_profile_password).uppercase()) {
+    SectionView(stringResource(MR.strings.hidden_profile_password).uppercase()) {
       SectionItemView {
-        PassphraseField(hidePassword, generalGetString(R.string.password_to_show), isValid = { passwordValid }, showStrength = true)
+        PassphraseField(hidePassword, generalGetString(MR.strings.password_to_show), isValid = { passwordValid }, showStrength = true)
       }
       SectionItemView {
-        PassphraseField(confirmHidePassword, stringResource(R.string.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
+        PassphraseField(confirmHidePassword, stringResource(MR.strings.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
       }
       SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {
-        Text(generalGetString(R.string.save_profile_password), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+        Text(generalGetString(MR.strings.save_profile_password), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }
     }
-    SectionTextFooter(stringResource(R.string.to_reveal_profile_enter_password))
+    SectionTextFooter(stringResource(MR.strings.to_reveal_profile_enter_password))
     SectionBottomSpacer()
   }
 }

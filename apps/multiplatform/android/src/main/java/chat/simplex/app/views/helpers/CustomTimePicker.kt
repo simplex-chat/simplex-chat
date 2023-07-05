@@ -8,13 +8,14 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
+import chat.simplex.res.MR
 import com.sd.lib.compose.wheel_picker.*
 
 @Composable
@@ -173,8 +174,8 @@ fun CustomTimePickerDialog(
               color = MaterialTheme.colors.secondary
             )
             Icon(
-              painterResource(R.drawable.ic_close),
-              generalGetString(R.string.icon_descr_close_button),
+              painterResource(MR.images.ic_close),
+              generalGetString(MR.strings.icon_descr_close_button),
               tint = MaterialTheme.colors.secondary,
               modifier = Modifier
                 .size(25.dp)
@@ -238,7 +239,7 @@ fun DropdownCustomTimePickerSettingRow(
     values.value.map { sel: DropdownSelection ->
       when (sel) {
         is DropdownSelection.DropdownValue -> sel to timeText(sel.value)
-        DropdownSelection.Custom -> sel to generalGetString(R.string.custom_time_picker_custom)
+        DropdownSelection.Custom -> sel to generalGetString(MR.strings.custom_time_picker_custom)
       }
     },
     dropdownSelection,

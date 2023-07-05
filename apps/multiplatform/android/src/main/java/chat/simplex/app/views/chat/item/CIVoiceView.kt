@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chat.item
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -16,12 +15,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.*
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 // TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
@@ -226,7 +225,7 @@ private fun PlayPauseButton(
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
+        if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
         contentDescription = null,
         Modifier.size(36.dp),
         tint = if (error) WarningOrange else if (!enabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -256,7 +255,7 @@ private fun VoiceMsgIndicator(
     if (hasText) {
       IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
         Icon(
-          if (audioPlaying) painterResource(R.drawable.ic_pause_filled) else painterResource(R.drawable.ic_play_arrow_filled),
+          if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
           contentDescription = null,
           Modifier.size(36.dp),
           tint = MaterialTheme.colors.primary

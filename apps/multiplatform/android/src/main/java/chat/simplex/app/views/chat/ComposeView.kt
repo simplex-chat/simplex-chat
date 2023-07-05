@@ -27,8 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import chat.simplex.app.*
@@ -36,6 +36,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.*
@@ -193,7 +194,7 @@ fun ComposeView(
     if (isGranted) {
       cameraLauncher.launchWithFallback()
     } else {
-      Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, generalGetString(MR.strings.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
   val processPickedMedia = { uris: List<Uri>, text: String? ->
@@ -218,8 +219,8 @@ fun ComposeView(
             } else {
               bitmap = null
               AlertManager.shared.showAlertMsg(
-                generalGetString(R.string.large_file),
-                String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
+                generalGetString(MR.strings.large_file),
+                String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
               )
             }
           } else {
@@ -252,8 +253,8 @@ fun ComposeView(
         }
       } else {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.large_file),
-          String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(maxFileSize))
+          generalGetString(MR.strings.large_file),
+          String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
         )
       }
     }
@@ -659,10 +660,10 @@ fun ComposeView(
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
-      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_reply)) {
+      is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_reply)) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
-      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(R.drawable.ic_edit_filled)) {
+      is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, painterResource(MR.images.ic_edit_filled)) {
         clearState()
       }
     }
@@ -718,8 +719,8 @@ fun ComposeView(
       val attachmentClicked = if (isGroupAndProhibitedFiles) {
         {
           AlertManager.shared.showAlertMsg(
-            title = generalGetString(R.string.files_and_media_prohibited),
-            text = generalGetString(R.string.only_owners_can_enable_files_and_media)
+            title = generalGetString(MR.strings.files_and_media_prohibited),
+            text = generalGetString(MR.strings.only_owners_can_enable_files_and_media)
           )
         }
       } else {
@@ -727,8 +728,8 @@ fun ComposeView(
       }
       IconButton(attachmentClicked, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
         Icon(
-          painterResource(R.drawable.ic_attach_file_filled_500),
-          contentDescription = stringResource(R.string.attach),
+          painterResource(MR.images.ic_attach_file_filled_500),
+          contentDescription = stringResource(MR.strings.attach),
           tint = if (!composeState.value.attachmentDisabled && userCanSend.value && !isGroupAndProhibitedFiles) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           modifier = Modifier
             .size(28.dp)
@@ -860,7 +861,7 @@ class PickMultipleImagesFromGallery: ActivityResultContract<Int, List<Uri>>() {
           if (uri != null) uris.add(uri)
         }
         if (itemCount > 10) {
-          AlertManager.shared.showAlertMsg(R.string.images_limit_title, R.string.images_limit_desc)
+          AlertManager.shared.showAlertMsg(MR.strings.images_limit_title, MR.strings.images_limit_desc)
         }
         uris
       }
@@ -887,7 +888,7 @@ class PickMultipleVideosFromGallery: ActivityResultContract<Int, List<Uri>>() {
           if (uri != null) uris.add(uri)
         }
         if (itemCount > 10) {
-          AlertManager.shared.showAlertMsg(R.string.videos_limit_title, R.string.videos_limit_desc)
+          AlertManager.shared.showAlertMsg(MR.strings.videos_limit_title, MR.strings.videos_limit_desc)
         }
         uris
       }

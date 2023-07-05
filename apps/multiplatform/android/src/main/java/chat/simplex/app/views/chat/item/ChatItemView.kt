@@ -14,8 +14,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -26,6 +26,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberPermissionState
+import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
@@ -69,10 +70,10 @@ fun ChatItemView(
     val onClick = {
       when (cItem.meta.itemStatus) {
         is CIStatus.SndErrorAuth -> {
-          showMsgDeliveryErrorAlert(generalGetString(R.string.message_delivery_error_desc))
+          showMsgDeliveryErrorAlert(generalGetString(MR.strings.message_delivery_error_desc))
         }
         is CIStatus.SndError -> {
-          showMsgDeliveryErrorAlert(generalGetString(R.string.unknown_error) + ": ${cItem.meta.itemStatus.agentError}")
+          showMsgDeliveryErrorAlert(generalGetString(MR.strings.unknown_error) + ": ${cItem.meta.itemStatus.agentError}")
         }
         else -> {}
       }
@@ -116,17 +117,17 @@ fun ChatItemView(
 
         fun deleteMessageQuestionText(): String {
           return if (fullDeleteAllowed) {
-            generalGetString(R.string.delete_message_cannot_be_undone_warning)
+            generalGetString(MR.strings.delete_message_cannot_be_undone_warning)
           } else {
-            generalGetString(R.string.delete_message_mark_deleted_warning)
+            generalGetString(MR.strings.delete_message_mark_deleted_warning)
           }
         }
 
         fun moderateMessageQuestionText(): String {
           return if (fullDeleteAllowed) {
-            generalGetString(R.string.moderate_message_will_be_deleted_warning)
+            generalGetString(MR.strings.moderate_message_will_be_deleted_warning)
           } else {
-            generalGetString(R.string.moderate_message_will_be_marked_warning)
+            generalGetString(MR.strings.moderate_message_will_be_marked_warning)
           }
         }
 
@@ -163,7 +164,7 @@ fun ChatItemView(
               MsgReactionsMenu()
             }
             if (cItem.meta.itemDeleted == null && !live) {
-              ItemAction(stringResource(R.string.reply_verb), painterResource(R.drawable.ic_reply), onClick = {
+              ItemAction(stringResource(MR.strings.reply_verb), painterResource(MR.images.ic_reply), onClick = {
                 if (composeState.value.editing) {
                   composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
                 } else {
@@ -172,7 +173,7 @@ fun ChatItemView(
                 showMenu.value = false
               })
             }
-            ItemAction(stringResource(R.string.share_verb), painterResource(R.drawable.ic_share), onClick = {
+            ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
               val filePath = getLoadedFilePath(cItem.file)
               when {
                 filePath != null -> shareFile(cItem.text, filePath)
@@ -180,7 +181,7 @@ fun ChatItemView(
               }
               showMenu.value = false
             })
-            ItemAction(stringResource(R.string.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
+            ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
               copyText(cItem.content.text)
               showMenu.value = false
             })
@@ -188,7 +189,7 @@ fun ChatItemView(
               val filePath = getLoadedFilePath(cItem.file)
               if (filePath != null) {
                 val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                ItemAction(stringResource(R.string.save_verb), painterResource(R.drawable.ic_download), onClick = {
+                ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), onClick = {
                   when (cItem.content.msgContent) {
                     is MsgContent.MCImage -> {
                       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.hasPermission) {
@@ -205,15 +206,15 @@ fun ChatItemView(
               }
             }
             if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
-              ItemAction(stringResource(R.string.edit_verb), painterResource(R.drawable.ic_edit_filled), onClick = {
+              ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), onClick = {
                 composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
                 showMenu.value = false
               })
             }
             if (cItem.meta.itemDeleted != null && revealed.value) {
               ItemAction(
-                stringResource(R.string.hide_verb),
-                painterResource(R.drawable.ic_visibility_off),
+                stringResource(MR.strings.hide_verb),
+                painterResource(MR.images.ic_visibility_off),
                 onClick = {
                   revealed.value = false
                   showMenu.value = false
@@ -239,8 +240,8 @@ fun ChatItemView(
           DefaultDropdownMenu(showMenu) {
             if (!cItem.isDeletedContent) {
               ItemAction(
-                stringResource(R.string.reveal_verb),
-                painterResource(R.drawable.ic_visibility),
+                stringResource(MR.strings.reveal_verb),
+                painterResource(MR.images.ic_visibility),
                 onClick = {
                   revealed.value = true
                   showMenu.value = false
@@ -289,7 +290,7 @@ fun ChatItemView(
         fun ModeratedItem() {
           MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
           DefaultDropdownMenu(showMenu) {
-            DeleteItemAction(cItem, showMenu, questionText = generalGetString(R.string.delete_message_cannot_be_undone_warning), deleteMessage)
+            DeleteItemAction(cItem, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage)
           }
         }
 
@@ -341,7 +342,7 @@ fun CancelFileItemAction(
 ) {
   ItemAction(
     stringResource(cancelAction.uiActionId),
-    painterResource(R.drawable.ic_close),
+    painterResource(MR.images.ic_close),
     onClick = {
       showMenu.value = false
       cancelFileAlertDialog(fileId, cancelFile = cancelFile, cancelAction = cancelAction)
@@ -358,8 +359,8 @@ fun ItemInfoAction(
   showMenu: MutableState<Boolean>
 ) {
   ItemAction(
-    stringResource(R.string.info_menu),
-    painterResource(R.drawable.ic_info),
+    stringResource(MR.strings.info_menu),
+    painterResource(MR.images.ic_info),
     onClick = {
       showItemDetails(cInfo, cItem)
       showMenu.value = false
@@ -376,8 +377,8 @@ fun DeleteItemAction(
   deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
   ItemAction(
-    stringResource(R.string.delete_verb),
-    painterResource(R.drawable.ic_delete),
+    stringResource(MR.strings.delete_verb),
+    painterResource(MR.images.ic_delete),
     onClick = {
       showMenu.value = false
       deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
@@ -394,8 +395,8 @@ fun ModerateItemAction(
   deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
   ItemAction(
-    stringResource(R.string.moderate_verb),
-    painterResource(R.drawable.ic_flag),
+    stringResource(MR.strings.moderate_verb),
+    painterResource(MR.images.ic_flag),
     onClick = {
       showMenu.value = false
       moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
@@ -458,7 +459,7 @@ fun cancelFileAlertDialog(fileId: Long, cancelFile: (Long) -> Unit, cancelAction
 
 fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
   AlertManager.shared.showAlertDialogButtons(
-    title = generalGetString(R.string.delete_message__question),
+    title = generalGetString(MR.strings.delete_message__question),
     text = questionText,
     buttons = {
       Row(
@@ -470,13 +471,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
         TextButton(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
-        }) { Text(stringResource(R.string.for_me_only), color = MaterialTheme.colors.error) }
+        }) { Text(stringResource(MR.strings.for_me_only), color = MaterialTheme.colors.error) }
         if (chatItem.meta.editable) {
           Spacer(Modifier.padding(horizontal = 4.dp))
           TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
-          }) { Text(stringResource(R.string.for_everybody), color = MaterialTheme.colors.error) }
+          }) { Text(stringResource(MR.strings.for_everybody), color = MaterialTheme.colors.error) }
         }
       }
     }
@@ -485,9 +486,9 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
 
 fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.delete_member_message__question),
+    title = generalGetString(MR.strings.delete_member_message__question),
     text = questionText,
-    confirmText = generalGetString(R.string.delete_verb),
+    confirmText = generalGetString(MR.strings.delete_verb),
     destructive = true,
     onConfirm = {
       deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
@@ -497,7 +498,7 @@ fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteM
 
 private fun showMsgDeliveryErrorAlert(description: String) {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.message_delivery_error_title),
+    title = generalGetString(MR.strings.message_delivery_error_title),
     text = description,
   )
 }

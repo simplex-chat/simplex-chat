@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -69,15 +70,15 @@ enum class ThemeColor {
 
   val text: String
     get() = when (this) {
-      PRIMARY -> generalGetString(R.string.color_primary)
-      PRIMARY_VARIANT -> generalGetString(R.string.color_primary_variant)
-      SECONDARY -> generalGetString(R.string.color_secondary)
-      SECONDARY_VARIANT -> generalGetString(R.string.color_secondary_variant)
-      BACKGROUND -> generalGetString(R.string.color_background)
-      SURFACE -> generalGetString(R.string.color_surface)
-      TITLE -> generalGetString(R.string.color_title)
-      SENT_MESSAGE -> generalGetString(R.string.color_sent_message)
-      RECEIVED_MESSAGE -> generalGetString(R.string.color_received_message)
+      PRIMARY -> generalGetString(MR.strings.color_primary)
+      PRIMARY_VARIANT -> generalGetString(MR.strings.color_primary_variant)
+      SECONDARY -> generalGetString(MR.strings.color_secondary)
+      SECONDARY_VARIANT -> generalGetString(MR.strings.color_secondary_variant)
+      BACKGROUND -> generalGetString(MR.strings.color_background)
+      SURFACE -> generalGetString(MR.strings.color_surface)
+      TITLE -> generalGetString(MR.strings.color_title)
+      SENT_MESSAGE -> generalGetString(MR.strings.color_sent_message)
+      RECEIVED_MESSAGE -> generalGetString(MR.strings.color_received_message)
     }
 }
 

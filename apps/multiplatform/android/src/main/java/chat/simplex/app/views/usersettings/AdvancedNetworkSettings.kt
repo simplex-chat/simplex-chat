@@ -14,8 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,6 +23,8 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 import java.text.DecimalFormat
 
 @Composable
@@ -31,6 +33,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   val currentCfgVal = currentCfg.value // used only on initialization
   val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
   val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
+  val networkTCPTimeoutPerKb = remember { mutableStateOf(currentCfgVal.tcpTimeoutPerKb) }
   val networkSMPPingInterval = remember { mutableStateOf(currentCfgVal.smpPingInterval) }
   val networkSMPPingCount = remember { mutableStateOf(currentCfgVal.smpPingCount) }
   val networkEnableKeepAlive = remember { mutableStateOf(currentCfgVal.enableKeepAlive) }
@@ -64,6 +67,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       sessionMode = currentCfg.value.sessionMode,
       tcpConnectTimeout = networkTCPConnectTimeout.value,
       tcpTimeout = networkTCPTimeout.value,
+      tcpTimeoutPerKb = networkTCPTimeoutPerKb.value,
       tcpKeepAlive = tcpKeepAlive,
       smpPingInterval = networkSMPPingInterval.value,
       smpPingCount = networkSMPPingCount.value
@@ -73,6 +77,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   fun updateView(cfg: NetCfg) {
     networkTCPConnectTimeout.value = cfg.tcpConnectTimeout
     networkTCPTimeout.value = cfg.tcpTimeout
+    networkTCPTimeoutPerKb.value = cfg.tcpTimeoutPerKb
     networkSMPPingInterval.value = cfg.smpPingInterval
     networkSMPPingCount.value = cfg.smpPingCount
     networkEnableKeepAlive.value = cfg.enableKeepAlive
@@ -104,6 +109,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   AdvancedNetworkSettingsLayout(
     networkTCPConnectTimeout,
     networkTCPTimeout,
+    networkTCPTimeoutPerKb,
     networkSMPPingInterval,
     networkSMPPingCount,
     networkEnableKeepAlive,
@@ -121,6 +127,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
 @Composable fun AdvancedNetworkSettingsLayout(
   networkTCPConnectTimeout: MutableState<Long>,
   networkTCPTimeout: MutableState<Long>,
+  networkTCPTimeoutPerKb: MutableState<Long>,
   networkSMPPingInterval: MutableState<Long>,
   networkSMPPingCount: MutableState<Int>,
   networkEnableKeepAlive: MutableState<Boolean>,
@@ -133,39 +140,45 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   revert: () -> Unit,
   save: () -> Unit
 ) {
-  val secondsLabel = stringResource(R.string.network_option_seconds_label)
+  val secondsLabel = stringResource(MR.strings.network_option_seconds_label)
 
   Column(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.network_settings_title))
+    AppBarTitle(stringResource(MR.strings.network_settings_title))
     SectionView {
       SectionItemView {
         ResetToDefaultsButton(reset, disabled = resetDisabled)
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(R.string.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
+          stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
           listOf(2_500000, 5_000000, 7_500000, 10_000000, 15_000000, 20_000000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(R.string.network_option_protocol_timeout), networkTCPTimeout,
+          stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeout,
           listOf(1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
-          stringResource(R.string.network_option_ping_interval), networkSMPPingInterval,
+          stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
+          listOf(5_000, 10_000, 20_000, 40_000), secondsLabel
+        )
+      }
+      SectionItemView {
+        TimeoutSettingRow(
+          stringResource(MR.strings.network_option_ping_interval), networkSMPPingInterval,
           listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
         )
       }
       SectionItemView {
         IntSettingRow(
-          stringResource(R.string.network_option_ping_count), networkSMPPingCount,
+          stringResource(MR.strings.network_option_ping_count), networkSMPPingCount,
           listOf(1, 2, 3, 5, 8), ""
         )
       }
@@ -209,7 +222,7 @@ fun ResetToDefaultsButton(reset: () -> Unit, disabled: Boolean) {
     verticalAlignment = Alignment.CenterVertically
   ) {
     val color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-    Text(stringResource(R.string.network_options_reset_to_defaults), color = color)
+    Text(stringResource(MR.strings.network_options_reset_to_defaults), color = color)
   }
 }
 
@@ -222,7 +235,7 @@ fun EnableKeepAliveSwitch(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    Text(stringResource(R.string.network_option_enable_tcp_keep_alive))
+    Text(stringResource(MR.strings.network_option_enable_tcp_keep_alive))
     DefaultSwitch(
       checked = networkEnableKeepAlive.value,
       onCheckedChange = { networkEnableKeepAlive.value = it },
@@ -260,8 +273,8 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
-          generalGetString(R.string.invite_to_group_button),
+          if (!expanded.value) painterResource(MR.images.ic_expand_more) else painterResource(MR.images.ic_expand_less),
+          generalGetString(MR.strings.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )
@@ -306,23 +319,22 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
         expanded.value = !expanded.value
       }
     ) {
-      val df = DecimalFormat("#.#")
-
+      val df = DecimalFormat("#.###")
       Row(
         Modifier.width(140.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.End
       ) {
         Text(
-          "${df.format(selection.value / 1_000_000.toDouble())} $label",
+          "${df.format(selection.value / 1_000_000.0)} $label",
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
           color = MaterialTheme.colors.secondary
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
-          generalGetString(R.string.invite_to_group_button),
+          if (!expanded.value) painterResource(MR.images.ic_expand_more) else painterResource(MR.images.ic_expand_less),
+          generalGetString(MR.strings.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )
@@ -339,7 +351,7 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
             contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
-              "${df.format(selectionOption / 1_000_000.toDouble())} $label",
+              "${df.format(selectionOption / 1_000_000.0)} $label",
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
             )
@@ -357,8 +369,8 @@ fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit, disabled: Boolea
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(painterResource(R.drawable.ic_replay), stringResource(R.string.network_options_revert), revert, disabled)
-    FooterButton(painterResource(R.drawable.ic_check), stringResource(R.string.network_options_save), save, disabled)
+    FooterButton(painterResource(MR.images.ic_replay), stringResource(MR.strings.network_options_revert), revert, disabled)
+    FooterButton(painterResource(MR.images.ic_check), stringResource(MR.strings.network_options_save), save, disabled)
   }
 }
 
@@ -388,9 +400,9 @@ fun FooterButton(icon: Painter, title: String, action: () -> Unit, disabled: Boo
 
 fun showUpdateNetworkSettingsDialog(action: () -> Unit) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.update_network_settings_question),
-    text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
-    confirmText = generalGetString(R.string.update_network_settings_confirmation),
+    title = generalGetString(MR.strings.update_network_settings_question),
+    text = generalGetString(MR.strings.updating_settings_will_reconnect_client_to_all_servers),
+    confirmText = generalGetString(MR.strings.update_network_settings_confirmation),
     onConfirm = action
   )
 }
@@ -402,6 +414,7 @@ fun PreviewAdvancedNetworkSettingsLayout() {
     AdvancedNetworkSettingsLayout(
       networkTCPConnectTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeout = remember { mutableStateOf(10_000000) },
+      networkTCPTimeoutPerKb = remember { mutableStateOf(10_000) },
       networkSMPPingInterval = remember { mutableStateOf(10_000000) },
       networkSMPPingCount = remember { mutableStateOf(3) },
       networkEnableKeepAlive = remember { mutableStateOf(true) },

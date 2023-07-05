@@ -8,10 +8,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.ui.theme.*
+import chat.simplex.res.MR
 
 @Composable
 fun DefaultTopAppBar(
@@ -47,7 +48,7 @@ fun DefaultTopAppBar(
 fun NavigationButtonBack(onButtonClicked: (() -> Unit)?) {
   IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
     Icon(
-      painterResource(R.drawable.ic_arrow_back_ios_new), stringResource(R.string.back), tint = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+      painterResource(MR.images.ic_arrow_back_ios_new), stringResource(MR.strings.back), tint = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
     )
   }
 }
@@ -56,7 +57,7 @@ fun NavigationButtonBack(onButtonClicked: (() -> Unit)?) {
 fun ShareButton(onButtonClicked: () -> Unit) {
   IconButton(onButtonClicked) {
     Icon(
-      painterResource(R.drawable.ic_share), stringResource(R.string.share_verb), tint = MaterialTheme.colors.primary
+      painterResource(MR.images.ic_share), stringResource(MR.strings.share_verb), tint = MaterialTheme.colors.primary
     )
   }
 }
@@ -65,8 +66,8 @@ fun ShareButton(onButtonClicked: () -> Unit) {
 fun NavigationButtonMenu(onButtonClicked: () -> Unit) {
   IconButton(onClick = onButtonClicked) {
     Icon(
-      painterResource(R.drawable.ic_menu),
-      stringResource(R.string.icon_descr_settings),
+      painterResource(MR.images.ic_menu),
+      stringResource(MR.strings.icon_descr_settings),
       tint = MaterialTheme.colors.primary,
     )
   }

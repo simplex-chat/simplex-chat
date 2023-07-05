@@ -7,14 +7,15 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
+import chat.simplex.res.MR
 
 @Composable
 fun CIInvalidJSONView(json: String) {
@@ -22,7 +23,7 @@ fun CIInvalidJSONView(json: String) {
     .clickable { ModalManager.shared.showModal(true) { InvalidJSONView(json) } }
     .padding(horizontal = 10.dp, vertical = 6.dp)
   ) {
-    Text(stringResource(R.string.invalid_data), color = Color.Red, fontStyle = FontStyle.Italic)
+    Text(stringResource(MR.strings.invalid_data), color = Color.Red, fontStyle = FontStyle.Italic)
   }
 }
 
@@ -31,7 +32,7 @@ fun InvalidJSONView(json: String) {
   Column {
     Spacer(Modifier.height(DEFAULT_PADDING))
     SectionView {
-      SettingsActionItem(painterResource(R.drawable.ic_share), generalGetString(R.string.share_verb), click = {
+      SettingsActionItem(painterResource(MR.images.ic_share), generalGetString(MR.strings.share_verb), click = {
         shareText(json)
       })
     }

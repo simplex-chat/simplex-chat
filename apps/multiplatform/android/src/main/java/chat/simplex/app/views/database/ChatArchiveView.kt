@@ -17,8 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.*
 import chat.simplex.app.R
@@ -26,6 +26,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
+import chat.simplex.res.MR
 import kotlinx.datetime.*
 import java.io.BufferedOutputStream
 import java.io.File
@@ -56,17 +57,17 @@ fun ChatArchiveLayout(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(title)
-    SectionView(stringResource(R.string.chat_archive_section)) {
+    SectionView(stringResource(MR.strings.chat_archive_section)) {
       SettingsActionItem(
-        painterResource(R.drawable.ic_ios_share),
-        stringResource(R.string.save_archive),
+        painterResource(MR.images.ic_ios_share),
+        stringResource(MR.strings.save_archive),
         saveArchive,
         textColor = MaterialTheme.colors.primary,
         iconColor = MaterialTheme.colors.primary,
       )
       SettingsActionItem(
-        painterResource(R.drawable.ic_delete),
-        stringResource(R.string.delete_archive),
+        painterResource(MR.images.ic_delete),
+        stringResource(MR.strings.delete_archive),
         deleteArchiveAlert,
         textColor = Color.Red,
         iconColor = Color.Red,
@@ -74,7 +75,7 @@ fun ChatArchiveLayout(
     }
     val archiveTs = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
     SectionTextFooter(
-      String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
+      String.format(generalGetString(MR.strings.archive_created_on_ts), archiveTs)
     )
     SectionBottomSpacer()
   }
@@ -93,11 +94,11 @@ private fun rememberSaveArchiveLauncher(chatArchivePath: String): ManagedActivit
             val outputStream = BufferedOutputStream(stream)
             File(chatArchivePath).inputStream().use { it.copyTo(outputStream) }
             outputStream.close()
-            Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+            Toast.makeText(cxt, generalGetString(MR.strings.file_saved), Toast.LENGTH_SHORT).show()
           }
         }
       } catch (e: Error) {
-        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Toast.makeText(cxt, generalGetString(MR.strings.error_saving_file), Toast.LENGTH_SHORT).show()
         Log.e(TAG, "rememberSaveArchiveLauncher error saving archive $e")
       }
     }
@@ -105,8 +106,8 @@ private fun rememberSaveArchiveLauncher(chatArchivePath: String): ManagedActivit
 
 private fun deleteArchiveAlert(m: ChatModel, archivePath: String) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.delete_chat_archive_question),
-    confirmText = generalGetString(R.string.delete_verb),
+    title = generalGetString(MR.strings.delete_chat_archive_question),
+    confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       val fileDeleted = File(archivePath).delete()
       if (fileDeleted) {

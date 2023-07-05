@@ -55,6 +55,22 @@ struct ChatListView: View {
         .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
         .onAppear() { connectViaUrl() }
         .onDisappear() { withAnimation { userPickerVisible = false } }
+        .refreshable {
+            AlertManager.shared.showAlert(Alert(
+                title: Text("Reconnect servers?"),
+                message: Text("Reconnect all connected servers to force message delivery. It uses additional traffic."),
+                primaryButton: .default(Text("Ok")) {
+                    Task {
+                        do {
+                            try await reconnectAllServers()
+                        } catch let error {
+                            AlertManager.shared.showAlertMsg(title: "Error", message: "\(responseError(error))")
+                        }
+                    }
+                },
+                secondaryButton: .cancel()
+            ))
+        }
         .offset(x: -8)
         .listStyle(.plain)
         .navigationBarTitleDisplayMode(.inline)

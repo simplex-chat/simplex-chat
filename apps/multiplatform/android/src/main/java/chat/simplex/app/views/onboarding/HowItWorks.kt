@@ -1,7 +1,6 @@
 package chat.simplex.app.views.onboarding
 
 import android.content.res.Configuration
-import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -9,18 +8,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.User
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = null) {
@@ -28,15 +28,15 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
     .fillMaxWidth()
     .padding(horizontal = DEFAULT_PADDING),
   ) {
-    AppBarTitle(stringResource(R.string.how_simplex_works), false)
-    ReadableText(R.string.many_people_asked_how_can_it_deliver)
-    ReadableText(R.string.to_protect_privacy_simplex_has_ids_for_queues)
-    ReadableText(R.string.you_control_servers_to_receive_your_contacts_to_send)
-    ReadableText(R.string.only_client_devices_store_contacts_groups_e2e_encrypted_messages)
+    AppBarTitle(stringResource(MR.strings.how_simplex_works), false)
+    ReadableText(MR.strings.many_people_asked_how_can_it_deliver)
+    ReadableText(MR.strings.to_protect_privacy_simplex_has_ids_for_queues)
+    ReadableText(MR.strings.you_control_servers_to_receive_your_contacts_to_send)
+    ReadableText(MR.strings.only_client_devices_store_contacts_groups_e2e_encrypted_messages)
     if (onboardingStage == null) {
-      ReadableTextWithLink(R.string.read_more_in_github_with_link, "https://github.com/simplex-chat/simplex-chat#readme")
+      ReadableTextWithLink(MR.strings.read_more_in_github_with_link, "https://github.com/simplex-chat/simplex-chat#readme")
     } else {
-      ReadableText(R.string.read_more_in_github)
+      ReadableText(MR.strings.read_more_in_github)
     }
 
     Spacer(Modifier.fillMaxHeight().weight(1f))
@@ -51,12 +51,12 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
 }
 
 @Composable
-fun ReadableText(@StringRes stringResId: Int, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp), style: TextStyle = LocalTextStyle.current) {
+fun ReadableText(stringResId: StringResource, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp), style: TextStyle = LocalTextStyle.current) {
   Text(annotatedStringResource(stringResId), modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp, style = style)
 }
 
 @Composable
-fun ReadableTextWithLink(@StringRes stringResId: Int, link: String, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp)) {
+fun ReadableTextWithLink(stringResId: StringResource, link: String, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp)) {
   val annotated = annotatedStringResource(stringResId)
   val primary = MaterialTheme.colors.primary
   // This replaces links in text highlighted with specific color, e.g. SimplexBlue

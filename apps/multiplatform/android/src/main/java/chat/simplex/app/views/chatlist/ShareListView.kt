@@ -11,8 +11,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
@@ -21,6 +21,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
@@ -52,7 +53,7 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
 @Composable
 private fun EmptyList() {
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Text(stringResource(R.string.you_have_no_chats), color = MaterialTheme.colors.secondary)
+    Text(stringResource(MR.strings.you_have_no_chats), color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -82,7 +83,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
   if (chatModel.chats.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(painterResource(R.drawable.ic_search_500), stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search_verb).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -90,13 +91,13 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
     barButtons.add {
       IconButton(onClick = {
         AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.chat_is_stopped_indication),
-          generalGetString(R.string.you_can_start_chat_via_setting_or_by_restarting_the_app)
+          generalGetString(MR.strings.chat_is_stopped_indication),
+          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
         )
       }) {
         Icon(
-          painterResource(R.drawable.ic_report_filled),
-          generalGetString(R.string.chat_is_stopped_indication),
+          painterResource(MR.images.ic_report_filled),
+          generalGetString(MR.strings.chat_is_stopped_indication),
           tint = Color.Red,
         )
       }
@@ -109,18 +110,18 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
           when (chatModel.sharedContent.value) {
-            is SharedContent.Text -> stringResource(R.string.share_message)
-            is SharedContent.Media -> stringResource(R.string.share_image)
-            is SharedContent.File -> stringResource(R.string.share_file)
-            else -> stringResource(R.string.share_message)
+            is SharedContent.Text -> stringResource(MR.strings.share_message)
+            is SharedContent.Media -> stringResource(MR.strings.share_image)
+            is SharedContent.File -> stringResource(MR.strings.share_file)
+            else -> stringResource(MR.strings.share_message)
           },
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
         if (chatModel.incognito.value) {
           Icon(
-            painterResource(R.drawable.ic_theater_comedy_filled),
-            stringResource(R.string.incognito),
+            painterResource(MR.images.ic_theater_comedy_filled),
+            stringResource(MR.strings.incognito),
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)
           )

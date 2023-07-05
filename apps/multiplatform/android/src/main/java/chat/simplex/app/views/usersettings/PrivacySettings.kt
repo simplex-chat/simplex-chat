@@ -13,8 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
@@ -28,6 +28,7 @@ import chat.simplex.app.views.helpers.DatabaseUtils.ksSelfDestructPassword
 import chat.simplex.app.views.isValidDisplayName
 import chat.simplex.app.views.localauth.SetAppPasscodeView
 import chat.simplex.app.views.onboarding.ReadableText
+import chat.simplex.res.MR
 
 enum class LAMode {
   SYSTEM,
@@ -35,8 +36,8 @@ enum class LAMode {
 
   val text: String
     get() = when (this) {
-      SYSTEM -> generalGetString(R.string.la_mode_system)
-      PASSCODE -> generalGetString(R.string.la_mode_passcode)
+      SYSTEM -> generalGetString(MR.strings.la_mode_system)
+      PASSCODE -> generalGetString(MR.strings.la_mode_passcode)
     }
 }
 
@@ -44,17 +45,17 @@ enum class LAMode {
 fun PrivacySettingsView(
   chatModel: ChatModel,
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  setPerformLA: (Boolean, FragmentActivity) -> Unit
+  setPerformLA: (Boolean) -> Unit
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
-    AppBarTitle(stringResource(R.string.your_privacy))
-    SectionView(stringResource(R.string.settings_section_title_device)) {
+    AppBarTitle(stringResource(MR.strings.your_privacy))
+    SectionView(stringResource(MR.strings.settings_section_title_device)) {
       ChatLockItem(chatModel, showSettingsModal, setPerformLA)
       val context = LocalContext.current
-      SettingsPreferenceItem(painterResource(R.drawable.ic_visibility_off), stringResource(R.string.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
+      SettingsPreferenceItem(painterResource(MR.images.ic_visibility_off), stringResource(MR.strings.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
         if (on) {
           (context as? FragmentActivity)?.window?.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
@@ -67,16 +68,16 @@ fun PrivacySettingsView(
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(R.string.settings_section_title_chats)) {
-      SettingsPreferenceItem(painterResource(R.drawable.ic_image), stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
-      SettingsPreferenceItem(painterResource(R.drawable.ic_travel_explore), stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
+    SectionView(stringResource(MR.strings.settings_section_title_chats)) {
+      SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
       })
     }
     if (chatModel.simplexLinkMode.value == SimplexLinkMode.BROWSER) {
-      SectionTextFooter(stringResource(R.string.simplex_link_mode_browser_warning))
+      SectionTextFooter(stringResource(MR.strings.simplex_link_mode_browser_warning))
     }
     SectionBottomSpacer()
   }
@@ -87,14 +88,14 @@ private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onS
   val values = remember {
     SimplexLinkMode.values().map {
       when (it) {
-        SimplexLinkMode.DESCRIPTION -> it to generalGetString(R.string.simplex_link_mode_description)
-        SimplexLinkMode.FULL -> it to generalGetString(R.string.simplex_link_mode_full)
-        SimplexLinkMode.BROWSER -> it to generalGetString(R.string.simplex_link_mode_browser)
+        SimplexLinkMode.DESCRIPTION -> it to generalGetString(MR.strings.simplex_link_mode_description)
+        SimplexLinkMode.FULL -> it to generalGetString(MR.strings.simplex_link_mode_full)
+        SimplexLinkMode.BROWSER -> it to generalGetString(MR.strings.simplex_link_mode_browser)
       }
     }
   }
   ExposedDropDownSettingRow(
-    generalGetString(R.string.simplex_link_mode),
+    generalGetString(MR.strings.simplex_link_mode),
     values,
     simplexLinkModeState,
     icon = null,
@@ -109,7 +110,7 @@ private val laDelays = listOf(10, 30, 60, 180, 0)
 fun SimplexLockView(
   chatModel: ChatModel,
   currentLAMode: SharedPreference<LAMode>,
-  setPerformLA: (Boolean, FragmentActivity) -> Unit
+  setPerformLA: (Boolean) -> Unit
 ) {
   val performLA = remember { chatModel.performLA }
   val laMode = remember { chatModel.controller.appPrefs.laMode.state }
@@ -139,11 +140,11 @@ fun SimplexLockView(
   fun toggleLAMode(toLAMode: LAMode) {
     authenticate(
       if (toLAMode == LAMode.SYSTEM) {
-        generalGetString(R.string.la_enter_app_passcode)
+        generalGetString(MR.strings.la_enter_app_passcode)
       } else {
-        generalGetString(R.string.chat_lock)
+        generalGetString(MR.strings.chat_lock)
       },
-      generalGetString(R.string.change_lock_mode)
+      generalGetString(MR.strings.change_lock_mode)
     ) { laResult ->
       when (laResult) {
         is LAResult.Error -> {
@@ -153,7 +154,7 @@ fun SimplexLockView(
         LAResult.Success -> {
           when (toLAMode) {
             LAMode.SYSTEM -> {
-              authenticate(generalGetString(R.string.auth_enable_simplex_lock), promptSubtitle = "", usingLAMode = toLAMode) { laResult ->
+              authenticate(generalGetString(MR.strings.auth_enable_simplex_lock), promptSubtitle = "", usingLAMode = toLAMode) { laResult ->
                 when (laResult) {
                   LAResult.Success -> {
                     currentLAMode.set(toLAMode)
@@ -173,7 +174,7 @@ fun SimplexLockView(
                     submit = {
                       laLockDelay.set(30)
                       currentLAMode.set(toLAMode)
-                      passcodeAlert(generalGetString(R.string.passcode_set))
+                      passcodeAlert(generalGetString(MR.strings.passcode_set))
                     },
                     cancel = {},
                     close = close
@@ -189,7 +190,7 @@ fun SimplexLockView(
   }
 
   fun toggleSelfDestruct(selfDestruct: SharedPreference<Boolean>) {
-    authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.change_self_destruct_mode)) { laResult ->
+    authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.change_self_destruct_mode)) { laResult ->
       when (laResult) {
         is LAResult.Error -> laFailedAlert()
         is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
@@ -208,16 +209,16 @@ fun SimplexLockView(
   }
 
   fun changeLAPassword() {
-    authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.la_change_app_passcode)) { laResult ->
+    authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.la_change_app_passcode)) { laResult ->
       when (laResult) {
         LAResult.Success -> {
           ModalManager.shared.showCustomModal { close ->
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
               SetAppPasscodeView(
                 submit = {
-                  passcodeAlert(generalGetString(R.string.passcode_changed))
+                  passcodeAlert(generalGetString(MR.strings.passcode_changed))
                 }, cancel = {
-                  passcodeAlert(generalGetString(R.string.passcode_not_changed))
+                  passcodeAlert(generalGetString(MR.strings.passcode_not_changed))
                 }, close = close
               )
             }
@@ -231,7 +232,7 @@ fun SimplexLockView(
   }
 
   fun changeSelfDestructPassword() {
-    authenticate(generalGetString(R.string.la_current_app_passcode), generalGetString(R.string.change_self_destruct_passcode)) { laResult ->
+    authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.change_self_destruct_passcode)) { laResult ->
       when (laResult) {
         LAResult.Success -> {
           ModalManager.shared.showCustomModal { close ->
@@ -239,9 +240,9 @@ fun SimplexLockView(
               SetAppPasscodeView(
                 passcodeKeychain = ksSelfDestructPassword,
                 submit = {
-                  selfDestructPasscodeAlert(generalGetString(R.string.self_destruct_passcode_changed))
+                  selfDestructPasscodeAlert(generalGetString(MR.strings.self_destruct_passcode_changed))
                 }, cancel = {
-                  passcodeAlert(generalGetString(R.string.passcode_not_changed))
+                  passcodeAlert(generalGetString(MR.strings.passcode_not_changed))
                 },
                 close = close
               )
@@ -258,7 +259,7 @@ fun SimplexLockView(
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(R.string.chat_lock))
+    AppBarTitle(stringResource(MR.strings.chat_lock))
     SectionView {
       EnableLock(performLA) { performLAToggle ->
         performLA.value = performLAToggle
@@ -266,7 +267,7 @@ fun SimplexLockView(
         if (performLAToggle) {
           when (currentLAMode.state.value) {
             LAMode.SYSTEM -> {
-              setPerformLA(true, activity)
+              setPerformLA(true)
             }
             LAMode.PASSCODE -> {
               ModalManager.shared.showCustomModal { close ->
@@ -275,7 +276,7 @@ fun SimplexLockView(
                     submit = {
                       laLockDelay.set(30)
                       chatModel.controller.appPrefs.performLA.set(true)
-                      passcodeAlert(generalGetString(R.string.passcode_set))
+                      passcodeAlert(generalGetString(MR.strings.passcode_set))
                     },
                     cancel = {
                       resetLAEnabled(false)
@@ -287,7 +288,7 @@ fun SimplexLockView(
             }
           }
         } else {
-          setPerformLA(false, activity)
+          setPerformLA(false)
         }
       }
       LockModeSelector(laMode) { newLAMode ->
@@ -304,7 +305,7 @@ fun SimplexLockView(
         if (showChangePasscode.value && laMode.value == LAMode.PASSCODE) {
           SectionItemView({ changeLAPassword() }) {
             Text(
-              generalGetString(R.string.la_change_app_passcode),
+              generalGetString(MR.strings.la_change_app_passcode),
               color = MaterialTheme.colors.primary
             )
           }
@@ -312,7 +313,7 @@ fun SimplexLockView(
       }
       if (performLA.value && laMode.value == LAMode.PASSCODE) {
         SectionDividerSpaced()
-        SectionView(stringResource(R.string.self_destruct_passcode).uppercase()) {
+        SectionView(stringResource(MR.strings.self_destruct_passcode).uppercase()) {
           val openInfo = {
             ModalManager.shared.showModal {
               SelfDestructInfoView()
@@ -320,8 +321,8 @@ fun SimplexLockView(
           }
           SettingsActionItemWithContent(null, null, click = openInfo) {
             SharedPreferenceToggleWithIcon(
-              stringResource(R.string.enable_self_destruct),
-              painterResource(R.drawable.ic_info),
+              stringResource(MR.strings.enable_self_destruct),
+              painterResource(MR.images.ic_info),
               openInfo,
               remember { selfDestructPref.state }.value
             ) {
@@ -332,7 +333,7 @@ fun SimplexLockView(
           if (remember { selfDestructPref.state }.value) {
             Column(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)) {
               Text(
-                stringResource(R.string.self_destruct_new_display_name),
+                stringResource(MR.strings.self_destruct_new_display_name),
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
               )
@@ -346,7 +347,7 @@ fun SimplexLockView(
             }
             SectionItemView({ changeSelfDestructPassword() }) {
               Text(
-                stringResource(R.string.change_self_destruct_passcode),
+                stringResource(MR.strings.change_self_destruct_passcode),
                 color = MaterialTheme.colors.primary
               )
             }
@@ -363,12 +364,12 @@ private fun SelfDestructInfoView() {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
   ) {
-    AppBarTitle(stringResource(R.string.self_destruct), withPadding = false)
-    ReadableText(stringResource(R.string.if_you_enter_self_destruct_code))
+    AppBarTitle(stringResource(MR.strings.self_destruct), withPadding = false)
+    ReadableText(stringResource(MR.strings.if_you_enter_self_destruct_code))
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-      TextListItem("1.", stringResource(R.string.all_app_data_will_be_cleared))
-      TextListItem("2.", stringResource(R.string.app_passcode_replaced_with_self_destruct))
-      TextListItem("3.", stringResource(R.string.empty_chat_profile_is_created))
+      TextListItem("1.", stringResource(MR.strings.all_app_data_will_be_cleared))
+      TextListItem("2.", stringResource(MR.strings.app_passcode_replaced_with_self_destruct))
+      TextListItem("3.", stringResource(MR.strings.empty_chat_profile_is_created))
     }
     SectionBottomSpacer()
   }
@@ -381,10 +382,10 @@ private fun EnableSelfDestruct(
 ) {
   Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
     SetAppPasscodeView(
-      passcodeKeychain = ksSelfDestructPassword, title = generalGetString(R.string.set_passcode), reason = generalGetString(R.string.enabled_self_destruct_passcode),
+      passcodeKeychain = ksSelfDestructPassword, title = generalGetString(MR.strings.set_passcode), reason = generalGetString(MR.strings.enabled_self_destruct_passcode),
       submit = {
         selfDestruct.set(true)
-        selfDestructPasscodeAlert(generalGetString(R.string.self_destruct_passcode_enabled))
+        selfDestructPasscodeAlert(generalGetString(MR.strings.self_destruct_passcode_enabled))
       },
       cancel = {},
       close = close
@@ -397,7 +398,7 @@ private fun EnableLock(performLA: MutableState<Boolean>, onCheckedChange: (Boole
   SectionItemView {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
-        stringResource(R.string.enable_lock), Modifier
+        stringResource(MR.strings.enable_lock), Modifier
           .padding(end = 24.dp)
           .fillMaxWidth()
           .weight(1F)
@@ -414,7 +415,7 @@ private fun EnableLock(performLA: MutableState<Boolean>, onCheckedChange: (Boole
 private fun LockModeSelector(state: State<LAMode>, onSelected: (LAMode) -> Unit) {
   val values by remember { mutableStateOf(LAMode.values().map { it to it.text }) }
   ExposedDropDownSettingRow(
-    generalGetString(R.string.lock_mode),
+    generalGetString(MR.strings.lock_mode),
     values,
     state,
     icon = null,
@@ -428,7 +429,7 @@ private fun LockDelaySelector(state: State<Int>, onSelected: (Int) -> Unit) {
   val delays = remember { if (laDelays.contains(state.value)) laDelays else listOf(state.value) + laDelays }
   val values by remember { mutableStateOf(delays.map { it to laDelayText(it) }) }
   ExposedDropDownSettingRow(
-    generalGetString(R.string.lock_after),
+    generalGetString(MR.strings.lock_after),
     values,
     state,
     icon = null,
@@ -449,22 +450,22 @@ private fun laDelayText(t: Int): String {
   val m = t / 60
   val s = t % 60
   return if (t == 0) {
-    generalGetString(R.string.la_immediately)
+    generalGetString(MR.strings.la_immediately)
   } else if (m == 0 || s != 0) {
     // there are no options where both minutes and seconds are needed
-    generalGetString(R.string.la_seconds).format(s)
+    generalGetString(MR.strings.la_seconds).format(s)
   } else {
-    generalGetString(R.string.la_minutes).format(m)
+    generalGetString(MR.strings.la_minutes).format(m)
   }
 }
 
 private fun passcodeAlert(title: String) {
   AlertManager.shared.showAlertMsg(
     title = title,
-    text = generalGetString(R.string.la_please_remember_to_store_password)
+    text = generalGetString(MR.strings.la_please_remember_to_store_password)
   )
 }
 
 private fun selfDestructPasscodeAlert(title: String) {
-  AlertManager.shared.showAlertMsg(title, generalGetString(R.string.if_you_enter_passcode_data_removed))
+  AlertManager.shared.showAlertMsg(title, generalGetString(MR.strings.if_you_enter_passcode_data_removed))
 }

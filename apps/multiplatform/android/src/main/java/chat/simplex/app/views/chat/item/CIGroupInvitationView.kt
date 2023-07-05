@@ -8,7 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.*
@@ -18,6 +18,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 
 @Composable
 fun CIGroupInvitationView(
@@ -43,7 +44,7 @@ fun CIGroupInvitationView(
         .padding(vertical = 4.dp)
         .padding(end = 2.dp)
     ) {
-      ProfileImage(size = 60.dp, image = groupInvitation.groupProfile.image, icon = R.drawable.ic_supervised_user_circle_filled, color = iconColor)
+      ProfileImage(size = 60.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
       Spacer(Modifier.padding(horizontal = 3.dp))
       Column(
         Modifier.defaultMinSize(minHeight = 60.dp),
@@ -60,11 +61,11 @@ fun CIGroupInvitationView(
   @Composable
   fun groupInvitationText() {
     when {
-      sent -> Text(stringResource(R.string.you_sent_group_invitation))
-      !sent && groupInvitation.status == CIGroupInvitationStatus.Pending -> Text(stringResource(R.string.you_are_invited_to_group))
-      !sent && groupInvitation.status == CIGroupInvitationStatus.Accepted -> Text(stringResource(R.string.you_joined_this_group))
-      !sent && groupInvitation.status == CIGroupInvitationStatus.Rejected -> Text(stringResource(R.string.you_rejected_group_invitation))
-      !sent && groupInvitation.status == CIGroupInvitationStatus.Expired -> Text(stringResource(R.string.group_invitation_expired))
+      sent -> Text(stringResource(MR.strings.you_sent_group_invitation))
+      !sent && groupInvitation.status == CIGroupInvitationStatus.Pending -> Text(stringResource(MR.strings.you_are_invited_to_group))
+      !sent && groupInvitation.status == CIGroupInvitationStatus.Accepted -> Text(stringResource(MR.strings.you_joined_this_group))
+      !sent && groupInvitation.status == CIGroupInvitationStatus.Rejected -> Text(stringResource(MR.strings.you_rejected_group_invitation))
+      !sent && groupInvitation.status == CIGroupInvitationStatus.Expired -> Text(stringResource(MR.strings.group_invitation_expired))
     }
   }
 
@@ -95,7 +96,7 @@ fun CIGroupInvitationView(
           if (action) {
             groupInvitationText()
             Text(stringResource(
-              if (chatIncognito) R.string.group_invitation_tap_to_join_incognito else  R.string.group_invitation_tap_to_join),
+              if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else  MR.strings.group_invitation_tap_to_join),
               color = if (chatIncognito) Indigo else MaterialTheme.colors.primary)
           } else {
             Box(Modifier.padding(end = 48.dp)) {

@@ -7,7 +7,6 @@ import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -15,8 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -31,6 +30,8 @@ import chat.simplex.app.views.chatlist.UserProfileRow
 import chat.simplex.app.views.database.PassphraseField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.CreateProfile
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
 
 @Composable
@@ -58,14 +59,14 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     removeUser = { user ->
       if (m.users.size > 1 && (user.hidden || visibleUsersCount(m) > 1)) {
         val text = buildAnnotatedString {
-          append(generalGetString(R.string.users_delete_all_chats_deleted) + "\n\n" + generalGetString(R.string.users_delete_profile_for) + " ")
+          append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
           withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
             append(user.displayName)
           }
           append(":")
         }
         AlertManager.shared.showAlertDialogButtonsColumn(
-          title = generalGetString(R.string.users_delete_question),
+          title = generalGetString(MR.strings.users_delete_question),
           text = text,
           buttons = {
             Column {
@@ -73,25 +74,25 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
                 AlertManager.shared.hideAlert()
                 removeUser(m, user, users, true, searchTextOrPassword.value.trim())
               }) {
-                Text(stringResource(R.string.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+                Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
               }
               SectionItemView({
                 AlertManager.shared.hideAlert()
                 removeUser(m, user, users, false, searchTextOrPassword.value.trim())
               }
               ) {
-                Text(stringResource(R.string.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+                Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
               }
             }
           }
         )
       } else {
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(R.string.cant_delete_user_profile),
+          title = generalGetString(MR.strings.cant_delete_user_profile),
           text = if (m.users.size > 1) {
-            generalGetString(R.string.should_be_at_least_one_visible_profile)
+            generalGetString(MR.strings.should_be_at_least_one_visible_profile)
           } else {
-            generalGetString(R.string.should_be_at_least_one_profile)
+            generalGetString(MR.strings.should_be_at_least_one_profile)
           }
         )
       }
@@ -158,14 +159,14 @@ private fun UserProfilesLayout(
   ) {
     if (profileHidden.value) {
       SectionView {
-        SettingsActionItem(painterResource(R.drawable.ic_lock_open), stringResource(R.string.enter_password_to_show), click = {
+        SettingsActionItem(painterResource(MR.images.ic_lock_open), stringResource(MR.strings.enter_password_to_show), click = {
           profileHidden.value = false
         }
         )
       }
       SectionSpacer()
     }
-    AppBarTitle(stringResource(R.string.your_chat_profiles))
+    AppBarTitle(stringResource(MR.strings.your_chat_profiles))
 
     SectionView {
       for (user in filteredUsers) {
@@ -174,20 +175,20 @@ private fun UserProfilesLayout(
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
         SectionItemView(addUser, minHeight = 68.dp) {
-          Icon(painterResource(R.drawable.ic_add), stringResource(R.string.users_add), tint = MaterialTheme.colors.primary)
+          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.users_add), tint = MaterialTheme.colors.primary)
           Spacer(Modifier.padding(horizontal = 4.dp))
-          Text(stringResource(R.string.users_add), color = MaterialTheme.colors.primary)
+          Text(stringResource(MR.strings.users_add), color = MaterialTheme.colors.primary)
         }
       }
     }
-    SectionTextFooter(stringResource(R.string.tap_to_activate_profile))
+    SectionTextFooter(stringResource(MR.strings.tap_to_activate_profile))
     LaunchedEffect(Unit) {
       if (showHiddenProfilesNotice.state.value && users.size > 1) {
         AlertManager.shared.showAlertDialog(
-          title = generalGetString(R.string.make_profile_private),
-          text = generalGetString(R.string.you_can_hide_or_mute_user_profile),
-          confirmText = generalGetString(R.string.ok),
-          dismissText = generalGetString(R.string.dont_show_again),
+          title = generalGetString(MR.strings.make_profile_private),
+          text = generalGetString(MR.strings.you_can_hide_or_mute_user_profile),
+          confirmText = generalGetString(MR.strings.ok),
+          dismissText = generalGetString(MR.strings.dont_show_again),
           onDismiss = {
             showHiddenProfilesNotice.set(false)
           },
@@ -217,30 +218,30 @@ private fun UserView(
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
-        ItemAction(stringResource(R.string.user_unhide), painterResource(R.drawable.ic_lock_open), onClick = {
+        ItemAction(stringResource(MR.strings.user_unhide), painterResource(MR.images.ic_lock_open), onClick = {
           showMenu.value = false
           unhideUser(user)
         })
       } else {
         if (visibleUsersCount > 1) {
-          ItemAction(stringResource(R.string.user_hide), painterResource(R.drawable.ic_lock), onClick = {
+          ItemAction(stringResource(MR.strings.user_hide), painterResource(MR.images.ic_lock), onClick = {
             showMenu.value = false
             showHiddenProfile(user)
           })
         }
         if (user.showNtfs) {
-          ItemAction(stringResource(R.string.user_mute), painterResource(R.drawable.ic_notifications_off), onClick = {
+          ItemAction(stringResource(MR.strings.user_mute), painterResource(MR.images.ic_notifications_off), onClick = {
             showMenu.value = false
             muteUser(user)
           })
         } else {
-          ItemAction(stringResource(R.string.user_unmute), painterResource(R.drawable.ic_notifications), onClick = {
+          ItemAction(stringResource(MR.strings.user_unmute), painterResource(MR.images.ic_notifications), onClick = {
             showMenu.value = false
             unmuteUser(user)
           })
         }
       }
-      ItemAction(stringResource(R.string.delete_verb), painterResource(R.drawable.ic_delete), color = Color.Red, onClick = {
+      ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, onClick = {
         removeUser(user)
         showMenu.value = false
       })
@@ -264,7 +265,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
     val passwordValid by remember { derivedStateOf { actionPassword.value == actionPassword.value.trim() } }
     val actionEnabled by remember { derivedStateOf { actionPassword.value != "" && passwordValid && correctPassword(user, actionPassword.value) } }
 
-    @Composable fun ActionHeader(@StringRes title: Int) {
+    @Composable fun ActionHeader(title: StringResource) {
       AppBarTitle(stringResource(title))
       SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
         UserProfileRow(user)
@@ -272,10 +273,10 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
       SectionSpacer()
     }
 
-    @Composable fun PasswordAndAction(@StringRes label: Int, color: Color = MaterialTheme.colors.primary) {
+    @Composable fun PasswordAndAction(label: StringResource, color: Color = MaterialTheme.colors.primary) {
       SectionView() {
         SectionItemView {
-          PassphraseField(actionPassword, generalGetString(R.string.profile_password), isValid = { passwordValid }, showStrength = true)
+          PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true)
         }
         SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
           Text(generalGetString(label), color = if (actionEnabled) color else MaterialTheme.colors.secondary)
@@ -285,15 +286,15 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
 
     when (action) {
       UserProfileAction.DELETE -> {
-        ActionHeader(R.string.delete_profile)
-        PasswordAndAction(R.string.delete_chat_profile, color = Color.Red)
+        ActionHeader(MR.strings.delete_profile)
+        PasswordAndAction(MR.strings.delete_chat_profile, color = Color.Red)
         if (actionEnabled) {
-          SectionTextFooter(stringResource(R.string.users_delete_all_chats_deleted))
+          SectionTextFooter(stringResource(MR.strings.users_delete_all_chats_deleted))
         }
       }
       UserProfileAction.UNHIDE -> {
-        ActionHeader(R.string.unhide_profile)
-        PasswordAndAction(R.string.unhide_chat_profile)
+        ActionHeader(MR.strings.unhide_profile)
+        PasswordAndAction(MR.strings.unhide_chat_profile)
       }
     }
     SectionBottomSpacer()
@@ -358,7 +359,7 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
       deleteUser(user)
     }
   } catch (e: Exception) {
-    AlertManager.shared.showAlertMsg(generalGetString(R.string.error_deleting_user), e.stackTraceToString())
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_user), e.stackTraceToString())
   }
 }
 
@@ -368,7 +369,7 @@ private suspend fun setUserPrivacy(m: ChatModel, onSuccess: (() -> Unit)? = null
     onSuccess?.invoke()
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(
-      title = generalGetString(R.string.error_updating_user_privacy),
+      title = generalGetString(MR.strings.error_updating_user_privacy),
       text = e.stackTraceToString()
     )
   }
@@ -376,10 +377,10 @@ private suspend fun setUserPrivacy(m: ChatModel, onSuccess: (() -> Unit)? = null
 
 private fun showMuteProfileAlert(showMuteProfileAlert: SharedPreference<Boolean>) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.muted_when_inactive),
-    text = generalGetString(R.string.you_will_still_receive_calls_and_ntfs),
-    confirmText = generalGetString(R.string.ok),
-    dismissText = generalGetString(R.string.dont_show_again),
+    title = generalGetString(MR.strings.muted_when_inactive),
+    text = generalGetString(MR.strings.you_will_still_receive_calls_and_ntfs),
+    confirmText = generalGetString(MR.strings.ok),
+    dismissText = generalGetString(MR.strings.dont_show_again),
     onDismiss = {
       showMuteProfileAlert.set(false)
     },

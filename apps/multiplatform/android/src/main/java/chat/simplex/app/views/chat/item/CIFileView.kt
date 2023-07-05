@@ -14,8 +14,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,6 +23,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 @Composable
@@ -43,15 +44,15 @@ fun CIFileView(
       contentAlignment = Alignment.Center
     ) {
       Icon(
-        painterResource(R.drawable.ic_draft_filled),
-        stringResource(R.string.icon_descr_file),
+        painterResource(MR.images.ic_draft_filled),
+        stringResource(MR.strings.icon_descr_file),
         Modifier.fillMaxSize(),
         tint = color
       )
       if (innerIcon != null) {
         Icon(
           innerIcon,
-          stringResource(R.string.icon_descr_file),
+          stringResource(MR.strings.icon_descr_file),
           Modifier
             .size(32.dp)
             .padding(top = 12.dp),
@@ -76,8 +77,8 @@ fun CIFileView(
             receiveFile(file.fileId)
           } else {
             AlertManager.shared.showAlertMsg(
-              generalGetString(R.string.large_file),
-              String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
+              generalGetString(MR.strings.large_file),
+              String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol)))
             )
           }
         }
@@ -85,13 +86,13 @@ fun CIFileView(
           when (file.fileProtocol) {
             FileProtocol.XFTP ->
               AlertManager.shared.showAlertMsg(
-                generalGetString(R.string.waiting_for_file),
-                generalGetString(R.string.file_will_be_received_when_contact_completes_uploading)
+                generalGetString(MR.strings.waiting_for_file),
+                generalGetString(MR.strings.file_will_be_received_when_contact_completes_uploading)
               )
             FileProtocol.SMP ->
               AlertManager.shared.showAlertMsg(
-                generalGetString(R.string.waiting_for_file),
-                generalGetString(R.string.file_will_be_received_when_contact_is_online)
+                generalGetString(MR.strings.waiting_for_file),
+                generalGetString(MR.strings.file_will_be_received_when_contact_is_online)
               )
           }
         is CIFileStatus.RcvComplete -> {
@@ -99,7 +100,7 @@ fun CIFileView(
           if (filePath != null) {
             saveFileLauncher.launch(file.fileName)
           } else {
-            Toast.makeText(context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, generalGetString(MR.strings.file_not_found), Toast.LENGTH_SHORT).show()
           }
         }
         else -> {}
@@ -151,15 +152,15 @@ fun CIFileView(
               FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
               FileProtocol.SMP -> progressIndicator()
             }
-          is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(R.drawable.ic_check_filled))
-          is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(R.drawable.ic_close))
-          is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(R.drawable.ic_close))
+          is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
+          is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvInvitation ->
             if (fileSizeValid())
-              fileIcon(innerIcon = painterResource(R.drawable.ic_arrow_downward), color = MaterialTheme.colors.primary)
+              fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary)
             else
-              fileIcon(innerIcon = painterResource(R.drawable.ic_priority_high), color = WarningOrange)
-          is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(R.drawable.ic_more_horiz))
+              fileIcon(innerIcon = painterResource(MR.images.ic_priority_high), color = WarningOrange)
+          is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))
           is CIFileStatus.RcvTransfer ->
             if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
               progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
@@ -167,8 +168,8 @@ fun CIFileView(
               progressIndicator()
             }
           is CIFileStatus.RcvComplete -> fileIcon()
-          is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = painterResource(R.drawable.ic_close))
-          is CIFileStatus.RcvError -> fileIcon(innerIcon = painterResource(R.drawable.ic_close))
+          is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.RcvError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
         }
       } else {
         fileIcon()

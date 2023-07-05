@@ -6,8 +6,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
@@ -15,6 +15,7 @@ import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.usersettings.UserAddressView
+import chat.simplex.res.MR
 
 enum class CreateLinkTab {
   ONE_TIME, LONG_TERM
@@ -43,9 +44,9 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
   }
   val tabTitles = CreateLinkTab.values().map {
     when {
-      it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() -> stringResource(R.string.create_one_time_link)
-      it == CreateLinkTab.ONE_TIME -> stringResource(R.string.one_time_link)
-      it == CreateLinkTab.LONG_TERM -> stringResource(R.string.your_simplex_contact_address)
+      it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() -> stringResource(MR.strings.create_one_time_link)
+      it == CreateLinkTab.ONE_TIME -> stringResource(MR.strings.one_time_link)
+      it == CreateLinkTab.LONG_TERM -> stringResource(MR.strings.your_simplex_contact_address)
       else -> ""
     }
   }
@@ -78,7 +79,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
           text = { Text(it, fontSize = 13.sp) },
           icon = {
             Icon(
-              if (CreateLinkTab.ONE_TIME.ordinal == index) painterResource(R.drawable.ic_repeat_one) else painterResource(R.drawable.ic_all_inclusive),
+              if (CreateLinkTab.ONE_TIME.ordinal == index) painterResource(MR.images.ic_repeat_one) else painterResource(MR.images.ic_all_inclusive),
               it
             )
           },
