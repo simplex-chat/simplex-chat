@@ -66,6 +66,7 @@ public enum ChatCommand {
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
+    case reconnectAllServers
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
@@ -176,6 +177,7 @@ public enum ChatCommand {
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
+            case .reconnectAllServers: return "/reconnect"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
@@ -284,6 +286,7 @@ public enum ChatCommand {
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
+            case .reconnectAllServers: return "reconnectAllServers"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
@@ -994,6 +997,7 @@ public struct NetCfg: Codable, Equatable {
     public var sessionMode: TransportSessionMode
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
+    public var tcpTimeoutPerKb: Int // microseconds
     public var tcpKeepAlive: KeepAliveOpts?
     public var smpPingInterval: Int // microseconds
     public var smpPingCount: Int // times
@@ -1004,6 +1008,7 @@ public struct NetCfg: Codable, Equatable {
         sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 10_000_000,
         tcpTimeout: 7_000_000,
+        tcpTimeoutPerKb: 10_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1015,6 +1020,7 @@ public struct NetCfg: Codable, Equatable {
         sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 20_000_000,
         tcpTimeout: 15_000_000,
+        tcpTimeoutPerKb: 20_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,

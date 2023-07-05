@@ -7,21 +7,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
+import chat.simplex.res.MR
 
 @Composable
 fun ContactConnectionView(contactConnection: PendingContactConnection) {
   Row {
     Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
-      ProfileImage(size = 54.dp, null, if (contactConnection.initiated) R.drawable.ic_add_link else R.drawable.ic_link)
+      ProfileImage(size = 54.dp, null, if (contactConnection.initiated) MR.images.ic_add_link else MR.images.ic_link)
     }
     Column(
       modifier = Modifier

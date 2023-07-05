@@ -11,8 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,6 +31,7 @@ import chat.simplex.app.views.usersettings.DeleteImageButton
 import chat.simplex.app.views.usersettings.EditImageButton
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
+import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -88,8 +89,8 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = DEFAULT_PADDING)
         ) {
-          AppBarTitle(stringResource(R.string.create_secret_group_title))
-          ReadableText(R.string.group_is_decentralized, TextAlign.Center)
+          AppBarTitle(stringResource(MR.strings.create_secret_group_title))
+          ReadableText(MR.strings.group_is_decentralized, TextAlign.Center)
           Box(
             Modifier
               .fillMaxWidth()
@@ -108,13 +109,13 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
           }
           Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
-              stringResource(R.string.group_display_name_field),
+              stringResource(MR.strings.group_display_name_field),
               fontSize = 16.sp
             )
             if (!isValidDisplayName(displayName.value)) {
               Spacer(Modifier.size(DEFAULT_PADDING_HALF))
               Text(
-                stringResource(R.string.no_spaces),
+                stringResource(MR.strings.no_spaces),
                 fontSize = 16.sp,
                 color = Color.Red
               )
@@ -123,7 +124,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
           ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
           Spacer(Modifier.height(DEFAULT_PADDING))
           Text(
-            stringResource(R.string.group_full_name_field),
+            stringResource(MR.strings.group_full_name_field),
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
           )
@@ -161,8 +162,8 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
   ) {
     Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
       Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = color, fontWeight = FontWeight.Bold)
-        Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(R.string.create_profile_button), tint = color)
+        Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = color, fontWeight = FontWeight.Bold)
+        Icon(painterResource(MR.images.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = color)
       }
     }
   }

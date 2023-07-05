@@ -8,12 +8,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.views.helpers.*
+import chat.simplex.res.MR
 
 @Composable
 fun PasscodeView(
@@ -39,9 +40,9 @@ fun PasscodeView(
       }
       PasscodeEntry(passcode, true)
       Row {
-        SimpleButton(generalGetString(R.string.cancel_verb), icon = painterResource(R.drawable.ic_close), click = cancel)
+        SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), click = cancel)
         Spacer(Modifier.size(20.dp))
-        SimpleButton(submitLabel, icon = painterResource(R.drawable.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
+        SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
       }
     }
   }
@@ -82,8 +83,8 @@ fun PasscodeView(
             Modifier.padding(start = 30.dp).height(s * 3),
             verticalArrangement = Arrangement.SpaceEvenly
           ) {
-            SimpleButton(generalGetString(R.string.cancel_verb), icon = painterResource(R.drawable.ic_close), click = cancel)
-            SimpleButton(submitLabel, icon = painterResource(R.drawable.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
+            SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), click = cancel)
+            SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4, click = submit)
           }
         }
       }

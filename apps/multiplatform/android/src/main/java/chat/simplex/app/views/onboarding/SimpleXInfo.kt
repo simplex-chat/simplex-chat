@@ -1,7 +1,6 @@
 package chat.simplex.app.views.onboarding
 
 import android.content.res.Configuration
-import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,8 +10,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,6 +22,8 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.User
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ModalManager
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
@@ -49,11 +50,11 @@ fun SimpleXInfoLayout(
       SimpleXLogo()
     }
 
-    Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 48.dp).padding(horizontal = 36.dp), textAlign = TextAlign.Center)
+    Text(stringResource(MR.strings.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 48.dp).padding(horizontal = 36.dp), textAlign = TextAlign.Center)
 
-    InfoRow(painterResource(R.drawable.privacy), R.string.privacy_redefined, R.string.first_platform_without_user_ids, width = 80.dp)
-    InfoRow(painterResource(R.drawable.shield), R.string.immune_to_spam_and_abuse, R.string.people_can_connect_only_via_links_you_share)
-    InfoRow(painterResource(if (isInDarkTheme()) R.drawable.decentralized_light else R.drawable.decentralized), R.string.decentralized, R.string.opensource_protocol_and_code_anybody_can_run_servers)
+    InfoRow(painterResource(MR.images.privacy), MR.strings.privacy_redefined, MR.strings.first_platform_without_user_ids, width = 80.dp)
+    InfoRow(painterResource(MR.images.shield), MR.strings.immune_to_spam_and_abuse, MR.strings.people_can_connect_only_via_links_you_share)
+    InfoRow(painterResource(if (isInDarkTheme()) MR.images.decentralized_light else MR.images.decentralized), MR.strings.decentralized, MR.strings.opensource_protocol_and_code_anybody_can_run_servers)
 
     Spacer(Modifier.fillMaxHeight().weight(1f))
 
@@ -69,7 +70,7 @@ fun SimpleXInfoLayout(
         .fillMaxWidth()
         .padding(bottom = DEFAULT_PADDING.times(1.5f), top = DEFAULT_PADDING), contentAlignment = Alignment.Center
     ) {
-      SimpleButtonDecorated(text = stringResource(R.string.how_it_works), icon = painterResource(R.drawable.ic_info),
+      SimpleButtonDecorated(text = stringResource(MR.strings.how_it_works), icon = painterResource(MR.images.ic_info),
         click = showModal { HowItWorks(user, onboardingStage) })
     }
   }
@@ -78,8 +79,8 @@ fun SimpleXInfoLayout(
 @Composable
 fun SimpleXLogo() {
   Image(
-    painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
-    contentDescription = stringResource(R.string.image_descr_simplex_logo),
+    painter = painterResource(if (isInDarkTheme()) MR.images.logo_light else MR.images.logo),
+    contentDescription = stringResource(MR.strings.image_descr_simplex_logo),
     modifier = Modifier
       .padding(vertical = DEFAULT_PADDING)
       .fillMaxWidth(0.60f)
@@ -87,7 +88,7 @@ fun SimpleXLogo() {
 }
 
 @Composable
-private fun InfoRow(icon: Painter, @StringRes titleId: Int, @StringRes textId: Int, width: Dp = 76.dp) {
+private fun InfoRow(icon: Painter, titleId: StringResource, textId: StringResource, width: Dp = 76.dp) {
   Row(Modifier.padding(bottom = 27.dp), verticalAlignment = Alignment.Top) {
     Image(icon, contentDescription = null, modifier = Modifier
       .width(width)
@@ -102,15 +103,15 @@ private fun InfoRow(icon: Painter, @StringRes titleId: Int, @StringRes textId: I
 @Composable
 fun OnboardingActionButton(user: User?, onboardingStage: MutableState<OnboardingStage?>, onclick: (() -> Unit)? = null) {
   if (user == null) {
-    OnboardingActionButton(R.string.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage, true, onclick)
+    OnboardingActionButton(MR.strings.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage, true, onclick)
   } else {
-    OnboardingActionButton(R.string.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, onboardingStage, true, onclick)
+    OnboardingActionButton(MR.strings.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, onboardingStage, true, onclick)
   }
 }
 
 @Composable
 fun OnboardingActionButton(
-  @StringRes labelId: Int,
+  labelId: StringResource,
   onboarding: OnboardingStage?,
   onboardingStage: MutableState<OnboardingStage?>,
   border: Boolean,
@@ -136,7 +137,7 @@ fun OnboardingActionButton(
   }, modifier) {
     Text(stringResource(labelId), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary, fontSize = 20.sp)
     Icon(
-      painterResource(R.drawable.ic_arrow_forward_ios), "next stage", tint = MaterialTheme.colors.primary,
+      painterResource(MR.images.ic_arrow_forward_ios), "next stage", tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(start = DEFAULT_PADDING.div(4)).size(20.dp)
     )
   }

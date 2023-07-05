@@ -6,12 +6,13 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCodeScanner
 import com.google.accompanist.permissions.rememberPermissionState
+import chat.simplex.res.MR
 
 @Composable
 fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit) {
@@ -29,7 +30,7 @@ private fun ScanCodeLayout(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit,
       .fillMaxSize()
       .padding(horizontal = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(R.string.scan_code), false)
+    AppBarTitle(stringResource(MR.strings.scan_code), false)
     Box(
       Modifier
         .fillMaxWidth()
@@ -42,12 +43,12 @@ private fun ScanCodeLayout(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit,
             close()
           } else {
             AlertManager.shared.showAlertMsg(
-              title = generalGetString(R.string.incorrect_code)
+              title = generalGetString(MR.strings.incorrect_code)
             )
           }
         }
       }
     }
-    Text(stringResource(R.string.scan_code_from_contacts_app))
+    Text(stringResource(MR.strings.scan_code_from_contacts_app))
   }
 }
