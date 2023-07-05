@@ -352,8 +352,8 @@ pattern DisableNtfs <- ChatSettings {enableNtfs = False}
 data ChatFeature
   = CFTimedMessages
   | CFFullDelete
-  | -- | CFReceipts
-    CFReactions
+  | CFReceipts
+  | CFReactions
   | CFVoice
   | CFCalls
   deriving (Show, Generic)
@@ -361,6 +361,7 @@ data ChatFeature
 data SChatFeature (f :: ChatFeature) where
   SCFTimedMessages :: SChatFeature 'CFTimedMessages
   SCFFullDelete :: SChatFeature 'CFFullDelete
+  SCFReceipts :: SChatFeature 'CFReceipts
   SCFReactions :: SChatFeature 'CFReactions
   SCFVoice :: SChatFeature 'CFVoice
   SCFCalls :: SChatFeature 'CFCalls
@@ -375,6 +376,7 @@ chatFeatureNameText :: ChatFeature -> Text
 chatFeatureNameText = \case
   CFTimedMessages -> "Disappearing messages"
   CFFullDelete -> "Full deletion"
+  CFReceipts -> "Delivery receipts"
   CFReactions -> "Message reactions"
   CFVoice -> "Voice messages"
   CFCalls -> "Audio/video calls"
@@ -398,7 +400,7 @@ allChatFeatures :: [AChatFeature]
 allChatFeatures =
   [ ACF SCFTimedMessages,
     ACF SCFFullDelete,
-    -- ACF SCFReceipts,
+    ACF SCFReceipts,
     ACF SCFReactions,
     ACF SCFVoice,
     ACF SCFCalls
@@ -408,7 +410,7 @@ chatPrefSel :: SChatFeature f -> Preferences -> Maybe (FeaturePreference f)
 chatPrefSel = \case
   SCFTimedMessages -> timedMessages
   SCFFullDelete -> fullDelete
-  -- SCFReceipts -> receipts
+  SCFReceipts -> receipts
   SCFReactions -> reactions
   SCFVoice -> voice
   SCFCalls -> calls
@@ -417,6 +419,7 @@ chatFeature :: SChatFeature f -> ChatFeature
 chatFeature = \case
   SCFTimedMessages -> CFTimedMessages
   SCFFullDelete -> CFFullDelete
+  SCFReceipts -> CFReceipts
   SCFReactions -> CFReactions
   SCFVoice -> CFVoice
   SCFCalls -> CFCalls
@@ -434,7 +437,7 @@ instance PreferenceI FullPreferences where
   getPreference = \case
     SCFTimedMessages -> timedMessages
     SCFFullDelete -> fullDelete
-    -- CFReceipts -> receipts
+    SCFReceipts -> receipts
     SCFReactions -> reactions
     SCFVoice -> voice
     SCFCalls -> calls
@@ -456,6 +459,7 @@ setPreference_ f pref_ prefs =
   case f of
     SCFTimedMessages -> prefs {timedMessages = pref_}
     SCFFullDelete -> prefs {fullDelete = pref_}
+    SCFReceipts -> prefs {receipts = pref_}
     SCFReactions -> prefs {reactions = pref_}
     SCFVoice -> prefs {voice = pref_}
     SCFCalls -> prefs {calls = pref_}
@@ -464,7 +468,7 @@ setPreference_ f pref_ prefs =
 data Preferences = Preferences
   { timedMessages :: Maybe TimedMessagesPreference,
     fullDelete :: Maybe FullDeletePreference,
-    -- receipts :: Maybe SimplePreference,
+    receipts :: Maybe ReceiptsPreference,
     reactions :: Maybe ReactionsPreference,
     voice :: Maybe VoicePreference,
     calls :: Maybe CallsPreference
@@ -485,8 +489,8 @@ data GroupFeature
   = GFTimedMessages
   | GFDirectMessages
   | GFFullDelete
-  | -- | GFReceipts
-    GFReactions
+  | GFReceipts
+  | GFReactions
   | GFVoice
   | GFFiles
   deriving (Show, Generic)
@@ -495,7 +499,7 @@ data SGroupFeature (f :: GroupFeature) where
   SGFTimedMessages :: SGroupFeature 'GFTimedMessages
   SGFDirectMessages :: SGroupFeature 'GFDirectMessages
   SGFFullDelete :: SGroupFeature 'GFFullDelete
-  -- SGFReceipts :: SGroupFeature 'GFReceipts
+  SGFReceipts :: SGroupFeature 'GFReceipts
   SGFReactions :: SGroupFeature 'GFReactions
   SGFVoice :: SGroupFeature 'GFVoice
   SGFFiles :: SGroupFeature 'GFFiles
@@ -511,6 +515,7 @@ groupFeatureNameText = \case
   GFTimedMessages -> "Disappearing messages"
   GFDirectMessages -> "Direct messages"
   GFFullDelete -> "Full deletion"
+  GFReceipts -> "Delivery receipts"
   GFReactions -> "Message reactions"
   GFVoice -> "Voice messages"
   GFFiles -> "Files and media"
@@ -537,7 +542,7 @@ allGroupFeatures =
   [ AGF SGFTimedMessages,
     AGF SGFDirectMessages,
     AGF SGFFullDelete,
-    -- GFReceipts,
+    AGF SGFReceipts,
     AGF SGFReactions,
     AGF SGFVoice,
     AGF SGFFiles
@@ -548,7 +553,7 @@ groupPrefSel = \case
   SGFTimedMessages -> timedMessages
   SGFDirectMessages -> directMessages
   SGFFullDelete -> fullDelete
-  -- GFReceipts -> receipts
+  SGFReceipts -> receipts
   SGFReactions -> reactions
   SGFVoice -> voice
   SGFFiles -> files
@@ -558,6 +563,7 @@ toGroupFeature = \case
   SGFTimedMessages -> GFTimedMessages
   SGFDirectMessages -> GFDirectMessages
   SGFFullDelete -> GFFullDelete
+  SGFReceipts -> GFReceipts
   SGFReactions -> GFReactions
   SGFVoice -> GFVoice
   SGFFiles -> GFFiles
@@ -576,7 +582,7 @@ instance GroupPreferenceI FullGroupPreferences where
     SGFTimedMessages -> timedMessages
     SGFDirectMessages -> directMessages
     SGFFullDelete -> fullDelete
-    -- GFReceipts -> receipts
+    SGFReceipts -> receipts
     SGFReactions -> reactions
     SGFVoice -> voice
     SGFFiles -> files
@@ -587,7 +593,7 @@ data GroupPreferences = GroupPreferences
   { timedMessages :: Maybe TimedMessagesGroupPreference,
     directMessages :: Maybe DirectMessagesGroupPreference,
     fullDelete :: Maybe FullDeleteGroupPreference,
-    -- receipts :: Maybe GroupPreference,
+    receipts :: Maybe ReceiptsGroupPreference,
     reactions :: Maybe ReactionsGroupPreference,
     voice :: Maybe VoiceGroupPreference,
     files :: Maybe FilesGroupPreference
@@ -622,6 +628,7 @@ setGroupPreference_ f pref prefs =
     SGFTimedMessages -> prefs {timedMessages = pref}
     SGFDirectMessages -> prefs {directMessages = pref}
     SGFFullDelete -> prefs {fullDelete = pref}
+    SGFReceipts -> prefs {receipts = pref}
     SGFReactions -> prefs {reactions = pref}
     SGFVoice -> prefs {voice = pref}
     SGFFiles -> prefs {files = pref}
@@ -637,7 +644,7 @@ setGroupTimedMessagesPreference pref prefs_ =
 data FullPreferences = FullPreferences
   { timedMessages :: TimedMessagesPreference,
     fullDelete :: FullDeletePreference,
-    -- receipts :: SimplePreference,
+    receipts :: ReceiptsPreference,
     reactions :: ReactionsPreference,
     voice :: VoicePreference,
     calls :: CallsPreference
@@ -652,7 +659,7 @@ data FullGroupPreferences = FullGroupPreferences
   { timedMessages :: TimedMessagesGroupPreference,
     directMessages :: DirectMessagesGroupPreference,
     fullDelete :: FullDeleteGroupPreference,
-    -- receipts :: GroupPreference,
+    receipts :: ReceiptsGroupPreference,
     reactions :: ReactionsGroupPreference,
     voice :: VoiceGroupPreference,
     files :: FilesGroupPreference
@@ -665,7 +672,7 @@ instance ToJSON FullGroupPreferences where toEncoding = J.genericToEncoding J.de
 data ContactUserPreferences = ContactUserPreferences
   { timedMessages :: ContactUserPreference TimedMessagesPreference,
     fullDelete :: ContactUserPreference FullDeletePreference,
-    -- receipts :: ContactUserPreference,
+    receipts :: ContactUserPreference ReceiptsPreference,
     reactions :: ContactUserPreference ReactionsPreference,
     voice :: ContactUserPreference VoicePreference,
     calls :: ContactUserPreference CallsPreference
@@ -691,11 +698,11 @@ instance ToJSON p => ToJSON (ContactUserPref p) where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CUP"
 
 toChatPrefs :: FullPreferences -> Preferences
-toChatPrefs FullPreferences {timedMessages, fullDelete, reactions, voice, calls} =
+toChatPrefs FullPreferences {timedMessages, fullDelete, receipts, reactions, voice, calls} =
   Preferences
     { timedMessages = Just timedMessages,
       fullDelete = Just fullDelete,
-      -- receipts = Just receipts,
+      receipts = Just receipts,
       reactions = Just reactions,
       voice = Just voice,
       calls = Just calls
@@ -706,14 +713,18 @@ defaultChatPrefs =
   FullPreferences
     { timedMessages = TimedMessagesPreference {allow = FAYes, ttl = Nothing},
       fullDelete = FullDeletePreference {allow = FANo},
-      -- receipts = SimplePreference {allow = FANo},
+      receipts = ReceiptsPreference {allow = FAYes, enabled = False},
       reactions = ReactionsPreference {allow = FAYes},
       voice = VoicePreference {allow = FAYes},
       calls = CallsPreference {allow = FAYes}
     }
 
+-- TODO this should be used when creating new profiles and contacts
+newDefaultChatPrefs :: FullPreferences
+newDefaultChatPrefs = defaultChatPrefs {receipts = ReceiptsPreference {allow = FAYes, enabled = True}}
+
 emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing
+emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing
 
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
@@ -721,14 +732,14 @@ defaultGroupPrefs =
     { timedMessages = TimedMessagesGroupPreference {enable = FEOff, ttl = Just 86400},
       directMessages = DirectMessagesGroupPreference {enable = FEOff},
       fullDelete = FullDeleteGroupPreference {enable = FEOff},
-      -- receipts = GroupPreference {enable = FEOff},
+      receipts = ReceiptsGroupPreference {enable = FEOff},
       reactions = ReactionsGroupPreference {enable = FEOn},
       voice = VoiceGroupPreference {enable = FEOn},
       files = FilesGroupPreference {enable = FEOn}
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 data TimedMessagesPreference = TimedMessagesPreference
   { allow :: FeatureAllowed,
@@ -739,6 +750,14 @@ data TimedMessagesPreference = TimedMessagesPreference
 instance ToJSON TimedMessagesPreference where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data ReceiptsPreference = ReceiptsPreference
+  { allow :: FeatureAllowed,
+    enabled :: Bool
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON ReceiptsPreference where toEncoding = J.genericToEncoding J.defaultOptions
 
 data FullDeletePreference = FullDeletePreference {allow :: FeatureAllowed}
   deriving (Eq, Show, Generic, FromJSON)
@@ -771,6 +790,9 @@ instance HasField "allow" TimedMessagesPreference FeatureAllowed where
 instance HasField "allow" FullDeletePreference FeatureAllowed where
   hasField p = (\allow -> p {allow}, allow (p :: FullDeletePreference))
 
+instance HasField "allow" ReceiptsPreference FeatureAllowed where
+  hasField p = (\allow -> p {allow}, allow (p :: ReceiptsPreference))
+
 instance HasField "allow" ReactionsPreference FeatureAllowed where
   hasField p = (\allow -> p {allow}, allow (p :: ReactionsPreference))
 
@@ -788,6 +810,11 @@ instance FeatureI 'CFTimedMessages where
 instance FeatureI 'CFFullDelete where
   type FeaturePreference 'CFFullDelete = FullDeletePreference
   sFeature = SCFFullDelete
+  prefParam _ = Nothing
+
+instance FeatureI 'CFReceipts where
+  type FeaturePreference 'CFReceipts = ReceiptsPreference
+  sFeature = SCFReceipts
   prefParam _ = Nothing
 
 instance FeatureI 'CFReactions where
@@ -823,6 +850,10 @@ data FullDeleteGroupPreference = FullDeleteGroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show, Generic, FromJSON)
 
+data ReceiptsGroupPreference = ReceiptsGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show, Generic, FromJSON)
+
 data ReactionsGroupPreference = ReactionsGroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show, Generic, FromJSON)
@@ -844,6 +875,8 @@ instance ToJSON DirectMessagesGroupPreference where toEncoding = J.genericToEnco
 instance ToJSON ReactionsGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
 
 instance ToJSON FullDeleteGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance ToJSON ReceiptsGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
 
 instance ToJSON VoiceGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -869,6 +902,9 @@ instance HasField "enable" ReactionsGroupPreference GroupFeatureEnabled where
 instance HasField "enable" FullDeleteGroupPreference GroupFeatureEnabled where
   hasField p = (\enable -> p {enable}, enable (p :: FullDeleteGroupPreference))
 
+instance HasField "enable" ReceiptsGroupPreference GroupFeatureEnabled where
+  hasField p = (\enable -> p {enable}, enable (p :: ReceiptsGroupPreference))
+
 instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
   hasField p = (\enable -> p {enable}, enable (p :: VoiceGroupPreference))
 
@@ -888,6 +924,11 @@ instance GroupFeatureI 'GFDirectMessages where
 instance GroupFeatureI 'GFFullDelete where
   type GroupFeaturePreference 'GFFullDelete = FullDeleteGroupPreference
   sGroupFeature = SGFFullDelete
+  groupPrefParam _ = Nothing
+
+instance GroupFeatureI 'GFReceipts where
+  type GroupFeaturePreference 'GFReceipts = ReceiptsGroupPreference
+  sGroupFeature = SGFReceipts
   groupPrefParam _ = Nothing
 
 instance GroupFeatureI 'GFReactions where
@@ -1009,7 +1050,7 @@ mergePreferences contactPrefs userPreferences =
   FullPreferences
     { timedMessages = pref SCFTimedMessages,
       fullDelete = pref SCFFullDelete,
-      -- receipts = pref CFReceipts,
+      receipts = pref SCFReceipts,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
       calls = pref SCFCalls
@@ -1034,7 +1075,7 @@ mergeGroupPreferences groupPreferences =
     { timedMessages = pref SGFTimedMessages,
       directMessages = pref SGFDirectMessages,
       fullDelete = pref SGFFullDelete,
-      -- receipts = pref GFReceipts,
+      receipts = pref SGFReceipts,
       reactions = pref SGFReactions,
       voice = pref SGFVoice,
       files = pref SGFFiles
@@ -1049,7 +1090,7 @@ toGroupPreferences groupPreferences =
     { timedMessages = pref SGFTimedMessages,
       directMessages = pref SGFDirectMessages,
       fullDelete = pref SGFFullDelete,
-      -- receipts = pref GFReceipts,
+      receipts = pref SGFReceipts,
       reactions = pref SGFReactions,
       voice = pref SGFVoice,
       files = pref SGFFiles
@@ -1128,7 +1169,7 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
   ContactUserPreferences
     { timedMessages = pref SCFTimedMessages,
       fullDelete = pref SCFFullDelete,
-      -- receipts = pref CFReceipts,
+      receipts = pref SCFReceipts,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
       calls = pref SCFCalls
@@ -1156,7 +1197,7 @@ getContactUserPreference :: SChatFeature f -> ContactUserPreferences -> ContactU
 getContactUserPreference = \case
   SCFTimedMessages -> timedMessages
   SCFFullDelete -> fullDelete
-  -- CFReceipts -> receipts
+  SCFReceipts -> receipts
   SCFReactions -> reactions
   SCFVoice -> voice
   SCFCalls -> calls

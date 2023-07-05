@@ -2786,6 +2786,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XCallEnd callId -> xCallEnd ct callId msg msgMeta
               BFileChunk sharedMsgId chunk -> bFileChunk ct sharedMsgId chunk msgMeta
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
+        RCVD msgMeta msgRcpt -> directMsgReceived ct msgMeta msgRcpt
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
@@ -3020,6 +3021,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           canSend a
             | memberRole (m :: GroupMember) <= GRObserver = messageError "member is not allowed to send messages"
             | otherwise = a
+      RCVD msgMeta msgRcpt -> groupMsgReceived gInfo m msgMeta msgRcpt
       SENT msgId -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
@@ -4205,6 +4207,20 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ci <- saveRcvChatItem user cd msg msgMeta (CIRcvGroupEvent $ RGEGroupUpdated p')
           groupMsgToView g' m ci msgMeta
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
+
+    directMsgReceived :: Contact -> MsgMeta -> MsgReceipt -> m ()
+    directMsgReceived _ct _msgMeta _msgRcpt = do
+      -- update chat item status
+      -- send updated chat item or a separate event to view
+      -- possibly, this event would update terminal view - can be done by scanning the window and matching message time and text
+      -- not sure how to test it, so could be an option that is disabled in the tests
+      pure ()
+
+    groupMsgReceived :: GroupInfo -> GroupMember -> MsgMeta -> MsgReceipt -> m ()
+    groupMsgReceived _gInfo _m _msgMeta _msgRcpt = do
+      -- update chat item status
+      -- send updated chat item or a separate event to view
+      pure ()
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =

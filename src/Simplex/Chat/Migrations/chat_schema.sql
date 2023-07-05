@@ -31,7 +31,8 @@ CREATE TABLE users(
   agent_user_id INTEGER CHECK(agent_user_id NOT NULL),
   view_pwd_hash BLOB,
   view_pwd_salt BLOB,
-  show_ntfs INTEGER NOT NULL DEFAULT 1, -- 1 for active user
+  show_ntfs INTEGER NOT NULL DEFAULT 1,
+  delivery_rcpts_enabled INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
