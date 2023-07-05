@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,7 +57,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
 }
 
 private val titles = listOf(MR.strings.share_one_time_link, MR.strings.connect_via_link_or_qr, MR.strings.create_group)
-private val icons = listOf(R.drawable.ic_add_link, R.drawable.ic_qr_code, R.drawable.ic_group)
+private val icons = listOf(MR.images.ic_add_link, MR.images.ic_qr_code, MR.images.ic_group)
 
 @Composable
 private fun NewChatSheetLayout(
@@ -155,11 +155,11 @@ private fun NewChatSheetLayout(
       contentColor = Color.White
     ) {
       Icon(
-        painterResource(R.drawable.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group),
+        painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group),
         Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }
       )
       Icon(
-        painterResource(R.drawable.ic_close), stringResource(MR.strings.add_contact_or_create_group),
+        painterResource(MR.images.ic_close), stringResource(MR.strings.add_contact_or_create_group),
         Modifier.graphicsLayer { alpha = animatedFloat.value }
       )
     }

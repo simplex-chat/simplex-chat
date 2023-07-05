@@ -17,7 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.*
@@ -59,14 +59,14 @@ fun ChatArchiveLayout(
     AppBarTitle(title)
     SectionView(stringResource(MR.strings.chat_archive_section)) {
       SettingsActionItem(
-        painterResource(R.drawable.ic_ios_share),
+        painterResource(MR.images.ic_ios_share),
         stringResource(MR.strings.save_archive),
         saveArchive,
         textColor = MaterialTheme.colors.primary,
         iconColor = MaterialTheme.colors.primary,
       )
       SettingsActionItem(
-        painterResource(R.drawable.ic_delete),
+        painterResource(MR.images.ic_delete),
         stringResource(MR.strings.delete_archive),
         deleteArchiveAlert,
         textColor = Color.Red,

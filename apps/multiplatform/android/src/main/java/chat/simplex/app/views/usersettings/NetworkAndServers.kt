@@ -15,11 +15,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -167,16 +166,16 @@ fun NetworkAndServersView(
   ) {
     AppBarTitle(stringResource(MR.strings.network_and_servers))
     SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
-      SettingsActionItem(painterResource(R.drawable.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
+      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
 
-      SettingsActionItem(painterResource(R.drawable.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
+      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
 
       UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
       UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
       if (developerTools) {
         SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
       }
-      SettingsActionItem(painterResource(R.drawable.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
+      SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
     if (networkUseSocksProxy.value) {
       SectionCustomFooter { Text(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported)) }
@@ -186,7 +185,7 @@ fun NetworkAndServersView(
     }
 
     SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
-      SettingsActionItem(painterResource(R.drawable.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), showModal { RTCServersView(it) })
+      SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), showModal { RTCServersView(it) })
     }
     SectionBottomSpacer()
   }
@@ -209,7 +208,7 @@ fun UseSocksProxySwitch(
       verticalAlignment = Alignment.CenterVertically
     ) {
       Icon(
-        painterResource(R.drawable.ic_settings_ethernet),
+        painterResource(MR.images.ic_settings_ethernet),
         stringResource(MR.strings.network_socks_toggle_use_socks_proxy),
         tint = MaterialTheme.colors.secondary
       )
@@ -224,7 +223,7 @@ fun UseSocksProxySwitch(
       }
       ClickableText(
         text,
-        style = TextStyle(color = MaterialTheme.colors.onBackground, fontSize = 16.sp, fontFamily = FontFamily(Font(R.font.inter_regular))),
+        style = TextStyle(color = MaterialTheme.colors.onBackground, fontSize = 16.sp, fontFamily = Inter, fontWeight = FontWeight.Normal),
         onClick = { offset ->
           text.getStringAnnotations(tag = "PORT", start = offset, end = offset)
             .firstOrNull()?.let { _ ->
@@ -356,7 +355,7 @@ private fun UseOnionHosts(
     generalGetString(MR.strings.network_use_onion_hosts),
     onionHosts,
     values,
-    icon = painterResource(R.drawable.ic_security),
+    icon = painterResource(MR.images.ic_security),
     enabled = enabled,
     onSelected = onSelected
   )
@@ -381,7 +380,7 @@ private fun SessionModePicker(
     generalGetString(MR.strings.network_session_mode_transport_isolation),
     sessionMode,
     values,
-    icon = painterResource(R.drawable.ic_safety_divider),
+    icon = painterResource(MR.images.ic_safety_divider),
     onSelected = showModal {
       Column(
         Modifier.fillMaxWidth(),
@@ -400,8 +399,8 @@ private fun NetworkSectionFooter(revert: () -> Unit, save: () -> Unit, revertDis
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(painterResource(R.drawable.ic_replay), stringResource(MR.strings.network_options_revert), revert, revertDisabled)
-    FooterButton(painterResource(R.drawable.ic_check), stringResource(MR.strings.network_options_save), save, saveDisabled)
+    FooterButton(painterResource(MR.images.ic_replay), stringResource(MR.strings.network_options_revert), revert, revertDisabled)
+    FooterButton(painterResource(MR.images.ic_check), stringResource(MR.strings.network_options_save), save, saveDisabled)
   }
 }
 

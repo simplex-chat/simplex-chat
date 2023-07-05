@@ -16,6 +16,7 @@ import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationPreviewMode
 import chat.simplex.app.views.usersettings.NotificationsMode
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.datetime.*
@@ -1578,12 +1579,12 @@ data class CIMeta (
 
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew
 
-  fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<Int, Color>? =
+  fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<ImageResource, Color>? =
     when (itemStatus) {
-      is CIStatus.SndSent -> R.drawable.ic_check_filled to metaColor
-      is CIStatus.SndErrorAuth -> R.drawable.ic_close to Color.Red
-      is CIStatus.SndError -> R.drawable.ic_warning_filled to WarningYellow
-      is CIStatus.RcvNew -> R.drawable.ic_circle_filled to primaryColor
+      is CIStatus.SndSent -> MR.images.ic_check_filled to metaColor
+      is CIStatus.SndErrorAuth -> MR.images.ic_close to Color.Red
+      is CIStatus.SndError -> MR.images.ic_warning_filled to WarningYellow
+      is CIStatus.RcvNew -> MR.images.ic_circle_filled to primaryColor
       else -> null
     }
 

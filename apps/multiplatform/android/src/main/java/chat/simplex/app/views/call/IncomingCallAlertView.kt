@@ -11,7 +11,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,9 +60,9 @@ fun IncomingCallAlertLayout(
         ProfilePreview(profileOf = invitation.contact, size = 64.dp)
       }
       Row(verticalAlignment = Alignment.CenterVertically) {
-        CallButton(stringResource(MR.strings.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
-        CallButton(stringResource(MR.strings.ignore), painterResource(R.drawable.ic_close), MaterialTheme.colors.primary, ignoreCall)
-        CallButton(stringResource(MR.strings.accept), painterResource(R.drawable.ic_check_filled), SimplexGreen, acceptCall)
+        CallButton(stringResource(MR.strings.reject), painterResource(MR.images.ic_call_end_filled), Color.Red, rejectCall)
+        CallButton(stringResource(MR.strings.ignore), painterResource(MR.images.ic_close), MaterialTheme.colors.primary, ignoreCall)
+        CallButton(stringResource(MR.strings.accept), painterResource(MR.images.ic_check_filled), SimplexGreen, acceptCall)
       }
     }
   }
@@ -76,8 +76,8 @@ fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
       ProfileImage(size = 32.dp, image = invitation.user.profile.image, color = MaterialTheme.colors.secondaryVariant)
       Spacer(Modifier.width(4.dp))
     }
-    if (invitation.callType.media == CallMediaType.Video) CallIcon(painterResource(R.drawable.ic_videocam_filled), stringResource(MR.strings.icon_descr_video_call))
-    else CallIcon(painterResource(R.drawable.ic_call_filled), stringResource(MR.strings.icon_descr_audio_call))
+    if (invitation.callType.media == CallMediaType.Video) CallIcon(painterResource(MR.images.ic_videocam_filled), stringResource(MR.strings.icon_descr_video_call))
+    else CallIcon(painterResource(MR.images.ic_call_filled), stringResource(MR.strings.icon_descr_audio_call))
     Spacer(Modifier.width(4.dp))
     Text(invitation.callTypeText, color = MaterialTheme.colors.onBackground)
   }

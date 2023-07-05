@@ -627,9 +627,6 @@ getContactConnections db userId Contact {contactId} =
     connections [] = throwError $ SEContactNotFound contactId
     connections rows = pure $ map toConnection rows
 
-
-
-
 getConnectionById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Connection
 getConnectionById db User {userId} connId = ExceptT $ do
   firstRow toConnection (SEConnectionNotFoundById connId) $

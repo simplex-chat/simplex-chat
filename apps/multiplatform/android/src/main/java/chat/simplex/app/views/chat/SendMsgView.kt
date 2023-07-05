@@ -50,6 +50,7 @@ import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import java.lang.reflect.Field
@@ -160,7 +161,7 @@ fun SendMsgView(
         }
         else -> {
           val cs = composeState.value
-          val icon = if (cs.editing || cs.liveMessage != null) painterResource(R.drawable.ic_check_filled) else painterResource(R.drawable.ic_arrow_upward)
+          val icon = if (cs.editing || cs.liveMessage != null) painterResource(MR.images.ic_check_filled) else painterResource(MR.images.ic_arrow_upward)
           val disabled = !cs.sendEnabled() ||
               (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
               cs.endLiveDisabled
@@ -191,7 +192,7 @@ fun SendMsgView(
                 menuItems.add {
                   ItemAction(
                     generalGetString(MR.strings.disappearing_message),
-                    painterResource(R.drawable.ic_timer),
+                    painterResource(MR.images.ic_timer),
                     onClick = {
                       showCustomDisappearingMessageDialog.value = true
                       showDropdown.value = false
@@ -281,7 +282,7 @@ private fun CustomDisappearingMessageDialog(
                 color = MaterialTheme.colors.secondary
               )
               Icon(
-                painterResource(R.drawable.ic_close),
+                painterResource(MR.images.ic_close),
                 generalGetString(MR.strings.icon_descr_close_button),
                 tint = MaterialTheme.colors.secondary,
                 modifier = Modifier
@@ -436,7 +437,7 @@ private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) 
     { composeState.value = composeState.value.copy(message = "") },
     Modifier.align(Alignment.TopEnd).size(36.dp)
   ) {
-    Icon(painterResource(R.drawable.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
   }
 }
 
@@ -493,7 +494,7 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
 private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp), enabled = enabled) {
     Icon(
-      painterResource(R.drawable.ic_keyboard_voice),
+      painterResource(MR.images.ic_keyboard_voice),
       stringResource(MR.strings.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.secondary,
       modifier = Modifier
@@ -507,7 +508,7 @@ private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
 private fun VoiceButtonWithoutPermission(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
-      painterResource(R.drawable.ic_keyboard_voice_filled),
+      painterResource(MR.images.ic_keyboard_voice_filled),
       stringResource(MR.strings.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
@@ -539,7 +540,7 @@ private fun LockToCurrentOrientationUntilDispose() {
 private fun StopRecordButton(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
-      painterResource(R.drawable.ic_stop_filled),
+      painterResource(MR.images.ic_stop_filled),
       stringResource(MR.strings.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
@@ -553,7 +554,7 @@ private fun StopRecordButton(onClick: () -> Unit) {
 private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
   IconButton({}, Modifier.size(36.dp), interactionSource = interactionSource) {
     Icon(
-      painterResource(R.drawable.ic_keyboard_voice_filled),
+      painterResource(MR.images.ic_keyboard_voice_filled),
       stringResource(MR.strings.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
@@ -574,7 +575,7 @@ private fun CancelLiveMessageButton(
 ) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
-      painterResource(R.drawable.ic_close),
+      painterResource(MR.images.ic_close),
       stringResource(MR.strings.icon_descr_cancel_live_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier

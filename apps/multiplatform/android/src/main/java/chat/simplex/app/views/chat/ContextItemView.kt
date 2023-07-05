@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -59,7 +59,7 @@ fun ContextItemView(
     }
     IconButton(onClick = cancelContextItem) {
       Icon(
-        painterResource(R.drawable.ic_close),
+        painterResource(MR.images.ic_close),
         contentDescription = stringResource(MR.strings.cancel_verb),
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp)
@@ -74,7 +74,7 @@ fun PreviewContextItemView() {
   SimpleXTheme {
     ContextItemView(
       contextItem = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), "hello"),
-      contextIcon = painterResource(R.drawable.ic_edit_filled)
+      contextIcon = painterResource(MR.images.ic_edit_filled)
     ) {}
   }
 }

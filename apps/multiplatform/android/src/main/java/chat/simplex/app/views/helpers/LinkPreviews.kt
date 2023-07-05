@@ -12,7 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -113,7 +113,7 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
     if (cancelEnabled) {
       IconButton(onClick = cancelPreview, modifier = Modifier.padding(0.dp)) {
         Icon(
-          painterResource(R.drawable.ic_close),
+          painterResource(MR.images.ic_close),
           contentDescription = stringResource(MR.strings.icon_descr_cancel_link_preview),
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)

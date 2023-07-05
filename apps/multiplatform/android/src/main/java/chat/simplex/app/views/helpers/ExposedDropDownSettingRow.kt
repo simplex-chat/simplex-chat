@@ -2,7 +2,7 @@ package chat.simplex.app.views.helpers
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +51,7 @@ fun <T> ExposedDropDownSettingRow(
         )
         Spacer(Modifier.size(12.dp))
         Icon(
-          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
+          if (!expanded.value) painterResource(MR.images.ic_expand_more) else painterResource(MR.images.ic_expand_less),
           generalGetString(MR.strings.icon_descr_more_button),
           tint = MaterialTheme.colors.secondary
         )

@@ -1134,6 +1134,19 @@ processChatCommand = \case
         connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
         pure $ CRGroupMemberSwitchAborted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
+  APISyncContactRatchet contactId force -> withUser $ \user -> do
+    ct <- withStore $ \db -> getContact db user contactId
+    cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a (contactConnId ct) force
+    createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCERatchetSync rss Nothing) Nothing
+    pure $ CRContactRatchetSyncStarted user ct cStats
+  APISyncGroupMemberRatchet gId gMemberId force -> withUser $ \user -> do
+    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
+    case memberConnId m of
+      Just connId -> do
+        cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId force
+        createInternalChatItem user (CDGroupSnd g) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m) Nothing
+        pure $ CRGroupMemberRatchetSyncStarted user g m cStats
+      _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
     ct@Contact {activeConn = conn@Connection {connId}} <- withStore $ \db -> getContact db user contactId
     code <- getConnectionCode (contactConnId ct)
@@ -1196,6 +1209,8 @@ processChatCommand = \case
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
   AbortSwitchContact cName -> withContactName cName APIAbortSwitchContact
   AbortSwitchGroupMember gName mName -> withMemberName gName mName APIAbortSwitchGroupMember
+  SyncContactRatchet cName force -> withContactName cName $ \ctId -> APISyncContactRatchet ctId force
+  SyncGroupMemberRatchet gName mName force -> withMemberName gName mName $ \gId mId -> APISyncGroupMemberRatchet gId mId force
   GetContactCode cName -> withContactName cName APIGetContactCode
   GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
   VerifyContact cName code -> withContactName cName (`APIVerifyContact` code)
@@ -2716,7 +2731,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId} = \case
+    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId, connectionCode} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
@@ -2849,6 +2864,36 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
             QDRcv -> createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCESwitchQueue phase Nothing) Nothing
             QDSnd -> createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
+        RSYNC rss cryptoErr_ cStats ->
+          case (rss, connectionCode, cryptoErr_) of
+            (RSRequired, _, Just cryptoErr) -> processErr cryptoErr
+            (RSAllowed, _, Just cryptoErr) -> processErr cryptoErr
+            (RSAgreed, Just _, _) -> do
+              withStore' $ \db -> setConnectionVerified db user connId Nothing
+              let ct' = ct {activeConn = conn {connectionCode = Nothing}} :: Contact
+              ratchetSyncEventItem ct'
+              toView $ CRContactVerificationReset user ct'
+              createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent RCEVerificationCodeReset) Nothing
+            _ -> ratchetSyncEventItem ct
+          where
+            processErr cryptoErr = do
+              let e@(mde, n) = agentMsgDecryptError cryptoErr
+              ci_ <- withStore $ \db ->
+                getDirectChatItemsLast db user contactId 1 ""
+                  >>= liftIO
+                    . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False Nothing)
+                    . (mdeUpdatedCI e <=< headMaybe)
+              case ci_ of
+                Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
+                _ -> do
+                  toView $ CRContactRatchetSync user ct (RatchetSyncProgress rss cStats)
+                  createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError mde n) Nothing
+            headMaybe = \case
+              x : _ -> Just x
+              _ -> Nothing
+            ratchetSyncEventItem ct' = do
+              toView $ CRContactRatchetSync user ct' (RatchetSyncProgress rss cStats)
+              createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCERatchetSync rss) Nothing
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -2863,24 +2908,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-          forM_ (agentMsgDecryptError err) $ \e@(mde, n) -> do
-            ci_ <- withStore $ \db ->
-              getDirectChatItemsLast db user contactId 1 ""
-                >>= liftIO
-                  . mapM (\(ci, content') -> updateDirectChatItem' db user contactId ci content' False Nothing)
-                  . (mdeUpdatedCI e <=< headMaybe)
-            case ci_ of
-              Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
-              _ -> createInternalChatItem user (CDDirectRcv ct) (CIRcvDecryptionError mde n) Nothing
-          where
-            headMaybe = \case
-              x : _ -> Just x
-              _ -> Nothing
         -- TODO add debugging output
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, connectionCode} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -3028,6 +3060,33 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
+      RSYNC rss cryptoErr_ cStats ->
+        case (rss, connectionCode, cryptoErr_) of
+          (RSRequired, _, Just cryptoErr) -> processErr cryptoErr
+          (RSAllowed, _, Just cryptoErr) -> processErr cryptoErr
+          (RSAgreed, Just _, _) -> do
+            withStore' $ \db -> setConnectionVerified db user connId Nothing
+            let m' = m {activeConn = Just (conn {connectionCode = Nothing} :: Connection)} :: GroupMember
+            ratchetSyncEventItem m'
+            toView $ CRGroupMemberVerificationReset user gInfo m'
+            createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent RCEVerificationCodeReset) Nothing
+          _ -> ratchetSyncEventItem m
+        where
+          processErr cryptoErr = do
+            let e@(mde, n) = agentMsgDecryptError cryptoErr
+            ci_ <- withStore $ \db ->
+              getGroupMemberChatItemLast db user groupId (groupMemberId' m)
+                >>= liftIO
+                  . mapM (\(ci, content') -> updateGroupChatItem db user groupId ci content' False Nothing)
+                  . mdeUpdatedCI e
+            case ci_ of
+              Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
+              _ -> do
+                toView $ CRGroupMemberRatchetSync user gInfo m (RatchetSyncProgress rss cStats)
+                createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError mde n) Nothing
+          ratchetSyncEventItem m' = do
+            toView $ CRGroupMemberRatchetSync user gInfo m' (RatchetSyncProgress rss cStats)
+            createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent $ RCERatchetSync rss) Nothing
       OK ->
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -3038,35 +3097,24 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       ERR err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        forM_ (agentMsgDecryptError err) $ \e@(mde, n) -> do
-          ci_ <- withStore $ \db ->
-            getGroupMemberChatItemLast db user groupId (groupMemberId' m)
-              >>= liftIO
-                . mapM (\(ci, content') -> updateGroupChatItem db user groupId ci content' False Nothing)
-                . mdeUpdatedCI e
-          case ci_ of
-            Just ci -> toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
-            _ -> createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvDecryptionError mde n) Nothing
       -- TODO add debugging output
       _ -> pure ()
 
-    agentMsgDecryptError :: AgentErrorType -> Maybe (MsgDecryptError, Word32)
+    agentMsgDecryptError :: AgentCryptoError -> (MsgDecryptError, Word32)
     agentMsgDecryptError = \case
-      AGENT (A_CRYPTO RATCHET_HEADER) -> Just (MDERatchetHeader, 1)
-      AGENT (A_CRYPTO (RATCHET_SKIPPED n)) -> Just (MDETooManySkipped, n)
-      -- we are not treating this as decryption error, as in many cases it happens as the result of duplicate or redundant delivery,
-      -- and we don't have a way to differentiate.
-      -- we could store the hashes of past messages in the agent, or delaying message deletion after ACK
-      -- A_DUPLICATE -> Nothing
-      -- earlier messages may be received in case of redundant delivery, and do not necessarily indicate an error
-      -- AGENT (A_CRYPTO (RATCHET_EARLIER n)) -> Nothing
-      _ -> Nothing
+      DECRYPT_AES -> (MDEOther, 1)
+      DECRYPT_CB -> (MDEOther, 1)
+      RATCHET_HEADER -> (MDERatchetHeader, 1)
+      RATCHET_EARLIER _ -> (MDERatchetEarlier, 1)
+      RATCHET_SKIPPED n -> (MDETooManySkipped, n)
 
     mdeUpdatedCI :: (MsgDecryptError, Word32) -> CChatItem c -> Maybe (ChatItem c 'MDRcv, CIContent 'MDRcv)
     mdeUpdatedCI (mde', n') (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n})
       | mde == mde' = case mde of
         MDERatchetHeader -> r (n + n')
         MDETooManySkipped -> r n' -- the numbers are not added as sequential MDETooManySkipped will have it incremented by 1
+        MDERatchetEarlier -> r (n + n')
+        MDEOther -> r (n + n')
       | otherwise = Nothing
       where
         r n'' = Just (ci, CIRcvDecryptionError mde n'')
@@ -4919,10 +4967,14 @@ chatCommandP =
       "/_switch @" *> (APISwitchContact <$> A.decimal),
       "/_abort switch #" *> (APIAbortSwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_abort switch @" *> (APIAbortSwitchContact <$> A.decimal),
+      "/_sync #" *> (APISyncGroupMemberRatchet <$> A.decimal <* A.space <*> A.decimal <*> (" force=on" $> True <|> pure False)),
+      "/_sync @" *> (APISyncContactRatchet <$> A.decimal <*> (" force=on" $> True <|> pure False)),
       "/switch #" *> (SwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       "/switch " *> char_ '@' *> (SwitchContact <$> displayName),
       "/abort switch #" *> (AbortSwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       "/abort switch " *> char_ '@' *> (AbortSwitchContact <$> displayName),
+      "/sync #" *> (SyncGroupMemberRatchet <$> displayName <* A.space <* char_ '@' <*> displayName <*> (" force=on" $> True <|> pure False)),
+      "/sync " *> char_ '@' *> (SyncContactRatchet <$> displayName <*> (" force=on" $> True <|> pure False)),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
       "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> textP)),

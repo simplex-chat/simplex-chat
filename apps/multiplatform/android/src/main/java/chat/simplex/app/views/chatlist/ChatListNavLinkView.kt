@@ -9,14 +9,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
@@ -192,7 +191,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
 fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.mark_read),
-    painterResource(R.drawable.ic_check),
+    painterResource(MR.images.ic_check),
     onClick = {
       markChatRead(chat, chatModel)
       chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
@@ -205,7 +204,7 @@ fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<
 fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.mark_unread),
-    painterResource(R.drawable.ic_mark_chat_unread),
+    painterResource(MR.images.ic_mark_chat_unread),
     onClick = {
       markChatUnread(chat, chatModel)
       showMenu.value = false
@@ -217,7 +216,7 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
 fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolean, showMenu: MutableState<Boolean>) {
   ItemAction(
     if (favorite) stringResource(MR.strings.unfavorite_chat) else stringResource(MR.strings.favorite_chat),
-    if (favorite) painterResource(R.drawable.ic_star_off) else painterResource(R.drawable.ic_star),
+    if (favorite) painterResource(MR.images.ic_star_off) else painterResource(MR.images.ic_star),
     onClick = {
       toggleChatFavorite(chat, !favorite, chatModel)
       showMenu.value = false
@@ -229,7 +228,7 @@ fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolea
 fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled: Boolean, showMenu: MutableState<Boolean>) {
   ItemAction(
     if (ntfsEnabled) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
-    if (ntfsEnabled) painterResource(R.drawable.ic_notifications_off) else painterResource(R.drawable.ic_notifications),
+    if (ntfsEnabled) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
     onClick = {
       toggleNotifications(chat, !ntfsEnabled, chatModel)
       showMenu.value = false
@@ -241,7 +240,7 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
 fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.clear_chat_menu_action),
-    painterResource(R.drawable.ic_settings_backup_restore),
+    painterResource(MR.images.ic_settings_backup_restore),
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
@@ -254,7 +253,7 @@ fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boo
 fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.delete_contact_menu_action),
-    painterResource(R.drawable.ic_delete),
+    painterResource(MR.images.ic_delete),
     onClick = {
       deleteContactDialog(chat.chatInfo, chatModel)
       showMenu.value = false
@@ -267,7 +266,7 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
 fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.delete_group_menu_action),
-    painterResource(R.drawable.ic_delete),
+    painterResource(MR.images.ic_delete),
     onClick = {
       deleteGroupDialog(chat.chatInfo, groupInfo, chatModel)
       showMenu.value = false
@@ -281,7 +280,7 @@ fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, show
   val joinGroup: () -> Unit = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } }
   ItemAction(
     if (chat.chatInfo.incognito) stringResource(MR.strings.join_group_incognito_button) else stringResource(MR.strings.join_group_button),
-    if (chat.chatInfo.incognito) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_login),
+    if (chat.chatInfo.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_login),
     color = if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
       joinGroup()
@@ -294,7 +293,7 @@ fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, show
 fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.leave_group_button),
-    painterResource(R.drawable.ic_logout),
+    painterResource(MR.images.ic_logout),
     onClick = {
       leaveGroupDialog(groupInfo, chatModel)
       showMenu.value = false
@@ -307,7 +306,7 @@ fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: Mutab
 fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     if (chatModel.incognito.value) stringResource(MR.strings.accept_contact_incognito_button) else stringResource(MR.strings.accept_contact_button),
-    if (chatModel.incognito.value) painterResource(R.drawable.ic_theater_comedy_filled) else painterResource(R.drawable.ic_check),
+    if (chatModel.incognito.value) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_check),
     color = if (chatModel.incognito.value) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
       acceptContactRequest(chatInfo.apiId, chatInfo, true, chatModel)
@@ -316,7 +315,7 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
   )
   ItemAction(
     stringResource(MR.strings.reject_contact_button),
-    painterResource(R.drawable.ic_close),
+    painterResource(MR.images.ic_close),
     onClick = {
       rejectContactRequest(chatInfo, chatModel)
       showMenu.value = false
@@ -329,7 +328,7 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
 fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.set_contact_name),
-    painterResource(R.drawable.ic_edit),
+    painterResource(MR.images.ic_edit),
     onClick = {
       ModalManager.shared.showModalCloseable(true) { close ->
         ContactConnectionInfoView(chatModel, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
@@ -339,7 +338,7 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
   )
   ItemAction(
     stringResource(MR.strings.delete_verb),
-    painterResource(R.drawable.ic_delete),
+    painterResource(MR.images.ic_delete),
     onClick = {
       deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {}
       showMenu.value = false
@@ -351,7 +350,7 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
 @Composable
 private fun InvalidDataView() {
   Row {
-    ProfileImage(72.dp, null, R.drawable.ic_account_circle_filled, MaterialTheme.colors.secondary)
+    ProfileImage(72.dp, null, MR.images.ic_account_circle_filled, MaterialTheme.colors.secondary)
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)

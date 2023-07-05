@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.res.stringResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +28,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 
 @Composable
@@ -40,7 +41,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
     fun linkButton(link: String) {
       val uriHandler = LocalUriHandler.current
       Icon(
-        painterResource(R.drawable.ic_open_in_new), stringResource(titleId), tint = MaterialTheme.colors.primary,
+        painterResource(MR.images.ic_open_in_new), stringResource(titleId), tint = MaterialTheme.colors.primary,
         modifier = Modifier
           .clickable { uriHandler.openUriCatching(link) }
       )
@@ -84,7 +85,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
               .clickable { currentVersion.value = prev }
               .padding(8.dp)
           ) {
-            Icon(painterResource(R.drawable.ic_arrow_back_ios_new), "previous", tint = MaterialTheme.colors.primary)
+            Icon(painterResource(MR.images.ic_arrow_back_ios_new), "previous", tint = MaterialTheme.colors.primary)
             Text(versionDescriptions[prev].version, color = MaterialTheme.colors.primary)
           }
         }
@@ -101,7 +102,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
               .padding(8.dp)
           ) {
             Text(versionDescriptions[next].version, color = MaterialTheme.colors.primary)
-            Icon(painterResource(R.drawable.ic_arrow_forward_ios), "next", tint = MaterialTheme.colors.primary)
+            Icon(painterResource(MR.images.ic_arrow_forward_ios), "next", tint = MaterialTheme.colors.primary)
           }
         }
       }
@@ -129,7 +130,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = DEFAULT_PADDING.div(4))) {
           Text(stringResource(MR.strings.whats_new_read_more), color = MaterialTheme.colors.primary,
             modifier = Modifier.clickable { uriHandler.openUriCatching(v.post) })
-          Icon(painterResource(R.drawable.ic_open_in_new), stringResource(MR.strings.whats_new_read_more), tint = MaterialTheme.colors.primary)
+          Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.whats_new_read_more), tint = MaterialTheme.colors.primary)
         }
       }
 
@@ -156,7 +157,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
 }
 
 private data class FeatureDescription(
-  val icon: Int,
+  val icon: ImageResource,
   val titleId: StringResource,
   val descrId: StringResource,
   val link: String? = null
@@ -174,18 +175,18 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     post = "https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html",
     features = listOf(
       FeatureDescription(
-        icon = R.drawable.ic_verified_user,
+        icon = MR.images.ic_verified_user,
         titleId = MR.strings.v4_2_security_assessment,
         descrId = MR.strings.v4_2_security_assessment_desc,
         link = "https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"
       ),
       FeatureDescription(
-        icon = R.drawable.ic_group,
+        icon = MR.images.ic_group,
         titleId = MR.strings.v4_2_group_links,
         descrId = MR.strings.v4_2_group_links_desc
       ),
       FeatureDescription(
-        icon = R.drawable.ic_check,
+        icon = MR.images.ic_check,
         titleId = MR.strings.v4_2_auto_accept_contact_requests,
         descrId = MR.strings.v4_2_auto_accept_contact_requests_desc
       ),
@@ -196,22 +197,22 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     post = "https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html",
     features = listOf(
       FeatureDescription(
-        icon = R.drawable.ic_mic,
+        icon = MR.images.ic_mic,
         titleId = MR.strings.v4_3_voice_messages,
         descrId = MR.strings.v4_3_voice_messages_desc
       ),
       FeatureDescription(
-        icon = R.drawable.ic_delete_forever,
+        icon = MR.images.ic_delete_forever,
         titleId = MR.strings.v4_3_irreversible_message_deletion,
         descrId = MR.strings.v4_3_irreversible_message_deletion_desc
       ),
       FeatureDescription(
-        icon = R.drawable.ic_wifi_tethering,
+        icon = MR.images.ic_wifi_tethering,
         titleId = MR.strings.v4_3_improved_server_configuration,
         descrId = MR.strings.v4_3_improved_server_configuration_desc
       ),
       FeatureDescription(
-        icon = R.drawable.ic_visibility_off,
+        icon = MR.images.ic_visibility_off,
         titleId = MR.strings.v4_3_improved_privacy_and_security,
         descrId = MR.strings.v4_3_improved_privacy_and_security_desc
       ),
@@ -222,22 +223,22 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     post = "https://simplex.chat/blog/20230103-simplex-chat-v4.4-disappearing-messages.html",
     features = listOf(
       FeatureDescription(
-        icon = R.drawable.ic_timer,
+        icon = MR.images.ic_timer,
         titleId = MR.strings.v4_4_disappearing_messages,
         descrId = MR.strings.v4_4_disappearing_messages_desc
       ),
       FeatureDescription(
-        icon = R.drawable.ic_pending,
+        icon = MR.images.ic_pending,
         titleId = MR.strings.v4_4_live_messages,
         descrId = MR.strings.v4_4_live_messages_desc
       ),
       FeatureDescription(
-        icon = R.drawable.ic_verified_user,
+        icon = MR.images.ic_verified_user,
         titleId = MR.strings.v4_4_verify_connection_security,
         descrId = MR.strings.v4_4_verify_connection_security_desc
       ),
       FeatureDescription(
-        icon = R.drawable.ic_translate,
+        icon = MR.images.ic_translate,
         titleId = MR.strings.v4_4_french_interface,
         descrId = MR.strings.v4_4_french_interface_descr
       )
@@ -248,33 +249,33 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     post = "https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html",
     features = listOf(
       FeatureDescription(
-        icon = R.drawable.ic_manage_accounts,
+        icon = MR.images.ic_manage_accounts,
         titleId = MR.strings.v4_5_multiple_chat_profiles,
         descrId = MR.strings.v4_5_multiple_chat_profiles_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_edit_note,
+        icon = MR.images.ic_edit_note,
         titleId = MR.strings.v4_5_message_draft,
         descrId = MR.strings.v4_5_message_draft_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_safety_divider,
+        icon = MR.images.ic_safety_divider,
         titleId = MR.strings.v4_5_transport_isolation,
         descrId = MR.strings.v4_5_transport_isolation_descr,
         link = "https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation"
       ),
       FeatureDescription(
-        icon = R.drawable.ic_task,
+        icon = MR.images.ic_task,
         titleId = MR.strings.v4_5_private_filenames,
         descrId = MR.strings.v4_5_private_filenames_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_battery_2_bar,
+        icon = MR.images.ic_battery_2_bar,
         titleId = MR.strings.v4_5_reduced_battery_usage,
         descrId = MR.strings.v4_5_reduced_battery_usage_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_translate,
+        icon = MR.images.ic_translate,
         titleId = MR.strings.v4_5_italian_interface,
         descrId = MR.strings.v4_5_italian_interface_descr,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
@@ -286,32 +287,32 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     post = "https://simplex.chat/blog/20230328-simplex-chat-v4-6-hidden-profiles.html",
     features = listOf(
       FeatureDescription(
-        icon = R.drawable.ic_lock,
+        icon = MR.images.ic_lock,
         titleId = MR.strings.v4_6_hidden_chat_profiles,
         descrId = MR.strings.v4_6_hidden_chat_profiles_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_flag,
+        icon = MR.images.ic_flag,
         titleId = MR.strings.v4_6_group_moderation,
         descrId = MR.strings.v4_6_group_moderation_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_maps_ugc,
+        icon = MR.images.ic_maps_ugc,
         titleId = MR.strings.v4_6_group_welcome_message,
         descrId = MR.strings.v4_6_group_welcome_message_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_call,
+        icon = MR.images.ic_call,
         titleId = MR.strings.v4_6_audio_video_calls,
         descrId = MR.strings.v4_6_audio_video_calls_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_battery_3_bar,
+        icon = MR.images.ic_battery_3_bar,
         titleId = MR.strings.v4_6_reduced_battery_usage,
         descrId = MR.strings.v4_6_reduced_battery_usage_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_translate,
+        icon = MR.images.ic_translate,
         titleId = MR.strings.v4_6_chinese_spanish_interface,
         descrId = MR.strings.v4_6_chinese_spanish_interface_descr,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
@@ -323,17 +324,17 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     post = "https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.html",
     features = listOf(
       FeatureDescription(
-        icon = R.drawable.ic_upload_file,
+        icon = MR.images.ic_upload_file,
         titleId = MR.strings.v5_0_large_files_support,
         descrId = MR.strings.v5_0_large_files_support_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_lock,
+        icon = MR.images.ic_lock,
         titleId = MR.strings.v5_0_app_passcode,
         descrId = MR.strings.v5_0_app_passcode_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_translate,
+        icon = MR.images.ic_translate,
         titleId = MR.strings.v5_0_polish_interface,
         descrId = MR.strings.v5_0_polish_interface_descr,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
@@ -351,27 +352,27 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     post = "https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html",
     features = listOf(
       FeatureDescription(
-        icon = R.drawable.ic_add_reaction,
+        icon = MR.images.ic_add_reaction,
         titleId = MR.strings.v5_1_message_reactions,
         descrId = MR.strings.v5_1_message_reactions_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_chat,
+        icon = MR.images.ic_chat,
         titleId = MR.strings.v5_1_better_messages,
         descrId = MR.strings.v5_1_better_messages_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_light_mode,
+        icon = MR.images.ic_light_mode,
         titleId = MR.strings.v5_1_custom_themes,
         descrId = MR.strings.v5_1_custom_themes_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_lock,
+        icon = MR.images.ic_lock,
         titleId = MR.strings.v5_1_self_destruct_passcode,
         descrId = MR.strings.v5_1_self_destruct_passcode_descr
       ),
       FeatureDescription(
-        icon = R.drawable.ic_translate,
+        icon = MR.images.ic_translate,
         titleId = MR.strings.v5_1_japanese_portuguese_interface,
         descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
