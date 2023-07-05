@@ -391,7 +391,6 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIDirectRcv -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
-        -- CIRcvDecryptionError err n syncRequired -> viewRcvDecryptionError from err n syncRequired ts tz meta
         CIRcvGroupEvent {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
@@ -408,7 +407,6 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       CIGroupRcv m -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
-        -- CIRcvDecryptionError err n syncRequired -> viewRcvDecryptionError from err n syncRequired ts tz meta
         CIRcvGroupInvitation {} -> showRcvItemProhibited from
         CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g m) quote meta [plainContent content] False
         _ -> showRcvItem from
@@ -592,9 +590,6 @@ msgPreview = msgPlain . preview . msgContentText
 
 viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> TimeZone -> CIMeta c 'MDRcv -> [StyledString]
 viewRcvIntegrityError from msgErr ts tz meta = receivedWithTime_ ts tz from [] meta (viewMsgIntegrityError msgErr) False
-
-viewRcvDecryptionError :: StyledString -> MsgDecryptError -> Word32 -> Maybe Bool -> CurrentTime -> TimeZone -> CIMeta c 'MDRcv -> [StyledString]
-viewRcvDecryptionError from err n syncRequired ts tz meta = receivedWithTime_ ts tz from [] meta [ ttyError $ msgDecryptErrorText err n syncRequired] False
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
 viewMsgIntegrityError err = [ttyError $ msgIntegrityError err]
