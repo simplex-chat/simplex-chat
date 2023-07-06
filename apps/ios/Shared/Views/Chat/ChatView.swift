@@ -66,6 +66,7 @@ struct ChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if case let .direct(contact) = cInfo {
+                // TODO fix race
                 Task {
                     do {
                         let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
