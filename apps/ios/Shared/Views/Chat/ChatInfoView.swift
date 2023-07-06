@@ -301,7 +301,7 @@ struct ChatInfoView: View {
         Button {
             syncContactConnection(force: false)
         } label: {
-            Label("Fix connection", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
+            Label("Fix encryption", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
                 .foregroundColor(.orange)
         }
     }

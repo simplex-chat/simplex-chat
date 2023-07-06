@@ -82,7 +82,7 @@ struct CIRcvDecryptionError: View {
                         .italic()
                 }
                 HStack {
-                    Text("Fix connection")
+                    Text("Fix")
                         .foregroundColor(syncConnection != nil ? .accentColor : .secondary)
                         .font(.callout)
                 }
@@ -163,7 +163,7 @@ struct CIRcvDecryptionError: View {
 
     private func syncAllowedAlert(_ syncConnection: @escaping () -> Void) -> Alert {
         Alert(
-            title: Text("Fix connection?"),
+            title: Text("Fix encryption?"),
             message: message(),
             primaryButton: .default(Text("Fix"), action: syncConnection),
             secondaryButton: .cancel()
