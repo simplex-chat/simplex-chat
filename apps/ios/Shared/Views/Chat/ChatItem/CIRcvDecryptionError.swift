@@ -81,11 +81,9 @@ struct CIRcvDecryptionError: View {
                         .foregroundColor(.red)
                         .italic()
                 }
-                HStack {
-                    Text("Fix")
-                        .foregroundColor(syncConnection != nil ? .accentColor : .secondary)
-                        .font(.callout)
-                }
+                (Text(Image(systemName: "hammer.fill")).font(.caption) + Text(" ") + Text("Fix"))
+                    .foregroundColor(syncConnection != nil ? .accentColor : .secondary)
+                    .font(.callout)
             }
             .padding(.horizontal, 12)
             CIMetaView(chatItem: chatItem)
