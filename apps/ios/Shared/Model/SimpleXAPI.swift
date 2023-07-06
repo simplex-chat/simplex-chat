@@ -508,6 +508,18 @@ func apiAbortSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) throws 
     throw r
 }
 
+func apiSyncContactRatchet(_ contactId: Int64, _ force: Bool) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSyncContactRatchet(contactId: contactId, force: force))
+    if case let .contactRatchetSyncStarted(_, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiSyncGroupMemberRatchet(_ groupId: Int64, _ groupMemberId: Int64, _ force: Bool) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSyncGroupMemberRatchet(groupId: groupId, groupMemberId: groupMemberId, force: force))
+    if case let .groupMemberRatchetSyncStarted(_, _, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
 func apiGetContactCode(_ contactId: Int64) async throws -> (Contact, String) {
     let r = await chatSendCmd(.apiGetContactCode(contactId: contactId))
     if case let .contactCode(_, contact, connectionCode) = r { return (contact, connectionCode) }
@@ -1453,6 +1465,18 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case .chatSuspended:
             chatSuspended()
+        case .contactSwitch:
+            // TODO update contact connection ConnectionStats
+            return
+        case .groupMemberSwitch:
+            // TODO update group member connection ConnectionStats
+            return
+        case .contactRatchetSync:
+            // TODO update contact connection ConnectionStats
+            return
+        case .groupMemberRatchetSync:
+            // TODO update group member connection ConnectionStats
+            return
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

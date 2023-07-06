@@ -27,6 +27,10 @@ struct CIRcvDecryptionError: View {
                 message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why + Text("\n") + permanent
             case .tooManySkipped:
                 message = Text("\(msgCount) messages skipped.") + Text("\n") + why + Text("\n") + permanent
+            case .ratchetEarlier:
+                message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why + Text("\n") + permanent
+            case .other:
+                message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why + Text("\n") + permanent
             }
             AlertManager.shared.showAlert(Alert(title: Text("Decryption error"), message: message))
         }
