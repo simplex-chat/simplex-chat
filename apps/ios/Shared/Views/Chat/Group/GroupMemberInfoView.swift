@@ -27,6 +27,7 @@ struct GroupMemberInfoView: View {
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
         case abortSwitchAddressAlert
+        case syncConnectionForceAlert
         case connRequestSentAlert(type: ConnReqType)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
         case other(alert: Alert)
@@ -38,6 +39,7 @@ struct GroupMemberInfoView: View {
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .connRequestSentAlert: return "connRequestSentAlert"
+            case .syncConnectionForceAlert: return "syncConnectionForceAlert"
             case let .error(title, _): return "error \(title)"
             case let .other(alert): return "other \(alert)"
             }
@@ -77,6 +79,12 @@ struct GroupMemberInfoView: View {
                             }
                         }
                         if let code = connectionCode { verifyCodeButton(code) }
+                        if let connStats = connectionStats,
+                           connStats.ratchetSyncAllowed {
+                            synchronizeConnectionButton()
+                        } else if developerTools {
+                            synchronizeConnectionButtonForce()
+                        }
                     }
                 }
 
@@ -185,6 +193,7 @@ struct GroupMemberInfoView: View {
             case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
             case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
+            case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
             case let .connRequestSentAlert(type): return connReqSentAlert(type)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             case let .other(alert): return alert
@@ -291,7 +300,24 @@ struct GroupMemberInfoView: View {
                 systemImage: member.verified ? "checkmark.shield" : "shield"
             )
         }
+    }
 
+    private func synchronizeConnectionButton() -> some View {
+        Button {
+            syncMemberConnection(force: false)
+        } label: {
+            Label("Fix connection", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
+                .foregroundColor(.orange)
+        }
+    }
+
+    private func synchronizeConnectionButtonForce() -> some View {
+        Button {
+            alert = .syncConnectionForceAlert
+        } label: {
+            Label("Renegotiate encryption", systemImage: "exclamationmark.triangle")
+                .foregroundColor(.red)
+        }
     }
 
     private func removeMemberButton(_ mem: GroupMember) -> some View {
@@ -357,7 +383,8 @@ struct GroupMemberInfoView: View {
         Task {
             do {
                 let stats = try apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
-                connectionStats = stats 
+                connectionStats = stats
+                await MainActor.run { dismiss() }
             } catch let error {
                 logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")
@@ -376,6 +403,22 @@ struct GroupMemberInfoView: View {
             } catch let error {
                 logger.error("abortSwitchMemberAddress apiAbortSwitchGroupMember error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error aborting address change")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+
+    private func syncMemberConnection(force: Bool) {
+        Task {
+            do {
+                let stats = try apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force)
+                connectionStats = stats
+                await MainActor.run { dismiss() }
+            } catch let error {
+                logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
                     alert = .error(title: a.title, error: a.message)
                 }

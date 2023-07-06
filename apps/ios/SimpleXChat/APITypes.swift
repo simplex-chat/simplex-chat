@@ -1150,6 +1150,14 @@ public struct ConnectionStats: Decodable {
     public var sndQueuesInfo: [SndQueueInfo]
     public var ratchetSyncState: RatchetSyncState
     public var ratchetSyncSupported: Bool
+
+    public var ratchetSyncAllowed: Bool {
+        ratchetSyncSupported && [.allowed, .required].contains(ratchetSyncState)
+    }
+
+    public var ratchetSyncSendProhibited: Bool {
+        [.required, .started, .agreed].contains(ratchetSyncState)
+    }
 }
 
 public struct RcvQueueInfo: Codable {
