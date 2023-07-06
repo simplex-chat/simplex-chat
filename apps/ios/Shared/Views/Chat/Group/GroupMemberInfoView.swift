@@ -137,12 +137,18 @@ struct GroupMemberInfoView: View {
                         Button("Change receiving address") {
                             alert = .switchAddressAlert
                         }
-                        .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil })
+                        .disabled(
+                            connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
+                            || connStats.ratchetSyncSendProhibited
+                        )
                         if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
                             Button("Abort changing address") {
                                 alert = .abortSwitchAddressAlert
                             }
-                            .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch })
+                            .disabled(
+                                connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                || connStats.ratchetSyncSendProhibited
+                            )
                         }
                         smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
                         smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })

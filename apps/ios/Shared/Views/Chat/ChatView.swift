@@ -59,12 +59,26 @@ struct ChatView: View {
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
-            .disabled(!cInfo.sendMsgEnabled)
+            // .disabled(!cInfo.sendMsgEnabled)
+            .disabled(!cInfo.sendMsgEnabled || connectionStats?.ratchetSyncSendProhibited ?? false) // TODO move to contact sendMsgEnabled
         }
         .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            if case .direct = cInfo {
+                Task {
+                    do {
+                        let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
+                        await MainActor.run {
+                            connectionStats = stats
+                            customUserProfile = profile
+                        }
+                    } catch let error {
+                        logger.error("apiContactInfo error: \(responseError(error))")
+                    }
+                }
+            }
             if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
                 composeState = draft
             }
@@ -113,7 +127,6 @@ struct ChatView: View {
                         ChatInfoToolbar(chat: chat)
                     }
                     .sheet(isPresented: $showChatInfoSheet, onDismiss: {
-                        connectionStats = nil
                         customUserProfile = nil
                         connectionCode = nil
                     }) {
