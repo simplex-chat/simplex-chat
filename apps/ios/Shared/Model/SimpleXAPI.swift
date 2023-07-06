@@ -1465,18 +1465,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case .chatSuspended:
             chatSuspended()
-        case .contactSwitch:
-            // TODO update contact connection ConnectionStats
-            return
-        case .groupMemberSwitch:
-            // TODO update group member connection ConnectionStats
-            return
-        case .contactRatchetSync:
-            // TODO update contact connection ConnectionStats
-            return
-        case .groupMemberRatchetSync:
-            // TODO update group member connection ConnectionStats
-            return
+        case let .contactSwitch(_, contact, switchProgress):
+            m.updateContactConnectionStats(contact, switchProgress.connectionStats)
+        case let .groupMemberSwitch(_, groupInfo, member, switchProgress):
+            m.updateGroupMemberConnectionStats(groupInfo, member, switchProgress.connectionStats)
+        case let .contactRatchetSync(_, contact, ratchetSyncProgress):
+            m.updateContactConnectionStats(contact, ratchetSyncProgress.connectionStats)
+        case let .groupMemberRatchetSync(_, groupInfo, member, ratchetSyncProgress):
+            m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

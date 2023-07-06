@@ -390,7 +390,10 @@ struct GroupMemberInfoView: View {
             do {
                 let stats = try apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
                 connectionStats = stats
-                await MainActor.run { dismiss() }
+                await MainActor.run {
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, member, stats)
+                    dismiss()
+                }
             } catch let error {
                 logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")
@@ -406,6 +409,9 @@ struct GroupMemberInfoView: View {
             do {
                 let stats = try apiAbortSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
                 connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, member, stats)
+                }
             } catch let error {
                 logger.error("abortSwitchMemberAddress apiAbortSwitchGroupMember error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error aborting address change")
@@ -421,7 +427,10 @@ struct GroupMemberInfoView: View {
             do {
                 let stats = try apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force)
                 connectionStats = stats
-                await MainActor.run { dismiss() }
+                await MainActor.run {
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, member, stats)
+                    dismiss()
+                }
             } catch let error {
                 logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error synchronizing connection")

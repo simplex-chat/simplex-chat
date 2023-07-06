@@ -403,7 +403,10 @@ struct ChatInfoView: View {
             do {
                 let stats = try apiSwitchContact(contactId: contact.apiId)
                 connectionStats = stats
-                await MainActor.run { dismiss() }
+                await MainActor.run {
+                    chatModel.updateContactConnectionStats(contact, stats)
+                    dismiss()
+                }
             } catch let error {
                 logger.error("switchContactAddress apiSwitchContact error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")
@@ -419,6 +422,9 @@ struct ChatInfoView: View {
             do {
                 let stats = try apiAbortSwitchContact(contact.apiId)
                 connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateContactConnectionStats(contact, stats)
+                }
             } catch let error {
                 logger.error("abortSwitchContactAddress apiAbortSwitchContact error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error aborting address change")
@@ -434,7 +440,10 @@ struct ChatInfoView: View {
             do {
                 let stats = try apiSyncContactRatchet(contact.apiId, force)
                 connectionStats = stats
-                await MainActor.run { dismiss() }
+                await MainActor.run {
+                    chatModel.updateContactConnectionStats(contact, stats)
+                    dismiss()
+                }
             } catch let error {
                 logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error synchronizing connection")

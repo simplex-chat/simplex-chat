@@ -1353,7 +1353,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn.connStatus == .ready } }
-    public var sendMsgEnabled: Bool { get { true } }
+    public var sendMsgEnabled: Bool { get { !(activeConn.connectionStats?.ratchetSyncSendProhibited ?? false) } }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
@@ -1425,6 +1425,12 @@ public struct Connection: Decodable {
     public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
     public var connectionCode: SecurityCode?
+
+    public var connectionStats: ConnectionStats? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case connId, agentConnId, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode
+    }
 
     public var id: ChatId { get { ":\(connId)" } }
 

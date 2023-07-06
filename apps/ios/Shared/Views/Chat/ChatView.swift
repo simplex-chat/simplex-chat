@@ -59,20 +59,20 @@ struct ChatView: View {
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
-            // .disabled(!cInfo.sendMsgEnabled)
-            .disabled(!cInfo.sendMsgEnabled || connectionStats?.ratchetSyncSendProhibited ?? false) // TODO move to contact sendMsgEnabled
+            .disabled(!cInfo.sendMsgEnabled)
         }
         .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if case .direct = cInfo {
+            if case let .direct(contact) = cInfo {
                 Task {
                     do {
-                        let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
+                        let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
                         await MainActor.run {
-                            connectionStats = stats
-                            customUserProfile = profile
+                            if let s = stats {
+                                chatModel.updateContactConnectionStats(contact, s)
+                            }
                         }
                     } catch let error {
                         logger.error("apiContactInfo error: \(responseError(error))")
