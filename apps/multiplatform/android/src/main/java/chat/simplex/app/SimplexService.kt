@@ -16,10 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
-import chat.simplex.app.model.ChatController
-import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.usersettings.NotificationsMode
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -97,7 +95,7 @@ class SimplexService: Service() {
     val self = this
     isStartingService = true
     withApi {
-      val chatController = (application as SimplexApp).chatController
+      val chatController = ChatController
       waitDbMigrationEnds(chatController)
       try {
         Log.w(TAG, "Starting foreground service")
@@ -167,7 +165,7 @@ class SimplexService: Service() {
   // re-schedules the task when "Clear recent apps" is pressed
   override fun onTaskRemoved(rootIntent: Intent) {
     // Just to make sure that after restart of the app the user will need to re-authenticate
-    MainActivity.clearAuthState()
+    AppLock.clearAuthState()
 
     // If notification service isn't enabled or battery optimization isn't disabled, we shouldn't restart the service
     if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {

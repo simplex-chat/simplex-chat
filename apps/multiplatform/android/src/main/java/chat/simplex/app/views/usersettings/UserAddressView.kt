@@ -20,9 +20,10 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.sendEmail
+import chat.simplex.app.platform.shareText
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ShareAddressButton
 import chat.simplex.app.views.helpers.*

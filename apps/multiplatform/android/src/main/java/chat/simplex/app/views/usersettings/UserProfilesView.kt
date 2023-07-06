@@ -21,8 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.chatPasswordHash
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.chatPasswordHash
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.chatlist.UserProfilePickerItem

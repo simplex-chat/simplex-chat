@@ -20,10 +20,11 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.AppPreferences
+import chat.simplex.app.model.NotificationsMode
+import chat.simplex.app.platform.initChatController
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.AppVersionText
-import chat.simplex.app.views.usersettings.NotificationsMode
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -199,7 +200,7 @@ private fun runChat(
   if (progressIndicator.value) return@launch
   progressIndicator.value = true
   try {
-    SimplexApp.context.initChatController(dbKey, confirmMigrations)
+    initChatController(dbKey, confirmMigrations)
   } catch (e: Exception) {
     Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
   }

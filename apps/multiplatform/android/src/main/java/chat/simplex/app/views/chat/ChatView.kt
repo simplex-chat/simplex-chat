@@ -30,8 +30,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.group.*

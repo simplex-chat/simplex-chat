@@ -29,85 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.json
-import chat.simplex.app.views.chat.PickFromGallery
+import chat.simplex.app.platform.getAppFilesDirectory
 import chat.simplex.app.views.newchat.ActionButton
 import chat.simplex.res.MR
 import kotlinx.serialization.builtins.*
-import java.io.ByteArrayOutputStream
 import java.io.File
-import kotlin.math.min
-import kotlin.math.sqrt
-
-// Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
-fun cropToSquare(image: Bitmap): Bitmap {
-  var xOffset = 0
-  var yOffset = 0
-  val side = min(image.height, image.width)
-  if (image.height < image.width) {
-    xOffset = (image.width - side) / 2
-  } else {
-    yOffset = (image.height - side) / 2
-  }
-  return Bitmap.createBitmap(image, xOffset, yOffset, side, side)
-}
-
-fun resizeImageToStrSize(image: Bitmap, maxDataSize: Long): String {
-  var img = image
-  var str = compressImageStr(img)
-  while (str.length > maxDataSize) {
-    val ratio = sqrt(str.length.toDouble() / maxDataSize.toDouble())
-    val clippedRatio = min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = Bitmap.createScaledBitmap(img, width, height, true)
-    str = compressImageStr(img)
-  }
-  return str
-}
-
-private fun compressImageStr(bitmap: Bitmap): String {
-  val usePng = bitmap.hasAlpha()
-  val ext = if (usePng) "png" else "jpg"
-  return "data:image/$ext;base64," + Base64.encodeToString(compressImageData(bitmap, usePng).toByteArray(), Base64.NO_WRAP)
-}
-
-fun resizeImageToDataSize(image: Bitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
-  var img = image
-  var stream = compressImageData(img, usePng)
-  while (stream.size() > maxDataSize) {
-    val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
-    val clippedRatio = min(ratio, 2.0)
-    val width = (img.width.toDouble() / clippedRatio).toInt()
-    val height = img.height * width / img.width
-    img = Bitmap.createScaledBitmap(img, width, height, true)
-    stream = compressImageData(img, usePng)
-  }
-  return stream
-}
-
-private fun compressImageData(bitmap: Bitmap, usePng: Boolean): ByteArrayOutputStream {
-  val stream = ByteArrayOutputStream()
-  bitmap.compress(if (!usePng) Bitmap.CompressFormat.JPEG else Bitmap.CompressFormat.PNG, 85, stream)
-  return stream
-}
 
 val errorBitmapBytes = Base64.decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg==", Base64.NO_WRAP)
 val errorBitmap: Bitmap = BitmapFactory.decodeByteArray(errorBitmapBytes, 0, errorBitmapBytes.size)
-
-fun base64ToBitmap(base64ImageString: String): Bitmap {
-  val imageString = base64ImageString
-    .removePrefix("data:image/png;base64,")
-    .removePrefix("data:image/jpg;base64,")
-  try {
-    val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
-    return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-  } catch (e: Exception) {
-    Log.e(TAG, "base64ToBitmap error: $e")
-    return errorBitmap
-  }
-}
 
 class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Uri?>() {
   @CallSuper
@@ -268,4 +198,66 @@ fun GetImageBottomSheet(
       }
     }
   }
+}
+
+class PickFromGallery: ActivityResultContract<Int, Uri?>() {
+  override fun createIntent(context: Context, input: Int) =
+    Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
+      type = "image/*"
+    }
+
+  override fun parseResult(resultCode: Int, intent: Intent?): Uri? = intent?.data
+}
+
+class PickMultipleImagesFromGallery: ActivityResultContract<Int, List<Uri>>() {
+  override fun createIntent(context: Context, input: Int) =
+    Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
+      putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+      type = "image/*"
+    }
+
+  override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> =
+    if (intent?.data != null)
+      listOf(intent.data!!)
+    else if (intent?.clipData != null)
+      with(intent.clipData!!) {
+        val uris = ArrayList<Uri>()
+        for (i in 0 until kotlin.math.min(itemCount, 10)) {
+          val uri = getItemAt(i).uri
+          if (uri != null) uris.add(uri)
+        }
+        if (itemCount > 10) {
+          AlertManager.shared.showAlertMsg(MR.strings.images_limit_title, MR.strings.images_limit_desc)
+        }
+        uris
+      }
+    else
+      emptyList()
+}
+
+
+class PickMultipleVideosFromGallery: ActivityResultContract<Int, List<Uri>>() {
+  override fun createIntent(context: Context, input: Int) =
+    Intent(Intent.ACTION_PICK, MediaStore.Video.Media.INTERNAL_CONTENT_URI).apply {
+      putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+      type = "video/*"
+    }
+
+  override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> =
+    if (intent?.data != null)
+      listOf(intent.data!!)
+    else if (intent?.clipData != null)
+      with(intent.clipData!!) {
+        val uris = ArrayList<Uri>()
+        for (i in 0 until kotlin.math.min(itemCount, 10)) {
+          val uri = getItemAt(i).uri
+          if (uri != null) uris.add(uri)
+        }
+        if (itemCount > 10) {
+          AlertManager.shared.showAlertMsg(MR.strings.videos_limit_title, MR.strings.videos_limit_desc)
+        }
+        uris
+      }
+    else
+      emptyList()
 }

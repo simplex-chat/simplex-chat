@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.LinkPreview
+import chat.simplex.app.platform.base64ToBitmap
+import chat.simplex.app.platform.resizeImageToStrSize
 import chat.simplex.app.ui.theme.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers

@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.cropToSquare
+import chat.simplex.app.platform.resizeImageToStrSize
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.*

@@ -8,10 +8,8 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.ui.theme.*
 
 @Composable
 fun DefaultDropdownMenu(

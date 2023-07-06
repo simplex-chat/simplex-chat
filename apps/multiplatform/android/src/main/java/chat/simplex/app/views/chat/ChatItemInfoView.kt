@@ -18,8 +18,9 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.copyText
+import chat.simplex.app.platform.shareText
 import chat.simplex.app.ui.theme.CurrentColors
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.chat.item.ItemAction

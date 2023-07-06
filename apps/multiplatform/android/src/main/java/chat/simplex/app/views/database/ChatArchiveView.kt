@@ -3,7 +3,6 @@ package chat.simplex.app.views.database
 import SectionBottomSpacer
 import SectionTextFooter
 import SectionView
-import android.content.Context
 import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
@@ -21,8 +20,8 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.platform.getFilesDirectory
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*

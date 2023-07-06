@@ -2,9 +2,7 @@ package chat.simplex.app.views.call
 
 import androidx.compose.runtime.Composable
 import dev.icerock.moko.resources.compose.stringResource
-import chat.simplex.app.*
-import chat.simplex.app.model.Contact
-import chat.simplex.app.model.User
+import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.res.MR
 import kotlinx.datetime.Instant
@@ -214,7 +212,7 @@ fun parseRTCIceServers(servers: List<String>): List<RTCIceServer>? {
 }
 
 fun getIceServers(): List<RTCIceServer>? {
-  val value = SimplexApp.context.chatController.appPrefs.webrtcIceServers.get() ?: return null
+  val value = ChatController.appPrefs.webrtcIceServers.get() ?: return null
   val servers: List<String> = value.split("\n")
   return parseRTCIceServers(servers)
 }

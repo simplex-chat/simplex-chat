@@ -5,7 +5,6 @@ import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
 import SectionView
-import android.content.Context
 import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
@@ -28,10 +27,9 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
@@ -357,7 +355,7 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastSta
   withApi {
     try {
       if (chatDbChanged.value) {
-        SimplexApp.context.initChatController()
+        initChatController()
         chatDbChanged.value = false
       }
       if (m.chatDbStatus.value !is DBMigrationResult.OK) {

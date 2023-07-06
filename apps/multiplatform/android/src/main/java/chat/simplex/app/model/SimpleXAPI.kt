@@ -1,6 +1,7 @@
 package chat.simplex.app.model
 
 import android.content.*
+import android.os.Build
 import android.util.Log
 import chat.simplex.app.views.helpers.*
 import androidx.compose.runtime.*
@@ -8,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.app.*
+import chat.simplex.app.platform.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.newchat.ConnectViaLinkTab
@@ -1379,7 +1381,7 @@ object ChatController {
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
           withApi { receiveFile(r.user, file.fileId) }
         }
-        if (cItem.showNotification && (!SimplexApp.context.isAppOnForeground || chatModel.chatId.value != cInfo.id)) {
+        if (cItem.showNotification && (!isAppOnForeground || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
         }
       }
@@ -3832,4 +3834,15 @@ sealed class ArchiveError {
   }
   @Serializable @SerialName("import") class ArchiveErrorImport(val chatError: ChatError): ArchiveError()
   @Serializable @SerialName("importFile") class ArchiveErrorImportFile(val file: String, val chatError: ChatError): ArchiveError()
+}
+
+enum class NotificationsMode(private val requiresIgnoringBatterySinceSdk: Int) {
+  OFF(Int.MAX_VALUE), PERIODIC(Build.VERSION_CODES.M), SERVICE(Build.VERSION_CODES.S), /*INSTANT(Int.MAX_VALUE) - for Firebase notifications */;
+
+  val requiresIgnoringBattery
+    get() = requiresIgnoringBatterySinceSdk <= Build.VERSION.SDK_INT
+
+  companion object {
+    val default: NotificationsMode = SERVICE
+  }
 }
