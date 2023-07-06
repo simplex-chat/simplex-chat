@@ -127,6 +127,7 @@ struct ChatView: View {
                         ChatInfoToolbar(chat: chat)
                     }
                     .sheet(isPresented: $showChatInfoSheet, onDismiss: {
+                        connectionStats = nil
                         customUserProfile = nil
                         connectionCode = nil
                     }) {

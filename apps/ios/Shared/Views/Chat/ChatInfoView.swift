@@ -120,8 +120,6 @@ struct ChatInfoView: View {
                     if let connStats = connectionStats,
                        connStats.ratchetSyncAllowed {
                         synchronizeConnectionButton()
-                    } else if developerTools {
-                        synchronizeConnectionButtonForce()
                     }
                 }
 
@@ -176,6 +174,10 @@ struct ChatInfoView: View {
                     Section(header: Text("For console")) {
                         infoRow("Local name", chat.chatInfo.localDisplayName)
                         infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                    }
+
+                    Section {
+                        synchronizeConnectionButtonForce()
                     }
                 }
             }

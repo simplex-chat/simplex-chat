@@ -82,8 +82,6 @@ struct GroupMemberInfoView: View {
                         if let connStats = connectionStats,
                            connStats.ratchetSyncAllowed {
                             synchronizeConnectionButton()
-                        } else if developerTools {
-                            synchronizeConnectionButtonForce()
                         }
                     }
                 }
@@ -165,6 +163,10 @@ struct GroupMemberInfoView: View {
                     Section("For console") {
                         infoRow("Local name", member.localDisplayName)
                         infoRow("Database ID", "\(member.groupMemberId)")
+                    }
+
+                    Section {
+                        synchronizeConnectionButtonForce()
                     }
                 }
             }
