@@ -208,7 +208,7 @@ private fun runChat(
     is DBMigrationResult.OK -> {
       SimplexService.cancelPassphraseNotification()
       when (prefs.notificationsMode.get()) {
-        NotificationsMode.SERVICE.name -> CoroutineScope(Dispatchers.Default).launch { SimplexService.start(SimplexApp.context) }
+        NotificationsMode.SERVICE.name -> CoroutineScope(Dispatchers.Default).launch { SimplexService.start() }
         NotificationsMode.PERIODIC.name -> SimplexApp.context.schedulePeriodicWakeUp()
       }
     }

@@ -377,7 +377,7 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastSta
       m.controller.appPrefs.chatLastStart.set(ts)
       chatLastStart.value = ts
       when (m.controller.appPrefs.notificationsMode.get()) {
-        NotificationsMode.SERVICE.name -> CoroutineScope(Dispatchers.Default).launch { SimplexService.start(SimplexApp.context) }
+        NotificationsMode.SERVICE.name -> CoroutineScope(Dispatchers.Default).launch { SimplexService.start() }
         NotificationsMode.PERIODIC.name -> SimplexApp.context.schedulePeriodicWakeUp()
       }
     } catch (e: Error) {
