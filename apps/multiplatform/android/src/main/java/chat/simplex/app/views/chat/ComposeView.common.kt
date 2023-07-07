@@ -312,8 +312,6 @@ fun ComposeView(
     return null
   }
 
-
-
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): ChatItem? {
     val cInfo = chat.chatInfo
     val cs = composeState.value
