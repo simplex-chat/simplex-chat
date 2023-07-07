@@ -66,35 +66,56 @@ struct CIRcvDecryptionError: View {
     }
 
     @ViewBuilder private func decryptionErrorItem(_ syncConnection: (() -> Void)? = nil) -> some View {
-        ZStack(alignment: .bottomTrailing) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    if showMember, let member = chatItem.memberDisplayName {
-                        Text(member).fontWeight(.medium) + Text(": ")
+        VStack {
+            if let syncConn = syncConnection {
+                ZStack(alignment: .bottomTrailing) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            if showMember, let member = chatItem.memberDisplayName {
+                                Text(member).fontWeight(.medium) + Text(": ")
+                            }
+                            Text(chatItem.content.text)
+                                .foregroundColor(.red)
+                                .italic()
+                        }
+                        (Text(Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")) + Text(" ") + Text("Fix connection"))
+                            .foregroundColor(.accentColor)
+                            .font(.callout)
                     }
-                    Text(chatItem.content.text)
-                        .foregroundColor(.red)
-                        .italic()
+                    .padding(.horizontal, 12)
+                    CIMetaView(chatItem: chatItem)
+                        .padding(.horizontal, 12)
                 }
-                (Text(Image(systemName: "hammer.fill")).font(.caption) + Text(" ") + Text("Fix connection"))
-                    .foregroundColor(syncConnection != nil ? .accentColor : .secondary)
-                    .font(.callout)
+                .onTapGesture(perform: {
+                    alert = .syncAllowedAlert(syncConn)
+                })
+            } else {
+                ZStack(alignment: .bottomTrailing) {
+                    HStack {
+                        if showMember, let member = chatItem.memberDisplayName {
+                            Text(member).fontWeight(.medium) + Text(": ")
+                        }
+                        (
+                            Text(chatItem.content.text)
+                                .foregroundColor(.red)
+                                .italic()
+                            + Text(" ")
+                            + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
+                        )
+                    }
+                    .padding(.horizontal, 12)
+                    CIMetaView(chatItem: chatItem)
+                        .padding(.horizontal, 12)
+                }
+                .onTapGesture(perform: {
+                    alert = .decryptionErrorAlert
+                })
             }
-            .padding(.horizontal, 12)
-            CIMetaView(chatItem: chatItem)
-                .padding(.horizontal, 12)
         }
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
         .cornerRadius(18)
         .textSelection(.disabled)
-        .onTapGesture(perform: {
-            if let sync = syncConnection {
-                alert = .syncAllowedAlert(sync)
-            } else {
-                alert = .decryptionErrorAlert
-            }
-        })
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case let .syncAllowedAlert(syncConnection): return syncAllowedAlert(syncConnection)
