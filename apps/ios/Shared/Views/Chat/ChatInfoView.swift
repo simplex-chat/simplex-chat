@@ -476,8 +476,8 @@ func abortSwitchAddressAlert(_ abortSwitchAddress: @escaping () -> Void) -> Aler
 func syncConnectionForceAlert(_ syncConnectionForce: @escaping () -> Void) -> Alert {
     Alert(
         title: Text("Renegotiate encryption?"),
-        message: Text("Encryption renegotiation is not required in current state, and will be triggered forcefully. It may lead to connection destabilization. This is an advanced feature, make sure you understand what you are doing."),
-        primaryButton: .destructive(Text("Renegotiate forcefully"), action: syncConnectionForce),
+        message: Text("The encryption is working and the new encryption agreement is not required. It may result in connection errors!"),
+        primaryButton: .destructive(Text("Renegotiate"), action: syncConnectionForce),
         secondaryButton: .cancel()
     )
 }

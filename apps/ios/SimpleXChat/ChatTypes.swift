@@ -3076,7 +3076,7 @@ public enum RcvConnEvent: Decodable {
             if case .completed = phase {
                 return NSLocalizedString("changed address for you", comment: "chat item text")
             }
-            return NSLocalizedString("changing address...", comment: "chat item text")
+            return NSLocalizedString("changing address…", comment: "chat item text")
         case let .ratchetSync(syncStatus):
             return ratchetSyncStatusToText(syncStatus)
         case .verificationCodeReset:
@@ -3090,7 +3090,7 @@ func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
     case .ok: return NSLocalizedString("connection fixed", comment: "chat item text")
     case .allowed: return NSLocalizedString("decryption error, connection fix allowed", comment: "chat item text")
     case .required: return NSLocalizedString("decryption error, connection fix required", comment: "chat item text")
-    case .started: return NSLocalizedString("fixing connection", comment: "chat item text")
+    case .started: return NSLocalizedString("fixing connection…", comment: "chat item text")
     case .agreed: return NSLocalizedString("connection fix confirmed", comment: "chat item text")
     }
 }
@@ -3105,11 +3105,11 @@ public enum SndConnEvent: Decodable {
             if let name = member?.profile.profileViewName {
                 return phase == .completed
                 ? String.localizedStringWithFormat(NSLocalizedString("you changed address for %@", comment: "chat item text"), name)
-                : String.localizedStringWithFormat(NSLocalizedString("changing address for %@...", comment: "chat item text"), name)
+                : String.localizedStringWithFormat(NSLocalizedString("changing address for %@…", comment: "chat item text"), name)
             }
             return phase == .completed
             ? NSLocalizedString("you changed address", comment: "chat item text")
-            : NSLocalizedString("changing address...", comment: "chat item text")
+            : NSLocalizedString("changing address…", comment: "chat item text")
         case let .ratchetSync(syncStatus, member):
             if let name = member?.profile.profileViewName {
                 switch syncStatus {

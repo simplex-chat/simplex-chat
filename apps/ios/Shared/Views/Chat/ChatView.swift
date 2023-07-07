@@ -639,7 +639,7 @@ struct ChatView: View {
 
         private func reactionUIMenuPreiOS16(_ rs: [UIAction]) -> UIMenu {
             UIMenu(
-                title: NSLocalizedString("React...", comment: "chat item menu"),
+                title: NSLocalizedString("React…", comment: "chat item menu"),
                 image: UIImage(systemName: "face.smiling"),
                 children: rs
             )
