@@ -29,7 +29,7 @@ import System.Info (os)
 import Test.Hspec
 
 defaultPrefs :: Maybe Preferences
-defaultPrefs = Just $ toChatPrefs defaultChatPrefs
+defaultPrefs = Just newDefaultChatPrefs
 
 aliceProfile :: Profile
 aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}

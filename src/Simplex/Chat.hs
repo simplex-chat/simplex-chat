@@ -3343,7 +3343,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     withAckMessage :: ConnId -> CommandId -> MsgMeta -> m () -> m ()
     withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action =
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
-      action `E.finally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId)
+      action `E.finally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId Nothing)
 
     ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
     ackMsgDeliveryEvent Connection {connId} ackCmdId =
@@ -4258,7 +4258,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           groupMsgToView g' m ci msgMeta
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
-    directMsgReceived :: Contact -> MsgMeta -> MsgReceipt -> m ()
+    directMsgReceived :: Contact -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     directMsgReceived _ct _msgMeta _msgRcpt = do
       -- update chat item status
       -- send updated chat item or a separate event to view
@@ -4266,7 +4266,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- not sure how to test it, so could be an option that is disabled in the tests
       pure ()
 
-    groupMsgReceived :: GroupInfo -> GroupMember -> MsgMeta -> MsgReceipt -> m ()
+    groupMsgReceived :: GroupInfo -> GroupMember -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     groupMsgReceived _gInfo _m _msgMeta _msgRcpt = do
       -- update chat item status
       -- send updated chat item or a separate event to view
