@@ -12,7 +12,6 @@ import SimpleXChat
 let decryptErrorReason: LocalizedStringKey = "It can happen when you or your connection used the old database backup."
 
 struct CIRcvDecryptionError: View {
-    @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var chat: Chat
     var msgDecryptError: MsgDecryptError
     var msgCount: UInt32
@@ -40,18 +39,13 @@ struct CIRcvDecryptionError: View {
                 // for direct chat ConnectionStats are populated on opening chat, see ChatView onAppear
                 if case let .group(groupInfo) = chat.chatInfo,
                    case let .groupRcv(groupMember) = chatItem.chatDir {
-                    // TODO fix race
-                    Task {
-                        do {
-                            let stats = try apiGroupMemberInfo(groupInfo.apiId, groupMember.groupMemberId)
-                            await MainActor.run {
-                                if let s = stats {
-                                    chatModel.updateGroupMemberConnectionStats(groupInfo, groupMember, s)
-                                }
-                            }
-                        } catch let error {
-                            logger.error("apiGroupMemberInfo error: \(responseError(error))")
+                    do {
+                        let (member, stats) = try apiGroupMemberInfo(groupInfo.apiId, groupMember.groupMemberId)
+                        if let s = stats {
+                            ChatModel.shared.updateGroupMemberConnectionStats(groupInfo, member, s)
                         }
+                    } catch let error {
+                        logger.error("apiGroupMemberInfo error: \(responseError(error))")
                     }
                 }
             }
@@ -63,7 +57,7 @@ struct CIRcvDecryptionError: View {
             decryptionErrorItem({ syncContactConnection(contact) })
         } else if case let .group(groupInfo) = chat.chatInfo,
                   case let .groupRcv(groupMember) = chatItem.chatDir,
-                  let modelMember = chatModel.groupMembers.first(where: { $0.id == groupMember.id }),
+                  let modelMember = ChatModel.shared.groupMembers.first(where: { $0.id == groupMember.id }),
                   modelMember.activeConn?.connectionStats?.ratchetSyncAllowed ?? false {
             decryptionErrorItem({ syncMemberConnection(groupInfo, groupMember) })
         } else {
@@ -82,7 +76,7 @@ struct CIRcvDecryptionError: View {
                         .foregroundColor(.red)
                         .italic()
                 }
-                (Text(Image(systemName: "hammer.fill")).font(.caption) + Text(" ") + Text("Fix"))
+                (Text(Image(systemName: "hammer.fill")).font(.caption) + Text(" ") + Text("Fix connection"))
                     .foregroundColor(syncConnection != nil ? .accentColor : .secondary)
                     .font(.callout)
             }
@@ -129,9 +123,9 @@ struct CIRcvDecryptionError: View {
     private func syncMemberConnection(_ groupInfo: GroupInfo, _ member: GroupMember) {
         Task {
             do {
-                let stats = try apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, false)
+                let (mem, stats) = try apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, false)
                 await MainActor.run {
-                    chatModel.updateGroupMemberConnectionStats(groupInfo, member, stats)
+                    ChatModel.shared.updateGroupMemberConnectionStats(groupInfo, mem, stats)
                 }
             } catch let error {
                 logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
@@ -148,7 +142,7 @@ struct CIRcvDecryptionError: View {
             do {
                 let stats = try apiSyncContactRatchet(contact.apiId, false)
                 await MainActor.run {
-                    chatModel.updateContactConnectionStats(contact, stats)
+                    ChatModel.shared.updateContactConnectionStats(contact, stats)
                 }
             } catch let error {
                 logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
@@ -162,7 +156,7 @@ struct CIRcvDecryptionError: View {
 
     private func syncAllowedAlert(_ syncConnection: @escaping () -> Void) -> Alert {
         Alert(
-            title: Text("Fix encryption?"),
+            title: Text("Fix connection?"),
             message: message(),
             primaryButton: .default(Text("Fix"), action: syncConnection),
             secondaryButton: .cancel()

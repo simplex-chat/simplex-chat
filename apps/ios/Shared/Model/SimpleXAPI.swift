@@ -478,9 +478,9 @@ func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profi
     throw r
 }
 
-func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (ConnectionStats?) {
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (GroupMember, ConnectionStats?) {
     let r = chatSendCmdSync(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
-    if case let .groupMemberInfo(_, _, _, connStats_) = r { return (connStats_) }
+    if case let .groupMemberInfo(_, _, member, connStats_) = r { return (member, connStats_) }
     throw r
 }
 
@@ -514,9 +514,9 @@ func apiSyncContactRatchet(_ contactId: Int64, _ force: Bool) throws -> Connecti
     throw r
 }
 
-func apiSyncGroupMemberRatchet(_ groupId: Int64, _ groupMemberId: Int64, _ force: Bool) throws -> ConnectionStats {
+func apiSyncGroupMemberRatchet(_ groupId: Int64, _ groupMemberId: Int64, _ force: Bool) throws -> (GroupMember, ConnectionStats) {
     let r = chatSendCmdSync(.apiSyncGroupMemberRatchet(groupId: groupId, groupMemberId: groupMemberId, force: force))
-    if case let .groupMemberRatchetSyncStarted(_, _, _, connectionStats) = r { return connectionStats }
+    if case let .groupMemberRatchetSyncStarted(_, _, member, connectionStats) = r { return (member, connectionStats) }
     throw r
 }
 

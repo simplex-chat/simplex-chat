@@ -65,32 +65,14 @@ struct ChatView: View {
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if case let .direct(contact) = cInfo {
-                // TODO fix race
-                Task {
-                    do {
-                        let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
-                        await MainActor.run {
-                            if let s = stats {
-                                chatModel.updateContactConnectionStats(contact, s)
-                            }
-                        }
-                    } catch let error {
-                        logger.error("apiContactInfo error: \(responseError(error))")
-                    }
-                }
-            }
-            if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
-                composeState = draft
-            }
-            if chat.chatStats.unreadChat {
-                Task {
-                    await markChatUnread(chat, unreadChat: false)
-                }
-            }
+            initChatView()
         }
-        .onChange(of: chatModel.chatId) { _ in
-            if chatModel.chatId == nil { dismiss() }
+        .onChange(of: chatModel.chatId) { cId in
+            if cId != nil {
+                initChatView()
+            } else {
+                dismiss()
+            }
         }
         .onDisappear {
             VideoPlayerView.players.removeAll()
@@ -196,6 +178,32 @@ struct ChatView: View {
                 default:
                     EmptyView()
                 }
+            }
+        }
+    }
+
+    private func initChatView() {
+        let cInfo = chat.chatInfo
+        if case let .direct(contact) = cInfo {
+            Task {
+                do {
+                    let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
+                    await MainActor.run {
+                        if let s = stats {
+                            chatModel.updateContactConnectionStats(contact, s)
+                        }
+                    }
+                } catch let error {
+                    logger.error("apiContactInfo error: \(responseError(error))")
+                }
+            }
+        }
+        if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+            composeState = draft
+        }
+        if chat.chatStats.unreadChat {
+            Task {
+                await markChatUnread(chat, unreadChat: false)
             }
         }
     }

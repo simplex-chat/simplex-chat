@@ -178,7 +178,7 @@ struct GroupMemberInfoView: View {
                 }
                 newRole = member.memberRole
                 do {
-                    let stats = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                    let (_, stats) = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
                     let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                     member = mem
                     connectionStats = stats
@@ -314,7 +314,7 @@ struct GroupMemberInfoView: View {
         Button {
             syncMemberConnection(force: false)
         } label: {
-            Label("Fix encryption", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
+            Label("Fix connection", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
                 .foregroundColor(.orange)
         }
     }
@@ -427,10 +427,10 @@ struct GroupMemberInfoView: View {
     private func syncMemberConnection(force: Bool) {
         Task {
             do {
-                let stats = try apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force)
+                let (mem, stats) = try apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force)
                 connectionStats = stats
                 await MainActor.run {
-                    chatModel.updateGroupMemberConnectionStats(groupInfo, member, stats)
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, mem, stats)
                     dismiss()
                 }
             } catch let error {

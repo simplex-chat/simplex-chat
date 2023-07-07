@@ -3087,11 +3087,11 @@ public enum RcvConnEvent: Decodable {
 
 func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
     switch ratchetSyncStatus {
-    case .ok: return NSLocalizedString("encryption fixed", comment: "chat item text")
-    case .allowed: return NSLocalizedString("decryption error, fix allowed", comment: "chat item text")
-    case .required: return NSLocalizedString("decryption error, fix required", comment: "chat item text")
-    case .started: return NSLocalizedString("fixing encryption", comment: "chat item text")
-    case .agreed: return NSLocalizedString("encryption confirmed", comment: "chat item text")
+    case .ok: return NSLocalizedString("connection fixed", comment: "chat item text")
+    case .allowed: return NSLocalizedString("decryption error, connection fix allowed", comment: "chat item text")
+    case .required: return NSLocalizedString("decryption error, connection fix required", comment: "chat item text")
+    case .started: return NSLocalizedString("fixing connection", comment: "chat item text")
+    case .agreed: return NSLocalizedString("connection fix confirmed", comment: "chat item text")
     }
 }
 
@@ -3113,11 +3113,11 @@ public enum SndConnEvent: Decodable {
         case let .ratchetSync(syncStatus, member):
             if let name = member?.profile.profileViewName {
                 switch syncStatus {
-                case .ok: return String.localizedStringWithFormat(NSLocalizedString("encryption fixed for %@", comment: "chat item text"), name)
-                case .allowed: return String.localizedStringWithFormat(NSLocalizedString("decryption error, fix allowed for %@", comment: "chat item text"), name)
-                case .required: return String.localizedStringWithFormat(NSLocalizedString("decryption error, fix required for %@", comment: "chat item text"), name)
-                case .started: return String.localizedStringWithFormat(NSLocalizedString("fixing encryption for %@", comment: "chat item text"), name)
-                case .agreed: return String.localizedStringWithFormat(NSLocalizedString("encryption confirmed for %@", comment: "chat item text"), name)
+                case .ok: return String.localizedStringWithFormat(NSLocalizedString("connection fixed for %@", comment: "chat item text"), name)
+                case .allowed: return String.localizedStringWithFormat(NSLocalizedString("decryption error, connection fix allowed for %@", comment: "chat item text"), name)
+                case .required: return String.localizedStringWithFormat(NSLocalizedString("decryption error, connection fix required for %@", comment: "chat item text"), name)
+                case .started: return String.localizedStringWithFormat(NSLocalizedString("fixing connection for %@", comment: "chat item text"), name)
+                case .agreed: return String.localizedStringWithFormat(NSLocalizedString("connection fix confirmed for %@", comment: "chat item text"), name)
                 }
             }
             return ratchetSyncStatusToText(syncStatus)
