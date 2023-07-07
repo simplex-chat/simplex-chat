@@ -78,9 +78,13 @@ struct CIRcvDecryptionError: View {
                                 .foregroundColor(.red)
                                 .italic()
                         }
-                        (Text(Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")) + Text(" ") + Text("Fix connection"))
-                            .foregroundColor(.accentColor)
-                            .font(.callout)
+                        (
+                            Text(Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")).foregroundColor(.accentColor).font(.callout)
+                            + Text(" ")
+                            + Text("Fix connection").foregroundColor(.accentColor).font(.callout)
+                            + Text("   ")
+                            + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
+                        )
                     }
                     .padding(.horizontal, 12)
                     CIMetaView(chatItem: chatItem)
@@ -99,7 +103,7 @@ struct CIRcvDecryptionError: View {
                             Text(chatItem.content.text)
                                 .foregroundColor(.red)
                                 .italic()
-                            + Text(" ")
+                            + Text("   ")
                             + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
                         )
                     }
