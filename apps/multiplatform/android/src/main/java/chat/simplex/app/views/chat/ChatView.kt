@@ -167,7 +167,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
         hideKeyboard(view)
         withApi {
-          val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val r = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val stats = r?.second
           val (_, code) = if (member.memberActive) {
             try {
               chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)

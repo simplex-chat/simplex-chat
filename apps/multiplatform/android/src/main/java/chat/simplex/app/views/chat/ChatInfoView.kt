@@ -29,7 +29,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -85,6 +84,8 @@ fun ChatInfoView(
         showSwitchAddressAlert(switchAddress = {
           withApi {
             connStats.value = chatModel.controller.apiSwitchContact(contact.contactId)
+            // TODO updateContactConnectionStats
+            // TODO dismiss
           }
         })
       },
@@ -92,6 +93,26 @@ fun ChatInfoView(
         showAbortSwitchAddressAlert(abortSwitchAddress = {
           withApi {
             connStats.value = chatModel.controller.apiAbortSwitchContact(contact.contactId)
+            // TODO updateContactConnectionStats
+          }
+        })
+      },
+      syncContactConnection = {
+        withApi {
+          connStats.value = chatModel.controller.apiSyncContactRatchet(contact.contactId, force = false)
+          // TODO updateContactConnectionStats
+          // TODO dismiss
+        }
+      },
+      syncContactConnectionForce = {
+        showSyncConnectionForceAlert(syncConnectionForce = {
+          withApi {
+            val cStats = chatModel.controller.apiSyncContactRatchet(contact.contactId, force = true)
+            connStats.value = cStats
+            if (cStats != null) {
+              chatModel.updateContactConnectionStats(contact, cStats)
+            }
+            // TODO dismiss
           }
         })
       },
@@ -179,6 +200,8 @@ fun ChatInfoLayout(
   clearChat: () -> Unit,
   switchContactAddress: () -> Unit,
   abortSwitchContactAddress: () -> Unit,
+  syncContactConnection: () -> Unit,
+  syncContactConnectionForce: () -> Unit,
   verifyClicked: () -> Unit,
 ) {
   val cStats = connStats.value
@@ -208,6 +231,11 @@ fun ChatInfoLayout(
         VerifyCodeButton(contact.verified, verifyClicked)
       }
       ContactPreferencesButton(openPreferences)
+      if (cStats != null && cStats.ratchetSyncAllowed) {
+        SynchronizeConnectionButton(syncContactConnection)
+      } else if (developerTools) {
+        SynchronizeConnectionButtonForce(syncContactConnectionForce)
+      }
     }
 
     SectionDividerSpaced()
@@ -230,12 +258,12 @@ fun ChatInfoLayout(
       }
       if (cStats != null) {
         SwitchAddressButton(
-          disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null },
+          disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || cStats.ratchetSyncSendProhibited,
           switchAddress = switchContactAddress
         )
         if (cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
           AbortSwitchAddressButton(
-            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch },
+            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch } || cStats.ratchetSyncSendProhibited,
             abortSwitchAddress = abortSwitchContactAddress
           )
         }
@@ -422,6 +450,28 @@ fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) 
 }
 
 @Composable
+fun SynchronizeConnectionButton(syncConnection: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_restart_alt), // Sync Problem
+    stringResource(MR.strings.fix_connection),
+    click = syncConnection,
+    textColor = WarningOrange,
+    iconColor = WarningOrange
+  )
+}
+
+@Composable
+fun SynchronizeConnectionButtonForce(syncConnectionForce: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_restart_alt), // Report Problem / Warning Amber
+    stringResource(MR.strings.renegotiate_encryption),
+    click = syncConnectionForce,
+    textColor = Color.Red,
+    iconColor = Color.Red
+  )
+}
+
+@Composable
 fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
   SettingsActionItem(
     if (contactVerified) painterResource(MR.images.ic_verified_user) else painterResource(MR.images.ic_shield),
@@ -498,6 +548,16 @@ fun showAbortSwitchAddressAlert(abortSwitchAddress: () -> Unit) {
   )
 }
 
+fun showSyncConnectionForceAlert(syncConnectionForce: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.sync_connection_force_question),
+    text = generalGetString(MR.strings.sync_connection_force_desc),
+    confirmText = generalGetString(MR.strings.sync_connection_force_confirm),
+    onConfirm = syncConnectionForce,
+    destructive = true,
+  )
+}
+
 @Preview
 @Composable
 fun PreviewChatInfoLayout() {
@@ -520,6 +580,8 @@ fun PreviewChatInfoLayout() {
       clearChat = {},
       switchContactAddress = {},
       abortSwitchContactAddress = {},
+      syncContactConnection = {},
+      syncContactConnectionForce = {},
       verifyClicked = {},
     )
   }
