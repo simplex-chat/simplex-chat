@@ -59,7 +59,7 @@ fun ActiveCallView(chatModel: ChatModel) {
   LaunchedEffect(Unit) {
     // Start service when call happening since it's not already started.
     // It's needed to prevent Android from shutting down a microphone after a minute or so when screen is off
-    if (!ntfModeService) SimplexService.start(SimplexApp.context)
+    if (!ntfModeService) SimplexService.start()
   }
   DisposableEffect(Unit) {
     val am = SimplexApp.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
