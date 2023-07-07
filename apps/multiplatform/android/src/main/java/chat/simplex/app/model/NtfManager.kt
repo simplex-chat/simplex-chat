@@ -13,6 +13,8 @@ import android.util.Log
 import android.view.Display
 import androidx.core.app.*
 import chat.simplex.app.*
+import chat.simplex.app.platform.base64ToBitmap
+import chat.simplex.app.platform.isAppOnForeground
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chatlist.acceptContactRequest
 import chat.simplex.app.views.helpers.*
@@ -172,9 +174,9 @@ object NtfManager {
       "notifyCallInvitation pre-requests: " +
           "keyguard locked ${keyguardManager.isKeyguardLocked}, " +
           "callOnLockScreen ${appPreferences.callOnLockScreen.get()}, " +
-          "onForeground ${SimplexApp.context.isAppOnForeground}"
+          "onForeground ${isAppOnForeground}"
     )
-    if (SimplexApp.context.isAppOnForeground) return
+    if (isAppOnForeground) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
     val image = invitation.contact.image

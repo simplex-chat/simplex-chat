@@ -18,8 +18,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.*
 import chat.simplex.app.TAG
-import chat.simplex.app.chatParseMarkdown
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.chatParseMarkdown
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.MarkdownText
 import com.google.accompanist.insets.navigationBarsWithImePadding

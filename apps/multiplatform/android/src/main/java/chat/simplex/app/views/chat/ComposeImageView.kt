@@ -15,9 +15,9 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
+import chat.simplex.app.platform.base64ToBitmap
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.UploadContent
-import chat.simplex.app.views.helpers.base64ToBitmap
 import chat.simplex.res.MR
 
 @Composable

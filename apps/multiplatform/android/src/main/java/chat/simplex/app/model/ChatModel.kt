@@ -14,7 +14,6 @@ import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationPreviewMode
-import chat.simplex.app.views.usersettings.NotificationsMode
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource

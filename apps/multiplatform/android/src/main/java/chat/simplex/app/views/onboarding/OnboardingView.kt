@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.CreateProfilePanel
-import chat.simplex.app.views.helpers.getKeyboardState
+import chat.simplex.app.platform.getKeyboardState
 import com.google.accompanist.insets.ProvideWindowInsets
 import kotlinx.coroutines.launch
 

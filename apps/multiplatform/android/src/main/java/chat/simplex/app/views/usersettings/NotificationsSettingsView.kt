@@ -16,22 +16,12 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import chat.simplex.app.*
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.NotificationsMode
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlin.collections.ArrayList
-
-enum class NotificationsMode(private val requiresIgnoringBatterySinceSdk: Int) {
-  OFF(Int.MAX_VALUE), PERIODIC(Build.VERSION_CODES.M), SERVICE(Build.VERSION_CODES.S), /*INSTANT(Int.MAX_VALUE) - for Firebase notifications */;
-
-  val requiresIgnoringBattery
-    get() = requiresIgnoringBatterySinceSdk <= Build.VERSION.SDK_INT
-
-  companion object {
-    val default: NotificationsMode = SERVICE
-  }
-}
 
 enum class NotificationPreviewMode {
   MESSAGE, CONTACT, HIDDEN;

@@ -1,4 +1,4 @@
-package chat.simplex.app.views.helpers
+package chat.simplex.app.platform
 
 import android.Manifest
 import android.content.*
@@ -7,14 +7,11 @@ import android.provider.MediaStore
 import android.util.Log
 import android.webkit.MimeTypeMap
 import android.widget.Toast
-import androidx.activity.compose.ManagedActivityResultLauncher
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.model.CIFile
+import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.res.MR
 import java.io.BufferedOutputStream
 import java.io.File
@@ -66,29 +63,6 @@ fun sendEmail(subject: String, body: CharSequence) {
     Log.e(TAG, "No activity was found for handling email intent")
   }
 }
-
-@Composable
-fun rememberSaveFileLauncher(ciFile: CIFile?): ManagedActivityResultLauncher<String, Uri?> =
-  rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.CreateDocument(),
-    onResult = { destination ->
-      destination?.let {
-        val cxt = SimplexApp.context
-        val filePath = getLoadedFilePath(ciFile)
-        if (filePath != null) {
-          val contentResolver = cxt.contentResolver
-          contentResolver.openOutputStream(destination)?.let { stream ->
-            val outputStream = BufferedOutputStream(stream)
-            File(filePath).inputStream().use { it.copyTo(outputStream) }
-            outputStream.close()
-            Toast.makeText(cxt, generalGetString(MR.strings.file_saved), Toast.LENGTH_SHORT).show()
-          }
-        } else {
-          Toast.makeText(cxt, generalGetString(MR.strings.file_not_found), Toast.LENGTH_SHORT).show()
-        }
-      }
-    }
-  )
 
 fun imageMimeType(fileName: String): String {
   val lowercaseName = fileName.lowercase()

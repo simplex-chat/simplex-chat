@@ -1,5 +1,7 @@
 package chat.simplex.app.views.chatlist
 
+import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -23,7 +25,7 @@ import chat.simplex.app.*
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.NewChatSheet
+import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.WhatsNewView
 import chat.simplex.app.views.onboarding.shouldShowWhatsNew
 import chat.simplex.app.views.usersettings.SettingsView
@@ -304,6 +306,35 @@ private fun ProgressIndicator() {
     color = MaterialTheme.colors.secondary,
     strokeWidth = 2.5.dp
   )
+}
+
+fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
+  Log.d(TAG, "connectIfOpenedViaUri: opened via link")
+  if (chatModel.currentUser.value == null) {
+    chatModel.appOpenUrl.value = uri
+  } else {
+    withUriAction(uri) { linkType ->
+      val title = when (linkType) {
+        ConnectionLinkType.CONTACT -> generalGetString(MR.strings.connect_via_contact_link)
+        ConnectionLinkType.INVITATION -> generalGetString(MR.strings.connect_via_invitation_link)
+        ConnectionLinkType.GROUP -> generalGetString(MR.strings.connect_via_group_link)
+      }
+      AlertManager.shared.showAlertDialog(
+        title = title,
+        text = if (linkType == ConnectionLinkType.GROUP)
+          generalGetString(MR.strings.you_will_join_group)
+        else
+          generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link),
+        confirmText = generalGetString(MR.strings.connect_via_link_verb),
+        onConfirm = {
+          withApi {
+            Log.d(TAG, "connectIfOpenedViaUri: connecting")
+            connectViaUri(chatModel, linkType, uri)
+          }
+        }
+      )
+    }
+  }
 }
 
 private var lazyListState = 0 to 0

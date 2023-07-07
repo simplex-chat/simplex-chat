@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatInfo
+import chat.simplex.app.platform.base64ToBitmap
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource

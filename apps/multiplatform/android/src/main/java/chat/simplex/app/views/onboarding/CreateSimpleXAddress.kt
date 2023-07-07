@@ -14,9 +14,10 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.UserContactLinkRec
+import chat.simplex.app.platform.sendEmail
+import chat.simplex.app.platform.shareText
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode

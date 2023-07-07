@@ -14,8 +14,8 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.shareText
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.LocalAliasEditor
 import chat.simplex.app.views.chatlist.deleteContactConnectionAlert

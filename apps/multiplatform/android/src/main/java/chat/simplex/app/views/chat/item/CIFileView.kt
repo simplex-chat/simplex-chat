@@ -1,6 +1,10 @@
 package chat.simplex.app.views.chat.item
 
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -19,12 +23,15 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.getLoadedFilePath
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
+import java.io.BufferedOutputStream
+import java.io.File
 
 @Composable
 fun CIFileView(
@@ -205,6 +212,30 @@ fun CIFileView(
     }
   }
 }
+
+@Composable
+fun rememberSaveFileLauncher(ciFile: CIFile?): ManagedActivityResultLauncher<String, Uri?> =
+  rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.CreateDocument(),
+    onResult = { destination ->
+      destination?.let {
+        val cxt = SimplexApp.context
+        val filePath = getLoadedFilePath(ciFile)
+        if (filePath != null) {
+          val contentResolver = cxt.contentResolver
+          contentResolver.openOutputStream(destination)?.let { stream ->
+            val outputStream = BufferedOutputStream(stream)
+            File(filePath).inputStream().use { it.copyTo(outputStream) }
+            outputStream.close()
+            Toast.makeText(cxt, generalGetString(MR.strings.file_saved), Toast.LENGTH_SHORT).show()
+          }
+        } else {
+          Toast.makeText(cxt, generalGetString(MR.strings.file_not_found), Toast.LENGTH_SHORT).show()
+        }
+      }
+    }
+  )
+
 
 class ChatItemProvider: PreviewParameterProvider<ChatItem> {
   private val sentFile = ChatItem(

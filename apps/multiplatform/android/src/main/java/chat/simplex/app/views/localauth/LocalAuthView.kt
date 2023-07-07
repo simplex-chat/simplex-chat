@@ -7,6 +7,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.app.*
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.initChatController
 import chat.simplex.app.views.database.deleteChatAsync
 import chat.simplex.app.views.database.stopChatAsync
 import chat.simplex.app.views.helpers.*
@@ -52,7 +53,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       m.chatDbChanged.value = true
       m.chatDbStatus.value = null
       try {
-        SimplexApp.context.initChatController(startChat = true)
+        initChatController(startChat = true)
       } catch (e: Exception) {
         Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
       }

@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.unit.*
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.getLoadedFilePath
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.res.MR

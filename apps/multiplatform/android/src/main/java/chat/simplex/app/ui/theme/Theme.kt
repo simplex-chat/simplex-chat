@@ -1,7 +1,5 @@
 package chat.simplex.app.ui.theme
 
-import android.app.UiModeManager
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.*
@@ -10,8 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
+import chat.simplex.app.platform.isInNightMode
 import chat.simplex.app.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -253,10 +251,6 @@ val SimplexColorPaletteApp = AppColors(
 )
 
 val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow(ThemeManager.currentColors(isInNightMode()))
-
-// Non-@Composable implementation
-private fun isInNightMode() =
-  (SimplexApp.context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager).nightMode == UiModeManager.MODE_NIGHT_YES
 
 @Composable
 fun isInDarkTheme(): Boolean = !CurrentColors.collectAsState().value.colors.isLight

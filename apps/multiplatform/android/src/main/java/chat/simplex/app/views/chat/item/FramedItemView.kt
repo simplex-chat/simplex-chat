@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.platform.base64ToBitmap
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.res.MR

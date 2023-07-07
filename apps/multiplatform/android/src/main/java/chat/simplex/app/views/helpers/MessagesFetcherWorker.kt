@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.work.*
 import chat.simplex.app.*
 import chat.simplex.app.SimplexService.Companion.showPassphraseNotification
+import chat.simplex.app.model.ChatController
 import kotlinx.coroutines.*
 import java.util.Date
 import java.util.concurrent.TimeUnit
@@ -55,7 +56,7 @@ class MessagesFetcherWork(
     var shouldReschedule = true
     try {
       withTimeout(durationSeconds * 1000L) {
-        val chatController = (applicationContext as SimplexApp).chatController
+        val chatController = ChatController
         SimplexService.waitDbMigrationEnds(chatController)
         val chatDbStatus = chatController.chatModel.chatDbStatus.value
         if (chatDbStatus != DBMigrationResult.OK) {

@@ -3,7 +3,6 @@ package chat.simplex.app.views.call
 import android.util.Log
 import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.helpers.withApi
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
