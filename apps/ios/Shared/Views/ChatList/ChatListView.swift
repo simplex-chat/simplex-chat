@@ -76,26 +76,25 @@ struct ChatListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
+                let user = chatModel.currentUser ?? User.sampleData
+                ZStack(alignment: .topTrailing) {
+                    ProfileImage(imageStr: user.image, color: Color(uiColor: .quaternaryLabel))
+                        .frame(width: 32, height: 32)
+                        .padding(.trailing, 4)
+                    let allRead = chatModel.users
+                        .filter { u in !u.user.activeUser && !u.user.hidden }
+                        .allSatisfy { u in u.unreadCount == 0 }
+                    if !allRead {
+                        unreadBadge(size: 12)
+                    }
+                }
+                .onTapGesture {
                     if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
                         withAnimation {
                             userPickerVisible.toggle()
                         }
                     } else {
                         showSettings = true
-                    }
-                } label: {
-                    let user = chatModel.currentUser ?? User.sampleData
-                    ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: user.image, color: Color(uiColor: .quaternaryLabel))
-                            .frame(width: 32, height: 32)
-                            .padding(.trailing, 4)
-                        let allRead = chatModel.users
-                            .filter { u in !u.user.activeUser && !u.user.hidden }
-                            .allSatisfy { u in u.unreadCount == 0 }
-                        if !allRead {
-                            unreadBadge(size: 12)
-                        }
                     }
                 }
             }
