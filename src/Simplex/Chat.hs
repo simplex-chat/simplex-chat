@@ -3336,9 +3336,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       withStore' $ \db -> createCommand db user (Just connId) CFAckMessage
 
     withAckMessage :: ConnId -> CommandId -> MsgMeta -> m () -> m ()
-    withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action =
+    withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action = do
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
-      action `E.finally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId)
+      action `catchChatError` \e -> ack >> throwError e
+      ack
+      where
+        ack = withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId)
 
     ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
     ackMsgDeliveryEvent Connection {connId} ackCmdId =
