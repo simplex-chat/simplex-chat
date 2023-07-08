@@ -66,6 +66,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Util (catchExcept)
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
@@ -2746,8 +2747,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           saveConnInfo conn connInfo
         MSG meta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
-          withAckMessage agentConnId cmdId meta . void $
-            saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
+          withAckMessage agentConnId cmdId meta $
+            saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId $> False
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
         OK ->
@@ -2803,6 +2804,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XCallEnd callId -> xCallEnd ct callId msg msgMeta
               BFileChunk sharedMsgId chunk -> bFileChunk ct sharedMsgId chunk msgMeta
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
+            pure $ hasDeliveryReceipt $ toCMEventTag event
         RCVD msgMeta msgRcpt -> directMsgReceived ct msgMeta msgRcpt
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
@@ -3051,6 +3053,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
+          pure $ hasDeliveryReceipt $ toCMEventTag event
         where
           canSend a
             | memberRole (m :: GroupMember) <= GRObserver = messageError "member is not allowed to send messages"
@@ -3162,7 +3165,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> throwChatError $ CEFileSend fileId err
         MSG meta _ _ -> do
           cmdId <- createAckCmd conn
-          withAckMessage agentConnId cmdId meta $ pure ()
+          withAckMessage agentConnId cmdId meta $ pure False
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -3257,7 +3260,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         ack a = case conn_ of
           Just conn -> do
             cmdId <- createAckCmd conn
-            withAckMessage agentConnId cmdId meta a
+            withAckMessage agentConnId cmdId meta $ a $> False
           Nothing -> a
 
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
@@ -3340,10 +3343,40 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     createAckCmd Connection {connId} = do
       withStore' $ \db -> createCommand db user (Just connId) CFAckMessage
 
-    withAckMessage :: ConnId -> CommandId -> MsgMeta -> m () -> m ()
-    withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action =
+    withAckMessage :: ConnId -> CommandId -> MsgMeta -> m Bool -> m ()
+    withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action = do
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
-      action `E.finally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId Nothing)
+      -- TODO not catching ExceptT error here is what is likely causing message delivery being stuck, as the result of ACK not sent
+      -- This is not obvious how to fix, as currently restarting the app results in message being correctly processed,
+      -- while simply sending ACK after an error, particularly if it is a database error, the message won't be processed.
+      -- Possible solutions are:
+      -- 1) retry processing several times
+      -- 2) stabilize database
+      -- 3) show screen of death to the user asking to restart
+      --
+      -- (action $> ()) `E.finally` ack Nothing -- this doesn't catch IO exception
+      --
+      -- (action >> ack Nothing) `catchError` \e -> ack Nothing >> throwError e -- this doesn't catch IO exception
+      --
+      -- (action >> ack Nothing) `E.catch` \e -> ack Nothing >> throwError e -- this doesn't catch IO exception
+      --
+      -- r <- (tryError action) `E.catch` (pure . err) -- this does catch IO exception
+      -- case r of
+      --   Right withRcpt -> ack Nothing -- $ if withRcpt then Just "" else Nothing
+      --   Left e -> ack Nothing >> throwError e
+
+      catchExcept
+        (ChatError . CEException . show)
+        (action >> ack Nothing)
+        (\e -> ack Nothing >> throwError e)
+
+      -- ack Nothing -- $ if withRcpt then Just "" else Nothing
+      where
+        err :: E.SomeException -> Either ChatError a
+        err = Left . ChatError . CEException . show
+        ack rcpt = do
+          liftIO $ print "called ack"
+          withAgent $ \a -> ackMessageAsync a (aCorrId cmdId) cId msgId rcpt
 
     ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
     ackMsgDeliveryEvent Connection {connId} ackCmdId =
@@ -3413,6 +3446,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
+      case content of
+        MCText "hello 111" ->
+          E.throwIO $ userError "#####################"
+          -- throwChatError $ CECommandError "#####################"
+        _ -> pure ()
       if isVoice content && not (featureAllowed SCFVoice forContact ct)
         then do
           void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
