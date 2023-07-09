@@ -3409,11 +3409,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
-      case content of
-        MCText "hello 111" ->
-          UE.throwIO $ userError "#####################"
-          -- throwChatError $ CECommandError "#####################"
-        _ -> pure ()
+      -- case content of
+      --   MCText "hello 111" ->
+      --     UE.throwIO $ userError "#####################"
+      --     -- throwChatError $ CECommandError "#####################"
+      --   _ -> pure ()
       if isVoice content && not (featureAllowed SCFVoice forContact ct)
         then do
           void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
