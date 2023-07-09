@@ -61,7 +61,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, 
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (catchExcept, tryThrow)
+import Simplex.Messaging.Util (catchAllErrors, allFinally)
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
@@ -903,10 +903,16 @@ type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
 
 catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
-catchChatError = catchExcept (\(e :: SomeException) -> ChatError . CEException $ show e)
+catchChatError = catchAllErrors mkChatError
+{-# INLINE catchChatError #-}
 
-tryThrowCE :: ChatMonad m => (String -> ChatErrorType) -> IO a -> m a
-tryThrowCE err = tryThrow (ChatError . err . show)
+chatFinally :: ChatMonad m => m a -> m a -> m a
+chatFinally = allFinally mkChatError
+{-# INLINE chatFinally #-}
+
+mkChatError :: SomeException -> ChatError
+mkChatError = ChatError . CEException . show
+{-# INLINE mkChatError #-}
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError

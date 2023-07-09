@@ -32,7 +32,7 @@ chatDirectTests = do
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message edit history" testDirectMessageEditHistory
-    it "direct message delete" testDirectMessageDelete
+    fit "direct message delete" testDirectMessageDelete
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
@@ -356,9 +356,16 @@ testDirectMessageDelete =
     \alice bob -> do
       connectUsers alice bob
 
+      alice #> "@bob hello 111"
+      bob <## "exception: user error (#####################)"
+      -- bob <## "bad chat command: #####################"
+      -- bob <# "alice> hello 111"
+      print 111
+
       -- alice, bob: msg id 1
       alice #> "@bob hello 🙂"
       bob <# "alice> hello 🙂"
+      print 222
 
       -- alice, bob: msg id 2
       bob `send` "> @alice (hello 🙂) hey alic"

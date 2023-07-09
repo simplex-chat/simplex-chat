@@ -16,6 +16,7 @@ module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry, stateTVar)
+import qualified Control.Exception as E
 import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -89,14 +90,14 @@ import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName, (</>))
-import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
+import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
-import qualified UnliftIO.Exception as E
-import UnliftIO.IO (hClose, hSeek, hTell)
+import qualified UnliftIO.Exception as UE
+import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
 defaultChatConfig :: ChatConfig
@@ -911,7 +912,7 @@ processChatCommand = \case
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \db ->
         getContactRequest db user connReqId
-          `E.finally` liftIO (deleteContactRequest db user connReqId)
+          `UE.finally` liftIO (deleteContactRequest db user connReqId)
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected user cReq
   APISendCallInvitation contactId callType -> withUser $ \user -> do
@@ -2225,7 +2226,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
       liftIO $ B.hPut h "" >> hFlush h
       pure fPath
     getTmpHandle :: FilePath -> m Handle
-    getTmpHandle fPath = tryThrowCE CEFileInternal $ openFile fPath AppendMode
+    getTmpHandle fPath = openFile fPath AppendMode `catchThrow` (ChatError . CEFileInternal . show)
     uniqueCombine :: FilePath -> String -> m FilePath
     uniqueCombine filePath fileName = tryCombine (0 :: Int)
       where
@@ -3338,10 +3339,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     withAckMessage :: ConnId -> CommandId -> MsgMeta -> m () -> m ()
     withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action = do
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
-      action `catchChatError` \e -> ack >> throwError e
-      ack
-      where
-        ack = withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId)
+      action `chatFinally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId)
 
     ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
     ackMsgDeliveryEvent Connection {connId} ackCmdId =
@@ -3411,6 +3409,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
+      case content of
+        MCText "hello 111" ->
+          UE.throwIO $ userError "#####################"
+          -- throwChatError $ CECommandError "#####################"
+        _ -> pure ()
       if isVoice content && not (featureAllowed SCFVoice forContact ct)
         then do
           void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
@@ -4343,9 +4346,8 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
     append_ filePath = do
       fsFilePath <- toFSFilePath filePath
       h <- getFileHandle fileId fsFilePath rcvFiles AppendMode
-      E.try (liftIO $ B.hPut h chunk >> hFlush h) >>= \case
-        Left (e :: E.SomeException) -> throwChatError . CEFileWrite fsFilePath $ show e
-        Right () -> withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
+      liftIO (E.try $ B.hPut h chunk >> hFlush h) `catchThrow` (ChatError . CEFileWrite filePath . show)
+      withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
 
 getFileHandle :: ChatMonad m => Int64 -> FilePath -> (ChatController -> TVar (Map Int64 Handle)) -> IOMode -> m Handle
 getFileHandle fileId filePath files ioMode = do
@@ -4354,7 +4356,7 @@ getFileHandle fileId filePath files ioMode = do
   maybe (newHandle fs) pure h_
   where
     newHandle fs = do
-      h <- tryThrowCE CEFileInternal $ openFile filePath ioMode
+      h <- openFile filePath ioMode `catchThrow` (ChatError . CEFileInternal . show)
       atomically . modifyTVar fs $ M.insert fileId h
       pure h
 
