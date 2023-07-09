@@ -9,14 +9,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -189,14 +187,14 @@ fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
 
 fun changeNotificationsMode(mode: NotificationsMode, chatModel: ChatModel) {
   chatModel.controller.appPrefs.notificationsMode.set(mode.name)
-  if (mode.requiresIgnoringBattery && !chatModel.controller.isIgnoringBatteryOptimizations()) {
+  if (mode.requiresIgnoringBattery && !SimplexService.isIgnoringBatteryOptimizations()) {
     chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
   }
   chatModel.notificationsMode.value = mode
   SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
   CoroutineScope(Dispatchers.Default).launch {
     if (mode == NotificationsMode.SERVICE)
-      SimplexService.start(SimplexApp.context)
+      SimplexService.start()
     else
       SimplexService.safeStopService(SimplexApp.context)
   }
@@ -204,5 +202,5 @@ fun changeNotificationsMode(mode: NotificationsMode, chatModel: ChatModel) {
   if (mode != NotificationsMode.PERIODIC) {
     MessagesFetcherWorker.cancelAll()
   }
-  chatModel.controller.showBackgroundServiceNoticeIfNeeded()
+  SimplexService.showBackgroundServiceNoticeIfNeeded()
 }

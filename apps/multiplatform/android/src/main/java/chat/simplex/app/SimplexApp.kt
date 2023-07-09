@@ -84,9 +84,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
         chatController.startChat(user)
         // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
         if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
-          chatController.showBackgroundServiceNoticeIfNeeded()
+          SimplexService.showBackgroundServiceNoticeIfNeeded()
           if (appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
-            SimplexService.start(applicationContext)
+            SimplexService.start()
         }
       }
     }
@@ -134,7 +134,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         Lifecycle.Event.ON_RESUME -> {
           isAppOnForeground = true
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
-            chatController.showBackgroundServiceNoticeIfNeeded()
+            SimplexService.showBackgroundServiceNoticeIfNeeded()
           }
           /**
            * We're starting service here instead of in [Lifecycle.Event.ON_START] because
@@ -145,7 +145,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
             chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete &&
             appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name
           ) {
-            SimplexService.start(applicationContext)
+            SimplexService.start()
           }
         }
         else -> isAppOnForeground = false
@@ -155,12 +155,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   fun allowToStartServiceAfterAppExit() = with(chatModel.controller) {
     appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name &&
-        (!NotificationsMode.SERVICE.requiresIgnoringBattery || isIgnoringBatteryOptimizations())
+        (!NotificationsMode.SERVICE.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
   }
 
   private fun allowToStartPeriodically() = with(chatModel.controller) {
     appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC.name &&
-        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || isIgnoringBatteryOptimizations())
+        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
   }
 
   /*
