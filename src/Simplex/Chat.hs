@@ -912,7 +912,7 @@ processChatCommand = \case
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \db ->
         getContactRequest db user connReqId
-          `UE.finally` liftIO (deleteContactRequest db user connReqId)
+          `storeFinally` liftIO (deleteContactRequest db user connReqId)
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected user cReq
   APISendCallInvitation contactId callType -> withUser $ \user -> do
@@ -3409,6 +3409,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
+      -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
       --   MCText "hello 111" ->
       --     UE.throwIO $ userError "#####################"
