@@ -108,7 +108,7 @@ handleSQLError err e
   | DB.sqlError e == DB.ErrorConstraint = err
   | otherwise = SEInternalError $ show e
 
-storeFinally :: ExceptT StoreError IO a -> ExceptT StoreError IO a -> ExceptT StoreError IO a
+storeFinally :: ExceptT StoreError IO a -> ExceptT StoreError IO b -> ExceptT StoreError IO a
 storeFinally = allFinally mkStoreError
 {-# INLINE storeFinally #-}
 

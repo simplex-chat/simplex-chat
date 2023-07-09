@@ -906,7 +906,7 @@ catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
 catchChatError = catchAllErrors mkChatError
 {-# INLINE catchChatError #-}
 
-chatFinally :: ChatMonad m => m a -> m a -> m a
+chatFinally :: ChatMonad m => m a -> m b -> m a
 chatFinally = allFinally mkChatError
 {-# INLINE chatFinally #-}
 
