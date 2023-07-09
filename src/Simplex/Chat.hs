@@ -3364,12 +3364,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- case r of
       --   Right withRcpt -> ack Nothing -- $ if withRcpt then Just "" else Nothing
       --   Left e -> ack Nothing >> throwError e
-
+      --
+      -- catchExcept
+      --   (ChatError . CEException . show)
+      --   (action >> ack Nothing)
+      --   (\e -> ack Nothing >> throwError e)
+      --
       catchExcept
         (ChatError . CEException . show)
-        (action >> ack Nothing)
+        action
         (\e -> ack Nothing >> throwError e)
-
+      ack Nothing
       -- ack Nothing -- $ if withRcpt then Just "" else Nothing
       where
         err :: E.SomeException -> Either ChatError a
