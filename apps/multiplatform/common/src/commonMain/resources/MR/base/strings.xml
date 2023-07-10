@@ -1199,6 +1199,10 @@
   <string name="switch_receiving_address">Change receiving address</string>
   <string name="abort_switch_receiving_address">Abort changing address</string>
   <string name="fix_connection">Fix connection</string>
+  <string name="fix_connection_question">Fix connection?</string>
+  <string name="fix_connection_confirm">Fix</string>
+  <string name="fix_connection_not_supported_by_contact">Fix not supported by contact</string>
+  <string name="fix_connection_not_supported_by_group_member">Fix not supported by group member</string>
   <string name="renegotiate_encryption">Renegotiate encryption</string>
 
   <!-- AddGroupView.kt -->

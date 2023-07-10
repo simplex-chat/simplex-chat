@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
-import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.ComposeState
