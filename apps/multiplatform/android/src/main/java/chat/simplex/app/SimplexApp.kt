@@ -1,30 +1,31 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.net.LocalServerSocket
-import android.util.Log
+import chat.simplex.common.platform.Log
 import androidx.lifecycle.*
 import androidx.work.*
-import chat.simplex.app.model.*
-import chat.simplex.app.platform.*
-import chat.simplex.app.ui.theme.DefaultTheme
-import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.onboarding.OnboardingStage
+import chat.simplex.app.model.NtfManager
+import chat.simplex.common.helpers.APPLICATION_ID
+import chat.simplex.common.helpers.requiresIgnoringBattery
+import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
+import chat.simplex.common.platform.*
+import chat.simplex.common.views.call.RcvCallInvitation
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
-import kotlinx.serialization.decodeFromString
 import java.io.*
-import java.lang.ref.WeakReference
 import java.util.*
-import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 
 const val TAG = "SIMPLEX"
 
 class SimplexApp: Application(), LifecycleEventObserver {
   val chatModel: ChatModel
     get() = chatController.chatModel
+
+  val chatController: ChatController = ChatController
 
   override fun onCreate() {
     super.onCreate()
@@ -33,7 +34,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
     }
     context = this
     initHaskell()
-    context.getDir("temp", MODE_PRIVATE).deleteRecursively()
+    initMultiplatform()
+    tmpDir.deleteRecursively()
     withBGApi {
       initChatController()
       runMigrations()
@@ -77,7 +79,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * */
           if (chatModel.chatRunning.value != false &&
             chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete &&
-            appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name
+            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
           ) {
             SimplexService.start()
           }
@@ -88,12 +90,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
   }
 
   fun allowToStartServiceAfterAppExit() = with(chatModel.controller) {
-    appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name &&
+    appPrefs.notificationsMode.get() == NotificationsMode.SERVICE &&
         (!NotificationsMode.SERVICE.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
   }
 
   private fun allowToStartPeriodically() = with(chatModel.controller) {
-    appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC.name &&
+    appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC &&
         (!NotificationsMode.PERIODIC.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
   }
 
@@ -130,5 +132,63 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   companion object {
     lateinit var context: SimplexApp private set
+  }
+
+  private fun initMultiplatform() {
+    androidAppContext = this
+    APPLICATION_ID = BuildConfig.APPLICATION_ID
+    serviceStart = { SimplexService.start() }
+    serviceSafeStop = { SimplexService.safeStopService() }
+    ntfManager = object : chat.simplex.common.platform.NtfManager() {
+      override fun notifyContactConnected(user: User, contact: Contact) = NtfManager.notifyContactConnected(user, contact)
+      override fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) = NtfManager.notifyContactRequestReceived(user, cInfo)
+      override fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) = NtfManager.notifyMessageReceived(user, cInfo, cItem)
+      override fun notifyCallInvitation(invitation: RcvCallInvitation) = NtfManager.notifyCallInvitation(invitation)
+      override fun hasNotificationsForChat(chatId: String): Boolean = NtfManager.hasNotificationsForChat(chatId)
+      override fun cancelNotificationsForChat(chatId: String) = NtfManager.cancelNotificationsForChat(chatId)
+      override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<NotificationAction>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
+      override fun createNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
+      override fun cancelCallNotification() = NtfManager.cancelCallNotification()
+      override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
+    }
+    notificationsModeChanged = { mode: NotificationsMode ->
+      if (mode.requiresIgnoringBattery && !SimplexService.isIgnoringBatteryOptimizations()) {
+        appPrefs.backgroundServiceNoticeShown.set(false)
+      }
+      SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+      CoroutineScope(Dispatchers.Default).launch {
+        if (mode == NotificationsMode.SERVICE)
+          SimplexService.start()
+        else
+          SimplexService.safeStopService()
+      }
+
+      if (mode != NotificationsMode.PERIODIC) {
+        MessagesFetcherWorker.cancelAll()
+      }
+      SimplexService.showBackgroundServiceNoticeIfNeeded()
+    }
+    chatStartedAfterBeingOff = {
+      SimplexService.cancelPassphraseNotification()
+      when (appPrefs.notificationsMode.get()) {
+        NotificationsMode.SERVICE -> CoroutineScope(Dispatchers.Default).launch { serviceStart() }
+        NotificationsMode.PERIODIC -> SimplexApp.context.schedulePeriodicWakeUp()
+        NotificationsMode.OFF -> {}
+      }
+    }
+    chatStopped = {
+      SimplexService.safeStopService()
+      MessagesFetcherWorker.cancelAll()
+    }
+    chatInitializedAndStarted = {
+      // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
+      if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
+        SimplexService.showBackgroundServiceNoticeIfNeeded()
+        if (appPrefs.notificationsMode.get() == NotificationsMode.SERVICE)
+          withBGApi {
+            serviceStart()
+          }
+      }
+    }
   }
 }
