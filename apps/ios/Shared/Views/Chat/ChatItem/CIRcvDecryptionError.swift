@@ -21,12 +21,16 @@ struct CIRcvDecryptionError: View {
 
     enum CIRcvDecryptionErrorAlert: Identifiable {
         case syncAllowedAlert(_ syncConnection: () -> Void)
+        case syncNotSupportedContactAlert
+        case syncNotSupportedMemberAlert
         case decryptionErrorAlert
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
         var id: String {
             switch self {
             case .syncAllowedAlert: return "syncAllowedAlert"
+            case .syncNotSupportedContactAlert: return "syncNotSupportedContactAlert"
+            case .syncNotSupportedMemberAlert: return "syncNotSupportedMemberAlert"
             case .decryptionErrorAlert: return "decryptionErrorAlert"
             case let .error(title, _): return "error \(title)"
             }
@@ -49,84 +53,114 @@ struct CIRcvDecryptionError: View {
                     }
                 }
             }
+            .alert(item: $alert) { alertItem in
+                switch(alertItem) {
+                case let .syncAllowedAlert(syncConnection): return syncAllowedAlert(syncConnection)
+                case .syncNotSupportedContactAlert: return Alert(title: Text("Fix not supported by contact"), message: message())
+                case .syncNotSupportedMemberAlert: return Alert(title: Text("Fix not supported by group member"), message: message())
+                case .decryptionErrorAlert: return Alert(title: Text("Decryption error"), message: message())
+                case let .error(title, error): return Alert(title: Text(title), message: Text(error))
+                }
+            }
     }
 
     @ViewBuilder private func viewBody() -> some View {
         if case let .direct(contact) = chat.chatInfo,
-           contact.activeConn.connectionStats?.ratchetSyncAllowed ?? false {
-            decryptionErrorItem({ syncContactConnection(contact) })
+           let contactStats = contact.activeConn.connectionStats {
+            if contactStats.ratchetSyncAllowed {
+                decryptionErrorItemFixButton(syncSupported: true) {
+                    alert = .syncAllowedAlert { syncContactConnection(contact) }
+                }
+            } else if !contactStats.ratchetSyncSupported {
+                decryptionErrorItemFixButton(syncSupported: false) {
+                    alert = .syncNotSupportedContactAlert
+                }
+            } else {
+                basicDecryptionErrorItem()
+            }
         } else if case let .group(groupInfo) = chat.chatInfo,
                   case let .groupRcv(groupMember) = chatItem.chatDir,
                   let modelMember = ChatModel.shared.groupMembers.first(where: { $0.id == groupMember.id }),
-                  modelMember.activeConn?.connectionStats?.ratchetSyncAllowed ?? false {
-            decryptionErrorItem({ syncMemberConnection(groupInfo, groupMember) })
+                  let memberStats = modelMember.activeConn?.connectionStats {
+            if memberStats.ratchetSyncSupported {
+                decryptionErrorItemFixButton(syncSupported: true) {
+                    alert = .syncAllowedAlert { syncMemberConnection(groupInfo, groupMember) }
+                }
+            } else if !memberStats.ratchetSyncSupported {
+                decryptionErrorItemFixButton(syncSupported: false) {
+                    alert = .syncNotSupportedMemberAlert
+                }
+            } else {
+                basicDecryptionErrorItem()
+            }
         } else {
-            decryptionErrorItem()
+            basicDecryptionErrorItem()
         }
     }
 
-    @ViewBuilder private func decryptionErrorItem(_ syncConnection: (() -> Void)? = nil) -> some View {
-        VStack {
-            if let syncConn = syncConnection {
-                ZStack(alignment: .bottomTrailing) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack {
-                            if showMember, let member = chatItem.memberDisplayName {
-                                Text(member).fontWeight(.medium) + Text(": ")
-                            }
-                            Text(chatItem.content.text)
-                                .foregroundColor(.red)
-                                .italic()
-                        }
-                        (
-                            Text(Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")).foregroundColor(.accentColor).font(.callout)
-                            + Text(" ")
-                            + Text("Fix connection").foregroundColor(.accentColor).font(.callout)
-                            + Text("   ")
-                            + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
-                        )
+    private func basicDecryptionErrorItem() -> some View {
+        decryptionErrorItem { alert = .decryptionErrorAlert }
+    }
+
+    private func decryptionErrorItemFixButton(syncSupported: Bool, _ onClick: @escaping (() -> Void)) -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    if showMember, let member = chatItem.memberDisplayName {
+                        Text(member).fontWeight(.medium) + Text(": ")
                     }
-                    .padding(.horizontal, 12)
-                    CIMetaView(chatItem: chatItem)
-                        .padding(.horizontal, 12)
+                    Text(chatItem.content.text)
+                        .foregroundColor(.red)
+                        .italic()
                 }
-                .onTapGesture(perform: {
-                    alert = .syncAllowedAlert(syncConn)
-                })
-            } else {
-                ZStack(alignment: .bottomTrailing) {
-                    HStack {
-                        if showMember, let member = chatItem.memberDisplayName {
-                            Text(member).fontWeight(.medium) + Text(": ")
-                        }
-                        (
-                            Text(chatItem.content.text)
-                                .foregroundColor(.red)
-                                .italic()
-                            + Text("   ")
-                            + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
-                        )
-                    }
-                    .padding(.horizontal, 12)
-                    CIMetaView(chatItem: chatItem)
-                        .padding(.horizontal, 12)
-                }
-                .onTapGesture(perform: {
-                    alert = .decryptionErrorAlert
-                })
+                (
+                    Text(Image(systemName: "exclamationmark.arrow.triangle.2.circlepath"))
+                        .foregroundColor(syncSupported ? .accentColor : .secondary)
+                        .font(.callout)
+                    + Text(" ")
+                    + Text("Fix connection")
+                        .foregroundColor(syncSupported ? .accentColor : .secondary)
+                        .font(.callout)
+                    + Text("   ")
+                    + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
+                )
             }
+            .padding(.horizontal, 12)
+            CIMetaView(chatItem: chatItem)
+                .padding(.horizontal, 12)
         }
+        .onTapGesture(perform: { onClick() })
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
         .cornerRadius(18)
         .textSelection(.disabled)
-        .alert(item: $alert) { alertItem in
-            switch(alertItem) {
-            case let .syncAllowedAlert(syncConnection): return syncAllowedAlert(syncConnection)
-            case .decryptionErrorAlert: return decryptionErrorAlert()
-            case let .error(title, error): return Alert(title: Text(title), message: Text(error))
-            }
+    }
+
+    private func decryptionErrorItem(_ onClick: @escaping (() -> Void)) -> some View {
+        func text() -> Text {
+            Text(chatItem.content.text)
+                .foregroundColor(.red)
+                .italic()
+            + Text("   ")
+            + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
         }
+        return ZStack(alignment: .bottomTrailing) {
+            HStack {
+                if showMember, let member = chatItem.memberDisplayName {
+                    Text(member).fontWeight(.medium) + Text(": ") + text()
+                } else {
+                    text()
+                }
+            }
+            .padding(.horizontal, 12)
+            CIMetaView(chatItem: chatItem)
+                .padding(.horizontal, 12)
+        }
+        .onTapGesture(perform: { onClick() })
+        .padding(.vertical, 6)
+        .background(Color(uiColor: .tertiarySystemGroupedBackground))
+        .cornerRadius(18)
+        .textSelection(.disabled)
     }
 
     private func message() -> Text {
@@ -186,10 +220,6 @@ struct CIRcvDecryptionError: View {
             primaryButton: .default(Text("Fix"), action: syncConnection),
             secondaryButton: .cancel()
         )
-    }
-
-    private func decryptionErrorAlert() -> Alert {
-        Alert(title: Text("Decryption error"), message: message())
     }
 }
 
