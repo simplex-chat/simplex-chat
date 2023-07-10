@@ -1088,7 +1088,7 @@
     <string name="you_can_turn_on_lock">Você pode ativar o bloqueio SimpleX via Configurações.</string>
     <string name="alert_title_msg_bad_hash">Hash de mensagem incorreta</string>
     <string name="alert_text_msg_bad_hash">O hash da mensagem anterior é diferente.</string>
-    <string name="alert_text_decryption_error_header">%1$d descriptografia das mensagens falhou</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d descriptografia das mensagens falhou</string>
     <string name="alert_title_msg_bad_id">ID de mensagem incorreta</string>
     <string name="alert_text_msg_bad_id">A ID da próxima mensagem está incorreta (menor ou igual à anterior).
 \nIsso pode acontecer por causa de algum bug ou quando a conexão está comprometida.</string>
