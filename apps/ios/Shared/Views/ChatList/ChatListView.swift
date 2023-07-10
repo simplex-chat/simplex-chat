@@ -18,6 +18,14 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
+        if #available(iOS 16.0, *) {
+            viewBody.scrollDismissesKeyboard(.immediately)
+        } else {
+            viewBody
+        }
+    }
+
+    private var viewBody: some View {
         ZStack(alignment: .topLeading) {
             NavStackCompat(
                 isActive: Binding(

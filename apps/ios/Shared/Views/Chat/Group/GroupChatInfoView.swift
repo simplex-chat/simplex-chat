@@ -126,6 +126,7 @@ struct GroupChatInfoView: View {
                 logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
         }
+         .keyboardPadding()
     }
 
     private func groupInfoHeader() -> some View {

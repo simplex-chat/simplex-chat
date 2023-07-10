@@ -57,6 +57,8 @@ final class ChatModel: ObservableObject {
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
+    // tracks keyboard height via subscription in AppDelegate
+    @Published var keyboardHeight: CGFloat = 0
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
