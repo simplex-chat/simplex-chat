@@ -461,7 +461,7 @@ fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) 
 @Composable
 fun SynchronizeConnectionButton(syncConnection: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_restart_alt), // TODO Sync Problem
+    painterResource(MR.images.ic_sync_problem),
     stringResource(MR.strings.fix_connection),
     click = syncConnection,
     textColor = WarningOrange,
@@ -472,7 +472,7 @@ fun SynchronizeConnectionButton(syncConnection: () -> Unit) {
 @Composable
 fun SynchronizeConnectionButtonForce(syncConnectionForce: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_restart_alt), // TODO Warning
+    painterResource(MR.images.ic_warning),
     stringResource(MR.strings.renegotiate_encryption),
     click = syncConnectionForce,
     textColor = Color.Red,

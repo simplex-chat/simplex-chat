@@ -165,7 +165,7 @@ fun DecryptionErrorItemFixButton(
         )
         Row {
           Icon(
-            painterResource(MR.images.ic_restart_alt), // TODO Sync Problem
+            painterResource(MR.images.ic_sync_problem),
             stringResource(MR.strings.fix_connection),
             tint = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
           )
