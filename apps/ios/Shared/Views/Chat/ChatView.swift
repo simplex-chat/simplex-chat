@@ -22,7 +22,7 @@ struct ChatView: View {
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
-    @FocusState private var keyboardVisible: Bool
+    @State private var keyboardVisible = false
     @State private var showDeleteMessage = false
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
@@ -40,7 +40,9 @@ struct ChatView: View {
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            viewBody.scrollDismissesKeyboard(.immediately)
+            viewBody
+            .scrollDismissesKeyboard(.immediately)
+            .keyboardPadding()
         } else {
             viewBody
         }
