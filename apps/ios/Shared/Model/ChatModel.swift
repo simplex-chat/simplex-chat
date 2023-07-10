@@ -135,6 +135,14 @@ final class ChatModel: ObservableObject {
         updateChat(.direct(contact: contact), addMissing: contact.directOrUsed)
     }
 
+    func updateContactConnectionStats(_ contact: Contact, _ connectionStats: ConnectionStats) {
+        var updatedConn = contact.activeConn
+        updatedConn.connectionStats = connectionStats
+        var updatedContact = contact
+        updatedContact.activeConn = updatedConn
+        updateContact(updatedContact)
+    }
+
     func updateGroup(_ groupInfo: GroupInfo) {
         updateChat(.group(groupInfo: groupInfo))
     }
@@ -520,6 +528,16 @@ final class ChatModel: ObservableObject {
             }
         } else {
             return false
+        }
+    }
+
+    func updateGroupMemberConnectionStats(_ groupInfo: GroupInfo, _ member: GroupMember, _ connectionStats: ConnectionStats) {
+        if let conn = member.activeConn {
+            var updatedConn = conn
+            updatedConn.connectionStats = connectionStats
+            var updatedMember = member
+            updatedMember.activeConn = updatedConn
+            _ = upsertGroupMember(groupInfo, updatedMember)
         }
     }
 
