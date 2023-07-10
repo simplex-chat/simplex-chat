@@ -130,7 +130,24 @@ object ChatModel {
 
   fun updateChatInfo(cInfo: ChatInfo) {
     val i = getChatIndex(cInfo.id)
-    if (i >= 0) chats[i] = chats[i].copy(chatInfo = cInfo)
+    if (i >= 0) {
+      val currentCInfo = chats[i].chatInfo
+      var newCInfo = cInfo
+      if (currentCInfo is ChatInfo.Direct && newCInfo is ChatInfo.Direct) {
+        val currentStats = currentCInfo.contact.activeConn.connectionStats
+        val newStats = newCInfo.contact.activeConn.connectionStats
+        if (currentStats != null && newStats == null) {
+          newCInfo = newCInfo.copy(
+            contact = newCInfo.contact.copy(
+              activeConn = newCInfo.contact.activeConn.copy(
+                connectionStats = currentStats
+              )
+            )
+          )
+        }
+      }
+      chats[i] = chats[i].copy(chatInfo = newCInfo)
+    }
   }
 
   fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
