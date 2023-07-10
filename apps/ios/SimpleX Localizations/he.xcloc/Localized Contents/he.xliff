@@ -2352,24 +2352,29 @@ Available in v5.1</source>
         <target state="translated">בהיר</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Limitations" xml:space="preserve">
+      <trans-unit id="Limitations" xml:space="preserve" approved="no">
         <source>Limitations</source>
+        <target state="translated">מגבלות</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Live message!" xml:space="preserve">
+      <trans-unit id="Live message!" xml:space="preserve" approved="no">
         <source>Live message!</source>
+        <target state="translated">הודעה חיה!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Live messages" xml:space="preserve">
+      <trans-unit id="Live messages" xml:space="preserve" approved="no">
         <source>Live messages</source>
+        <target state="translated">הודעות חיות</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local name" xml:space="preserve">
+      <trans-unit id="Local name" xml:space="preserve" approved="no">
         <source>Local name</source>
+        <target state="translated">שם מקומי</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local profile data only" xml:space="preserve">
+      <trans-unit id="Local profile data only" xml:space="preserve" approved="no">
         <source>Local profile data only</source>
+        <target state="translated">נתוני פרופיל מקומיים בלבד</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Lock after" xml:space="preserve">
