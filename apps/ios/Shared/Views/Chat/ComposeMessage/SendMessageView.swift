@@ -27,7 +27,7 @@ struct SendMessageView: View {
     var onMediaAdded: ([UploadContent]) -> Void
     @State private var holdingVMR = false
     @Namespace var namespace
-    @FocusState.Binding var keyboardVisible: Bool
+    @Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     @State private var teUiFont: UIFont = UIFont.preferredFont(forTextStyle: .body)
@@ -401,7 +401,6 @@ struct SendMessageView_Previews: PreviewProvider {
         @State var composeStateNew = ComposeState()
         let ci = ChatItem.getSample(1, .directSnd, .now, "hello")
         @State var composeStateEditing = ComposeState(editingItem: ci)
-        @FocusState var keyboardVisible: Bool
         @State var sendEnabled: Bool = true
 
         return Group {
@@ -412,7 +411,7 @@ struct SendMessageView_Previews: PreviewProvider {
                     composeState: $composeStateNew,
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
-                    keyboardVisible: $keyboardVisible
+                    keyboardVisible: Binding.constant(true)
                 )
             }
             VStack {
@@ -422,7 +421,7 @@ struct SendMessageView_Previews: PreviewProvider {
                     composeState: $composeStateEditing,
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
-                    keyboardVisible: $keyboardVisible
+                    keyboardVisible: Binding.constant(true)
                 )
             }
         }
