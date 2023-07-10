@@ -39,6 +39,14 @@ struct ChatView: View {
     @State private var selectedMember: GroupMember? = nil
 
     var body: some View {
+        if #available(iOS 16.0, *) {
+            viewBody.scrollDismissesKeyboard(.immediately)
+        } else {
+            viewBody
+        }
+    }
+
+    private var viewBody: some View {
         let cInfo = chat.chatInfo
         return VStack(spacing: 0) {
             if searchMode {
