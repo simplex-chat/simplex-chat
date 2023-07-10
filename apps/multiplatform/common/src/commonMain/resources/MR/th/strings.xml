@@ -1042,7 +1042,7 @@
     <string name="update_database">อัปเดต</string>
     <string name="use_simplex_chat_servers__question">ใช้เซิร์ฟเวอร์ SimpleX Chat ไหม\?</string>
     <string name="video_call_no_encryption">การสนทนาทางวิดีโอ (ไม่ได้ encrypt จากต้นจนจบ)</string>
-    <string name="using_simplex_chat_servers">กำลังใช้เซิร์ฟเวอร์ SimpleX Chatอยู่</string>
+    <string name="using_simplex_chat_servers">กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่</string>
     <string name="v5_1_better_messages_descr">- ข้อความเสียงนานสุด 5 นาที
 \n- เวลาที่กำหนดเองที่จะหายไป
 \n- ประวัติการแก้ไข</string>
@@ -1090,7 +1090,7 @@
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">เพื่อปกป้องข้อมูลของคุณ ให้เปิด SimpleX Lock
 \nคุณจะได้รับแจ้งให้ยืนยันตัวตนให้เสร็จสมบูรณ์ก่อนที่จะเปิดใช้งานคุณลักษณะนี้</string>
     <string name="la_notice_turn_on">เปิด</string>
-    <string name="la_could_not_be_verified">เราไม่สามารถยืนยันคุณได้ กรุณาลองอีกครั้ง.</string>
+    <string name="la_could_not_be_verified">เราไม่สามารถยืนยันคุณได้ กรุณาลองอีกครั้ง</string>
     <string name="auth_unlock">ปลดล็อค</string>
     <string name="you_can_turn_on_lock">คุณสามารถเปิด SimpleX Lock ผ่านการตั้งค่า</string>
     <string name="moderate_message_will_be_deleted_warning">ข้อความจะถูกลบสำหรับสมาชิกทั้งหมด</string>
@@ -1219,7 +1219,7 @@
     <string name="member_role_will_be_changed_with_invitation">บทบาทจะเปลี่ยนเป็น \"%s\" สมาชิกจะได้รับคำเชิญใหม่</string>
     <string name="group_welcome_title">ข้อความต้อนรับ</string>
     <string name="group_main_profile_sent">โปรไฟล์การแชทของคุณจะถูกส่งไปยังสมาชิกในกลุ่ม</string>
-    <string name="update_network_settings_confirmation">อัพเดต</string>
+    <string name="update_network_settings_confirmation">อัปเดต</string>
     <string name="update_network_settings_question">อัปเดตการตั้งค่าเครือข่ายไหม\?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง</string>
     <string name="user_unhide">ยกเลิกการซ่อน</string>
