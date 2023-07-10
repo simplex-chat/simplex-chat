@@ -731,9 +731,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long): ConnectionStats? {
+  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long): Pair<GroupMember, ConnectionStats>? {
     val r = sendCmd(CC.APISwitchGroupMember(groupId, groupMemberId))
-    if (r is CR.GroupMemberSwitchStarted) return r.connectionStats
+    if (r is CR.GroupMemberSwitchStarted) return Pair(r.member, r.connectionStats)
     apiErrorAlert("apiSwitchGroupMember", generalGetString(MR.strings.error_changing_address), r)
     return null
   }
@@ -745,9 +745,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiAbortSwitchGroupMember(groupId: Long, groupMemberId: Long): ConnectionStats? {
+  suspend fun apiAbortSwitchGroupMember(groupId: Long, groupMemberId: Long): Pair<GroupMember, ConnectionStats>? {
     val r = sendCmd(CC.APIAbortSwitchGroupMember(groupId, groupMemberId))
-    if (r is CR.GroupMemberSwitchAborted) return r.connectionStats
+    if (r is CR.GroupMemberSwitchAborted) return Pair(r.member, r.connectionStats)
     apiErrorAlert("apiAbortSwitchGroupMember", generalGetString(MR.strings.error_aborting_address_change), r)
     return null
   }

@@ -83,25 +83,34 @@ fun ChatInfoView(
       switchContactAddress = {
         showSwitchAddressAlert(switchAddress = {
           withApi {
-            connStats.value = chatModel.controller.apiSwitchContact(contact.contactId)
-            // TODO updateContactConnectionStats
-            // TODO dismiss
+            val cStats = chatModel.controller.apiSwitchContact(contact.contactId)
+            connStats.value = cStats
+            if (cStats != null) {
+              chatModel.updateContactConnectionStats(contact, cStats)
+            }
+            close.invoke()
           }
         })
       },
       abortSwitchContactAddress = {
         showAbortSwitchAddressAlert(abortSwitchAddress = {
           withApi {
-            connStats.value = chatModel.controller.apiAbortSwitchContact(contact.contactId)
-            // TODO updateContactConnectionStats
+            val cStats = chatModel.controller.apiAbortSwitchContact(contact.contactId)
+            connStats.value = cStats
+            if (cStats != null) {
+              chatModel.updateContactConnectionStats(contact, cStats)
+            }
           }
         })
       },
       syncContactConnection = {
         withApi {
-          connStats.value = chatModel.controller.apiSyncContactRatchet(contact.contactId, force = false)
-          // TODO updateContactConnectionStats
-          // TODO dismiss
+          val cStats = chatModel.controller.apiSyncContactRatchet(contact.contactId, force = false)
+          connStats.value = cStats
+          if (cStats != null) {
+            chatModel.updateContactConnectionStats(contact, cStats)
+          }
+          close.invoke()
         }
       },
       syncContactConnectionForce = {
@@ -112,7 +121,7 @@ fun ChatInfoView(
             if (cStats != null) {
               chatModel.updateContactConnectionStats(contact, cStats)
             }
-            // TODO dismiss
+            close.invoke()
           }
         })
       },
@@ -452,7 +461,7 @@ fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) 
 @Composable
 fun SynchronizeConnectionButton(syncConnection: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_restart_alt), // Sync Problem
+    painterResource(MR.images.ic_restart_alt), // TODO Sync Problem
     stringResource(MR.strings.fix_connection),
     click = syncConnection,
     textColor = WarningOrange,
@@ -463,7 +472,7 @@ fun SynchronizeConnectionButton(syncConnection: () -> Unit) {
 @Composable
 fun SynchronizeConnectionButtonForce(syncConnectionForce: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_restart_alt), // Report Problem / Warning Amber
+    painterResource(MR.images.ic_restart_alt), // TODO Warning
     stringResource(MR.strings.renegotiate_encryption),
     click = syncConnectionForce,
     textColor = Color.Red,
