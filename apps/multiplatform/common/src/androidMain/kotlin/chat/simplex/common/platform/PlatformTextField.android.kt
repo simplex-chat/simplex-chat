@@ -29,6 +29,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.core.widget.doOnTextChanged
 import chat.simplex.common.*
 import chat.simplex.common.R
+import chat.simplex.common.helpers.toURI
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.*
@@ -86,7 +87,7 @@ actual fun PlatformTextField(
           } catch (e: Exception) {
             return@OnCommitContentListener false
           }
-          ChatModel.sharedContent.value = SharedContent.Media("", listOf(URI(inputContentInfo.contentUri.toString())))
+          ChatModel.sharedContent.value = SharedContent.Media("", listOf(inputContentInfo.contentUri.toURI()))
           true
         }
         return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
@@ -126,7 +127,7 @@ actual fun PlatformTextField(
     it.setTextColor(textColor.toArgb())
     it.textSize = textStyle.value.fontSize.value
     DrawableCompat.setTint(it.background, tintColor.toArgb())
-    it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview && !cs.inProgress
+    it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
     if (cs.message != it.text.toString()) {
       it.setText(cs.message)

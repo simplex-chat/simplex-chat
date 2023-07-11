@@ -327,7 +327,7 @@ fun connectIfOpenedViaUri(uri: URI, chatModel: ChatModel) {
         onConfirm = {
           withApi {
             Log.d(TAG, "connectIfOpenedViaUri: connecting")
-            connectViaUri(chatModel, linkType, URI(uri.toString()))
+            connectViaUri(chatModel, linkType, uri)
           }
         }
       )

@@ -262,7 +262,7 @@ class SimplexService: Service() {
       workManager.enqueueUniqueWork(WORK_NAME_ONCE, ExistingWorkPolicy.KEEP, startServiceRequest) // Unique avoids races!
     }
 
-    suspend fun start() = serviceAction(SimplexApp.context, Action.START)
+    suspend fun start() = serviceAction(Action.START)
 
     /**
      * If there is a need to stop the service, use this function only. It makes sure that the service will be stopped without an
@@ -276,12 +276,12 @@ class SimplexService: Service() {
       }
     }
 
-    private suspend fun serviceAction(context: Context, action: Action) {
+    private suspend fun serviceAction(action: Action) {
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")
       withContext(Dispatchers.IO) {
-        Intent(context, SimplexService::class.java).also {
+        Intent(androidAppContext, SimplexService::class.java).also {
           it.action = action.name
-          ContextCompat.startForegroundService(context, it)
+          ContextCompat.startForegroundService(androidAppContext, it)
         }
       }
     }
@@ -428,7 +428,7 @@ class SimplexService: Service() {
     private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode) = AlertManager.shared.showAlert {
       val ignoreOptimization = {
         AlertManager.shared.hideAlert()
-        askAboutIgnoringBatteryOptimization(androidAppContext)
+        askAboutIgnoringBatteryOptimization()
       }
       AlertDialog(
         onDismissRequest = ignoreOptimization,
@@ -495,14 +495,14 @@ class SimplexService: Service() {
       return powerManager.isIgnoringBatteryOptimizations(androidAppContext.packageName)
     }
 
-    private fun askAboutIgnoringBatteryOptimization(context: Context) {
+    private fun askAboutIgnoringBatteryOptimization() {
       Intent().apply {
         @SuppressLint("BatteryLife")
         action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-        data = Uri.parse("package:${context.packageName}")
+        data = Uri.parse("package:${androidAppContext.packageName}")
         // This flag is needed when you start a new activity from non-Activity context
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(this)
+        androidAppContext.startActivity(this)
       }
     }
   }

@@ -26,17 +26,16 @@ class MainActivity: FragmentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     // testJson()
-    val m = ChatModel
     mainActivity = WeakReference(this)
-    applyAppLocale(m.controller.appPrefs.appLanguage)
+    applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
-      processNotificationIntent(intent, m)
+      processNotificationIntent(intent)
       processIntent(intent)
       processExternalIntent(intent)
     }
-    if (m.controller.appPrefs.privacyProtectScreen.get()) {
+    if (ChatController.appPrefs.privacyProtectScreen.get()) {
       Log.d(TAG, "onCreate: set FLAG_SECURE")
       window.setFlags(
         WindowManager.LayoutParams.FLAG_SECURE,
@@ -102,7 +101,7 @@ class MainActivity: FragmentActivity() {
   }
 }
 
-fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
+fun processNotificationIntent(intent: Intent?) {
   val userId = getUserIdFromIntent(intent)
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
@@ -150,7 +149,7 @@ fun processIntent(intent: Intent?) {
   when (intent?.action) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
-      if (uri != null) connectIfOpenedViaUri(URI(uri.toString()), ChatModel)
+      if (uri != null) connectIfOpenedViaUri(uri.toURI(), ChatModel)
     }
   }
 }
@@ -171,13 +170,13 @@ fun processExternalIntent(intent: Intent?) {
         isMediaIntent(intent) -> {
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
-            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(URI(uri.toString())))
+            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(uri.toURI()))
           } // All other mime types
         }
         else -> {
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
-            chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", URI(uri.toString()))
+            chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uri.toURI())
           }
         }
       }
@@ -191,7 +190,7 @@ fun processExternalIntent(intent: Intent?) {
         isMediaIntent(intent) -> {
           val uris = intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>
           if (uris != null) {
-            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uris.map { URI(it.toString()) })
+            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uris.map { it.toURI() })
           } // All other mime types
         }
         else -> {}

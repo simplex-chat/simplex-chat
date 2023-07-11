@@ -1829,7 +1829,7 @@ sealed class MsgReaction {
   }
 
   companion object {
-    val values: List<MsgReaction> get() = MREmojiChar.values().map(MsgReaction::Emoji)
+    val values: List<MsgReaction> get() = MREmojiChar.values().map(::Emoji)
   }
 }
 

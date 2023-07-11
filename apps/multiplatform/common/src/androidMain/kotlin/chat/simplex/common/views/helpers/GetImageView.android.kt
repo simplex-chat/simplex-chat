@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.common.helpers.APPLICATION_ID
+import chat.simplex.common.helpers.toURI
 import chat.simplex.common.model.json
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.newchat.ActionButton
@@ -144,7 +145,7 @@ actual fun GetImageBottomSheet(
   val context = LocalContext.current
   val processPickedImage = { uri: Uri? ->
     if (uri != null) {
-      val uri = URI(uri.toString())
+      val uri = uri.toURI()
       val bitmap = getBitmapFromUri(uri)
       if (bitmap != null) {
         imageBitmap.value = uri

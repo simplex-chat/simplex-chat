@@ -2315,8 +2315,7 @@ data class NetCfg(
       )
   }
 
-  val onionHosts: OnionHosts
-    get() = when {
+  val onionHosts: OnionHosts get() = when {
     hostMode == HostMode.Public && requiredHostMode -> OnionHosts.NEVER
     hostMode == HostMode.OnionViaSocks && !requiredHostMode -> OnionHosts.PREFER
     hostMode == HostMode.OnionViaSocks && requiredHostMode -> OnionHosts.REQUIRED

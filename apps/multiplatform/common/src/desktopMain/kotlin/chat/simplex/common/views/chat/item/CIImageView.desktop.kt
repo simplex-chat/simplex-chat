@@ -17,10 +17,8 @@ actual fun SimpleAndAnimatedImageView(
   imageProvider: () -> ImageGalleryProvider,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 ) {
-  val view = LocalMultiplatformView()
   // LALAL make it animated too
   ImageView(imageBitmap.toAwtImage().toPainter()) {
-    hideKeyboard(view)
     if (getLoadedFilePath(file) != null) {
       ModalManager.shared.showCustomModal(animated = false) { close ->
         ImageFullScreenView(imageProvider, close)
