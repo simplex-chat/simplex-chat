@@ -20,16 +20,16 @@ object DatabaseUtils {
   class KeyStoreItem(private val alias: String, val passphrase: SharedPreference<String?>, val initVector: SharedPreference<String?>) {
     fun get(): String? {
       return cryptor.decryptData(
-        passphrase.get()?.toByteArrayFromBase64() ?: return null,
-        initVector.get()?.toByteArrayFromBase64() ?: return null,
+        passphrase.get()?.toByteArrayFromBase64ForPassphrase() ?: return null,
+        initVector.get()?.toByteArrayFromBase64ForPassphrase() ?: return null,
         alias,
       )
     }
 
     fun set(key: String) {
       val data = cryptor.encryptText(key, alias)
-      passphrase.set(data.first.toBase64String())
-      initVector.set(data.second.toBase64String())
+      passphrase.set(data.first.toBase64StringForPassphrase())
+      initVector.set(data.second.toBase64StringForPassphrase())
     }
 
     fun remove() {
@@ -62,7 +62,7 @@ object DatabaseUtils {
   private fun randomDatabasePassword(): String {
     val s = ByteArray(32)
     SecureRandom().nextBytes(s)
-    return s.toBase64String().replace("\n", "")
+    return s.toBase64StringForPassphrase().replace("\n", "")
   }
 }
 

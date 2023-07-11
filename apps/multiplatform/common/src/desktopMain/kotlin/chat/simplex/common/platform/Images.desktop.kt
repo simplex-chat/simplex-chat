@@ -59,7 +59,7 @@ actual fun compressImageStr(bitmap: ImageBitmap): String {
   val usePng = bitmap.hasAlpha
   val ext = if (usePng) "png" else "jpg"
   return try {
-    val encoded  =Base64.getEncoder().encodeToString(compressImageData(bitmap, usePng).toByteArray())
+    val encoded  = Base64.getEncoder().encodeToString(compressImageData(bitmap, usePng).toByteArray())
     "data:image/$ext;base64,$encoded"
   } catch (e: IOException) {
     Log.e(TAG, "resizeImageToStrSize error: $e")

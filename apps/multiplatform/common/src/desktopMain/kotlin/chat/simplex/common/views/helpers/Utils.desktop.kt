@@ -8,7 +8,10 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
 import java.io.File
 import java.net.URI
+import java.util.*
 import javax.imageio.ImageIO
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.io.path.toPath
 
 // LALAL MAKE REALLY ANNOTATED STRING FROM HTML
@@ -61,3 +64,9 @@ actual fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): Vide
   // LALAL
   return VideoPlayerInterface.PreviewAndDuration(preview = null, timestamp = 0L, duration = 0L)
 }
+
+@OptIn(ExperimentalEncodingApi::class)
+actual fun ByteArray.toBase64StringForPassphrase(): String = Base64.encode(this)
+
+@OptIn(ExperimentalEncodingApi::class)
+actual fun String.toByteArrayFromBase64ForPassphrase(): ByteArray = Base64.decode(this)

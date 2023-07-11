@@ -11,6 +11,7 @@ import android.provider.OpenableColumns
 import android.text.Spanned
 import android.text.SpannedString
 import android.text.style.*
+import android.util.Base64
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.*
@@ -302,3 +303,7 @@ actual fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): Vide
   mmr.release()
   return VideoPlayerInterface.PreviewAndDuration(image?.asImageBitmap(), durationMs, timestamp ?: 0)
 }
+
+actual fun ByteArray.toBase64StringForPassphrase(): String = Base64.encodeToString(this, Base64.DEFAULT)
+
+actual fun String.toByteArrayFromBase64ForPassphrase(): ByteArray = Base64.decode(this, Base64.DEFAULT)
