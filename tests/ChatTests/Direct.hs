@@ -365,7 +365,6 @@ testDirectMessageDelete =
       -- alice, bob: msg id 1
       alice #> "@bob hello 🙂"
       bob <# "alice> hello 🙂"
-      print 222
 
       -- alice, bob: msg id 2
       bob `send` "> @alice (hello 🙂) hey alic"

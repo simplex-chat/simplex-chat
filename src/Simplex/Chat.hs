@@ -67,7 +67,6 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Util (catchExcept)
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
@@ -3351,12 +3350,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- 1) retry processing several times
       -- 2) stabilize database
       -- 3) show screen of death to the user asking to restart
-      action `catchChatError` \e -> ack Nothing >> throwError e
-      ack Nothing
-
-      -- tryChatError action >>= \case
-      --   Right _withRcpt -> ack Nothing -- $ if withRcpt then Just "" else Nothing
-      --   Left e -> ack Nothing >> throwError e
+      tryChatError action >>= \case
+        Right _withRcpt -> ack Nothing -- $ if withRcpt then Just "" else Nothing
+        Left e -> ack Nothing >> throwError e
       where
         ack rcpt = withAgent $ \a -> ackMessageAsync a (aCorrId cmdId) cId msgId rcpt
 

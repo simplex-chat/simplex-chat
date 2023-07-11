@@ -61,7 +61,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, 
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (catchAllErrors, allFinally)
+import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors)
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
@@ -901,6 +901,10 @@ throwDBError = throwError . ChatErrorDatabase
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
+
+tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
+tryChatError = tryAllErrors mkChatError
+{-# INLINE tryChatError #-}
 
 catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
 catchChatError = catchAllErrors mkChatError
