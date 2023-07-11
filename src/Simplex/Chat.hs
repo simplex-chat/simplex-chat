@@ -351,7 +351,7 @@ processChatCommand = \case
             throwChatError $ CEUserExists displayName
           withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
-    let prefs' = maybe newDefaultChatPrefs activateReceiveReceipts preferences
+    let prefs' = maybe newDefaultChatPrefs activateReceipts preferences
         p' = (p :: Profile) {preferences = Just prefs'}
     user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p' True ts
     storeServers user smpServers

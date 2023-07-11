@@ -351,7 +351,7 @@ pattern DisableNtfs <- ChatSettings {enableNtfs = False}
 
 data ChatFeature
   = CFTimedMessages
-  | CFReceiveReceipts
+  | CFReceipts
   | CFFullDelete
   | CFReactions
   | CFVoice
@@ -360,7 +360,7 @@ data ChatFeature
 
 data SChatFeature (f :: ChatFeature) where
   SCFTimedMessages :: SChatFeature 'CFTimedMessages
-  SCFReceiveReceipts :: SChatFeature 'CFReceiveReceipts
+  SCFReceipts :: SChatFeature 'CFReceipts
   SCFFullDelete :: SChatFeature 'CFFullDelete
   SCFReactions :: SChatFeature 'CFReactions
   SCFVoice :: SChatFeature 'CFVoice
@@ -375,7 +375,7 @@ deriving instance Show AChatFeature
 chatFeatureNameText :: ChatFeature -> Text
 chatFeatureNameText = \case
   CFTimedMessages -> "Disappearing messages"
-  CFReceiveReceipts -> "Receive delivery receipts"
+  CFReceipts -> "Delivery receipts"
   CFFullDelete -> "Full deletion"
   CFReactions -> "Message reactions"
   CFVoice -> "Voice messages"
@@ -399,7 +399,7 @@ instance FromJSON ChatFeature where
 allChatFeatures :: [AChatFeature]
 allChatFeatures =
   [ ACF SCFTimedMessages,
-    ACF SCFReceiveReceipts,
+    ACF SCFReceipts,
     ACF SCFFullDelete,
     ACF SCFReactions,
     ACF SCFVoice,
@@ -409,7 +409,7 @@ allChatFeatures =
 chatPrefSel :: SChatFeature f -> Preferences -> Maybe (FeaturePreference f)
 chatPrefSel = \case
   SCFTimedMessages -> timedMessages
-  SCFReceiveReceipts -> receiveReceipts
+  SCFReceipts -> receipts
   SCFFullDelete -> fullDelete
   SCFReactions -> reactions
   SCFVoice -> voice
@@ -418,7 +418,7 @@ chatPrefSel = \case
 chatFeature :: SChatFeature f -> ChatFeature
 chatFeature = \case
   SCFTimedMessages -> CFTimedMessages
-  SCFReceiveReceipts -> CFReceiveReceipts
+  SCFReceipts -> CFReceipts
   SCFFullDelete -> CFFullDelete
   SCFReactions -> CFReactions
   SCFVoice -> CFVoice
@@ -436,7 +436,7 @@ instance PreferenceI (Maybe Preferences) where
 instance PreferenceI FullPreferences where
   getPreference = \case
     SCFTimedMessages -> timedMessages
-    SCFReceiveReceipts -> receiveReceipts
+    SCFReceipts -> receipts
     SCFFullDelete -> fullDelete
     SCFReactions -> reactions
     SCFVoice -> voice
@@ -458,7 +458,7 @@ setPreference_ :: SChatFeature f -> Maybe (FeaturePreference f) -> Preferences -
 setPreference_ f pref_ prefs =
   case f of
     SCFTimedMessages -> prefs {timedMessages = pref_}
-    SCFReceiveReceipts -> prefs {receiveReceipts = pref_}
+    SCFReceipts -> prefs {receipts = pref_}
     SCFFullDelete -> prefs {fullDelete = pref_}
     SCFReactions -> prefs {reactions = pref_}
     SCFVoice -> prefs {voice = pref_}
@@ -467,7 +467,7 @@ setPreference_ f pref_ prefs =
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
   { timedMessages :: Maybe TimedMessagesPreference,
-    receiveReceipts :: Maybe ReceiveReceiptsPreference,
+    receipts :: Maybe ReceiptsPreference,
     fullDelete :: Maybe FullDeletePreference,
     reactions :: Maybe ReactionsPreference,
     voice :: Maybe VoicePreference,
@@ -643,7 +643,7 @@ setGroupTimedMessagesPreference pref prefs_ =
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
 data FullPreferences = FullPreferences
   { timedMessages :: TimedMessagesPreference,
-    receiveReceipts :: ReceiveReceiptsPreference,
+    receipts :: ReceiptsPreference,
     fullDelete :: FullDeletePreference,
     reactions :: ReactionsPreference,
     voice :: VoicePreference,
@@ -671,7 +671,7 @@ instance ToJSON FullGroupPreferences where toEncoding = J.genericToEncoding J.de
 -- merged preferences of user for a given contact - they differentiate between specific preferences for the contact and global user preferences
 data ContactUserPreferences = ContactUserPreferences
   { timedMessages :: ContactUserPreference TimedMessagesPreference,
-    receiveReceipts :: ContactUserPreference ReceiveReceiptsPreference,
+    receipts :: ContactUserPreference ReceiptsPreference,
     fullDelete :: ContactUserPreference FullDeletePreference,
     reactions :: ContactUserPreference ReactionsPreference,
     voice :: ContactUserPreference VoicePreference,
@@ -699,10 +699,10 @@ instance ToJSON p => ToJSON (ContactUserPref p) where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CUP"
 
 toChatPrefs :: FullPreferences -> Preferences
-toChatPrefs FullPreferences {timedMessages, receiveReceipts, fullDelete, reactions, voice, calls} =
+toChatPrefs FullPreferences {timedMessages, receipts, fullDelete, reactions, voice, calls} =
   Preferences
     { timedMessages = Just timedMessages,
-      receiveReceipts = Just receiveReceipts,
+      receipts = Just receipts,
       fullDelete = Just fullDelete,
       reactions = Just reactions,
       voice = Just voice,
@@ -713,7 +713,7 @@ defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
     { timedMessages = TimedMessagesPreference {allow = FAYes, ttl = Nothing},
-      receiveReceipts = ReceiveReceiptsPreference {allow = FAYes, activated = False},
+      receipts = ReceiptsPreference {allow = FAYes, activated = False},
       fullDelete = FullDeletePreference {allow = FANo},
       reactions = ReactionsPreference {allow = FAYes},
       voice = VoicePreference {allow = FAYes},
@@ -721,15 +721,15 @@ defaultChatPrefs =
     }
 
 newDefaultChatPrefs :: Preferences
-newDefaultChatPrefs = toChatPrefs defaultChatPrefs {receiveReceipts = defReceiveReceiptsPref}
+newDefaultChatPrefs = toChatPrefs defaultChatPrefs {receipts = defReceiptsPref}
 
-defReceiveReceiptsPref :: ReceiveReceiptsPreference
-defReceiveReceiptsPref = ReceiveReceiptsPreference {allow = FAYes, activated = True}
+defReceiptsPref :: ReceiptsPreference
+defReceiptsPref = ReceiptsPreference {allow = FAYes, activated = True}
 
-activateReceiveReceipts :: Preferences -> Preferences
-activateReceiveReceipts prefs@Preferences {receiveReceipts} =
-  let receiveReceipts' = maybe defReceiveReceiptsPref (\rr -> rr {activated = True}) receiveReceipts 
-   in (prefs :: Preferences) {receiveReceipts = Just receiveReceipts'}
+activateReceipts :: Preferences -> Preferences
+activateReceipts prefs@Preferences {receipts} =
+  let receipts' = maybe defReceiptsPref (\rr -> rr {activated = True}) receipts 
+   in (prefs :: Preferences) {receipts = Just receipts'}
 
 emptyChatPrefs :: Preferences
 emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing
@@ -759,13 +759,13 @@ instance ToJSON TimedMessagesPreference where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data ReceiveReceiptsPreference = ReceiveReceiptsPreference
+data ReceiptsPreference = ReceiptsPreference
   { allow :: FeatureAllowed, -- allowed would mean that the user/contact actually send the receipts (that is, allow the other user to receive them)
     activated :: Bool
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON ReceiveReceiptsPreference where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON ReceiptsPreference where toEncoding = J.genericToEncoding J.defaultOptions
 
 data FullDeletePreference = FullDeletePreference {allow :: FeatureAllowed}
   deriving (Eq, Show, Generic, FromJSON)
@@ -796,8 +796,8 @@ class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureA
 instance HasField "allow" TimedMessagesPreference FeatureAllowed where
   hasField p = (\allow -> p {allow}, allow (p :: TimedMessagesPreference))
 
-instance HasField "allow" ReceiveReceiptsPreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, allow (p :: ReceiveReceiptsPreference))
+instance HasField "allow" ReceiptsPreference FeatureAllowed where
+  hasField p = (\allow -> p {allow}, allow (p :: ReceiptsPreference))
 
 instance HasField "allow" FullDeletePreference FeatureAllowed where
   hasField p = (\allow -> p {allow}, allow (p :: FullDeletePreference))
@@ -817,11 +817,11 @@ instance FeatureI 'CFTimedMessages where
   prefParam TimedMessagesPreference {ttl} = ttl
   prefActivated _ = True
 
-instance FeatureI 'CFReceiveReceipts where
-  type FeaturePreference 'CFReceiveReceipts = ReceiveReceiptsPreference
-  sFeature = SCFReceiveReceipts
+instance FeatureI 'CFReceipts where
+  type FeaturePreference 'CFReceipts = ReceiptsPreference
+  sFeature = SCFReceipts
   prefParam _ = Nothing
-  prefActivated ReceiveReceiptsPreference {activated} = activated
+  prefActivated ReceiptsPreference {activated} = activated
 
 instance FeatureI 'CFFullDelete where
   type FeaturePreference 'CFFullDelete = FullDeletePreference
@@ -1064,7 +1064,7 @@ mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
   FullPreferences
     { timedMessages = pref SCFTimedMessages,
-      receiveReceipts = pref SCFReceiveReceipts,
+      receipts = pref SCFReceipts,
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
@@ -1183,7 +1183,7 @@ contactUserPreferences :: User -> Preferences -> Maybe Preferences -> Bool -> Co
 contactUserPreferences user userPreferences contactPreferences connectedIncognito =
   ContactUserPreferences
     { timedMessages = pref SCFTimedMessages,
-      receiveReceipts = pref SCFReceiveReceipts,
+      receipts = pref SCFReceipts,
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
@@ -1211,7 +1211,7 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
 getContactUserPreference :: SChatFeature f -> ContactUserPreferences -> ContactUserPreference (FeaturePreference f)
 getContactUserPreference = \case
   SCFTimedMessages -> timedMessages
-  SCFReceiveReceipts -> receiveReceipts
+  SCFReceipts -> receipts
   SCFFullDelete -> fullDelete
   SCFReactions -> reactions
   SCFVoice -> voice
