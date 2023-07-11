@@ -32,7 +32,7 @@ chatDirectTests = do
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message edit history" testDirectMessageEditHistory
-    fit "direct message delete" testDirectMessageDelete
+    it "direct message delete" testDirectMessageDelete
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
