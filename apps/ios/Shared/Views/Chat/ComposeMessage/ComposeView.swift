@@ -234,7 +234,7 @@ struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
-    @FocusState.Binding var keyboardVisible: Bool
+    @Binding var keyboardVisible: Bool
 
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
@@ -943,19 +943,18 @@ struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
         @State var composeState = ComposeState(message: "hello")
-        @FocusState var keyboardVisible: Bool
 
         return Group {
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
         }

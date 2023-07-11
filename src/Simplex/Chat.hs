@@ -16,6 +16,7 @@ module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry, stateTVar)
+import qualified Control.Exception as E
 import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -90,14 +91,14 @@ import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName, (</>))
-import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
+import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
-import qualified UnliftIO.Exception as E
-import UnliftIO.IO (hClose, hSeek, hTell)
+import qualified UnliftIO.Exception as UE
+import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
 defaultChatConfig :: ChatConfig
@@ -289,11 +290,11 @@ startFilesToReceive users = do
     startReceive :: [User] -> m ()
     startReceive = mapM_ $ runExceptT . startReceiveUserFiles
 
-startReceiveUserFiles :: forall m. ChatMonad m => User -> m ()
+startReceiveUserFiles :: ChatMonad m => User -> m ()
 startReceiveUserFiles user = do
   filesToReceive <- withStoreCtx' (Just "startReceiveUserFiles, getRcvFilesToReceive") (`getRcvFilesToReceive` user)
   forM_ filesToReceive $ \ft ->
-    flip catchError (toView . CRChatError (Just user)) $
+    flip catchChatError (toView . CRChatError (Just user)) $
       toView =<< receiveFile' user ft Nothing Nothing
 
 restoreCalls :: ChatMonad' m => m ()
@@ -593,7 +594,7 @@ processChatCommand = \case
         sendGroupFileInline :: [GroupMember] -> SharedMsgId -> FileTransferMeta -> m ()
         sendGroupFileInline ms sharedMsgId ft@FileTransferMeta {fileInline} =
           when (fileInline == Just IFMSent) . forM_ ms $ \m ->
-            processMember m `catchError` (toView . CRChatError (Just user))
+            processMember m `catchChatError` (toView . CRChatError (Just user))
           where
             processMember m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
               when (connStatus == ConnReady || connStatus == ConnSndReady) $ do
@@ -656,7 +657,7 @@ processChatCommand = \case
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
         case contactOrGroup of
           CGContact Contact {activeConn} -> withStore' $ \db -> createSndFTDescrXFTP db user Nothing activeConn ft fileDescr
-          CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchError` (toView . CRChatError (Just user))
+          CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
             where
               -- we are not sending files to pending members, same as with inline files
               saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
@@ -873,7 +874,7 @@ processChatCommand = \case
         deleteUnusedContact :: ContactId -> m [ConnId]
         deleteUnusedContact contactId =
           (withStore (\db -> getContact db user contactId) >>= delete)
-            `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
+            `catchChatError` (\e -> toView (CRChatError (Just user) e) $> [])
           where
             delete ct
               | directOrUsed ct = pure []
@@ -883,7 +884,7 @@ processChatCommand = \case
                   Nothing -> do
                     conns <- withStore $ \db -> getContactConnections db userId ct
                     withStore' (\db -> setContactDeleted db user ct)
-                      `catchError` (toView . CRChatError (Just user))
+                      `catchChatError` (toView . CRChatError (Just user))
                     pure $ map aConnId conns
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
@@ -914,7 +915,7 @@ processChatCommand = \case
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \db ->
         getContactRequest db user connReqId
-          `E.finally` liftIO (deleteContactRequest db user connReqId)
+          `storeFinally` liftIO (deleteContactRequest db user connReqId)
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected user cReq
   APISendCallInvitation contactId callType -> withUser $ \user -> do
@@ -1035,7 +1036,7 @@ processChatCommand = \case
     user_ <- withStore' (`getUserByAConnId` agentConnId)
     connEntity <-
       pure user_ $>>= \user ->
-        withStore (\db -> Just <$> getConnectionEntity db user agentConnId) `catchError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
+        withStore (\db -> Just <$> getConnectionEntity db user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
     pure CRNtfMessages {user_, connEntity, msgTs = msgTs', ntfMessages}
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     ChatConfig {defaultServers} <- asks config
@@ -1102,7 +1103,7 @@ processChatCommand = \case
         liftIO $ updateGroupSettings db user chatId chatSettings
         pure ms
       forM_ (filter memberActive ms) $ \m -> forM_ (memberConnId m) $ \connId ->
-        withAgent (\a -> toggleConnectionNtfs a connId $ enableNtfs chatSettings) `catchError` (toView . CRChatError (Just user))
+        withAgent (\a -> toggleConnectionNtfs a connId $ enableNtfs chatSettings) `catchChatError` (toView . CRChatError (Just user))
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
@@ -1310,7 +1311,7 @@ processChatCommand = \case
     where
       mc = MCText msg
       sendAndCount user ll (s, f) ct =
-        (sendToContact user ct $> (s + 1, f)) `catchError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
+        (sendToContact user ct $> (s + 1, f)) `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
       sendToContact user ct = do
         (sndMsg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
         void $ saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
@@ -1610,7 +1611,7 @@ processChatCommand = \case
             Just XFTPRcvFile {agentRcvFileId} -> do
               forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
                 fsFilePath <- toFSFilePath filePath
-                removeFile fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+                liftIO $ removeFile fsFilePath `catchAll_` pure ()
               forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                 withAgent (`xftpDeleteRcvFile` aFileId)
               ci <- withStore $ \db -> do
@@ -1686,7 +1687,7 @@ processChatCommand = \case
     --   corrId <- liftIO $ SMP.CorrId <$> randomBytes gVar 8
     --   void . forkIO $
     --     withAgentLock a . withLock l name $
-    --       (atomically . writeTBQueue q) . (Just corrId,) =<< (action `catchError` (pure . CRChatError))
+    --       (atomically . writeTBQueue q) . (Just corrId,) =<< (action `catchChatError` (pure . CRChatError))
     --   pure $ CRCmdAccepted corrId
     -- use function below to make commands "synchronous"
     procCmd :: m ChatResponse -> m ChatResponse
@@ -1800,7 +1801,7 @@ processChatCommand = \case
           (successes, failures) <- foldM (processAndCount user' logLevel) (0, 0) contacts
           pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' successes failures
       where
-        processAndCount user' ll (s, f) ct = (processContact user' ct $> (s + 1, f)) `catchError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
+        processAndCount user' ll (s, f) ct = (processContact user' ct $> (s + 1, f)) `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
         processContact user' ct = do
           let mergedProfile = userProfileToSend user Nothing $ Just ct
               ct' = updateMergedPreferences user' ct
@@ -1819,7 +1820,7 @@ processChatCommand = \case
             mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         when (mergedProfile' /= mergedProfile) $
           withChatLock "updateProfile" $ do
-            void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError (Just user))
+            void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchChatError` (toView . CRChatError (Just user))
             when (directOrUsed ct') $ createSndFeatureItems user ct ct'
         pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
@@ -1999,7 +2000,7 @@ startExpireCIThread user@User {userId} = do
       liftIO $ threadDelay' delay
       interval <- asks $ ciExpirationInterval . config
       forever $ do
-        flip catchError (toView . CRChatError (Just user)) $ do
+        flip catchChatError (toView . CRChatError (Just user)) $ do
           expireFlags <- asks expireCIFlags
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
           ttl <- withStoreCtx' (Just "startExpireCIThread, getChatItemTTL") (`getChatItemTTL` user)
@@ -2018,26 +2019,26 @@ setAllExpireCIFlags b = do
     keys <- M.keys <$> readTVar expireFlags
     forM_ keys $ \k -> TM.insert k b expireFlags
 
-deleteFilesAndConns :: forall m. ChatMonad m => User -> [CIFileInfo] -> m ()
+deleteFilesAndConns :: ChatMonad m => User -> [CIFileInfo] -> m ()
 deleteFilesAndConns user filesInfo = do
   connIds <- mapM (deleteFile user) filesInfo
   deleteAgentConnectionsAsync user $ concat connIds
 
-deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m [ConnId]
+deleteFile :: ChatMonad m => User -> CIFileInfo -> m [ConnId]
 deleteFile user fileInfo = deleteFile' user fileInfo False
 
 deleteFile' :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m [ConnId]
 deleteFile' user ciFileInfo@CIFileInfo {filePath} sendCancel = do
   aConnIds <- cancelFile' user ciFileInfo sendCancel
-  delete `catchError` (toView . CRChatError (Just user))
+  delete `catchChatError` (toView . CRChatError (Just user))
   pure aConnIds
   where
     delete :: m ()
     delete = withFilesFolder $ \filesFolder ->
-      forM_ filePath $ \fPath -> do
+      liftIO . forM_ filePath $ \fPath -> do
         let fsFilePath = filesFolder </> fPath
-        removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
-          removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+        removeFile fsFilePath `catchAll` \_ ->
+          removePathForcibly fsFilePath `catchAll_` pure ()
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> m ()) -> m ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
@@ -2045,7 +2046,7 @@ deleteFile' user ciFileInfo@CIFileInfo {filePath} sendCancel = do
 cancelFile' :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m [ConnId]
 cancelFile' user CIFileInfo {fileId, fileStatus} sendCancel =
   case fileStatus of
-    Just fStatus -> cancel' fStatus `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
+    Just fStatus -> cancel' fStatus `catchChatError` (\e -> toView (CRChatError (Just user) e) $> [])
     Nothing -> pure []
   where
     cancel' :: ACIFileStatus -> m [ConnId]
@@ -2102,13 +2103,13 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
 -- mobile clients use file paths relative to app directory (e.g. for the reason ios app directory changes on updates),
 -- so we have to differentiate between the file path stored in db and communicated with frontend, and the file path
 -- used during file transfer for actual operations with file system
-toFSFilePath :: ChatMonad m => FilePath -> m FilePath
+toFSFilePath :: ChatMonad' m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
 
 receiveFile' :: ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m ChatResponse
 receiveFile' user ft rcvInline_ filePath_ = do
-  (CRRcvFileAccepted user <$> acceptFileReceive user ft rcvInline_ filePath_) `catchError` processError
+  (CRRcvFileAccepted user <$> acceptFileReceive user ft rcvInline_ filePath_) `catchChatError` processError
   where
     processError = \case
       -- TODO AChatItem in Cancelled events
@@ -2218,7 +2219,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
         (createEmptyFile fPath)
   where
     createEmptyFile :: FilePath -> m FilePath
-    createEmptyFile fPath = emptyFile fPath `E.catch` (throwChatError . CEFileWrite fPath . (show :: E.SomeException -> String))
+    createEmptyFile fPath = emptyFile fPath `catchThrow` (ChatError . CEFileWrite fPath . show)
     emptyFile :: FilePath -> m FilePath
     emptyFile fPath = do
       h <-
@@ -2228,8 +2229,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
       liftIO $ B.hPut h "" >> hFlush h
       pure fPath
     getTmpHandle :: FilePath -> m Handle
-    getTmpHandle fPath =
-      liftIO (openFile fPath AppendMode) `E.catch` (throwChatError . CEFileInternal . (show :: E.SomeException -> String))
+    getTmpHandle fPath = openFile fPath AppendMode `catchThrow` (ChatError . CEFileInternal . show)
     uniqueCombine :: FilePath -> String -> m FilePath
     uniqueCombine filePath fileName = tryCombine (0 :: Int)
       where
@@ -2291,7 +2291,7 @@ agentSubscriber = do
       where
         run action = do
           let name = "agentSubscriber entity=" <> show e <> " entId=" <> str entId <> " msg=" <> str (aCommandTag msg)
-          withLock l name $ runExceptT $ action `catchError` (toView . CRChatError Nothing)
+          withLock l name $ runExceptT $ action `catchChatError` (toView . CRChatError Nothing)
         str :: StrEncoding a => a -> String
         str = B.unpack . strEncode
 
@@ -2396,7 +2396,7 @@ subscribeUserConnections agentBatchSubscribe user@User {userId} = do
     pendingConnSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId PendingContactConnection -> m ()
     pendingConnSubsToView rs = toView . CRPendingSubSummary user . map (uncurry PendingSubStatus) . resultsFor rs
     withStore_ :: String -> (DB.Connection -> User -> IO [a]) -> m [a]
-    withStore_ ctx a = withStoreCtx' (Just ctx) (`a` user) `catchError` \e -> toView (CRChatError (Just user) e) $> []
+    withStore_ ctx a = withStoreCtx' (Just ctx) (`a` user) `catchChatError` \e -> toView (CRChatError (Just user) e) $> []
     filterErrors :: [(a, Maybe ChatError)] -> [(a, ChatError)]
     filterErrors = mapMaybe (\(a, e_) -> (a,) <$> e_)
     resultsFor :: Map ConnId (Either AgentErrorType ()) -> Map ConnId a -> [(a, Maybe ChatError)]
@@ -2418,36 +2418,36 @@ cleanupManager = do
   liftIO $ threadDelay' initialDelay
   stepDelay <- asks (cleanupManagerStepDelay . config)
   forever $ do
-    flip catchError (toView . CRChatError Nothing) $ do
+    flip catchChatError (toView . CRChatError Nothing) $ do
       waitChatStarted
       users <- withStoreCtx' (Just "cleanupManager, getUsers 1") getUsers
       let (us, us') = partition activeUser users
       forM_ us $ cleanupUser interval stepDelay
       forM_ us' $ cleanupUser interval stepDelay
-      cleanupMessages `catchError` (toView . CRChatError Nothing)
+      cleanupMessages `catchChatError` (toView . CRChatError Nothing)
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
-    runWithoutInitialDelay cleanupInterval = flip catchError (toView . CRChatError Nothing) $ do
+    runWithoutInitialDelay cleanupInterval = flip catchChatError (toView . CRChatError Nothing) $ do
       waitChatStarted
       users <- withStoreCtx' (Just "cleanupManager, getUsers 2") getUsers
       let (us, us') = partition activeUser users
-      forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
-      forM_ us' $ \u -> cleanupTimedItems cleanupInterval u `catchError` (toView . CRChatError (Just u))
+      forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchChatError` (toView . CRChatError (Just u))
+      forM_ us' $ \u -> cleanupTimedItems cleanupInterval u `catchChatError` (toView . CRChatError (Just u))
     cleanupUser cleanupInterval stepDelay user = do
-      cleanupTimedItems cleanupInterval user `catchError` (toView . CRChatError (Just user))
+      cleanupTimedItems cleanupInterval user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
-      cleanupDeletedContacts user `catchError` (toView . CRChatError (Just user))
+      cleanupDeletedContacts user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
       timedItems <- withStoreCtx' (Just "cleanupManager, getTimedItems") $ \db -> getTimedItems db user startTimedThreadCutoff
-      forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchError` const (pure ())
+      forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchChatError` const (pure ())
     cleanupDeletedContacts user = do
       contacts <- withStore' (`getDeletedContacts` user)
       forM_ contacts $ \ct ->
         withStore' (\db -> deleteContactWithoutGroups db user ct)
-          `catchError` (toView . CRChatError (Just user))
+          `catchChatError` (toView . CRChatError (Just user))
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (- (30 * nominalDay)) ts
@@ -2511,7 +2511,7 @@ expireChatItems user@User {userId} ttl sync = do
     loop :: [a] -> (a -> m ()) -> m ()
     loop [] _ = pure ()
     loop (a : as) process = continue $ do
-      process a `catchError` (toView . CRChatError (Just user))
+      process a `catchChatError` (toView . CRChatError (Just user))
       loop as process
     continue :: m () -> m ()
     continue a =
@@ -2541,7 +2541,7 @@ processAgentMessage _ connId DEL_CONN =
   toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg =
   withStore' (`getUserByAConnId` AgentConnId connId) >>= \case
-    Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
+    Just user -> processAgentMessageConn user corrId connId msg `catchChatError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
 processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone -> m ()
@@ -2563,7 +2563,7 @@ processAgentMessageNoConn = \case
 processAgentMsgSndFile :: forall m. ChatMonad m => ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> m ()
 processAgentMsgSndFile _corrId aFileId msg =
   withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-    Just user -> process user `catchError` (toView . CRChatError (Just user))
+    Just user -> process user `catchChatError` (toView . CRChatError (Just user))
     _ -> do
       withAgent (`xftpDeleteSndFileInternal` aFileId)
       throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
@@ -2600,7 +2600,7 @@ processAgentMsgSndFile _corrId aFileId msg =
                   let rfdsMemberFTs = zip rfds $ memberFTs ms
                       extraRFDs = drop (length rfdsMemberFTs) rfds
                   withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                  forM_ rfdsMemberFTs $ \mt -> sendToMember mt `catchError` (toView . CRChatError (Just user))
+                  forM_ rfdsMemberFTs $ \mt -> sendToMember mt `catchChatError` (toView . CRChatError (Just user))
                   ci' <- withStore $ \db -> do
                     liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                     getChatItemByFileId db user fileId
@@ -2652,7 +2652,7 @@ processAgentMsgSndFile _corrId aFileId msg =
 processAgentMsgRcvFile :: forall m. ChatMonad m => ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> m ()
 processAgentMsgRcvFile _corrId aFileId msg =
   withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
-    Just user -> process user `catchError` (toView . CRChatError (Just user))
+    Just user -> process user `catchChatError` (toView . CRChatError (Just user))
     _ -> do
       withAgent (`xftpDeleteRcvFile` aFileId)
       throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
@@ -3009,7 +3009,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
-              processIntro intro `catchError` (toView . CRChatError (Just user))
+              processIntro intro `catchChatError` (toView . CRChatError (Just user))
             where
               processIntro intro@GroupMemberIntro {introId} = do
                 void $ sendDirectMessage conn (XGrpMemIntro . memberInfo $ reMember intro) (GroupId groupId)
@@ -3346,42 +3346,19 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     withAckMessage :: ConnId -> CommandId -> MsgMeta -> m Bool -> m ()
     withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action = do
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
-      -- TODO not catching ExceptT error here is what is likely causing message delivery being stuck, as the result of ACK not sent
-      -- This is not obvious how to fix, as currently restarting the app results in message being correctly processed,
-      -- while simply sending ACK after an error, particularly if it is a database error, the message won't be processed.
+      -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
       -- Possible solutions are:
       -- 1) retry processing several times
       -- 2) stabilize database
       -- 3) show screen of death to the user asking to restart
-      --
-      -- (action $> ()) `E.finally` ack Nothing -- this doesn't catch IO exception
-      --
-      -- (action >> ack Nothing) `catchError` \e -> ack Nothing >> throwError e -- this doesn't catch IO exception
-      --
-      -- (action >> ack Nothing) `E.catch` \(e :: E.SomeException) -> ack Nothing >> throwError ((ChatError . CEException . show) e) -- this works and catches ExceptT error as wrapped
-      --
-      -- r <- (tryError action) `E.catch` (pure . err) -- this does catch IO exception
-      -- case r of
-      --   Right withRcpt -> ack Nothing -- $ if withRcpt then Just "" else Nothing
-      --   Left e -> ack Nothing >> throwError e
-      --
-      -- catchExcept -- works
-      --   (ChatError . CEException . show)
-      --   (action >> ack Nothing)
-      --   (\e -> ack Nothing >> throwError e)
-      --
-      catchExcept -- works
-        (ChatError . CEException . show)
-        action
-        (\e -> ack Nothing >> throwError e)
+      action `catchChatError` \e -> ack Nothing >> throwError e
       ack Nothing
-      -- ack Nothing -- $ if withRcpt then Just "" else Nothing
+
+      -- tryChatError action >>= \case
+      --   Right _withRcpt -> ack Nothing -- $ if withRcpt then Just "" else Nothing
+      --   Left e -> ack Nothing >> throwError e
       where
-        err :: E.SomeException -> Either ChatError a
-        err = Left . ChatError . CEException . show
-        ack rcpt = do
-          liftIO $ print "called ack"
-          withAgent $ \a -> ackMessageAsync a (aCorrId cmdId) cId msgId rcpt
+        ack rcpt = withAgent $ \a -> ackMessageAsync a (aCorrId cmdId) cId msgId rcpt
 
     ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
     ackMsgDeliveryEvent Connection {connId} ackCmdId =
@@ -3433,7 +3410,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         else do
           cs <- withStore' $ \db -> getMatchingContacts db user ct
           let probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
-          forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
+          forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchChatError` \_ -> pure ()
       where
         sendProbeHash :: Contact -> ProbeHash -> Int64 -> m ()
         sendProbeHash c probeHash probeId = do
@@ -3451,11 +3428,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
-      case content of
-        MCText "hello 111" ->
-          E.throwIO $ userError "#####################"
-          -- throwChatError $ CECommandError "#####################"
-        _ -> pure ()
+      -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
+      -- case content of
+      --   MCText "hello 111" ->
+      --     UE.throwIO $ userError "#####################"
+      --     -- throwChatError $ CECommandError "#####################"
+      --   _ -> pure ()
       if isVoice content && not (featureAllowed SCFVoice forContact ct)
         then do
           void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
@@ -3627,7 +3605,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     catchCINotFound :: m a -> (SharedMsgId -> m a) -> m a
     catchCINotFound f handle =
-      f `catchError` \case
+      f `catchChatError` \case
         ChatErrorStore (SEChatItemSharedMsgIdNotFound sharedMsgId) -> handle sharedMsgId
         e -> throwError e
 
@@ -4377,7 +4355,7 @@ sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
 readFileChunk :: ChatMonad m => SndFileTransfer -> Integer -> m ByteString
 readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo = do
   fsFilePath <- toFSFilePath filePath
-  read_ fsFilePath `E.catch` (throwChatError . CEFileRead filePath . (show :: E.SomeException -> String))
+  read_ fsFilePath `catchThrow` (ChatError . CEFileRead filePath . show)
   where
     read_ fsFilePath = do
       h <- getFileHandle fileId fsFilePath sndFiles ReadMode
@@ -4402,9 +4380,8 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
     append_ filePath = do
       fsFilePath <- toFSFilePath filePath
       h <- getFileHandle fileId fsFilePath rcvFiles AppendMode
-      E.try (liftIO $ B.hPut h chunk >> hFlush h) >>= \case
-        Left (e :: E.SomeException) -> throwChatError . CEFileWrite fsFilePath $ show e
-        Right () -> withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
+      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` (ChatError . CEFileWrite filePath . show)
+      withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
 
 getFileHandle :: ChatMonad m => Int64 -> FilePath -> (ChatController -> TVar (Map Int64 Handle)) -> IOMode -> m Handle
 getFileHandle fileId filePath files ioMode = do
@@ -4413,7 +4390,7 @@ getFileHandle fileId filePath files ioMode = do
   maybe (newHandle fs) pure h_
   where
     newHandle fs = do
-      h <- liftIO (openFile filePath ioMode) `E.catch` (throwChatError . CEFileInternal . (show :: E.SomeException -> String))
+      h <- openFile filePath ioMode `catchThrow` (ChatError . CEFileInternal . show)
       atomically . modifyTVar fs $ M.insert fileId h
       pure h
 
@@ -4424,7 +4401,7 @@ isFileActive fileId files = do
 
 cancelRcvFileTransfer :: ChatMonad m => User -> RcvFileTransfer -> m (Maybe ConnId)
 cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInline} =
-  cancel' `catchError` (\e -> toView (CRChatError (Just user) e) $> fileConnId)
+  cancel' `catchChatError` (\e -> toView (CRChatError (Just user) e) $> fileConnId)
   where
     cancel' = do
       closeFileHandle fileId rcvFiles
@@ -4442,20 +4419,20 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInlin
 cancelSndFile :: ChatMonad m => User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> m [ConnId]
 cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
   withStore' (\db -> updateFileCancelled db user fileId CIFSSndCancelled)
-    `catchError` (toView . CRChatError (Just user))
+    `catchChatError` (toView . CRChatError (Just user))
   case xftpSndFile of
     Nothing ->
       catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
     Just xsf -> do
       forM_ fts (\ft -> cancelSndFileTransfer user ft False)
-      agentXFTPDeleteSndFileRemote user xsf fileId `catchError` (toView . CRChatError (Just user))
+      agentXFTPDeleteSndFileRemote user xsf fileId `catchChatError` (toView . CRChatError (Just user))
       pure []
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe ConnId)
 cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
   if fileStatus == FSCancelled || fileStatus == FSComplete
     then pure Nothing
-    else cancel' `catchError` (\e -> toView (CRChatError (Just user) e) $> fileConnId)
+    else cancel' `catchChatError` (\e -> toView (CRChatError (Just user) e) $> fileConnId)
   where
     cancel' = do
       withStore' $ \db -> do
@@ -4473,7 +4450,7 @@ closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Ha
 closeFileHandle fileId files = do
   fs <- asks files
   h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
-  mapM_ hClose h_ `E.catch` \(_ :: E.SomeException) -> pure ()
+  liftIO $ mapM_ hClose h_ `catchAll_` pure ()
 
 throwChatError :: ChatMonad m => ChatErrorType -> m a
 throwChatError = throwError . ChatError
@@ -4539,7 +4516,7 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
   -- TODO collect failed deliveries into a single error
   forM_ (filter memberCurrent members) $ \m ->
-    messageMember m msg `catchError` (toView . CRChatError (Just user))
+    messageMember m msg `catchChatError` (toView . CRChatError (Just user))
   pure msg
   where
     messageMember m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
@@ -4556,7 +4533,7 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
   pendingMessages <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
   -- TODO ensure order - pending messages interleave with user input messages
   forM_ pendingMessages $ \pgm ->
-    processPendingMessage pgm `catchError` (toView . CRChatError (Just user))
+    processPendingMessage pgm `catchChatError` (toView . CRChatError (Just user))
   where
     processPendingMessage PendingGroupMessage {msgId, cmEventTag = ACMEventTag _ tag, msgBody, introId_} = do
       void $ deliverMessage conn tag msgBody msgId
@@ -4686,12 +4663,12 @@ agentAcceptContactAsync user enableNtfs invId msg = do
 
 deleteAgentConnectionAsync :: ChatMonad m => User -> ConnId -> m ()
 deleteAgentConnectionAsync user acId =
-  withAgent (`deleteConnectionAsync` acId) `catchError` (toView . CRChatError (Just user))
+  withAgent (`deleteConnectionAsync` acId) `catchChatError` (toView . CRChatError (Just user))
 
 deleteAgentConnectionsAsync :: ChatMonad m => User -> [ConnId] -> m ()
 deleteAgentConnectionsAsync _ [] = pure ()
 deleteAgentConnectionsAsync user acIds =
-  withAgent (`deleteConnectionsAsync` acIds) `catchError` (toView . CRChatError (Just user))
+  withAgent (`deleteConnectionsAsync` acIds) `catchChatError` (toView . CRChatError (Just user))
 
 agentXFTPDeleteRcvFile :: ChatMonad m => RcvFileId -> FileTransferId -> m ()
 agentXFTPDeleteRcvFile aFileId fileId = do
@@ -4864,7 +4841,7 @@ withUser' action =
     >>= readTVarIO
     >>= maybe (throwChatError CENoActiveUser) run
   where
-    run u = action u `catchError` (pure . CRChatCmdError (Just u))
+    run u = action u `catchChatError` (pure . CRChatCmdError (Just u))
 
 withUser :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser action = withUser' $ \user ->

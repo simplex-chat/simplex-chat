@@ -34,6 +34,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Util (allFinally)
 import UnliftIO.STM
 
 -- These error type constructors must be added to mobile apps
@@ -106,6 +107,14 @@ handleSQLError :: StoreError -> SQLError -> StoreError
 handleSQLError err e
   | DB.sqlError e == DB.ErrorConstraint = err
   | otherwise = SEInternalError $ show e
+
+storeFinally :: ExceptT StoreError IO a -> ExceptT StoreError IO b -> ExceptT StoreError IO a
+storeFinally = allFinally mkStoreError
+{-# INLINE storeFinally #-}
+
+mkStoreError :: E.SomeException -> StoreError
+mkStoreError = SEInternalError . show
+{-# INLINE mkStoreError #-}
 
 fileInfoQuery :: Query
 fileInfoQuery =

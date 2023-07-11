@@ -1120,7 +1120,7 @@
     <string name="la_mode_system">系統</string>
     <string name="alert_text_msg_bad_id">此ID的下一則訊息是錯誤（小於或等於上一則的）。
 \n當一些錯誤出現或你的連結被破壞時會發生。</string>
-    <string name="alert_text_decryption_error_header">%1$d 訊息解密失敗。</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d 訊息解密失敗。</string>
     <string name="network_socks_toggle_use_socks_proxy">使用SOCKS 代理伺服器</string>
     <string name="your_XFTP_servers">你的 XFTP 伺服器</string>
     <string name="alert_text_fragment_permanent_error_reconnect">這個連結錯誤是永久性的，請重新連接。</string>

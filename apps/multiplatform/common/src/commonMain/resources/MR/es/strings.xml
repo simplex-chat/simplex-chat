@@ -1101,7 +1101,7 @@
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</string>
     <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
     <string name="alert_text_fragment_permanent_error_reconnect">El error es permanente para esta conexión, por favor vuelve a conectarte.</string>
-    <string name="alert_text_decryption_error_header">%1$d mensajes no pudieron ser descifrados.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensajes no pudieron ser descifrados.</string>
     <string name="no_spaces">¡Sin espacios!</string>
     <string name="stop_file__action">Detener archivo</string>
     <string name="revoke_file__message">El archivo será eliminado de los servidores.</string>

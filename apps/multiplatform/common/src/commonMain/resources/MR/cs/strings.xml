@@ -1096,7 +1096,7 @@
     <string name="alert_text_msg_bad_hash">Hash předchozí zprávy se liší.</string>
     <string name="alert_text_msg_bad_id">ID další zprávy je nesprávné (menší nebo rovno předchozí).
 \nMůže se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitováno.</string>
-    <string name="alert_text_decryption_error_header">%1$d zprávy se nepodařilo dešifrovat.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d zprávy se nepodařilo dešifrovat.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d zprývy přeskočeny.</string>
     <string name="alert_text_fragment_please_report_to_developers">Nahlaste to prosím vývojářům.</string>
     <string name="alert_text_fragment_permanent_error_reconnect">Tato chyba je pro toto připojení trvalá, připojte se znovu.</string>

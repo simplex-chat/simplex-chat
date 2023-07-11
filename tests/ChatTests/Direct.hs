@@ -356,11 +356,11 @@ testDirectMessageDelete =
     \alice bob -> do
       connectUsers alice bob
 
-      alice #> "@bob hello 111"
-      bob <## "exception: user error (#####################)"
-      -- bob <## "bad chat command: #####################"
-      -- bob <# "alice> hello 111"
-      print 111
+      -- Test for exception not interrupting the delivery - uncomment lines in newContentMessage
+      -- alice #> "@bob hello 111"
+      -- bob <## "exception: user error (#####################)"
+      -- -- bob <## "bad chat command: #####################"
+      -- -- bob <# "alice> hello 111"
 
       -- alice, bob: msg id 1
       alice #> "@bob hello 🙂"
