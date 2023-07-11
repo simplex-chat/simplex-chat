@@ -21,8 +21,9 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
+import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
-import chat.simplex.common.helpers.toUri
+import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
@@ -153,6 +154,8 @@ private fun spannableStringToAnnotatedString(
   }
 }
 
+actual fun getAppFileUri(fileName: String): URI =
+  FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", File(getAppFilePath(fileName))).toURI()
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
 actual fun getLoadedImage(file: CIFile?): ImageBitmap? {

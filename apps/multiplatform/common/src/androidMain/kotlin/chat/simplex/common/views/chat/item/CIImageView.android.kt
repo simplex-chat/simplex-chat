@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import chat.simplex.common.helpers.toUri
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.ModalManager
@@ -26,7 +27,7 @@ actual fun SimpleAndAnimatedImageView(
 ) {
   val context = LocalContext.current
   val imagePainter = rememberAsyncImagePainter(
-    ImageRequest.Builder(context).data(data = uri).size(coil.size.Size.ORIGINAL).build(),
+    ImageRequest.Builder(context).data(data = uri.toUri()).size(coil.size.Size.ORIGINAL).build(),
     placeholder = BitmapPainter(imageBitmap), // show original image while it's still loading by coil
     imageLoader = imageLoader
   )

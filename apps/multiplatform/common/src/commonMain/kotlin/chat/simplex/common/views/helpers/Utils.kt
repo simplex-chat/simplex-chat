@@ -63,9 +63,7 @@ const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
-fun getAppFileUri(fileName: String): URI {
-  return URI("file:" + getAppFilesDirectory() + File.separator + fileName)
-}
+expect fun getAppFileUri(fileName: String): URI
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
 expect fun getLoadedImage(file: CIFile?): ImageBitmap?
@@ -266,7 +264,8 @@ fun blendARGB(
 
 fun ByteArray.toBase64String(): String = Base64.getEncoder().encodeToString(this)
 
-fun String.toByteArrayFromBase64(): ByteArray = Base64.getDecoder().decode(this)
+// Android's default implementation that was used before multiplatform, adds non-needed characters at the end of string
+fun String.toByteArrayFromBase64(): ByteArray = Base64.getDecoder().decode(this.trimEnd { it == '\n' || it == ' ' })
 
 val LongRange.Companion.saver
   get() = Saver<MutableState<LongRange>, Pair<Long, Long>>(

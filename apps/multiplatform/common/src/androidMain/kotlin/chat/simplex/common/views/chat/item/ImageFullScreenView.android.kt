@@ -11,6 +11,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.isVisible
+import chat.simplex.common.helpers.toUri
 import chat.simplex.common.platform.VideoPlayer
 import chat.simplex.res.MR
 import coil.ImageLoader
@@ -39,7 +40,7 @@ actual fun FullScreenImageView(modifier: Modifier, uri: URI, imageBitmap: ImageB
     .build()
   Image(
     rememberAsyncImagePainter(
-      ImageRequest.Builder(LocalContext.current).data(data = uri).size(Size.ORIGINAL).build(),
+      ImageRequest.Builder(LocalContext.current).data(data = uri.toUri()).size(Size.ORIGINAL).build(),
       placeholder = BitmapPainter(imageBitmap), // show original image while it's still loading by coil
       imageLoader = imageLoader
     ),
