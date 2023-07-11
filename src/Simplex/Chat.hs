@@ -2804,7 +2804,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               BFileChunk sharedMsgId chunk -> bFileChunk ct sharedMsgId chunk msgMeta
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
             pure $ hasDeliveryReceipt $ toCMEventTag event
-        RCVD msgMeta msgRcpt -> directMsgReceived ct msgMeta msgRcpt
+        RCVD msgMeta msgRcpt -> directMsgReceived ct conn msgMeta msgRcpt
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
@@ -3057,7 +3057,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           canSend a
             | memberRole (m :: GroupMember) <= GRObserver = messageError "member is not allowed to send messages"
             | otherwise = a
-      RCVD msgMeta msgRcpt -> groupMsgReceived gInfo m msgMeta msgRcpt
+      RCVD msgMeta msgRcpt -> groupMsgReceived gInfo m conn msgMeta msgRcpt
       SENT msgId -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
@@ -4275,19 +4275,22 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           groupMsgToView g' m ci msgMeta
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
-    directMsgReceived :: Contact -> MsgMeta -> NonEmpty MsgReceipt -> m ()
-    directMsgReceived _ct _msgMeta _msgRcpt = do
-      -- update chat item status
-      -- send updated chat item or a separate event to view
-      -- possibly, this event would update terminal view - can be done by scanning the window and matching message time and text
-      -- not sure how to test it, so could be an option that is disabled in the tests
-      pure ()
-
-    groupMsgReceived :: GroupInfo -> GroupMember -> MsgMeta -> NonEmpty MsgReceipt -> m ()
-    groupMsgReceived _gInfo _m _msgMeta _msgRcpt = do
-      -- update chat item status
-      -- send updated chat item or a separate event to view
-      pure ()
+    directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
+    directMsgReceived ct@Contact {contactId, localDisplayName = c} Connection {connId} msgMeta msgRcpts = do
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+      forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
+        withStore $ \db -> createSndMsgDeliveryEvent db connId agentMsgId $ MDSSndRcvd msgRcptStatus
+        withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId agentMsgId) >>= \case
+          Just (CChatItem SMDSnd ci) -> do
+            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) $ CISSndRcvd msgRcptStatus
+            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+          _ -> pure ()
+ 
+    groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
+    groupMsgReceived gInfo m Connection {connId} msgMeta msgRcpts = do
+      checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
+      forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} ->
+        withStore $ \db -> createSndMsgDeliveryEvent db connId agentMsgId $ MDSSndRcvd msgRcptStatus
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =

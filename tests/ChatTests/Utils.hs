@@ -186,7 +186,7 @@ chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 chatFeatures'' =
   [ ((0, "Disappearing messages: allowed"), Nothing, Nothing),
-    ((0, "Receive delivery receipts: enabled"), Nothing, Nothing),
+    ((0, "Delivery receipts: enabled"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: enabled"), Nothing, Nothing),
     ((0, "Voice messages: enabled"), Nothing, Nothing),

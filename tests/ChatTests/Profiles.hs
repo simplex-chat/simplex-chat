@@ -106,7 +106,7 @@ testUpdateProfileImage =
       alice <## "profile image removed"
       alice ##> "/show profile image"
       alice <## "No profile image"
-      alice ##> "/_profile 1 {\"displayName\": \"alice2\", \"fullName\": \"\", \"preferences\": {\"receiveReceipts\": {\"allow\": \"yes\", \"activated\": true}}}"
+      alice ##> "/_profile 1 {\"displayName\": \"alice2\", \"fullName\": \"\", \"preferences\": {\"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
       alice <## "user profile is changed to alice2 (your 1 contacts are notified)"
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
@@ -878,7 +878,7 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
           cath <## "alice (Alice): contact is connected"
       ]
     alice <## "cath (Catherine): contact is connected"
-    alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}, \"receiveReceipts\": {\"allow\": \"yes\", \"activated\": true}}}"
+    alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
     alice <## "user full name removed (your 1 contacts are notified)"
     alice <## "updated preferences:"
     alice <## "Full deletion allowed: always"
@@ -1050,7 +1050,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     createDirectoryIfMissing True "./tests/tmp/bob"
     copyFile "./tests/fixtures/test.txt" "./tests/tmp/alice/test.txt"
     copyFile "./tests/fixtures/test.txt" "./tests/tmp/bob/test.txt"
-    bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}, \"receiveReceipts\": {\"allow\": \"yes\", \"activated\": true}}}"
+    bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
     bob <## "profile image removed"
     bob <## "updated preferences:"
     bob <## "Voice messages allowed: no"
@@ -1059,7 +1059,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
-    let startFeatures = [(0, "Disappearing messages: allowed"), (0, "Receive delivery receipts: enabled"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
+    let startFeatures = [(0, "Disappearing messages: allowed"), (0, "Delivery receipts: enabled"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
     let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
@@ -1100,7 +1100,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <## "Voice messages: off (you allow: default (no), contact allows: yes)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off")])
     (bob </)
-    bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}, \"receiveReceipts\": {\"allow\": \"yes\", \"activated\": true}}}"
+    bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
     bob <## "user full name removed (your 1 contacts are notified)"
     bob <## "updated preferences:"
     bob <## "Voice messages allowed: yes"

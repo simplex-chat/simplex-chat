@@ -1735,7 +1735,7 @@ testUserPrivacy =
       alice ##> "/_get items before=13 count=10"
       alice
         <##? [ "bob> Disappearing messages: allowed",
-               "bob> Receive delivery receipts: enabled",
+               "bob> Delivery receipts: enabled",
                "bob> Full deletion: off",
                "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
@@ -1798,7 +1798,7 @@ testUserPrivacy =
       alice <## "profile is visible"
     chatHistory =
       [ "bob> Disappearing messages: allowed",
-        "bob> Receive delivery receipts: enabled",
+        "bob> Delivery receipts: enabled",
         "bob> Full deletion: off",
         "bob> Message reactions: enabled",
         "bob> Voice messages: enabled",
