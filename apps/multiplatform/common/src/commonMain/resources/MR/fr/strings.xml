@@ -1119,7 +1119,7 @@
     <string name="stop_rcv_file__title">Arrêter de recevoir le fichier \?</string>
     <string name="alert_text_fragment_permanent_error_reconnect">Cette erreur est persistante pour cette connexion, veuillez vous reconnecter.</string>
     <string name="la_could_not_be_verified">Vous n\'avez pas pu être vérifié·e ; veuillez réessayer.</string>
-    <string name="alert_text_decryption_error_header">%1$d messages n\'ont pas pu être déchiffrés.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d messages n\'ont pas pu être déchiffrés.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d messages sautés.</string>
     <string name="you_can_turn_on_lock">Vous pouvez activer SimpleX Lock dans les Paramètres.</string>
     <string name="v5_0_polish_interface_descr">Merci aux utilisateurs - contribuez via Weblate !</string>

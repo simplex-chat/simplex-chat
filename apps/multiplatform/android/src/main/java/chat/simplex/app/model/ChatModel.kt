@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
-import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.ComposeState
@@ -131,12 +130,35 @@ object ChatModel {
 
   fun updateChatInfo(cInfo: ChatInfo) {
     val i = getChatIndex(cInfo.id)
-    if (i >= 0) chats[i] = chats[i].copy(chatInfo = cInfo)
+    if (i >= 0) {
+      val currentCInfo = chats[i].chatInfo
+      var newCInfo = cInfo
+      if (currentCInfo is ChatInfo.Direct && newCInfo is ChatInfo.Direct) {
+        val currentStats = currentCInfo.contact.activeConn.connectionStats
+        val newStats = newCInfo.contact.activeConn.connectionStats
+        if (currentStats != null && newStats == null) {
+          newCInfo = newCInfo.copy(
+            contact = newCInfo.contact.copy(
+              activeConn = newCInfo.contact.activeConn.copy(
+                connectionStats = currentStats
+              )
+            )
+          )
+        }
+      }
+      chats[i] = chats[i].copy(chatInfo = newCInfo)
+    }
   }
 
   fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
 
   fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = contact.directOrUsed)
+
+  fun updateContactConnectionStats(contact: Contact, connectionStats: ConnectionStats) {
+    val updatedConn = contact.activeConn.copy(connectionStats = connectionStats)
+    val updatedContact = contact.copy(activeConn = updatedConn)
+    updateContact(updatedContact)
+  }
 
   fun updateGroup(groupInfo: GroupInfo) = updateChat(ChatInfo.Group(groupInfo))
 
@@ -433,6 +455,15 @@ object ChatModel {
       }
     } else {
       false
+    }
+  }
+
+  fun updateGroupMemberConnectionStats(groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats) {
+    val memberConn = member.activeConn
+    if (memberConn != null) {
+      val updatedConn = memberConn.copy(connectionStats = connectionStats)
+      val updatedMember = member.copy(activeConn = updatedConn)
+      upsertGroupMember(groupInfo, updatedMember)
     }
   }
 
@@ -747,7 +778,7 @@ data class Contact(
   override val id get() = "@$contactId"
   override val apiId get() = contactId
   override val ready get() = activeConn.connStatus == ConnStatus.Ready
-  override val sendMsgEnabled get() = true
+  override val sendMsgEnabled get() = !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false)
   override val ntfsEnabled get() = chatSettings.enableNtfs
   override val incognito get() = contactConnIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
@@ -827,7 +858,8 @@ data class Connection(
   val connLevel: Int,
   val viaGroupLink: Boolean,
   val customUserProfileId: Long? = null,
-  val connectionCode: SecurityCode? = null
+  val connectionCode: SecurityCode? = null,
+  val connectionStats: ConnectionStats? = null
 ) {
   val id: ChatId get() = ":$connId"
   companion object {
@@ -1768,11 +1800,15 @@ sealed class CIContent: ItemContent {
 @Serializable
 enum class MsgDecryptError {
   @SerialName("ratchetHeader") RatchetHeader,
-  @SerialName("tooManySkipped") TooManySkipped;
+  @SerialName("tooManySkipped") TooManySkipped,
+  @SerialName("ratchetEarlier") RatchetEarlier,
+  @SerialName("other") Other;
 
   val text: String get() = when (this) {
     RatchetHeader -> generalGetString(MR.strings.decryption_error)
     TooManySkipped -> generalGetString(MR.strings.decryption_error)
+    RatchetEarlier -> generalGetString(MR.strings.decryption_error)
+    Other -> generalGetString(MR.strings.decryption_error)
   }
 }
 
@@ -2328,18 +2364,33 @@ sealed class SndGroupEvent() {
 @Serializable
 sealed class RcvConnEvent {
   @Serializable @SerialName("switchQueue") class SwitchQueue(val phase: SwitchPhase): RcvConnEvent()
+  @Serializable @SerialName("ratchetSync") class RatchetSync(val syncStatus: RatchetSyncState): RcvConnEvent()
+  @Serializable @SerialName("verificationCodeReset") object VerificationCodeReset: RcvConnEvent()
 
   val text: String get() = when (this) {
     is SwitchQueue -> when (phase) {
       SwitchPhase.Completed -> generalGetString(MR.strings.rcv_conn_event_switch_queue_phase_completed)
       else -> generalGetString(MR.strings.rcv_conn_event_switch_queue_phase_changing)
     }
+    is RatchetSync -> ratchetSyncStatusToText(syncStatus)
+    is VerificationCodeReset -> generalGetString(MR.strings.rcv_conn_event_verification_code_reset)
+  }
+}
+
+fun ratchetSyncStatusToText(ratchetSyncStatus: RatchetSyncState): String {
+  return when (ratchetSyncStatus) {
+    RatchetSyncState.Ok -> generalGetString(MR.strings.conn_event_ratchet_sync_ok)
+    RatchetSyncState.Allowed -> generalGetString(MR.strings.conn_event_ratchet_sync_allowed)
+    RatchetSyncState.Required -> generalGetString(MR.strings.conn_event_ratchet_sync_required)
+    RatchetSyncState.Started -> generalGetString(MR.strings.conn_event_ratchet_sync_started)
+    RatchetSyncState.Agreed -> generalGetString(MR.strings.conn_event_ratchet_sync_agreed)
   }
 }
 
 @Serializable
 sealed class SndConnEvent {
   @Serializable @SerialName("switchQueue") class SwitchQueue(val phase: SwitchPhase, val member: GroupMemberRef? = null): SndConnEvent()
+  @Serializable @SerialName("ratchetSync") class RatchetSync(val syncStatus: RatchetSyncState, val member: GroupMemberRef? = null): SndConnEvent()
 
   val text: String
     get() = when (this) {
@@ -2354,6 +2405,19 @@ sealed class SndConnEvent {
           SwitchPhase.Completed -> generalGetString(MR.strings.snd_conn_event_switch_queue_phase_completed)
           else -> generalGetString(MR.strings.snd_conn_event_switch_queue_phase_changing)
         }
+      }
+
+      is RatchetSync -> {
+        member?.profile?.profileViewName?.let {
+          return when (syncStatus) {
+            RatchetSyncState.Ok -> String.format(generalGetString(MR.strings.snd_conn_event_ratchet_sync_ok), it)
+            RatchetSyncState.Allowed -> String.format(generalGetString(MR.strings.snd_conn_event_ratchet_sync_allowed), it)
+            RatchetSyncState.Required -> String.format(generalGetString(MR.strings.snd_conn_event_ratchet_sync_required), it)
+            RatchetSyncState.Started -> String.format(generalGetString(MR.strings.snd_conn_event_ratchet_sync_started), it)
+            RatchetSyncState.Agreed -> String.format(generalGetString(MR.strings.snd_conn_event_ratchet_sync_agreed), it)
+          }
+        }
+        ratchetSyncStatusToText(syncStatus)
       }
     }
 }
