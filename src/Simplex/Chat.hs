@@ -3358,19 +3358,19 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       --
       -- (action >> ack Nothing) `catchError` \e -> ack Nothing >> throwError e -- this doesn't catch IO exception
       --
-      -- (action >> ack Nothing) `E.catch` \e -> ack Nothing >> throwError e -- this doesn't catch IO exception
+      -- (action >> ack Nothing) `E.catch` \(e :: E.SomeException) -> ack Nothing >> throwError ((ChatError . CEException . show) e) -- this works and catches ExceptT error as wrapped
       --
       -- r <- (tryError action) `E.catch` (pure . err) -- this does catch IO exception
       -- case r of
       --   Right withRcpt -> ack Nothing -- $ if withRcpt then Just "" else Nothing
       --   Left e -> ack Nothing >> throwError e
       --
-      -- catchExcept
+      -- catchExcept -- works
       --   (ChatError . CEException . show)
       --   (action >> ack Nothing)
       --   (\e -> ack Nothing >> throwError e)
       --
-      catchExcept
+      catchExcept -- works
         (ChatError . CEException . show)
         action
         (\e -> ack Nothing >> throwError e)
