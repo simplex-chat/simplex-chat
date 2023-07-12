@@ -43,17 +43,22 @@ fun copyBytesToFile(bytes: ByteArrayInputStream, to: URI, finally: () -> Unit) {
   }
 }
 
-fun getFilesDirectory(): String {
-  return dataDir.absolutePath + File.separator + "files"
+fun getDbAbsolutePathPrefix(): String =
+  dataDir.absolutePath + File.separator + if (appPlatform == AppPlatform.ANDROID) "files" else "simplex_v1"
+
+fun getFilesDirectory(): String =
+  dataDir.absolutePath + File.separator + if (appPlatform == AppPlatform.ANDROID) "files" else "simplex_v1_files"
+
+fun getTempFilesDirectory(): String = if (appPlatform == AppPlatform.ANDROID) {
+  getFilesDirectory() + File.separator + "temp_files"
+} else {
+  tmpDir.absolutePath + File.separator + "simplex"
 }
 
-// LALAL
-fun getTempFilesDirectory(): String {
-  return getFilesDirectory() + File.separator + "temp_files"
-}
-
-fun getAppFilesDirectory(): String {
-  return getFilesDirectory() + File.separator + "app_files"
+fun getAppFilesDirectory(): String = if (appPlatform == AppPlatform.ANDROID) {
+  getFilesDirectory() + File.separator + "app_files"
+} else {
+  getFilesDirectory()
 }
 
 fun getAppFilePath(fileName: String): String {

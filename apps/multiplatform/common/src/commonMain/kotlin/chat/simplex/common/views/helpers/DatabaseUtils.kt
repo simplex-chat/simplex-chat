@@ -39,9 +39,18 @@ object DatabaseUtils {
     }
   }
 
-  // LALAL CHANGE DB FILE NAME ON DESKTOP
+  fun chatDatabaseFileName(): String = when (appPlatform) {
+    AppPlatform.ANDROID -> "files_chat.db"
+    AppPlatform.DESKTOP -> "simplex_v1_chat.db"
+  }
+
+  fun agentDatabaseFileName(): String = when (appPlatform) {
+    AppPlatform.ANDROID -> "files_agent.db"
+    AppPlatform.DESKTOP -> "simplex_v1_agent.db"
+  }
+
   private fun hasDatabase(rootDir: String): Boolean =
-    File(rootDir + File.separator + "files_chat.db").exists() && File(rootDir + File.separator + "files_agent.db").exists()
+    File(rootDir + File.separator + chatDatabaseFileName()).exists() && File(rootDir + File.separator + agentDatabaseFileName()).exists()
 
   fun useDatabaseKey(): String {
     Log.d(TAG, "useDatabaseKey ${appPreferences.storeDBPassphrase.get()}")

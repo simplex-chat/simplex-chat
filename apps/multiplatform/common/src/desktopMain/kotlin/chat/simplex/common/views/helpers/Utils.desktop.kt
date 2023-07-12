@@ -34,7 +34,7 @@ actual fun getLoadedImage(file: CIFile?): ImageBitmap? {
 
 actual fun getFileName(uri: URI): String? = uri.toPath().toFile().name
 
-actual fun getAppFilePath(uri: URI): String? = getFilesDirectory() + File.separator + "app_files"
+actual fun getAppFilePath(uri: URI): String? = getAppFilePath(uri.toString().substringAfterLast(File.separator))
 
 actual fun getFileSize(uri: URI): Long? = uri.toPath().toFile().length()
 
