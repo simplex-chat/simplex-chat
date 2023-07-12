@@ -491,6 +491,7 @@ testRepeatAuthErrorsDisableContact =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     alice <##> bob
+    threadDelay 500000
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
     forM_ [1 .. authErrDisableCount] $ \_ -> sendAuth alice
@@ -2007,7 +2008,7 @@ testMsgDecryptError tmp =
     withTestChat tmp "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       alice #> "@bob hello again"
-      bob <# "alice> skipped message ID 5..7"
+      bob <# "alice> skipped message ID 9..11"
       bob <# "alice> hello again"
       bob #> "@alice received!"
       alice <# "bob> received!"
@@ -2017,10 +2018,15 @@ setupDesynchronizedRatchet tmp alice = do
   copyDb "bob" "bob_old"
   withTestChat tmp "bob" $ \bob -> do
     bob <## "1 contacts connected (use /cs for the list)"
-    alice #> "@bob hello"
-    bob <# "alice> hello"
-    bob #> "@alice hello too"
-    alice <# "bob> hello too"
+    alice #> "@bob 1"
+    bob <# "alice> 1"
+    bob #> "@alice 2"
+    alice <# "bob> 2"
+    alice #> "@bob 3"
+    bob <# "alice> 3"
+    bob #> "@alice 4"
+    alice <# "bob> 4"
+    threadDelay 500000
   withTestChat tmp "bob_old" $ \bob -> do
     bob <## "1 contacts connected (use /cs for the list)"
     bob ##> "/sync alice"

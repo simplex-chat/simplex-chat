@@ -596,6 +596,7 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     bob ##> "/contacts"
     bob <## "i alice (Alice)"
     bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
+    threadDelay 500000
     -- delete contact, incognito profile is deleted
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"

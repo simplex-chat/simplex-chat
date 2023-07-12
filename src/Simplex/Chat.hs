@@ -3365,7 +3365,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- 3) show screen of death to the user asking to restart
       -- TODO send receipt depending on contact/group settings
       tryChatError action >>= \case
-        Right _withRcpt -> ack Nothing -- $ if withRcpt then Just "" else Nothing
+        Right withRcpt -> ack $ if withRcpt then Just "" else Nothing
         Left e -> ack Nothing >> throwError e
       where
         ack rcpt = withAgent $ \a -> ackMessageAsync a (aCorrId cmdId) cId msgId rcpt
