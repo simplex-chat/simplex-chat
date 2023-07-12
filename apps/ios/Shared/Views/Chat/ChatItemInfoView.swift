@@ -48,25 +48,20 @@ struct ChatItemInfoView: View {
     }
 
     @ViewBuilder private func itemInfoView() -> some View {
-        GeometryReader { g in
-            let maxWidth = (g.size.width - 32) * 0.84
-            TabView(selection: $selection) {
-                historyTab(maxWidth)
-                    .tabItem {
-                        Label("History", systemImage: "clock")
-                    }
-                    .tag(CIInfoTab.history)
-                if let qi = ci.quotedItem {
-                    quoteTab(qi, maxWidth)
-                        .tabItem {
-                            Label("Quoted message", systemImage: "arrowshape.turn.up.left")
-                        }
-                        .tag(CIInfoTab.quote)
+        TabView(selection: $selection) {
+            historyTab()
+                .tabItem {
+                    Label("History", systemImage: "clock")
                 }
+                .tag(CIInfoTab.history)
+            if let qi = ci.quotedItem {
+                quoteTab(qi)
+                    .tabItem {
+                        Label("Quoted message", systemImage: "arrowshape.turn.up.left")
+                    }
+                    .tag(CIInfoTab.quote)
             }
         }
-        .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder private func details() -> some View {
@@ -102,30 +97,34 @@ struct ChatItemInfoView: View {
         }
     }
 
-    @ViewBuilder private func historyTab(_ maxWidth: CGFloat) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                details()
-                Divider().padding(.vertical)
-                if let chatItemInfo = chatItemInfo,
-                   !chatItemInfo.itemVersions.isEmpty {
-                    Text("History")
-                        .font(.title2)
-                        .padding(.bottom, 4)
-                    LazyVStack(alignment: .leading, spacing: 16)  {
-                        ForEach(Array(chatItemInfo.itemVersions.enumerated()), id: \.element.chatItemVersionId) { index, itemVersion in
-                            itemVersionView(itemVersion, maxWidth, current: index == 0 && ci.meta.itemDeleted == nil)
+    @ViewBuilder private func historyTab() -> some View {
+        GeometryReader { g in
+            let maxWidth = (g.size.width - 32) * 0.84
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    details()
+                    Divider().padding(.vertical)
+                    if let chatItemInfo = chatItemInfo,
+                       !chatItemInfo.itemVersions.isEmpty {
+                        Text("History")
+                            .font(.title2)
+                            .padding(.bottom, 4)
+                        LazyVStack(alignment: .leading, spacing: 16)  {
+                            ForEach(Array(chatItemInfo.itemVersions.enumerated()), id: \.element.chatItemVersionId) { index, itemVersion in
+                                itemVersionView(itemVersion, maxWidth, current: index == 0 && ci.meta.itemDeleted == nil)
+                            }
                         }
                     }
+                    else {
+                        Text("No history")
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
-                else {
-                    Text("No history")
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity)
-                }
+                .padding()
             }
+            .frame(maxHeight: .infinity, alignment: .top)
         }
-        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
@@ -169,18 +168,22 @@ struct ChatItemInfoView: View {
         }
     }
 
-    @ViewBuilder private func quoteTab(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                details()
-                Divider().padding(.vertical)
-                Text("Quoted message")
-                    .font(.title2)
-                    .padding(.bottom, 4)
-                quotedMsgView(qi, maxWidth)
+    @ViewBuilder private func quoteTab(_ qi: CIQuote) -> some View {
+        GeometryReader { g in
+            let maxWidth = (g.size.width - 32) * 0.84
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    details()
+                    Divider().padding(.vertical)
+                    Text("Quoted message")
+                        .font(.title2)
+                        .padding(.bottom, 4)
+                    quotedMsgView(qi, maxWidth)
+                }
+                .padding()
             }
+            .frame(maxHeight: .infinity, alignment: .top)
         }
-        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
