@@ -1,10 +1,15 @@
 package chat.simplex.common.views.helpers
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.DropdownMenu
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
+import kotlin.math.exp
 
 actual interface DefaultExposedDropdownMenuBoxScope {
   @Composable
@@ -14,9 +19,11 @@ actual interface DefaultExposedDropdownMenuBoxScope {
     modifier: Modifier,
     content: @Composable ColumnScope.() -> Unit
   ) {
-    Column {
-      content()
-    }
+     DropdownMenu(expanded, onDismissRequest, offset = DpOffset(0.dp, (-40).dp)) {
+       Column {
+         content()
+       }
+     }
   }
 }
 
@@ -27,8 +34,10 @@ actual fun DefaultExposedDropdownMenuBox(
   modifier: Modifier,
   content: @Composable DefaultExposedDropdownMenuBoxScope.() -> Unit
 ) {
-  if (expanded) {
-    val obj = remember { object : DefaultExposedDropdownMenuBoxScope {} }
+  val obj = remember { object : DefaultExposedDropdownMenuBoxScope {} }
+  Box(Modifier
+    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { onExpandedChange(!expanded) })
+  ) {
     obj.content()
   }
 }
