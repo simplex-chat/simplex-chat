@@ -112,7 +112,9 @@ data User = User
     fullPreferences :: FullPreferences,
     activeUser :: Bool,
     viewPwdHash :: Maybe UserPwdHash,
-    showNtfs :: Bool
+    showNtfs :: Bool,
+    sendRcptsContacts :: Bool,
+    sendRcptsSmallGroups :: Bool
   }
   deriving (Show, Generic, FromJSON)
 
@@ -334,6 +336,7 @@ contactAndGroupIds = \case
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
   { enableNtfs :: Bool,
+    sendRcpts :: Maybe Bool,
     favorite :: Bool
   }
   deriving (Eq, Show, Generic, FromJSON)
@@ -343,6 +346,7 @@ instance ToJSON ChatSettings where toEncoding = J.genericToEncoding J.defaultOpt
 defaultChatSettings :: ChatSettings
 defaultChatSettings = ChatSettings
   { enableNtfs = True,
+    sendRcpts = Nothing,
     favorite = False
   }
 

@@ -45,7 +45,7 @@ import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
+import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
@@ -199,6 +199,9 @@ data ChatCommand
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
   | SetActiveUser UserName (Maybe UserPwd)
+  | SetAllContactReceipts Bool
+  | APISetUserContactReceipts UserId UserMsgReceiptSettings
+  | SetUserContactReceipts UserMsgReceiptSettings
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId

@@ -388,6 +388,15 @@ processChatCommand = \case
     tryError (withStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
+  SetAllContactReceipts onOff -> withUser $ \_ -> withStore' (`updateAllContactReceipts` onOff) >> ok_
+  APISetUserContactReceipts userId' settings -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' Nothing
+    withStore' $ \db -> updateUserContactReceipts db user' settings
+    ok user
+  SetUserContactReceipts settings -> withUser $ \user -> do
+    withStore' $ \db -> updateUserContactReceipts db user settings
+    ok user
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -4909,6 +4918,9 @@ chatCommandP =
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (A.space *> pwdP)),
+      "/set receipts all " *> (SetAllContactReceipts <$> onOffP),
+      "/_set receipts " *> (APISetUserContactReceipts <$> A.decimal <* A.space <*> receiptSettings),
+      "/set receipts " *> (SetUserContactReceipts <$> receiptSettings),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
       "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
       "/_mute user " *> (APIMuteUser <$> A.decimal),
@@ -5162,6 +5174,10 @@ chatCommandP =
     refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
+    receiptSettings = do
+      enable <- onOffP
+      clearOverrides <- (" clear_overrides=" *> onOffP) <|> pure False
+      pure UserMsgReceiptSettings {enable, clearOverrides}
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayName <*> fullNameP
     newUserP = do
