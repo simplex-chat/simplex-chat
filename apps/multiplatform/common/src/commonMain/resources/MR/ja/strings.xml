@@ -1072,7 +1072,7 @@
     <string name="alert_text_fragment_please_report_to_developers">開発者に報告してください。</string>
     <string name="alert_text_fragment_permanent_error_reconnect">このエラーはこの接続では永続的なものです。再接続してください。</string>
     <string name="v5_0_large_files_support">1GBまでのビデオとファイル</string>
-    <string name="alert_text_decryption_error_header">%1$d メッセージの復号化に失敗しました。</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d メッセージの復号化に失敗しました。</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d メッセージをスキップしました</string>
     <string name="error_loading_smp_servers">SMP サーバーのロード中にエラーが発生しました</string>
     <string name="error_saving_user_password">ユーザーパスワード保存エラー</string>

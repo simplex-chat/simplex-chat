@@ -135,8 +135,19 @@ suspend fun apiFindMessages(chatInfo: ChatInfo, chatModel: ChatModel, search: St
 
 suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
   val groupMembers = chatModel.controller.apiListMembers(groupInfo.groupId)
+  val currentMembers = chatModel.groupMembers
+  val newMembers = groupMembers.map { newMember ->
+    val currentMember = currentMembers.find { it.id == newMember.id }
+    val currentMemberStats = currentMember?.activeConn?.connectionStats
+    val newMemberConn = newMember.activeConn
+    if (currentMemberStats != null && newMemberConn != null && newMemberConn.connectionStats == null) {
+      newMember.copy(activeConn = newMemberConn.copy(connectionStats = currentMemberStats))
+    } else {
+      newMember
+    }
+  }
   chatModel.groupMembers.clear()
-  chatModel.groupMembers.addAll(groupMembers)
+  chatModel.groupMembers.addAll(newMembers)
 }
 
 @Composable
