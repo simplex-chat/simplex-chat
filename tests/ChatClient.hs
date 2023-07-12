@@ -26,7 +26,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
-import Simplex.Chat.Types (AgentUserId (..), Profile (..), User (..), newDefaultChatPrefs)
+import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
@@ -136,7 +136,7 @@ testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
   Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile {preferences = Just newDefaultChatPrefs} True
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC

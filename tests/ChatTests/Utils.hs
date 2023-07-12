@@ -29,7 +29,7 @@ import System.Info (os)
 import Test.Hspec
 
 defaultPrefs :: Maybe Preferences
-defaultPrefs = Just newDefaultChatPrefs
+defaultPrefs = Just $ toChatPrefs defaultChatPrefs
 
 aliceProfile :: Profile
 aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
@@ -186,7 +186,6 @@ chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 chatFeatures'' =
   [ ((0, "Disappearing messages: allowed"), Nothing, Nothing),
-    ((0, "Delivery receipts: enabled"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: enabled"), Nothing, Nothing),
     ((0, "Voice messages: enabled"), Nothing, Nothing),
@@ -204,7 +203,6 @@ groupFeatures'' =
   [ ((0, "Disappearing messages: off"), Nothing, Nothing),
     ((0, "Direct messages: on"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
-    ((0, "Delivery receipts: off"), Nothing, Nothing),
     ((0, "Message reactions: on"), Nothing, Nothing),
     ((0, "Voice messages: on"), Nothing, Nothing),
     ((0, "Files and media: on"), Nothing, Nothing)
