@@ -50,7 +50,7 @@ struct ChatItemInfoView: View {
                     .tag(CIInfoTab.history)
                 quoteTab(qi)
                     .tabItem {
-                        Label("Quoted message", systemImage: "arrowshape.turn.up.left")
+                        Label("In reply to", systemImage: "arrowshape.turn.up.left")
                     }
                     .tag(CIInfoTab.quote)
             }
@@ -170,7 +170,7 @@ struct ChatItemInfoView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     details()
                     Divider().padding(.vertical)
-                    Text("Quoted message")
+                    Text("In reply to")
                         .font(.title2)
                         .padding(.bottom, 4)
                     quotedMsgView(qi, maxWidth)
@@ -245,7 +245,7 @@ struct ChatItemInfoView: View {
             ]
         }
         if let qi = ci.quotedItem {
-            shareText += ["", NSLocalizedString("Quoted message", comment: "copied message info")]
+            shareText += ["", NSLocalizedString("In reply to", comment: "copied message info")]
             let t = qi.text
             shareText += [""]
             if let sender = qi.getSender(nil) {
