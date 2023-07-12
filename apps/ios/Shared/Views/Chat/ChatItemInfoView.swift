@@ -48,19 +48,21 @@ struct ChatItemInfoView: View {
     }
 
     @ViewBuilder private func itemInfoView() -> some View {
-        TabView(selection: $selection) {
-            historyTab()
-                .tabItem {
-                    Label("History", systemImage: "clock")
-                }
-                .tag(CIInfoTab.history)
-            if let qi = ci.quotedItem {
+        if let qi = ci.quotedItem {
+            TabView(selection: $selection) {
+                historyTab()
+                    .tabItem {
+                        Label("History", systemImage: "clock")
+                    }
+                    .tag(CIInfoTab.history)
                 quoteTab(qi)
                     .tabItem {
                         Label("Quoted message", systemImage: "arrowshape.turn.up.left")
                     }
                     .tag(CIInfoTab.quote)
             }
+        } else {
+            historyTab()
         }
     }
 
