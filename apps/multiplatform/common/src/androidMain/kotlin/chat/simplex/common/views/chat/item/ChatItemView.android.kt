@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MsgContent
+import chat.simplex.common.platform.FileChooserLauncher
 import chat.simplex.common.platform.saveImage
 import chat.simplex.common.views.helpers.withApi
 import chat.simplex.res.MR
@@ -14,8 +15,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-actual fun SaveContentItemAction(cItem: ChatItem, showMenu: MutableState<Boolean>) {
-  val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
+actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserLauncher, showMenu: MutableState<Boolean>) {
   val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
   ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), onClick = {
     when (cItem.content.msgContent) {

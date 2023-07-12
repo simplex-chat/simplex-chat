@@ -1,5 +1,6 @@
 package chat.simplex.common.platform
 
+import androidx.compose.runtime.Composable
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -68,6 +69,7 @@ fun getLoadedFilePath(file: CIFile?): String? {
   }
 }
 
+@Composable
 expect fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher
 
 expect class FileChooserLauncher() {

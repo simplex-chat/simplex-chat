@@ -156,6 +156,7 @@ fun ChatItemView(
 
         @Composable
         fun MsgContentItemDropdownMenu() {
+          val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
           DefaultDropdownMenu(showMenu) {
             if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
               MsgReactionsMenu()
@@ -183,11 +184,8 @@ fun ChatItemView(
               clipboard.setText(AnnotatedString(cItem.content.text))
               showMenu.value = false
             })
-            if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
-              val filePath = getLoadedFilePath(cItem.file)
-              if (filePath != null) {
-                SaveContentItemAction(cItem, showMenu)
-              }
+            if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice && getLoadedFilePath(cItem.file) != null) {
+              SaveContentItemAction(cItem, saveFileLauncher, showMenu)
             }
             if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
               ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), onClick = {
@@ -319,7 +317,7 @@ fun ChatItemView(
 }
 
 @Composable
-expect fun SaveContentItemAction(cItem: ChatItem, showMenu: MutableState<Boolean>)
+expect fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserLauncher, showMenu: MutableState<Boolean>)
 
 @Composable
 fun CancelFileItemAction(
