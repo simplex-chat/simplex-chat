@@ -68,6 +68,15 @@ struct ChatItemInfoView: View {
                         infoRow("Record updated at", localTimestamp(meta.updatedAt))
                     }
 
+                    if let qi = ci.quotedItem {
+                        Divider().padding(.vertical)
+
+                        Text("Quoted message")
+                            .font(.title2)
+                            .padding(.bottom, 4)
+                        quotedMsgView(qi, maxWidth)
+                    }
+
                     if let chatItemInfo = chatItemInfo,
                        !chatItemInfo.itemVersions.isEmpty {
                         Divider().padding(.vertical)
@@ -87,10 +96,46 @@ struct ChatItemInfoView: View {
             .frame(maxHeight: .infinity, alignment: .top)
         }
     }
+
+    @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            textBubble(qi.text, qi.formattedText, qi.getSender(nil))
+                .allowsHitTesting(false)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(quotedMsgFrameColor(qi, colorScheme))
+                .cornerRadius(18)
+                .contextMenu {
+                    if qi.text != "" {
+                        Button {
+                            showShareSheet(items: [qi.text])
+                        } label: {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+                        Button {
+                            UIPasteboard.general.string = qi.text
+                        } label: {
+                            Label("Copy", systemImage: "doc.on.doc")
+                        }
+                    }
+                }
+            Text(localTimestamp(qi.sentAt))
+                .foregroundStyle(.secondary)
+                .font(.caption)
+                .padding(.horizontal, 12)
+        }
+        .frame(maxWidth: maxWidth, alignment: .leading)
+    }
+
+    func quotedMsgFrameColor(_ qi: CIQuote, _ colorScheme: ColorScheme) -> Color {
+        (qi.chatDir?.sent ?? false)
+        ? (colorScheme == .light ? sentColorLight : sentColorDark)
+        : Color(uiColor: .tertiarySystemGroupedBackground)
+    }
     
     @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            versionText(itemVersion)
+            textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
                 .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -119,9 +164,9 @@ struct ChatItemInfoView: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
-    @ViewBuilder private func versionText(_ itemVersion: ChatItemVersion) -> some View {
-        if itemVersion.msgContent.text != "" {
-            messageText(itemVersion.msgContent.text, itemVersion.formattedText, nil)
+    @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil) -> some View {
+        if text != "" {
+            messageText(text, formattedText, sender)
         } else {
             Text("no text")
                 .italic()
@@ -155,6 +200,24 @@ struct ChatItemInfoView: View {
                 String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId),
                 String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt))
             ]
+        }
+        if let qi = ci.quotedItem {
+            shareText += ["", NSLocalizedString("Quoted message", comment: "copied message info")]
+            let t = qi.text
+            shareText += [""]
+            if let sender = qi.getSender(nil) {
+                shareText += [String.localizedStringWithFormat(
+                    NSLocalizedString("%@ at %@:", comment: "copied message info, <sender> at <time>"),
+                    sender,
+                    localTimestamp(qi.sentAt)
+                )]
+            } else {
+                shareText += [String.localizedStringWithFormat(
+                    NSLocalizedString("%@:", comment: "copied message info"),
+                    localTimestamp(qi.sentAt)
+                )]
+            }
+            shareText += [t != "" ? t : NSLocalizedString("no text", comment: "copied message info in history")]
         }
         if let chatItemInfo = chatItemInfo,
            !chatItemInfo.itemVersions.isEmpty {
