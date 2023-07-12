@@ -96,7 +96,6 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
-import qualified UnliftIO.Exception as UE
 import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
@@ -124,6 +123,7 @@ defaultChatConfig =
       xftpFileConfig = Just defaultXFTPFileConfig,
       tempDir = Nothing,
       showReactions = False,
+      showReceipts = False,
       logLevel = CLLImportant,
       subscriptionEvents = False,
       hostEvents = False,
@@ -2804,7 +2804,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               BFileChunk sharedMsgId chunk -> bFileChunk ct sharedMsgId chunk msgMeta
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
             pure $ hasDeliveryReceipt $ toCMEventTag event
-        RCVD msgMeta msgRcpt -> directMsgReceived ct conn msgMeta msgRcpt
+        RCVD msgMeta msgRcpt ->
+          withAckMessage' agentConnId conn msgMeta $
+            directMsgReceived ct conn msgMeta msgRcpt
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
@@ -3052,12 +3054,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
-          pure $ hasDeliveryReceipt $ toCMEventTag event
+          pure False -- no receipts in group now $ hasDeliveryReceipt $ toCMEventTag event
         where
           canSend a
             | memberRole (m :: GroupMember) <= GRObserver = messageError "member is not allowed to send messages"
             | otherwise = a
-      RCVD msgMeta msgRcpt -> groupMsgReceived gInfo m conn msgMeta msgRcpt
+      RCVD msgMeta msgRcpt ->
+        withAckMessage' agentConnId conn msgMeta $
+          groupMsgReceived gInfo m conn msgMeta msgRcpt
       SENT msgId -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
@@ -3162,9 +3166,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 getChatItemByFileId db user fileId
               toView $ CRSndFileRcvCancelled user ci ft
             _ -> throwChatError $ CEFileSend fileId err
-        MSG meta _ _ -> do
-          cmdId <- createAckCmd conn
-          withAckMessage agentConnId cmdId meta $ pure False
+        MSG meta _ _ -> withAckMessage' agentConnId conn meta $ pure ()
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -3257,9 +3259,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
       where
         ack a = case conn_ of
-          Just conn -> do
-            cmdId <- createAckCmd conn
-            withAckMessage agentConnId cmdId meta $ a $> False
+          Just conn -> withAckMessage' agentConnId conn meta a
           Nothing -> a
 
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
@@ -3342,6 +3342,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     createAckCmd Connection {connId} = do
       withStore' $ \db -> createCommand db user (Just connId) CFAckMessage
 
+    withAckMessage' :: ConnId -> Connection -> MsgMeta -> m () -> m ()
+    withAckMessage' cId conn msgMeta action = do
+      cmdId <- createAckCmd conn
+      withAckMessage cId cmdId msgMeta $ action $> False
+
     withAckMessage :: ConnId -> CommandId -> MsgMeta -> m Bool -> m ()
     withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action = do
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
@@ -3351,7 +3356,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- 2) stabilize database
       -- 3) show screen of death to the user asking to restart
       tryChatError action >>= \case
-        Right _withRcpt -> ack Nothing -- $ if withRcpt then Just "" else Nothing
+        Right withRcpt -> ack $ if withRcpt then Just "" else Nothing
         Left e -> ack Nothing >> throwError e
       where
         ack rcpt = withAgent $ \a -> ackMessageAsync a (aCorrId cmdId) cId msgId rcpt
@@ -4276,14 +4281,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
-    directMsgReceived ct@Contact {contactId, localDisplayName = c} Connection {connId} msgMeta msgRcpts = do
+    directMsgReceived ct@Contact {contactId} Connection {connId} msgMeta msgRcpts = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore $ \db -> createSndMsgDeliveryEvent db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId agentMsgId) >>= \case
           Just (CChatItem SMDSnd ci) -> do
             chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) $ CISSndRcvd msgRcptStatus
-            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+            toView $ CRChatItemReceipt user msgRcptStatus $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
           _ -> pure ()
  
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()

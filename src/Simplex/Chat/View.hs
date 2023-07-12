@@ -62,7 +62,7 @@ serializeChatResponse :: Maybe User -> CurrentTime -> TimeZone -> ChatResponse -
 serializeChatResponse user_ ts tz = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz
 
 responseToView :: Maybe User -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> ChatResponse -> [StyledString]
-responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts tz = \case
+responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
@@ -102,6 +102,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
+  CRChatItemReceipt u status (AChatItem _ _ chat item) -> if testView && showReceipts then ttyUser u $ prependFirst (viewDeliveryReceipt status) $ viewChatItem chat item False ts tz else []
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
@@ -495,7 +496,7 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
 
-hideLive :: CIMeta с d -> [StyledString] -> [StyledString]
+hideLive :: CIMeta c d -> [StyledString] -> [StyledString]
 hideLive CIMeta {itemLive = Just True} _ = []
 hideLive _ s = s
 
@@ -1153,6 +1154,11 @@ viewReceivedMessage_ updated from quote mc ts tz meta = receivedWithTime_ ts tz 
 viewReceivedReaction :: StyledString -> [StyledString] -> StyledString -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
 viewReceivedReaction from styledMsg reactionText ts tz reactionTs =
   prependFirst (ttyMsgTime ts tz reactionTs <> " " <> from) (styledMsg <> ["    " <> reactionText])
+
+viewDeliveryReceipt :: MsgReceiptStatus -> StyledString
+viewDeliveryReceipt = \case
+  MROk -> "⩗ "
+  MRBadMsgHash -> ttyError' "⩗ "
 
 receivedWithTime_ :: CurrentTime -> TimeZone -> StyledString -> [StyledString] -> CIMeta c d -> [StyledString] -> Bool -> [StyledString]
 receivedWithTime_ ts tz from quote CIMeta {itemId, itemTs, itemEdited, itemDeleted, itemLive} styledMsg updated = do

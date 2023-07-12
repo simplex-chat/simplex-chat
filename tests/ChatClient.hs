@@ -116,6 +116,7 @@ testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
+      showReceipts = False,
       testView = True,
       tbqSize = 16,
       xftpFileConfig = Nothing
