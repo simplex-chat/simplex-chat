@@ -13,7 +13,20 @@ struct ChatItemInfoView: View {
     @Environment(\.colorScheme) var colorScheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
+    @State private var selection: CIInfoTab = .history
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+
+    enum CIInfoTab: Identifiable, Hashable {
+        case history
+        case quote
+
+        var id: String {
+            switch self {
+            case .history: return "History"
+            case .quote: return "Quoted message"
+            }
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -35,104 +48,86 @@ struct ChatItemInfoView: View {
     }
 
     @ViewBuilder private func itemInfoView() -> some View {
-        let meta = ci.meta
         GeometryReader { g in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(title)
-                        .font(.largeTitle)
-                        .bold()
-                        .padding(.bottom)
-
-                    let maxWidth = (g.size.width - 32) * 0.84
-                    infoRow("Sent at", localTimestamp(meta.itemTs))
-                    if !ci.chatDir.sent {
-                        infoRow("Received at", localTimestamp(meta.createdAt))
+            let maxWidth = (g.size.width - 32) * 0.84
+            TabView(selection: $selection) {
+                historyTab(maxWidth)
+                    .tabItem {
+                        Label("History", systemImage: "clock")
                     }
-                    switch (meta.itemDeleted) {
-                    case let .deleted(deletedTs):
-                        if let deletedTs = deletedTs {
-                            infoRow("Deleted at", localTimestamp(deletedTs))
+                    .tag(CIInfoTab.history)
+                if let qi = ci.quotedItem {
+                    quoteTab(qi, maxWidth)
+                        .tabItem {
+                            Label("Quoted message", systemImage: "arrowshape.turn.up.left")
                         }
-                    case let .moderated(deletedTs, _):
-                        if let deletedTs = deletedTs {
-                            infoRow("Moderated at", localTimestamp(deletedTs))
-                        }
-                    default: EmptyView()
-                    }
-                    if let deleteAt = meta.itemTimed?.deleteAt {
-                        infoRow("Disappears at", localTimestamp(deleteAt))
-                    }
-                    if developerTools {
-                        infoRow("Database ID", "\(meta.itemId)")
-                        infoRow("Record updated at", localTimestamp(meta.updatedAt))
-                    }
-
-                    if let qi = ci.quotedItem {
-                        Divider().padding(.vertical)
-
-                        Text("Quoted message")
-                            .font(.title2)
-                            .padding(.bottom, 4)
-                        quotedMsgView(qi, maxWidth)
-                    }
-
-                    if let chatItemInfo = chatItemInfo,
-                       !chatItemInfo.itemVersions.isEmpty {
-                        Divider().padding(.vertical)
-
-                        Text("History")
-                            .font(.title2)
-                            .padding(.bottom, 4)
-                        LazyVStack(alignment: .leading, spacing: 16)  {
-                            ForEach(Array(chatItemInfo.itemVersions.enumerated()), id: \.element.chatItemVersionId) { index, itemVersion in
-                                itemVersionView(itemVersion, maxWidth, current: index == 0 && ci.meta.itemDeleted == nil)
-                            }
-                        }
-                    }
+                        .tag(CIInfoTab.quote)
                 }
             }
-            .padding()
-            .frame(maxHeight: .infinity, alignment: .top)
+        }
+        .padding()
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    @ViewBuilder private func details() -> some View {
+        let meta = ci.meta
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title)
+                .font(.largeTitle)
+                .bold()
+                .padding(.bottom)
+
+            infoRow("Sent at", localTimestamp(meta.itemTs))
+            if !ci.chatDir.sent {
+                infoRow("Received at", localTimestamp(meta.createdAt))
+            }
+            switch (meta.itemDeleted) {
+            case let .deleted(deletedTs):
+                if let deletedTs = deletedTs {
+                    infoRow("Deleted at", localTimestamp(deletedTs))
+                }
+            case let .moderated(deletedTs, _):
+                if let deletedTs = deletedTs {
+                    infoRow("Moderated at", localTimestamp(deletedTs))
+                }
+            default: EmptyView()
+            }
+            if let deleteAt = meta.itemTimed?.deleteAt {
+                infoRow("Disappears at", localTimestamp(deleteAt))
+            }
+            if developerTools {
+                infoRow("Database ID", "\(meta.itemId)")
+                infoRow("Record updated at", localTimestamp(meta.updatedAt))
+            }
         }
     }
 
-    @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            textBubble(qi.text, qi.formattedText, qi.getSender(nil))
-                .allowsHitTesting(false)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(quotedMsgFrameColor(qi, colorScheme))
-                .cornerRadius(18)
-                .contextMenu {
-                    if qi.text != "" {
-                        Button {
-                            showShareSheet(items: [qi.text])
-                        } label: {
-                            Label("Share", systemImage: "square.and.arrow.up")
-                        }
-                        Button {
-                            UIPasteboard.general.string = qi.text
-                        } label: {
-                            Label("Copy", systemImage: "doc.on.doc")
+    @ViewBuilder private func historyTab(_ maxWidth: CGFloat) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                details()
+                Divider().padding(.vertical)
+                if let chatItemInfo = chatItemInfo,
+                   !chatItemInfo.itemVersions.isEmpty {
+                    Text("History")
+                        .font(.title2)
+                        .padding(.bottom, 4)
+                    LazyVStack(alignment: .leading, spacing: 16)  {
+                        ForEach(Array(chatItemInfo.itemVersions.enumerated()), id: \.element.chatItemVersionId) { index, itemVersion in
+                            itemVersionView(itemVersion, maxWidth, current: index == 0 && ci.meta.itemDeleted == nil)
                         }
                     }
                 }
-            Text(localTimestamp(qi.sentAt))
-                .foregroundStyle(.secondary)
-                .font(.caption)
-                .padding(.horizontal, 12)
+                else {
+                    Text("No history")
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                }
+            }
         }
-        .frame(maxWidth: maxWidth, alignment: .leading)
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
-    func quotedMsgFrameColor(_ qi: CIQuote, _ colorScheme: ColorScheme) -> Color {
-        (qi.chatDir?.sent ?? false)
-        ? (colorScheme == .light ? sentColorLight : sentColorDark)
-        : Color(uiColor: .tertiarySystemGroupedBackground)
-    }
-    
     @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
@@ -172,6 +167,56 @@ struct ChatItemInfoView: View {
                 .italic()
                 .foregroundColor(.secondary)
         }
+    }
+
+    @ViewBuilder private func quoteTab(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                details()
+                Divider().padding(.vertical)
+                Text("Quoted message")
+                    .font(.title2)
+                    .padding(.bottom, 4)
+                quotedMsgView(qi, maxWidth)
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            textBubble(qi.text, qi.formattedText, qi.getSender(nil))
+                .allowsHitTesting(false)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(quotedMsgFrameColor(qi, colorScheme))
+                .cornerRadius(18)
+                .contextMenu {
+                    if qi.text != "" {
+                        Button {
+                            showShareSheet(items: [qi.text])
+                        } label: {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+                        Button {
+                            UIPasteboard.general.string = qi.text
+                        } label: {
+                            Label("Copy", systemImage: "doc.on.doc")
+                        }
+                    }
+                }
+            Text(localTimestamp(qi.sentAt))
+                .foregroundStyle(.secondary)
+                .font(.caption)
+                .padding(.horizontal, 12)
+        }
+        .frame(maxWidth: maxWidth, alignment: .leading)
+    }
+
+    func quotedMsgFrameColor(_ qi: CIQuote, _ colorScheme: ColorScheme) -> Color {
+        (qi.chatDir?.sent ?? false)
+        ? (colorScheme == .light ? sentColorLight : sentColorDark)
+        : Color(uiColor: .tertiarySystemGroupedBackground)
     }
 
     private func itemInfoShareText() -> String {
