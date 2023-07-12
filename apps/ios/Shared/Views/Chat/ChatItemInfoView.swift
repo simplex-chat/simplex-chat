@@ -16,16 +16,9 @@ struct ChatItemInfoView: View {
     @State private var selection: CIInfoTab = .history
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
-    enum CIInfoTab: Identifiable, Hashable {
+    enum CIInfoTab {
         case history
         case quote
-
-        var id: String {
-            switch self {
-            case .history: return "History"
-            case .quote: return "Quoted message"
-            }
-        }
     }
     
     var body: some View {
