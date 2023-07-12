@@ -3,8 +3,8 @@ package chat.simplex.app
 import android.app.backup.BackupAgentHelper
 import android.app.backup.FullBackupDataOutput
 import android.content.Context
-import chat.simplex.app.model.AppPreferences
-import chat.simplex.app.model.AppPreferences.Companion.SHARED_PREFS_PRIVACY_FULL_BACKUP
+import chat.simplex.common.model.AppPreferences
+import chat.simplex.common.model.AppPreferences.Companion.SHARED_PREFS_PRIVACY_FULL_BACKUP
 
 class BackupAgent: BackupAgentHelper() {
   override fun onFullBackup(data: FullBackupDataOutput?) {

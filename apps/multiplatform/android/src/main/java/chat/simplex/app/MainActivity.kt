@@ -1,51 +1,41 @@
 package chat.simplex.app
 
-import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.os.*
-import android.os.SystemClock.elapsedRealtime
-import android.util.Log
 import android.view.WindowManager
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
-import androidx.compose.runtime.*
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.*
-import chat.simplex.app.helpers.applyAppLocale
-import chat.simplex.app.model.*
+import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.getUserIdFromIntent
-import chat.simplex.app.platform.mainActivity
-import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chatlist.*
-import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.*
-import chat.simplex.app.views.onboarding.*
-import chat.simplex.app.views.usersettings.*
+import chat.simplex.common.*
+import chat.simplex.common.helpers.*
+import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.*
+import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.*
+import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
+import java.net.URI
 
 class MainActivity: FragmentActivity() {
-  private val vm by viewModels<SimplexViewModel>()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    mainActivity = WeakReference(this)
     // testJson()
-    val m = vm.chatModel
-    applyAppLocale(m.controller.appPrefs.appLanguage)
+    mainActivity = WeakReference(this)
+    applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
-      processNotificationIntent(intent, m)
-      processIntent(intent, m)
-      processExternalIntent(intent, m)
+      processNotificationIntent(intent)
+      processIntent(intent)
+      processExternalIntent(intent)
     }
-    if (m.controller.appPrefs.privacyProtectScreen.get()) {
+    if (ChatController.appPrefs.privacyProtectScreen.get()) {
       Log.d(TAG, "onCreate: set FLAG_SECURE")
       window.setFlags(
         WindowManager.LayoutParams.FLAG_SECURE,
@@ -54,17 +44,7 @@ class MainActivity: FragmentActivity() {
     }
     setContent {
       SimpleXTheme {
-        Surface(color = MaterialTheme.colors.background) {
-          MainPage(
-            m,
-            AppLock.userAuthorized,
-            AppLock.laFailed,
-            AppLock.destroyedAfterBackPress,
-            { AppLock.runAuthenticate() },
-            { AppLock.setPerformLA(it) },
-            showLANotice = { AppLock.showLANotice(m.controller.appPrefs.laNoticeShown) }
-          )
-        }
+        AppScreen()
       }
     }
     SimplexApp.context.schedulePeriodicServiceRestartWorker()
@@ -73,22 +53,13 @@ class MainActivity: FragmentActivity() {
 
   override fun onNewIntent(intent: Intent?) {
     super.onNewIntent(intent)
-    processIntent(intent, vm.chatModel)
-    processExternalIntent(intent, vm.chatModel)
+    processIntent(intent)
+    processExternalIntent(intent)
   }
 
   override fun onResume() {
     super.onResume()
-    val enteredBackgroundVal = AppLock.enteredBackground.value
-    val delay = vm.chatModel.controller.appPrefs.laLockDelay.get()
-    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= delay * 1000) {
-      if (AppLock.userAuthorized.value != false) {
-        /** [runAuthenticate] will be called in [MainPage] if needed. Making like this prevents double showing of passcode on start */
-        AppLock.setAuthState()
-      } else if (!vm.chatModel.activeCallViewIsVisible.value) {
-        AppLock.runAuthenticate()
-      }
-    }
+    AppLock.recheckAuthState()
   }
 
   override fun onPause() {
@@ -98,13 +69,13 @@ class MainActivity: FragmentActivity() {
      * recreation but receives onStop after recreation. So using both (onPause and onStop) to prevent
      * unwanted multiple auth dialogs from [runAuthenticate]
      * */
-    AppLock.enteredBackground.value = elapsedRealtime()
+    AppLock.appWasHidden()
   }
 
   override fun onStop() {
     super.onStop()
     VideoPlayer.stopAll()
-    AppLock.enteredBackground.value = elapsedRealtime()
+    AppLock.appWasHidden()
   }
 
   override fun onBackPressed() {
@@ -117,7 +88,7 @@ class MainActivity: FragmentActivity() {
       super.onBackPressed()
     }
 
-    if (!onBackPressedDispatcher.hasEnabledCallbacks() && vm.chatModel.controller.appPrefs.performLA.get()) {
+    if (!onBackPressedDispatcher.hasEnabledCallbacks() && ChatController.appPrefs.performLA.get()) {
       // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
       AppLock.clearAuthState()
       AppLock.laFailed.value = true
@@ -130,12 +101,7 @@ class MainActivity: FragmentActivity() {
   }
 }
 
-class SimplexViewModel(application: Application): AndroidViewModel(application) {
-  val app = getApplication<SimplexApp>()
-  val chatModel = app.chatModel
-}
-
-fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
+fun processNotificationIntent(intent: Intent?) {
   val userId = getUserIdFromIntent(intent)
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
@@ -179,16 +145,16 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
   }
 }
 
-fun processIntent(intent: Intent?, chatModel: ChatModel) {
+fun processIntent(intent: Intent?) {
   when (intent?.action) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
-      if (uri != null) connectIfOpenedViaUri(uri, chatModel)
+      if (uri != null) connectIfOpenedViaUri(uri.toURI(), ChatModel)
     }
   }
 }
 
-fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
+fun processExternalIntent(intent: Intent?) {
   when (intent?.action) {
     Intent.ACTION_SEND -> {
       // Close active chat and show a list of chats
@@ -204,13 +170,13 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
         isMediaIntent(intent) -> {
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
-            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(uri))
+            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(uri.toURI()))
           } // All other mime types
         }
         else -> {
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
-            chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uri)
+            chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uri.toURI())
           }
         }
       }
@@ -224,7 +190,7 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
         isMediaIntent(intent) -> {
           val uris = intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>
           if (uris != null) {
-            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uris)
+            chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uris.map { it.toURI() })
           } // All other mime types
         }
         else -> {}
