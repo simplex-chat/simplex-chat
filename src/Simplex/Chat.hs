@@ -2810,7 +2810,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XCallEnd callId -> xCallEnd ct callId msg msgMeta
               BFileChunk sharedMsgId chunk -> bFileChunk ct sharedMsgId chunk msgMeta
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
-            pure $ hasDeliveryReceipt $ toCMEventTag event
+            let Contact {chatSettings = ChatSettings {sendRcpts}} = ct
+            pure $ fromMaybe (sendRcptsContacts user) sendRcpts && hasDeliveryReceipt (toCMEventTag event)
         RCVD msgMeta msgRcpt ->
           withAckMessage' agentConnId conn msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
