@@ -27,7 +27,6 @@ fun initApp() {
     override fun cancelCallNotification() {}
     override fun cancelAllNotifications() {}
   }
-  chatInitializedAndStarted = {}
   applyAppLocale()
   withBGApi {
     initChatController()

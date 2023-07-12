@@ -371,7 +371,7 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastSta
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)
       chatLastStart.value = ts
-      chatStartedAfterBeingOff()
+      platformCallbacks.androidChatStartedAfterBeingOff()
     } catch (e: Error) {
       runChat.value = false
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
@@ -425,7 +425,7 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
     try {
       runChat.value = false
       stopChatAsync(m)
-      chatStopped()
+      platformCallbacks.androidChatStopped()
     } catch (e: Error) {
       runChat.value = true
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_stopping_chat), e.toString())

@@ -151,43 +151,48 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
       override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
     }
-    notificationsModeChanged = { mode: NotificationsMode ->
-      if (mode.requiresIgnoringBattery && !SimplexService.isIgnoringBatteryOptimizations()) {
-        appPrefs.backgroundServiceNoticeShown.set(false)
-      }
-      SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
-      CoroutineScope(Dispatchers.Default).launch {
-        if (mode == NotificationsMode.SERVICE)
-          SimplexService.start()
-        else
-          SimplexService.safeStopService()
+    platformCallbacks = object : PlatformCallbacks {
+      override fun androidNotificationsModeChanged(mode: NotificationsMode) {
+        if (mode.requiresIgnoringBattery && !SimplexService.isIgnoringBatteryOptimizations()) {
+          appPrefs.backgroundServiceNoticeShown.set(false)
+        }
+        SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+        CoroutineScope(Dispatchers.Default).launch {
+          if (mode == NotificationsMode.SERVICE)
+            SimplexService.start()
+          else
+            SimplexService.safeStopService()
+        }
+
+        if (mode != NotificationsMode.PERIODIC) {
+          MessagesFetcherWorker.cancelAll()
+        }
+        SimplexService.showBackgroundServiceNoticeIfNeeded()
       }
 
-      if (mode != NotificationsMode.PERIODIC) {
+      override fun androidChatStartedAfterBeingOff() {
+        SimplexService.cancelPassphraseNotification()
+        when (appPrefs.notificationsMode.get()) {
+          NotificationsMode.SERVICE -> CoroutineScope(Dispatchers.Default).launch { serviceStart() }
+          NotificationsMode.PERIODIC -> SimplexApp.context.schedulePeriodicWakeUp()
+          NotificationsMode.OFF -> {}
+        }
+      }
+
+      override fun androidChatStopped() {
+        SimplexService.safeStopService()
         MessagesFetcherWorker.cancelAll()
       }
-      SimplexService.showBackgroundServiceNoticeIfNeeded()
-    }
-    chatStartedAfterBeingOff = {
-      SimplexService.cancelPassphraseNotification()
-      when (appPrefs.notificationsMode.get()) {
-        NotificationsMode.SERVICE -> CoroutineScope(Dispatchers.Default).launch { serviceStart() }
-        NotificationsMode.PERIODIC -> SimplexApp.context.schedulePeriodicWakeUp()
-        NotificationsMode.OFF -> {}
-      }
-    }
-    chatStopped = {
-      SimplexService.safeStopService()
-      MessagesFetcherWorker.cancelAll()
-    }
-    chatInitializedAndStarted = {
-      // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
-      if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
-        SimplexService.showBackgroundServiceNoticeIfNeeded()
-        if (appPrefs.notificationsMode.get() == NotificationsMode.SERVICE)
-          withBGApi {
-            serviceStart()
-          }
+
+      override fun androidChatInitializedAndStarted() {
+        // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
+        if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
+          SimplexService.showBackgroundServiceNoticeIfNeeded()
+          if (appPrefs.notificationsMode.get() == NotificationsMode.SERVICE)
+            withBGApi {
+              serviceStart()
+            }
+        }
       }
     }
   }

@@ -167,5 +167,5 @@ fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
 
 fun changeNotificationsMode(mode: NotificationsMode, chatModel: ChatModel) {
   chatModel.controller.appPrefs.notificationsMode.set(mode)
-  notificationsModeChanged(mode)
+  platformCallbacks.androidNotificationsModeChanged(mode)
 }

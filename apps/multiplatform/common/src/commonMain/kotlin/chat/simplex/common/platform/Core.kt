@@ -61,7 +61,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
         savedOnboardingStage
       }
       chatController.startChat(user)
-      chatInitializedAndStarted()
+      platformCallbacks.androidChatInitializedAndStarted()
     }
   }
 }
