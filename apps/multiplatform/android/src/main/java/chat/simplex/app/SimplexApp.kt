@@ -137,8 +137,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
   private fun initMultiplatform() {
     androidAppContext = this
     APPLICATION_ID = BuildConfig.APPLICATION_ID
-    serviceStart = { SimplexService.start() }
-    serviceSafeStop = { SimplexService.safeStopService() }
     ntfManager = object : chat.simplex.common.platform.NtfManager() {
       override fun notifyContactConnected(user: User, contact: Contact) = NtfManager.notifyContactConnected(user, contact)
       override fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) = NtfManager.notifyContactRequestReceived(user, cInfo)
@@ -151,7 +149,15 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
       override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
     }
-    platformCallbacks = object : PlatformCallbacks {
+    platform = object : PlatformInterface {
+      override suspend fun androidServiceStart() {
+        SimplexService.start()
+      }
+
+      override fun androidServiceSafeStop() {
+        SimplexService.safeStopService()
+      }
+
       override fun androidNotificationsModeChanged(mode: NotificationsMode) {
         if (mode.requiresIgnoringBattery && !SimplexService.isIgnoringBatteryOptimizations()) {
           appPrefs.backgroundServiceNoticeShown.set(false)
@@ -173,7 +179,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidChatStartedAfterBeingOff() {
         SimplexService.cancelPassphraseNotification()
         when (appPrefs.notificationsMode.get()) {
-          NotificationsMode.SERVICE -> CoroutineScope(Dispatchers.Default).launch { serviceStart() }
+          NotificationsMode.SERVICE -> CoroutineScope(Dispatchers.Default).launch { platform.androidServiceStart() }
           NotificationsMode.PERIODIC -> SimplexApp.context.schedulePeriodicWakeUp()
           NotificationsMode.OFF -> {}
         }
@@ -190,7 +196,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           SimplexService.showBackgroundServiceNoticeIfNeeded()
           if (appPrefs.notificationsMode.get() == NotificationsMode.SERVICE)
             withBGApi {
-              serviceStart()
+              platform.androidServiceStart()
             }
         }
       }

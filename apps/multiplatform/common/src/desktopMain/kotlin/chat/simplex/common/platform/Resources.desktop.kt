@@ -21,10 +21,10 @@ actual fun StringResource.localized(): String = desc().toString()
 actual fun isInNightMode() = false
 
 private val settingsFile =
-  File(platform.configPath + File.separator + "settings.properties")
+  File(desktopPlatform.configPath + File.separator + "settings.properties")
     .also { it.parentFile.mkdirs() }
 private val settingsThemesFile =
-  File(platform.configPath + File.separator + "themes.properties")
+  File(desktopPlatform.configPath + File.separator + "themes.properties")
     .also { it.parentFile.mkdirs() }
 private val settingsProps =
   Properties()

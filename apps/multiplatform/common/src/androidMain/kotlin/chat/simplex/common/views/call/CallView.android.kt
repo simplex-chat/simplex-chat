@@ -58,7 +58,7 @@ actual fun ActiveCallView() {
   LaunchedEffect(Unit) {
     // Start service when call happening since it's not already started.
     // It's needed to prevent Android from shutting down a microphone after a minute or so when screen is off
-    if (!ntfModeService) serviceStart()
+    if (!ntfModeService) platform.androidServiceStart()
   }
   DisposableEffect(Unit) {
     val am = androidAppContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -97,7 +97,7 @@ actual fun ActiveCallView() {
     proximityLock?.acquire()
     onDispose {
       // Stop it when call ended
-      if (!ntfModeService) serviceSafeStop()
+      if (!ntfModeService) platform.androidServiceSafeStop()
       dropAudioManagerOverrides()
       am.unregisterAudioDeviceCallback(audioCallback)
       proximityLock?.release()

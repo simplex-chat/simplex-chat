@@ -2,7 +2,9 @@ package chat.simplex.common.platform
 
 import chat.simplex.common.model.NotificationsMode
 
-interface PlatformCallbacks {
+interface PlatformInterface {
+  suspend fun androidServiceStart() {}
+  fun androidServiceSafeStop() {}
   fun androidNotificationsModeChanged(mode: NotificationsMode) {}
   fun androidChatStartedAfterBeingOff() {}
   fun androidChatStopped() {}
@@ -21,4 +23,4 @@ interface PlatformCallbacks {
  *
  * See [SimplexApp] and [AppCommon.desktop] for re-assigning of this var
  * */
-var platformCallbacks: PlatformCallbacks = object : PlatformCallbacks {}
+var platform: PlatformInterface = object : PlatformInterface {}

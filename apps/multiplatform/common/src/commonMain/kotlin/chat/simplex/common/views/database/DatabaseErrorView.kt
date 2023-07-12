@@ -200,7 +200,7 @@ private fun runChat(
   progressIndicator.value = false
   when (val status = chatDbStatus.value) {
     is DBMigrationResult.OK -> {
-      platformCallbacks.androidChatStartedAfterBeingOff()
+      platform.androidChatStartedAfterBeingOff()
     }
     is DBMigrationResult.ErrorNotADatabase ->
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.wrong_passphrase_title), generalGetString(MR.strings.enter_correct_passphrase))

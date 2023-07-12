@@ -4,8 +4,7 @@ import SectionView
 import androidx.compose.runtime.Composable
 import androidx.work.WorkManager
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.androidAppContext
-import chat.simplex.common.platform.serviceSafeStop
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -36,7 +35,7 @@ private fun restartApp() {
 
 private fun shutdownApp() {
   WorkManager.getInstance(androidAppContext).cancelAllWork()
-  serviceSafeStop()
+  platform.androidServiceSafeStop()
   Runtime.getRuntime().exit(0)
 }
 

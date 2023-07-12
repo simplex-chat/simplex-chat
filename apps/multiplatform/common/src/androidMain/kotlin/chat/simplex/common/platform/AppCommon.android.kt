@@ -25,9 +25,6 @@ val defaultLocale: Locale = Locale.getDefault()
 lateinit var androidAppContext: Context
 lateinit var mainActivity: WeakReference<FragmentActivity>
 
-lateinit var serviceStart: suspend () -> Unit
-lateinit var serviceSafeStop: () -> Unit
-
 actual fun initHaskell() {
   val socketName = "chat.simplex.app.local.socket.address.listen.native.cmd2" + Random.nextLong(100000)
   val s = Semaphore(0)

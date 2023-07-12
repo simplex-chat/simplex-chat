@@ -15,7 +15,7 @@ private fun applicationParentPath(): String = try {
   "./"
 }
 
-actual val dataDir: File = File(platform.configPath)
+actual val dataDir: File = File(desktopPlatform.configPath)
 actual val tmpDir: File = File(System.getProperty("java.io.tmpdir"))
 actual val cacheDir: File = tmpDir
 
