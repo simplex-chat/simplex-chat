@@ -220,6 +220,8 @@
   <string name="sent_message">Sent message</string>
   <string name="received_message">Received message</string>
   <string name="edit_history">History</string>
+  <string name="no_history">No history</string>
+  <string name="in_reply_to">In reply to</string>
   <string name="delete_verb">Delete</string>
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
@@ -1161,7 +1163,8 @@
   <string name="share_text_moderated_at">Moderated at: %s</string>
   <string name="share_text_disappears_at">Disappears at: %s</string>
   <string name="item_info_current">(current)</string>
-  <string name="current_version_timestamp">"%s (current)"</string>
+  <string name="sender_at_ts">%s at %s</string>
+  <string name="current_version_timestamp">%s (current)</string>
   <string name="item_info_no_text">no text</string>
 
   <!-- GroupMemberInfoView.kt -->

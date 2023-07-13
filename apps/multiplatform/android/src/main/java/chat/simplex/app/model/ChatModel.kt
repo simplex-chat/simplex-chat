@@ -1832,7 +1832,7 @@ class CIQuote (
   fun sender(membership: GroupMember?): String? = when (chatDir) {
     is CIDirection.DirectSnd -> generalGetString(MR.strings.sender_you_pronoun)
     is CIDirection.DirectRcv -> null
-    is CIDirection.GroupSnd -> membership?.displayName
+    is CIDirection.GroupSnd -> membership?.displayName ?: generalGetString(MR.strings.sender_you_pronoun)
     is CIDirection.GroupRcv -> chatDir.groupMember.displayName
     null -> null
   }
