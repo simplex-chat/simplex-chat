@@ -9,6 +9,7 @@
 
 module Simplex.Chat.Store.Profiles
   ( AutoAccept (..),
+    UserMsgReceiptSettings (..),
     UserContactLink (..),
     createUserRecord,
     createUserRecordAt,
@@ -27,6 +28,8 @@ module Simplex.Chat.Store.Profiles
     getUserFileInfo,
     deleteUserRecord,
     updateUserPrivacy,
+    updateAllContactReceipts,
+    updateUserContactReceipts,
     updateUserProfile,
     setUserProfileContactLink,
     getUserContactProfiles,
@@ -86,10 +89,13 @@ createUserRecordAt :: DB.Connection -> AgentUserId -> Profile -> Bool -> UTCTime
 createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, preferences = userPreferences} activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
+    let showNtfs = True
+        sendRcptsContacts = True
+        sendRcptsSmallGroups = False
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, created_at, updated_at) VALUES (?,?,?,0,?,?,?)"
-      (auId, displayName, activeUser, True, currentTs, currentTs)
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,0,?,?,?,?,?)"
+      (auId, displayName, activeUser, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, currentTs, currentTs)
     userId <- insertedRowId db
     DB.execute
       db
@@ -106,7 +112,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences, True) :. (Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -212,6 +218,15 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
     (hashSalt viewPwdHash :. (showNtfs, userId))
   where
     hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
+
+updateAllContactReceipts :: DB.Connection -> Bool -> IO ()
+updateAllContactReceipts db onOff =
+  DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE view_pwd_hash IS NULL" (Only onOff)
+
+updateUserContactReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
+updateUserContactReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
+  DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE user_id = ?" (enable, userId)
+  when clearOverrides $ DB.execute_ db "UPDATE contacts SET send_rcpts = NULL"
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
@@ -356,6 +371,12 @@ deleteUserAddress db user@User {userId} = do
     [":user_id" := userId]
   void $ setUserProfileContactLink db user Nothing
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
+
+data UserMsgReceiptSettings = UserMsgReceiptSettings
+  { enable :: Bool,
+    clearOverrides :: Bool
+  }
+  deriving (Show)
 
 data UserContactLink = UserContactLink
   { connReqContact :: ConnReqContact,

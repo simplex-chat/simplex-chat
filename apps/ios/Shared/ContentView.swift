@@ -136,6 +136,9 @@ struct ContentView: View {
             .sheet(isPresented: $showWhatsNew) {
                 WhatsNewView()
             }
+            if chatModel.setDeliveryReceipts {
+                SetDeliveryReceiptsView()
+            }
             IncomingCallView()
         }
         .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)

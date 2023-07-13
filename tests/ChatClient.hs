@@ -116,6 +116,7 @@ testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
+      showReceipts = False,
       testView = True,
       tbqSize = 16,
       xftpFileConfig = Nothing
@@ -248,6 +249,7 @@ getTermLine cc =
     Just s -> do
       -- remove condition to always echo virtual terminal
       when (printOutput cc) $ do
+      -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
