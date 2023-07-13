@@ -473,7 +473,7 @@ viewChatItemStatusUpdated (AChatItem _ _ chat item@ChatItem {meta = CIMeta {item
 viewDeliveryReceipt :: MsgReceiptStatus -> StyledString
 viewDeliveryReceipt = \case
   MROk -> "⩗"
-  MRBadMsgHash -> ttyError' "⩗"
+  MRBadMsgHash -> ttyError' "⩗!"
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}, content, quotedItem} liveItems ts tz = case chat of
