@@ -72,7 +72,13 @@ fun getLoadedFilePath(file: CIFile?): String? {
 @Composable
 expect fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher
 
+expect fun rememberFileChooserMultipleLauncher(onResult: (List<URI>) -> Unit): FileChooserMultipleLauncher
+
 expect class FileChooserLauncher() {
+  suspend fun launch(input: String)
+}
+
+expect class FileChooserMultipleLauncher() {
   suspend fun launch(input: String)
 }
 

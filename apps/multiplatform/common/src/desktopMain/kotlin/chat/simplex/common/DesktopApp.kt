@@ -38,8 +38,20 @@ fun showApp() = application {
         FileDialogChooser(
           title = "SimpleX",
           isLoad = true,
+          params = simplexWindowState.openDialog.params,
           onResult = {
-            simplexWindowState.openDialog.onResult(it)
+            simplexWindowState.openDialog.onResult(it.firstOrNull())
+          }
+        )
+      }
+
+      if (simplexWindowState.openMultipleDialog.isAwaiting) {
+        FileDialogChooser(
+          title = "SimpleX",
+          isLoad = true,
+          params = simplexWindowState.openMultipleDialog.params,
+          onResult = {
+            simplexWindowState.openMultipleDialog.onResult(it)
           }
         )
       }
@@ -48,7 +60,8 @@ fun showApp() = application {
         FileDialogChooser(
           title = "SimpleX",
           isLoad = false,
-          onResult = { simplexWindowState.saveDialog.onResult(it) }
+          params = simplexWindowState.saveDialog.params,
+          onResult = { simplexWindowState.saveDialog.onResult(it.firstOrNull()) }
         )
       }
       val toasts = remember { simplexWindowState.toasts }
@@ -97,16 +110,25 @@ fun showApp() = application {
 class SimplexWindowState {
   val backstack = mutableStateListOf<() -> Unit>()
   val openDialog = DialogState<File?>()
+  val openMultipleDialog = DialogState<List<File>>()
   val saveDialog = DialogState<File?>()
   val toasts = mutableStateListOf<Pair<String, Long>>()
 }
 
+data class DialogParams(
+  val allowMultiple: Boolean = false,
+  val fileFilter: ((File?) -> Boolean)? = null,
+  val fileFilterDescription: String = "",
+)
+
 class DialogState<T> {
   private var onResult: CompletableDeferred<T>? by mutableStateOf(null)
+  var params = DialogParams()
   val isAwaiting get() = onResult != null
 
-  suspend fun awaitResult(): T {
+  suspend fun awaitResult(params: DialogParams = DialogParams()): T {
     onResult = CompletableDeferred()
+    this.params = params
     val result = onResult!!.await()
     onResult = null
     return result

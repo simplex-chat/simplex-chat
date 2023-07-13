@@ -180,7 +180,7 @@ fun ComposeView(
         isImage(uri) -> {
           // Image
           val drawable = getDrawableFromUri(uri)
-          bitmap = if (drawable != null) getBitmapFromUri(uri) else null
+          bitmap = getBitmapFromUri(uri)
           if (isAnimImage(uri, drawable)) {
             // It's a gif or webp
             val fileSize = getFileSize(uri)

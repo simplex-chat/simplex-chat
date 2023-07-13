@@ -41,7 +41,20 @@ actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   }
   return str
 }
-actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream = TODO()
+actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
+  var img = image
+  var stream = compressImageData(img, usePng)
+  while (stream.size() > maxDataSize) {
+    val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
+    val clippedRatio = kotlin.math.min(ratio, 2.0)
+    val width = (img.width.toDouble() / clippedRatio).toInt()
+    val height = img.height * width / img.width
+    img = img.scale(width, height)
+    stream = compressImageData(img, usePng)
+  }
+  return stream
+}
+
 actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
   var xOffset = 0
   var yOffset = 0

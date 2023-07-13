@@ -24,10 +24,31 @@ actual fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> 
   return FileChooserLauncher(launcher)
 }
 
+@Composable
+actual fun rememberFileChooserMultipleLauncher(onResult: (List<URI>) -> Unit): FileChooserMultipleLauncher {
+  val launcher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.GetMultipleContents(),
+    onResult = { onResult(it.map { it.toURI() }) }
+  )
+  return FileChooserMultipleLauncher(launcher)
+}
+
 actual class FileChooserLauncher actual constructor() {
   private lateinit var launcher: ManagedActivityResultLauncher<String, Uri?>
 
   constructor(launcher: ManagedActivityResultLauncher<String, Uri?>): this() {
+    this.launcher = launcher
+  }
+
+  actual suspend fun launch(input: String) {
+    launcher.launch(input)
+  }
+}
+
+actual class FileChooserMultipleLauncher actual constructor() {
+  private lateinit var launcher: ManagedActivityResultLauncher<String, List<Uri>>
+
+  constructor(launcher: ManagedActivityResultLauncher<String, List<Uri>>): this() {
     this.launcher = launcher
   }
 

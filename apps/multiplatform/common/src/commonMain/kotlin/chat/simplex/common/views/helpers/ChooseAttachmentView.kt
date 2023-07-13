@@ -8,6 +8,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.views.newchat.ActionButton
 import chat.simplex.res.MR
 
@@ -37,21 +38,32 @@ fun ChooseAttachmentView(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(Modifier.fillMaxWidth(0.25f), null, stringResource(MR.strings.use_camera_button), icon = painterResource(MR.images.ic_camera_enhance)) {
-        attachmentOption.value = AttachmentOption.CameraPhoto
-        hide()
-      }
-      ActionButton(Modifier.fillMaxWidth(0.33f), null, stringResource(MR.strings.gallery_image_button), icon = painterResource(MR.images.ic_add_photo)) {
-        attachmentOption.value = AttachmentOption.GalleryImage
-        hide()
-      }
-      ActionButton(Modifier.fillMaxWidth(0.50f), null, stringResource(MR.strings.gallery_video_button), icon = painterResource(MR.images.ic_smart_display)) {
-        attachmentOption.value = AttachmentOption.GalleryVideo
-        hide()
-      }
-      ActionButton(Modifier.fillMaxWidth(1f), null, stringResource(MR.strings.choose_file), icon = painterResource(MR.images.ic_note_add)) {
-        attachmentOption.value = AttachmentOption.File
-        hide()
+      if (appPlatform.isAndroid) {
+        ActionButton(Modifier.fillMaxWidth(0.25f), null, stringResource(MR.strings.use_camera_button), icon = painterResource(MR.images.ic_camera_enhance)) {
+          attachmentOption.value = AttachmentOption.CameraPhoto
+          hide()
+        }
+        ActionButton(Modifier.fillMaxWidth(0.33f), null, stringResource(MR.strings.gallery_image_button), icon = painterResource(MR.images.ic_add_photo)) {
+          attachmentOption.value = AttachmentOption.GalleryImage
+          hide()
+        }
+        ActionButton(Modifier.fillMaxWidth(0.50f), null, stringResource(MR.strings.gallery_video_button), icon = painterResource(MR.images.ic_smart_display)) {
+          attachmentOption.value = AttachmentOption.GalleryVideo
+          hide()
+        }
+        ActionButton(Modifier.fillMaxWidth(1f), null, stringResource(MR.strings.choose_file), icon = painterResource(MR.images.ic_note_add)) {
+          attachmentOption.value = AttachmentOption.File
+          hide()
+        }
+      } else {
+        ActionButton(Modifier.fillMaxWidth(0.5f), null, stringResource(MR.strings.gallery_image_button), icon = painterResource(MR.images.ic_add_photo)) {
+          attachmentOption.value = AttachmentOption.GalleryImage
+          hide()
+        }
+        ActionButton(Modifier.fillMaxWidth(1f), null, stringResource(MR.strings.choose_file), icon = painterResource(MR.images.ic_note_add)) {
+          attachmentOption.value = AttachmentOption.File
+          hide()
+        }
       }
     }
   }
