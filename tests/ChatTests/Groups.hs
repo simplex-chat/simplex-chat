@@ -587,6 +587,7 @@ testGroupDeleteInvitedContact =
             bob <## "#team: alice invites you to join the group as admin"
             bob <## "use /j team to accept"
         ]
+      threadDelay 500000
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
       bob ##> "/j team"
@@ -1798,6 +1799,7 @@ testGroupLinkContactUsed =
       bob @@@ [("#team", "connected")]
       alice #> "@bob hello"
       bob <# "alice> hello"
+      threadDelay 500000
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
       alice @@@ [("@bob", ""), ("#team", "connected")]
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
