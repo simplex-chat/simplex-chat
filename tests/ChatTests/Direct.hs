@@ -93,6 +93,7 @@ chatDirectTests = do
     it "set message reactions" testSetMessageReactions
   describe "delivery receipts" $ do
     it "should send delivery receipts" testSendDeliveryReceipts
+    it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -2192,3 +2193,81 @@ testSendDeliveryReceipts tmp =
       bob ⩗ "@alice hey"
   where
     cfg = testCfg {showReceipts = True}
+
+testConfigureDeliveryReceipts :: HasCallStack => FilePath -> IO ()
+testConfigureDeliveryReceipts tmp =
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
+        connectUsers alice bob
+        connectUsers alice cath
+
+        -- for new users receipts are enabled by default
+        receipt bob alice "1"
+        receipt cath alice "2"
+
+        -- configure receipts in all chats
+        alice ##> "/set receipts all off"
+        alice <## "ok"
+        noReceipt bob alice "3"
+        noReceipt cath alice "4"
+
+        -- configure receipts for user contacts
+        alice ##> "/_set receipts 1 on"
+        alice <## "ok"
+        receipt bob alice "5"
+        receipt cath alice "6"
+
+        -- configure receipts for user contacts (terminal api)
+        alice ##> "/set receipts off"
+        alice <## "ok"
+        noReceipt bob alice "7"
+        noReceipt cath alice "8"
+
+        -- configure receipts for contact
+        alice ##> "/receipts @bob on"
+        alice <## "ok"
+        receipt bob alice "9"
+        noReceipt cath alice "10"
+
+        -- configure receipts for user contacts (don't clear overrides)
+        alice ##> "/_set receipts 1 off"
+        alice <## "ok"
+        receipt bob alice "11"
+        noReceipt cath alice "12"
+
+        alice ##> "/_set receipts 1 off clear_overrides=off"
+        alice <## "ok"
+        receipt bob alice "13"
+        noReceipt cath alice "14"
+
+        -- configure receipts for user contacts (clear overrides)
+        alice ##> "/set receipts off clear_overrides=on"
+        alice <## "ok"
+        noReceipt bob alice "15"
+        noReceipt cath alice "16"
+
+        -- configure receipts for contact, reset to default
+        alice ##> "/receipts @bob on"
+        alice <## "ok"
+        receipt bob alice "17"
+        noReceipt cath alice "18"
+
+        alice ##> "/receipts @bob default"
+        alice <## "ok"
+        noReceipt bob alice "19"
+        noReceipt cath alice "20"
+  where
+    cfg = testCfg {showReceipts = True}
+    receipt cc1 cc2 msg = do
+      name1 <- userName cc1
+      name2 <- userName cc2
+      cc1 #> ("@" <> name2 <> " " <> msg)
+      cc2 <# (name1 <> "> " <> msg)
+      cc1 ⩗ ("@" <> name2 <> " " <> msg)
+    noReceipt cc1 cc2 msg = do
+      name1 <- userName cc1
+      name2 <- userName cc2
+      cc1 #> ("@" <> name2 <> " " <> msg)
+      cc2 <# (name1 <> "> " <> msg)
+      cc1 <// 50000

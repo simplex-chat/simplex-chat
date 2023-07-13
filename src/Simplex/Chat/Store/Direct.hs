@@ -12,6 +12,7 @@ module Simplex.Chat.Store.Direct
     updateContactProfile_,
     updateContactProfile_',
     deleteContactProfile_,
+
     -- * Contacts and connections functions
     getPendingContactConnection,
     deletePendingContactConnection,
@@ -670,8 +671,8 @@ updateConnectionStatus db Connection {connId} connStatus = do
   DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ? WHERE connection_id = ?" (connStatus, currentTs, connId)
 
 updateContactSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()
-updateContactSettings db User {userId} contactId ChatSettings {enableNtfs, favorite} =
-  DB.execute db "UPDATE contacts SET enable_ntfs = ?, favorite = ? WHERE user_id = ? AND contact_id = ?" (enableNtfs, favorite, userId, contactId)
+updateContactSettings db User {userId} contactId ChatSettings {enableNtfs, sendRcpts, favorite} =
+  DB.execute db "UPDATE contacts SET enable_ntfs = ?, send_rcpts = ?, favorite = ? WHERE user_id = ? AND contact_id = ?" (enableNtfs, sendRcpts, favorite, userId, contactId)
 
 setConnConnReqInv :: DB.Connection -> User -> Int64 -> ConnReqInvitation -> IO ()
 setConnConnReqInv db User {userId} connId connReq = do

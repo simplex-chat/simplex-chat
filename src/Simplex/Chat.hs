@@ -1201,18 +1201,10 @@ processChatCommand = \case
         withStore' $ \db -> setConnectionAuthErrCounter db user conn 0
         ok user
       _ -> throwChatError CEGroupMemberNotActive
-  ShowMessages (ChatName cType name) ntfOn -> withUser $ \user -> do
-    (chatId, chatSettings) <- case cType of
-      CTDirect -> withStore $ \db -> do
-        ctId <- getContactIdByName db user name
-        Contact {chatSettings} <- getContact db user ctId
-        pure (ctId, chatSettings)
-      CTGroup -> withStore $ \db -> do
-        gId <- getGroupIdByName db user name
-        GroupInfo {chatSettings} <- getGroupInfo db user gId
-        pure (gId, chatSettings)
-      _ -> throwChatError $ CECommandError "not supported"
-    processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ chatSettings {enableNtfs = ntfOn}
+  ShowMessages cName ntfOn ->
+    updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
+  ConfigureReceipts cName rcptsOn_ ->
+    updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   ContactInfo cName -> withContactName cName APIContactInfo
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
@@ -1971,6 +1963,19 @@ processChatCommand = \case
       withAgent $ \a -> deleteUser a (aUserId user) delSMPQueues
       withStore' (`deleteUserRecord` user)
       ok_
+    updateChatSettings :: ChatName -> (ChatSettings -> ChatSettings) -> m ChatResponse
+    updateChatSettings (ChatName cType name) updateSettings = withUser $ \user -> do
+      (chatId, chatSettings) <- case cType of
+        CTDirect -> withStore $ \db -> do
+          ctId <- getContactIdByName db user name
+          Contact {chatSettings} <- getContact db user ctId
+          pure (ctId, chatSettings)
+        CTGroup -> withStore $ \db -> do
+          gId <- getGroupIdByName db user name
+          GroupInfo {chatSettings} <- getGroupInfo db user gId
+          pure (gId, chatSettings)
+        _ -> throwChatError $ CECommandError "not supported"
+      processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -4914,6 +4919,7 @@ chatCommandP =
   choice
     [ "/mute " *> ((`ShowMessages` False) <$> chatNameP),
       "/unmute " *> ((`ShowMessages` True) <$> chatNameP),
+      "/receipts " *> (ConfigureReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
       "/_create user " *> (CreateActiveUser <$> jsonP),
       "/create user " *> (CreateActiveUser <$> newUserP),
       "/users" $> ListUsers,

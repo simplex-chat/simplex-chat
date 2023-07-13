@@ -302,6 +302,7 @@ data ChatCommand
   | APIEnableContact ContactId
   | APIEnableGroupMember GroupId GroupMemberId
   | ShowMessages ChatName Bool
+  | ConfigureReceipts ChatName (Maybe Bool)
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
