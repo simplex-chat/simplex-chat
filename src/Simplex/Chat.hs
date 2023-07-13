@@ -394,9 +394,7 @@ processChatCommand = \case
     validateUserPassword user user' Nothing
     withStore' $ \db -> updateUserContactReceipts db user' settings
     ok user
-  SetUserContactReceipts settings -> withUser $ \user -> do
-    withStore' $ \db -> updateUserContactReceipts db user settings
-    ok user
+  SetUserContactReceipts settings -> withUser $ \User {userId} -> processChatCommand $ APISetUserContactReceipts userId settings
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -1201,10 +1199,8 @@ processChatCommand = \case
         withStore' $ \db -> setConnectionAuthErrCounter db user conn 0
         ok user
       _ -> throwChatError CEGroupMemberNotActive
-  ShowMessages cName ntfOn ->
-    updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
-  ConfigureReceipts cName rcptsOn_ ->
-    updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
+  SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
+  SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   ContactInfo cName -> withContactName cName APIContactInfo
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
@@ -4917,9 +4913,9 @@ withStoreCtx ctx_ action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
-    [ "/mute " *> ((`ShowMessages` False) <$> chatNameP),
-      "/unmute " *> ((`ShowMessages` True) <$> chatNameP),
-      "/receipts " *> (ConfigureReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
+    [ "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
+      "/unmute " *> ((`SetShowMessages` True) <$> chatNameP),
+      "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
       "/_create user " *> (CreateActiveUser <$> jsonP),
       "/create user " *> (CreateActiveUser <$> newUserP),
       "/users" $> ListUsers,

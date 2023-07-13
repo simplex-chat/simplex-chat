@@ -301,8 +301,8 @@ data ChatCommand
   | APIVerifyGroupMember GroupId GroupMemberId (Maybe Text)
   | APIEnableContact ContactId
   | APIEnableGroupMember GroupId GroupMemberId
-  | ShowMessages ChatName Bool
-  | ConfigureReceipts ChatName (Maybe Bool)
+  | SetShowMessages ChatName Bool
+  | SetSendReceipts ChatName (Maybe Bool)
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
