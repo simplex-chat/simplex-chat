@@ -18,8 +18,6 @@ import chat.simplex.common.model.AppPreferences
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.helpers.DatabaseUtils.agentDatabaseFileName
-import chat.simplex.common.views.helpers.DatabaseUtils.chatDatabaseFileName
 import chat.simplex.common.views.usersettings.AppVersionText
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
@@ -223,8 +221,8 @@ private fun shouldShowRestoreDbButton(prefs: AppPreferences): Boolean {
   val startedAt = prefs.encryptionStartedAt.get() ?: return false
   /** Just in case there is any small difference between reported Java's [Clock.System.now] and Linux's time on a file */
   val safeDiffInTime = 10_000L
-  val filesChat = File(dataDir.absolutePath + File.separator + "${chatDatabaseFileName()}.bak")
-  val filesAgent = File(dataDir.absolutePath + File.separator + "${agentDatabaseFileName()}.bak")
+  val filesChat = File(dataDir.absolutePath + File.separator + "${chatDatabaseFileName}.bak")
+  val filesAgent = File(dataDir.absolutePath + File.separator + "${agentDatabaseFileName}.bak")
   return filesChat.exists() &&
       filesAgent.exists() &&
       startedAt.toEpochMilliseconds() - safeDiffInTime <= filesChat.lastModified() &&
@@ -232,8 +230,8 @@ private fun shouldShowRestoreDbButton(prefs: AppPreferences): Boolean {
 }
 
 private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPreferences) {
-  val filesChatBase = dataDir.absolutePath + File.separator + chatDatabaseFileName()
-  val filesAgentBase = dataDir.absolutePath + File.separator + agentDatabaseFileName()
+  val filesChatBase = dataDir.absolutePath + File.separator + chatDatabaseFileName
+  val filesAgentBase = dataDir.absolutePath + File.separator + agentDatabaseFileName
   try {
     Files.copy(Path("$filesChatBase.bak"), Path(filesChatBase), StandardCopyOption.REPLACE_EXISTING)
     Files.copy(Path("$filesAgentBase.bak"), Path(filesAgentBase), StandardCopyOption.REPLACE_EXISTING)

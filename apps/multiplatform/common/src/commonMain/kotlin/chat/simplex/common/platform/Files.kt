@@ -14,6 +14,9 @@ expect val filesDir: File
 expect val appFilesDir: File
 expect val dbAbsolutePrefixPath: String
 
+expect val chatDatabaseFileName: String
+expect val agentDatabaseFileName: String
+
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
   try {
     to.outputStream().use { stream ->

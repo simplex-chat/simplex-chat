@@ -18,6 +18,9 @@ actual val filesDir: File = File(dataDir.absolutePath + File.separator + "files"
 actual val appFilesDir: File = File(filesDir.absolutePath + File.separator + "app_files")
 actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator + "files"
 
+actual val chatDatabaseFileName: String = "files_chat.db"
+actual val agentDatabaseFileName: String = "files_agent.db"
+
 @Composable
 actual fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher {
   val launcher = rememberLauncherForActivityResult(
