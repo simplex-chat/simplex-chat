@@ -438,7 +438,6 @@ data ChatResponse
   | CRChatItemStatusUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
-  | CRChatItemReceipt {user :: User, receiptStatus :: MsgReceiptStatus, chatItem :: AChatItem}
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
   | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}

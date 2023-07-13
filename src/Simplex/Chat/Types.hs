@@ -664,7 +664,6 @@ data ContactUserPreferences = ContactUserPreferences
 
 data ContactUserPreference p = ContactUserPreference
   { enabled :: PrefEnabled,
-    -- for delivery receipts, enabled for user would mean that the user receives them, and enabled for contact - that contact receives them
     userPreference :: ContactUserPref p,
     contactPreference :: p
   }

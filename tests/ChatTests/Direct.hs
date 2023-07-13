@@ -91,6 +91,8 @@ chatDirectTests = do
     it "synchronize ratchets, reset connection code" testSyncRatchetCodeReset
   describe "message reactions" $ do
     it "set message reactions" testSetMessageReactions
+  describe "delivery receipts" $ do
+    it "should send delivery receipts" testSendDeliveryReceipts
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -2174,3 +2176,19 @@ testSetMessageReactions =
       bob ##> "/tail @alice 1"
       bob <# "alice> hi"
       bob <## "      👍 1"
+
+testSendDeliveryReceipts :: HasCallStack => FilePath -> IO ()
+testSendDeliveryReceipts tmp =
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      alice ⩗ "@bob hi"
+
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+      bob ⩗ "@alice hey"
+  where
+    cfg = testCfg {showReceipts = True}

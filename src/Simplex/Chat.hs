@@ -4297,9 +4297,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId agentMsgId) >>= \case
           Just (CChatItem SMDSnd ci) -> do
             chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) $ CISSndRcvd msgRcptStatus
-            toView $ CRChatItemReceipt user msgRcptStatus $ AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem
+            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
           _ -> pure ()
- 
+
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     groupMsgReceived gInfo m Connection {connId} msgMeta msgRcpts = do
       checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta

@@ -98,11 +98,10 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRChatItems u chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
-  CRChatItemStatusUpdated u _ -> ttyUser u []
+  CRChatItemStatusUpdated u ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
-  CRChatItemReceipt u status (AChatItem _ _ chat item) -> if testView && showReceipts then ttyUser u $ prependFirst (viewDeliveryReceipt status) $ viewChatItem chat item False ts tz else []
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
@@ -461,6 +460,20 @@ localTs tz ts = do
   let localTime = utcToLocalTime tz ts
       formattedTime = formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" localTime
   formattedTime
+
+viewChatItemStatusUpdated :: AChatItem -> CurrentTime -> TimeZone -> Bool -> Bool -> [StyledString]
+viewChatItemStatusUpdated (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) ts tz testView showReceipts =
+  case itemStatus of
+    CISSndRcvd rcptStatus ->
+      if testView && showReceipts
+        then prependFirst (viewDeliveryReceipt rcptStatus <> " ") $ viewChatItem chat item False ts tz
+        else []
+    _ -> []
+
+viewDeliveryReceipt :: MsgReceiptStatus -> StyledString
+viewDeliveryReceipt = \case
+  MROk -> "⩗"
+  MRBadMsgHash -> ttyError' "⩗"
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}, content, quotedItem} liveItems ts tz = case chat of
@@ -1154,11 +1167,6 @@ viewReceivedMessage_ updated from quote mc ts tz meta = receivedWithTime_ ts tz 
 viewReceivedReaction :: StyledString -> [StyledString] -> StyledString -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
 viewReceivedReaction from styledMsg reactionText ts tz reactionTs =
   prependFirst (ttyMsgTime ts tz reactionTs <> " " <> from) (styledMsg <> ["    " <> reactionText])
-
-viewDeliveryReceipt :: MsgReceiptStatus -> StyledString
-viewDeliveryReceipt = \case
-  MROk -> "⩗ "
-  MRBadMsgHash -> ttyError' "⩗ "
 
 receivedWithTime_ :: CurrentTime -> TimeZone -> StyledString -> [StyledString] -> CIMeta c d -> [StyledString] -> Bool -> [StyledString]
 receivedWithTime_ ts tz from quote CIMeta {itemId, itemTs, itemEdited, itemDeleted, itemLive} styledMsg updated = do
