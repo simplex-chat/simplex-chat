@@ -9,10 +9,12 @@ LIB_EXT=dylib
 LIB=libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT
 GHC_LIBS_DIR=$(ghc --print-libdir)
 
-rm -rf dist-newstyle/build/$ARCH-*/ghc-*/simplex-chat-*
+BUILD_DIR=dist-newstyle/build/$ARCH-*/ghc-*/simplex-chat-*
+
+rm -rf $BUILD_DIR
 cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/rts -optl-lHSrts_thr-ghc8.10.7 -optl-lffi"
 
-cd dist-newstyle/build/$ARCH-*/ghc-*/simplex-chat-*/build
+cd $BUILD_DIR/build
 mkdir deps 2> /dev/null
 
 # It's not included by default for some reason. Compiled lib tries to find system one but it's not always available
@@ -59,10 +61,12 @@ function copy_deps() {
 copy_deps $LIB
 rm deps/`basename $LIB`
 
-rf -rf ../../../../../../apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-rm -rf ../../../../../../apps/multiplatform/common/src/commonMain/resources/libs/$OS-$ARCH/
-rm -rf ../../../../../../apps/multiplatform/desktop/build/cmake
+cd -
 
-mkdir -p ../../../../../../apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-cp -r deps ../../../../../../apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-cp libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT ../../../../../../apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+rm -rf apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+rm -rf apps/multiplatform/common/src/commonMain/resources/libs/$OS-$ARCH/
+rm -rf apps/multiplatform/desktop/build/cmake
+
+mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+cp -r $BUILD_DIR/build/deps apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+cp $BUILD_DIR/build/deps/libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
