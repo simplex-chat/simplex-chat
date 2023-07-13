@@ -10,6 +10,9 @@ import java.net.URI
 expect val dataDir: File
 expect val tmpDir: File
 expect val cacheDir: File
+expect val filesDir: File
+expect val appFilesDir: File
+expect val dbAbsolutePrefixPath: String
 
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
   try {
@@ -43,26 +46,8 @@ fun copyBytesToFile(bytes: ByteArrayInputStream, to: URI, finally: () -> Unit) {
   }
 }
 
-fun getDbAbsolutePathPrefix(): String =
-  dataDir.absolutePath + File.separator + if (appPlatform == AppPlatform.ANDROID) "files" else "simplex_v1"
-
-fun getFilesDirectory(): String =
-  dataDir.absolutePath + File.separator + if (appPlatform == AppPlatform.ANDROID) "files" else "simplex_v1_files"
-
-fun getTempFilesDirectory(): String = if (appPlatform == AppPlatform.ANDROID) {
-  getFilesDirectory() + File.separator + "temp_files"
-} else {
-  tmpDir.absolutePath + File.separator + "simplex"
-}
-
-fun getAppFilesDirectory(): String = if (appPlatform == AppPlatform.ANDROID) {
-  getFilesDirectory() + File.separator + "app_files"
-} else {
-  getFilesDirectory()
-}
-
 fun getAppFilePath(fileName: String): String {
-  return getAppFilesDirectory() + File.separator + fileName
+  return appFilesDir.absolutePath + File.separator + fileName
 }
 
 fun getLoadedFilePath(file: CIFile?): String? {

@@ -209,7 +209,7 @@ fun removeFile(fileName: String): Boolean {
 }
 
 fun deleteAppFiles() {
-  val dir = File(getAppFilesDirectory())
+  val dir = appFilesDir
   try {
     dir.list()?.forEach {
       removeFile(it)

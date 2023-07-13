@@ -36,6 +36,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
     initHaskell()
     initMultiplatform()
     tmpDir.deleteRecursively()
+    // Remove in 2024 since it's unused now but may contain files from previous launch in users devices
+    File(filesDir.absolutePath + File.separator + "temp_files").deleteRecursively()
+
     withBGApi {
       initChatController()
       runMigrations()

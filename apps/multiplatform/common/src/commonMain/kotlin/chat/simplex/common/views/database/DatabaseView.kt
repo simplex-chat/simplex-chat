@@ -54,7 +54,7 @@ fun DatabaseView(
       }
     }
   }
-  val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(getAppFilesDirectory())) }
+  val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(appFilesDir.absolutePath)) }
   val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
     if (to != null) {
       importArchiveAlert(m, to, appFilesCountAndSize, progressIndicator)
@@ -475,7 +475,7 @@ private suspend fun exportChatArchive(
   val archiveTime = Clock.System.now()
   val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
   val archiveName = "simplex-chat.$ts.zip"
-  val archivePath = "${getFilesDirectory()}${File.separator}$archiveName"
+  val archivePath = "${filesDir.absolutePath}${File.separator}$archiveName"
   val config = ArchiveConfig(archivePath, parentTempDirectory = cacheDir.toString())
   m.controller.apiExportArchive(config)
   deleteOldArchive(m)
@@ -490,7 +490,7 @@ private suspend fun exportChatArchive(
 private fun deleteOldArchive(m: ChatModel) {
   val chatArchiveName = m.controller.appPrefs.chatArchiveName.get()
   if (chatArchiveName != null) {
-    val file = File("${getFilesDirectory()}${File.separator}$chatArchiveName")
+    val file = File("${filesDir.absolutePath}${File.separator}$chatArchiveName")
     val fileDeleted = file.delete()
     if (fileDeleted) {
       m.controller.appPrefs.chatArchiveName.set(null)
@@ -532,7 +532,7 @@ private fun importArchive(
           val config = ArchiveConfig(archivePath, parentTempDirectory = cacheDir.toString())
           val archiveErrors = m.controller.apiImportArchive(config)
           DatabaseUtils.ksDatabasePassword.remove()
-          appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory())
+          appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
           if (archiveErrors.isEmpty()) {
             operationEnded(m, progressIndicator) {
               AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database))
@@ -632,7 +632,7 @@ private fun afterSetCiTTL(
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
 ) {
   progressIndicator.value = false
-  appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory())
+  appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
   withApi {
     try {
       val chats = m.controller.apiGetChats()
@@ -655,7 +655,7 @@ private fun deleteFilesAndMediaAlert(appFilesCountAndSize: MutableState<Pair<Int
 
 private fun deleteFiles(appFilesCountAndSize: MutableState<Pair<Int, Long>>) {
   deleteAppFiles()
-  appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory())
+  appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
 }
 
 private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean>, alert: () -> Unit) {

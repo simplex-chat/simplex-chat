@@ -16,8 +16,11 @@ private fun applicationParentPath(): String = try {
 }
 
 actual val dataDir: File = File(desktopPlatform.configPath)
-actual val tmpDir: File = File(System.getProperty("java.io.tmpdir"))
+actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex")
 actual val cacheDir: File = tmpDir
+actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")
+actual val appFilesDir: File = filesDir
+actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator + "simplex_v1"
 
 @Composable
 actual fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher =
