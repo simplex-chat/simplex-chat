@@ -18,6 +18,14 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
+        if #available(iOS 16.0, *) {
+            viewBody.scrollDismissesKeyboard(.immediately)
+        } else {
+            viewBody
+        }
+    }
+
+    private var viewBody: some View {
         ZStack(alignment: .topLeading) {
             NavStackCompat(
                 isActive: Binding(
@@ -76,26 +84,25 @@ struct ChatListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
+                let user = chatModel.currentUser ?? User.sampleData
+                ZStack(alignment: .topTrailing) {
+                    ProfileImage(imageStr: user.image, color: Color(uiColor: .quaternaryLabel))
+                        .frame(width: 32, height: 32)
+                        .padding(.trailing, 4)
+                    let allRead = chatModel.users
+                        .filter { u in !u.user.activeUser && !u.user.hidden }
+                        .allSatisfy { u in u.unreadCount == 0 }
+                    if !allRead {
+                        unreadBadge(size: 12)
+                    }
+                }
+                .onTapGesture {
                     if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
                         withAnimation {
                             userPickerVisible.toggle()
                         }
                     } else {
                         showSettings = true
-                    }
-                } label: {
-                    let user = chatModel.currentUser ?? User.sampleData
-                    ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: user.image, color: Color(uiColor: .quaternaryLabel))
-                            .frame(width: 32, height: 32)
-                            .padding(.trailing, 4)
-                        let allRead = chatModel.users
-                            .filter { u in !u.user.activeUser && !u.user.hidden }
-                            .allSatisfy { u in u.unreadCount == 0 }
-                        if !allRead {
-                            unreadBadge(size: 12)
-                        }
                     }
                 }
             }

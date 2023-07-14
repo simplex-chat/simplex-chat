@@ -57,6 +57,8 @@ final class ChatModel: ObservableObject {
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
+    // tracks keyboard height via subscription in AppDelegate
+    @Published var keyboardHeight: CGFloat = 0
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -131,6 +133,14 @@ final class ChatModel: ObservableObject {
 
     func updateContact(_ contact: Contact) {
         updateChat(.direct(contact: contact), addMissing: contact.directOrUsed)
+    }
+
+    func updateContactConnectionStats(_ contact: Contact, _ connectionStats: ConnectionStats) {
+        var updatedConn = contact.activeConn
+        updatedConn.connectionStats = connectionStats
+        var updatedContact = contact
+        updatedContact.activeConn = updatedConn
+        updateContact(updatedContact)
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {
@@ -518,6 +528,16 @@ final class ChatModel: ObservableObject {
             }
         } else {
             return false
+        }
+    }
+
+    func updateGroupMemberConnectionStats(_ groupInfo: GroupInfo, _ member: GroupMember, _ connectionStats: ConnectionStats) {
+        if let conn = member.activeConn {
+            var updatedConn = conn
+            updatedConn.connectionStats = connectionStats
+            var updatedMember = member
+            updatedMember.activeConn = updatedConn
+            _ = upsertGroupMember(groupInfo, updatedMember)
         }
     }
 

@@ -8,6 +8,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -60,6 +61,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, 
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
+import Simplex.Messaging.Util (catchAllErrors, allFinally)
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
@@ -899,6 +901,18 @@ throwDBError = throwError . ChatErrorDatabase
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
+
+catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
+catchChatError = catchAllErrors mkChatError
+{-# INLINE catchChatError #-}
+
+chatFinally :: ChatMonad m => m a -> m b -> m a
+chatFinally = allFinally mkChatError
+{-# INLINE chatFinally #-}
+
+mkChatError :: SomeException -> ChatError
+mkChatError = ChatError . CEException . show
+{-# INLINE mkChatError #-}
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError

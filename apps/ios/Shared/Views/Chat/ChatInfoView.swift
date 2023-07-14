@@ -76,6 +76,7 @@ struct ChatInfoView: View {
         case networkStatusAlert
         case switchAddressAlert
         case abortSwitchAddressAlert
+        case syncConnectionForceAlert
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
@@ -85,6 +86,7 @@ struct ChatInfoView: View {
             case .networkStatusAlert: return "networkStatusAlert"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
+            case .syncConnectionForceAlert: return "syncConnectionForceAlert"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -115,6 +117,12 @@ struct ChatInfoView: View {
                 Section {
                     if let code = connectionCode { verifyCodeButton(code) }
                     contactPreferencesButton()
+                    if let connStats = connectionStats,
+                       connStats.ratchetSyncAllowed {
+                        synchronizeConnectionButton()
+                    } else if developerTools {
+                        synchronizeConnectionButtonForce()
+                    }
                 }
 
                 if let contactLink = contact.contactLink {
@@ -141,12 +149,18 @@ struct ChatInfoView: View {
                         Button("Change receiving address") {
                             alert = .switchAddressAlert
                         }
-                        .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil })
+                        .disabled(
+                            connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
+                            || connStats.ratchetSyncSendProhibited
+                        )
                         if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
                             Button("Abort changing address") {
                                 alert = .abortSwitchAddressAlert
                             }
-                            .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch })
+                            .disabled(
+                                connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                || connStats.ratchetSyncSendProhibited
+                            )
                         }
                         smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
                         smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
@@ -175,6 +189,7 @@ struct ChatInfoView: View {
             case .networkStatusAlert: return networkStatusAlert()
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
+            case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
@@ -280,6 +295,24 @@ struct ChatInfoView: View {
         }
     }
 
+    private func synchronizeConnectionButton() -> some View {
+        Button {
+            syncContactConnection(force: false)
+        } label: {
+            Label("Fix connection", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
+                .foregroundColor(.orange)
+        }
+    }
+
+    private func synchronizeConnectionButtonForce() -> some View {
+        Button {
+            alert = .syncConnectionForceAlert
+        } label: {
+            Label("Renegotiate encryption", systemImage: "exclamationmark.triangle")
+                .foregroundColor(.red)
+        }
+    }
+
     private func networkStatusRow() -> some View {
         HStack {
             Text("Network status")
@@ -370,6 +403,10 @@ struct ChatInfoView: View {
             do {
                 let stats = try apiSwitchContact(contactId: contact.apiId)
                 connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateContactConnectionStats(contact, stats)
+                    dismiss()
+                }
             } catch let error {
                 logger.error("switchContactAddress apiSwitchContact error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")
@@ -385,9 +422,31 @@ struct ChatInfoView: View {
             do {
                 let stats = try apiAbortSwitchContact(contact.apiId)
                 connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateContactConnectionStats(contact, stats)
+                }
             } catch let error {
                 logger.error("abortSwitchContactAddress apiAbortSwitchContact error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error aborting address change")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+
+    private func syncContactConnection(force: Bool) {
+        Task {
+            do {
+                let stats = try apiSyncContactRatchet(contact.apiId, force)
+                connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateContactConnectionStats(contact, stats)
+                    dismiss()
+                }
+            } catch let error {
+                logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
                     alert = .error(title: a.title, error: a.message)
                 }
@@ -410,6 +469,15 @@ func abortSwitchAddressAlert(_ abortSwitchAddress: @escaping () -> Void) -> Aler
         title: Text("Abort changing address?"),
         message: Text("Address change will be aborted. Old receiving address will be used."),
         primaryButton: .destructive(Text("Abort"), action: abortSwitchAddress),
+        secondaryButton: .cancel()
+    )
+}
+
+func syncConnectionForceAlert(_ syncConnectionForce: @escaping () -> Void) -> Alert {
+    Alert(
+        title: Text("Renegotiate encryption?"),
+        message: Text("The encryption is working and the new encryption agreement is not required. It may result in connection errors!"),
+        primaryButton: .destructive(Text("Renegotiate"), action: syncConnectionForce),
         secondaryButton: .cancel()
     )
 }
