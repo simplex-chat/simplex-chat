@@ -236,6 +236,11 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Filter unread and favorite chats."
             ),
             FeatureDescription(
+                icon: "exclamationmark.arrow.triangle.2.circlepath",
+                title: "Keep your connections",
+                description: "Fix encryption after restoring backups."
+            ),
+            FeatureDescription(
                 icon: "person.2",
                 title: "A bit better groups",
                 description: "- search members.\n- view original messages.\n- share your address in profile."
