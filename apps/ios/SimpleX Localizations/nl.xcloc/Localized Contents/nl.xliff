@@ -72,8 +72,9 @@
         <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ at %@:" xml:space="preserve">
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
         <source>%1$@ at %2$@:</source>
+        <target state="translated">%1$@ bij %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -1136,8 +1137,9 @@
         <target>Contact voorkeuren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contacts" xml:space="preserve">
+      <trans-unit id="Contacts" xml:space="preserve" approved="no">
         <source>Contacts</source>
+        <target state="translated">Contacten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts can mark messages for deletion; you will be able to view them." xml:space="preserve">
@@ -1533,20 +1535,24 @@
         <target>Verwijderd om: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
+      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve" approved="no">
         <source>Delivery receipts are disabled!</source>
+        <target state="translated">Ontvangstbewijzen zijn uitgeschakeld!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
+      <trans-unit id="Delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve" approved="no">
         <source>Delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
+        <target state="translated">Ontvangstbewijzen worden ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts will be enabled for all contacts." xml:space="preserve">
+      <trans-unit id="Delivery receipts will be enabled for all contacts." xml:space="preserve" approved="no">
         <source>Delivery receipts will be enabled for all contacts.</source>
+        <target state="translated">Ontvangstbewijzen worden ingeschakeld voor alle contacten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts!" xml:space="preserve">
+      <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
         <source>Delivery receipts!</source>
+        <target state="translated">Ontvangstbewijzen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1719,8 +1725,9 @@
         <target>Onmiddellijke meldingen inschakelen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable later via Settings" xml:space="preserve">
+      <trans-unit id="Enable later via Settings" xml:space="preserve" approved="no">
         <source>Enable later via Settings</source>
+        <target state="translated">Schakel later in via Instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable lock" xml:space="preserve">
@@ -2023,8 +2030,9 @@
         <target>Fout bij wisselen van profiel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error synchronizing connection" xml:space="preserve">
+      <trans-unit id="Error synchronizing connection" xml:space="preserve" approved="no">
         <source>Error synchronizing connection</source>
+        <target state="translated">Fout bij het synchroniseren van de verbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve">
@@ -2092,8 +2100,9 @@
         <target>Database archief exporteren...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Exporting database archive…" xml:space="preserve">
+      <trans-unit id="Exporting database archive…" xml:space="preserve" approved="no">
         <source>Exporting database archive…</source>
+        <target state="translated">Database archief exporteren…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Failed to remove passphrase" xml:space="preserve">
@@ -2156,24 +2165,29 @@
         <target>Eindelijk, we hebben ze! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix" xml:space="preserve">
+      <trans-unit id="Fix" xml:space="preserve" approved="no">
         <source>Fix</source>
+        <target state="translated">Herstel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix connection" xml:space="preserve">
+      <trans-unit id="Fix connection" xml:space="preserve" approved="no">
         <source>Fix connection</source>
+        <target state="translated">Verbinding herstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix connection?" xml:space="preserve">
+      <trans-unit id="Fix connection?" xml:space="preserve" approved="no">
         <source>Fix connection?</source>
+        <target state="translated">Verbinding herstellen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix not supported by contact" xml:space="preserve">
+      <trans-unit id="Fix not supported by contact" xml:space="preserve" approved="no">
         <source>Fix not supported by contact</source>
+        <target state="translated">Herstel wordt niet ondersteund door contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix not supported by group member" xml:space="preserve">
+      <trans-unit id="Fix not supported by group member" xml:space="preserve" approved="no">
         <source>Fix not supported by group member</source>
+        <target state="translated">Herstel wordt niet ondersteund door groepslid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -2481,8 +2495,9 @@
         <target>Verbeterde serverconfiguratie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="In reply to" xml:space="preserve">
+      <trans-unit id="In reply to" xml:space="preserve" approved="no">
         <source>In reply to</source>
+        <target state="translated">In antwoord op</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -2868,8 +2883,9 @@
         <target>Database archief migreren...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrating database archive…" xml:space="preserve">
+      <trans-unit id="Migrating database archive…" xml:space="preserve" approved="no">
         <source>Migrating database archive…</source>
+        <target state="translated">Database archief migreren…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration error:" xml:space="preserve">
