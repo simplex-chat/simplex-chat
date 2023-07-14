@@ -464,6 +464,10 @@ func setNetworkConfig(_ cfg: NetCfg) throws {
     throw r
 }
 
+func reconnectAllServers() async throws {
+    try await sendCommandOkResp(.reconnectAllServers)
+}
+
 func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) async throws {
     try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
 }
@@ -474,9 +478,9 @@ func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profi
     throw r
 }
 
-func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (ConnectionStats?) {
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (GroupMember, ConnectionStats?) {
     let r = chatSendCmdSync(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
-    if case let .groupMemberInfo(_, _, _, connStats_) = r { return (connStats_) }
+    if case let .groupMemberInfo(_, _, member, connStats_) = r { return (member, connStats_) }
     throw r
 }
 
@@ -501,6 +505,18 @@ func apiAbortSwitchContact(_ contactId: Int64) throws -> ConnectionStats {
 func apiAbortSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) throws -> ConnectionStats {
     let r = chatSendCmdSync(.apiAbortSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
     if case let .groupMemberSwitchAborted(_, _, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiSyncContactRatchet(_ contactId: Int64, _ force: Bool) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSyncContactRatchet(contactId: contactId, force: force))
+    if case let .contactRatchetSyncStarted(_, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiSyncGroupMemberRatchet(_ groupId: Int64, _ groupMemberId: Int64, _ force: Bool) throws -> (GroupMember, ConnectionStats) {
+    let r = chatSendCmdSync(.apiSyncGroupMemberRatchet(groupId: groupId, groupMemberId: groupMemberId, force: force))
+    if case let .groupMemberRatchetSyncStarted(_, _, member, connectionStats) = r { return (member, connectionStats) }
     throw r
 }
 
@@ -1449,6 +1465,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case .chatSuspended:
             chatSuspended()
+        case let .contactSwitch(_, contact, switchProgress):
+            m.updateContactConnectionStats(contact, switchProgress.connectionStats)
+        case let .groupMemberSwitch(_, groupInfo, member, switchProgress):
+            m.updateGroupMemberConnectionStats(groupInfo, member, switchProgress.connectionStats)
+        case let .contactRatchetSync(_, contact, ratchetSyncProgress):
+            m.updateContactConnectionStats(contact, ratchetSyncProgress.connectionStats)
+        case let .groupMemberRatchetSync(_, groupInfo, member, ratchetSyncProgress):
+            m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

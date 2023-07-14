@@ -11,7 +11,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.R
@@ -123,7 +123,7 @@ private fun ContactConnectionInfoLayout(
 @Composable
 fun DeleteButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_delete),
+    painterResource(MR.images.ic_delete),
     stringResource(MR.strings.delete_verb),
     click = onClick,
     textColor = Color.Red,

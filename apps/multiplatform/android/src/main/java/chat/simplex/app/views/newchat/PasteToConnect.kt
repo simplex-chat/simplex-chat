@@ -12,7 +12,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -94,16 +94,16 @@ fun PasteToConnectLayout(
       horizontalArrangement = Arrangement.Start,
     ) {
       if (connectionLink.value == "") {
-        SimpleButton(text = stringResource(MR.strings.paste_button), icon = painterResource(R.drawable.ic_content_paste)) {
+        SimpleButton(text = stringResource(MR.strings.paste_button), icon = painterResource(MR.images.ic_content_paste)) {
           pasteFromClipboard()
         }
       } else {
-        SimpleButton(text = stringResource(MR.strings.clear_verb), icon = painterResource(R.drawable.ic_close)) {
+        SimpleButton(text = stringResource(MR.strings.clear_verb), icon = painterResource(MR.images.ic_close)) {
           connectionLink.value = ""
         }
       }
       Spacer(Modifier.weight(1f).fillMaxWidth())
-      SimpleButton(text = stringResource(MR.strings.connect_button), icon = painterResource(R.drawable.ic_link)) {
+      SimpleButton(text = stringResource(MR.strings.connect_button), icon = painterResource(MR.images.ic_link)) {
         connectViaLink(connectionLink.value)
       }
     }

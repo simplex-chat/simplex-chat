@@ -14,7 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -138,7 +138,7 @@ private fun CustomServer(
   }
   SectionView(
     stringResource(MR.strings.smp_servers_your_server_address).uppercase(),
-    icon = painterResource(R.drawable.ic_error),
+    icon = painterResource(MR.images.ic_error),
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
@@ -191,9 +191,9 @@ private fun UseServerSection(
 @Composable
 fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
   when (server.tested) {
-    true -> Icon(painterResource(R.drawable.ic_check), null, modifier, tint = SimplexGreen)
-    false -> Icon(painterResource(R.drawable.ic_close), null, modifier, tint = MaterialTheme.colors.error)
-    else -> Icon(painterResource(R.drawable.ic_check), null, modifier, tint = Color.Transparent)
+    true -> Icon(painterResource(MR.images.ic_check), null, modifier, tint = SimplexGreen)
+    false -> Icon(painterResource(MR.images.ic_close), null, modifier, tint = MaterialTheme.colors.error)
+    else -> Icon(painterResource(MR.images.ic_check), null, modifier, tint = Color.Transparent)
   }
 
 suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCfg, ProtocolTestFailure?> =

@@ -14,7 +14,7 @@ fun SplashView() {
     color = MaterialTheme.colors.background
   ) {
 //    Image(
-//      painter = painterResource(R.drawable.logo),
+//      painter = painterResource(MR.images.logo),
 //      contentDescription = "Simplex Icon",
 //      modifier = Modifier
 //        .height(230.dp)

@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -164,7 +164,7 @@ fun ChatItemView(
               MsgReactionsMenu()
             }
             if (cItem.meta.itemDeleted == null && !live) {
-              ItemAction(stringResource(MR.strings.reply_verb), painterResource(R.drawable.ic_reply), onClick = {
+              ItemAction(stringResource(MR.strings.reply_verb), painterResource(MR.images.ic_reply), onClick = {
                 if (composeState.value.editing) {
                   composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
                 } else {
@@ -173,7 +173,7 @@ fun ChatItemView(
                 showMenu.value = false
               })
             }
-            ItemAction(stringResource(MR.strings.share_verb), painterResource(R.drawable.ic_share), onClick = {
+            ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
               val filePath = getLoadedFilePath(cItem.file)
               when {
                 filePath != null -> shareFile(cItem.text, filePath)
@@ -181,7 +181,7 @@ fun ChatItemView(
               }
               showMenu.value = false
             })
-            ItemAction(stringResource(MR.strings.copy_verb), painterResource(R.drawable.ic_content_copy), onClick = {
+            ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
               copyText(cItem.content.text)
               showMenu.value = false
             })
@@ -189,7 +189,7 @@ fun ChatItemView(
               val filePath = getLoadedFilePath(cItem.file)
               if (filePath != null) {
                 val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                ItemAction(stringResource(MR.strings.save_verb), painterResource(R.drawable.ic_download), onClick = {
+                ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), onClick = {
                   when (cItem.content.msgContent) {
                     is MsgContent.MCImage -> {
                       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.hasPermission) {
@@ -206,7 +206,7 @@ fun ChatItemView(
               }
             }
             if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
-              ItemAction(stringResource(MR.strings.edit_verb), painterResource(R.drawable.ic_edit_filled), onClick = {
+              ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), onClick = {
                 composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
                 showMenu.value = false
               })
@@ -214,7 +214,7 @@ fun ChatItemView(
             if (cItem.meta.itemDeleted != null && revealed.value) {
               ItemAction(
                 stringResource(MR.strings.hide_verb),
-                painterResource(R.drawable.ic_visibility_off),
+                painterResource(MR.images.ic_visibility_off),
                 onClick = {
                   revealed.value = false
                   showMenu.value = false
@@ -241,7 +241,7 @@ fun ChatItemView(
             if (!cItem.isDeletedContent) {
               ItemAction(
                 stringResource(MR.strings.reveal_verb),
-                painterResource(R.drawable.ic_visibility),
+                painterResource(MR.images.ic_visibility),
                 onClick = {
                   revealed.value = true
                   showMenu.value = false
@@ -342,7 +342,7 @@ fun CancelFileItemAction(
 ) {
   ItemAction(
     stringResource(cancelAction.uiActionId),
-    painterResource(R.drawable.ic_close),
+    painterResource(MR.images.ic_close),
     onClick = {
       showMenu.value = false
       cancelFileAlertDialog(fileId, cancelFile = cancelFile, cancelAction = cancelAction)
@@ -360,7 +360,7 @@ fun ItemInfoAction(
 ) {
   ItemAction(
     stringResource(MR.strings.info_menu),
-    painterResource(R.drawable.ic_info),
+    painterResource(MR.images.ic_info),
     onClick = {
       showItemDetails(cInfo, cItem)
       showMenu.value = false
@@ -378,7 +378,7 @@ fun DeleteItemAction(
 ) {
   ItemAction(
     stringResource(MR.strings.delete_verb),
-    painterResource(R.drawable.ic_delete),
+    painterResource(MR.images.ic_delete),
     onClick = {
       showMenu.value = false
       deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
@@ -396,7 +396,7 @@ fun ModerateItemAction(
 ) {
   ItemAction(
     stringResource(MR.strings.moderate_verb),
-    painterResource(R.drawable.ic_flag),
+    painterResource(MR.images.ic_flag),
     onClick = {
       showMenu.value = false
       moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)

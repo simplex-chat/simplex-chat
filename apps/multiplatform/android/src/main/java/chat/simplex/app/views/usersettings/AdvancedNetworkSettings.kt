@@ -14,7 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,6 +24,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 import java.text.DecimalFormat
 
 @Composable
@@ -272,7 +273,7 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
+          if (!expanded.value) painterResource(MR.images.ic_expand_more) else painterResource(MR.images.ic_expand_less),
           generalGetString(MR.strings.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
@@ -318,22 +319,21 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
         expanded.value = !expanded.value
       }
     ) {
-      val df = DecimalFormat("#.#")
-
+      val df = DecimalFormat("#.###")
       Row(
         Modifier.width(140.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.End
       ) {
         Text(
-          "${df.format(selection.value / 1_000_000.toDouble())} $label",
+          "${df.format(selection.value / 1_000_000.0)} $label",
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
           color = MaterialTheme.colors.secondary
         )
         Spacer(Modifier.size(4.dp))
         Icon(
-          if (!expanded.value) painterResource(R.drawable.ic_expand_more) else painterResource(R.drawable.ic_expand_less),
+          if (!expanded.value) painterResource(MR.images.ic_expand_more) else painterResource(MR.images.ic_expand_less),
           generalGetString(MR.strings.invite_to_group_button),
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
@@ -351,7 +351,7 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
             contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
-              "${df.format(selectionOption / 1_000_000.toDouble())} $label",
+              "${df.format(selectionOption / 1_000_000.0)} $label",
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
             )
@@ -369,8 +369,8 @@ fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit, disabled: Boolea
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(painterResource(R.drawable.ic_replay), stringResource(MR.strings.network_options_revert), revert, disabled)
-    FooterButton(painterResource(R.drawable.ic_check), stringResource(MR.strings.network_options_save), save, disabled)
+    FooterButton(painterResource(MR.images.ic_replay), stringResource(MR.strings.network_options_revert), revert, disabled)
+    FooterButton(painterResource(MR.images.ic_check), stringResource(MR.strings.network_options_save), save, disabled)
   }
 }
 

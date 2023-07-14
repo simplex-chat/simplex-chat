@@ -1284,4 +1284,5 @@
     <string name="favorite_chat">最喜欢</string>
     <string name="search_verb">搜索</string>
     <string name="la_mode_off">已关闭</string>
+    <string name="network_option_protocol_timeout_per_kb">协议超时每 KB</string>
 </resources>

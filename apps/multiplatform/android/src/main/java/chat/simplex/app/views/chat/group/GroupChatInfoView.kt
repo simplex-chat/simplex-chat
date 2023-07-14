@@ -17,7 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -260,7 +260,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
 @Composable
 private fun GroupPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_toggle_on),
+    painterResource(MR.images.ic_toggle_on),
     stringResource(MR.strings.group_preferences),
     click = onClick
   )
@@ -269,7 +269,7 @@ private fun GroupPreferencesButton(onClick: () -> Unit) {
 @Composable
 private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_add),
+    painterResource(MR.images.ic_add),
     stringResource(MR.strings.button_add_members),
     onClick,
     iconColor = tint,
@@ -333,13 +333,13 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
 
 @Composable
 private fun MemberVerifiedShield() {
-  Icon(painterResource(R.drawable.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = MaterialTheme.colors.secondary)
+  Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = MaterialTheme.colors.secondary)
 }
 
 @Composable
 private fun GroupLinkButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_link),
+    painterResource(MR.images.ic_link),
     stringResource(MR.strings.group_link),
     onClick,
     iconColor = MaterialTheme.colors.secondary
@@ -349,7 +349,7 @@ private fun GroupLinkButton(onClick: () -> Unit) {
 @Composable
 private fun CreateGroupLinkButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_add_link),
+    painterResource(MR.images.ic_add_link),
     stringResource(MR.strings.create_group_link),
     onClick,
     iconColor = MaterialTheme.colors.secondary
@@ -359,7 +359,7 @@ private fun CreateGroupLinkButton(onClick: () -> Unit) {
 @Composable
 fun EditGroupProfileButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_edit),
+    painterResource(MR.images.ic_edit),
     stringResource(MR.strings.button_edit_group_profile),
     onClick,
     iconColor = MaterialTheme.colors.secondary
@@ -374,7 +374,7 @@ private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit
     stringResource(MR.strings.button_welcome_message)
   }
   SettingsActionItem(
-    painterResource(R.drawable.ic_maps_ugc),
+    painterResource(MR.images.ic_maps_ugc),
     text,
     onClick,
     iconColor = MaterialTheme.colors.secondary
@@ -384,7 +384,7 @@ private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit
 @Composable
 private fun LeaveGroupButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_logout),
+    painterResource(MR.images.ic_logout),
     stringResource(MR.strings.button_leave_group),
     onClick,
     iconColor = Color.Red,
@@ -395,7 +395,7 @@ private fun LeaveGroupButton(onClick: () -> Unit) {
 @Composable
 private fun DeleteGroupButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_delete),
+    painterResource(MR.images.ic_delete),
     stringResource(MR.strings.button_delete_group),
     onClick,
     iconColor = Color.Red,
@@ -408,7 +408,7 @@ private fun SearchRowView(
   searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
 ) {
   Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) {
-    Icon(painterResource(R.drawable.ic_search), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_search), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.secondary)
   }
   Spacer(Modifier.width(14.dp))
   SearchTextField(Modifier.fillMaxWidth(), searchText = searchText, alwaysVisible = true) {

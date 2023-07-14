@@ -1283,4 +1283,5 @@
     <string name="group_members_can_send_files">Groepsleden kunnen bestanden en media verzenden.</string>
     <string name="search_verb">Zoeken</string>
     <string name="la_mode_off">Uit</string>
+    <string name="network_option_protocol_timeout_per_kb">Protocol timeout per KB</string>
 </resources>

@@ -4,16 +4,16 @@ import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
+import chat.simplex.res.MR
 
 // https://github.com/rsms/inter
-val Inter = FontFamily(
-  Font(R.font.inter_regular),
-  Font(R.font.inter_italic, style = FontStyle.Italic),
-  Font(R.font.inter_bold, weight = FontWeight.Bold),
-  Font(R.font.inter_semi_bold, weight = FontWeight.SemiBold),
-  Font(R.font.inter_medium, weight = FontWeight.Medium),
-  Font(R.font.inter_light, weight = FontWeight.Light),
+val Inter: FontFamily = FontFamily(
+  Font(MR.fonts.Inter.regular.fontResourceId),
+  Font(MR.fonts.Inter.italic.fontResourceId, style = FontStyle.Italic),
+  Font(MR.fonts.Inter.bold.fontResourceId, FontWeight.Bold),
+  Font(MR.fonts.Inter.semibold.fontResourceId, FontWeight.SemiBold),
+  Font(MR.fonts.Inter.medium.fontResourceId, FontWeight.Medium),
+  Font(MR.fonts.Inter.light.fontResourceId, FontWeight.Light)
 )
 
 // Set of Material typography styles to start with

@@ -1,25 +1,13 @@
 package chat.simplex.app.model
 
-import android.annotation.SuppressLint
-import android.app.Application
 import android.content.*
-import android.net.Uri
-import android.os.PowerManager
-import android.provider.Settings
 import android.util.Log
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
 import chat.simplex.app.views.helpers.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.painterResource
-import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.newchat.ConnectViaLinkTab
@@ -28,7 +16,6 @@ import chat.simplex.app.views.usersettings.*
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -1662,159 +1649,6 @@ object ChatController {
     chatModel.setContactNetworkStatus(contact, NetworkStatus.Error(err))
   }
 
-  fun showBackgroundServiceNoticeIfNeeded() {
-    val mode = NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!)
-    Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
-    // Nothing to do if mode is OFF. Can be selected on on-boarding stage
-    if (mode == NotificationsMode.OFF) return
-
-    if (!appPrefs.backgroundServiceNoticeShown.get()) {
-      // the branch for the new users who have never seen service notice
-      if (!mode.requiresIgnoringBattery || isIgnoringBatteryOptimizations()) {
-        showBGServiceNotice(mode)
-      } else {
-        showBGServiceNoticeIgnoreOptimization(mode)
-      }
-      // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
-      appPrefs.backgroundServiceNoticeShown.set(true)
-      appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-    } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations()) {
-      // the branch for users who have app installed, and have seen the service notice,
-      // but the battery optimization for the app is on (Android 12) AND the service is running
-      if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
-        // users have been presented with battery notice before - they did not allow ignoring optimizations -> disable service
-        showDisablingServiceNotice(mode)
-        appPrefs.notificationsMode.set(NotificationsMode.OFF.name)
-        chatModel.notificationsMode.value = NotificationsMode.OFF
-        SimplexService.StartReceiver.toggleReceiver(false)
-        MessagesFetcherWorker.cancelAll()
-        SimplexService.safeStopService(SimplexApp.context)
-      } else {
-        // show battery optimization notice
-        showBGServiceNoticeIgnoreOptimization(mode)
-        appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-      }
-    } else {
-      // service or periodic mode was chosen and battery optimization is disabled
-      SimplexApp.context.schedulePeriodicServiceRestartWorker()
-      SimplexApp.context.schedulePeriodicWakeUp()
-    }
-  }
-
-  private fun showBGServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
-    AlertDialog(
-      onDismissRequest = AlertManager.shared::hideAlert,
-      title = {
-        Row {
-          Icon(
-            painterResource(R.drawable.ic_bolt),
-            contentDescription =
-            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
-          )
-          Text(
-            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
-            fontWeight = FontWeight.Bold
-          )
-        }
-      },
-      text = {
-        Column {
-          Text(
-            if (mode == NotificationsMode.SERVICE) annotatedStringResource(MR.strings.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(MR.strings.periodic_notifications_desc),
-            Modifier.padding(bottom = 8.dp)
-          )
-          Text(
-            annotatedStringResource(MR.strings.it_can_disabled_via_settings_notifications_still_shown)
-          )
-        }
-      },
-      confirmButton = {
-        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
-      }
-    )
-  }
-
-  private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode) = AlertManager.shared.showAlert {
-    val ignoreOptimization = {
-      AlertManager.shared.hideAlert()
-      askAboutIgnoringBatteryOptimization()
-    }
-    AlertDialog(
-      onDismissRequest = ignoreOptimization,
-      title = {
-        Row {
-          Icon(
-            painterResource(R.drawable.ic_bolt),
-            contentDescription =
-            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
-          )
-          Text(
-            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.service_notifications) else stringResource(MR.strings.periodic_notifications),
-            fontWeight = FontWeight.Bold
-          )
-        }
-      },
-      text = {
-        Column {
-          Text(
-            if (mode == NotificationsMode.SERVICE) annotatedStringResource(MR.strings.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(MR.strings.periodic_notifications_desc),
-            Modifier.padding(bottom = 8.dp)
-          )
-          Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
-        }
-      },
-      confirmButton = {
-        TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.ok)) }
-      }
-    )
-  }
-
-  private fun showDisablingServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
-    AlertDialog(
-      onDismissRequest = AlertManager.shared::hideAlert,
-      title = {
-        Row {
-          Icon(
-            painterResource(R.drawable.ic_bolt),
-            contentDescription =
-            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
-          )
-          Text(
-            if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.service_notifications_disabled) else stringResource(MR.strings.periodic_notifications_disabled),
-            fontWeight = FontWeight.Bold
-          )
-        }
-      },
-      text = {
-        Column {
-          Text(
-            annotatedStringResource(MR.strings.turning_off_service_and_periodic),
-            Modifier.padding(bottom = 8.dp)
-          )
-        }
-      },
-      confirmButton = {
-        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
-      }
-    )
-  }
-
-  fun isIgnoringBatteryOptimizations(): Boolean {
-    val powerManager = SimplexApp.context.getSystemService(Application.POWER_SERVICE) as PowerManager
-    return powerManager.isIgnoringBatteryOptimizations(SimplexApp.context.packageName)
-  }
-
-  private fun askAboutIgnoringBatteryOptimization() {
-    Intent().apply {
-      @SuppressLint("BatteryLife")
-      action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-      data = Uri.parse("package:${SimplexApp.context.packageName}")
-      // This flag is needed when you start a new activity from non-Activity context
-      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-      SimplexApp.context.startActivity(this)
-    }
-  }
-
   fun getXFTPCfg(): XFTPFileConfig {
     return XFTPFileConfig(minFileSize = 0)
   }
@@ -2856,20 +2690,20 @@ enum class ChatFeature: Feature {
 
   val icon: Painter
     @Composable get() = when(this) {
-      TimedMessages -> painterResource(R.drawable.ic_timer)
-      FullDelete -> painterResource(R.drawable.ic_delete_forever)
-      Reactions -> painterResource(R.drawable.ic_add_reaction)
-      Voice -> painterResource(R.drawable.ic_keyboard_voice)
-      Calls -> painterResource(R.drawable.ic_call)
+      TimedMessages -> painterResource(MR.images.ic_timer)
+      FullDelete -> painterResource(MR.images.ic_delete_forever)
+      Reactions -> painterResource(MR.images.ic_add_reaction)
+      Voice -> painterResource(MR.images.ic_keyboard_voice)
+      Calls -> painterResource(MR.images.ic_call)
     }
 
   @Composable
   override fun iconFilled(): Painter = when(this) {
-      TimedMessages -> painterResource(R.drawable.ic_timer_filled)
-      FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
-      Reactions -> painterResource(R.drawable.ic_add_reaction_filled)
-      Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
-      Calls -> painterResource(R.drawable.ic_call_filled)
+      TimedMessages -> painterResource(MR.images.ic_timer_filled)
+      FullDelete -> painterResource(MR.images.ic_delete_forever_filled)
+      Reactions -> painterResource(MR.images.ic_add_reaction_filled)
+      Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
+      Calls -> painterResource(MR.images.ic_call_filled)
   }
 
   fun allowDescription(allowed: FeatureAllowed): String =
@@ -2962,22 +2796,22 @@ enum class GroupFeature: Feature {
 
   val icon: Painter
     @Composable get() = when(this) {
-      TimedMessages -> painterResource(R.drawable.ic_timer)
-      DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle)
-      FullDelete -> painterResource(R.drawable.ic_delete_forever)
-      Reactions -> painterResource(R.drawable.ic_add_reaction)
-      Voice -> painterResource(R.drawable.ic_keyboard_voice)
-      Files -> painterResource(R.drawable.ic_draft)
+      TimedMessages -> painterResource(MR.images.ic_timer)
+      DirectMessages -> painterResource(MR.images.ic_swap_horizontal_circle)
+      FullDelete -> painterResource(MR.images.ic_delete_forever)
+      Reactions -> painterResource(MR.images.ic_add_reaction)
+      Voice -> painterResource(MR.images.ic_keyboard_voice)
+      Files -> painterResource(MR.images.ic_draft)
     }
 
   @Composable
   override fun iconFilled(): Painter = when(this) {
-    TimedMessages -> painterResource(R.drawable.ic_timer_filled)
-    DirectMessages -> painterResource(R.drawable.ic_swap_horizontal_circle_filled)
-    FullDelete -> painterResource(R.drawable.ic_delete_forever_filled)
-    Reactions -> painterResource(R.drawable.ic_add_reaction_filled)
-    Voice -> painterResource(R.drawable.ic_keyboard_voice_filled)
-    Files -> painterResource(R.drawable.ic_draft_filled)
+    TimedMessages -> painterResource(MR.images.ic_timer_filled)
+    DirectMessages -> painterResource(MR.images.ic_swap_horizontal_circle_filled)
+    FullDelete -> painterResource(MR.images.ic_delete_forever_filled)
+    Reactions -> painterResource(MR.images.ic_add_reaction_filled)
+    Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
+    Files -> painterResource(MR.images.ic_draft_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =

@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -45,7 +45,7 @@ fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Uni
               modifier = Modifier.widthIn(max = 80.dp).height(60.dp)
             )
             Icon(
-              painterResource(R.drawable.ic_videocam_filled),
+              painterResource(MR.images.ic_videocam_filled),
               "preview video",
               Modifier
                 .size(20.dp),
@@ -65,7 +65,7 @@ fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Uni
     if (cancelEnabled) {
       IconButton(onClick = cancelImages) {
         Icon(
-          painterResource(R.drawable.ic_close),
+          painterResource(MR.images.ic_close),
           contentDescription = stringResource(MR.strings.icon_descr_cancel_image_preview),
           tint = MaterialTheme.colors.primary,
         )

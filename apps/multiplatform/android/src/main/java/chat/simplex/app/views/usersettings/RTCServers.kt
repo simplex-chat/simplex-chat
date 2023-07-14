@@ -12,7 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -202,7 +202,7 @@ private fun howToButton() {
   ) {
     Text(stringResource(MR.strings.how_to), color = MaterialTheme.colors.primary)
     Icon(
-      painterResource(R.drawable.ic_open_in_new), stringResource(MR.strings.how_to), tint = MaterialTheme.colors.primary,
+      painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.how_to), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 5.dp)
     )
   }

@@ -5,7 +5,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
@@ -58,7 +58,7 @@ fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
           text = { Text(it, fontSize = 13.sp) },
           icon = {
             Icon(
-              if (ConnectViaLinkTab.SCAN.ordinal == index) painterResource(R.drawable.ic_qr_code) else painterResource(R.drawable.ic_article),
+              if (ConnectViaLinkTab.SCAN.ordinal == index) painterResource(MR.images.ic_qr_code) else painterResource(MR.images.ic_article),
               it
             )
           },

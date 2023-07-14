@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -19,12 +19,13 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatInfo
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   val icon =
-    if (chatInfo is ChatInfo.Group) R.drawable.ic_supervised_user_circle_filled
-                                    else R.drawable.ic_account_circle_filled
+    if (chatInfo is ChatInfo.Group) MR.images.ic_supervised_user_circle_filled
+                                    else MR.images.ic_account_circle_filled
   ProfileImage(size, chatInfo.image, icon, iconColor)
 }
 
@@ -32,7 +33,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
 fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   Box(Modifier.size(size)) {
     Icon(
-      painterResource(R.drawable.ic_theater_comedy_filled), stringResource(MR.strings.incognito),
+      painterResource(MR.images.ic_theater_comedy_filled), stringResource(MR.strings.incognito),
       modifier = Modifier.size(size).padding(size / 12),
       iconColor
     )
@@ -43,14 +44,14 @@ fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVa
 fun ProfileImage(
   size: Dp,
   image: String? = null,
-  icon: Int = R.drawable.ic_account_circle_filled,
+  icon: ImageResource = MR.images.ic_account_circle_filled,
   color: Color = MaterialTheme.colors.secondaryVariant
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {
       val iconToReplace = when (icon) {
-        R.drawable.ic_account_circle_filled -> AccountCircleFilled
-        R.drawable.ic_supervised_user_circle_filled -> SupervisedUserCircleFilled
+        MR.images.ic_account_circle_filled -> AccountCircleFilled
+        MR.images.ic_supervised_user_circle_filled -> SupervisedUserCircleFilled
         else -> null
       }
       if (iconToReplace != null) {

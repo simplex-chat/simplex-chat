@@ -591,8 +591,9 @@
         <target>Sta toe om verzonden berichten onomkeerbaar te verwijderen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send files and media." xml:space="preserve">
+      <trans-unit id="Allow to send files and media." xml:space="preserve" approved="no">
         <source>Allow to send files and media.</source>
+        <target state="translated">Sta toe om bestanden en media te verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send voice messages." xml:space="preserve">
@@ -2099,16 +2100,19 @@
         <target>Bestanden en media</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files and media" xml:space="preserve">
+      <trans-unit id="Files and media" xml:space="preserve" approved="no">
         <source>Files and media</source>
+        <target state="translated">Bestanden en media</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve">
+      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve" approved="no">
         <source>Files and media are prohibited in this group.</source>
+        <target state="translated">Bestanden en media zijn verboden in deze groep.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files and media prohibited!" xml:space="preserve">
+      <trans-unit id="Files and media prohibited!" xml:space="preserve" approved="no">
         <source>Files and media prohibited!</source>
+        <target state="translated">Bestanden en media verboden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
@@ -2221,8 +2225,9 @@
         <target>Groepsleden kunnen verdwijnende berichten sturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send files and media." xml:space="preserve">
+      <trans-unit id="Group members can send files and media." xml:space="preserve" approved="no">
         <source>Group members can send files and media.</source>
+        <target state="translated">Groepsleden kunnen bestanden en media verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send voice messages." xml:space="preserve">
@@ -2953,8 +2958,9 @@
         <target>Geen apparaattoken!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No filtered chats" xml:space="preserve">
+      <trans-unit id="No filtered chats" xml:space="preserve" approved="no">
         <source>No filtered chats</source>
+        <target state="translated">Geen gefilterde gesprekken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No group!" xml:space="preserve">
@@ -3046,8 +3052,9 @@
         <target>Alleen groep eigenaren kunnen groep voorkeuren wijzigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
+      <trans-unit id="Only group owners can enable files and media." xml:space="preserve" approved="no">
         <source>Only group owners can enable files and media.</source>
+        <target state="translated">Alleen groepseigenaren kunnen bestanden en media inschakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable voice messages." xml:space="preserve">
@@ -3370,8 +3377,9 @@
         <target>Verbied het verzenden van verdwijnende berichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending files and media." xml:space="preserve">
+      <trans-unit id="Prohibit sending files and media." xml:space="preserve" approved="no">
         <source>Prohibit sending files and media.</source>
+        <target state="translated">Verbied het verzenden van bestanden en media.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">

@@ -18,7 +18,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
@@ -180,7 +180,7 @@ private fun SearchRowView(
   selectedContactsSize: Int
 ) {
   Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) {
-    Icon(painterResource(R.drawable.ic_search), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_search), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.secondary)
   }
   Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
   SearchTextField(Modifier.fillMaxWidth(), searchText = searchText, alwaysVisible = true) {
@@ -214,7 +214,7 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
 @Composable
 fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_check),
+    painterResource(MR.images.ic_check),
     stringResource(MR.strings.invite_to_group_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
@@ -226,7 +226,7 @@ fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
 @Composable
 fun SkipInvitingButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(R.drawable.ic_check),
+    painterResource(MR.images.ic_check),
     stringResource(MR.strings.skip_inviting_button),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
@@ -299,13 +299,13 @@ fun ContactCheckRow(
   val icon: Painter
   val iconColor: Color
   if (prohibitedToInviteIncognito) {
-    icon = painterResource(R.drawable.ic_theater_comedy_filled)
+    icon = painterResource(MR.images.ic_theater_comedy_filled)
     iconColor = MaterialTheme.colors.secondary
   } else if (checked) {
-    icon = painterResource(R.drawable.ic_check_circle_filled)
+    icon = painterResource(MR.images.ic_check_circle_filled)
     iconColor = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
   } else {
-    icon = painterResource(R.drawable.ic_circle)
+    icon = painterResource(MR.images.ic_circle)
     iconColor = MaterialTheme.colors.secondary
   }
   SectionItemView(

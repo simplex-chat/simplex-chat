@@ -11,7 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
@@ -83,7 +83,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
   if (chatModel.chats.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
-        Icon(painterResource(R.drawable.ic_search_500), stringResource(MR.strings.search_verb).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search_verb).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
       }
     }
   }
@@ -96,7 +96,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
         )
       }) {
         Icon(
-          painterResource(R.drawable.ic_report_filled),
+          painterResource(MR.images.ic_report_filled),
           generalGetString(MR.strings.chat_is_stopped_indication),
           tint = Color.Red,
         )
@@ -120,7 +120,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
         )
         if (chatModel.incognito.value) {
           Icon(
-            painterResource(R.drawable.ic_theater_comedy_filled),
+            painterResource(MR.images.ic_theater_comedy_filled),
             stringResource(MR.strings.incognito),
             tint = Indigo,
             modifier = Modifier.padding(10.dp).size(26.dp)

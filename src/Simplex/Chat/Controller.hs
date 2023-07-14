@@ -8,6 +8,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -60,6 +61,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, 
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
+import Simplex.Messaging.Util (catchAllErrors, allFinally)
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
@@ -279,6 +281,7 @@ data ChatCommand
   | GetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
+  | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
   | APIGroupMemberInfo GroupId GroupMemberId
@@ -286,6 +289,8 @@ data ChatCommand
   | APISwitchGroupMember GroupId GroupMemberId
   | APIAbortSwitchContact ContactId
   | APIAbortSwitchGroupMember GroupId GroupMemberId
+  | APISyncContactRatchet ContactId Bool
+  | APISyncGroupMemberRatchet GroupId GroupMemberId Bool
   | APIGetContactCode ContactId
   | APIGetGroupMemberCode GroupId GroupMemberId
   | APIVerifyContact ContactId (Maybe Text)
@@ -299,6 +304,8 @@ data ChatCommand
   | SwitchGroupMember GroupName ContactName
   | AbortSwitchContact ContactName
   | AbortSwitchGroupMember GroupName ContactName
+  | SyncContactRatchet ContactName Bool
+  | SyncGroupMemberRatchet GroupName ContactName Bool
   | GetContactCode ContactName
   | GetGroupMemberCode GroupName ContactName
   | VerifyContact ContactName (Maybe Text)
@@ -414,6 +421,12 @@ data ChatResponse
   | CRGroupMemberSwitchAborted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitch {user :: User, contact :: Contact, switchProgress :: SwitchProgress}
   | CRGroupMemberSwitch {user :: User, groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
+  | CRContactRatchetSyncStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
+  | CRGroupMemberRatchetSyncStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
+  | CRContactRatchetSync {user :: User, contact :: Contact, ratchetSyncProgress :: RatchetSyncProgress}
+  | CRGroupMemberRatchetSync {user :: User, groupInfo :: GroupInfo, member :: GroupMember, ratchetSyncProgress :: RatchetSyncProgress}
+  | CRContactVerificationReset {user :: User, contact :: Contact}
+  | CRGroupMemberVerificationReset {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
@@ -718,6 +731,14 @@ data SwitchProgress = SwitchProgress
 
 instance ToJSON SwitchProgress where toEncoding = J.genericToEncoding J.defaultOptions
 
+data RatchetSyncProgress = RatchetSyncProgress
+  { ratchetSyncStatus :: RatchetSyncState,
+    connectionStats :: ConnectionStats
+  }
+  deriving (Show, Generic)
+
+instance ToJSON RatchetSyncProgress where toEncoding = J.genericToEncoding J.defaultOptions
+
 data ParsedServerAddress = ParsedServerAddress
   { serverAddress :: Maybe ServerAddress,
     parseError :: String
@@ -880,6 +901,18 @@ throwDBError = throwError . ChatErrorDatabase
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
+
+catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
+catchChatError = catchAllErrors mkChatError
+{-# INLINE catchChatError #-}
+
+chatFinally :: ChatMonad m => m a -> m b -> m a
+chatFinally = allFinally mkChatError
+{-# INLINE chatFinally #-}
+
+mkChatError :: SomeException -> ChatError
+mkChatError = ChatError . CEException . show
+{-# INLINE mkChatError #-}
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError

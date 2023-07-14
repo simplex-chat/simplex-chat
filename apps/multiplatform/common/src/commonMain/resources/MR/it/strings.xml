@@ -763,7 +763,7 @@
     <string name="wrong_passphrase">Password del database sbagliata</string>
     <string name="wrong_passphrase_title">Password sbagliata!</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Sei stato/a invitato/a al gruppo. Entra per connetterti con i suoi membri.</string>
-    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puoi avviare la chat tramite Impostazioni -> Database o riavviando l\'app.</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puoi avviare la chat tramite Impostazioni -&gt; Database o riavviando l\'app.</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Sei entrato/a in questo gruppo. Connessione al membro del gruppo invitante.</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Non riceverai più messaggi da questo gruppo. La cronologia della chat verrà conservata.</string>
     <string name="group_member_status_invited">ha invitato</string>
@@ -1281,4 +1281,8 @@
     <string name="files_are_prohibited_in_group">File e contenuti multimediali sono vietati in questo gruppo.</string>
     <string name="files_and_media_prohibited">File e contenuti multimediali vietati!</string>
     <string name="la_mode_off">Off</string>
+    <string name="no_filtered_chats">Nessuna chat filtrata</string>
+    <string name="favorite_chat">Preferita</string>
+    <string name="unfavorite_chat">Non preferita</string>
+    <string name="network_option_protocol_timeout_per_kb">Scadenza del protocollo per KB</string>
 </resources>

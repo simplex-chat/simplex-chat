@@ -1274,4 +1274,15 @@
     <string name="abort_switch_receiving_address">Annuler le changement d\'adresse</string>
     <string name="abort_switch_receiving_address_desc">Le changement d\'adresse sera annulé. L\'ancienne adresse de réception sera utilisée.</string>
     <string name="la_mode_off">Désactivé</string>
+    <string name="only_owners_can_enable_files_and_media">Seuls les propriétaires du groupe peuvent activer les fichiers et les médias.</string>
+    <string name="favorite_chat">Favoris</string>
+    <string name="prohibit_sending_files">Interdire l\'envoi de fichiers et de médias.</string>
+    <string name="no_filtered_chats">Pas de chats filtrés</string>
+    <string name="files_and_media">Fichiers et médias</string>
+    <string name="unfavorite_chat">Défavoris</string>
+    <string name="network_option_protocol_timeout_per_kb">Délai d\'attente du protocole par KB</string>
+    <string name="files_and_media_prohibited">Fichiers et médias interdits !</string>
+    <string name="allow_to_send_files">Permet l\'envoi de fichiers et de médias.</string>
+    <string name="group_members_can_send_files">Les membres du groupe peuvent envoyer des fichiers et des médias.</string>
+    <string name="files_are_prohibited_in_group">Les fichiers et les médias sont interdits dans ce groupe.</string>
 </resources>

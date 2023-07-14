@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -78,14 +78,14 @@ fun CIImageView(
               FileProtocol.SMP -> {}
             }
           is CIFileStatus.SndTransfer -> progressIndicator()
-          is CIFileStatus.SndComplete -> fileIcon(painterResource(R.drawable.ic_check_filled), MR.strings.icon_descr_image_snd_complete)
-          is CIFileStatus.SndCancelled -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
-          is CIFileStatus.SndError -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
-          is CIFileStatus.RcvInvitation -> fileIcon(painterResource(R.drawable.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
-          is CIFileStatus.RcvAccepted -> fileIcon(painterResource(R.drawable.ic_more_horiz), MR.strings.icon_descr_waiting_for_image)
+          is CIFileStatus.SndComplete -> fileIcon(painterResource(MR.images.ic_check_filled), MR.strings.icon_descr_image_snd_complete)
+          is CIFileStatus.SndCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+          is CIFileStatus.SndError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+          is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
+          is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_image)
           is CIFileStatus.RcvTransfer -> progressIndicator()
-          is CIFileStatus.RcvCancelled -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
-          is CIFileStatus.RcvError -> fileIcon(painterResource(R.drawable.ic_close), MR.strings.icon_descr_file)
+          is CIFileStatus.RcvCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+          is CIFileStatus.RcvError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           else -> {}
         }
       }

@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -88,7 +88,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
       if (chatModel.users.isEmpty()) {
         SimpleButtonDecorated(
           text = stringResource(MR.strings.about_simplex),
-          icon = painterResource(R.drawable.ic_arrow_back_ios_new),
+          icon = painterResource(MR.images.ic_arrow_back_ios_new),
           textDecoration = TextDecoration.None,
           fontWeight = FontWeight.Medium
         ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
@@ -107,7 +107,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
       Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
           Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
-          Icon(painterResource(R.drawable.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = createColor)
+          Icon(painterResource(MR.images.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = createColor)
         }
       }
     }

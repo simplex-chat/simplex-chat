@@ -14,7 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.res.painterResource
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -141,7 +141,7 @@ private fun SaveButton(save: () -> Unit, disabled: Boolean) {
 private fun ChangeModeButton(editMode: Boolean, click: () -> Unit, disabled: Boolean) {
   SectionItemView(click, disabled = disabled) {
     Icon(
-      painterResource(if (editMode) R.drawable.ic_visibility else R.drawable.ic_edit),
+      painterResource(if (editMode) MR.images.ic_visibility else MR.images.ic_edit),
       contentDescription = generalGetString(MR.strings.edit_verb),
       tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
     )
@@ -157,7 +157,7 @@ private fun ChangeModeButton(editMode: Boolean, click: () -> Unit, disabled: Boo
 private fun CopyTextButton(click: () -> Unit) {
   SectionItemView(click) {
     Icon(
-      painterResource(R.drawable.ic_content_copy),
+      painterResource(MR.images.ic_content_copy),
       contentDescription = generalGetString(MR.strings.copy_verb),
       tint = MaterialTheme.colors.primary,
     )
