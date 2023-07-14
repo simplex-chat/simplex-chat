@@ -307,6 +307,9 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
 (cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
 
+(⩗) :: HasCallStack => TestCC -> String -> Expectation
+cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
+
 (</) :: HasCallStack => TestCC -> Expectation
 (</) = (<// 500000)
 
@@ -340,6 +343,16 @@ dropTime_ :: String -> Maybe String
 dropTime_ msg = case splitAt 6 msg of
   ([m, m', ':', s, s', ' '], text) ->
     if all isDigit [m, m', s, s'] then Just text else Nothing
+  _ -> Nothing
+
+dropReceipt :: HasCallStack => String -> String
+dropReceipt msg = fromMaybe err $ dropReceipt_ msg
+  where
+    err = error $ "invalid receipt: " <> msg
+
+dropReceipt_ :: String -> Maybe String
+dropReceipt_ msg = case splitAt 2 msg of
+  ("⩗ ", text) -> Just text
   _ -> Nothing
 
 getInvitation :: HasCallStack => TestCC -> IO String
