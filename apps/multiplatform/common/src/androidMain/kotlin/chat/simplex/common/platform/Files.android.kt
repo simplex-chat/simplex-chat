@@ -21,6 +21,8 @@ actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator 
 actual val chatDatabaseFileName: String = "files_chat.db"
 actual val agentDatabaseFileName: String = "files_agent.db"
 
+actual val databaseExportDir: File = androidAppContext.cacheDir
+
 @Composable
 actual fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher {
   val launcher = rememberLauncherForActivityResult(

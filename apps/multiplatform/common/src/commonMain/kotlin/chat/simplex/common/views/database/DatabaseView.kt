@@ -476,7 +476,7 @@ private suspend fun exportChatArchive(
   val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
   val archiveName = "simplex-chat.$ts.zip"
   val archivePath = "${filesDir.absolutePath}${File.separator}$archiveName"
-  val config = ArchiveConfig(archivePath, parentTempDirectory = tmpDir.toString())
+  val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
   m.controller.apiExportArchive(config)
   deleteOldArchive(m)
   m.controller.appPrefs.chatArchiveName.set(archiveName)
@@ -529,7 +529,7 @@ private fun importArchive(
       try {
         m.controller.apiDeleteStorage()
         try {
-          val config = ArchiveConfig(archivePath, parentTempDirectory = tmpDir.toString())
+          val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
           val archiveErrors = m.controller.apiImportArchive(config)
           DatabaseUtils.ksDatabasePassword.remove()
           appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
@@ -563,7 +563,7 @@ private fun saveArchiveFromURI(importedArchiveURI: URI): String? {
     val inputStream = importedArchiveURI.inputStream()
     val archiveName = getFileName(importedArchiveURI)
     if (inputStream != null && archiveName != null) {
-      val archivePath = "$tmpDir${File.separator}$archiveName"
+      val archivePath = "$databaseExportDir${File.separator}$archiveName"
       val destFile = File(archivePath)
       Files.copy(inputStream, destFile.toPath())
       archivePath
