@@ -1197,7 +1197,7 @@
     <string name="call_connection_via_relay">דרך ממסר</string>
     <string name="icon_descr_video_off">וידאו כבוי</string>
     <string name="icon_descr_video_on">וידאו פעיל</string>
-    <string name="alert_text_decryption_error_header">%1$d הודעות לא הצליחו לעבור פענוח.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d הודעות לא הצליחו לעבור פענוח.</string>
     <string name="you_must_use_the_most_recent_version_of_database">עליכם להשתמש בגרסה העדכנית ביותר של מסד הנתונים שלכם במכשיר אחד בלבד, אחרת אתם עלולים להפסיק לקבל הודעות מאנשי קשר מסוימים.</string>
     <string name="wrong_passphrase_title">סיסמה שגויה!</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">הוזמנתם לקבוצה. הצטרפו כדי ליצור קשר עם חברי הקבוצה.</string>

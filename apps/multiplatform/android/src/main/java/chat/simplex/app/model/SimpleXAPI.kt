@@ -717,9 +717,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiGroupMemberInfo(groupId: Long, groupMemberId: Long): ConnectionStats? {
+  suspend fun apiGroupMemberInfo(groupId: Long, groupMemberId: Long): Pair<GroupMember, ConnectionStats?>? {
     val r = sendCmd(CC.APIGroupMemberInfo(groupId, groupMemberId))
-    if (r is CR.GroupMemberInfo) return r.connectionStats_
+    if (r is CR.GroupMemberInfo) return Pair(r.member, r.connectionStats_)
     Log.e(TAG, "apiGroupMemberInfo bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -731,9 +731,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long): ConnectionStats? {
+  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long): Pair<GroupMember, ConnectionStats>? {
     val r = sendCmd(CC.APISwitchGroupMember(groupId, groupMemberId))
-    if (r is CR.GroupMemberSwitchStarted) return r.connectionStats
+    if (r is CR.GroupMemberSwitchStarted) return Pair(r.member, r.connectionStats)
     apiErrorAlert("apiSwitchGroupMember", generalGetString(MR.strings.error_changing_address), r)
     return null
   }
@@ -745,10 +745,24 @@ object ChatController {
     return null
   }
 
-  suspend fun apiAbortSwitchGroupMember(groupId: Long, groupMemberId: Long): ConnectionStats? {
+  suspend fun apiAbortSwitchGroupMember(groupId: Long, groupMemberId: Long): Pair<GroupMember, ConnectionStats>? {
     val r = sendCmd(CC.APIAbortSwitchGroupMember(groupId, groupMemberId))
-    if (r is CR.GroupMemberSwitchAborted) return r.connectionStats
+    if (r is CR.GroupMemberSwitchAborted) return Pair(r.member, r.connectionStats)
     apiErrorAlert("apiAbortSwitchGroupMember", generalGetString(MR.strings.error_aborting_address_change), r)
+    return null
+  }
+
+  suspend fun apiSyncContactRatchet(contactId: Long, force: Boolean): ConnectionStats? {
+    val r = sendCmd(CC.APISyncContactRatchet(contactId, force))
+    if (r is CR.ContactRatchetSyncStarted) return r.connectionStats
+    apiErrorAlert("apiSyncContactRatchet", generalGetString(MR.strings.error_synchronizing_connection), r)
+    return null
+  }
+
+  suspend fun apiSyncGroupMemberRatchet(groupId: Long, groupMemberId: Long, force: Boolean): Pair<GroupMember, ConnectionStats>? {
+    val r = sendCmd(CC.APISyncGroupMemberRatchet(groupId, groupMemberId, force))
+    if (r is CR.GroupMemberRatchetSyncStarted) return Pair(r.member, r.connectionStats)
+    apiErrorAlert("apiSyncGroupMemberRatchet", generalGetString(MR.strings.error_synchronizing_connection), r)
     return null
   }
 
@@ -1569,6 +1583,14 @@ object ChatController {
           }
         }
       }
+      is CR.ContactSwitch ->
+        chatModel.updateContactConnectionStats(r.contact, r.switchProgress.connectionStats)
+      is CR.GroupMemberSwitch ->
+        chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.switchProgress.connectionStats)
+      is CR.ContactRatchetSync ->
+        chatModel.updateContactConnectionStats(r.contact, r.ratchetSyncProgress.connectionStats)
+      is CR.GroupMemberRatchetSync ->
+        chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
     }
@@ -1789,6 +1811,8 @@ sealed class CC {
   class APISwitchGroupMember(val groupId: Long, val groupMemberId: Long): CC()
   class APIAbortSwitchContact(val contactId: Long): CC()
   class APIAbortSwitchGroupMember(val groupId: Long, val groupMemberId: Long): CC()
+  class APISyncContactRatchet(val contactId: Long, val force: Boolean): CC()
+  class APISyncGroupMemberRatchet(val groupId: Long, val groupMemberId: Long, val force: Boolean): CC()
   class APIGetContactCode(val contactId: Long): CC()
   class APIGetGroupMemberCode(val groupId: Long, val groupMemberId: Long): CC()
   class APIVerifyContact(val contactId: Long, val connectionCode: String?): CC()
@@ -1884,6 +1908,8 @@ sealed class CC {
     is APISwitchGroupMember -> "/_switch #$groupId $groupMemberId"
     is APIAbortSwitchContact -> "/_abort switch @$contactId"
     is APIAbortSwitchGroupMember -> "/_abort switch #$groupId $groupMemberId"
+    is APISyncContactRatchet -> if (force) "/_sync @$contactId force=on" else "/_sync @$contactId"
+    is APISyncGroupMemberRatchet -> if (force) "/_sync #$groupId $groupMemberId force=on" else "/_sync #$groupId $groupMemberId"
     is APIGetContactCode -> "/_get code @$contactId"
     is APIGetGroupMemberCode -> "/_get code #$groupId $groupMemberId"
     is APIVerifyContact -> "/_verify code @$contactId" + if (connectionCode != null) " $connectionCode" else ""
@@ -1974,6 +2000,8 @@ sealed class CC {
     is APISwitchGroupMember -> "apiSwitchGroupMember"
     is APIAbortSwitchContact -> "apiAbortSwitchContact"
     is APIAbortSwitchGroupMember -> "apiAbortSwitchGroupMember"
+    is APISyncContactRatchet -> "apiSyncContactRatchet"
+    is APISyncGroupMemberRatchet -> "apiSyncGroupMemberRatchet"
     is APIGetContactCode -> "apiGetContactCode"
     is APIGetGroupMemberCode -> "apiGetGroupMemberCode"
     is APIVerifyContact -> "apiVerifyContact"
@@ -3161,6 +3189,14 @@ sealed class CR {
   @Serializable @SerialName("groupMemberSwitchStarted") class GroupMemberSwitchStarted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("contactSwitchAborted") class ContactSwitchAborted(val user: User, val contact: Contact, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("groupMemberSwitchAborted") class GroupMemberSwitchAborted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("contactSwitch") class ContactSwitch(val user: User, val contact: Contact, val switchProgress: SwitchProgress): CR()
+  @Serializable @SerialName("groupMemberSwitch") class GroupMemberSwitch(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val switchProgress: SwitchProgress): CR()
+  @Serializable @SerialName("contactRatchetSyncStarted") class ContactRatchetSyncStarted(val user: User, val contact: Contact, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("groupMemberRatchetSyncStarted") class GroupMemberRatchetSyncStarted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("contactRatchetSync") class ContactRatchetSync(val user: User, val contact: Contact, val ratchetSyncProgress: RatchetSyncProgress): CR()
+  @Serializable @SerialName("groupMemberRatchetSync") class GroupMemberRatchetSync(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val ratchetSyncProgress: RatchetSyncProgress): CR()
+  @Serializable @SerialName("contactVerificationReset") class ContactVerificationReset(val user: User, val contact: Contact): CR()
+  @Serializable @SerialName("groupMemberVerificationReset") class GroupMemberVerificationReset(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("contactCode") class ContactCode(val user: User, val contact: Contact, val connectionCode: String): CR()
   @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
   @Serializable @SerialName("connectionVerified") class ConnectionVerified(val user: User, val verified: Boolean, val expectedCode: String): CR()
@@ -3279,6 +3315,14 @@ sealed class CR {
     is GroupMemberSwitchStarted -> "groupMemberSwitchStarted"
     is ContactSwitchAborted -> "contactSwitchAborted"
     is GroupMemberSwitchAborted -> "groupMemberSwitchAborted"
+    is ContactSwitch -> "contactSwitch"
+    is GroupMemberSwitch -> "groupMemberSwitch"
+    is ContactRatchetSyncStarted -> "contactRatchetSyncStarted"
+    is GroupMemberRatchetSyncStarted -> "groupMemberRatchetSyncStarted"
+    is ContactRatchetSync -> "contactRatchetSync"
+    is GroupMemberRatchetSync -> "groupMemberRatchetSync"
+    is ContactVerificationReset -> "contactVerificationReset"
+    is GroupMemberVerificationReset -> "groupMemberVerificationReset"
     is ContactCode -> "contactCode"
     is GroupMemberCode -> "groupMemberCode"
     is ConnectionVerified -> "connectionVerified"
@@ -3394,6 +3438,14 @@ sealed class CR {
     is GroupMemberSwitchStarted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is ContactSwitchAborted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is GroupMemberSwitchAborted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
+    is ContactSwitch -> withUser(user, "contact: ${json.encodeToString(contact)}\nswitchProgress: ${json.encodeToString(switchProgress)}")
+    is GroupMemberSwitch -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nswitchProgress: ${json.encodeToString(switchProgress)}")
+    is ContactRatchetSyncStarted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
+    is GroupMemberRatchetSyncStarted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
+    is ContactRatchetSync -> withUser(user, "contact: ${json.encodeToString(contact)}\nratchetSyncProgress: ${json.encodeToString(ratchetSyncProgress)}")
+    is GroupMemberRatchetSync -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nratchetSyncProgress: ${json.encodeToString(ratchetSyncProgress)}")
+    is ContactVerificationReset -> withUser(user, "contact: ${json.encodeToString(contact)}")
+    is GroupMemberVerificationReset -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}")
     is ContactCode -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionCode: $connectionCode")
     is GroupMemberCode -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionCode: $connectionCode")
     is ConnectionVerified -> withUser(user, "verified: $verified\nconnectionCode: $expectedCode")
@@ -3525,7 +3577,19 @@ abstract class TerminalItem {
 }
 
 @Serializable
-class ConnectionStats(val rcvQueuesInfo: List<RcvQueueInfo>, val sndQueuesInfo: List<SndQueueInfo>)
+class ConnectionStats(
+  val connAgentVersion: Int,
+  val rcvQueuesInfo: List<RcvQueueInfo>,
+  val sndQueuesInfo: List<SndQueueInfo>,
+  val ratchetSyncState: RatchetSyncState,
+  val ratchetSyncSupported: Boolean
+) {
+  val ratchetSyncAllowed: Boolean get() =
+    ratchetSyncSupported && listOf(RatchetSyncState.Allowed, RatchetSyncState.Required).contains(ratchetSyncState)
+
+  val ratchetSyncSendProhibited: Boolean get() =
+    listOf(RatchetSyncState.Required, RatchetSyncState.Started, RatchetSyncState.Agreed).contains(ratchetSyncState)
+}
 
 @Serializable
 class RcvQueueInfo(
@@ -3552,6 +3616,34 @@ class SndQueueInfo(
 enum class SndSwitchStatus {
   @SerialName("sending_qkey") SendingQKEY,
   @SerialName("sending_qtest") SendingQTEST
+}
+
+@Serializable
+enum class QueueDirection {
+  @SerialName("rcv") Rcv,
+  @SerialName("snd") Snd
+}
+
+@Serializable
+class SwitchProgress(
+  val queueDirection: QueueDirection,
+  val switchPhase: SwitchPhase,
+  val connectionStats: ConnectionStats
+)
+
+@Serializable
+class RatchetSyncProgress(
+  val ratchetSyncStatus: RatchetSyncState,
+  val connectionStats: ConnectionStats
+)
+
+@Serializable
+enum class RatchetSyncState {
+  @SerialName("ok") Ok,
+  @SerialName("allowed") Allowed,
+  @SerialName("required") Required,
+  @SerialName("started") Started,
+  @SerialName("agreed") Agreed
 }
 
 @Serializable

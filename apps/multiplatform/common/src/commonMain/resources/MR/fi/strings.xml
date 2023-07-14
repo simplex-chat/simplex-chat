@@ -1244,7 +1244,7 @@
     <string name="alert_text_decryption_error_too_many_skipped"> %1$d  viestit ohitettu.</string>
     <string name="alert_text_msg_bad_id">Seuraavan viestin tunnus on väärä (pienempi tai yhtä suuri kuin edellisen).
 \nTämä voi johtua jostain virheestä tai siitä, että yhteys on vaarantunut.</string>
-    <string name="alert_text_decryption_error_header">%1$d viestien salauksen purku epäonnistui.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d viestien salauksen purku epäonnistui.</string>
     <string name="user_unhide">Näytä</string>
     <string name="you_have_to_enter_passphrase_every_time">Sinun on annettava tunnuslause aina, kun sovellus käynnistyy - sitä ei tallenneta laitteeseen.</string>
     <string name="update_database_passphrase">Päivitä tietokannan tunnuslause</string>

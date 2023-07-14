@@ -1099,7 +1099,7 @@
     <string name="alert_title_msg_bad_id">Onjuiste bericht ID</string>
     <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
 \nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
-    <string name="alert_text_decryption_error_header">%1$d-berichten konden niet worden ontsleuteld.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d-berichten konden niet worden ontsleuteld.</string>
     <string name="no_spaces">Geen spaties!</string>
     <string name="stop_rcv_file__message">Het ontvangen van het bestand wordt gestopt.</string>
     <string name="revoke_file__confirm">Intrekken</string>

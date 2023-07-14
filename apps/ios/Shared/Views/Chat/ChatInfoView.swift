@@ -57,6 +57,22 @@ private func serverHost(_ s: String) -> String {
     }
 }
 
+enum SendReceipts: Identifiable, Hashable {
+    case yes
+    case no
+    case userDefault(Bool)
+
+    var id: Self { self }
+
+    var text: LocalizedStringKey {
+        switch self {
+        case .yes: "yes"
+        case .no: "no"
+        case let .userDefault(on): on ? "default (yes)" : "default (no)"
+        }
+    }
+}
+
 struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -68,6 +84,7 @@ struct ChatInfoView: View {
     @Binding var connectionCode: String?
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
+    @State private var sendReceipts = SendReceipts.yes
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
@@ -117,6 +134,7 @@ struct ChatInfoView: View {
                 Section {
                     if let code = connectionCode { verifyCodeButton(code) }
                     contactPreferencesButton()
+                    sendReceiptsOption()
                     if let connStats = connectionStats,
                        connStats.ratchetSyncAllowed {
                         synchronizeConnectionButton()
@@ -153,7 +171,7 @@ struct ChatInfoView: View {
                             connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
                             || connStats.ratchetSyncSendProhibited
                         )
-                        if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
+                        if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
                             Button("Abort changing address") {
                                 alert = .abortSwitchAddressAlert
                             }
@@ -293,6 +311,17 @@ struct ChatInfoView: View {
         } label: {
             Label("Contact preferences", systemImage: "switch.2")
         }
+    }
+
+    private func sendReceiptsOption() -> some View {
+        Picker(selection: $sendReceipts) {
+            ForEach([.yes, .no, .userDefault(true)]) { (opt: SendReceipts) in
+                Text(opt.text)
+            }
+        } label: {
+            Label("Send receipts", systemImage: "checkmark.message")
+        }
+        .frame(height: 36)
     }
 
     private func synchronizeConnectionButton() -> some View {

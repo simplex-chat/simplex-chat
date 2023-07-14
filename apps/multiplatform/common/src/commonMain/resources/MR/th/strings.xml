@@ -1052,7 +1052,7 @@
     <string name="v4_4_verify_connection_security">ตรวจสอบความปลอดภัยในการเชื่อมต่อ</string>
     <string name="incognito_info_share">เมื่อคุณแชร์โปรไฟล์ที่ไม่ระบุตัวตนกับใครสักคน โปรไฟล์นี้จะใช้สำหรับกลุ่มที่พวกเขาเชิญคุณ</string>
     <string name="contact_wants_to_connect_via_call">%1$s ต้องการเชื่อมต่อกับคุณผ่านทาง</string>
-    <string name="alert_text_decryption_error_header">%1$d ข้อความไม่สามารถ decrypt ได้</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">ข้อความ %1$d ไม่สามารถ decrypt ได้</string>
     <string name="group_info_section_title_num_members">%1$s สมาชิก</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[คุณสามารถ <font color="#0088ff">เชื่อมต่อกับ SimpleX Chat นักพัฒนาแอปเพื่อถามคำถามและรับการอัปเดต</font>]]></string>
     <string name="you_can_share_your_address">คุณสามารถแชร์ที่อยู่ของคุณเป็นลิงก์หรือรหัสคิวอาร์ - ใคร ๆ ก็สามารถเชื่อมต่อกับคุณได้</string>

@@ -874,7 +874,7 @@
     <string name="show_call_on_lock_screen">Показати</string>
     <string name="no_call_on_lock_screen">Вимкнути</string>
     <string name="relay_server_if_necessary">Сервер ретрансляції використовується лише за необхідності. Інша сторона може спостерігати за вашою IP-адресою.</string>
-    <string name="alert_text_decryption_error_header">%1$d повідомлення не вдалося розшифрувати.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d повідомлення не вдалося розшифрувати.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d повідомлення пропущені.</string>
     <string name="alert_text_fragment_please_report_to_developers">Будь ласка, повідомте про це розробникам.</string>
     <string name="send_link_previews">Надіслати попередній перегляд за посиланням</string>

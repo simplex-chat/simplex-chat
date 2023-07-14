@@ -20,7 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
@@ -47,6 +46,12 @@ fun ChatItemView(
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
+  updateContactStats: (Contact) -> Unit,
+  updateMemberStats: (GroupInfo, GroupMember) -> Unit,
+  syncContactConnection: (Contact) -> Unit,
+  syncMemberConnection: (GroupInfo, GroupMember) -> Unit,
+  findModelChat: (String) -> Chat?,
+  findModelMember: (String) -> GroupMember?,
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
 ) {
@@ -302,7 +307,7 @@ fun ChatItemView(
           is CIContent.SndCall -> CallItem(c.status, c.duration)
           is CIContent.RcvCall -> CallItem(c.status, c.duration)
           is CIContent.RcvIntegrityError -> IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL, showMember = showMember)
-          is CIContent.RcvDecryptionError -> CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cItem, cInfo.timedMessagesTTL, showMember = showMember)
+          is CIContent.RcvDecryptionError -> CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, showMember = showMember)
           is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
           is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
           is CIContent.RcvGroupEventContent -> CIEventView(cItem)
@@ -522,6 +527,12 @@ fun PreviewChatItemView() {
       acceptCall = { _ -> },
       scrollToItem = {},
       acceptFeature = { _, _, _ -> },
+      updateContactStats = { },
+      updateMemberStats = { _, _ -> },
+      syncContactConnection = { },
+      syncMemberConnection = { _, _ -> },
+      findModelChat = { null },
+      findModelMember = { null },
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
     )
@@ -545,6 +556,12 @@ fun PreviewChatItemViewDeletedContent() {
       acceptCall = { _ -> },
       scrollToItem = {},
       acceptFeature = { _, _, _ -> },
+      updateContactStats = { },
+      updateMemberStats = { _, _ -> },
+      syncContactConnection = { },
+      syncMemberConnection = { _, _ -> },
+      findModelChat = { null },
+      findModelMember = { null },
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
     )
