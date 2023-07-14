@@ -241,14 +241,14 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Fix encryption after restoring backups."
             ),
             FeatureDescription(
-                icon: "person.2",
-                title: "A bit better groups",
-                description: "- search members.\n- view original messages.\n- share your address in profile."
+                icon: "stopwatch",
+                title: "Make one message disappear",
+                description: "Even when disabled in the conversation."
             ),
             FeatureDescription(
-                icon: "gearshape.2",
-                title: "More reliable",
-                description: "Improved stability of message delivery"
+                icon: "gift",
+                title: "A few more things",
+                description: "- more stabile message delivery.\n- a bit better groups.\n- and more!"
             ),
         ]
     )
