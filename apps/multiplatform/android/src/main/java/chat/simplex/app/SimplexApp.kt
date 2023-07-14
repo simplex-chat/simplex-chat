@@ -36,6 +36,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     initHaskell()
     initMultiplatform()
     tmpDir.deleteRecursively()
+
     withBGApi {
       initChatController()
       runMigrations()

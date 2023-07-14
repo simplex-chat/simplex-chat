@@ -43,7 +43,7 @@ val errorBitmap: Bitmap = BitmapFactory.decodeByteArray(errorBitmapBytes, 0, err
 class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Uri?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
-    tmpFile = File.createTempFile("image", ".bmp", File(getAppFilesDirectory()))
+    tmpFile = File.createTempFile("image", ".bmp", appFilesDir)
     // Since the class should return Uri, the file should be deleted somewhere else. And in order to be sure, delegate this to system
     tmpFile?.deleteOnExit()
     uri = FileProvider.getUriForFile(context, "$APPLICATION_ID.provider", tmpFile!!)
