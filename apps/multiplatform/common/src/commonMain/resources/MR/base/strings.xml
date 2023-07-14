@@ -1478,6 +1478,16 @@
   <string name="v5_1_better_messages_descr">- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history.</string>
   <string name="v5_1_japanese_portuguese_interface">Japanese and Portuguese UI</string>
   <string name="whats_new_thanks_to_users_contribute_weblate">Thanks to the users – contribute via Weblate!</string>
+  <string name="v5_2_message_delivery_receipts">Message delivery receipts!</string>
+  <string name="v5_2_message_delivery_receipts_descr">The second tick we missed! ✅</string>
+  <string name="v5_2_favourites_filter">Find chats faster</string>
+  <string name="v5_2_favourites_filter_descr">Filter unread and favorite chats.</string>
+  <string name="v5_2_fix_encryption">Keep your connections</string>
+  <string name="v5_2_fix_encryption_descr">Fix encryption after restoring backups.</string>
+  <string name="v5_2_disappear_one_message">Make one message disappear</string>
+  <string name="v5_2_disappear_one_message_descr">Even when disabled in the conversation.</string>
+  <string name="v5_2_more_things">A few more things</string>
+  <string name="v5_2_more_things_descr">- more stabile message delivery.\n- a bit better groups.\n- and more!</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
