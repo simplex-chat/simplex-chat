@@ -150,7 +150,6 @@ struct PrivacySettings: View {
             do {
                 if let currentUser = m.currentUser {
                     let userMsgReceiptSettings = UserMsgReceiptSettings(enable: enable, clearOverrides: clearOverrides)
-                    print("setSendReceiptsContacts \(userMsgReceiptSettings)")
                     try await apiSetUserContactReceipts(currentUser.userId, userMsgReceiptSettings: userMsgReceiptSettings)
                     await MainActor.run {
                         var updatedUser = currentUser

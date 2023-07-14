@@ -27,7 +27,6 @@ struct ChatView: View {
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
-//    @State private var contactSendReceipts: SendReceipts?
     @State private var tableView: UITableView?
     @State private var loadingItems = false
     @State private var firstPage = false
@@ -108,7 +107,6 @@ struct ChatView: View {
                                     connectionStats = stats
                                     customUserProfile = profile
                                     connectionCode = code
-//                                    contactSendReceipts = contactSendReceipts(contact)
                                     if contact.activeConn.connectionCode != ct.activeConn.connectionCode {
                                         chat.chatInfo = .direct(contact: ct)
                                     }
@@ -200,19 +198,6 @@ struct ChatView: View {
             }
         }
     }
-
-//    private func contactSendReceipts(_ contact: Contact) -> SendReceipts {
-//        switch contact.chatSettings.sendRcpts {
-//        case .some(true): return SendReceipts.yes
-//        case .some(false): return SendReceipts.no
-//        case .none:
-//            var userDefault = true
-//            if let currentUser = chatModel.currentUser {
-//                userDefault = currentUser.sendRcptsContacts
-//            }
-//            return SendReceipts.userDefault(userDefault)
-//        }
-//    }
 
     private func initChatView() {
         let cInfo = chat.chatInfo
@@ -970,14 +955,11 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
             await MainActor.run {
                 switch chat.chatInfo {
                 case var .direct(contact):
-                    var updatedContact = contact
-                    updatedContact.chatSettings = chatSettings
-                    print("updateChatSettings \(chatSettings)")
-                    ChatModel.shared.updateContact(updatedContact)
+                    contact.chatSettings = chatSettings
+                    ChatModel.shared.updateContact(contact)
                 case var .group(groupInfo):
-                    var updatedGroupInfo = groupInfo
-                    updatedGroupInfo.chatSettings = chatSettings
-                    ChatModel.shared.updateGroup(updatedGroupInfo)
+                    groupInfo.chatSettings = chatSettings
+                    ChatModel.shared.updateGroup(groupInfo)
                 default: ()
                 }
             }
