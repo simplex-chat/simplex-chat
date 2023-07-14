@@ -25,6 +25,8 @@ actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator 
 actual val chatDatabaseFileName: String = "simplex_v1_chat.db"
 actual val agentDatabaseFileName: String = "simplex_v1_agent.db"
 
+actual val databaseExportDir: File = tmpDir
+
 @Composable
 actual fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher =
   remember { FileChooserLauncher(getContent, onResult) }
