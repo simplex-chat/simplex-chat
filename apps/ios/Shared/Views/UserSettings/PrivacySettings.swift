@@ -121,7 +121,7 @@ struct PrivacySettings: View {
                 sendReceiptsContacts = currentUser.sendRcptsContacts
             }
         }
-        .onChange(of: sendReceiptsContacts) { sendReceiptsContactsToggle in
+        .onChange(of: sendReceiptsContacts) { sendReceiptsContactsToggle in // sometimes there is race with onAppear
             if sendReceiptsContactsToggleReset {
                 sendReceiptsContactsToggleReset = false
             } else {
