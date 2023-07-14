@@ -2610,12 +2610,12 @@
       </trans-unit>
       <trans-unit id="KeyChain error" xml:space="preserve" approved="no">
         <source>KeyChain error</source>
-        <target state="translated">Schlüsselbund-Fehler</target>
+        <target state="translated">KeyChain Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keychain error" xml:space="preserve" approved="no">
         <source>Keychain error</source>
-        <target state="translated">Schlüsselbund-Fehler</target>
+        <target state="translated">KeyChain Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="LIVE" xml:space="preserve">
