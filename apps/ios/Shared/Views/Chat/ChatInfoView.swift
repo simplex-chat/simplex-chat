@@ -94,7 +94,6 @@ struct ChatInfoView: View {
     @State private var alert: ChatInfoViewAlert? = nil
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
-    @State private var sendReceiptsAppear = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
@@ -343,11 +342,7 @@ struct ChatInfoView: View {
         }
         .frame(height: 36)
         .onChange(of: sendReceipts) { sendReceipts in
-            if sendReceiptsAppear {
-                sendReceiptsAppear = false
-            } else {
-                setSendReceipts(sendReceipts)
-            }
+            setSendReceipts(sendReceipts)
         }
     }
 

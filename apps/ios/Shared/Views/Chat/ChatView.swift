@@ -970,11 +970,14 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
             await MainActor.run {
                 switch chat.chatInfo {
                 case var .direct(contact):
-                    contact.chatSettings = chatSettings
-                    ChatModel.shared.updateContact(contact)
+                    var updatedContact = contact
+                    updatedContact.chatSettings = chatSettings
+                    print("updateChatSettings \(chatSettings)")
+                    ChatModel.shared.updateContact(updatedContact)
                 case var .group(groupInfo):
-                    groupInfo.chatSettings = chatSettings
-                    ChatModel.shared.updateGroup(groupInfo)
+                    var updatedGroupInfo = groupInfo
+                    updatedGroupInfo.chatSettings = chatSettings
+                    ChatModel.shared.updateGroup(updatedGroupInfo)
                 default: ()
                 }
             }
