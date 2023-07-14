@@ -570,12 +570,6 @@
 /* rcv group event chat item */
 "changed your role to %@" = "あなたの役割を %@ に変更しました";
 
-/* chat item text */
-"changing address for %@..." = "%@ のアドレスを変更しています...";
-
-/* chat item text */
-"changing address..." = "アドレスを変更しています…";
-
 /* No comment provided by engineer. */
 "Chat archive" = "チャットのアーカイブ";
 
@@ -894,7 +888,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "分散型";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "復号化エラー";
 
 /* pref value */
@@ -2266,9 +2260,6 @@
 /* No comment provided by engineer. */
 "Rate the app" = "アプリを評価";
 
-/* chat item menu */
-"React..." = "リアクション...";
-
 /* No comment provided by engineer. */
 "Read" = "読む";
 
@@ -2868,9 +2859,6 @@
 
 /* notification title */
 "this contact" = "この連絡先";
-
-/* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "このエラーはこの接続では永続的なものです。再接続してください。";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "このグループはもう存在しません。";

@@ -161,7 +161,7 @@
     <string name="callstate_connected">מחובר/ת</string>
     <string name="callstate_connecting">מתחבר…</string>
     <string name="icon_descr_call_connecting">מתחבר לשיחה</string>
-    <string name="confirm_passcode">אימות קוד גישה</string>
+    <string name="confirm_passcode">אשר קוד גישה</string>
     <string name="change_lock_mode">שנה מצב נעילה</string>
     <string name="settings_section_title_chats">צ׳אטים</string>
     <string name="chat_database_section">מסד נתונים</string>
@@ -1052,7 +1052,7 @@
     <string name="incognito_info_find">כדי למצוא את הפרופיל המשמש לזהות נסתרת, הקישו על שם איש הקשר או הקבוצה בחלק העליון של הצ\'אט.</string>
     <string name="image_decoding_exception_desc">לא ניתן לפענח את התמונה. אנא נסו תמונה אחרת או צרו קשר עם המפתחים.</string>
     <string name="videos_limit_title">יותר מדי סרטונים!</string>
-    <string name="switch_receiving_address_desc">תכונה זו היא ניסיונית! היא תפעל רק אם לאיש הקשר יש גרסה 4.2 מותקנת. אתם אמורים לראות את ההודעה בשיחה לאחר השלמת שינוי הכתובת - בידקו שאתם עדיין יכולים לקבל הודעות מאיש קשר זה (או מחבר קבוצה).</string>
+    <string name="switch_receiving_address_desc">כתובת הקבלה תשתנה לשרת אחר. שינוי הכתובת יושלם לאחר שהשולח יתחבר לאינטרנט.</string>
     <string name="connection_you_accepted_will_be_cancelled">החיבור שאישרת יבוטל!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">איש הקשר שאיתו שיתפת את הקישור הזה לא יוכל להתחבר!</string>
     <string name="this_QR_code_is_not_a_link">קוד QR זה אינו קישור!</string>
@@ -1282,4 +1282,8 @@
     <string name="settings_restart_app">איתחול</string>
     <string name="unfavorite_chat">שנוא</string>
     <string name="la_mode_off">כבוי</string>
+    <string name="strikethrough_text">קו חוצה</string>
+    <string name="prohibit_sending_files">לאסור שליחת קבצים ומדיה.</string>
+    <string name="only_owners_can_enable_files_and_media">רק בעלי קבוצות יכולים לאפשר קבצים ומדיה.</string>
+    <string name="network_option_protocol_timeout_per_kb">תום זמן הפרוטוקול לכל קילו-בית</string>
 </resources>
