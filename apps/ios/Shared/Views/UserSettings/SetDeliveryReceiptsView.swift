@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct SetDeliveryReceiptsView: View {
     @EnvironmentObject var m: ChatModel
@@ -22,7 +23,23 @@ struct SetDeliveryReceiptsView: View {
             Spacer()
 
             Button("Enable") {
-                m.setDeliveryReceipts = false
+                Task {
+                    do {
+                        try await apiSetAllContactReceipts(enable: true)
+                        await MainActor.run {
+                            m.setDeliveryReceipts = false
+                            privacyDeliveryReceiptsSet.set(true)
+                        }
+                    } catch let error {
+                        AlertManager.shared.showAlert(Alert(
+                            title: Text("Error enabling delivery receipts!"),
+                            message: Text("Error: \(responseError(error))")
+                        ))
+                        await MainActor.run {
+                            m.setDeliveryReceipts = false
+                        }
+                    }
+                }
             }
             .font(.largeTitle)
             Group {
@@ -36,17 +53,26 @@ struct SetDeliveryReceiptsView: View {
 
             Spacer()
 
-            Button("Enable later via Settings") {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Delivery receipts are disabled!"),
-                    message: Text("You can enable them later via app Privacy & Security settings."),
-                    primaryButton: .default(Text("Don't show again")) {
-                        m.setDeliveryReceipts = false
-                    },
-                    secondaryButton: .default(Text("Ok")) {
-                        m.setDeliveryReceipts = false
+            VStack(spacing: 8) {
+                Button {
+                    AlertManager.shared.showAlert(Alert(
+                        title: Text("Delivery receipts are disabled!"),
+                        message: Text("You can enable them later via app Privacy & Security settings."),
+                        primaryButton: .default(Text("Don't show again")) {
+                            m.setDeliveryReceipts = false
+                            privacyDeliveryReceiptsSet.set(true)
+                        },
+                        secondaryButton: .default(Text("Ok")) {
+                            m.setDeliveryReceipts = false
+                        }
+                    ))
+                } label: {
+                    HStack {
+                        Text("Don't enable")
+                        Image(systemName: "chevron.right")
                     }
-                ))
+                }
+                Text("You can enable later in Settings").font(.footnote)
             }
         }
         .padding()

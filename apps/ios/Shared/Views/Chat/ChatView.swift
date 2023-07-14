@@ -27,6 +27,7 @@ struct ChatView: View {
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
+//    @State private var contactSendReceipts: SendReceipts?
     @State private var tableView: UITableView?
     @State private var loadingItems = false
     @State private var firstPage = false
@@ -107,6 +108,7 @@ struct ChatView: View {
                                     connectionStats = stats
                                     customUserProfile = profile
                                     connectionCode = code
+//                                    contactSendReceipts = contactSendReceipts(contact)
                                     if contact.activeConn.connectionCode != ct.activeConn.connectionCode {
                                         chat.chatInfo = .direct(contact: ct)
                                     }
@@ -124,7 +126,14 @@ struct ChatView: View {
                         customUserProfile = nil
                         connectionCode = nil
                     }) {
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
+                        ChatInfoView(
+                            chat: chat,
+                            contact: contact,
+                            connectionStats: $connectionStats,
+                            customUserProfile: $customUserProfile,
+                            localAlias: chat.chatInfo.localAlias,
+                            connectionCode: $connectionCode
+                        )
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
@@ -191,6 +200,19 @@ struct ChatView: View {
             }
         }
     }
+
+//    private func contactSendReceipts(_ contact: Contact) -> SendReceipts {
+//        switch contact.chatSettings.sendRcpts {
+//        case .some(true): return SendReceipts.yes
+//        case .some(false): return SendReceipts.no
+//        case .none:
+//            var userDefault = true
+//            if let currentUser = chatModel.currentUser {
+//                userDefault = currentUser.sendRcptsContacts
+//            }
+//            return SendReceipts.userDefault(userDefault)
+//        }
+//    }
 
     private func initChatView() {
         let cInfo = chat.chatInfo

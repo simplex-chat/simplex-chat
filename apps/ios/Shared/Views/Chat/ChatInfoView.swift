@@ -71,6 +71,14 @@ enum SendReceipts: Identifiable, Hashable {
         case let .userDefault(on): return on ? "default (yes)" : "default (no)"
         }
     }
+
+    func toBool() -> Bool? {
+        switch self {
+        case .yes: return true
+        case .no: return false
+        case .userDefault: return nil
+        }
+    }
 }
 
 struct ChatInfoView: View {
@@ -84,7 +92,9 @@ struct ChatInfoView: View {
     @Binding var connectionCode: String?
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
-    @State private var sendReceipts = SendReceipts.yes
+    @State private var sendReceipts = SendReceipts.userDefault(true)
+    @State private var sendReceiptsUserDefault = true
+    @State private var sendReceiptsAppear = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
@@ -200,6 +210,16 @@ struct ChatInfoView: View {
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            if let currentUser = chatModel.currentUser {
+                sendReceiptsUserDefault = currentUser.sendRcptsContacts
+            }
+            switch contact.chatSettings.sendRcpts {
+            case .some(true): sendReceipts = SendReceipts.yes
+            case .some(false): sendReceipts = SendReceipts.no
+            case .none: sendReceipts = SendReceipts.userDefault(sendReceiptsUserDefault)
+            }
+        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteContactAlert: return deleteContactAlert()
@@ -315,13 +335,26 @@ struct ChatInfoView: View {
 
     private func sendReceiptsOption() -> some View {
         Picker(selection: $sendReceipts) {
-            ForEach([.yes, .no, .userDefault(true)]) { (opt: SendReceipts) in
+            ForEach([.yes, .no, .userDefault(sendReceiptsUserDefault)]) { (opt: SendReceipts) in
                 Text(opt.text)
             }
         } label: {
             Label("Send receipts", systemImage: "checkmark.message")
         }
         .frame(height: 36)
+        .onChange(of: sendReceipts) { sendReceipts in
+            if sendReceiptsAppear {
+                sendReceiptsAppear = false
+            } else {
+                setSendReceipts(sendReceipts)
+            }
+        }
+    }
+
+    func setSendReceipts(_ sendReceipts: SendReceipts) {
+        var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
+        chatSettings.sendRcpts = sendReceipts.toBool()
+        updateChatSettings(chat, chatSettings: chatSettings)
     }
 
     private func synchronizeConnectionButton() -> some View {
