@@ -4488,7 +4488,7 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       </trans-unit>
       <trans-unit id="Unfav." xml:space="preserve" approved="no">
         <source>Unfav.</source>
-        <target state="translated">No favorito</target>
+        <target state="translated">No fav.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
