@@ -31,7 +31,9 @@ CREATE TABLE users(
   agent_user_id INTEGER CHECK(agent_user_id NOT NULL),
   view_pwd_hash BLOB,
   view_pwd_salt BLOB,
-  show_ntfs INTEGER NOT NULL DEFAULT 1, -- 1 for active user
+  show_ntfs INTEGER NOT NULL DEFAULT 1,
+  send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
+  send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -65,6 +67,7 @@ CREATE TABLE contacts(
   chat_ts TEXT,
   deleted INTEGER NOT NULL DEFAULT 0,
   favorite INTEGER NOT NULL DEFAULT 0,
+  send_rcpts INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -137,7 +140,8 @@ CREATE TABLE groups(
   host_conn_custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   chat_ts TEXT,
-  favorite INTEGER NOT NULL DEFAULT 0, -- received
+  favorite INTEGER NOT NULL DEFAULT 0,
+  send_rcpts INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

@@ -712,6 +712,13 @@ hasNotification = \case
   XCallInv_ -> True
   _ -> False
 
+hasDeliveryReceipt :: CMEventTag e -> Bool
+hasDeliveryReceipt = \case
+  XMsgNew_ -> True
+  XGrpInv_ -> True
+  XCallInv_ -> True
+  _ -> False
+
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
   eventTag <- strDecode $ B.singleton tag
