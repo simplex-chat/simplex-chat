@@ -118,7 +118,6 @@ struct PrivacySettings: View {
         }
         .onAppear {
             if let currentUser = m.currentUser {
-                sendReceiptsContactsToggleReset = true
                 sendReceiptsContacts = currentUser.sendRcptsContacts
             }
         }
