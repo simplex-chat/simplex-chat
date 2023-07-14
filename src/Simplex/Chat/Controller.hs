@@ -45,7 +45,7 @@ import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
+import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
@@ -61,7 +61,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, 
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (catchAllErrors, allFinally)
+import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors)
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
@@ -109,6 +109,7 @@ data ChatConfig = ChatConfig
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     tempDir :: Maybe FilePath,
     showReactions :: Bool,
+    showReceipts :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -198,6 +199,9 @@ data ChatCommand
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
   | SetActiveUser UserName (Maybe UserPwd)
+  | SetAllContactReceipts Bool
+  | APISetUserContactReceipts UserId UserMsgReceiptSettings
+  | SetUserContactReceipts UserMsgReceiptSettings
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId
@@ -297,7 +301,8 @@ data ChatCommand
   | APIVerifyGroupMember GroupId GroupMemberId (Maybe Text)
   | APIEnableContact ContactId
   | APIEnableGroupMember GroupId GroupMemberId
-  | ShowMessages ChatName Bool
+  | SetShowMessages ChatName Bool
+  | SetSendReceipts ChatName (Maybe Bool)
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
@@ -901,6 +906,10 @@ throwDBError = throwError . ChatErrorDatabase
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
+
+tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
+tryChatError = tryAllErrors mkChatError
+{-# INLINE tryChatError #-}
 
 catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
 catchChatError = catchAllErrors mkChatError

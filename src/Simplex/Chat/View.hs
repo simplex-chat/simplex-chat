@@ -62,7 +62,7 @@ serializeChatResponse :: Maybe User -> CurrentTime -> TimeZone -> ChatResponse -
 serializeChatResponse user_ ts tz = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz
 
 responseToView :: Maybe User -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> ChatResponse -> [StyledString]
-responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts tz = \case
+responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
@@ -98,7 +98,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, testView} liveItems ts
   CRChatItems u chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
-  CRChatItemStatusUpdated u _ -> ttyUser u []
+  CRChatItemStatusUpdated u ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
   CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
@@ -461,6 +461,20 @@ localTs tz ts = do
       formattedTime = formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" localTime
   formattedTime
 
+viewChatItemStatusUpdated :: AChatItem -> CurrentTime -> TimeZone -> Bool -> Bool -> [StyledString]
+viewChatItemStatusUpdated (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) ts tz testView showReceipts =
+  case itemStatus of
+    CISSndRcvd rcptStatus ->
+      if testView && showReceipts
+        then prependFirst (viewDeliveryReceipt rcptStatus <> " ") $ viewChatItem chat item False ts tz
+        else []
+    _ -> []
+
+viewDeliveryReceipt :: MsgReceiptStatus -> StyledString
+viewDeliveryReceipt = \case
+  MROk -> "⩗"
+  MRBadMsgHash -> ttyError' "⩗!"
+
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}, content, quotedItem} liveItems ts tz = case chat of
   DirectChat c -> case chatDir of
@@ -495,7 +509,7 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
 
-hideLive :: CIMeta с d -> [StyledString] -> [StyledString]
+hideLive :: CIMeta c d -> [StyledString] -> [StyledString]
 hideLive CIMeta {itemLive = Just True} _ = []
 hideLive _ s = s
 

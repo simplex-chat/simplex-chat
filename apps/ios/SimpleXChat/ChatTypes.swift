@@ -1353,7 +1353,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn.connStatus == .ready } }
-    public var sendMsgEnabled: Bool { get { true } }
+    public var sendMsgEnabled: Bool { get { !(activeConn.connectionStats?.ratchetSyncSendProhibited ?? false) } }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
@@ -1425,6 +1425,12 @@ public struct Connection: Decodable {
     public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
     public var connectionCode: SecurityCode?
+
+    public var connectionStats: ConnectionStats? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case connId, agentConnId, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode
+    }
 
     public var id: ChatId { get { ":\(connId)" } }
 
@@ -2456,20 +2462,24 @@ public enum CIContent: Decodable, ItemContent {
 public enum MsgDecryptError: String, Decodable {
     case ratchetHeader
     case tooManySkipped
+    case ratchetEarlier
+    case other
 
     var text: String {
         switch self {
         case .ratchetHeader: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
         case .tooManySkipped: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
+        case .ratchetEarlier: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
+        case .other: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
         }
     }
 }
 
 public struct CIQuote: Decodable, ItemContent {
-    var chatDir: CIDirection?
+    public var chatDir: CIDirection?
     public var itemId: Int64?
     var sharedMsgId: String? = nil
-    var sentAt: Date
+    public var sentAt: Date
     public var content: MsgContent
     public var formattedText: [FormattedText]?
 
@@ -2484,7 +2494,7 @@ public struct CIQuote: Decodable, ItemContent {
         switch (chatDir) {
         case .directSnd: return "you"
         case .directRcv: return nil
-        case .groupSnd: return membership?.displayName
+        case .groupSnd: return membership?.displayName ?? "you"
         case let .groupRcv(member): return member.displayName
         case nil: return nil
         }
@@ -3057,6 +3067,8 @@ public enum SndGroupEvent: Decodable {
 
 public enum RcvConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase)
+    case ratchetSync(syncStatus: RatchetSyncState)
+    case verificationCodeReset
     
     var text: String {
         switch self {
@@ -3064,25 +3076,51 @@ public enum RcvConnEvent: Decodable {
             if case .completed = phase {
                 return NSLocalizedString("changed address for you", comment: "chat item text")
             }
-            return NSLocalizedString("changing address...", comment: "chat item text")
+            return NSLocalizedString("changing address…", comment: "chat item text")
+        case let .ratchetSync(syncStatus):
+            return ratchetSyncStatusToText(syncStatus)
+        case .verificationCodeReset:
+            return NSLocalizedString("security code changed", comment: "chat item text")
         }
+    }
+}
+
+func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
+    switch ratchetSyncStatus {
+    case .ok: return NSLocalizedString("encryption ok", comment: "chat item text")
+    case .allowed: return NSLocalizedString("encryption re-negotiation allowed", comment: "chat item text")
+    case .required: return NSLocalizedString("encryption re-negotiation required", comment: "chat item text")
+    case .started: return NSLocalizedString("agreeing encryption…", comment: "chat item text")
+    case .agreed: return NSLocalizedString("encryption agreed", comment: "chat item text")
     }
 }
 
 public enum SndConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
+    case ratchetSync(syncStatus: RatchetSyncState, member: GroupMemberRef?)
     
     var text: String {
         switch self {
         case let .switchQueue(phase, member):
             if let name = member?.profile.profileViewName {
                 return phase == .completed
-                    ? String.localizedStringWithFormat(NSLocalizedString("you changed address for %@", comment: "chat item text"), name)
-                    : String.localizedStringWithFormat(NSLocalizedString("changing address for %@...", comment: "chat item text"), name)
+                ? String.localizedStringWithFormat(NSLocalizedString("you changed address for %@", comment: "chat item text"), name)
+                : String.localizedStringWithFormat(NSLocalizedString("changing address for %@…", comment: "chat item text"), name)
             }
             return phase == .completed
-                ? NSLocalizedString("you changed address", comment: "chat item text")
-                : NSLocalizedString("changing address...", comment: "chat item text")
+            ? NSLocalizedString("you changed address", comment: "chat item text")
+            : NSLocalizedString("changing address…", comment: "chat item text")
+        case let .ratchetSync(syncStatus, member):
+            if let name = member?.profile.profileViewName {
+                switch syncStatus {
+                case .ok: return String.localizedStringWithFormat(NSLocalizedString("encryption ok for %@", comment: "chat item text"), name)
+                case .allowed: return String.localizedStringWithFormat(NSLocalizedString("encryption re-negotiation allowed for %@", comment: "chat item text"), name)
+                case .required: return String.localizedStringWithFormat(NSLocalizedString("encryption re-negotiation required for %@", comment: "chat item text"), name)
+                case .started: return String.localizedStringWithFormat(NSLocalizedString("agreeing encryption for %@…", comment: "chat item text"), name)
+                case .agreed: return String.localizedStringWithFormat(NSLocalizedString("encryption agreed for %@", comment: "chat item text"), name)
+                }
+            }
+            return ratchetSyncStatusToText(syncStatus)
         }
     }
 }

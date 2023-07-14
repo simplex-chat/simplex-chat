@@ -102,14 +102,46 @@ fun GroupMemberInfoView(
       switchMemberAddress = {
         showSwitchAddressAlert(switchAddress = {
           withApi {
-            connStats.value = chatModel.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+            val r = chatModel.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+            if (r != null) {
+              connStats.value = r.second
+              chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+              close.invoke()
+            }
           }
         })
       },
       abortSwitchMemberAddress = {
         showAbortSwitchAddressAlert(abortSwitchAddress = {
           withApi {
-            connStats.value = chatModel.controller.apiAbortSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+            val r = chatModel.controller.apiAbortSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+            if (r != null) {
+              connStats.value = r.second
+              chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+              close.invoke()
+            }
+          }
+        })
+      },
+      syncMemberConnection = {
+        withApi {
+          val r = chatModel.controller.apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force = false)
+          if (r != null) {
+            connStats.value = r.second
+            chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+            close.invoke()
+          }
+        }
+      },
+      syncMemberConnectionForce = {
+        showSyncConnectionForceAlert(syncConnectionForce = {
+          withApi {
+            val r = chatModel.controller.apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force = true)
+            if (r != null) {
+              connStats.value = r.second
+              chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+              close.invoke()
+            }
           }
         })
       },
@@ -176,6 +208,8 @@ fun GroupMemberInfoLayout(
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
   abortSwitchMemberAddress: () -> Unit,
+  syncMemberConnection: () -> Unit,
+  syncMemberConnectionForce: () -> Unit,
   verifyClicked: () -> Unit,
 ) {
   val cStats = connStats.value
@@ -211,6 +245,11 @@ fun GroupMemberInfoLayout(
           }
           if (connectionCode != null) {
             VerifyCodeButton(member.verified, verifyClicked)
+          }
+          if (cStats != null && cStats.ratchetSyncAllowed) {
+            SynchronizeConnectionButton(syncMemberConnection)
+          } else if (developerTools) {
+            SynchronizeConnectionButtonForce(syncMemberConnectionForce)
           }
         }
         SectionDividerSpaced()
@@ -254,12 +293,12 @@ fun GroupMemberInfoLayout(
       SectionDividerSpaced()
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
         SwitchAddressButton(
-          disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null },
+          disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || cStats.ratchetSyncSendProhibited,
           switchAddress = switchMemberAddress
         )
         if (cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
           AbortSwitchAddressButton(
-            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch },
+            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch } || cStats.ratchetSyncSendProhibited,
             abortSwitchAddress = abortSwitchMemberAddress
           )
         }
@@ -414,6 +453,8 @@ fun PreviewGroupMemberInfoLayout() {
       onRoleSelected = {},
       switchMemberAddress = {},
       abortSwitchMemberAddress = {},
+      syncMemberConnection = {},
+      syncMemberConnectionForce = {},
       verifyClicked = {},
     )
   }
