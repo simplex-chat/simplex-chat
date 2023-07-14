@@ -124,14 +124,7 @@ struct ChatView: View {
                         customUserProfile = nil
                         connectionCode = nil
                     }) {
-                        ChatInfoView(
-                            chat: chat,
-                            contact: contact,
-                            connectionStats: $connectionStats,
-                            customUserProfile: $customUserProfile,
-                            localAlias: chat.chatInfo.localAlias,
-                            connectionCode: $connectionCode
-                        )
+                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
