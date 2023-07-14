@@ -18,7 +18,6 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
     @State private var sendReceiptsContacts = false
-    @State private var sendReceiptsContactsToSet = false
     @State private var sendReceiptsContactsToggleReset = false
     @State private var showResetContactsReceiptsOverridesDialogue = false
     @State private var alert: PrivacySettingsViewAlert?
@@ -109,10 +108,10 @@ struct PrivacySettings: View {
                         sendReceiptsContacts.toggle()
                     }
                     Button("Keep per contact overrides") {
-                        setSendReceiptsContacts(sendReceiptsContactsToSet, clearOverrides: false)
+                        setSendReceiptsContacts(sendReceiptsContacts, clearOverrides: false)
                     }
                     Button("Reset per contact overrides", role: .destructive) {
-                        setSendReceiptsContacts(sendReceiptsContactsToSet, clearOverrides: true)
+                        setSendReceiptsContacts(sendReceiptsContacts, clearOverrides: true)
                     }
                 }
             }
@@ -143,7 +142,6 @@ struct PrivacySettings: View {
         if allContacts.allSatisfy({ $0.chatSettings.sendRcpts == nil || $0.chatSettings.sendRcpts == enable }) {
             setSendReceiptsContacts(enable, clearOverrides: false)
         } else {
-            sendReceiptsContactsToSet = enable
             showResetContactsReceiptsOverridesDialogue = true
         }
     }
