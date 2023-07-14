@@ -372,6 +372,9 @@
 "Allow to irreversibly delete sent messages." = "Zezwól na nieodwracalne usunięcie wysłanych wiadomości.";
 
 /* No comment provided by engineer. */
+"Allow to send files and media." = "Pozwól na wysyłanie plików i mediów.";
+
+/* No comment provided by engineer. */
 "Allow to send voice messages." = "Zezwól na wysyłanie wiadomości głosowych.";
 
 /* No comment provided by engineer. */
@@ -584,12 +587,6 @@
 
 /* rcv group event chat item */
 "changed your role to %@" = "zmieniono Twoją rolę na %@";
-
-/* chat item text */
-"changing address for %@..." = "zmienienie adresu dla %@...";
-
-/* chat item text */
-"changing address..." = "zmienienie adresu...";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Archiwum czatu";
@@ -909,7 +906,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "Zdecentralizowane";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "Błąd odszyfrowania";
 
 /* pref value */
@@ -1407,6 +1404,15 @@
 /* No comment provided by engineer. */
 "Files & media" = "Pliki i media";
 
+/* chat feature */
+"Files and media" = "Pliki i media";
+
+/* No comment provided by engineer. */
+"Files and media are prohibited in this group." = "Pliki i media są zabronione w tej grupie.";
+
+/* No comment provided by engineer. */
+"Files and media prohibited!" = "Pliki i media zabronione!";
+
 /* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "W końcu je mamy! 🚀";
 
@@ -1475,6 +1481,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send disappearing messages." = "Członkowie grupy mogą wysyłać znikające wiadomości.";
+
+/* No comment provided by engineer. */
+"Group members can send files and media." = "Członkowie grupy mogą wysyłać pliki i media.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Członkowie grupy mogą wysyłać wiadomości głosowe.";
@@ -2005,6 +2014,9 @@
 "no e2e encryption" = "brak szyfrowania e2e";
 
 /* No comment provided by engineer. */
+"No filtered chats" = "Brak filtrowanych czatów";
+
+/* No comment provided by engineer. */
 "No group!" = "Nie znaleziono grupy!";
 
 /* No comment provided by engineer. */
@@ -2073,6 +2085,9 @@
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Tylko właściciele grup mogą zmieniać preferencje grupy.";
+
+/* No comment provided by engineer. */
+"Only group owners can enable files and media." = "Tylko właściciele grup mogą włączać pliki i media.";
 
 /* No comment provided by engineer. */
 "Only group owners can enable voice messages." = "Tylko właściciele grup mogą włączyć wiadomości głosowe.";
@@ -2276,6 +2291,9 @@
 "Prohibit sending disappearing messages." = "Zabroń wysyłania znikających wiadomości.";
 
 /* No comment provided by engineer. */
+"Prohibit sending files and media." = "Zakaz wysyłania plików i mediów.";
+
+/* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Zabroń wysyłania wiadomości głosowych.";
 
 /* No comment provided by engineer. */
@@ -2292,9 +2310,6 @@
 
 /* No comment provided by engineer. */
 "Rate the app" = "Oceń aplikację";
-
-/* chat item menu */
-"React..." = "Zareaguj...";
 
 /* No comment provided by engineer. */
 "Read" = "Czytaj";
@@ -2901,9 +2916,6 @@
 
 /* notification title */
 "this contact" = "ten kontakt";
-
-/* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "Ten błąd jest trwały dla tego połączenia, proszę o ponowne połączenie.";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Ta grupa już nie istnieje.";

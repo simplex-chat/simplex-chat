@@ -248,6 +248,15 @@
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Se utilizará una conexión TCP independiente **por cada contacto y miembro de grupo**.\n**Atención**: si tienes muchas conexiones, tu consumo de batería y tráfico pueden ser sustancialmente mayores y algunas conexiones pueden fallar.";
 
 /* No comment provided by engineer. */
+"Abort" = "Cancelar";
+
+/* No comment provided by engineer. */
+"Abort changing address" = "Cancelar cambio de dirección";
+
+/* No comment provided by engineer. */
+"Abort changing address?" = "¿Cancelar el cambio de dirección?";
+
+/* No comment provided by engineer. */
 "About SimpleX" = "Acerca de SimpleX";
 
 /* No comment provided by engineer. */
@@ -301,6 +310,9 @@
 
 /* No comment provided by engineer. */
 "Address" = "Dirección";
+
+/* No comment provided by engineer. */
+"Address change will be aborted. Old receiving address will be used." = "El cambio de dirección se cancelará. Se usará la antigua dirección de recepción.";
 
 /* member role */
 "admin" = "administrador";
@@ -358,6 +370,9 @@
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages." = "Se permite la eliminación irreversible de mensajes.";
+
+/* No comment provided by engineer. */
+"Allow to send files and media." = "Se permite enviar archivos y multimedia.";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "Permites enviar mensajes de voz.";
@@ -572,12 +587,6 @@
 
 /* rcv group event chat item */
 "changed your role to %@" = "ha cambiado tu rol a %@";
-
-/* chat item text */
-"changing address for %@..." = "cambiando de servidor para %@...";
-
-/* chat item text */
-"changing address..." = "cambiando de servidor...";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Archivo del chat";
@@ -897,7 +906,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "Descentralizado";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "Error de descifrado";
 
 /* pref value */
@@ -1219,6 +1228,9 @@
 "Error" = "Error";
 
 /* No comment provided by engineer. */
+"Error aborting address change" = "Error al cancelar el cambio de dirección";
+
+/* No comment provided by engineer. */
 "Error accepting contact request" = "Error aceptando la solicitud del contacto";
 
 /* No comment provided by engineer. */
@@ -1375,6 +1387,9 @@
 "Fast and no wait until the sender is online!" = "¡Rápido y sin necesidad de esperar a que el remitente esté en línea!";
 
 /* No comment provided by engineer. */
+"Favorite" = "Favoritos";
+
+/* No comment provided by engineer. */
 "File will be deleted from servers." = "El archivo será eliminado de los servidores.";
 
 /* No comment provided by engineer. */
@@ -1388,6 +1403,15 @@
 
 /* No comment provided by engineer. */
 "Files & media" = "Archivos y multimedia";
+
+/* chat feature */
+"Files and media" = "Archivos y multimedia";
+
+/* No comment provided by engineer. */
+"Files and media are prohibited in this group." = "No se permiten archivos y multimedia en este grupo.";
+
+/* No comment provided by engineer. */
+"Files and media prohibited!" = "¡Archivos y multimedia no permitidos!";
 
 /* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "¡Por fin los tenemos! 🚀";
@@ -1457,6 +1481,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send disappearing messages." = "Los miembros del grupo pueden enviar mensajes temporales.";
+
+/* No comment provided by engineer. */
+"Group members can send files and media." = "Los miembros del grupo pueden enviar archivos y multimedia.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Los miembros del grupo pueden enviar mensajes de voz.";
@@ -2057,6 +2084,9 @@
 "Only group owners can change group preferences." = "Sólo los propietarios pueden modificar las preferencias de grupo.";
 
 /* No comment provided by engineer. */
+"Only group owners can enable files and media." = "Sólo los propietarios pueden activar archivos y multimedia.";
+
+/* No comment provided by engineer. */
 "Only group owners can enable voice messages." = "Sólo los propietarios pueden activar los mensajes de voz.";
 
 /* No comment provided by engineer. */
@@ -2258,6 +2288,9 @@
 "Prohibit sending disappearing messages." = "No se permiten mensajes temporales.";
 
 /* No comment provided by engineer. */
+"Prohibit sending files and media." = "No permitir el envío de archivos y multimedia.";
+
+/* No comment provided by engineer. */
 "Prohibit sending voice messages." = "No se permiten mensajes de voz.";
 
 /* No comment provided by engineer. */
@@ -2274,9 +2307,6 @@
 
 /* No comment provided by engineer. */
 "Rate the app" = "Valora la aplicación";
-
-/* chat item menu */
-"React..." = "Reaccionar...";
 
 /* No comment provided by engineer. */
 "Read" = "Leer";
@@ -2313,6 +2343,9 @@
 
 /* message info title */
 "Received message" = "Mensaje entrante";
+
+/* No comment provided by engineer. */
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "La dirección de recepción se cambiará. El cambio se completará cuando el remitente esté en línea.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Se detendrá la recepción del archivo.";
@@ -2882,9 +2915,6 @@
 "this contact" = "este contacto";
 
 /* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "El error es permanente para esta conexión, por favor vuelve a conectarte.";
-
-/* No comment provided by engineer. */
 "This group no longer exists." = "Este grupo ya no existe.";
 
 /* No comment provided by engineer. */
@@ -2949,6 +2979,9 @@
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Estado de migración inesperado";
+
+/* No comment provided by engineer. */
+"Unfav." = "No fav.";
 
 /* No comment provided by engineer. */
 "Unhide" = "Mostrar";

@@ -372,6 +372,9 @@
 "Allow to irreversibly delete sent messages." = "Unwiederbringliches löschen von gesendeten Nachrichten erlauben.";
 
 /* No comment provided by engineer. */
+"Allow to send files and media." = "Das Senden von Dateien und Medien erlauben.";
+
+/* No comment provided by engineer. */
 "Allow to send voice messages." = "Das Senden von Sprachnachrichten erlauben.";
 
 /* No comment provided by engineer. */
@@ -584,12 +587,6 @@
 
 /* rcv group event chat item */
 "changed your role to %@" = "änderte Ihre Rolle auf %@";
-
-/* chat item text */
-"changing address for %@..." = "Wechseln der Adresse für %@ ...";
-
-/* chat item text */
-"changing address..." = "Wechseln der Adresse ...";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Datenbank Archiv";
@@ -853,7 +850,7 @@
 "Database encrypted!" = "Datenbank verschlüsselt!";
 
 /* No comment provided by engineer. */
-"Database encryption passphrase will be updated and stored in the keychain.\n" = "Das Passwort für die Datenbankverschlüsselung wird aktualisiert und im Keychain gespeichert.\n";
+"Database encryption passphrase will be updated and stored in the keychain.\n" = "Das Passwort für die Datenbankverschlüsselung wird aktualisiert und im Schlüsselbund gespeichert.\n";
 
 /* No comment provided by engineer. */
 "Database encryption passphrase will be updated.\n" = "Das Passwort für die Datenbankverschlüsselung wird aktualisiert.\n";
@@ -883,7 +880,7 @@
 "Database passphrase & export" = "Datenbank-Passwort & -Export";
 
 /* No comment provided by engineer. */
-"Database passphrase is different from saved in the keychain." = "Das Datenbank-Passwort unterscheidet sich von dem im Keychain gespeicherten.";
+"Database passphrase is different from saved in the keychain." = "Das Datenbank-Passwort unterscheidet sich von dem im Schlüsselbund gespeicherten.";
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "Das Datenbank-Passwort ist erforderlich, um den Chat zu öffnen.";
@@ -895,7 +892,7 @@
 "database version is newer than the app, but no down migration for: %@" = "Die Datenbank-Version ist neuer als die App, keine Abwärts-Migration für: %@";
 
 /* No comment provided by engineer. */
-"Database will be encrypted and the passphrase stored in the keychain.\n" = "Die Datenbank wird verschlüsselt, und das Passwort im Keychain gespeichert.\n";
+"Database will be encrypted and the passphrase stored in the keychain.\n" = "Die Datenbank wird verschlüsselt, und das Passwort im Schlüsselbund gespeichert.\n";
 
 /* No comment provided by engineer. */
 "Database will be encrypted.\n" = "Die Datenbank wird verschlüsselt.\n";
@@ -909,7 +906,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "Dezentral";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "Entschlüsselungsfehler";
 
 /* pref value */
@@ -1407,6 +1404,15 @@
 /* No comment provided by engineer. */
 "Files & media" = "Dateien & Medien";
 
+/* chat feature */
+"Files and media" = "Dateien und Medien";
+
+/* No comment provided by engineer. */
+"Files and media are prohibited in this group." = "In dieser Gruppe sind Dateien und Medien nicht erlaubt.";
+
+/* No comment provided by engineer. */
+"Files and media prohibited!" = "Dateien und Medien sind nicht erlaubt!";
+
 /* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "Endlich haben wir sie! 🚀";
 
@@ -1475,6 +1481,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send disappearing messages." = "Gruppenmitglieder können verschwindende Nachrichten senden.";
+
+/* No comment provided by engineer. */
+"Group members can send files and media." = "Gruppenmitglieder können Dateien und Medien senden.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten versenden.";
@@ -1753,7 +1762,7 @@
 "Joining group" = "Der Gruppe beitreten";
 
 /* No comment provided by engineer. */
-"Keychain error" = "Schlüsselbundfehler";
+"Keychain error" = "KeyChain Fehler";
 
 /* No comment provided by engineer. */
 "KeyChain error" = "KeyChain Fehler";
@@ -2005,6 +2014,9 @@
 "no e2e encryption" = "Keine E2E-Verschlüsselung";
 
 /* No comment provided by engineer. */
+"No filtered chats" = "Keine gefilterten Chats";
+
+/* No comment provided by engineer. */
 "No group!" = "Die Gruppe wurde nicht gefunden!";
 
 /* No comment provided by engineer. */
@@ -2073,6 +2085,9 @@
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Gruppenpräferenzen können nur von Gruppen-Eigentümern geändert werden.";
+
+/* No comment provided by engineer. */
+"Only group owners can enable files and media." = "Nur Gruppenbesitzer können Dateien und Medien aktivieren.";
 
 /* No comment provided by engineer. */
 "Only group owners can enable voice messages." = "Sprachnachrichten können nur von Gruppen-Eigentümern aktiviert werden.";
@@ -2276,6 +2291,9 @@
 "Prohibit sending disappearing messages." = "Das Senden von verschwindenden Nachrichten verbieten.";
 
 /* No comment provided by engineer. */
+"Prohibit sending files and media." = "Das Senden von Dateien und Medien nicht erlauben.";
+
+/* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Das Senden von Sprachnachrichten nicht erlauben.";
 
 /* No comment provided by engineer. */
@@ -2292,9 +2310,6 @@
 
 /* No comment provided by engineer. */
 "Rate the app" = "Bewerten Sie die App";
-
-/* chat item menu */
-"React..." = "Reaktion...";
 
 /* No comment provided by engineer. */
 "Read" = "Gelesen";
@@ -2903,9 +2918,6 @@
 "this contact" = "Dieser Kontakt";
 
 /* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.";
-
-/* No comment provided by engineer. */
 "This group no longer exists." = "Diese Gruppe existiert nicht mehr.";
 
 /* No comment provided by engineer. */
@@ -2972,7 +2984,7 @@
 "Unexpected migration state" = "Unerwarteter Migrationsstatus";
 
 /* No comment provided by engineer. */
-"Unfav." = "Unfav.";
+"Unfav." = "Fav. entf.";
 
 /* No comment provided by engineer. */
 "Unhide" = "Verbergen aufheben";

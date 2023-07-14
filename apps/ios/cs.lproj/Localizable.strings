@@ -573,12 +573,6 @@
 /* rcv group event chat item */
 "changed your role to %@" = "změnil vaši roli na %@";
 
-/* chat item text */
-"changing address for %@..." = "změna adresy pro %@...";
-
-/* chat item text */
-"changing address..." = "změna adresy...";
-
 /* No comment provided by engineer. */
 "Chat archive" = "Chat se archivuje";
 
@@ -897,7 +891,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "Decentralizované";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "Chyba dešifrování";
 
 /* pref value */
@@ -2275,9 +2269,6 @@
 /* No comment provided by engineer. */
 "Rate the app" = "Ohodnoťte aplikaci";
 
-/* chat item menu */
-"React..." = "Reagovat...";
-
 /* No comment provided by engineer. */
 "Read" = "Číst";
 
@@ -2880,9 +2871,6 @@
 
 /* notification title */
 "this contact" = "tento kontakt";
-
-/* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "Tato chyba je pro toto připojení trvalá, připojte se znovu.";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Tato skupina již neexistuje.";
