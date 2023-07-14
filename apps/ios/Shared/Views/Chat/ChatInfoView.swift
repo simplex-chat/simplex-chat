@@ -66,9 +66,9 @@ enum SendReceipts: Identifiable, Hashable {
 
     var text: LocalizedStringKey {
         switch self {
-        case .yes: "yes"
-        case .no: "no"
-        case let .userDefault(on): on ? "default (yes)" : "default (no)"
+        case .yes: return "yes"
+        case .no: return "no"
+        case let .userDefault(on): return on ? "default (yes)" : "default (no)"
         }
     }
 }
