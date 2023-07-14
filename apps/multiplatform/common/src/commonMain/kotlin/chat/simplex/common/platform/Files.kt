@@ -9,9 +9,9 @@ import java.net.URI
 
 expect val dataDir: File
 expect val tmpDir: File
-expect val cacheDir: File
 expect val filesDir: File
 expect val appFilesDir: File
+expect val coreTmpDir: File
 expect val dbAbsolutePrefixPath: String
 
 expect val chatDatabaseFileName: String

@@ -15,11 +15,11 @@ private fun applicationParentPath(): String = try {
   "./"
 }
 
-actual val dataDir: File = File(desktopPlatform.configPath)
-actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex")
-actual val cacheDir: File = tmpDir
+actual val dataDir: File = File(desktopPlatform.dataPath)
+actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex").also { it.deleteOnExit() }
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")
 actual val appFilesDir: File = filesDir
+actual val coreTmpDir: File = File(dataDir.absolutePath + File.separator + "tmp")
 actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator + "simplex_v1"
 
 actual val chatDatabaseFileName: String = "simplex_v1_chat.db"
