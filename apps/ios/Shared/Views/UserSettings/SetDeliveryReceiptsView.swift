@@ -44,9 +44,9 @@ struct SetDeliveryReceiptsView: View {
             .font(.largeTitle)
             Group {
                 if m.users.count > 1 {
-                    Text("Delivery receipts will be enabled for all contacts in all visible chat profiles.")
+                    Text("Sending delivery receipts will be enabled for all contacts in all visible chat profiles.")
                 } else {
-                    Text("Delivery receipts will be enabled for all contacts.")
+                    Text("Sending delivery receipts will be enabled for all contacts.")
                 }
             }
             .multilineTextAlignment(.center)
@@ -72,12 +72,12 @@ struct SetDeliveryReceiptsView: View {
                         Image(systemName: "chevron.right")
                     }
                 }
-                Text("You can enable later in Settings").font(.footnote)
+                Text("You can enable later via Settings").font(.footnote)
             }
         }
         .padding()
         .padding(.horizontal)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemBackground))
     }
 }

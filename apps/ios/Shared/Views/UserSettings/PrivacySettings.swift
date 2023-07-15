@@ -17,9 +17,10 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
-    @State private var sendReceiptsContacts = false
-    @State private var sendReceiptsContactsToggleReset = false
-    @State private var showResetContactsReceiptsOverridesDialogue = false
+    @State private var contactReceipts = false
+    @State private var contactReceiptsReset = false
+    @State private var contactReceiptsOverrides = 0
+    @State private var contactReceiptsDialogue = false
     @State private var alert: PrivacySettingsViewAlert?
 
     enum PrivacySettingsViewAlert: Identifiable {
@@ -86,7 +87,7 @@ struct PrivacySettings: View {
 
                 Section {
                     settingsRow("person") {
-                        Toggle("Contacts", isOn: $sendReceiptsContacts)
+                        Toggle("Contacts", isOn: $contactReceipts)
                     }
                     settingsRow("person.2") {
                         Toggle("Small groups (max 10)", isOn: Binding.constant(false))
@@ -102,30 +103,30 @@ struct PrivacySettings: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .confirmationDialog("You have configured this setting for some contacts", isPresented: $showResetContactsReceiptsOverridesDialogue, titleVisibility: .visible) {
-                    Button("Cancel") {
-                        sendReceiptsContactsToggleReset = true
-                        sendReceiptsContacts.toggle()
+                .confirmationDialog(contactReceiptsDialogTitle, isPresented: $contactReceiptsDialogue, titleVisibility: .visible) {
+                    Button("Keep contact settings") {
+                        setSendReceiptsContacts(contactReceipts, clearOverrides: false)
                     }
-                    Button("Keep per contact overrides") {
-                        setSendReceiptsContacts(sendReceiptsContacts, clearOverrides: false)
+                    Button(contactReceipts ? "Enable for all contacts" : "Disable for all contacts", role: .destructive) {
+                        setSendReceiptsContacts(contactReceipts, clearOverrides: true)
                     }
-                    Button("Reset per contact overrides", role: .destructive) {
-                        setSendReceiptsContacts(sendReceiptsContacts, clearOverrides: true)
+                    Button("Cancel", role: .cancel) {
+                        contactReceiptsReset = true
+                        contactReceipts.toggle()
                     }
                 }
             }
         }
         .onAppear {
             if let currentUser = m.currentUser {
-                sendReceiptsContacts = currentUser.sendRcptsContacts
+                contactReceipts = currentUser.sendRcptsContacts
             }
         }
-        .onChange(of: sendReceiptsContacts) { sendReceiptsContactsToggle in // sometimes there is race with onAppear
-            if sendReceiptsContactsToggleReset {
-                sendReceiptsContactsToggleReset = false
+        .onChange(of: contactReceipts) { _ in // sometimes there is race with onAppear
+            if contactReceiptsReset {
+                contactReceiptsReset = false
             } else {
-                setOrAskSendReceiptsContacts(sendReceiptsContactsToggle)
+                setOrAskSendReceiptsContacts(contactReceipts)
             }
         }
         .alert(item: $alert) { alert in
@@ -137,12 +138,21 @@ struct PrivacySettings: View {
     }
 
     private func setOrAskSendReceiptsContacts(_ enable: Bool) {
-        let allContacts = m.chats.compactMap({ $0.chatInfo.contact })
-        if allContacts.allSatisfy({ $0.chatSettings.sendRcpts == nil || $0.chatSettings.sendRcpts == enable }) {
+        contactReceiptsOverrides = m.chats.reduce(0) { count, chat in
+            let sendRcpts = chat.chatInfo.contact?.chatSettings.sendRcpts
+            return count + (sendRcpts == nil || sendRcpts == enable ? 0 : 1)
+        }
+        if contactReceiptsOverrides == 0 {
             setSendReceiptsContacts(enable, clearOverrides: false)
         } else {
-            showResetContactsReceiptsOverridesDialogue = true
+            contactReceiptsDialogue = true
         }
+    }
+
+    private var contactReceiptsDialogTitle: LocalizedStringKey {
+        contactReceipts
+        ? "Sending receipts is disabled for \(contactReceiptsOverrides) contacts"
+        : "Sending receipts is enabled for \(contactReceiptsOverrides) contacts"
     }
 
     private func setSendReceiptsContacts(_ enable: Bool, clearOverrides: Bool) {

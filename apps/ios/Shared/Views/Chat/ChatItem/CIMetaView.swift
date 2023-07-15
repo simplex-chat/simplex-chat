@@ -18,12 +18,30 @@ struct CIMetaView: View {
         if chatItem.isDeletedContent {
             chatItem.timestampText.font(.caption).foregroundColor(metaColor)
         } else {
-            ciMetaText(chatItem.meta, chatTTL: chat.chatInfo.timedMessagesTTL, color: metaColor)
+            let meta = chatItem.meta
+            let ttl = chat.chatInfo.timedMessagesTTL
+            switch meta.itemStatus {
+            case .sndSent:
+                ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .sent)
+            case .sndRcvd:
+                ZStack {
+                    ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd1)
+                    ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd2)
+                }
+            default:
+                ciMetaText(meta, chatTTL: ttl, color: metaColor)
+            }
         }
     }
 }
 
-func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparent: Bool = false) -> Text {
+enum SentCheckmark {
+    case sent
+    case rcvd1
+    case rcvd2
+}
+
+func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparent: Bool = false, sent: SentCheckmark? = nil) -> Text {
     var r = Text("")
     if meta.itemEdited {
         r = r + statusIconText("pencil", color)
@@ -37,7 +55,15 @@ func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparen
         r = r + Text(" ")
     }
     if let (icon, statusColor) = meta.statusIcon(color) {
-        r = r + statusIconText(icon, transparent ? .clear : statusColor) + Text(" ")
+        let t = Text(Image(systemName: icon))
+        let gap = Text("  ").kerning(-1).foregroundColor(.clear)
+        let clr = transparent ? .clear : sent == .rcvd1 ? color : statusColor
+        switch sent {
+        case nil: r = r + t.foregroundColor(clr)
+        case .rcvd2: r = r + gap + t.foregroundColor(clr)
+        default: r = r + t.foregroundColor(clr) + gap
+        }
+        r = r + Text(" ")
     } else if !meta.disappearing {
         r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
     }

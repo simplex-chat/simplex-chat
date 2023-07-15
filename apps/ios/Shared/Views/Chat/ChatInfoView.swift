@@ -72,12 +72,19 @@ enum SendReceipts: Identifiable, Hashable {
         }
     }
 
-    func toBool() -> Bool? {
+    func bool() -> Bool? {
         switch self {
         case .yes: return true
         case .no: return false
         case .userDefault: return nil
         }
+    }
+
+    static func fromBool(_ enable: Bool?, userDefault def: Bool) -> SendReceipts {
+        if let enable = enable {
+            return enable ? .yes : .no
+        }
+        return .userDefault(def)
     }
 }
 
@@ -213,11 +220,7 @@ struct ChatInfoView: View {
             if let currentUser = chatModel.currentUser {
                 sendReceiptsUserDefault = currentUser.sendRcptsContacts
             }
-            switch contact.chatSettings.sendRcpts {
-            case .some(true): sendReceipts = SendReceipts.yes
-            case .some(false): sendReceipts = SendReceipts.no
-            case .none: sendReceipts = SendReceipts.userDefault(sendReceiptsUserDefault)
-            }
+            sendReceipts = SendReceipts.fromBool(contact.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
@@ -341,14 +344,14 @@ struct ChatInfoView: View {
             Label("Send receipts", systemImage: "checkmark.message")
         }
         .frame(height: 36)
-        .onChange(of: sendReceipts) { sendReceipts in
-            setSendReceipts(sendReceipts)
+        .onChange(of: sendReceipts) { _ in
+            setSendReceipts()
         }
     }
 
-    func setSendReceipts(_ sendReceipts: SendReceipts) {
+    private func setSendReceipts() {
         var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
-        chatSettings.sendRcpts = sendReceipts.toBool()
+        chatSettings.sendRcpts = sendReceipts.bool()
         updateChatSettings(chat, chatSettings: chatSettings)
     }
 
