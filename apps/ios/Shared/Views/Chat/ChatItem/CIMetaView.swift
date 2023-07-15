@@ -56,7 +56,7 @@ func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparen
     }
     if let (icon, statusColor) = meta.statusIcon(color) {
         let t = Text(Image(systemName: icon))
-        let gap = Text("  ").kerning(-1).foregroundColor(.clear)
+        let gap = Text("  ").kerning(-1)
         let clr = transparent ? .clear : sent == .rcvd1 ? color : statusColor
         switch sent {
         case nil: r = r + t.foregroundColor(clr)
