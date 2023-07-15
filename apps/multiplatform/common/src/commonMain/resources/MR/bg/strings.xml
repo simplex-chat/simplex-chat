@@ -1,2 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="chat_item_ttl_month">1 месец</string>
+    <string name="contact_wants_to_connect_via_call">%1$s иска да се свърже с вас чрез</string>
+    <string name="send_disappearing_message_1_minute">1 минута</string>
+    <string name="v4_3_improved_server_configuration_desc">Добави сървъри чрез сканиране на QR кодове.</string>
+    <string name="smp_servers_add">Добави сървър…</string>
+    <string name="group_member_role_admin">админ</string>
+    <string name="button_add_welcome_message">Добави съобщение при посрещане</string>
+    <string name="v5_1_self_destruct_passcode_descr">Всички данни се изтриват при въвеждане.</string>
+    <string name="abort_switch_receiving_address">Откажи смяна на адрес</string>
+    <string name="learn_more_about_address">Повече за SimpleX адреса</string>
+    <string name="users_delete_all_chats_deleted">Всички чатове и съобщения ще бъдат изтрити - това не може да бъде отменено!</string>
+    <string name="above_then_preposition_continuation">по-горе, тогава:</string>
+    <string name="color_primary">Акцент</string>
+    <string name="accept_connection_request__question">Приемане на заявка за връзка\?</string>
+    <string name="callstatus_accepted">обаждането прието</string>
+    <string name="network_enable_socks_info">Достъп до сървърите чрез SOCKS прокси на порт %d\? Проксито трябва да бъде стартирано, преди тази опция да се активира.</string>
+    <string name="add_address_to_your_profile">Добавете адрес към вашия профил, така че вашите контакти да могат да го споделят с други хора. Актуализацията на профила ще бъде изпратена до вашите контакти.</string>
+    <string name="color_secondary_variant">Допълнителен вторичен</string>
+    <string name="users_add">Добави профил</string>
+    <string name="one_time_link_short">1-кратен линк</string>
+    <string name="chat_item_ttl_week">1 седмица</string>
+    <string name="send_disappearing_message_5_minutes">5 минути</string>
+    <string name="integrity_msg_skipped">%1$d пропуснато(и) съобщение(я)</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d съобщения не успяха да се декриптират.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d пропуснати съобщения.</string>
+    <string name="send_disappearing_message_30_seconds">30 секунди</string>
+    <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВЕ</string>
+    <string name="abort_switch_receiving_address_question">Откажи смяна на адрес\?</string>
+    <string name="abort_switch_receiving_address_confirm">Откажи</string>
+    <string name="abort_switch_receiving_address_desc">Промяната на адреса ще бъде прекъсната. Ще се използва стар адрес за получаване.</string>
+    <string name="accept_contact_button">Приеми</string>
+    <string name="accept_contact_incognito_button">Приеми инкогнито</string>
+    <string name="about_simplex_chat">За SimpleX Chat</string>
+    <string name="smp_servers_preset_add">Добави предварително зададени сървъри</string>
+    <string name="smp_servers_add_to_another_device">Добави към друго устройство</string>
+    <string name="network_settings">Разширени мрежови настройки</string>
+    <string name="about_simplex">За SimpleX</string>
+    <string name="accept">Приеми</string>
+    <string name="accept_call_on_lock_screen">Приеми</string>
+    <string name="all_app_data_will_be_cleared">Всички данни от приложението бяха изтрити.</string>
+    <string name="chat_item_ttl_day">1 ден</string>
+    <string name="conn_event_ratchet_sync_started">съгласуване на криптиране…</string>
+    <string name="snd_conn_event_ratchet_sync_started">съгласуване на криптиране за %s</string>
+    <string name="address_section_title">Адрес</string>
+    <string name="all_group_members_will_remain_connected">Всички членове на групата ще останат свързани.</string>
+    <string name="accept_feature">Приеми</string>
+    <string name="color_primary_variant">Допълнителен акцент</string>
+    <string name="v4_2_group_links_desc">Админите могат да създадат връзките за присъединяване към групи.</string>
+</resources>
