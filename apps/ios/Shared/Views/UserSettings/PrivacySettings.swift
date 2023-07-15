@@ -89,11 +89,9 @@ struct PrivacySettings: View {
                     settingsRow("person") {
                         Toggle("Contacts", isOn: $contactReceipts)
                     }
-                    settingsRow("person.2") {
-                        Toggle("Small groups (max 10)", isOn: Binding.constant(false))
-                    }
-                    .foregroundColor(.secondary)
-                    .disabled(true)
+//                    settingsRow("person.2") {
+//                        Toggle("Small groups (max 20)", isOn: Binding.constant(false))
+//                    }
                 } header: {
                     Text("Send delivery receipts to")
                 } footer: {
@@ -104,10 +102,10 @@ struct PrivacySettings: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .confirmationDialog(contactReceiptsDialogTitle, isPresented: $contactReceiptsDialogue, titleVisibility: .visible) {
-                    Button("Keep contact settings") {
+                    Button(contactReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
                         setSendReceiptsContacts(contactReceipts, clearOverrides: false)
                     }
-                    Button(contactReceipts ? "Enable for all contacts" : "Disable for all contacts", role: .destructive) {
+                    Button(contactReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
                         setSendReceiptsContacts(contactReceipts, clearOverrides: true)
                     }
                     Button("Cancel", role: .cancel) {
@@ -118,8 +116,9 @@ struct PrivacySettings: View {
             }
         }
         .onAppear {
-            if let currentUser = m.currentUser {
-                contactReceipts = currentUser.sendRcptsContacts
+            if let u = m.currentUser, contactReceipts != u.sendRcptsContacts {
+                contactReceiptsReset = true
+                contactReceipts = u.sendRcptsContacts
             }
         }
         .onChange(of: contactReceipts) { _ in // sometimes there is race with onAppear
@@ -165,6 +164,17 @@ struct PrivacySettings: View {
                         var updatedUser = currentUser
                         updatedUser.sendRcptsContacts = enable
                         m.updateUser(updatedUser)
+                        if clearOverrides {
+                            m.chats.forEach { chat in
+                                if var contact = chat.chatInfo.contact {
+                                    let sendRcpts = contact.chatSettings.sendRcpts
+                                    if sendRcpts != nil && sendRcpts != enable {
+                                        contact.chatSettings.sendRcpts = nil
+                                        m.updateContact(contact)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             } catch let error {
