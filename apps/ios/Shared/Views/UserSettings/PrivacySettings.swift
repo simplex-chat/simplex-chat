@@ -97,7 +97,7 @@ struct PrivacySettings: View {
                 } footer: {
                     VStack(alignment: .leading) {
                         Text("These settings are for your current profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
-                        Text("They can be overridden in contact and group settings")
+                        Text("They can be overridden in contact settings")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
