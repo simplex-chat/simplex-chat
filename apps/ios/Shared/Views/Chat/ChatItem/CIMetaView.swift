@@ -56,12 +56,13 @@ func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparen
     }
     if let (icon, statusColor) = meta.statusIcon(color) {
         let t = Text(Image(systemName: icon)).font(.caption2)
-        let gap = Text("    ").kerning(-2)
-        let clr = transparent ? .clear : sent == .rcvd1 ? color : statusColor
+        let gap = Text("   ").kerning(-2)
+        let clr = transparent ? .clear : statusColor
         switch sent {
         case nil: r = r + t.foregroundColor(clr)
+        case .sent: r = r + t.foregroundColor(clr) + gap
+        case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : Color(uiColor: .tertiaryLabel)) + gap
         case .rcvd2: r = r + gap + t.foregroundColor(clr)
-        default: r = r + t.foregroundColor(clr) + gap
         }
         r = r + Text(" ")
     } else if !meta.disappearing {

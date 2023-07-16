@@ -2275,7 +2275,7 @@ public struct CIMeta: Decodable {
         case .sndSent: return ("checkmark", metaColor)
         case let .sndRcvd(msgRcptStatus):
             switch msgRcptStatus {
-            case .ok: return ("checkmark", metaColor) // ("checkmark.circle", metaColor)
+            case .ok: return ("checkmark", Color(uiColor: .tertiaryLabel)) // ("checkmark.circle", metaColor)
             case .badMsgHash: return ("checkmark", .red) // ("checkmark.circle", .red)
             }
         case .sndErrorAuth: return ("multiply", .red)
