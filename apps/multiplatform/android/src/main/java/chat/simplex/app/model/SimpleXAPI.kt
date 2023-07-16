@@ -461,6 +461,18 @@ object ChatController {
     throw Exception("failed to set the user as active ${r.responseType} ${r.details}")
   }
 
+  suspend fun apiSetAllContactReceipts(enable: Boolean) {
+    val r = sendCmd(CC.SetAllContactReceipts(enable))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to enable receipts for all users ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetUserContactReceipts(userId: Long, userMsgReceiptSettings: UserMsgReceiptSettings) {
+    val r = sendCmd(CC.ApiSetUserContactReceipts(userId, userMsgReceiptSettings))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to enable receipts for user contacts ${r.responseType} ${r.details}")
+  }
+
   suspend fun apiHideUser(userId: Long, viewPwd: String): User =
     setUserPrivacy(CC.ApiHideUser(userId, viewPwd))
 
@@ -1762,6 +1774,8 @@ sealed class CC {
   class CreateActiveUser(val profile: Profile?, val sameServers: Boolean, val pastTimestamp: Boolean): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
+  class SetAllContactReceipts(val enable: Boolean): CC()
+  class ApiSetUserContactReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
   class ApiUnhideUser(val userId: Long, val viewPwd: String): CC()
   class ApiMuteUser(val userId: Long): CC()
@@ -1856,6 +1870,11 @@ sealed class CC {
     }
     is ListUsers -> "/users"
     is ApiSetActiveUser -> "/_user $userId${maybePwd(viewPwd)}"
+    is SetAllContactReceipts -> "/set receipts all ${onOff(enable)}"
+    is ApiSetUserContactReceipts -> {
+      val mrs = userMsgReceiptSettings
+      "/_set receipts $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
+    }
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
     is ApiUnhideUser -> "/_unhide user $userId ${json.encodeToString(viewPwd)}"
     is ApiMuteUser -> "/_mute user $userId"
@@ -1951,6 +1970,8 @@ sealed class CC {
     is CreateActiveUser -> "createActiveUser"
     is ListUsers -> "listUsers"
     is ApiSetActiveUser -> "apiSetActiveUser"
+    is SetAllContactReceipts -> "setAllContactReceipts"
+    is ApiSetUserContactReceipts -> "apiSetUserContactReceipts"
     is ApiHideUser -> "apiHideUser"
     is ApiUnhideUser -> "apiUnhideUser"
     is ApiMuteUser -> "apiMuteUser"
@@ -2389,12 +2410,16 @@ data class KeepAliveOpts(
 @Serializable
 data class ChatSettings(
   val enableNtfs: Boolean,
+  val sendRcpts: Boolean?,
   val favorite: Boolean
 ) {
   companion object {
-    val defaults: ChatSettings = ChatSettings(enableNtfs = true, favorite = false)
+    val defaults: ChatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false)
   }
 }
+
+@Serializable
+data class UserMsgReceiptSettings(val enable: Boolean, val clearOverrides: Boolean)
 
 @Serializable
 data class FullChatPreferences(

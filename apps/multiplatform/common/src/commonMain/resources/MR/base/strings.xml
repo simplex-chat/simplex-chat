@@ -1487,7 +1487,7 @@
   <string name="v5_2_disappear_one_message">Make one message disappear</string>
   <string name="v5_2_disappear_one_message_descr">Even when disabled in the conversation.</string>
   <string name="v5_2_more_things">A few more things</string>
-  <string name="v5_2_more_things_descr">- more stabile message delivery.\n- a bit better groups.\n- and more!</string>
+  <string name="v5_2_more_things_descr">- more stable message delivery.\n- a bit better groups.\n- and more!</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
