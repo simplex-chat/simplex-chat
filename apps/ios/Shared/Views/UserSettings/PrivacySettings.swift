@@ -115,17 +115,17 @@ struct PrivacySettings: View {
                 }
             }
         }
-        .onAppear {
-            if let u = m.currentUser, contactReceipts != u.sendRcptsContacts {
-                contactReceiptsReset = true
-                contactReceipts = u.sendRcptsContacts
-            }
-        }
         .onChange(of: contactReceipts) { _ in // sometimes there is race with onAppear
             if contactReceiptsReset {
                 contactReceiptsReset = false
             } else {
                 setOrAskSendReceiptsContacts(contactReceipts)
+            }
+        }
+        .onAppear {
+            if let u = m.currentUser, contactReceipts != u.sendRcptsContacts {
+                contactReceiptsReset = true
+                contactReceipts = u.sendRcptsContacts
             }
         }
         .alert(item: $alert) { alert in
