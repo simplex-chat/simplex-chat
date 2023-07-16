@@ -248,7 +248,7 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "gift",
                 title: "A few more things",
-                description: "- more stabile message delivery.\n- a bit better groups.\n- and more!"
+                description: "- more stable message delivery.\n- a bit better groups.\n- and more!"
             ),
         ]
     )

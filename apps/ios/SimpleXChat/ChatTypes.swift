@@ -16,6 +16,8 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
     public var activeUser: Bool
+    public var sendRcptsContacts: Bool
+    public var sendRcptsSmallGroups: Bool
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
@@ -44,6 +46,8 @@ public struct User: Decodable, NamedChat, Identifiable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
+        sendRcptsContacts: true,
+        sendRcptsSmallGroups: false,
         showNtfs: true
     )
 }
@@ -2269,6 +2273,11 @@ public struct CIMeta: Decodable {
     public func statusIcon(_ metaColor: Color = .secondary) -> (String, Color)? {
         switch itemStatus {
         case .sndSent: return ("checkmark", metaColor)
+        case let .sndRcvd(msgRcptStatus):
+            switch msgRcptStatus {
+            case .ok: return ("checkmark", metaColor) // ("checkmark.circle", metaColor)
+            case .badMsgHash: return ("checkmark", .red) // ("checkmark.circle", .red)
+            }
         case .sndErrorAuth: return ("multiply", .red)
         case .sndError: return ("exclamationmark.triangle.fill", .yellow)
         case .rcvNew: return ("circlebadge.fill", Color.accentColor)
@@ -2337,6 +2346,7 @@ private func recent(_ date: Date) -> Bool {
 public enum CIStatus: Decodable {
     case sndNew
     case sndSent
+    case sndRcvd(msgRcptStatus: MsgReceiptStatus)
     case sndErrorAuth
     case sndError(agentError: String)
     case rcvNew
@@ -2344,14 +2354,20 @@ public enum CIStatus: Decodable {
 
     var id: String {
         switch self {
-        case .sndNew: return  "sndNew"
-        case .sndSent: return  "sndSent"
-        case .sndErrorAuth: return  "sndErrorAuth"
-        case .sndError: return  "sndError"
-        case .rcvNew: return  "rcvNew"
+        case .sndNew: return "sndNew"
+        case .sndSent: return "sndSent"
+        case .sndRcvd: return "sndRcvd"
+        case .sndErrorAuth: return "sndErrorAuth"
+        case .sndError: return "sndError"
+        case .rcvNew: return "rcvNew"
         case .rcvRead: return "rcvRead"
         }
     }
+}
+
+public enum MsgReceiptStatus: String, Decodable {
+    case ok
+    case badMsgHash
 }
 
 public enum CIDeleted: Decodable {
