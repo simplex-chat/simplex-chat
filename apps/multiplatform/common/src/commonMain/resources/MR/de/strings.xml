@@ -1178,7 +1178,6 @@
     <string name="you_can_turn_on_lock">Sie können die SimpleX Sperre über die Einstellungen aktivieren.</string>
     <string name="network_socks_proxy_settings">SOCKS-Proxy Einstellungen</string>
     <string name="la_lock_mode_system">System-Authentifizierung</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.</string>
     <string name="smp_server_test_upload_file">Datei hochladen</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d Nachrichten übersprungen.</string>
     <string name="allow_calls_only_if">Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.</string>
@@ -1365,4 +1364,28 @@
     <string name="no_filtered_chats">Keine gefilterten Chats</string>
     <string name="la_mode_off">Aus</string>
     <string name="network_option_protocol_timeout_per_kb">Protokollzeitüberschreitung pro kB</string>
+    <string name="conn_event_ratchet_sync_started">Verschlüsselung zustimmen…</string>
+    <string name="snd_conn_event_ratchet_sync_started">Der Verschlüsselung von %s zustimmen</string>
+    <string name="conn_event_ratchet_sync_allowed">Neuaushandlung der Verschlüsselung erlaubt</string>
+    <string name="error_synchronizing_connection">Fehler beim Synchronisieren der Verbindung</string>
+    <string name="sync_connection_force_question">Verschlüsselung neu aushandeln\?</string>
+    <string name="fix_connection_question">Verbindung reparieren\?</string>
+    <string name="no_history">Keine Vergangenheit</string>
+    <string name="sync_connection_force_confirm">Neu aushandeln</string>
+    <string name="sync_connection_force_desc">Die Verschlüsselung funktioniert und ein neues Verschlüsselungsabkommen ist nicht erforderlich. Es kann zu Verbindungsfehlern kommen!</string>
+    <string name="renegotiate_encryption">Verschlüsselung neu aushandeln</string>
+    <string name="snd_conn_event_ratchet_sync_ok">Verschlüsselung von %s ist in Ordnung</string>
+    <string name="in_reply_to">Als Antwort auf</string>
+    <string name="snd_conn_event_ratchet_sync_allowed">Neuaushandlung der Verschlüsselung von %s erlaubt</string>
+    <string name="conn_event_ratchet_sync_required">Neuaushandlung der Verschlüsselung notwendig</string>
+    <string name="snd_conn_event_ratchet_sync_required">Neuaushandlung der Verschlüsselung von %s notwendig</string>
+    <string name="rcv_conn_event_verification_code_reset">Sicherheitscode wurde geändert</string>
+    <string name="conn_event_ratchet_sync_ok">Verschlüsselung ist in Ordnung</string>
+    <string name="conn_event_ratchet_sync_agreed">Der Verschlüsselung wurde zugestimmt</string>
+    <string name="snd_conn_event_ratchet_sync_agreed">Der Verschlüsselung von %s wurde zugestimmt</string>
+    <string name="fix_connection_confirm">Reparieren</string>
+    <string name="fix_connection_not_supported_by_contact">Reparatur wird vom Kontakt nicht unterstützt</string>
+    <string name="fix_connection_not_supported_by_group_member">Reparatur wird vom Gruppenmitglied nicht unterstützt</string>
+    <string name="sender_at_ts">%s an %s</string>
+    <string name="fix_connection">Verbindung reparieren</string>
 </resources>
