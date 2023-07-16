@@ -1,2 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="notifications">Bildirimler</string>
+    <string name="connect_via_link_or_qr">Bağlantı ya da karekod ile bağlan</string>
+    <string name="create_group">Gizli grup oluştur</string>
+    <string name="create_one_time_link">Tek seferlik davet bağlantısı oluştur</string>
+    <string name="your_simplex_contact_address">SimpleX addresin</string>
+    <string name="callstatus_missed">cevapsız çağrı</string>
+    <string name="incoming_video_call">Gelen görüntülü arama</string>
+    <string name="accept">Yanıtla</string>
+    <string name="reject">Reddet</string>
+    <string name="incoming_audio_call">Gelen sesli arama</string>
+    <string name="ignore">Yok say</string>
+    <string name="settings_audio_video_calls">Sesli ve görüntülü aramalar</string>
+    <string name="icon_descr_video_call">Görüntülü ara</string>
+    <string name="privacy_and_security">Gizlilik ve güvenlik</string>
+    <string name="incognito">Gizli ol</string>
+    <string name="your_chats">Konuşmalar</string>
+    <string name="connect_via_link">Bağlantı ile bağlan</string>
+    <string name="your_chat_profiles">Konuşma profillerin</string>
+    <string name="chat_preferences">Konuşma tercihleri</string>
+    <string name="network_and_servers">Ağ ve sunucular</string>
+    <string name="appearance_settings">Görünüm</string>
+    <string name="your_settings">Ayarların</string>
+    <string name="mute_chat">Sessize al</string>
+    <string name="unmute_chat">Sessizden çıkar</string>
+</resources>
