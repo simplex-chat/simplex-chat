@@ -864,6 +864,17 @@
   <string name="empty_chat_profile_is_created">An empty chat profile with the provided name is created, and the app opens as usual.</string>
   <string name="if_you_enter_passcode_data_removed">If you enter this passcode when opening the app, all app data will be irreversibly removed!</string>
   <string name="set_passcode">Set passcode</string>
+  <string name="receipts_section_description">These settings are for your current profile</string>
+  <string name="receipts_section_description_1">They can be overridden in contact settings</string>
+  <string name="receipts_section_contacts">Contacts</string>
+  <string name="receipts_contacts_title_enable">Enable receipts?</string>
+  <string name="receipts_contacts_title_disable">Disable receipts?</string>
+  <string name="receipts_contacts_override_enabled">Sending receipts is enabled for %d contacts</string>
+  <string name="receipts_contacts_override_disabled">Sending receipts is disabled for %d contacts</string>
+  <string name="receipts_contacts_enable_keep_overrides">Enable (keep overrides)</string>
+  <string name="receipts_contacts_disable_keep_overrides">Disable (keep overrides)</string>
+  <string name="receipts_contacts_enable_for_all">Enable for all</string>
+  <string name="receipts_contacts_disable_for_all">Disable for all</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
@@ -873,6 +884,7 @@
   <string name="settings_section_title_app">APP</string>
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
+  <string name="settings_section_title_delivery_receipts">SEND DELIVERY RECEIPTS TO</string>
   <string name="settings_restart_app">Restart</string>
   <string name="settings_shutdown">Shutdown</string>
   <string name="settings_developer_tools">Developer tools</string>
@@ -1144,6 +1156,7 @@
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
   <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
+  <string name="send_receipts">Send receipts</string>
 
   <!-- Chat / Chat item info -->
   <string name="section_title_for_console">FOR CONSOLE</string>

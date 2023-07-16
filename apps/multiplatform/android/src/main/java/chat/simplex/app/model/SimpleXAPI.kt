@@ -93,6 +93,7 @@ class AppPreferences {
     },
     set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
   )
+  val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyFullBackup = mkBoolPreference(SHARED_PREFS_PRIVACY_FULL_BACKUP, false)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
@@ -238,6 +239,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
+    private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     internal const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
@@ -711,7 +713,7 @@ object ChatController {
     }
   }
 
-  suspend fun apiSetSettings(type: ChatType,id: Long, settings: ChatSettings): Boolean {
+  suspend fun apiSetSettings(type: ChatType, id: Long, settings: ChatSettings): Boolean {
     val r = sendCmd(CC.APISetChatSettings(type, id, settings))
     return when (r) {
       is CR.CmdOk -> true

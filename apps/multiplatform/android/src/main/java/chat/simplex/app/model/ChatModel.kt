@@ -39,6 +39,7 @@ import kotlin.time.*
 object ChatModel {
   val controller: ChatController = ChatController
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
+  val setDeliveryReceipts = mutableStateOf(false)
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()
   val userCreated = mutableStateOf<Boolean?>(null)
@@ -829,7 +830,7 @@ data class Contact(
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
       contactUsed = true,
-      chatSettings = ChatSettings(true, false),
+      chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
@@ -978,7 +979,7 @@ data class GroupInfo (
       fullGroupPreferences = FullGroupPreferences.sampleData,
       membership = GroupMember.sampleData,
       hostConnCustomUserProfileId = null,
-      chatSettings = ChatSettings(true, false),
+      chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -1619,8 +1620,8 @@ data class CIMeta (
     when (itemStatus) {
       is CIStatus.SndSent -> MR.images.ic_check_filled to metaColor
       is CIStatus.SndRcvd -> when(itemStatus.msgRcptStatus) {
-        MsgReceiptStatus.Ok -> MR.images.ic_check_filled to metaColor
-        MsgReceiptStatus.BadMsgHash -> MR.images.ic_check_filled to Color.Red
+        MsgReceiptStatus.Ok -> MR.images.ic_double_check to metaColor
+        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
       }
       is CIStatus.SndErrorAuth -> MR.images.ic_close to Color.Red
       is CIStatus.SndError -> MR.images.ic_warning_filled to WarningYellow
@@ -1713,6 +1714,7 @@ sealed class CIStatus {
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
 }
 
+@Serializable
 enum class MsgReceiptStatus {
   @SerialName("ok") Ok,
   @SerialName("badMsgHash") BadMsgHash;
