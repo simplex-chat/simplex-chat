@@ -1,18 +1,19 @@
 ---
 layout: layouts/article.html
 title: "SimpleX Chat v5.2 released: message delivery receipts"
-date: 2023-07-19
+date: 2023-07-22
 # image: images/20230523-reactions.png
 # imageBottom: true
 # previewBody: blog_previews/20230523.html
-preview: 
-permalink: "/blog/20230719-simplex-chat-v5-2-message-delivery-receipts.html"
-draft: true
+preview: TODO this is a placeholder for the release announcement
+permalink: "/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html"
 ---
 
 # SimpleX Chat v5.2 released: message delivery receipts
 
-**Published:** July 19, 2023
+**Published:** July 22, 2023
+
+TODO this is a draft of the release announcement
 
 What's new in v5.2:
 
@@ -28,6 +29,10 @@ What's new in v5.2:
 - disappearing messages improvements:
   - send with custom timer when allowed but not enabled in the conversation
   - increased timer limit
+
+## Future of SimpleX Chat groups and communities
+
+TODO
 
 ## SimpleX platform
 
