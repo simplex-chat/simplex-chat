@@ -702,11 +702,6 @@ ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
-isSndRcvdStatus :: CIStatus d -> Bool
-isSndRcvdStatus = \case
-  CISSndRcvd _ -> True
-  _ -> False
-
 type ChatItemId = Int64
 
 type ChatItemTs = UTCTime
