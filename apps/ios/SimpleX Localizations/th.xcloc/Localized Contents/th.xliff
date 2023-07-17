@@ -14,17 +14,17 @@
       </trans-unit>
       <trans-unit id=" " xml:space="preserve" approved="no">
         <source> </source>
-        <target state="translated"> . </target>
+        <target state="translated"> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="  " xml:space="preserve" approved="no">
         <source>  </source>
-        <target state="translated">  . .  </target>
+        <target state="translated">  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="   " xml:space="preserve" approved="no">
         <source>   </source>
-        <target state="translated">   . . .   </target>
+        <target state="translated">   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (" xml:space="preserve" approved="no">
@@ -214,7 +214,7 @@
       </trans-unit>
       <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
         <source>%u messages failed to decrypt.</source>
-        <target state="translated">%u ไม่สามารถ decrypt ข้อความได้</target>
+        <target state="translated">การ decrypt %u ข้อความล้มเหลว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
@@ -468,7 +468,7 @@
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve" approved="no">
         <source>Add to another device</source>
-        <target state="translated">เพิ่มเข้าไปในอุปกรณ์อื่น ๆ</target>
+        <target state="translated">เพิ่มเข้าไปในอุปกรณ์อื่น</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add welcome message" xml:space="preserve" approved="no">
@@ -663,7 +663,7 @@
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve" approved="no">
         <source>Appearance</source>
-        <target state="translated">ลักษณะ</target>
+        <target state="translated">รูปร่างลักษณะ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve" approved="no">
@@ -688,17 +688,17 @@
       </trans-unit>
       <trans-unit id="Audio/video calls are prohibited." xml:space="preserve" approved="no">
         <source>Audio/video calls are prohibited.</source>
-        <target state="translated">ห้ามการโทรด้วยเสียง/วิดีโอ</target>
+        <target state="translated">การโทรด้วยเสียง/วิดีโอถูกห้าม</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication cancelled" xml:space="preserve" approved="no">
         <source>Authentication cancelled</source>
-        <target state="translated">การยืนยันตัวตนถูกยกเลิกแล้ว</target>
+        <target state="translated">การยืนยันถูกยกเลิกแล้ว</target>
         <note>PIN entry</note>
       </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve" approved="no">
         <source>Authentication failed</source>
-        <target state="translated">การยืนยันตัวตนล้มเหลว</target>
+        <target state="translated">การยืนยันล้มเหลว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
@@ -708,7 +708,7 @@
       </trans-unit>
       <trans-unit id="Authentication unavailable" xml:space="preserve" approved="no">
         <source>Authentication unavailable</source>
-        <target state="translated">การยืนยันตัวตนไม่พร้อมใช้งาน</target>
+        <target state="translated">การยืนยันไม่พร้อมใช้งาน</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept" xml:space="preserve" approved="no">
@@ -723,7 +723,7 @@
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve" approved="no">
         <source>Auto-accept images</source>
-        <target state="translated">ตอบรับภาพอัตโนมัติ</target>
+        <target state="translated">ยอมรับภาพอัตโนมัติ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Back" xml:space="preserve" approved="no">
@@ -4880,7 +4880,7 @@ SimpleX Lock must be enabled.</source>
       </trans-unit>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve" approved="no">
         <source>You will be required to authenticate when you start or resume the app after 30 seconds in background.</source>
-        <target state="translated">คุณจะต้องยืนยันตัวตนเมื่อคุณเริ่มหรือกลับมาใช้แอปพลิเคชันอีกครั้งหลังจากผ่านไป 30 วินาทีในพื้นหลัง</target>
+        <target state="translated">คุณจะต้องตรวจสอบสิทธิ์เมื่อคุณเริ่มหรือกลับมาใช้แอปพลิเคชันอีกครั้งหลังจากผ่านไป 30 วินาทีในพื้นหลัง</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will join a group this link refers to and connect to its group members." xml:space="preserve" approved="no">
@@ -5090,7 +5090,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve" approved="no">
         <source>accepted call</source>
-        <target state="translated">รับสาย</target>
+        <target state="translated">รับสายแล้ว</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve" approved="no">
@@ -5125,7 +5125,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="call error" xml:space="preserve" approved="no">
         <source>call error</source>
-        <target state="translated">การโทรล้มเหลว</target>
+        <target state="translated">การโทรผิดพลาด</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="call in progress" xml:space="preserve" approved="no">
@@ -5731,7 +5731,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
         <source>Abort changing address?</source>
-        <target state="translated">ยกเลิกการเปลี่ยนที่อยู่ไหม?</target>
+        <target state="translated">ยกเลิกการเปลี่ยนที่อยู่?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send files and media." xml:space="preserve" approved="no">
@@ -5746,7 +5746,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve" approved="no">
         <source>Address change will be aborted. Old receiving address will be used.</source>
-        <target state="translated">การเปลี่ยนแปลงที่อยู่จะถูกยกเลิก จะใช้ที่อยู่เดิม</target>
+        <target state="translated">การเปลี่ยนแปลงที่อยู่จะถูกยกเลิก จะใช้ที่อยู่เก่าของผู้รับ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve" approved="no">
