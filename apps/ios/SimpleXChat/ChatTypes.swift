@@ -2476,10 +2476,10 @@ public enum MsgDecryptError: String, Decodable {
 }
 
 public struct CIQuote: Decodable, ItemContent {
-    var chatDir: CIDirection?
+    public var chatDir: CIDirection?
     public var itemId: Int64?
     var sharedMsgId: String? = nil
-    var sentAt: Date
+    public var sentAt: Date
     public var content: MsgContent
     public var formattedText: [FormattedText]?
 
@@ -2494,7 +2494,7 @@ public struct CIQuote: Decodable, ItemContent {
         switch (chatDir) {
         case .directSnd: return "you"
         case .directRcv: return nil
-        case .groupSnd: return membership?.displayName
+        case .groupSnd: return membership?.displayName ?? "you"
         case let .groupRcv(member): return member.displayName
         case nil: return nil
         }

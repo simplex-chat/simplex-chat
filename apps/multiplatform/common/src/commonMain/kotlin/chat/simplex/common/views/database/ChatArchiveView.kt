@@ -25,7 +25,7 @@ import java.util.*
 
 @Composable
 fun ChatArchiveView(m: ChatModel, title: String, archiveName: String, archiveTime: Instant) {
-  val archivePath = getFilesDirectory() + File.separator + archiveName
+  val archivePath = filesDir.absolutePath + File.separator + archiveName
   val saveArchiveLauncher = rememberFileChooserLauncher(false) {  to: URI? ->
     if (to != null) {
       copyFileToFile(File(archivePath), to) {}

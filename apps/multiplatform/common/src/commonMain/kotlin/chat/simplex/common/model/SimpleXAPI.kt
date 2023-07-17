@@ -319,8 +319,8 @@ object ChatController {
     try {
       if (chatModel.chatRunning.value == true) return
       apiSetNetworkConfig(getNetCfg())
-      apiSetTempFolder(getTempFilesDirectory())
-      apiSetFilesFolder(getAppFilesDirectory())
+      apiSetTempFolder(coreTmpDir.absolutePath)
+      apiSetFilesFolder(appFilesDir.absolutePath)
       apiSetXFTPConfig(getXFTPCfg())
       val justStarted = apiStartChat()
       val users = listUsers()

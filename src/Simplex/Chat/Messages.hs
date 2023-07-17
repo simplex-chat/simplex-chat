@@ -35,9 +35,9 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
@@ -624,6 +624,7 @@ data CIFileInfo = CIFileInfo
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
   CISSndSent :: CIStatus 'MDSnd
+  CISSndRcvd :: MsgReceiptStatus -> CIStatus 'MDSnd
   CISSndErrorAuth :: CIStatus 'MDSnd
   CISSndError :: String -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
@@ -647,6 +648,7 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
   strEncode = \case
     CISSndNew -> "snd_new"
     CISSndSent -> "snd_sent"
+    CISSndRcvd status -> "snd_rcvd " <> strEncode status
     CISSndErrorAuth -> "snd_error_auth"
     CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
     CISRcvNew -> "rcv_new"
@@ -659,6 +661,7 @@ instance StrEncoding ACIStatus where
     A.takeTill (== ' ') >>= \case
       "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
       "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
+      "snd_rcvd" -> ACIStatus SMDSnd . CISSndRcvd <$> (A.space *> strP)
       "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
       "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
@@ -668,6 +671,7 @@ instance StrEncoding ACIStatus where
 data JSONCIStatus
   = JCISSndNew
   | JCISSndSent
+  | JCISSndRcvd {msgRcptStatus :: MsgReceiptStatus}
   | JCISSndErrorAuth
   | JCISSndError {agentError :: String}
   | JCISRcvNew
@@ -682,6 +686,7 @@ jsonCIStatus :: CIStatus d -> JSONCIStatus
 jsonCIStatus = \case
   CISSndNew -> JCISSndNew
   CISSndSent -> JCISSndSent
+  CISSndRcvd ok -> JCISSndRcvd ok
   CISSndErrorAuth -> JCISSndErrorAuth
   CISSndError e -> JCISSndError e
   CISRcvNew -> JCISRcvNew
@@ -805,7 +810,7 @@ data MsgDeliveryStatus (d :: MsgDirection) where
   MDSSndPending :: MsgDeliveryStatus 'MDSnd
   MDSSndAgent :: MsgDeliveryStatus 'MDSnd
   MDSSndSent :: MsgDeliveryStatus 'MDSnd
-  MDSSndReceived :: MsgDeliveryStatus 'MDSnd
+  MDSSndRcvd :: MsgReceiptStatus -> MsgDeliveryStatus 'MDSnd
   MDSSndRead :: MsgDeliveryStatus 'MDSnd
 
 data AMsgDeliveryStatus = forall d. AMDS (SMsgDirection d) (MsgDeliveryStatus d)
@@ -822,20 +827,23 @@ serializeMsgDeliveryStatus = \case
   MDSSndPending -> "snd_pending"
   MDSSndAgent -> "snd_agent"
   MDSSndSent -> "snd_sent"
-  MDSSndReceived -> "snd_received"
+  MDSSndRcvd status -> "snd_rcvd " <> safeDecodeUtf8 (strEncode status)
   MDSSndRead -> "snd_read"
 
 msgDeliveryStatusT :: Text -> Maybe AMsgDeliveryStatus
-msgDeliveryStatusT = \case
-  "rcv_agent" -> Just $ AMDS SMDRcv MDSRcvAgent
-  "rcv_acknowledged" -> Just $ AMDS SMDRcv MDSRcvAcknowledged
-  "snd_pending" -> Just $ AMDS SMDSnd MDSSndPending
-  "snd_agent" -> Just $ AMDS SMDSnd MDSSndAgent
-  "snd_sent" -> Just $ AMDS SMDSnd MDSSndSent
-  "snd_received" -> Just $ AMDS SMDSnd MDSSndReceived
-  "snd_read" -> Just $ AMDS SMDSnd MDSSndRead
-  _ -> Nothing
-
+msgDeliveryStatusT = eitherToMaybe . parseAll statusP . encodeUtf8
+  where
+    statusP =
+      A.takeTill (== ' ') >>= \case
+        "rcv_agent" -> pure $ AMDS SMDRcv MDSRcvAgent
+        "rcv_acknowledged" -> pure $ AMDS SMDRcv MDSRcvAcknowledged
+        "snd_pending" -> pure $ AMDS SMDSnd MDSSndPending
+        "snd_agent" -> pure $ AMDS SMDSnd MDSSndAgent
+        "snd_sent" -> pure $ AMDS SMDSnd MDSSndSent
+        "snd_rcvd" -> AMDS SMDSnd . MDSSndRcvd <$> (A.space *> strP)
+        "snd_read" -> pure $ AMDS SMDSnd MDSSndRead
+        _ -> fail "bad AMsgDeliveryStatus"
+  
 msgDeliveryStatusT' :: forall d. MsgDirectionI d => Text -> Maybe (MsgDeliveryStatus d)
 msgDeliveryStatusT' s =
   msgDeliveryStatusT s >>= \(AMDS d st) ->
