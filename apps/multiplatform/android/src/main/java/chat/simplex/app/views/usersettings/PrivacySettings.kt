@@ -95,15 +95,15 @@ fun PrivacySettingsView(
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
-            runBlocking {
-              chatModel.chats.forEach { chat ->
-                if (chat.chatInfo is ChatInfo.Direct) {
-                  var contact = chat.chatInfo.contact
-                  val sendRcpts = contact.chatSettings.sendRcpts
-                  if (sendRcpts != null && sendRcpts != enable) {
-                    contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                    chatModel.updateContact(contact)
-                  }
+            // For loop here is to prevent ConcurrentModificationException that happens with forEach
+            for (i in 0 until chatModel.chats.size) {
+              val chat = chatModel.chats[i]
+              if (chat.chatInfo is ChatInfo.Direct) {
+                var contact = chat.chatInfo.contact
+                val sendRcpts = contact.chatSettings.sendRcpts
+                if (sendRcpts != null && sendRcpts != enable) {
+                  contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
+                  chatModel.updateContact(contact)
                 }
               }
             }
