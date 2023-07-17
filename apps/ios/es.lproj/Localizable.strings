@@ -327,10 +327,10 @@
 "Advanced network settings" = "Configuración avanzada de red";
 
 /* chat item text */
-"agreeing encryption for %@…" = "Acordando la encriptación para %@…";
+"agreeing encryption for %@…" = "acordando la encriptación para %@…";
 
 /* chat item text */
-"agreeing encryption…" = "Acordando la encriptación…";
+"agreeing encryption…" = "acordando la encriptación…";
 
 /* No comment provided by engineer. */
 "All app data is deleted." = "Todos los datos de la aplicación se eliminarán.";
@@ -598,10 +598,10 @@
 "changed your role to %@" = "ha cambiado tu rol a %@";
 
 /* chat item text */
-"changing address for %@…" = "Cambiando dirección para %@…";
+"changing address for %@…" = "cambiando dirección para %@…";
 
 /* chat item text */
-"changing address…" = "Cambiando dirección…";
+"changing address…" = "cambiando dirección…";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Archivo del chat";
@@ -931,10 +931,10 @@
 "default (%@)" = "por defecto (%@)";
 
 /* No comment provided by engineer. */
-"default (no)" = "Por defecto (no)";
+"default (no)" = "por defecto (no)";
 
 /* No comment provided by engineer. */
-"default (yes)" = "Por defecto (sí)";
+"default (yes)" = "por defecto (sí)";
 
 /* chat item action */
 "Delete" = "Eliminar";
@@ -1225,28 +1225,28 @@
 "Encrypted message: unexpected error" = "Mensaje cifrado: error inesperado";
 
 /* chat item text */
-"encryption agreed" = "Encriptación acordada";
+"encryption agreed" = "encriptación acordada";
 
 /* chat item text */
-"encryption agreed for %@" = "Encriptación acordada para %@";
+"encryption agreed for %@" = "encriptación acordada para %@";
 
 /* chat item text */
-"encryption ok" = "Encriptación ok";
+"encryption ok" = "encriptación ok";
 
 /* chat item text */
-"encryption ok for %@" = "Encriptación ok para %@";
+"encryption ok for %@" = "encriptación ok para %@";
 
 /* chat item text */
-"encryption re-negotiation allowed" = "Renegociación de encriptación permitida";
+"encryption re-negotiation allowed" = "renegociación de encriptación permitida";
 
 /* chat item text */
-"encryption re-negotiation allowed for %@" = "Renegociación de encriptación permitida para %@";
+"encryption re-negotiation allowed for %@" = "renegociación de encriptación permitida para %@";
 
 /* chat item text */
-"encryption re-negotiation required" = "Se requiere renegociación de la encriptación";
+"encryption re-negotiation required" = "se requiere renegociación de la encriptación";
 
 /* chat item text */
-"encryption re-negotiation required for %@" = "Se requiere renegociación de la encriptación para %@";
+"encryption re-negotiation required for %@" = "se requiere renegociación de la encriptación para %@";
 
 /* No comment provided by engineer. */
 "ended" = "finalizado";
@@ -1474,13 +1474,13 @@
 "Finally, we have them! 🚀" = "¡Por fin los tenemos! 🚀";
 
 /* No comment provided by engineer. */
-"Fix" = "Solucionar";
+"Fix" = "Reparar";
 
 /* No comment provided by engineer. */
 "Fix connection" = "Reparar conexión";
 
 /* No comment provided by engineer. */
-"Fix connection?" = "Solucionar problemas de conexión ?";
+"Fix connection?" = "Reparar problemas de conexión ?";
 
 /* No comment provided by engineer. */
 "Fix not supported by contact" = "Corrección no compatible con el contacto";
@@ -2558,7 +2558,7 @@
 "Role" = "Rol";
 
 /* No comment provided by engineer. */
-"Run chat" = "Lanzar chat";
+"Run chat" = "Ejecutar chat";
 
 /* chat item action */
 "Save" = "Guardar";
@@ -2645,7 +2645,7 @@
 "Security code" = "Código de seguridad";
 
 /* chat item text */
-"security code changed" = "Código de seguridad cambiado";
+"security code changed" = "código de seguridad cambiado";
 
 /* No comment provided by engineer. */
 "Select" = "Seleccionar";

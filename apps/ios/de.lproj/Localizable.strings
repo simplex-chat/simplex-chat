@@ -327,7 +327,7 @@
 "Advanced network settings" = "Erweiterte Netzwerkeinstellungen";
 
 /* chat item text */
-"agreeing encryption for %@…" = "Der Verschlüsselung von %@ zustimmen…";
+"agreeing encryption for %@…" = "Verschlüsselung von %@ zustimmen…";
 
 /* chat item text */
 "agreeing encryption…" = "Verschlüsselung zustimmen…";
@@ -1225,10 +1225,10 @@
 "Encrypted message: unexpected error" = "Verschlüsselte Nachricht: Unerwarteter Fehler";
 
 /* chat item text */
-"encryption agreed" = "Der Verschlüsselung wurde zugestimmt";
+"encryption agreed" = "Verschlüsselung wurde zugestimmt";
 
 /* chat item text */
-"encryption agreed for %@" = "Der Verschlüsselung von %@ wurde zugestimmt";
+"encryption agreed for %@" = "Verschlüsselung von %@ wurde zugestimmt";
 
 /* chat item text */
 "encryption ok" = "Verschlüsselung ist in Ordnung";

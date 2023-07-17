@@ -1231,7 +1231,7 @@
 "encryption agreed for %@" = "versleuteling overeengekomen voor % @";
 
 /* chat item text */
-"encryption ok" = "Versleuteling ok";
+"encryption ok" = "versleuteling ok";
 
 /* chat item text */
 "encryption ok for %@" = "versleuteling ok voor % @";
@@ -1240,7 +1240,7 @@
 "encryption re-negotiation allowed" = "versleuteling heronderhandeling toegestaan";
 
 /* chat item text */
-"encryption re-negotiation allowed for %@" = "Versleuteling heronderhandeling toegestaan voor % @";
+"encryption re-negotiation allowed for %@" = "versleuteling heronderhandeling toegestaan voor % @";
 
 /* chat item text */
 "encryption re-negotiation required" = "heronderhandeling van versleuteling vereist";
