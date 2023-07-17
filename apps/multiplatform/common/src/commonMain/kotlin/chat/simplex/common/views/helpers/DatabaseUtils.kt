@@ -39,9 +39,8 @@ object DatabaseUtils {
     }
   }
 
-  // LALAL CHANGE DB FILE NAME ON DESKTOP
   private fun hasDatabase(rootDir: String): Boolean =
-    File(rootDir + File.separator + "files_chat.db").exists() && File(rootDir + File.separator + "files_agent.db").exists()
+    File(rootDir + File.separator + chatDatabaseFileName).exists() && File(rootDir + File.separator + agentDatabaseFileName).exists()
 
   fun useDatabaseKey(): String {
     Log.d(TAG, "useDatabaseKey ${appPreferences.storeDBPassphrase.get()}")
