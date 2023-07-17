@@ -96,7 +96,6 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
-import qualified UnliftIO.Exception as UE
 import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
@@ -124,6 +123,7 @@ defaultChatConfig =
       xftpFileConfig = Just defaultXFTPFileConfig,
       tempDir = Nothing,
       showReactions = False,
+      showReceipts = False,
       logLevel = CLLImportant,
       subscriptionEvents = False,
       hostEvents = False,
@@ -388,6 +388,13 @@ processChatCommand = \case
     tryError (withStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
+  SetAllContactReceipts onOff -> withUser $ \_ -> withStore' (`updateAllContactReceipts` onOff) >> ok_
+  APISetUserContactReceipts userId' settings -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' Nothing
+    withStore' $ \db -> updateUserContactReceipts db user' settings
+    ok user
+  SetUserContactReceipts settings -> withUser $ \User {userId} -> processChatCommand $ APISetUserContactReceipts userId settings
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -1192,18 +1199,8 @@ processChatCommand = \case
         withStore' $ \db -> setConnectionAuthErrCounter db user conn 0
         ok user
       _ -> throwChatError CEGroupMemberNotActive
-  ShowMessages (ChatName cType name) ntfOn -> withUser $ \user -> do
-    (chatId, chatSettings) <- case cType of
-      CTDirect -> withStore $ \db -> do
-        ctId <- getContactIdByName db user name
-        Contact {chatSettings} <- getContact db user ctId
-        pure (ctId, chatSettings)
-      CTGroup -> withStore $ \db -> do
-        gId <- getGroupIdByName db user name
-        GroupInfo {chatSettings} <- getGroupInfo db user gId
-        pure (gId, chatSettings)
-      _ -> throwChatError $ CECommandError "not supported"
-    processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ chatSettings {enableNtfs = ntfOn}
+  SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
+  SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   ContactInfo cName -> withContactName cName APIContactInfo
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
@@ -1962,6 +1959,19 @@ processChatCommand = \case
       withAgent $ \a -> deleteUser a (aUserId user) delSMPQueues
       withStore' (`deleteUserRecord` user)
       ok_
+    updateChatSettings :: ChatName -> (ChatSettings -> ChatSettings) -> m ChatResponse
+    updateChatSettings (ChatName cType name) updateSettings = withUser $ \user -> do
+      (chatId, chatSettings) <- case cType of
+        CTDirect -> withStore $ \db -> do
+          ctId <- getContactIdByName db user name
+          Contact {chatSettings} <- getContact db user ctId
+          pure (ctId, chatSettings)
+        CTGroup -> withStore $ \db -> do
+          gId <- getGroupIdByName db user name
+          GroupInfo {chatSettings} <- getGroupInfo db user gId
+          pure (gId, chatSettings)
+        _ -> throwChatError $ CECommandError "not supported"
+      processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -2744,8 +2754,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           saveConnInfo conn connInfo
         MSG meta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
-          withAckMessage agentConnId cmdId meta . void $
-            saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
+          withAckMessage agentConnId cmdId meta $
+            saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId $> False
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
         OK ->
@@ -2801,6 +2811,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XCallEnd callId -> xCallEnd ct callId msg msgMeta
               BFileChunk sharedMsgId chunk -> bFileChunk ct sharedMsgId chunk msgMeta
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
+            let Contact {chatSettings = ChatSettings {sendRcpts}} = ct
+            pure $ fromMaybe (sendRcptsContacts user) sendRcpts && hasDeliveryReceipt (toCMEventTag event)
+        RCVD msgMeta msgRcpt ->
+          withAckMessage' agentConnId conn msgMeta $
+            directMsgReceived ct conn msgMeta msgRcpt
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
@@ -3048,10 +3063,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
+          pure False -- no receipts in group now $ hasDeliveryReceipt $ toCMEventTag event
         where
           canSend a
             | memberRole (m :: GroupMember) <= GRObserver = messageError "member is not allowed to send messages"
             | otherwise = a
+      RCVD msgMeta msgRcpt ->
+        withAckMessage' agentConnId conn msgMeta $
+          groupMsgReceived gInfo m conn msgMeta msgRcpt
       SENT msgId -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
@@ -3156,9 +3175,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 getChatItemByFileId db user fileId
               toView $ CRSndFileRcvCancelled user ci ft
             _ -> throwChatError $ CEFileSend fileId err
-        MSG meta _ _ -> do
-          cmdId <- createAckCmd conn
-          withAckMessage agentConnId cmdId meta $ pure ()
+        MSG meta _ _ -> withAckMessage' agentConnId conn meta $ pure ()
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -3251,9 +3268,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
       where
         ack a = case conn_ of
-          Just conn -> do
-            cmdId <- createAckCmd conn
-            withAckMessage agentConnId cmdId meta a
+          Just conn -> withAckMessage' agentConnId conn meta a
           Nothing -> a
 
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
@@ -3336,10 +3351,25 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     createAckCmd Connection {connId} = do
       withStore' $ \db -> createCommand db user (Just connId) CFAckMessage
 
-    withAckMessage :: ConnId -> CommandId -> MsgMeta -> m () -> m ()
+    withAckMessage' :: ConnId -> Connection -> MsgMeta -> m () -> m ()
+    withAckMessage' cId conn msgMeta action = do
+      cmdId <- createAckCmd conn
+      withAckMessage cId cmdId msgMeta $ action $> False
+
+    withAckMessage :: ConnId -> CommandId -> MsgMeta -> m Bool -> m ()
     withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action = do
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
-      action `chatFinally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId)
+      -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
+      -- Possible solutions are:
+      -- 1) retry processing several times
+      -- 2) stabilize database
+      -- 3) show screen of death to the user asking to restart
+      -- TODO send receipt depending on contact/group settings
+      tryChatError action >>= \case
+        Right withRcpt -> ack $ if withRcpt then Just "" else Nothing
+        Left e -> ack Nothing >> throwError e
+      where
+        ack rcpt = withAgent $ \a -> ackMessageAsync a (aCorrId cmdId) cId msgId rcpt
 
     ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
     ackMsgDeliveryEvent Connection {connId} ackCmdId =
@@ -4260,6 +4290,23 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           groupMsgToView g' m ci msgMeta
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
+    directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
+    directMsgReceived ct@Contact {contactId} Connection {connId} msgMeta msgRcpts = do
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+      forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
+        withStore $ \db -> createSndMsgDeliveryEvent db connId agentMsgId $ MDSSndRcvd msgRcptStatus
+        withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId agentMsgId) >>= \case
+          Just (CChatItem SMDSnd ci) -> do
+            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) $ CISSndRcvd msgRcptStatus
+            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+          _ -> pure ()
+
+    groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
+    groupMsgReceived gInfo m Connection {connId} msgMeta msgRcpts = do
+      checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
+      forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} ->
+        withStore $ \db -> createSndMsgDeliveryEvent db connId agentMsgId $ MDSSndRcvd msgRcptStatus
+
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =
   liftEither . first (ChatError . CEInvalidFileDescription) . (strDecode . encodeUtf8)
@@ -4866,13 +4913,17 @@ withStoreCtx ctx_ action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
-    [ "/mute " *> ((`ShowMessages` False) <$> chatNameP),
-      "/unmute " *> ((`ShowMessages` True) <$> chatNameP),
+    [ "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
+      "/unmute " *> ((`SetShowMessages` True) <$> chatNameP),
+      "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
       "/_create user " *> (CreateActiveUser <$> jsonP),
       "/create user " *> (CreateActiveUser <$> newUserP),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (A.space *> pwdP)),
+      "/set receipts all " *> (SetAllContactReceipts <$> onOffP),
+      "/_set receipts " *> (APISetUserContactReceipts <$> A.decimal <* A.space <*> receiptSettings),
+      "/set receipts " *> (SetUserContactReceipts <$> receiptSettings),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
       "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
       "/_mute user " *> (APIMuteUser <$> A.decimal),
@@ -5126,6 +5177,10 @@ chatCommandP =
     refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
+    receiptSettings = do
+      enable <- onOffP
+      clearOverrides <- (" clear_overrides=" *> onOffP) <|> pure False
+      pure UserMsgReceiptSettings {enable, clearOverrides}
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayName <*> fullNameP
     newUserP = do

@@ -43,10 +43,10 @@ private fun applyAppLocale() {
 @Suppress("UnsafeDynamicallyLoadedCode")
 actual fun initHaskell() {
   val libApp = "libapp-lib.${desktopPlatform.libExtension}"
-  val tmpDir = Files.createTempDirectory("simplex-native-libs").toFile()
-  tmpDir.deleteOnExit()
-  copyResources(desktopPlatform.libPath, tmpDir.toPath())
-  System.load(File(tmpDir, libApp).absolutePath)
+  val libsTmpDir = File(tmpDir.absolutePath + File.separator + "libs")
+  copyResources(desktopPlatform.libPath, libsTmpDir.toPath())
+  System.load(File(libsTmpDir, libApp).absolutePath)
+  libsTmpDir.deleteRecursively()
   initHS()
 }
 

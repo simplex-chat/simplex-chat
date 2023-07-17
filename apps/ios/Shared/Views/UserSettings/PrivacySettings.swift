@@ -68,6 +68,25 @@ struct PrivacySettings: View {
                         Text("Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.")
                     }
                 }
+
+                Section {
+                    settingsRow("person") {
+                        Toggle("Contacts", isOn: $useLinkPreviews)
+                    }
+                    settingsRow("person.2") {
+                        Toggle("Small groups (max 10)", isOn: Binding.constant(false))
+                    }
+                    .foregroundColor(.secondary)
+                    .disabled(true)
+                } header: {
+                    Text("Send delivery receipts to")
+                } footer: {
+                    VStack(alignment: .leading) {
+                        Text("These settings are for your current profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                        Text("They can be overridden in contact and group settings")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
     }
