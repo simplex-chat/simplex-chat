@@ -381,7 +381,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v5.2",
-    post = "https://simplex.chat/blog/20230719-simplex-chat-v5-2-message-delivery-receipts.html",
+    post = "https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html",
     features = listOf(
       FeatureDescription(
         icon = MR.images.ic_check,

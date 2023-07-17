@@ -223,7 +223,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v5.2",
-        post: URL(string: "https://simplex.chat/blog/20230719-simplex-chat-v5-2-message-delivery-receipts.html"),
+        post: URL(string: "https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html"),
         features: [
             FeatureDescription(
                 icon: "checkmark",
