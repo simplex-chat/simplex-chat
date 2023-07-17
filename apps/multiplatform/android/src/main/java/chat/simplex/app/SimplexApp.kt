@@ -71,6 +71,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       val user = chatController.apiGetActiveUser()
       if (user == null) {
         chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+        chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
         chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
         chatModel.currentUser.value = null
         chatModel.users.clear()
@@ -80,6 +81,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
           OnboardingStage.Step3_CreateSimpleXAddress
         } else {
           savedOnboardingStage
+        }
+        if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete && !chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.get()) {
+          chatModel.setDeliveryReceipts.value = true
         }
         chatController.startChat(user)
         // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet

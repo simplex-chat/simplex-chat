@@ -37,6 +37,7 @@ import chat.simplex.app.views.localauth.SetAppPasscodeView
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import chat.simplex.app.views.usersettings.LAMode
+import chat.simplex.app.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -469,11 +470,15 @@ fun MainPage(
                     translationX = -offset.value.dp.toPx()
                   }
               ) {
+                if (chatModel.setDeliveryReceipts.value) {
+                  SetDeliveryReceiptsView(chatModel)
+                } else {
                   val stopped = chatModel.chatRunning.value == false
                   if (chatModel.sharedContent.value == null)
                     ChatListView(chatModel, setPerformLA, stopped)
                   else
                     ShareListView(chatModel, stopped)
+                }
               }
               val scope = rememberCoroutineScope()
               val onComposed: () -> Unit = {

@@ -1133,7 +1133,6 @@ func startChat(refreshInvitations: Bool = true) throws {
             m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
                                 ? .step3_CreateSimpleXAddress
                                 : savedOnboardingStage
-            // TODO don't show on first start
             if m.onboardingStage == .onboardingComplete && !privacyDeliveryReceiptsSet.get() {
                 m.setDeliveryReceipts = true
             }
