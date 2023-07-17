@@ -419,5 +419,70 @@
     <string name="smp_servers_delete_server">حذف الخادم</string>
     <string name="error_updating_link_for_group">خطأ في تحديث ارتباط المجموعة</string>
     <string name="simplex_link_mode_description">الوصف</string>
-    <string name="icon_descr_expand_role">وسّع اختيار الدور</string>
+    <string name="icon_descr_expand_role">توسيع اختيار الدور</string>
+    <string name="group_invitation_expired">انتهت صلاحية دعوة المجموعة</string>
+    <string name="alert_title_no_group">المجموعة غير موجودة!</string>
+    <string name="export_theme">تصدير السمة</string>
+    <string name="files_and_media">الملفات والوسائط</string>
+    <string name="icon_descr_flip_camera">قلب الكاميرا</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">سيتم حذف المجموعة لجميع الأعضاء - لا يمكن التراجع عن هذا!</string>
+    <string name="group_members_can_send_dms">يمكن لأعضاء المجموعة إرسال رسائل مباشرة.</string>
+    <string name="failed_to_parse_chats_title">فشل تحميل الدردشات</string>
+    <string name="email_invite_body">أهلاً!
+\nتواصل معي عبر SimpleX Chat: %s</string>
+    <string name="icon_descr_hang_up">قطع المكالمة</string>
+    <string name="files_and_media_prohibited">الملفات والوسائط ممنوعة!</string>
+    <string name="icon_descr_file">الملف</string>
+    <string name="snd_group_event_group_profile_updated">حُدّث ملف تعريف المجموعة</string>
+    <string name="group_display_name_field">اسم عرض المجموعة:</string>
+    <string name="group_members_can_send_voice">يمكن لأعضاء المجموعة إرسال رسائل صوتية.</string>
+    <string name="files_are_prohibited_in_group">الملفات والوسائط ممنوعة في هذه المجموعة.</string>
+    <string name="v4_6_group_welcome_message">رسالة ترحيب المجموعة</string>
+    <string name="v4_6_reduced_battery_usage">مزيد من تقليل استخدام البطارية</string>
+    <string name="info_row_group">المجموعة</string>
+    <string name="for_everybody">للجميع</string>
+    <string name="file_not_found">لم يتم العثور على الملف</string>
+    <string name="from_gallery_button">من المعرض</string>
+    <string name="v4_4_french_interface">الواجهة الفرنسية</string>
+    <string name="settings_section_title_help">المساعدة</string>
+    <string name="group_member_status_group_deleted">حُذِفت المجموعة</string>
+    <string name="group_members_can_send_disappearing">يمكن لأعضاء المجموعة إرسال رسائل تختفي.</string>
+    <string name="v4_6_group_moderation">إشراف المجموعة</string>
+    <string name="v5_1_message_reactions_descr">أخيرا، لدينا منهم! 🚀</string>
+    <string name="export_database">تصدير قاعدة البيانات</string>
+    <string name="section_title_for_console">لوحدة التحكم</string>
+    <string name="settings_experimental_features">الميزات التجريبية</string>
+    <string name="settings_section_title_experimenta">تجريبي</string>
+    <string name="icon_descr_group_inactive">المجموعة غير نشطة</string>
+    <string name="files_and_media_section">الملفات والوسائط</string>
+    <string name="group_members_can_delete">يمكن لأعضاء المجموعة حذف الرسائل المرسلة بشكل لا رجعة فيه.</string>
+    <string name="fix_connection_not_supported_by_contact">الإصلاح غير مدعوم من قبل جهة الاتصال</string>
+    <string name="group_profile_is_stored_on_members_devices">يُخزّن ملف تعريف المجموعة على أجهزة الأعضاء، وليس على الخوادم.</string>
+    <string name="v4_2_group_links">روابط المجموعة</string>
+    <string name="v4_6_hidden_chat_profiles">ملفات تعريف الدردشة المخفية</string>
+    <string name="full_name__field">الاسم الكامل:</string>
+    <string name="alert_message_group_invitation_expired">لم تعد دعوة المجموعة صالحة، تمت أُزيلت بواسطة المرسل.</string>
+    <string name="group_link">رابط المجموعة</string>
+    <string name="file_will_be_received_when_contact_is_online">سيتم استلام الملف عندما تكون جهة الاتصال الخاصة بك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="group_full_name_field">الاسم الكامل للمجموعة:</string>
+    <string name="simplex_link_mode_full">رابط كامل</string>
+    <string name="choose_file">الملف</string>
+    <string name="delete_group_for_self_cannot_undo_warning">سيتم حذف المجموعة لك - لا يمكن التراجع عن هذا!</string>
+    <string name="failed_to_parse_chat_title">فشل تحميل الدردشة</string>
+    <string name="group_members_can_add_message_reactions">يمكن لأعضاء المجموعة إضافة ردود فعل الرسالة.</string>
+    <string name="favorite_chat">المفضل</string>
+    <string name="notification_preview_mode_hidden">مخفي</string>
+    <string name="file_saved">حُفظ الملف</string>
+    <string name="revoke_file__message">سيتم حذف الملف من الخوادم.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">سيتم استلام الملف عند اكتمال تحميل جهة الاتصال الخاصة بك.</string>
+    <string name="icon_descr_help">المساعدة</string>
+    <string name="full_name_optional__prompt">الاسم الكامل (اختياري)</string>
+    <string name="file_with_path">الملف: %s</string>
+    <string name="fix_connection_confirm">إصلاح</string>
+    <string name="fix_connection">إصلاح الاتصال</string>
+    <string name="fix_connection_question">إصلاح الاتصال؟</string>
+    <string name="fix_connection_not_supported_by_group_member">الإصلاح غير مدعوم من قبل أعضاء المجموعة</string>
+    <string name="group_members_can_send_files">يمكن لأعضاء المجموعة إرسال الملفات والوسائط.</string>
+    <string name="group_preferences">تفضيلات المجموعة</string>
+    <string name="v5_0_large_files_support_descr">سريع ولا تنتظر حتى يصبح المرسل متصلاً بالإنترنت!</string>
 </resources>
