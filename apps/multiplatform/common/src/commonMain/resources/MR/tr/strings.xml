@@ -7,7 +7,7 @@
     <string name="your_simplex_contact_address">SimpleX addresin</string>
     <string name="callstatus_missed">cevapsız çağrı</string>
     <string name="incoming_video_call">Gelen görüntülü arama</string>
-    <string name="accept">Yanıtla</string>
+    <string name="accept">Kabul et</string>
     <string name="reject">Reddet</string>
     <string name="incoming_audio_call">Gelen sesli arama</string>
     <string name="ignore">Yok say</string>
@@ -24,4 +24,15 @@
     <string name="your_settings">Ayarların</string>
     <string name="mute_chat">Sessize al</string>
     <string name="unmute_chat">Sessizden çıkar</string>
+    <string name="abort_switch_receiving_address_confirm">İptal</string>
+    <string name="abort_switch_receiving_address_question">Adres değişikliğini iptal et\?</string>
+    <string name="send_disappearing_message_30_seconds">30 saniye</string>
+    <string name="send_disappearing_message_5_minutes">5 dakika</string>
+    <string name="accept_contact_button">Kabul et</string>
+    <string name="accept_connection_request__question">Bağlantı isteğini kabul et\?</string>
+    <string name="learn_more_about_address">SimpleX Adresi Hakkında</string>
+    <string name="about_simplex_chat">SimpleX Chat Hakkında</string>
+    <string name="about_simplex">SimpleX Hakkında</string>
+    <string name="accept_call_on_lock_screen">Yanıtla</string>
+    <string name="abort_switch_receiving_address">Adres değişikliğini iptal et</string>
 </resources>
