@@ -72,9 +72,9 @@
         <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
+      <trans-unit id="%@ at %@:" xml:space="preserve">
         <source>%1$@ at %2$@:</source>
-        <target state="translated">%1$@ bij %2$@:</target>
+        <target>%1$@ bij %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -1147,9 +1147,9 @@
         <target>Contact voorkeuren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contacts" xml:space="preserve" approved="no">
+      <trans-unit id="Contacts" xml:space="preserve">
         <source>Contacts</source>
-        <target state="translated">Contacten</target>
+        <target>Contacten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts can mark messages for deletion; you will be able to view them." xml:space="preserve">
@@ -1545,24 +1545,14 @@
         <target>Verwijderd om: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve" approved="no">
+      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
         <source>Delivery receipts are disabled!</source>
-        <target state="translated">Ontvangstbewijzen zijn uitgeschakeld!</target>
+        <target>Ontvangstbewijzen zijn uitgeschakeld!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve" approved="no">
-        <source>Delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
-        <target state="translated">Ontvangstbewijzen worden ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delivery receipts will be enabled for all contacts." xml:space="preserve" approved="no">
-        <source>Delivery receipts will be enabled for all contacts.</source>
-        <target state="translated">Ontvangstbewijzen worden ingeschakeld voor alle contacten.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
+      <trans-unit id="Delivery receipts!" xml:space="preserve">
         <source>Delivery receipts!</source>
-        <target state="translated">Ontvangstbewijzen!</target>
+        <target>Ontvangstbewijzen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1753,11 +1743,6 @@
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
         <target>Onmiddellijke meldingen inschakelen?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Enable later via Settings" xml:space="preserve" approved="no">
-        <source>Enable later via Settings</source>
-        <target state="translated">Schakel later in via Instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable lock" xml:space="preserve">
@@ -2068,9 +2053,9 @@
         <target>Fout bij wisselen van profiel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error synchronizing connection" xml:space="preserve" approved="no">
+      <trans-unit id="Error synchronizing connection" xml:space="preserve">
         <source>Error synchronizing connection</source>
-        <target state="translated">Fout bij het synchroniseren van de verbinding</target>
+        <target>Fout bij het synchroniseren van de verbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve">
@@ -2212,17 +2197,17 @@
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
         <source>Fix</source>
-        <target state="translated">Herstel</target>
+        <target>Herstel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix connection" xml:space="preserve" approved="no">
+      <trans-unit id="Fix connection" xml:space="preserve">
         <source>Fix connection</source>
-        <target state="translated">Verbinding herstellen</target>
+        <target>Verbinding herstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix connection?" xml:space="preserve" approved="no">
+      <trans-unit id="Fix connection?" xml:space="preserve">
         <source>Fix connection?</source>
-        <target state="translated">Verbinding herstellen?</target>
+        <target>Verbinding herstellen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix encryption after restoring backups." xml:space="preserve">
@@ -2231,12 +2216,12 @@
       </trans-unit>
       <trans-unit id="Fix not supported by contact" xml:space="preserve">
         <source>Fix not supported by contact</source>
-        <target state="translated">Herstel wordt niet ondersteund door contact</target>
+        <target>Herstel wordt niet ondersteund door contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix not supported by group member" xml:space="preserve" approved="no">
+      <trans-unit id="Fix not supported by group member" xml:space="preserve">
         <source>Fix not supported by group member</source>
-        <target state="translated">Herstel wordt niet ondersteund door groepslid</target>
+        <target>Herstel wordt niet ondersteund door groepslid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -2544,9 +2529,9 @@
         <target>Verbeterde serverconfiguratie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="In reply to" xml:space="preserve" approved="no">
+      <trans-unit id="In reply to" xml:space="preserve">
         <source>In reply to</source>
-        <target state="translated">In antwoord op</target>
+        <target>In antwoord op</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -3104,9 +3089,9 @@
         <target>Groep niet gevonden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No history" xml:space="preserve" approved="no">
+      <trans-unit id="No history" xml:space="preserve">
         <source>No history</source>
-        <target state="translated">Geen geschiedenis</target>
+        <target>Geen geschiedenis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -3543,9 +3528,9 @@
         <target>Protocol timeout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol timeout per KB" xml:space="preserve" approved="no">
+      <trans-unit id="Protocol timeout per KB" xml:space="preserve">
         <source>Protocol timeout per KB</source>
-        <target state="translated">Protocol timeout per KB</target>
+        <target>Protocol timeout per KB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -3558,9 +3543,9 @@
         <target>Beoordeel de app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="React…" xml:space="preserve" approved="no">
+      <trans-unit id="React…" xml:space="preserve">
         <source>React…</source>
-        <target state="translated">Reageer…</target>
+        <target>Reageer…</target>
         <note>chat item menu</note>
       </trans-unit>
       <trans-unit id="Read" xml:space="preserve">
@@ -3633,14 +3618,14 @@
         <target>Ontvangers zien updates terwijl u ze typt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reconnect all connected servers to force message delivery. It uses additional traffic." xml:space="preserve" approved="no">
+      <trans-unit id="Reconnect all connected servers to force message delivery. It uses additional traffic." xml:space="preserve">
         <source>Reconnect all connected servers to force message delivery. It uses additional traffic.</source>
-        <target state="translated">Verbind alle verbonden servers opnieuw om de bezorging van berichten af te dwingen. Het maakt gebruik van extra data.</target>
+        <target>Verbind alle verbonden servers opnieuw om de bezorging van berichten af te dwingen. Het maakt gebruik van extra data.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reconnect servers?" xml:space="preserve" approved="no">
+      <trans-unit id="Reconnect servers?" xml:space="preserve">
         <source>Reconnect servers?</source>
-        <target state="translated">Servers opnieuw verbinden?</target>
+        <target>Servers opnieuw verbinden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Record updated at" xml:space="preserve">
@@ -3703,19 +3688,19 @@
         <target>Wachtwoord van de keychain verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Renegotiate" xml:space="preserve" approved="no">
+      <trans-unit id="Renegotiate" xml:space="preserve">
         <source>Renegotiate</source>
-        <target state="translated">Opnieuw onderhandelen</target>
+        <target>Opnieuw onderhandelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Renegotiate encryption" xml:space="preserve" approved="no">
+      <trans-unit id="Renegotiate encryption" xml:space="preserve">
         <source>Renegotiate encryption</source>
-        <target state="translated">Heronderhandel over versleuteling</target>
+        <target>Heronderhandel over versleuteling</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Renegotiate encryption?" xml:space="preserve" approved="no">
+      <trans-unit id="Renegotiate encryption?" xml:space="preserve">
         <source>Renegotiate encryption?</source>
-        <target state="translated">Heronderhandelen over versleuteling?</target>
+        <target>Heronderhandelen over versleuteling?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reply" xml:space="preserve">
@@ -3973,9 +3958,9 @@
         <target>Stuur een live bericht, het wordt bijgewerkt voor de ontvanger(s) terwijl u het typt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send delivery receipts to" xml:space="preserve" approved="no">
+      <trans-unit id="Send delivery receipts to" xml:space="preserve">
         <source>Send delivery receipts to</source>
-        <target state="translated">Stuur ontvangstbewijzen naar</target>
+        <target>Stuur ontvangstbewijzen naar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
@@ -4013,9 +3998,9 @@
         <target>Stuur vragen en ideeën</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send receipts" xml:space="preserve" approved="no">
+      <trans-unit id="Send receipts" xml:space="preserve">
         <source>Send receipts</source>
-        <target state="translated">Ontvangstbewijzen verzenden</target>
+        <target>Ontvangstbewijzen verzenden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -4491,9 +4476,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Het aangemaakte archief is beschikbaar via app Instellingen / Database / Oud database archief.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The encryption is working and the new encryption agreement is not required. It may result in connection errors!" xml:space="preserve" approved="no">
+      <trans-unit id="The encryption is working and the new encryption agreement is not required. It may result in connection errors!" xml:space="preserve">
         <source>The encryption is working and the new encryption agreement is not required. It may result in connection errors!</source>
-        <target state="translated">De versleuteling werkt en de nieuwe versleutelingsovereenkomst is niet vereist. Dit kan leiden tot verbindingsfouten!</target>
+        <target>De versleuteling werkt en de nieuwe versleutelingsovereenkomst is niet vereist. Dit kan leiden tot verbindingsfouten!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The group is fully decentralized – it is visible only to the members." xml:space="preserve">
@@ -4560,14 +4545,14 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Er moet ten minste één zichtbaar gebruikers profiel zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="These settings are for your current profile **%@**." xml:space="preserve" approved="no">
+      <trans-unit id="These settings are for your current profile **%@**." xml:space="preserve">
         <source>These settings are for your current profile **%@**.</source>
-        <target state="translated">Deze instellingen zijn voor uw huidige profiel **%@**.</target>
+        <target>Deze instellingen zijn voor uw huidige profiel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="They can be overridden in contact settings" xml:space="preserve">
         <source>They can be overridden in contact settings</source>
-        <target state="translated">Ze kunnen worden overschreven in contactinstellingen</target>
+        <target>Ze kunnen worden overschreven in contactinstellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -5055,7 +5040,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       </trans-unit>
       <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
         <source>You can enable them later via app Privacy &amp; Security settings.</source>
-        <target state="translated">U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.</target>
+        <target>U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can hide or mute a user profile - swipe it to the right." xml:space="preserve">
@@ -5393,14 +5378,14 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>Beheerder</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="agreeing encryption for %@…" xml:space="preserve" approved="no">
+      <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
         <source>agreeing encryption for %@…</source>
-        <target state="translated">versleuteling overeenkomen voor %@…</target>
+        <target>versleuteling overeenkomen voor %@…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="agreeing encryption…" xml:space="preserve" approved="no">
+      <trans-unit id="agreeing encryption…" xml:space="preserve">
         <source>agreeing encryption…</source>
-        <target state="translated">versleuteling overeenkomen…</target>
+        <target>versleuteling overeenkomen…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="always" xml:space="preserve">
@@ -5463,14 +5448,14 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>veranderde je rol in %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="changing address for %@…" xml:space="preserve" approved="no">
+      <trans-unit id="changing address for %@…" xml:space="preserve">
         <source>changing address for %@…</source>
-        <target state="translated">adres wijzigen voor %@…</target>
+        <target>adres wijzigen voor %@…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="changing address…" xml:space="preserve" approved="no">
+      <trans-unit id="changing address…" xml:space="preserve">
         <source>changing address…</source>
-        <target state="translated">adres wijzigen…</target>
+        <target>adres wijzigen…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
@@ -5573,14 +5558,14 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>standaard (%@)</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="default (no)" xml:space="preserve" approved="no">
+      <trans-unit id="default (no)" xml:space="preserve">
         <source>default (no)</source>
-        <target state="translated">standaard (nee)</target>
+        <target>standaard (nee)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="default (yes)" xml:space="preserve" approved="no">
+      <trans-unit id="default (yes)" xml:space="preserve">
         <source>default (yes)</source>
-        <target state="translated">standaard (ja)</target>
+        <target>standaard (ja)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
@@ -5628,44 +5613,44 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>voor u ingeschakeld</target>
         <note>enabled status</note>
       </trans-unit>
-      <trans-unit id="encryption agreed" xml:space="preserve" approved="no">
+      <trans-unit id="encryption agreed" xml:space="preserve">
         <source>encryption agreed</source>
-        <target state="translated">versleuteling overeengekomen</target>
+        <target>versleuteling overeengekomen</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption agreed for %@" xml:space="preserve" approved="no">
+      <trans-unit id="encryption agreed for %@" xml:space="preserve">
         <source>encryption agreed for %@</source>
-        <target state="translated">versleuteling overeengekomen voor % @</target>
+        <target>versleuteling overeengekomen voor % @</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption ok" xml:space="preserve" approved="no">
+      <trans-unit id="encryption ok" xml:space="preserve">
         <source>encryption ok</source>
-        <target state="translated">Versleuteling ok</target>
+        <target>Versleuteling ok</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption ok for %@" xml:space="preserve" approved="no">
+      <trans-unit id="encryption ok for %@" xml:space="preserve">
         <source>encryption ok for %@</source>
-        <target state="translated">versleuteling ok voor % @</target>
+        <target>versleuteling ok voor % @</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation allowed" xml:space="preserve" approved="no">
+      <trans-unit id="encryption re-negotiation allowed" xml:space="preserve">
         <source>encryption re-negotiation allowed</source>
-        <target state="translated">versleuteling heronderhandeling toegestaan</target>
+        <target>versleuteling heronderhandeling toegestaan</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve" approved="no">
+      <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve">
         <source>encryption re-negotiation allowed for %@</source>
-        <target state="translated">Versleuteling heronderhandeling toegestaan voor % @</target>
+        <target>Versleuteling heronderhandeling toegestaan voor % @</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation required" xml:space="preserve" approved="no">
+      <trans-unit id="encryption re-negotiation required" xml:space="preserve">
         <source>encryption re-negotiation required</source>
-        <target state="translated">heronderhandeling van versleuteling vereist</target>
+        <target>heronderhandeling van versleuteling vereist</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve" approved="no">
+      <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve">
         <source>encryption re-negotiation required for %@</source>
-        <target state="translated">heronderhandeling van versleuteling vereist voor % @</target>
+        <target>heronderhandeling van versleuteling vereist voor % @</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="ended" xml:space="preserve">
@@ -5939,9 +5924,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>geheim</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="security code changed" xml:space="preserve" approved="no">
+      <trans-unit id="security code changed" xml:space="preserve">
         <source>security code changed</source>
-        <target state="translated">beveiligingscode gewijzigd</target>
+        <target>beveiligingscode gewijzigd</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">

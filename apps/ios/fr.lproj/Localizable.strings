@@ -29,7 +29,7 @@
 ": " = ": ";
 
 /* No comment provided by engineer. */
-"!1 colored!" = "!1 coloré!";
+"!1 colored!" = "1 coloré!";
 
 /* No comment provided by engineer. */
 "." = ".";
@@ -102,6 +102,9 @@
 
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
+
+/* copied message info, <sender> at <time> */
+"%@ at %@:" = "%1$@ à %2$@ :";
 
 /* notification title */
 "%@ is connected!" = "%@ est connecté·e !";
@@ -323,6 +326,12 @@
 /* No comment provided by engineer. */
 "Advanced network settings" = "Paramètres réseau avancés";
 
+/* chat item text */
+"agreeing encryption for %@…" = "Acceptant le chiffrement pour %@…";
+
+/* chat item text */
+"agreeing encryption…" = "Acceptant le chiffrement…";
+
 /* No comment provided by engineer. */
 "All app data is deleted." = "Toutes les données de l'application sont supprimées.";
 
@@ -450,7 +459,7 @@
 "Audio/video calls" = "Appels audio/vidéo";
 
 /* No comment provided by engineer. */
-"Audio/video calls are prohibited." = "Interdire les appels audio/vidéo.";
+"Audio/video calls are prohibited." = "Les appels audio/vidéo sont interdits.";
 
 /* PIN entry */
 "Authentication cancelled" = "Authentification interrompue";
@@ -587,6 +596,12 @@
 
 /* rcv group event chat item */
 "changed your role to %@" = "a modifié votre rôle pour %@";
+
+/* chat item text */
+"changing address for %@…" = "Changement d'adresse pour %@…";
+
+/* chat item text */
+"changing address…" = "Changement d'adresse…";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Archives du chat";
@@ -778,6 +793,9 @@
 "Contact preferences" = "Préférences de contact";
 
 /* No comment provided by engineer. */
+"Contacts" = "Contacts";
+
+/* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Vos contacts peuvent marquer les messages pour les supprimer ; vous pourrez les consulter.";
 
 /* No comment provided by engineer. */
@@ -912,6 +930,12 @@
 /* pref value */
 "default (%@)" = "défaut (%@)";
 
+/* No comment provided by engineer. */
+"default (no)" = "Par défaut (non)";
+
+/* No comment provided by engineer. */
+"default (yes)" = "Par défaut (oui)";
+
 /* chat item action */
 "Delete" = "Supprimer";
 
@@ -1028,6 +1052,12 @@
 
 /* rcv group event chat item */
 "deleted group" = "groupe supprimé";
+
+/* No comment provided by engineer. */
+"Delivery receipts are disabled!" = "Les accusés de réception sont désactivés !";
+
+/* No comment provided by engineer. */
+"Delivery receipts!" = "Justificatifs de réception!";
 
 /* No comment provided by engineer. */
 "Description" = "Description";
@@ -1194,6 +1224,30 @@
 /* notification */
 "Encrypted message: unexpected error" = "Message chiffrée : erreur inattendue";
 
+/* chat item text */
+"encryption agreed" = "Chiffrement accepté";
+
+/* chat item text */
+"encryption agreed for %@" = "Chiffrement accepté pour %@";
+
+/* chat item text */
+"encryption ok" = "Chiffrement ok";
+
+/* chat item text */
+"encryption ok for %@" = "Chiffrement ok pour %@";
+
+/* chat item text */
+"encryption re-negotiation allowed" = "Renégociation de chiffrement autorisée";
+
+/* chat item text */
+"encryption re-negotiation allowed for %@" = "Renégociation de chiffrement autorisée pour %@";
+
+/* chat item text */
+"encryption re-negotiation required" = "Renégociation de chiffrement requise";
+
+/* chat item text */
+"encryption re-negotiation required for %@" = "Renégociation de chiffrement requise pour %@";
+
 /* No comment provided by engineer. */
 "ended" = "terminé";
 
@@ -1342,6 +1396,9 @@
 "Error switching profile!" = "Erreur lors du changement de profil !";
 
 /* No comment provided by engineer. */
+"Error synchronizing connection" = "Erreur de synchronisation de connexion";
+
+/* No comment provided by engineer. */
 "Error updating group link" = "Erreur lors de la mise à jour du lien de groupe";
 
 /* No comment provided by engineer. */
@@ -1415,6 +1472,21 @@
 
 /* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "Enfin, les voilà ! 🚀";
+
+/* No comment provided by engineer. */
+"Fix" = "Corriger";
+
+/* No comment provided by engineer. */
+"Fix connection" = "Réparer la connexion";
+
+/* No comment provided by engineer. */
+"Fix connection?" = "Réparer la connexion?";
+
+/* No comment provided by engineer. */
+"Fix not supported by contact" = "Correction non prise en charge par le contact";
+
+/* No comment provided by engineer. */
+"Fix not supported by group member" = "Correction non prise en charge par un membre du groupe";
 
 /* No comment provided by engineer. */
 "For console" = "Pour la console";
@@ -1607,6 +1679,9 @@
 
 /* No comment provided by engineer. */
 "Improved server configuration" = "Configuration de serveur améliorée";
+
+/* copied message info */
+"In reply to" = "En réponse à";
 
 /* No comment provided by engineer. */
 "Incognito" = "Incognito";
@@ -2020,6 +2095,9 @@
 "No group!" = "Groupe introuvable !";
 
 /* No comment provided by engineer. */
+"No history" = "Aucun historique";
+
+/* No comment provided by engineer. */
 "No permission to record voice message" = "Pas l'autorisation d'enregistrer un message vocal";
 
 /* No comment provided by engineer. */
@@ -2306,10 +2384,16 @@
 "Protocol timeout" = "Délai du protocole";
 
 /* No comment provided by engineer. */
+"Protocol timeout per KB" = "Délai d'attente du protocole par KB";
+
+/* No comment provided by engineer. */
 "Push notifications" = "Notifications push";
 
 /* No comment provided by engineer. */
 "Rate the app" = "Évaluer l'app";
+
+/* chat item menu */
+"React…" = "Réagissez…";
 
 /* No comment provided by engineer. */
 "Read" = "Lire";
@@ -2333,7 +2417,7 @@
 "received answer…" = "réponse reçu…";
 
 /* No comment provided by engineer. */
-"Received at" = "Reçu le";
+"Received at" = "Reçu à";
 
 /* copied message info */
 "Received at: %@" = "Reçu le : %@";
@@ -2357,7 +2441,13 @@
 "Receiving via" = "Réception via";
 
 /* No comment provided by engineer. */
-"Recipients see updates as you type them." = "Les destinataires voient les mises à jour au fur et à mesure que vous les tapez.";
+"Recipients see updates as you type them." = "Les destinataires voient les mises à jour au fur et à mesure que vous leur écrivez.";
+
+/* No comment provided by engineer. */
+"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Reconnecter tous les serveurs connectés pour forcer la livraison des messages. Cette méthode utilise du trafic supplémentaire.";
+
+/* No comment provided by engineer. */
+"Reconnect servers?" = "Reconnecter les serveurs?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Enregistrement mis à jour le";
@@ -2406,6 +2496,15 @@
 
 /* rcv group event chat item */
 "removed you" = "vous a retiré";
+
+/* No comment provided by engineer. */
+"Renegotiate" = "Renégocier";
+
+/* No comment provided by engineer. */
+"Renegotiate encryption" = "Renégocier le chiffrement";
+
+/* No comment provided by engineer. */
+"Renegotiate encryption?" = "Renégocier le chiffrement?";
 
 /* chat item action */
 "Reply" = "Répondre";
@@ -2545,6 +2644,9 @@
 /* No comment provided by engineer. */
 "Security code" = "Code de sécurité";
 
+/* chat item text */
+"security code changed" = "Code de sécurité modifié";
+
 /* No comment provided by engineer. */
 "Select" = "Choisir";
 
@@ -2567,6 +2669,9 @@
 "Send a live message - it will update for the recipient(s) as you type it" = "Envoyez un message dynamique - il sera mis à jour pour le⸱s destinataire⸱s au fur et à mesure que vous le tapez";
 
 /* No comment provided by engineer. */
+"Send delivery receipts to" = "Envoyer les accusés de réception à";
+
+/* No comment provided by engineer. */
 "Send direct message" = "Envoi de message direct";
 
 /* No comment provided by engineer. */
@@ -2586,6 +2691,9 @@
 
 /* No comment provided by engineer. */
 "Send questions and ideas" = "Envoyez vos questions et idées";
+
+/* No comment provided by engineer. */
+"Send receipts" = "Envoyer les justificatifs";
 
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "Envoyez-les depuis la phototèque ou des claviers personnalisés.";
@@ -2867,6 +2975,9 @@
 "The created archive is available via app Settings / Database / Old database archive." = "L'archive créée est disponible via l'app Paramètres / Base de données / Ancienne archive de base de données.";
 
 /* No comment provided by engineer. */
+"The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Le chiffrement fonctionne et le nouvel accord de chiffrement n'est pas nécessaire. Cela peut provoquer des erreurs de connexion !";
+
+/* No comment provided by engineer. */
 "The group is fully decentralized – it is visible only to the members." = "Le groupe est entièrement décentralisé – il n'est visible que par ses membres.";
 
 /* No comment provided by engineer. */
@@ -2904,6 +3015,12 @@
 
 /* No comment provided by engineer. */
 "There should be at least one visible user profile." = "Il doit y avoir au moins un profil d'utilisateur visible.";
+
+/* No comment provided by engineer. */
+"These settings are for your current profile **%@**." = "Ces paramètres s'appliquent à votre profil actuel **%@**.";
+
+/* No comment provided by engineer. */
+"They can be overridden in contact settings" = "Ils peuvent être remplacés dans les paramètres des contacts";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Cette action ne peut être annulée - tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.";
@@ -3237,6 +3354,9 @@
 
 /* No comment provided by engineer. */
 "You can create it later" = "Vous pouvez la créer plus tard";
+
+/* No comment provided by engineer. */
+"You can enable them later via app Privacy & Security settings." = "Vous pouvez les activer ultérieurement via les paramètres de Confidentialité et Sécurité de l'application.";
 
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Vous pouvez masquer ou mettre en sourdine un profil d'utilisateur - faites-le glisser vers la droite.";
