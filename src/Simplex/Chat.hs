@@ -2870,7 +2870,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
           withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId msgId) >>= \case
-            Just (CChatItem SMDSnd ci) -> do
+            Just (CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemStatus}}) -> unless (isSndRcvdStatus itemStatus) $ do
               chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) CISSndSent
               toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
             _ -> pure ()

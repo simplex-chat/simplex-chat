@@ -702,6 +702,11 @@ ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
+isSndRcvdStatus :: CIStatus d -> Bool
+isSndRcvdStatus = \case
+  CISSndRcvd _ -> True
+  _ -> False
+
 type ChatItemId = Int64
 
 type ChatItemTs = UTCTime
@@ -843,7 +848,7 @@ msgDeliveryStatusT = eitherToMaybe . parseAll statusP . encodeUtf8
         "snd_rcvd" -> AMDS SMDSnd . MDSSndRcvd <$> (A.space *> strP)
         "snd_read" -> pure $ AMDS SMDSnd MDSSndRead
         _ -> fail "bad AMsgDeliveryStatus"
-  
+
 msgDeliveryStatusT' :: forall d. MsgDirectionI d => Text -> Maybe (MsgDeliveryStatus d)
 msgDeliveryStatusT' s =
   msgDeliveryStatusT s >>= \(AMDS d st) ->
