@@ -302,7 +302,7 @@ serverCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
-      serverTbqSize = 1,
+      -- serverTbqSize = 1,
       msgQueueQuota = 16,
       queueIdBytes = 12,
       msgIdBytes = 6,
@@ -321,7 +321,8 @@ serverCfg =
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       smpServerVRange = supportedSMPServerVRange,
-      transportConfig = defaultTransportServerConfig
+      transportConfig = defaultTransportServerConfig,
+      controlPort = Nothing
     }
 
 withSmpServer :: IO () -> IO ()
