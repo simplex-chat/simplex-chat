@@ -13,6 +13,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import chat.simplex.app.TAG
+import chat.simplex.app.model.ChatController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -27,6 +28,10 @@ fun SetDeliveryReceiptsView(m: ChatModel) {
         withApi {
           try {
             m.controller.apiSetAllContactReceipts(enable = true)
+            val users = m.controller.listUsers()
+            m.users.clear()
+            m.users.addAll(users)
+            m.currentUser.value = currentUser.copy(sendRcptsContacts = true)
             m.setDeliveryReceipts.value = false
             m.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           } catch (e: Exception) {

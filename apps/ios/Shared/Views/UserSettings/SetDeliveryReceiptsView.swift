@@ -25,10 +25,16 @@ struct SetDeliveryReceiptsView: View {
             Button("Enable") {
                 Task {
                     do {
-                        try await apiSetAllContactReceipts(enable: true)
-                        await MainActor.run {
-                            m.setDeliveryReceipts = false
-                            privacyDeliveryReceiptsSet.set(true)
+                        if let currentUser = m.currentUser {
+                            try await apiSetAllContactReceipts(enable: true)
+                            m.users = try listUsers()
+                            var updatedUser = currentUser
+                            updatedUser.sendRcptsContacts = true
+                            m.updateUser(updatedUser)
+                            await MainActor.run {
+                                m.setDeliveryReceipts = false
+                                privacyDeliveryReceiptsSet.set(true)
+                            }
                         }
                     } catch let error {
                         AlertManager.shared.showAlert(Alert(
