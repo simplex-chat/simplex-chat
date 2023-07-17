@@ -1296,10 +1296,10 @@
     <string name="fix_connection_not_supported_by_group_member">Herstel wordt niet ondersteund door groepslid</string>
     <string name="renegotiate_encryption">Heronderhandel over versleuteling</string>
     <string name="conn_event_ratchet_sync_started">versleuteling overeenkomen…</string>
-    <string name="snd_conn_event_ratchet_sync_started">versleuteling overeenkomen voor %s</string>
+    <string name="snd_conn_event_ratchet_sync_started">versleuteling overeenkomen voor %s…</string>
     <string name="conn_event_ratchet_sync_agreed">versleuteling overeengekomen</string>
     <string name="snd_conn_event_ratchet_sync_agreed">versleuteling overeengekomen voor %s</string>
-    <string name="conn_event_ratchet_sync_ok">Versleuteling ok</string>
+    <string name="conn_event_ratchet_sync_ok">versleuteling ok</string>
     <string name="snd_conn_event_ratchet_sync_ok">versleuteling ok voor %s</string>
     <string name="fix_connection">Verbinding herstellen</string>
     <string name="fix_connection_confirm">Herstel</string>

@@ -2197,7 +2197,7 @@
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
         <source>Fix</source>
-        <target>Solucionar</target>
+        <target>Reparar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix connection" xml:space="preserve">
@@ -2207,7 +2207,7 @@
       </trans-unit>
       <trans-unit id="Fix connection?" xml:space="preserve">
         <source>Fix connection?</source>
-        <target>Solucionar problemas de conexión ?</target>
+        <target>Reparar problemas de conexión ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix encryption after restoring backups." xml:space="preserve">
@@ -3790,7 +3790,7 @@
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
-        <target>Lanzar chat</target>
+        <target>Ejecutar chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SMP servers" xml:space="preserve">
@@ -5382,12 +5382,12 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
         <source>agreeing encryption for %@…</source>
-        <target>Acordando la encriptación para %@…</target>
+        <target>acordando la encriptación para %@…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="agreeing encryption…" xml:space="preserve">
         <source>agreeing encryption…</source>
-        <target>Acordando la encriptación…</target>
+        <target>acordando la encriptación…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="always" xml:space="preserve">
@@ -5452,12 +5452,12 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="changing address for %@…" xml:space="preserve">
         <source>changing address for %@…</source>
-        <target>Cambiando dirección para %@…</target>
+        <target>cambiando dirección para %@…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changing address…" xml:space="preserve">
         <source>changing address…</source>
-        <target>Cambiando dirección…</target>
+        <target>cambiando dirección…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
@@ -5562,12 +5562,12 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="default (no)" xml:space="preserve">
         <source>default (no)</source>
-        <target>Por defecto (no)</target>
+        <target>por defecto (no)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (yes)" xml:space="preserve">
         <source>default (yes)</source>
-        <target>Por defecto (sí)</target>
+        <target>por defecto (sí)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
@@ -5617,42 +5617,42 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="encryption agreed" xml:space="preserve">
         <source>encryption agreed</source>
-        <target>Encriptación acordada</target>
+        <target>encriptación acordada</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption agreed for %@" xml:space="preserve">
         <source>encryption agreed for %@</source>
-        <target>Encriptación acordada para %@</target>
+        <target>encriptación acordada para %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption ok" xml:space="preserve">
         <source>encryption ok</source>
-        <target>Encriptación ok</target>
+        <target>encriptación ok</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption ok for %@" xml:space="preserve">
         <source>encryption ok for %@</source>
-        <target>Encriptación ok para %@</target>
+        <target>encriptación ok para %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed" xml:space="preserve">
         <source>encryption re-negotiation allowed</source>
-        <target>Renegociación de encriptación permitida</target>
+        <target>renegociación de encriptación permitida</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve">
         <source>encryption re-negotiation allowed for %@</source>
-        <target>Renegociación de encriptación permitida para %@</target>
+        <target>renegociación de encriptación permitida para %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required" xml:space="preserve">
         <source>encryption re-negotiation required</source>
-        <target>Se requiere renegociación de la encriptación</target>
+        <target>se requiere renegociación de la encriptación</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve">
         <source>encryption re-negotiation required for %@</source>
-        <target>Se requiere renegociación de la encriptación para %@</target>
+        <target>se requiere renegociación de la encriptación para %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="ended" xml:space="preserve">
@@ -5928,7 +5928,7 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="security code changed" xml:space="preserve">
         <source>security code changed</source>
-        <target>Código de seguridad cambiado</target>
+        <target>código de seguridad cambiado</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">

@@ -5381,7 +5381,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
         <source>agreeing encryption for %@…</source>
-        <target>Der Verschlüsselung von %@ zustimmen…</target>
+        <target>Verschlüsselung von %@ zustimmen…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="agreeing encryption…" xml:space="preserve">
@@ -5616,12 +5616,12 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="encryption agreed" xml:space="preserve">
         <source>encryption agreed</source>
-        <target>Der Verschlüsselung wurde zugestimmt</target>
+        <target>Verschlüsselung wurde zugestimmt</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption agreed for %@" xml:space="preserve">
         <source>encryption agreed for %@</source>
-        <target>Der Verschlüsselung von %@ wurde zugestimmt</target>
+        <target>Verschlüsselung von %@ wurde zugestimmt</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption ok" xml:space="preserve">

@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve">
         <source>!1 colored!</source>
-        <target>1 coloré!</target>
+        <target>!1 coloré!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="#secret#" xml:space="preserve">
@@ -2197,7 +2197,7 @@
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
         <source>Fix</source>
-        <target>Corriger</target>
+        <target>Réparer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix connection" xml:space="preserve">
@@ -5381,12 +5381,12 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
         <source>agreeing encryption for %@…</source>
-        <target>Acceptant le chiffrement pour %@…</target>
+        <target>acceptant le chiffrement pour %@…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="agreeing encryption…" xml:space="preserve">
         <source>agreeing encryption…</source>
-        <target>Acceptant le chiffrement…</target>
+        <target>acceptant le chiffrement…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="always" xml:space="preserve">
@@ -5451,12 +5451,12 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="changing address for %@…" xml:space="preserve">
         <source>changing address for %@…</source>
-        <target>Changement d'adresse pour %@…</target>
+        <target>changement d'adresse pour %@…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changing address…" xml:space="preserve">
         <source>changing address…</source>
-        <target>Changement d'adresse…</target>
+        <target>changement d'adresse…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
@@ -5561,12 +5561,12 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="default (no)" xml:space="preserve">
         <source>default (no)</source>
-        <target>Par défaut (non)</target>
+        <target>par défaut (non)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (yes)" xml:space="preserve">
         <source>default (yes)</source>
-        <target>Par défaut (oui)</target>
+        <target>par défaut (oui)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
@@ -5616,42 +5616,42 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="encryption agreed" xml:space="preserve">
         <source>encryption agreed</source>
-        <target>Chiffrement accepté</target>
+        <target>chiffrement accepté</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption agreed for %@" xml:space="preserve">
         <source>encryption agreed for %@</source>
-        <target>Chiffrement accepté pour %@</target>
+        <target>chiffrement accepté pour %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption ok" xml:space="preserve">
         <source>encryption ok</source>
-        <target>Chiffrement ok</target>
+        <target>chiffrement ok</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption ok for %@" xml:space="preserve">
         <source>encryption ok for %@</source>
-        <target>Chiffrement ok pour %@</target>
+        <target>chiffrement ok pour %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed" xml:space="preserve">
         <source>encryption re-negotiation allowed</source>
-        <target>Renégociation de chiffrement autorisée</target>
+        <target>renégociation de chiffrement autorisée</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve">
         <source>encryption re-negotiation allowed for %@</source>
-        <target>Renégociation de chiffrement autorisée pour %@</target>
+        <target>renégociation de chiffrement autorisée pour %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required" xml:space="preserve">
         <source>encryption re-negotiation required</source>
-        <target>Renégociation de chiffrement requise</target>
+        <target>renégociation de chiffrement requise</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve">
         <source>encryption re-negotiation required for %@</source>
-        <target>Renégociation de chiffrement requise pour %@</target>
+        <target>renégociation de chiffrement requise pour %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="ended" xml:space="preserve">
@@ -5927,7 +5927,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="security code changed" xml:space="preserve">
         <source>security code changed</source>
-        <target>Code de sécurité modifié</target>
+        <target>code de sécurité modifié</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
