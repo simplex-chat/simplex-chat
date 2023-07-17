@@ -2724,7 +2724,7 @@ public enum CIFileStatus: Decodable, Equatable {
     }
 }
 
-public enum MsgContent {
+public enum MsgContent: Equatable {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
@@ -2784,6 +2784,27 @@ public enum MsgContent {
         case preview
         case image
         case duration
+    }
+
+    public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
+        switch (lhs, rhs) {
+        case let (.text(leftText), .text(rightText)):
+            return leftText == rightText
+        case let (.link(leftText, leftPreview), .link(rightText, rightPreview)):
+            return leftText == rightText && leftPreview == rightPreview
+        case let (.image(leftText, leftImage), .image(rightText, rightImage)):
+            return leftText == rightText && leftImage == rightImage
+        case let (.video(leftText, leftImage, leftDuration), .video(rightText, rightImage, rightDuration)):
+            return leftText == rightText && leftImage == rightImage && leftDuration == rightDuration
+        case let (.voice(leftText, leftDuration), .voice(rightText, rightDuration)):
+            return leftText == rightText && leftDuration == rightDuration
+        case let (.file(leftFile), .file(rightFile)):
+            return leftFile == rightFile
+        case let (.unknown(leftType, leftText), .unknown(rightType, rightText)):
+            return leftType == rightType && leftText == rightText
+        default:
+            return false
+        }
     }
 }
 
