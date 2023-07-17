@@ -7,6 +7,59 @@
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
             <item>
+                <title>SimpleX Chat v5.2 released: message delivery receipts</title>
+                <link>https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html</link>
+                <description>&lt;h1 id=&quot;simplex-chat-v52-released-message-delivery-receipts&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.2 released: message delivery receipts&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; July 22, 2023&lt;/p&gt;
+&lt;p&gt;TODO this is a draft of the release announcement&lt;/p&gt;
+&lt;p&gt;What&#39;s new in v5.2:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;message delivery receipts&lt;/li&gt;
+&lt;li&gt;improvements for groups
+&lt;ul&gt;
+&lt;li&gt;view quoted messages&lt;/li&gt;
+&lt;li&gt;share SimpleX address with your contacts via your chat profile&lt;/li&gt;
+&lt;li&gt;search for group members&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;feature allowing to fix connection encryption (for example after importing old database)&lt;/li&gt;
+&lt;li&gt;mark chats as favorite and filter chats&lt;/li&gt;
+&lt;li&gt;restart/reconnect&lt;/li&gt;
+&lt;li&gt;chat preference to allow/prohibit message reactions&lt;/li&gt;
+&lt;li&gt;disappearing messages improvements:
+&lt;ul&gt;
+&lt;li&gt;send with custom timer when allowed but not enabled in the conversation&lt;/li&gt;
+&lt;li&gt;increased timer limit&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;future-of-simplex-chat-groups-and-communities&quot; tabindex=&quot;-1&quot;&gt;Future of SimpleX Chat groups and communities&lt;/h2&gt;
+&lt;p&gt;TODO&lt;/p&gt;
+&lt;h2 id=&quot;simplex-platform&quot; tabindex=&quot;-1&quot;&gt;SimpleX platform&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html&quot;&gt;SimpleX Chat security assessment&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/#how-simplex-works&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/#why-ids-bad-for-privacy&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions&quot;&gt;How SimpleX is different from Session, Matrix, Signal, etc.&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Visit our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt; to learn more.&lt;/p&gt;
+&lt;h2 id=&quot;help-us-with-donations&quot; tabindex=&quot;-1&quot;&gt;Help us with donations&lt;/h2&gt;
+&lt;p&gt;Huge thank you to everybody who donated to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;We are prioritizing users privacy and security - it would be impossible without your support.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</description>
+                
+                
+                <pubDate>22 Jul 2023</pubDate>
+                <dc:creator>SimpleX Chat</dc:creator>
+                <guid>https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html</guid>
+            </item>
+            <item>
                 <title>SimpleX Chat v5.1 released: message reactions and self-destruct passcode</title>
                 <link>https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html</link>
                 <description>&lt;h1 id=&quot;simplex-chat-v51-released-message-reactions-and-self-destruct-passcode&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.1 released: message reactions and self-destruct passcode&lt;/h1&gt;
