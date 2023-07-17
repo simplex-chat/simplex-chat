@@ -665,17 +665,21 @@ struct ComposeView: View {
             if let oldMsgContent = ei.content.msgContent {
                 do {
                     let mc = updateMsgContent(oldMsgContent)
-                    let chatItem = try await apiUpdateChatItem(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        itemId: ei.id,
-                        msg: mc,
-                        live: live
-                    )
-                    await MainActor.run {
-                        _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                    if mc != oldMsgContent || (ei.meta.itemLive ?? false) {
+                        let chatItem = try await apiUpdateChatItem(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            itemId: ei.id,
+                            msg: mc,
+                            live: live
+                        )
+                        await MainActor.run {
+                            _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                        }
+                        return chatItem
+                    } else {
+                        return nil
                     }
-                    return chatItem
                 } catch {
                     logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
                     AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")

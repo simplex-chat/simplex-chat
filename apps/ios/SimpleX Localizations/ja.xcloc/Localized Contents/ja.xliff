@@ -301,6 +301,12 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve">
+        <source>- more stable message delivery.
+- a bit better groups.
+- and more!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
@@ -376,6 +382,10 @@
         <target>&lt;p&gt;こんにちは!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;SimpleX Chatでつながろう&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
+      </trans-unit>
+      <trans-unit id="A few more things" xml:space="preserve">
+        <source>A few more things</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
         <source>A new contact</source>
@@ -1531,14 +1541,6 @@
         <source>Delivery receipts are disabled!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
-        <source>Delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delivery receipts will be enabled for all contacts." xml:space="preserve">
-        <source>Delivery receipts will be enabled for all contacts.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Delivery receipts!" xml:space="preserve">
         <source>Delivery receipts!</source>
         <note>No comment provided by engineer.</note>
@@ -1588,10 +1590,18 @@
         <target>このグループではメンバー間のダイレクトメッセージが使用禁止です。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Disable (keep overrides)" xml:space="preserve">
+        <source>Disable (keep overrides)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
         <source>Disable SimpleX Lock</source>
         <target>SimpleXロックを無効にする</target>
         <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Disable for all" xml:space="preserve">
+        <source>Disable for all</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing message" xml:space="preserve">
         <source>Disappearing message</source>
@@ -1653,6 +1663,10 @@
         <target>アドレスを作成しないでください</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Don't enable" xml:space="preserve">
+        <source>Don't enable</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
         <source>Don't show again</source>
         <target>次から表示しない</target>
@@ -1693,6 +1707,10 @@
         <target>有効</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable (keep overrides)" xml:space="preserve">
+        <source>Enable (keep overrides)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
         <source>Enable SimpleX Lock</source>
         <target>SimpleXロックを有効にする</target>
@@ -1706,6 +1724,10 @@
       <trans-unit id="Enable automatic message deletion?" xml:space="preserve">
         <source>Enable automatic message deletion?</source>
         <target>自動メッセージ削除を有効にしますか？</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable for all" xml:space="preserve">
+        <source>Enable for all</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
@@ -1921,6 +1943,10 @@
         <target>ユーザのプロフィール削除にエラー発生</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
+        <source>Error enabling delivery receipts!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
         <source>Error enabling notifications</source>
         <target>通知の有効化にエラー発生</target>
@@ -2001,6 +2027,10 @@
         <target>メッセージ送信にエラー発生</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
+        <source>Error setting delivery receipts!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
         <source>Error starting chat</source>
         <target>チャット開始にエラー発生</target>
@@ -2058,6 +2088,10 @@
       <trans-unit id="Error: no database file" xml:space="preserve">
         <source>Error: no database file</source>
         <target>エラー: データベースが存在しません</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Even when disabled in the conversation." xml:space="preserve">
+        <source>Even when disabled in the conversation.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Exit without saving" xml:space="preserve">
@@ -2140,8 +2174,16 @@
         <source>Files and media prohibited!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
+        <source>Filter unread and favorite chats.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
         <source>Finally, we have them! 🚀</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Find chats faster" xml:space="preserve">
+        <source>Find chats faster</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -2154,6 +2196,10 @@
       </trans-unit>
       <trans-unit id="Fix connection?" xml:space="preserve">
         <source>Fix connection?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fix encryption after restoring backups." xml:space="preserve">
+        <source>Fix encryption after restoring backups.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix not supported by contact" xml:space="preserve">
@@ -2655,6 +2701,10 @@
         <target>グループに参加</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Keep your connections" xml:space="preserve">
+        <source>Keep your connections</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="KeyChain error" xml:space="preserve">
         <source>KeyChain error</source>
         <target>キーチェーンのエラー</target>
@@ -2745,6 +2795,10 @@
         <target>プライベートな接続をする</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Make one message disappear" xml:space="preserve">
+        <source>Make one message disappear</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Make profile private!" xml:space="preserve">
         <source>Make profile private!</source>
         <target>プロフィールを非表示にできます！</target>
@@ -2813,6 +2867,10 @@
       <trans-unit id="Message delivery error" xml:space="preserve">
         <source>Message delivery error</source>
         <target>メッセージ送信エラー</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message delivery receipts!" xml:space="preserve">
+        <source>Message delivery receipts!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
@@ -3934,9 +3992,25 @@
         <target>送信元が繋がりリクエストを削除したかもしれません。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
+        <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
+        <source>Sending delivery receipts will be enabled for all contacts.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
         <source>Sending file will be stopped.</source>
         <target>ファイルの送信を停止します。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve">
+        <source>Sending receipts is disabled for %lld contacts</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve">
+        <source>Sending receipts is enabled for %lld contacts</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -4418,6 +4492,10 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>プロフィールは連絡先にしか共有されません。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The second tick we missed! ✅" xml:space="preserve">
+        <source>The second tick we missed! ✅</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>送信者には通知されません</target>
@@ -4447,8 +4525,8 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>These settings are for your current profile **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="They can be overridden in contact and group settings" xml:space="preserve">
-        <source>They can be overridden in contact and group settings</source>
+      <trans-unit id="They can be overridden in contact settings" xml:space="preserve">
+        <source>They can be overridden in contact settings</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -4927,6 +5005,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You can create it later" xml:space="preserve">
         <source>You can create it later</source>
         <target>後からでも作成できます</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can enable later via Settings" xml:space="preserve">
+        <source>You can enable later via Settings</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">

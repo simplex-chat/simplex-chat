@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.chatlist.updateChatSettings
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
 import chat.simplex.app.views.usersettings.*
@@ -52,15 +53,26 @@ fun ChatInfoView(
 ) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val currentUser = chatModel.currentUser.value
   val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
-  if (chat != null) {
+  if (chat != null && currentUser != null) {
     val contactNetworkStatus = remember(chatModel.networkStatuses.toMap()) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
     }
+    val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     ChatInfoLayout(
       chat,
       contact,
+      currentUser,
+      sendReceipts = sendReceipts,
+      setSendReceipts = { sendRcpts ->
+        withApi {
+          val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
+          updateChatSettings(chat, chatSettings, chatModel)
+          sendReceipts.value = sendRcpts
+        }
+      },
       connStats = connStats,
       contactNetworkStatus.value,
       customUserProfile,
@@ -154,6 +166,34 @@ fun ChatInfoView(
   }
 }
 
+sealed class SendReceipts {
+  object Yes: SendReceipts()
+  object No: SendReceipts()
+  data class UserDefault(val enable: Boolean): SendReceipts()
+
+  val text: String get() = when (this) {
+    is Yes -> generalGetString(MR.strings.chat_preferences_yes)
+    is No -> generalGetString(MR.strings.chat_preferences_no)
+    is UserDefault -> String.format(
+      generalGetString(MR.strings.chat_preferences_default),
+      generalGetString(if (enable) MR.strings.chat_preferences_yes else MR.strings.chat_preferences_no)
+    )
+  }
+
+  val bool: Boolean? get() = when (this) {
+    is Yes -> true
+    is No -> false
+    is UserDefault -> null
+  }
+
+  companion object {
+    fun fromBool(enable: Boolean?, userDefault: Boolean): SendReceipts {
+      return if (enable == null) UserDefault(userDefault)
+      else if (enable) Yes else No
+    }
+  }
+}
+
 fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_contact_question),
@@ -197,6 +237,9 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
 fun ChatInfoLayout(
   chat: Chat,
   contact: Contact,
+  currentUser: User,
+  sendReceipts: State<SendReceipts>,
+  setSendReceipts: (SendReceipts) -> Unit,
   connStats: MutableState<ConnectionStats?>,
   contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
@@ -240,6 +283,7 @@ fun ChatInfoLayout(
         VerifyCodeButton(contact.verified, verifyClicked)
       }
       ContactPreferencesButton(openPreferences)
+      SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
       if (cStats != null && cStats.ratchetSyncAllowed) {
         SynchronizeConnectionButton(syncContactConnection)
       } else if (developerTools) {
@@ -500,6 +544,21 @@ private fun ContactPreferencesButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
+  val values = remember {
+    mutableListOf(SendReceipts.Yes, SendReceipts.No, SendReceipts.UserDefault(currentUser.sendRcptsContacts)).map { it to it.text }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(MR.strings.send_receipts),
+    values,
+    state,
+    icon = painterResource(MR.images.ic_double_check),
+    enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
+  )
+}
+
+@Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_settings_backup_restore),
@@ -577,6 +636,9 @@ fun PreviewChatInfoLayout() {
         chatItems = arrayListOf()
       ),
       Contact.sampleData,
+      User.sampleData,
+      sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
+      setSendReceipts = {},
       localAlias = "",
       connectionCode = "123",
       developerTools = false,

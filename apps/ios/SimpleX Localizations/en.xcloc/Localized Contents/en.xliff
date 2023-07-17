@@ -302,6 +302,15 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve">
+        <source>- more stable message delivery.
+- a bit better groups.
+- and more!</source>
+        <target>- more stable message delivery.
+- a bit better groups.
+- and more!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
@@ -377,6 +386,11 @@
         <target>&lt;p&gt;Hi!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
+      </trans-unit>
+      <trans-unit id="A few more things" xml:space="preserve">
+        <source>A few more things</source>
+        <target>A few more things</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
         <source>A new contact</source>
@@ -1540,16 +1554,6 @@
         <target>Delivery receipts are disabled!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
-        <source>Delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
-        <target>Delivery receipts will be enabled for all contacts in all visible chat profiles.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delivery receipts will be enabled for all contacts." xml:space="preserve">
-        <source>Delivery receipts will be enabled for all contacts.</source>
-        <target>Delivery receipts will be enabled for all contacts.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Delivery receipts!" xml:space="preserve">
         <source>Delivery receipts!</source>
         <target>Delivery receipts!</target>
@@ -1600,10 +1604,20 @@
         <target>Direct messages between members are prohibited in this group.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Disable (keep overrides)" xml:space="preserve">
+        <source>Disable (keep overrides)</source>
+        <target>Disable (keep overrides)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
         <source>Disable SimpleX Lock</source>
         <target>Disable SimpleX Lock</target>
         <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Disable for all" xml:space="preserve">
+        <source>Disable for all</source>
+        <target>Disable for all</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing message" xml:space="preserve">
         <source>Disappearing message</source>
@@ -1665,6 +1679,11 @@
         <target>Don't create address</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Don't enable" xml:space="preserve">
+        <source>Don't enable</source>
+        <target>Don't enable</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
         <source>Don't show again</source>
         <target>Don't show again</target>
@@ -1705,6 +1724,11 @@
         <target>Enable</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable (keep overrides)" xml:space="preserve">
+        <source>Enable (keep overrides)</source>
+        <target>Enable (keep overrides)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
         <source>Enable SimpleX Lock</source>
         <target>Enable SimpleX Lock</target>
@@ -1718,6 +1742,11 @@
       <trans-unit id="Enable automatic message deletion?" xml:space="preserve">
         <source>Enable automatic message deletion?</source>
         <target>Enable automatic message deletion?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable for all" xml:space="preserve">
+        <source>Enable for all</source>
+        <target>Enable for all</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
@@ -1935,6 +1964,11 @@
         <target>Error deleting user profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
+        <source>Error enabling delivery receipts!</source>
+        <target>Error enabling delivery receipts!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
         <source>Error enabling notifications</source>
         <target>Error enabling notifications</target>
@@ -2015,6 +2049,11 @@
         <target>Error sending message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
+        <source>Error setting delivery receipts!</source>
+        <target>Error setting delivery receipts!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
         <source>Error starting chat</source>
         <target>Error starting chat</target>
@@ -2073,6 +2112,11 @@
       <trans-unit id="Error: no database file" xml:space="preserve">
         <source>Error: no database file</source>
         <target>Error: no database file</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Even when disabled in the conversation." xml:space="preserve">
+        <source>Even when disabled in the conversation.</source>
+        <target>Even when disabled in the conversation.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Exit without saving" xml:space="preserve">
@@ -2160,9 +2204,19 @@
         <target>Files and media prohibited!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
+        <source>Filter unread and favorite chats.</source>
+        <target>Filter unread and favorite chats.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
         <source>Finally, we have them! 🚀</source>
         <target>Finally, we have them! 🚀</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Find chats faster" xml:space="preserve">
+        <source>Find chats faster</source>
+        <target>Find chats faster</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -2178,6 +2232,11 @@
       <trans-unit id="Fix connection?" xml:space="preserve">
         <source>Fix connection?</source>
         <target>Fix connection?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fix encryption after restoring backups." xml:space="preserve">
+        <source>Fix encryption after restoring backups.</source>
+        <target>Fix encryption after restoring backups.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix not supported by contact" xml:space="preserve">
@@ -2683,6 +2742,11 @@
         <target>Joining group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Keep your connections" xml:space="preserve">
+        <source>Keep your connections</source>
+        <target>Keep your connections</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="KeyChain error" xml:space="preserve">
         <source>KeyChain error</source>
         <target>KeyChain error</target>
@@ -2773,6 +2837,11 @@
         <target>Make a private connection</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Make one message disappear" xml:space="preserve">
+        <source>Make one message disappear</source>
+        <target>Make one message disappear</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Make profile private!" xml:space="preserve">
         <source>Make profile private!</source>
         <target>Make profile private!</target>
@@ -2841,6 +2910,11 @@
       <trans-unit id="Message delivery error" xml:space="preserve">
         <source>Message delivery error</source>
         <target>Message delivery error</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message delivery receipts!" xml:space="preserve">
+        <source>Message delivery receipts!</source>
+        <target>Message delivery receipts!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
@@ -3977,9 +4051,29 @@
         <target>Sender may have deleted the connection request.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
+        <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
+        <target>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
+        <source>Sending delivery receipts will be enabled for all contacts.</source>
+        <target>Sending delivery receipts will be enabled for all contacts.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
         <source>Sending file will be stopped.</source>
         <target>Sending file will be stopped.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve">
+        <source>Sending receipts is disabled for %lld contacts</source>
+        <target>Sending receipts is disabled for %lld contacts</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve">
+        <source>Sending receipts is enabled for %lld contacts</source>
+        <target>Sending receipts is enabled for %lld contacts</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -4464,6 +4558,11 @@ It can happen because of some bug or when the connection is compromised.</target
         <target>The profile is only shared with your contacts.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The second tick we missed! ✅" xml:space="preserve">
+        <source>The second tick we missed! ✅</source>
+        <target>The second tick we missed! ✅</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>The sender will NOT be notified</target>
@@ -4494,9 +4593,9 @@ It can happen because of some bug or when the connection is compromised.</target
         <target>These settings are for your current profile **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="They can be overridden in contact and group settings" xml:space="preserve">
-        <source>They can be overridden in contact and group settings</source>
-        <target>They can be overridden in contact and group settings</target>
+      <trans-unit id="They can be overridden in contact settings" xml:space="preserve">
+        <source>They can be overridden in contact settings</source>
+        <target>They can be overridden in contact settings</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -4976,6 +5075,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You can create it later" xml:space="preserve">
         <source>You can create it later</source>
         <target>You can create it later</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can enable later via Settings" xml:space="preserve">
+        <source>You can enable later via Settings</source>
+        <target>You can enable later via Settings</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
