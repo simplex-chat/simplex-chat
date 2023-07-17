@@ -1378,7 +1378,7 @@
 "Exported database archive." = "Archive de la base de données exportée.";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "Exportation de l'archive de la base de données...";
+"Exporting database archive…" = "Exportation de l'archive de la base de données…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Échec de la suppression de la phrase secrète";
@@ -1894,7 +1894,7 @@
 "Messages & files" = "Messages";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "Migration de l'archive de la base de données...";
+"Migrating database archive…" = "Migration de l'archive de la base de données…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Erreur de migration :";

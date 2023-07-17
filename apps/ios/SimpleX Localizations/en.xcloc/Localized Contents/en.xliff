@@ -1754,11 +1754,6 @@
         <target>Enable instant notifications?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable later via Settings" xml:space="preserve">
-        <source>Enable later via Settings</source>
-        <target>Enable later via Settings</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Enable lock" xml:space="preserve">
         <source>Enable lock</source>
         <target>Enable lock</target>
@@ -2137,11 +2132,6 @@
       <trans-unit id="Exported database archive." xml:space="preserve">
         <source>Exported database archive.</source>
         <target>Exported database archive.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Exporting database archive..." xml:space="preserve">
-        <source>Exporting database archive...</source>
-        <target>Exporting database archive...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Exporting database archive…" xml:space="preserve">
@@ -2950,11 +2940,6 @@
       <trans-unit id="Messages &amp; files" xml:space="preserve">
         <source>Messages &amp; files</source>
         <target>Messages &amp; files</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Migrating database archive..." xml:space="preserve">
-        <source>Migrating database archive...</source>
-        <target>Migrating database archive...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive…" xml:space="preserve">
@@ -4294,11 +4279,6 @@
       <trans-unit id="Skipped messages" xml:space="preserve">
         <source>Skipped messages</source>
         <target>Skipped messages</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Small groups (max 10)" xml:space="preserve">
-        <source>Small groups (max 10)</source>
-        <target>Small groups (max 10)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">

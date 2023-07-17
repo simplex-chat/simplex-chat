@@ -1357,7 +1357,7 @@
 "Exported database archive." = "データベースのアーカイブをエクスポートします。";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "データベース アーカイブをエクスポートしています...";
+"Exporting database archive…" = "データベース アーカイブをエクスポートしています…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "パスフレーズの削除に失敗";
@@ -1855,7 +1855,7 @@
 "Messages & files" = "メッセージ & ファイル";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "データベースのアーカイブを移行しています...";
+"Migrating database archive…" = "データベースのアーカイブを移行しています…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "移行エラー：";

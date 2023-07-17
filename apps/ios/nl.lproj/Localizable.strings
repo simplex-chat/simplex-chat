@@ -1378,7 +1378,7 @@
 "Exported database archive." = "Geëxporteerd database archief.";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "Database archief exporteren...";
+"Exporting database archive…" = "Database archief exporteren…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Kan wachtwoord niet verwijderen";
@@ -1894,7 +1894,7 @@
 "Messages & files" = "Berichten";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "Database archief migreren...";
+"Migrating database archive…" = "Database archief migreren…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Migratiefout:";
