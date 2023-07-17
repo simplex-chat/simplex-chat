@@ -2788,22 +2788,14 @@ public enum MsgContent: Equatable {
 
     public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
         switch (lhs, rhs) {
-        case let (.text(lt), .text(rt)):
-            return lt == rt
-        case let (.link(lt, lp), .link(rt, rp)):
-            return lt == rt && lp == rp
-        case let (.image(lt, li), .image(rt, ri)):
-            return lt == rt && li == ri
-        case let (.video(lt, li, ld), .video(rt, ri, rd)):
-            return lt == rt && li == ri && ld == rd
-        case let (.voice(lt, ld), .voice(rt, rd)):
-            return lt == rt && ld == rd
-        case let (.file(lf), .file(rf)):
-            return lf == rf
-        case let (.unknown(lType, lt), .unknown(rType, rt)):
-            return lType == rType && lt == rt
-        default:
-            return false
+        case let (.text(lt), .text(rt)): return lt == rt
+        case let (.link(lt, lp), .link(rt, rp)): return lt == rt && lp == rp
+        case let (.image(lt, li), .image(rt, ri)): return lt == rt && li == ri
+        case let (.video(lt, li, ld), .video(rt, ri, rd)): return lt == rt && li == ri && ld == rd
+        case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
+        case let (.file(lf), .file(rf)): return lf == rf
+        case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
+        default: return false
         }
     }
 }
