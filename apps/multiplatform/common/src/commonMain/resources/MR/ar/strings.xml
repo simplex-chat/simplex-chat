@@ -410,4 +410,13 @@
     <string name="ttl_days">%d أيام</string>
     <string name="custom_time_picker_custom">مخصص</string>
     <string name="v5_1_custom_themes_descr">تخصيص ومشاركة سمات الألوان.</string>
+    <string name="exit_without_saving">الخروج بدون حفظ</string>
+    <string name="settings_developer_tools">أدوات المطور</string>
+    <string name="smp_server_test_delete_queue">حذف قائمة الانتظار</string>
+    <string name="error_updating_user_privacy">خطأ في تحديث خصوصية المستخدم</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 سطح المكتب: امسح رمز الاستجابة السريعة (QR) المعروض من التطبيق، عبر <b>مسح رمز QR</b>.</string>
+    <string name="delete_profile">حذف ملف التعريف</string>
+    <string name="smp_servers_delete_server">حذف الخادم</string>
+    <string name="error_updating_link_for_group">خطأ في تحديث ارتباط المجموعة</string>
+    <string name="simplex_link_mode_description">الوصف</string>
 </resources>
