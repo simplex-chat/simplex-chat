@@ -16,8 +16,6 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
     public var activeUser: Bool
-    public var sendRcptsContacts: Bool
-    public var sendRcptsSmallGroups: Bool
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
@@ -25,6 +23,8 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var localAlias: String { get { "" } }
 
     public var showNtfs: Bool
+    public var sendRcptsContacts: Bool
+    public var sendRcptsSmallGroups: Bool
     public var viewPwdHash: UserPwdHash?
 
     public var id: Int64 { userId }
@@ -46,9 +46,9 @@ public struct User: Decodable, NamedChat, Identifiable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
+        showNtfs: true,
         sendRcptsContacts: true,
-        sendRcptsSmallGroups: false,
-        showNtfs: true
+        sendRcptsSmallGroups: false
     )
 }
 
