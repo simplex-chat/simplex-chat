@@ -60,15 +60,17 @@ fun ChatInfoView(
     val contactNetworkStatus = remember(chatModel.networkStatuses.toMap()) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
     }
+    val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     ChatInfoLayout(
       chat,
       contact,
       currentUser,
-      sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) },
+      sendReceipts = sendReceipts,
       setSendReceipts = { sendRcpts ->
         withApi {
           val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
           updateChatSettings(chat, chatSettings, chatModel)
+          sendReceipts.value = sendRcpts
         }
       },
       connStats = connStats,
@@ -167,7 +169,7 @@ fun ChatInfoView(
 sealed class SendReceipts {
   object Yes: SendReceipts()
   object No: SendReceipts()
-  class UserDefault(val enable: Boolean): SendReceipts()
+  data class UserDefault(val enable: Boolean): SendReceipts()
 
   val text: String get() = when (this) {
     is Yes -> generalGetString(MR.strings.chat_preferences_yes)
@@ -236,7 +238,7 @@ fun ChatInfoLayout(
   chat: Chat,
   contact: Contact,
   currentUser: User,
-  sendReceipts: MutableState<SendReceipts>,
+  sendReceipts: State<SendReceipts>,
   setSendReceipts: (SendReceipts) -> Unit,
   connStats: MutableState<ConnectionStats?>,
   contactNetworkStatus: NetworkStatus,

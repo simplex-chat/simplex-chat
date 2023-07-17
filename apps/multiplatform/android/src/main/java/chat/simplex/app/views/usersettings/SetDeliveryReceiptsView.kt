@@ -30,7 +30,11 @@ fun SetDeliveryReceiptsView(m: ChatModel) {
             m.setDeliveryReceipts.value = false
             m.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           } catch (e: Exception) {
-            Log.e(TAG, "Error enabling delivery receipts ${e.stackTraceToString()}")
+            AlertManager.shared.showAlertDialog(
+              title = generalGetString(MR.strings.error_enabling_delivery_receipts),
+              text = e.stackTraceToString()
+            )
+            Log.e(TAG, "${generalGetString(MR.strings.error_enabling_delivery_receipts)}: ${e.stackTraceToString()}")
             m.setDeliveryReceipts.value = false
           }
         }
@@ -43,15 +47,11 @@ fun SetDeliveryReceiptsView(m: ChatModel) {
         confirmText = generalGetString(MR.strings.ok),
         dismissText = generalGetString(MR.strings.dont_show_again),
         onConfirm = {
-          withApi {
-            m.setDeliveryReceipts.value = false
-          }
+          m.setDeliveryReceipts.value = false
         },
         onDismiss = {
-          withApi {
-            m.setDeliveryReceipts.value = false
-            m.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
-          }
+          m.setDeliveryReceipts.value = false
+          m.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
         }
       )
     },
