@@ -33,6 +33,7 @@ import chat.simplex.app.views.isValidDisplayName
 import chat.simplex.app.views.localauth.SetAppPasscodeView
 import chat.simplex.app.views.onboarding.ReadableText
 import chat.simplex.res.MR
+import kotlinx.coroutines.runBlocking
 
 enum class LAMode {
   SYSTEM,
@@ -94,13 +95,15 @@ fun PrivacySettingsView(
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
-            chatModel.chats.forEach { chat ->
-              if (chat.chatInfo is ChatInfo.Direct) {
-                var contact = chat.chatInfo.contact
-                val sendRcpts = contact.chatSettings.sendRcpts
-                if (sendRcpts != null && sendRcpts != enable) {
-                  contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateContact(contact)
+            runBlocking {
+              chatModel.chats.forEach { chat ->
+                if (chat.chatInfo is ChatInfo.Direct) {
+                  var contact = chat.chatInfo.contact
+                  val sendRcpts = contact.chatSettings.sendRcpts
+                  if (sendRcpts != null && sendRcpts != enable) {
+                    contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
+                    chatModel.updateContact(contact)
+                  }
                 }
               }
             }
@@ -111,7 +114,6 @@ fun PrivacySettingsView(
       DeliveryReceiptsSection(
         currentUser = currentUser,
         setOrAskSendReceiptsContacts = { enable ->
-          chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
             if (chat.chatInfo is ChatInfo.Direct) {
               val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
