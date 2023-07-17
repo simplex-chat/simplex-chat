@@ -843,7 +843,7 @@ msgDeliveryStatusT = eitherToMaybe . parseAll statusP . encodeUtf8
         "snd_rcvd" -> AMDS SMDSnd . MDSSndRcvd <$> (A.space *> strP)
         "snd_read" -> pure $ AMDS SMDSnd MDSSndRead
         _ -> fail "bad AMsgDeliveryStatus"
-  
+
 msgDeliveryStatusT' :: forall d. MsgDirectionI d => Text -> Maybe (MsgDeliveryStatus d)
 msgDeliveryStatusT' s =
   msgDeliveryStatusT s >>= \(AMDS d st) ->

@@ -17,6 +17,8 @@ public enum ChatCommand {
     case createActiveUser(profile: Profile?, sameServers: Bool, pastTimestamp: Bool)
     case listUsers
     case apiSetActiveUser(userId: Int64, viewPwd: String?)
+    case setAllContactReceipts(enable: Bool)
+    case apiSetUserContactReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
     case apiHideUser(userId: Int64, viewPwd: String)
     case apiUnhideUser(userId: Int64, viewPwd: String)
     case apiMuteUser(userId: Int64)
@@ -122,6 +124,10 @@ public enum ChatCommand {
                 return "/_create user \(encodeJSON(user))"
             case .listUsers: return "/users"
             case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
+            case let .setAllContactReceipts(enable): return "/set receipts all \(onOff(enable))"
+            case let .apiSetUserContactReceipts(userId, userMsgReceiptSettings):
+                let umrs = userMsgReceiptSettings
+                return "/_set receipts \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
@@ -249,6 +255,8 @@ public enum ChatCommand {
             case .createActiveUser: return "createActiveUser"
             case .listUsers: return "listUsers"
             case .apiSetActiveUser: return "apiSetActiveUser"
+            case .setAllContactReceipts: return "setAllContactReceipts"
+            case .apiSetUserContactReceipts: return "apiSetUserContactReceipts"
             case .apiHideUser: return "apiHideUser"
             case .apiUnhideUser: return "apiUnhideUser"
             case .apiMuteUser: return "apiMuteUser"
@@ -1134,14 +1142,26 @@ public struct KeepAliveOpts: Codable, Equatable {
 
 public struct ChatSettings: Codable {
     public var enableNtfs: Bool
+    public var sendRcpts: Bool?
     public var favorite: Bool
 
-    public init(enableNtfs: Bool, favorite: Bool) {
+    public init(enableNtfs: Bool, sendRcpts: Bool?, favorite: Bool) {
         self.enableNtfs = enableNtfs
+        self.sendRcpts = sendRcpts
         self.favorite = favorite
     }
 
-    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true, favorite: false)
+    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true, sendRcpts: nil, favorite: false)
+}
+
+public struct UserMsgReceiptSettings: Codable {
+    public var enable: Bool
+    public var clearOverrides: Bool
+
+    public init(enable: Bool, clearOverrides: Bool) {
+        self.enable = enable
+        self.clearOverrides = clearOverrides
+    }
 }
 
 public struct ConnectionStats: Decodable {

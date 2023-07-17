@@ -372,6 +372,9 @@
 "Allow to irreversibly delete sent messages." = "允许不可撤回地删除已发送消息。";
 
 /* No comment provided by engineer. */
+"Allow to send files and media." = "允许发送文件和媒体。";
+
+/* No comment provided by engineer. */
 "Allow to send voice messages." = "允许发送语音消息。";
 
 /* No comment provided by engineer. */
@@ -584,12 +587,6 @@
 
 /* rcv group event chat item */
 "changed your role to %@" = "更改您的角色为 %@";
-
-/* chat item text */
-"changing address for %@..." = "更改 %@... 的地址中";
-
-/* chat item text */
-"changing address..." = "更改地址中……";
 
 /* No comment provided by engineer. */
 "Chat archive" = "聊天档案";
@@ -909,7 +906,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "分散式";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "解密错误";
 
 /* pref value */
@@ -1407,6 +1404,15 @@
 /* No comment provided by engineer. */
 "Files & media" = "文件和媒体";
 
+/* chat feature */
+"Files and media" = "文件和媒体";
+
+/* No comment provided by engineer. */
+"Files and media are prohibited in this group." = "此群组中禁止文件和媒体。";
+
+/* No comment provided by engineer. */
+"Files and media prohibited!" = "禁止文件和媒体！";
+
 /* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "终于我们有它们了！ 🚀";
 
@@ -1475,6 +1481,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send disappearing messages." = "群组成员可以发送限时消息。";
+
+/* No comment provided by engineer. */
+"Group members can send files and media." = "群组成员可以发送文件和媒体。";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "群组成员可以发送语音消息。";
@@ -2005,6 +2014,9 @@
 "no e2e encryption" = "无端到端加密";
 
 /* No comment provided by engineer. */
+"No filtered chats" = "无过滤聊天";
+
+/* No comment provided by engineer. */
 "No group!" = "未找到群组！";
 
 /* No comment provided by engineer. */
@@ -2073,6 +2085,9 @@
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "只有群主可以改变群组偏好设置。";
+
+/* No comment provided by engineer. */
+"Only group owners can enable files and media." = "只有组主可以启用文件和媒体。";
 
 /* No comment provided by engineer. */
 "Only group owners can enable voice messages." = "只有群主可以启用语音信息。";
@@ -2276,6 +2291,9 @@
 "Prohibit sending disappearing messages." = "禁止发送限时消息。";
 
 /* No comment provided by engineer. */
+"Prohibit sending files and media." = "禁止发送文件和媒体。";
+
+/* No comment provided by engineer. */
 "Prohibit sending voice messages." = "禁止发送语音消息。";
 
 /* No comment provided by engineer. */
@@ -2292,9 +2310,6 @@
 
 /* No comment provided by engineer. */
 "Rate the app" = "评价此应用程序";
-
-/* chat item menu */
-"React..." = "回应……";
 
 /* No comment provided by engineer. */
 "Read" = "已读";
@@ -2901,9 +2916,6 @@
 
 /* notification title */
 "this contact" = "这个联系人";
-
-/* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "此错误对于此连接是永久性的，请重新连接。";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "该群组已不存在。";

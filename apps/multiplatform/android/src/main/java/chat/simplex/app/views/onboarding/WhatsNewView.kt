@@ -377,7 +377,38 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
-    )
+    ),
+  ),
+  VersionDescription(
+    version = "v5.2",
+    post = "https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_check,
+        titleId = MR.strings.v5_2_message_delivery_receipts,
+        descrId = MR.strings.v5_2_message_delivery_receipts_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_star,
+        titleId = MR.strings.v5_2_favourites_filter,
+        descrId = MR.strings.v5_2_favourites_filter_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_sync_problem,
+        titleId = MR.strings.v5_2_fix_encryption,
+        descrId = MR.strings.v5_2_fix_encryption_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_timer,
+        titleId = MR.strings.v5_2_disappear_one_message,
+        descrId = MR.strings.v5_2_disappear_one_message_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_redeem,
+        titleId = MR.strings.v5_2_more_things,
+        descrId = MR.strings.v5_2_more_things_descr
+      )
+    ),
   )
 )
 

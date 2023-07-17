@@ -93,6 +93,7 @@ class AppPreferences {
     },
     set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
   )
+  val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyFullBackup = mkBoolPreference(SHARED_PREFS_PRIVACY_FULL_BACKUP, false)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
@@ -238,6 +239,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
+    private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     internal const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
@@ -459,6 +461,18 @@ object ChatController {
     if (r is CR.ActiveUser) return r.user
     Log.d(TAG, "apiSetActiveUser: ${r.responseType} ${r.details}")
     throw Exception("failed to set the user as active ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetAllContactReceipts(enable: Boolean) {
+    val r = sendCmd(CC.SetAllContactReceipts(enable))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to enable receipts for all users ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetUserContactReceipts(userId: Long, userMsgReceiptSettings: UserMsgReceiptSettings) {
+    val r = sendCmd(CC.ApiSetUserContactReceipts(userId, userMsgReceiptSettings))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to enable receipts for user contacts ${r.responseType} ${r.details}")
   }
 
   suspend fun apiHideUser(userId: Long, viewPwd: String): User =
@@ -699,7 +713,7 @@ object ChatController {
     }
   }
 
-  suspend fun apiSetSettings(type: ChatType,id: Long, settings: ChatSettings): Boolean {
+  suspend fun apiSetSettings(type: ChatType, id: Long, settings: ChatSettings): Boolean {
     val r = sendCmd(CC.APISetChatSettings(type, id, settings))
     return when (r) {
       is CR.CmdOk -> true
@@ -1762,6 +1776,8 @@ sealed class CC {
   class CreateActiveUser(val profile: Profile?, val sameServers: Boolean, val pastTimestamp: Boolean): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
+  class SetAllContactReceipts(val enable: Boolean): CC()
+  class ApiSetUserContactReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
   class ApiUnhideUser(val userId: Long, val viewPwd: String): CC()
   class ApiMuteUser(val userId: Long): CC()
@@ -1856,6 +1872,11 @@ sealed class CC {
     }
     is ListUsers -> "/users"
     is ApiSetActiveUser -> "/_user $userId${maybePwd(viewPwd)}"
+    is SetAllContactReceipts -> "/set receipts all ${onOff(enable)}"
+    is ApiSetUserContactReceipts -> {
+      val mrs = userMsgReceiptSettings
+      "/_set receipts $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
+    }
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
     is ApiUnhideUser -> "/_unhide user $userId ${json.encodeToString(viewPwd)}"
     is ApiMuteUser -> "/_mute user $userId"
@@ -1951,6 +1972,8 @@ sealed class CC {
     is CreateActiveUser -> "createActiveUser"
     is ListUsers -> "listUsers"
     is ApiSetActiveUser -> "apiSetActiveUser"
+    is SetAllContactReceipts -> "setAllContactReceipts"
+    is ApiSetUserContactReceipts -> "apiSetUserContactReceipts"
     is ApiHideUser -> "apiHideUser"
     is ApiUnhideUser -> "apiUnhideUser"
     is ApiMuteUser -> "apiMuteUser"
@@ -2389,12 +2412,16 @@ data class KeepAliveOpts(
 @Serializable
 data class ChatSettings(
   val enableNtfs: Boolean,
+  val sendRcpts: Boolean?,
   val favorite: Boolean
 ) {
   companion object {
-    val defaults: ChatSettings = ChatSettings(enableNtfs = true, favorite = false)
+    val defaults: ChatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false)
   }
 }
+
+@Serializable
+data class UserMsgReceiptSettings(val enable: Boolean, val clearOverrides: Boolean)
 
 @Serializable
 data class FullChatPreferences(

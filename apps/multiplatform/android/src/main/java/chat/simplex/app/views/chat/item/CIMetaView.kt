@@ -10,8 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.CurrentColors
 import chat.simplex.res.MR
@@ -51,7 +50,11 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
   val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color)
   if (statusIcon != null) {
     val (icon, statusColor) = statusIcon
-    StatusIconText(painterResource(icon), statusColor)
+    if (meta.itemStatus is CIStatus.SndSent || meta.itemStatus is CIStatus.SndRcvd) {
+      Icon(painterResource(icon), null, Modifier.height(17.dp), tint = statusColor)
+    } else {
+      StatusIconText(painterResource(icon), statusColor)
+    }
     Spacer(Modifier.width(4.dp))
   } else if (!meta.disappearing) {
     StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)

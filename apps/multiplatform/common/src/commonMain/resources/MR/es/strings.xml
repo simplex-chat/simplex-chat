@@ -721,7 +721,7 @@
     <string name="la_notice_title_simplex_lock">Bloqueo SimpleX</string>
     <string name="auth_unlock">Desbloquear</string>
     <string name="this_text_is_available_in_settings">Este texto está disponible en Configuración</string>
-    <string name="switch_receiving_address_desc">¡Experimental! Sólo funcionará si el otro cliente tiene instalada la versión 4.2. Deberías ver el mensaje en la conversación una vez completado el cambio de dirección. Comprueba que puedes seguir recibiendo mensajes de este contacto (o miembro del grupo).</string>
+    <string name="switch_receiving_address_desc">La dirección de recepción se cambiará. El cambio se completará cuando el remitente esté en línea.</string>
     <string name="chat_lock">Bloqueo SimpleX</string>
     <string name="using_simplex_chat_servers">Usando servidores SimpleX Chat.</string>
     <string name="network_session_mode_transport_isolation">Aislamiento de transporte</string>
@@ -1270,4 +1270,20 @@
     <string name="settings_shutdown">Cerrar</string>
     <string name="shutdown_alert_desc">Las notificaciones dejarán de funcionar hasta que reinicies la aplicación</string>
     <string name="la_mode_off">Desactivado</string>
+    <string name="error_aborting_address_change">Error al cancelar el cambio de dirección</string>
+    <string name="no_filtered_chats">Sin chats filtrados</string>
+    <string name="files_and_media_prohibited">¡Archivos y multimedia no permitidos!</string>
+    <string name="abort_switch_receiving_address_confirm">Cancelar</string>
+    <string name="abort_switch_receiving_address_question">¿Cancelar el cambio de dirección\?</string>
+    <string name="abort_switch_receiving_address_desc">El cambio de dirección se cancelará. Se usará la antigua dirección de recepción.</string>
+    <string name="unfavorite_chat">No favorito</string>
+    <string name="abort_switch_receiving_address">Cancelar cambio de dirección</string>
+    <string name="files_and_media">Archivos y multimedia</string>
+    <string name="prohibit_sending_files">No permitir el envío de archivos y multimedia.</string>
+    <string name="files_are_prohibited_in_group">No se permiten archivos y multimedia en este grupo.</string>
+    <string name="group_members_can_send_files">Los miembros del grupo pueden enviar archivos y multimedia.</string>
+    <string name="allow_to_send_files">Se permite enviar archivos y multimedia</string>
+    <string name="favorite_chat">Favoritos</string>
+    <string name="only_owners_can_enable_files_and_media">Sólo los propietarios pueden activar archivos y multimedia.</string>
+    <string name="network_option_protocol_timeout_per_kb">Timeout de protocolo por KB</string>
 </resources>

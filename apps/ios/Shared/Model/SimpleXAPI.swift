@@ -159,6 +159,18 @@ func apiSetActiveUserAsync(_ userId: Int64, viewPwd: String?) async throws -> Us
     throw r
 }
 
+func apiSetAllContactReceipts(enable: Bool) async throws {
+    let r = await chatSendCmd(.setAllContactReceipts(enable: enable))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiSetUserContactReceipts(_ userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings) async throws {
+    let r = await chatSendCmd(.apiSetUserContactReceipts(userId: userId, userMsgReceiptSettings: userMsgReceiptSettings))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
 }
