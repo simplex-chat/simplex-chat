@@ -1511,4 +1511,14 @@
   <string name="custom_time_unit_months">months</string>
   <string name="custom_time_picker_select">Select</string>
   <string name="custom_time_picker_custom">custom</string>
+
+  <!--  SetDeliveryReceiptsView.kt -->
+  <string name="delivery_receipts_title">Delivery receipts!</string>
+  <string name="enable_receipts_all">Enable</string>
+  <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</string>
+  <string name="sending_delivery_receipts_will_be_enabled">Sending delivery receipts will be enabled for all contacts.</string>
+  <string name="dont_enable_receipts">Don\'t enable</string>
+  <string name="you_can_enable_delivery_receipts_later">You can enable later via Settings</string>
+  <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
+  <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
 </resources>
