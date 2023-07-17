@@ -27,12 +27,16 @@ fun SetDeliveryReceiptsView(m: ChatModel) {
         withApi {
           try {
             m.controller.apiSetAllContactReceipts(enable = true)
-            val users = m.controller.listUsers()
-            m.users.clear()
-            m.users.addAll(users)
             m.currentUser.value = currentUser.copy(sendRcptsContacts = true)
             m.setDeliveryReceipts.value = false
             m.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
+            try {
+              val users = m.controller.listUsers()
+              m.users.clear()
+              m.users.addAll(users)
+            } catch (e: Exception) {
+              Log.e(TAG, "listUsers error: ${e.stackTraceToString()}")
+            }
           } catch (e: Exception) {
             AlertManager.shared.showAlertDialog(
               title = generalGetString(MR.strings.error_enabling_delivery_receipts),
