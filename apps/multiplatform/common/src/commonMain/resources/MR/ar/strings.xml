@@ -419,4 +419,5 @@
     <string name="smp_servers_delete_server">حذف الخادم</string>
     <string name="error_updating_link_for_group">خطأ في تحديث ارتباط المجموعة</string>
     <string name="simplex_link_mode_description">الوصف</string>
+    <string name="icon_descr_expand_role">وسّع اختيار الدور</string>
 </resources>
