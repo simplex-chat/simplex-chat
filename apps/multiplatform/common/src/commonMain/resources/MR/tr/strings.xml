@@ -3,7 +3,7 @@
     <string name="notifications">Bildirimler</string>
     <string name="connect_via_link_or_qr">Bağlantı ya da karekod ile bağlan</string>
     <string name="create_group">Gizli grup oluştur</string>
-    <string name="create_one_time_link">Tek seferlik davet bağlantısı oluştur</string>
+    <string name="create_one_time_link">Tek kullanımlık davet bağlantısı oluştur</string>
     <string name="your_simplex_contact_address">SimpleX addresin</string>
     <string name="callstatus_missed">cevapsız çağrı</string>
     <string name="incoming_video_call">Gelen görüntülü arama</string>
@@ -41,7 +41,7 @@
     <string name="clear_chat_warning">Tüm mesajlar silinecektir - bu geri alınamaz! Mesajlar SADECE sizin tarafınızda silinecektir.</string>
     <string name="smp_servers_add">Sunucu ekle…</string>
     <string name="database_passphrase_and_export">Veri tabanı parolası &amp; dışa aktarma</string>
-    <string name="one_time_link_short">1 kullanımlık bağlantı</string>
+    <string name="one_time_link_short">tek kullanımlık bağlantı</string>
     <string name="network_settings">Gelişmiş ağ ayarları</string>
     <string name="app_version_title">Uygulama sürümü</string>
     <string name="app_version_code">Uygulama derlemesi: %s</string>
@@ -154,4 +154,12 @@
     <string name="member_role_will_be_changed_with_invitation">Rol \"%s\" olarak değiştirilecek. Üye yeni bir davetiye alacaktır.</string>
     <string name="group_unsupported_incognito_main_profile_sent">Gizli mod burada desteklenmiyor - ana profiliniz grup üyelerine gönderilecek</string>
     <string name="role_in_group">Rol</string>
+    <string name="allow_voice_messages_question">Sesli mesajlara izin ver\?</string>
+    <string name="users_add">Profil ekle</string>
+    <string name="allow_direct_messages">Üyelere direkt mesaj göndermeye izin ver.</string>
+    <string name="allow_to_send_disappearing">Kaybolan mesajlar göndermeye izin ver.</string>
+    <string name="allow_to_delete_messages">Gönderilen mesajların geri alınamaz şekilde silinmesine izin ver.</string>
+    <string name="allow_to_send_files">Dosya ve medya göndermeye izin ver.</string>
+    <string name="allow_to_send_voice">Sesli mesaj göndermeye izin ver.</string>
+    <string name="share_invitation_link">Tek kullanımlık bağlantıyı paylaş</string>
 </resources>
