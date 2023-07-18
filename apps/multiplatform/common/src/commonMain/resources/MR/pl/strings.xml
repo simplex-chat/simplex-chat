@@ -1097,7 +1097,6 @@
     <string name="alert_text_msg_bad_id">Identyfikator następnej wiadomości jest nieprawidłowy (mniejszy lub równy poprzedniej).
 \nMoże się to zdarzyć z powodu jakiegoś błędu lub gdy połączenie jest skompromitowane.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">Nie udało się odszyfrować %1$d wiadomości.</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">Ten błąd jest trwały dla tego połączenia, proszę o ponowne połączenie.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d pominiętych wiadomości.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Może się to zdarzyć, gdy Ty lub Twoje połączenie użyło starej kopii zapasowej bazy danych.</string>
     <string name="alert_text_fragment_please_report_to_developers">Prosimy o zgłaszanie tego do deweloperów.</string>
