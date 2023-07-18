@@ -175,7 +175,7 @@ fun ComposeView(
     val content = ArrayList<UploadContent>()
     val imagesPreview = ArrayList<String>()
     uris.forEach { uri ->
-      var bitmap: ImageBitmap? = null
+      var bitmap: ImageBitmap?
       when {
         isImage(uri) -> {
           // Image
