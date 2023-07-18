@@ -1123,7 +1123,6 @@
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d 訊息解密失敗。</string>
     <string name="network_socks_toggle_use_socks_proxy">使用SOCKS 代理伺服器</string>
     <string name="your_XFTP_servers">你的 XFTP 伺服器</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">這個連結錯誤是永久性的，請重新連接。</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d 錯過了多個訊息。</string>
     <string name="v5_0_large_files_support">影片和檔案和最大上限為1gb</string>
     <string name="gallery_video_button">影片</string>
