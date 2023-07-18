@@ -136,14 +136,19 @@ struct GroupChatInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(cInfo.displayName)
-                .font(.largeTitle)
-                .lineLimit(1)
-                .padding(.bottom, 2)
             if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
+                Text(cInfo.displayName)
+                    .font(.largeTitle)
+                    .lineLimit(1)
+                    .padding(.bottom, 2)
                 Text(cInfo.fullName)
                     .font(.title2)
                     .lineLimit(2)
+            } else {
+                Text(cInfo.displayName)
+                    .font(.largeTitle)
+                    .lineLimit(2)
+                    .padding(.bottom, 2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
