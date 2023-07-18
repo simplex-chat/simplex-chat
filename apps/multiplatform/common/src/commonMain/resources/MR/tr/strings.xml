@@ -238,7 +238,6 @@
     <string name="callstatus_error">görüşme hatası</string>
     <string name="callstate_connected">Bağlanıldı</string>
     <string name="callstate_connecting">bağlanılıyor…</string>
-    <string name="contact_wants_to_connect_via_call"></string>
     <string name="call_already_ended">Görüşmesi çoktan bitti!</string>
     <string name="your_calls">Görüşmelerin</string>
     <string name="open_verb">Aç</string>
@@ -282,8 +281,7 @@
     <string name="allow_your_contacts_adding_message_reactions">Konuştuğun kişilerin iletilerine tepki eklemesine izin ver.</string>
     <string name="allow_your_contacts_to_call">Konuştuğun kişilerin seni aramasına izin ver.</string>
     <string name="all_your_contacts_will_remain_connected">Konuştuğun bütün kişiler bağlı kalacaktır.</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent"></string>
-    <string name="keychain_is_storing_securely"></string>
+    <string name="keychain_is_storing_securely"/>
     <string name="icon_descr_cancel_file_preview">Dosya ön izlemesini iptal et</string>
     <string name="chat_database_imported">Konuşma veri tabanı içe aktarıldı</string>
     <string name="icon_descr_cancel_image_preview">Görsel ön izlemesini iptal et</string>
