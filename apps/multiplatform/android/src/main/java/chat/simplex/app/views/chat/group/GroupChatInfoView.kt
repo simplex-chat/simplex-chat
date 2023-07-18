@@ -241,22 +241,17 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    Text(
+      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      modifier = Modifier.horizontalScroll(rememberScrollState()),
+      color = MaterialTheme.colors.onBackground,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
       Text(
-        cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-        color = MaterialTheme.colors.onBackground,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
-      Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
-        color = MaterialTheme.colors.onBackground,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis
-      )
-    } else {
-      Text(
-        cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
         color = MaterialTheme.colors.onBackground,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
