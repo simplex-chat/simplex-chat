@@ -704,7 +704,7 @@ ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
--- many fields are redundant, 
+-- many fields are redundant, but may be used for UI w/t needing to repeat calculation logic
 data GroupSndCIStatus = GroupSndCIStatus
   { numDeliveries :: Int,
     numSent :: Int,
