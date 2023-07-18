@@ -1184,7 +1184,6 @@
     <string name="alert_text_fragment_please_report_to_developers">Пожалуйста, сообщите об этой ошибке девелоперам.</string>
     <string name="alert_text_msg_bad_id">Неправильный ID предыдущего сообщения (меньше или равен предыдущему).
 \nЭто может произойти из-за ошибки программы, или когда соединение компроментировано.</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">Эта ошибка постоянная для этого соединения, пожалуйста, соединитесь снова.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d сообщений пропущено.</string>
     <string name="allow_calls_only_if">Разрешить звонки, только если их разрешает Ваш контакт.</string>
     <string name="allow_your_contacts_to_call">Разрешить Вашим контактам звонить Вам.</string>

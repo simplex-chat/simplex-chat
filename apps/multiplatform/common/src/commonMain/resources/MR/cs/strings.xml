@@ -1099,7 +1099,6 @@
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d zprávy se nepodařilo dešifrovat.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d zprývy přeskočeny.</string>
     <string name="alert_text_fragment_please_report_to_developers">Nahlaste to prosím vývojářům.</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">Tato chyba je pro toto připojení trvalá, připojte se znovu.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.</string>
     <string name="no_spaces">Žádné mezery!</string>
     <string name="revoke_file__message">Soubor bude smazán ze serverů.</string>
