@@ -1305,4 +1305,32 @@
     <string name="unfavorite_chat">Desfavoritar</string>
     <string name="sync_connection_force_question">Renegociar a criptografia\?</string>
     <string name="settings_restart_app">Reiniciar</string>
+    <string name="delivery_receipts_title">Confirmações de entrega!</string>
+    <string name="delivery_receipts_are_disabled">As confirmações de entrega estão desabilitadas!</string>
+    <string name="receipts_contacts_enable_for_all">Ativar para todos</string>
+    <string name="receipts_contacts_disable_for_all">Desativar para todos</string>
+    <string name="receipts_contacts_title_disable">Desabilitar as confirmações\?</string>
+    <string name="receipts_contacts_disable_keep_overrides">Desativar (mantém alterações)</string>
+    <string name="receipts_contacts_enable_keep_overrides">Ativar (mantém alterações)</string>
+    <string name="receipts_contacts_title_enable">Ativar as confirmações\?</string>
+    <string name="v5_2_favourites_filter">Encontrar conversas rápido</string>
+    <string name="receipts_section_contacts">Contatos</string>
+    <string name="settings_section_title_delivery_receipts">ENVIAR CONFIRMAÇÕES DE ENTREGA PARA</string>
+    <string name="receipts_contacts_override_disabled">Enviar confirmações está desativado para %d contatos.</string>
+    <string name="receipts_contacts_override_enabled">Enviar confirmações está ativado para %d contatos.</string>
+    <string name="send_receipts">Enviar confirmações</string>
+    <string name="v5_2_more_things">Mais algumas coisas</string>
+    <string name="v5_2_disappear_one_message_descr">Até mesmo desabilitado na conversa.</string>
+    <string name="v5_2_favourites_filter_descr">Filtrar chats não lidos e favoritos.</string>
+    <string name="v5_2_fix_encryption_descr">Corrigir encriptação depois de restaurar os backups.</string>
+    <string name="v5_2_fix_encryption">Manter suas conexões</string>
+    <string name="v5_2_disappear_one_message">Fazer uma mensagem desaparecer</string>
+    <string name="v5_2_message_delivery_receipts">Confirmações de entrega de mensagens!</string>
+    <string name="v5_2_more_things_descr">- entregas de mensagens mais estáveis.
+\n- grupos melhores.
+\n- e mais!</string>
+    <string name="dont_enable_receipts">Não ative</string>
+    <string name="enable_receipts_all">Ativar</string>
+    <string name="sending_delivery_receipts_will_be_enabled">Enviar confirmações de entrega serão ativadas para todos os contatos.</string>
+    <string name="error_enabling_delivery_receipts">Ocorreu um erro ao ativar as confirmações de entrega!</string>
 </resources>
