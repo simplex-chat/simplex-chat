@@ -1,6 +1,5 @@
 package chat.simplex.common.views.newchat
 
-import chat.simplex.common.platform.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -24,7 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.screenWidth
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -55,7 +54,11 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
   )
 }
 
-private val titles = listOf(MR.strings.share_one_time_link, MR.strings.connect_via_link_or_qr, MR.strings.create_group)
+private val titles = listOf(
+  MR.strings.share_one_time_link,
+  if (appPlatform.isAndroid) MR.strings.connect_via_link_or_qr else MR.strings.connect_via_link,
+  MR.strings.create_group
+)
 private val icons = listOf(MR.images.ic_add_link, MR.images.ic_qr_code, MR.images.ic_group)
 
 @Composable
