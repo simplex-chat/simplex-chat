@@ -6,7 +6,7 @@
     <string name="accept_contact_button">รับ</string>
     <string name="accept_contact_incognito_button">ยอมรับโหมดไม่ระบุตัวตน</string>
     <string name="about_simplex_chat">เกี่ยวกับ SimpleX Chat</string>
-    <string name="callstatus_accepted">รับสาย</string>
+    <string name="callstatus_accepted">รับสายแล้ว</string>
     <string name="accept_call_on_lock_screen">รับ</string>
     <string name="chat_item_ttl_week">1 สัปดาห์</string>
     <string name="color_primary">สีเน้น</string>
@@ -14,7 +14,7 @@
     <string name="chat_item_ttl_day">1 วัน</string>
     <string name="chat_item_ttl_month">1 เดือน</string>
     <string name="accept">รับ</string>
-    <string name="accept_connection_request__question">ยอมรับการเชื่อมต่อหรือไม่\?</string>
+    <string name="accept_connection_request__question">รับการขอเชื่อมต่อหรือไม่\?</string>
     <string name="one_time_link_short">ลิงก์สำหรับใช้ 1 ครั้ง</string>
     <string name="send_disappearing_message_5_minutes">5 นาที</string>
     <string name="about_simplex">เกี่ยวกับ SimpleX</string>
@@ -23,14 +23,14 @@
     <string name="color_primary_variant">เน้นสีเพิ่มเติม</string>
     <string name="settings_section_title_icon">ไอคอนแอป</string>
     <string name="v5_0_app_passcode">รหัสผ่านแอป</string>
-    <string name="keychain_is_storing_securely">Android Keystore ใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัย - ซึ่งจะช่วยให้บริการแจ้งเตือนข้อความทำงานได้</string>
-    <string name="keychain_allows_to_receive_ntfs">Android Keystore จะถูกใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัยหลังจากที่คุณรีสตาร์ทแอปหรือเปลี่ยนรหัสผ่าน - ซึ่งจะอนุญาตให้รับบริการแจ้งเตือนข้อความ</string>
+    <string name="keychain_is_storing_securely">Android Keystore ใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัย - ซึ่งจะช่วยให้บริการแจ้งเตือนทำงานได้</string>
+    <string name="keychain_allows_to_receive_ntfs">Android Keystore จะถูกใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัยหลังจากที่คุณรีสตาร์ทแอปหรือเปลี่ยนรหัสผ่าน - ซึ่งจะอนุญาตให้รับบริการแจ้งเตือนได้</string>
     <string name="app_version_code">รุ่นแอป: %s</string>
     <string name="full_backup">การสํารองข้อมูลแอป</string>
     <string name="empty_chat_profile_is_created">โปรไฟล์แชทที่ว่างเปล่าพร้อมชื่อที่ให้ไว้ได้ถูกสร้างขึ้นและแอปจะเปิดตามปกติ</string>
     <string name="audio_call_no_encryption">การโทรด้วยเสียง (ไม่ได้ encrypt จากต้นจนจบ)</string>
-    <string name="notifications_mode_off_desc">แอปสามารถรับการแจ้งเตือนได้เฉพาะเมื่อกำลังทำงานอยู่เท่านั้น โดยจะไม่มีการบริการพื้นหลัง</string>
-    <string name="appearance_settings">ลักษณะ</string>
+    <string name="notifications_mode_off_desc">แอปสามารถรับการแจ้งเตือนได้เฉพาะเมื่อกำลังทำงานอยู่เท่านั้น โดยจะไม่มีการเริ่มบริการพื้นหลัง</string>
+    <string name="appearance_settings">รูปร่างลักษณะ</string>
     <string name="incognito_random_profile_from_contact_description">โปรไฟล์แบบสุ่มจะถูกส่งไปยังผู้ติดต่อที่คุณได้รับลิงก์นี้จาก</string>
     <string name="incognito_random_profile_description">โปรไฟล์แบบสุ่มจะถูกส่งไปยังผู้ติดต่อของคุณ</string>
     <string name="network_session_mode_user_description"><![CDATA[การเชื่อมต่อ TCP (และข้อมูลรับรอง SOCKS) แบบแยกต่างหาก จะถูกใช้ <b> สําหรับแต่ละโปรไฟล์แชทที่คุณมีในแอป </b>]]></string>
@@ -38,16 +38,16 @@
     <string name="attach">แนบ</string>
     <string name="v4_6_audio_video_calls">การโทรด้วยเสียงและวิดีโอ</string>
     <string name="auto_accept_contact">ยอมรับอัตโนมัติ</string>
-    <string name="auto_accept_images">ตอบรับภาพอัตโนมัติ</string>
+    <string name="auto_accept_images">ยอมรับภาพอัตโนมัติ</string>
     <string name="audio_video_calls">การโทรด้วยเสียง/วิดีโอ</string>
-    <string name="authentication_cancelled">การยืนยันตัวตนถูกยกเลิกแล้ว</string>
-    <string name="auth_unavailable">การยืนยันตัวตนไม่พร้อมใช้งาน</string>
-    <string name="la_auth_failed">การยืนยันตัวตนล้มเหลว</string>
+    <string name="authentication_cancelled">การยืนยันถูกยกเลิกแล้ว</string>
+    <string name="auth_unavailable">การยืนยันไม่พร้อมใช้งาน</string>
+    <string name="la_auth_failed">การยืนยันล้มเหลว</string>
     <string name="notifications_mode_service">เปิดตลอดเวลา</string>
-    <string name="la_authenticate">รับรอง</string>
+    <string name="la_authenticate">ตรวจสอบสิทธิ์</string>
     <string name="icon_descr_asked_to_receive">ขอรับภาพ</string>
     <string name="icon_descr_video_asked_to_receive">ขอรับวิดีโอ</string>
-    <string name="clear_chat_warning">ข้อความทั้งหมดจะถูกลบ - ไม่สามารถยกเลิกได้! ข้อความจะถูกลบสำหรับคุณเท่านั้น.</string>
+    <string name="clear_chat_warning">ข้อความทั้งหมดจะถูกลบ - การดำเนินการนี้ไม่สามารถยกเลิกได้! ข้อความจะถูกลบสำหรับคุณเท่านั้น</string>
     <string name="smp_servers_add">เพิ่มเซิร์ฟเวอร์…</string>
     <string name="app_version_title">เวอร์ชันแอป</string>
     <string name="app_version_name">เวอร์ชันแอป: v%s</string>
@@ -70,7 +70,7 @@
     <string name="allow_to_delete_messages">อนุญาตให้ลบข้อความที่ส่งไปแล้วอย่างถาวร</string>
     <string name="allow_to_send_disappearing">อนุญาตให้ส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages)</string>
     <string name="allow_message_reactions">อนุญาตการแสดงปฏิกิริยาต่อข้อความ</string>
-    <string name="calls_prohibited_with_this_contact">ห้ามการโทรด้วยเสียง/วิดีโอ</string>
+    <string name="calls_prohibited_with_this_contact">การโทรด้วยเสียง/วิดีโอถูกห้าม</string>
     <string name="v4_2_auto_accept_contact_requests">ตอบรับคำขอเป็นเพื่อนโดยอัตโนมัติ</string>
     <string name="v4_2_group_links_desc">ผู้ดูแลระบบสามารถสร้างลิงก์เพื่อเข้าร่วมกลุ่มต่างๆได้</string>
     <string name="network_settings">การตั้งค่าระบบเครือข่ายขั้นสูง</string>
@@ -81,7 +81,7 @@
     <string name="users_delete_all_chats_deleted">แชทและข้อความทั้งหมดจะถูกลบ - การดำเนินการนี้ไม่สามารถยกเลิกได้!</string>
     <string name="address_section_title">ที่อยู่</string>
     <string name="v4_3_improved_server_configuration_desc">เพิ่มเซิร์ฟเวอร์โดยการสแกนรหัส QR</string>
-    <string name="smp_servers_add_to_another_device">เพิ่มเข้าไปในอุปกรณ์อื่น ๆ</string>
+    <string name="smp_servers_add_to_another_device">เพิ่มเข้าไปในอุปกรณ์อื่น</string>
     <string name="group_member_role_admin">ผู้ดูแลระบบ</string>
     <string name="all_group_members_will_remain_connected">สมาชิกในกลุ่มทุกคนจะยังคงเชื่อมต่ออยู่.</string>
     <string name="v5_1_self_destruct_passcode_descr">ข้อมูลทั้งหมดจะถูกลบเมื่อถูกป้อน</string>
@@ -102,7 +102,7 @@
     <string name="alert_title_msg_bad_hash">แฮชข้อความไม่ดี</string>
     <string name="integrity_msg_bad_id">ID ข้อความที่ไม่ดี</string>
     <string name="both_you_and_your_contact_can_send_voice">ทั้งคุณและผู้ติดต่อของคุณสามารถส่งข้อความเสียงได้</string>
-    <string name="callstatus_error">การโทรล้มเหลว</string>
+    <string name="callstatus_error">การโทรผิดพลาด</string>
     <string name="v4_5_transport_isolation_descr">ตามโปรไฟล์แชท (การตั้งค่าเริ่มต้น) หรือโดยการเชื่อมต่อ (เบต้า)</string>
     <string name="callstatus_ended">สิ้นสุดการโทร %1$s</string>
     <string name="icon_descr_call_progress">กําลังโทร</string>
@@ -138,7 +138,7 @@
     <string name="cancel_verb">ยกเลิก</string>
     <string name="icon_descr_cancel_link_preview">ยกเลิกการแสดงตัวอย่างลิงก์</string>
     <string name="change_self_destruct_mode">เปลี่ยนโหมดทําลายตัวเอง</string>
-    <string name="cannot_access_keychain">ไม่สามารถเข้าถึง Keystore เพื่อบันทึกรหัสผ่านฐานข้อมูลได้</string>
+    <string name="cannot_access_keychain">ไม่สามารถเข้าถึง Keystore เพื่อบันทึกรหัสผ่านฐานข้อมูล</string>
     <string name="rcv_group_event_changed_member_role">เปลี่ยนบทบาทของ %s เป็น %s</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">เปลี่ยนที่อยู่สําหรับคุณ</string>
     <string name="invite_prohibited">ไม่สามารถเชิญผู้ติดต่อได้!</string>
@@ -1052,7 +1052,7 @@
     <string name="v4_4_verify_connection_security">ตรวจสอบความปลอดภัยในการเชื่อมต่อ</string>
     <string name="incognito_info_share">เมื่อคุณแชร์โปรไฟล์ที่ไม่ระบุตัวตนกับใครสักคน โปรไฟล์นี้จะใช้สำหรับกลุ่มที่พวกเขาเชิญคุณ</string>
     <string name="contact_wants_to_connect_via_call">%1$s ต้องการเชื่อมต่อกับคุณผ่านทาง</string>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">ข้อความ %1$d ไม่สามารถ decrypt ได้</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">การ decrypt %1$d ข้อความล้มเหลว</string>
     <string name="group_info_section_title_num_members">%1$s สมาชิก</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[คุณสามารถ <font color="#0088ff">เชื่อมต่อกับ SimpleX Chat นักพัฒนาแอปเพื่อถามคำถามและรับการอัปเดต</font>]]></string>
     <string name="you_can_share_your_address">คุณสามารถแชร์ที่อยู่ของคุณเป็นลิงก์หรือรหัสคิวอาร์ - ใคร ๆ ก็สามารถเชื่อมต่อกับคุณได้</string>
@@ -1258,7 +1258,6 @@
     <string name="scan_qr_to_connect_to_contact">เพื่อการเชื่อมต่อ ผู้ติดต่อของคุณสามารถสแกนคิวอาร์โค้ดหรือใช้ลิงก์ในแอป</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">คุณจะไม่สูญเสียรายชื่อผู้ติดต่อของคุณหากคุณลบที่อยู่ในภายหลัง</string>
     <string name="this_string_is_not_a_connection_link">สตริงนี้ไม่ใช่ลิงค์เชื่อมต่อ!</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">ข้อผิดพลาดนี้เกิดขึ้นอย่างถาวรสำหรับการเชื่อมต่อนี้ โปรดเชื่อมต่อใหม่</string>
     <string name="messages_section_description">การตั้งค่านี้ใช้กับข้อความในโปรไฟล์แชทปัจจุบันของคุณ</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">คุณจะหยุดได้รับข้อความจากกลุ่มนี้ ประวัติการแชทจะถูกรักษาไว้</string>
     <string name="alert_message_no_group">ไม่มีกลุ่มนี้แล้ว</string>
@@ -1269,7 +1268,7 @@
     <string name="files_and_media_prohibited">ไฟล์และสื่อต้องห้าม!</string>
     <string name="no_filtered_chats">ไม่มีการกรองการแชท</string>
     <string name="abort_switch_receiving_address_confirm">ยกเลิก</string>
-    <string name="abort_switch_receiving_address_question">ยกเลิกการเปลี่ยนที่อยู่ไหม\?</string>
+    <string name="abort_switch_receiving_address_question">ยกเลิกการเปลี่ยนที่อยู่\?</string>
     <string name="favorite_chat">ที่ชอบ</string>
     <string name="unfavorite_chat">ลบที่ชื่นชอบ</string>
     <string name="strikethrough_text">ตี</string>
@@ -1281,6 +1280,8 @@
     <string name="files_are_prohibited_in_group">ไฟล์และสื่อเป็นสิ่งต้องห้ามในกลุ่มนี้</string>
     <string name="group_members_can_send_files">สมาชิกกลุ่มสามารถส่งไฟล์และสื่อ</string>
     <string name="error_aborting_address_change">ข้อผิดพลาดในการยกเลิกการเปลี่ยนที่อยู่</string>
-    <string name="abort_switch_receiving_address_desc">การเปลี่ยนแปลงที่อยู่จะถูกยกเลิก จะใช้ที่อยู่เดิม</string>
+    <string name="abort_switch_receiving_address_desc">การเปลี่ยนแปลงที่อยู่จะถูกยกเลิก จะใช้ที่อยู่เก่าของผู้รับ</string>
     <string name="only_owners_can_enable_files_and_media">เฉพาะเจ้าของกลุ่มเท่านั้นที่สามารถเปิดใช้งานไฟล์และสื่อได้</string>
+    <string name="conn_event_ratchet_sync_started">เห็นด้วยกับการ encrypt…</string>
+    <string name="snd_conn_event_ratchet_sync_started">ตกลงการ encryption สำหรับ %s</string>
 </resources>

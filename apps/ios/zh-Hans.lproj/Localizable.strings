@@ -1378,7 +1378,7 @@
 "Exported database archive." = "导出数据库归档。";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "导出数据库档案中……";
+"Exporting database archive…" = "导出数据库档案中…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "移除密码失败";
@@ -1894,7 +1894,7 @@
 "Messages & files" = "消息";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "迁移数据库档案中……";
+"Migrating database archive…" = "迁移数据库档案中…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "迁移错误：";

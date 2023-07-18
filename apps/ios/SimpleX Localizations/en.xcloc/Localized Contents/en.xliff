@@ -2134,11 +2134,6 @@
         <target>Exported database archive.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Exporting database archive..." xml:space="preserve">
-        <source>Exporting database archive...</source>
-        <target>Exporting database archive...</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Exporting database archive…" xml:space="preserve">
         <source>Exporting database archive…</source>
         <target>Exporting database archive…</target>
@@ -2945,11 +2940,6 @@
       <trans-unit id="Messages &amp; files" xml:space="preserve">
         <source>Messages &amp; files</source>
         <target>Messages &amp; files</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Migrating database archive..." xml:space="preserve">
-        <source>Migrating database archive...</source>
-        <target>Migrating database archive...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive…" xml:space="preserve">

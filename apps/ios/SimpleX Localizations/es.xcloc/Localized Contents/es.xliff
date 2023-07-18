@@ -74,6 +74,7 @@
       </trans-unit>
       <trans-unit id="%@ at %@:" xml:space="preserve">
         <source>%1$@ at %2$@:</source>
+        <target>%1$@ a las %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -1148,6 +1149,7 @@
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
         <source>Contacts</source>
+        <target>Contactos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts can mark messages for deletion; you will be able to view them." xml:space="preserve">
@@ -1545,10 +1547,12 @@
       </trans-unit>
       <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
         <source>Delivery receipts are disabled!</source>
+        <target>¡Los justificantes de entrega están desactivados!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery receipts!" xml:space="preserve">
         <source>Delivery receipts!</source>
+        <target>¡Justificantes de entrega!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -2051,6 +2055,7 @@
       </trans-unit>
       <trans-unit id="Error synchronizing connection" xml:space="preserve">
         <source>Error synchronizing connection</source>
+        <target>Error al sincronizar conexión</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve">
@@ -2117,13 +2122,9 @@
         <target>Archivo de base de datos exportado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Exporting database archive..." xml:space="preserve">
-        <source>Exporting database archive...</source>
-        <target>Exportando archivo de base de datos...</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Exporting database archive…" xml:space="preserve">
         <source>Exporting database archive…</source>
+        <target>Exportando archivo de base de datos…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Failed to remove passphrase" xml:space="preserve">
@@ -2196,14 +2197,17 @@
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
         <source>Fix</source>
+        <target>Reparar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix connection" xml:space="preserve">
         <source>Fix connection</source>
+        <target>Reparar conexión</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix connection?" xml:space="preserve">
         <source>Fix connection?</source>
+        <target>Reparar problemas de conexión ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix encryption after restoring backups." xml:space="preserve">
@@ -2212,10 +2216,12 @@
       </trans-unit>
       <trans-unit id="Fix not supported by contact" xml:space="preserve">
         <source>Fix not supported by contact</source>
+        <target>Corrección no compatible con el contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix not supported by group member" xml:space="preserve">
         <source>Fix not supported by group member</source>
+        <target>Corrección no compatible con miembro del grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -2525,6 +2531,7 @@
       </trans-unit>
       <trans-unit id="In reply to" xml:space="preserve">
         <source>In reply to</source>
+        <target>En respuesta a</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -2917,13 +2924,9 @@
         <target>Mensajes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrating database archive..." xml:space="preserve">
-        <source>Migrating database archive...</source>
-        <target>Migrando la base de datos...</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Migrating database archive…" xml:space="preserve">
         <source>Migrating database archive…</source>
+        <target>Migrando archivo de base de datos…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration error:" xml:space="preserve">
@@ -3078,6 +3081,7 @@
       </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve">
         <source>No filtered chats</source>
+        <target>Ningún chat filtrado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No group!" xml:space="preserve">
@@ -3087,6 +3091,7 @@
       </trans-unit>
       <trans-unit id="No history" xml:space="preserve">
         <source>No history</source>
+        <target>Sin historial</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -3470,42 +3475,42 @@
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
-        <target>No se permiten llamadas y videollamadas.</target>
+        <target>Prohibir las llamadas y videollamadas.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
         <source>Prohibit irreversible message deletion.</source>
-        <target>No se permite la eliminación irreversible de mensajes.</target>
+        <target>Prohibir la eliminación irreversible de mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit message reactions." xml:space="preserve">
         <source>Prohibit message reactions.</source>
-        <target>No se permiten reacciones a los mensajes.</target>
+        <target>Prohibir reacciones a mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit messages reactions." xml:space="preserve">
         <source>Prohibit messages reactions.</source>
-        <target>No se permiten reacciones a los mensajes.</target>
+        <target>Prohibir reacciones a mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
         <source>Prohibit sending direct messages to members.</source>
-        <target>No se permiten mensajes directos entre miembros.</target>
+        <target>Prohibir mensajes directos a miembros.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
         <source>Prohibit sending disappearing messages.</source>
-        <target>No se permiten mensajes temporales.</target>
+        <target>Prohibir envío de mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending files and media." xml:space="preserve">
         <source>Prohibit sending files and media.</source>
-        <target>No permitir el envío de archivos y multimedia.</target>
+        <target>Prohibir el envío de archivos y multimedia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
         <source>Prohibit sending voice messages.</source>
-        <target>No se permiten mensajes de voz.</target>
+        <target>Prohibir el envío de mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
@@ -3515,7 +3520,7 @@
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
         <source>Protect your chat profiles with a password!</source>
-        <target>¡Protege tus perfiles con contraseña!</target>
+        <target>¡Protege tus perfiles de chat con contraseña!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -3525,11 +3530,12 @@
       </trans-unit>
       <trans-unit id="Protocol timeout per KB" xml:space="preserve">
         <source>Protocol timeout per KB</source>
+        <target>Límite de espera del protocolo por KB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
-        <target>Notificaciones automáticas</target>
+        <target>Notificaciones push</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -3539,6 +3545,7 @@
       </trans-unit>
       <trans-unit id="React…" xml:space="preserve">
         <source>React…</source>
+        <target>Reaccione…</target>
         <note>chat item menu</note>
       </trans-unit>
       <trans-unit id="Read" xml:space="preserve">
@@ -3573,7 +3580,7 @@
       </trans-unit>
       <trans-unit id="Received at" xml:space="preserve">
         <source>Received at</source>
-        <target>Recibido</target>
+        <target>Recibido a las</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received at: %@" xml:space="preserve">
@@ -3608,30 +3615,32 @@
       </trans-unit>
       <trans-unit id="Recipients see updates as you type them." xml:space="preserve">
         <source>Recipients see updates as you type them.</source>
-        <target>Los destinatarios ven la actualizacion mientras escribes.</target>
+        <target>Los destinatarios ven actualizaciones mientras les escribes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reconnect all connected servers to force message delivery. It uses additional traffic." xml:space="preserve">
         <source>Reconnect all connected servers to force message delivery. It uses additional traffic.</source>
+        <target>Reconectar todos los servidores conectados para forzar la entrega del mensaje. Se usa tráfico adicional.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reconnect servers?" xml:space="preserve">
         <source>Reconnect servers?</source>
+        <target>¿Reconectar servidores?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Record updated at" xml:space="preserve">
         <source>Record updated at</source>
-        <target>Registro actualiz.</target>
+        <target>Registro actualizado a las</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Record updated at: %@" xml:space="preserve">
         <source>Record updated at: %@</source>
-        <target>Registro actualiz: %@</target>
+        <target>Registro actualizado a las: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve">
         <source>Reduced battery usage</source>
-        <target>Reducción del uso de la batería</target>
+        <target>Uso de la batería reducido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reject" xml:space="preserve">
@@ -3651,12 +3660,12 @@
       </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
-        <target>El relay sólo se usa en caso de necesidad. Un tercero podría ver tu IP.</target>
+        <target>El servidor de retransmisión sólo se utiliza en caso necesario. Un tercero podría ver tu dirección IP.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve">
         <source>Relay server protects your IP address, but it can observe the duration of the call.</source>
-        <target>El servidor relay protege tu IP pero puede observar la duración de la llamada.</target>
+        <target>El servidor de retransmisión protege tu dirección IP, pero puede observar la duración de la llamada.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove" xml:space="preserve">
@@ -3676,19 +3685,22 @@
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
         <source>Remove passphrase from keychain?</source>
-        <target>¿Eliminar contraseña de Keychain?</target>
+        <target>¿Eliminar la contraseña del llavero?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
         <source>Renegotiate</source>
+        <target>Renegociar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate encryption" xml:space="preserve">
         <source>Renegotiate encryption</source>
+        <target>Renegociar cifrado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate encryption?" xml:space="preserve">
         <source>Renegotiate encryption?</source>
+        <target>¿Renegociar cifrado?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reply" xml:space="preserve">
@@ -3723,7 +3735,7 @@
       </trans-unit>
       <trans-unit id="Restart the app to use imported chat database" xml:space="preserve">
         <source>Restart the app to use imported chat database</source>
-        <target>Reinicia la aplicación para utilizar la base de datos importada</target>
+        <target>Reinicia la aplicación para utilizar la base de datos de chats importada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restore" xml:space="preserve">
@@ -3778,7 +3790,7 @@
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
-        <target>Ejecutar Chat</target>
+        <target>Ejecutar chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SMP servers" xml:space="preserve">
@@ -3818,7 +3830,7 @@
       </trans-unit>
       <trans-unit id="Save auto-accept settings" xml:space="preserve">
         <source>Save auto-accept settings</source>
-        <target>Guardar configuración de auto aceptar</target>
+        <target>Guardar configuración de aceptación automática (auto-accept)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
@@ -3948,6 +3960,7 @@
       </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve">
         <source>Send delivery receipts to</source>
+        <target>Enviar recibos de entrega a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
@@ -3987,6 +4000,7 @@
       </trans-unit>
       <trans-unit id="Send receipts" xml:space="preserve">
         <source>Send receipts</source>
+        <target>Enviar recibos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -4464,6 +4478,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="The encryption is working and the new encryption agreement is not required. It may result in connection errors!" xml:space="preserve">
         <source>The encryption is working and the new encryption agreement is not required. It may result in connection errors!</source>
+        <target>El cifrado funciona y el nuevo acuerdo de encriptación no es necesario. ¡Puede provocar errores de conexión!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The group is fully decentralized – it is visible only to the members." xml:space="preserve">
@@ -4532,10 +4547,12 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="These settings are for your current profile **%@**." xml:space="preserve">
         <source>These settings are for your current profile **%@**.</source>
+        <target>Estos ajustes son para tu perfil actual **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="They can be overridden in contact settings" xml:space="preserve">
         <source>They can be overridden in contact settings</source>
+        <target>Se pueden anular en la configuración de contactos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -5024,6 +5041,7 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
       </trans-unit>
       <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
         <source>You can enable them later via app Privacy &amp; Security settings.</source>
+        <target>Puedes activarlos más tarde a través de la aplicación en los ajustes de Privacidad y Seguridad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can hide or mute a user profile - swipe it to the right." xml:space="preserve">
@@ -5063,7 +5081,7 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
       </trans-unit>
       <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
         <source>You can turn on SimpleX Lock via Settings.</source>
-        <target>Puedes activar el Bloqueo SimpleX a través de Configuración.</target>
+        <target>Puedes activar el Bloqueo SimpleX a través de Ajustes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -5364,10 +5382,12 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
         <source>agreeing encryption for %@…</source>
+        <target>acordando la encriptación para %@…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="agreeing encryption…" xml:space="preserve">
         <source>agreeing encryption…</source>
+        <target>acordando la encriptación…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="always" xml:space="preserve">
@@ -5432,10 +5452,12 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="changing address for %@…" xml:space="preserve">
         <source>changing address for %@…</source>
+        <target>cambiando dirección para %@…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changing address…" xml:space="preserve">
         <source>changing address…</source>
+        <target>cambiando dirección…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
@@ -5540,10 +5562,12 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="default (no)" xml:space="preserve">
         <source>default (no)</source>
+        <target>por defecto (no)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (yes)" xml:space="preserve">
         <source>default (yes)</source>
+        <target>por defecto (sí)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
@@ -5593,34 +5617,42 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="encryption agreed" xml:space="preserve">
         <source>encryption agreed</source>
+        <target>encriptación acordada</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption agreed for %@" xml:space="preserve">
         <source>encryption agreed for %@</source>
+        <target>encriptación acordada para %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption ok" xml:space="preserve">
         <source>encryption ok</source>
+        <target>encriptación ok</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption ok for %@" xml:space="preserve">
         <source>encryption ok for %@</source>
+        <target>encriptación ok para %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed" xml:space="preserve">
         <source>encryption re-negotiation allowed</source>
+        <target>renegociación de encriptación permitida</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve">
         <source>encryption re-negotiation allowed for %@</source>
+        <target>renegociación de encriptación permitida para %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required" xml:space="preserve">
         <source>encryption re-negotiation required</source>
+        <target>se requiere renegociación de la encriptación</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve">
         <source>encryption re-negotiation required for %@</source>
+        <target>se requiere renegociación de la encriptación para %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="ended" xml:space="preserve">
@@ -5896,6 +5928,7 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="security code changed" xml:space="preserve">
         <source>security code changed</source>
+        <target>código de seguridad cambiado</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
