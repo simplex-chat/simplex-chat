@@ -334,6 +334,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    groupSndStatus :: Maybe GroupSndCIStatus,
     itemSharedMsgId :: Maybe SharedMsgId,
     itemDeleted :: Maybe (CIDeleted c),
     itemEdited :: Bool,
@@ -350,7 +351,8 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
   let editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, createdAt, updatedAt}
+      groupSndStatus = Nothing
+   in CIMeta {itemId, itemTs, itemText, itemStatus, groupSndStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, createdAt, updatedAt}
 
 instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -701,6 +703,44 @@ ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
+
+-- many fields are redundant, 
+data GroupSndCIStatus = GroupSndCIStatus
+  { numDeliveries :: Int,
+    numSent :: Int,
+    numRcvd :: Int,
+    sentProgress :: GroupSndCIStatusProgress,
+    rcvdProgress :: GroupSndCIStatusProgress,
+    -- can have history of status changes per member instead
+    deliveryStatuses :: [GroupMemberSndCIStatus]
+  }
+  deriving (Show, Generic)
+
+instance ToJSON GroupSndCIStatus where toEncoding = J.genericToEncoding J.defaultOptions
+
+data GroupSndCIStatusProgress
+  = GSPNone
+  | GSPOne
+  | GSPOneThird
+  | GSPTwoThirds
+  | GSPComplete
+  deriving (Show, Generic)
+
+instance ToJSON GroupSndCIStatusProgress where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GSP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GSP"
+
+type SndCIStatus = CIStatus 'MDSnd
+
+data GroupMemberSndCIStatus = GroupMemberSndCIStatus
+  { groupMemberId :: GroupMemberId,
+    ownDevice :: Bool,
+    deliveryStatus :: SndCIStatus,
+    deliveryStatusTs :: UTCTime
+  }
+  deriving (Show, Generic)
+
+instance ToJSON GroupMemberSndCIStatus where toEncoding = J.genericToEncoding J.defaultOptions
 
 type ChatItemId = Int64
 
