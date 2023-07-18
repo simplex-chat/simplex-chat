@@ -1295,7 +1295,7 @@
     <string name="fix_connection_question">לתקן את החיבור\?</string>
     <string name="fix_connection_not_supported_by_contact">תיקון לא נתמך על ידי איש קשר</string>
     <string name="conn_event_ratchet_sync_started">מסכים להצפנה…</string>
-    <string name="snd_conn_event_ratchet_sync_started">מסכים להצפנה עבור %s</string>
+    <string name="snd_conn_event_ratchet_sync_started">מסכים להצפנה עבור %s…</string>
     <string name="in_reply_to">בתגובה ל</string>
     <string name="no_history">ללא היסטוריה</string>
     <string name="sync_connection_force_confirm">משא ומתן מחדש</string>
@@ -1309,4 +1309,21 @@
     <string name="sender_at_ts">%s בזמן %s</string>
     <string name="rcv_conn_event_verification_code_reset">קוד האבטחה השתנה</string>
     <string name="renegotiate_encryption">משא ומתן מחדש על ההצפנה</string>
+    <string name="v5_2_more_things">עוד כמה דברים</string>
+    <string name="receipts_contacts_disable_keep_overrides">השבת (שמור עקיפות)</string>
+    <string name="receipts_contacts_title_disable">להשבית קבלות\?</string>
+    <string name="dont_enable_receipts">אל תפעיל</string>
+    <string name="receipts_contacts_enable_keep_overrides">הפעל (שמור עקיפות)</string>
+    <string name="v5_2_fix_encryption_descr">תקן הצפנה לאחר שחזור גיבויים.</string>
+    <string name="receipts_section_contacts">אנשי קשר</string>
+    <string name="receipts_contacts_title_enable">להפעיל קבלות\?</string>
+    <string name="receipts_contacts_enable_for_all">הפעל עבור כולם</string>
+    <string name="receipts_contacts_disable_for_all">השבת לכולם</string>
+    <string name="v5_2_favourites_filter_descr">סנן צ\'אטים שלא נקראו וצ\'אטים מועדפים.</string>
+    <string name="v5_2_favourites_filter">מצא צ\'אטים מהר יותר</string>
+    <string name="v5_2_disappear_one_message">העלם הודעה אחת</string>
+    <string name="delivery_receipts_title">קבלות על המשלוח!</string>
+    <string name="enable_receipts_all">הפעל</string>
+    <string name="delivery_receipts_are_disabled">קבלות על משלוח מושבתות!</string>
+    <string name="error_enabling_delivery_receipts">שגיאה בהפעלת קבלות משלוח!</string>
 </resources>
