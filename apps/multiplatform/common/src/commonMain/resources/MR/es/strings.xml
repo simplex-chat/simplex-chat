@@ -142,7 +142,7 @@
     <string name="group_member_status_announced">conectando (anunciado)</string>
     <string name="connection_local_display_name">conexión %1$d</string>
     <string name="connect_via_link_or_qr">Conecta vía enlace / Código QR</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No podrá deshacerse!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No se podrá deshacer!</string>
     <string name="icon_descr_contact_checked">Contacto verificado</string>
     <string name="status_contact_has_e2e_encryption">el contacto dispone de cifrado de extremo a extremo</string>
     <string name="smp_server_test_disconnect">Desconectar</string>
@@ -1309,4 +1309,38 @@
     <string name="fix_connection_question">¿Reparar conexión\?</string>
     <string name="renegotiate_encryption">Renegociar cifrado</string>
     <string name="sender_at_ts">%s a las %s</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">El envío de recibos de entrega se activará para todos los contactos en todos los perfiles de chat visibles.</string>
+    <string name="receipts_section_contacts">Contactos</string>
+    <string name="delivery_receipts_title">¡Recibos de entrega!</string>
+    <string name="receipts_contacts_disable_keep_overrides">Desactivar (mantener anulaciones)</string>
+    <string name="v5_2_favourites_filter">Encontrar chats mas rápido</string>
+    <string name="v5_2_disappear_one_message">Hacer desaparecer un mensaje</string>
+    <string name="receipts_contacts_override_disabled">El envío de recibos está desactivado para %d contactos</string>
+    <string name="receipts_contacts_override_enabled">El envío de recibos está activado para %d contactos</string>
+    <string name="send_receipts">Enviar recibos</string>
+    <string name="receipts_section_description">Estos ajustes corresponden a su perfil actual</string>
+    <string name="enable_receipts_all">Activar</string>
+    <string name="receipts_contacts_title_disable">¿Desactivar recibos\?</string>
+    <string name="receipts_contacts_title_enable">¿Activar recibos\?</string>
+    <string name="receipts_section_description_1">Se pueden anular en la configuración de los contactos</string>
+    <string name="receipts_contacts_enable_for_all">Activar para todo(s)</string>
+    <string name="receipts_contacts_enable_keep_overrides">Activar (conservar anulaciones)</string>
+    <string name="receipts_contacts_disable_for_all">Desactivar para todo(s)</string>
+    <string name="settings_section_title_delivery_receipts">ENVIAR LOS RECIBOS DE ENTREGA A</string>
+    <string name="delivery_receipts_are_disabled">¡Los recibos de entrega están desactivados!</string>
+    <string name="dont_enable_receipts">No activar</string>
+    <string name="error_enabling_delivery_receipts">Error al activar recibos de entrega</string>
+    <string name="v5_2_disappear_one_message_descr">Incluso desactivado en la conversación.</string>
+    <string name="v5_2_favourites_filter_descr">Filtrar chats no leídos y favoritos.</string>
+    <string name="v5_2_fix_encryption_descr">Arreglar el cifrado después de restaurar las copias de seguridad.</string>
+    <string name="v5_2_fix_encryption">Mantener tus conexiones</string>
+    <string name="v5_2_message_delivery_receipts">¡Recibos de entrega de mensajes!</string>
+    <string name="v5_2_more_things_descr">- entrega de mensajes más estable.
+\n- grupos un poco mejores.
+\n- ¡y mucho más!</string>
+    <string name="sending_delivery_receipts_will_be_enabled">El envío de recibos de entrega se activará para todos los contactos.</string>
+    <string name="v5_2_message_delivery_receipts_descr">¡La segunda casilla que se nos olvidaba! ✅</string>
+    <string name="you_can_enable_delivery_receipts_later">Se pueden activar mas tarde en Ajustes</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Puedes activarlas más tarde vía app en la configuración de Privacidad y Seguridad.</string>
+    <string name="v5_2_more_things">Algunas cosas más</string>
 </resources>
