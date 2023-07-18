@@ -129,8 +129,8 @@ private fun FrameWindowScope.FileDialogAwt(
       this.title = title
       this.isMultipleMode = allowMultiple && isLoad
       if (fileFilter != null) {
-        this.setFilenameFilter { file, _ ->
-          fileFilter(file)
+        this.setFilenameFilter { dir, file ->
+          fileFilter(File(dir.absolutePath + File.separator + file))
         }
       }
     }
