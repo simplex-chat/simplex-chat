@@ -57,7 +57,7 @@
     <string name="conn_event_ratchet_sync_started">şifreleme kabul ediliyor…</string>
     <string name="group_member_role_admin">yönetici</string>
     <string name="button_add_welcome_message">Karşılama mesajı ekleyin</string>
-    <string name="users_delete_all_chats_deleted">Tüm sohbetler ve mesajlar silinecektir - bu geri alınamaz!</string>
+    <string name="users_delete_all_chats_deleted">Tüm konuşmalar ve iletiler silinecektir. Bu, geri alınamaz!</string>
     <string name="incognito_random_profile_description">Kişinize rastgele bir profil gönderilecek</string>
     <string name="incognito_random_profile_from_contact_description">Bu bağlantıyı aldığınız kişiye rastgele bir profil gönderilecek</string>
     <string name="color_primary">Ana renk</string>
@@ -73,7 +73,7 @@
     <string name="all_group_members_will_remain_connected">Konuşma üyelerinin tümü bağlı kalacaktır.</string>
     <string name="allow_verb">İzin ver</string>
     <string name="v5_0_app_passcode">Uygulama şifresi</string>
-    <string name="network_session_mode_user_description">Uygulamada sahip olduğunuz her sohbet profili için ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır&lt;/b&gt;.</string>
+    <string name="network_session_mode_user_description"><b>Uygulamadaki her konuşma profliniz için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır.</string>
     <string name="network_session_mode_entity_description"><b>Her kişi ve grup üyesi için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır.
 \n<b>Lütfen unutmayın</b>: Çok sayıda bağlantınız varsa, piliniz ve veri kullanımınız önemli ölçüde artabilir ve bazı bağlantılar başarısız olabilir.</string>
     <string name="save_and_notify_group_members">Kaydet ve grup üyelerini bilgilendir</string>
