@@ -42,7 +42,7 @@ final class ChatModel: ObservableObject {
     @Published var tokenRegistered = false
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
-    @Published var notificationPreview: NotificationPreviewMode? = ntfPreviewModeGroupDefault.get()
+    @Published var notificationPreview: NotificationPreviewMode = ntfPreviewModeGroupDefault.get()
     @Published var incognito: Bool = incognitoGroupDefault.get()
     // pending notification actions
     @Published var ntfContactRequest: ChatId?
@@ -68,6 +68,14 @@ final class ChatModel: ObservableObject {
     static let shared = ChatModel()
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
+
+    var ntfEnableLocal: Bool {
+        notificationMode == .off || ntfEnableLocalGroupDefault.get()
+    }
+
+    var ntfEnablePeriodic: Bool {
+        notificationMode == .periodic || ntfEnablePeriodicGroupDefault.get()
+    }
 
     func getUser(_ userId: Int64) -> User? {
         currentUser?.userId == userId
