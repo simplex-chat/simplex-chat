@@ -16,6 +16,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.shareText
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -110,9 +111,11 @@ private fun VerifyCodeLayout(
           verifyCode(null) {}
         }
       } else {
-        SimpleButton(generalGetString(MR.strings.scan_code), painterResource(MR.images.ic_qr_code)) {
-          ModalManager.shared.showModal {
-            ScanCodeView(verifyCode) { }
+        if (appPlatform.isAndroid) {
+          SimpleButton(generalGetString(MR.strings.scan_code), painterResource(MR.images.ic_qr_code)) {
+            ModalManager.shared.showModal {
+              ScanCodeView(verifyCode) { }
+            }
           }
         }
         SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(MR.images.ic_verified_user)) {

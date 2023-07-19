@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.views.usersettings.ScanProtocolServer
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
@@ -113,18 +114,20 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
               }) {
                 Text(stringResource(MR.strings.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
               }
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-                ModalManager.shared.showModalCloseable { close ->
-                  ScanProtocolServer {
-                    close()
-                    servers = servers + it
-                    m.userSMPServersUnsaved.value = servers
+              if (appPlatform.isAndroid) {
+                SectionItemView({
+                  AlertManager.shared.hideAlert()
+                  ModalManager.shared.showModalCloseable { close ->
+                    ScanProtocolServer {
+                      close()
+                      servers = servers + it
+                      m.userSMPServersUnsaved.value = servers
+                    }
                   }
                 }
-              }
-              ) {
-                Text(stringResource(MR.strings.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                ) {
+                  Text(stringResource(MR.strings.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                }
               }
               val hasAllPresets = hasAllPresets(presetServers, servers, m)
               if (!hasAllPresets) {
