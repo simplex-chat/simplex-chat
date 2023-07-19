@@ -261,15 +261,17 @@ struct GroupMemberInfoView: View {
                 .padding(.top, 12)
                 .padding()
             if mem.verified {
-                HStack {
-                    Image(systemName: "checkmark.shield")
+                (
+                    Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(.secondary)
-                    Text(mem.displayName)
+                        .font(.title2)
+                    + Text(" ")
+                    + Text(mem.displayName)
                         .font(.largeTitle)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(2)
-                        .padding(.bottom, 2)
-                }
+                )
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.bottom, 2)
             } else {
                 Text(mem.displayName)
                     .font(.largeTitle)
