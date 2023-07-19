@@ -21,6 +21,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -243,17 +244,17 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Text(
       cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-      modifier = Modifier.horizontalScroll(rememberScrollState()),
       color = MaterialTheme.colors.onBackground,
-      maxLines = 1,
+      textAlign = TextAlign.Center,
+      maxLines = 4,
       overflow = TextOverflow.Ellipsis
     )
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
       Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
         color = MaterialTheme.colors.onBackground,
-        maxLines = 2,
+        textAlign = TextAlign.Center,
+        maxLines = 8,
         overflow = TextOverflow.Ellipsis
       )
     }

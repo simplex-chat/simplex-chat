@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -338,14 +339,23 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      if (member.verified) {
+    if (member.verified) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
+        Text(
+          member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+          color = MaterialTheme.colors.onBackground,
+          textAlign = TextAlign.Left,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis
+        )
       }
+    } else {
       Text(
         member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
         color = MaterialTheme.colors.onBackground,
-        maxLines = 1,
+        textAlign = TextAlign.Center,
+        maxLines = 2,
         overflow = TextOverflow.Ellipsis
       )
     }
@@ -353,7 +363,8 @@ fun GroupMemberInfoHeader(member: GroupMember) {
       Text(
         member.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
-        maxLines = 2,
+        textAlign = TextAlign.Center,
+        maxLines = 4,
         overflow = TextOverflow.Ellipsis
       )
     }

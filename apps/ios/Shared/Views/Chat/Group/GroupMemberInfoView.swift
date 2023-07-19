@@ -260,19 +260,28 @@ struct GroupMemberInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            HStack {
-                if mem.verified {
+            if mem.verified {
+                HStack {
                     Image(systemName: "checkmark.shield")
+                        .foregroundColor(.secondary)
+                    Text(mem.displayName)
+                        .font(.largeTitle)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .padding(.bottom, 2)
                 }
+            } else {
                 Text(mem.displayName)
                     .font(.largeTitle)
-                    .lineLimit(1)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .padding(.bottom, 2)
             }
-            .padding(.bottom, 2)
             if mem.fullName != "" && mem.fullName != mem.displayName {
                 Text(mem.fullName)
                     .font(.title2)
-                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)

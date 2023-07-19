@@ -354,14 +354,23 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
-    Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-      if (contact.verified) {
+    if (contact.verified) {
+      Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
+        Text(
+          contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+          color = MaterialTheme.colors.onBackground,
+          textAlign = TextAlign.Left,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis,
+        )
       }
+    } else {
       Text(
         contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
         color = MaterialTheme.colors.onBackground,
-        maxLines = 1,
+        textAlign = TextAlign.Center,
+        maxLines = 2,
         overflow = TextOverflow.Ellipsis,
       )
     }
@@ -369,7 +378,8 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
-        maxLines = 2,
+        textAlign = TextAlign.Center,
+        maxLines = 4,
         overflow = TextOverflow.Ellipsis
       )
     }

@@ -323,7 +323,10 @@ fun ContactCheckRow(
     ProfileImage(size = 36.dp, contact.image)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     Text(
-      contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+      contact.chatViewName,
+      modifier = Modifier.weight(10f, fill = true),
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
       color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))
