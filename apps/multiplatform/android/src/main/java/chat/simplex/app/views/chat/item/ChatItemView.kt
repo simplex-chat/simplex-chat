@@ -226,10 +226,10 @@ fun ChatItemView(
                 }
               )
             }
+            ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
               CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
             }
-            ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             if (!(live && cItem.meta.isLive)) {
               DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
             }
