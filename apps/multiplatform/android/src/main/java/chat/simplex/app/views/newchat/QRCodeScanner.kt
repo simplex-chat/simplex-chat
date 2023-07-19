@@ -7,6 +7,8 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
@@ -50,7 +52,8 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
         )
         implementationMode = PreviewView.ImplementationMode.COMPATIBLE
       }
-    }
+    },
+    modifier = Modifier.clipToBounds()
   ) { previewView ->
     val cameraSelector: CameraSelector = CameraSelector.Builder()
       .requireLensFacing(CameraSelector.LENS_FACING_BACK)
