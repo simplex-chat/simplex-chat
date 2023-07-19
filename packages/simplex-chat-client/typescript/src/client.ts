@@ -32,7 +32,7 @@ export class ChatClient {
   private readonly sentCommands = new Map<string, Request>()
 
   static defaultConfig: ChatClientConfig = {
-    qSize: 16,
+    qSize: 16, // TODO: explain what q is
     tcpTimeout: 4000,
   }
 
@@ -76,6 +76,11 @@ export class ChatClient {
     }
   }
 
+  /**
+   * Sends a command to the {@link https://simplex.chat/docs/cli.html SimpleX CLI}.
+   * @param {string} cmd - The command to send.
+   * @returns {Promise<ChatResponse>} - The response from the CLI.
+   */
   sendChatCmdStr(cmd: string): Promise<ChatResponse> {
     const corrId = `${++this.clientCorrId}`
     const t: ChatSrvRequest = {corrId, cmd}
@@ -83,10 +88,19 @@ export class ChatClient {
     return new Promise((resolve, reject) => this.sentCommands.set(corrId, {resolve, reject}))
   }
 
+  /**
+   * Sends a command to the {@link https://simplex.chat/docs/cli.html SimpleX CLI}.
+   * @param {ChatCommand} command - The command to send.
+   * @returns {Promise<ChatResponse>} - The response from the CLI.
+   */
   sendChatCommand(command: ChatCommand): Promise<ChatResponse> {
     return this.sendChatCmdStr(CC.cmdString(command))
   }
 
+  /**
+   * TODO: specify what this disconnects from
+   * @returns {Promise<void>} - A promise that resolves when the client disconnects.
+   */
   async disconnect(): Promise<void> {
     await this.transport.close()
     await this.client
@@ -160,22 +174,52 @@ export class ChatClient {
     throw new ChatCommandError("error loading chat", r)
   }
 
+  /**
+   * Sends a message to a chat, with optional attachments.
+   * @param {ChatType} chatType The kind of chat to send the message to.
+   * @param {number} chatId The identifier of the chat to send the message to.
+   * @param {ComposedMessage} message The message to send.
+   * @returns {Promise<AChatItem>} The sent message as {@link AChatItem}.
+   */
   async apiSendMessage(chatType: ChatType, chatId: number, message: CC.ComposedMessage): Promise<CR.AChatItem> {
     const r = await this.sendChatCommand({type: "apiSendMessage", chatType, chatId, message})
     if (r.type === "newChatItem") return r.chatItem
     throw new ChatCommandError("unexpected response", r)
   }
 
+  /**
+   * Sends a text message without attachments to a chat.
+   * @param {ChatType} chatType The type of chat to send the message to.
+   * @param {number} chatId The identifier of the chat to send the message to.
+   * @param {string} text The actual content of the message.
+   * @returns {Promise<AChatItem>} The sent message as {@link AChatItem}.
+   */
   apiSendTextMessage(chatType: ChatType, chatId: number, text: string): Promise<CR.AChatItem> {
     return this.apiSendMessage(chatType, chatId, {msgContent: {type: "text", text}})
   }
 
+  /**
+   * Edits a message after it has been sent.
+   * @param {ChatType} chatType The type of chat the message belongs to.
+   * @param {number} chatId The identifier of the chat the message belongs to.
+   * @param {ChatItemId} chatItemId The identifier of the message to edit.
+   * @param {MsgContent} msgContent The new, edited content of the message.
+   * @returns {Promise<ChatItem>} The edited message as a {@link ChatItem}.
+   */
   async apiUpdateChatItem(chatType: ChatType, chatId: number, chatItemId: CC.ChatItemId, msgContent: CC.MsgContent): Promise<CR.ChatItem> {
     const r = await this.sendChatCommand({type: "apiUpdateChatItem", chatType, chatId, chatItemId, msgContent})
     if (r.type === "chatItemUpdated") return r.chatItem.chatItem
     throw new ChatCommandError("error updating chat item", r)
   }
 
+  /**
+   * Removes a message from a chat after it has been sent.
+   * @param {ChatType} chatType The type of chat the message belongs to.
+   * @param {number} chatId The identifier of the chat the message belongs to.
+   * @param {number} chatItemId The identifier of the message to remove.
+   * @param {DeleteMode} deleteMode Whether to delete the message for everyone or just locally.
+   * @returns {Promise<ChatItem | undefined>} TODO: explain under which circumstances this returns undefined.
+   */
   async apiDeleteChatItem(
     chatType: ChatType,
     chatId: number,
@@ -205,28 +249,50 @@ export class ChatClient {
     }
   }
 
-  async apiDeleteChat(chatType: ChatType, chatId: number): Promise<void> {
+  /**
+   * Removes an entire chat. TODO: specify whether this includes all messages
+   * @param {ChatType} chatType The type of chat to remove.
+   * @param {number} chatId The identifier of the chat to remove.
+   * @returns {Promise<true>} If the chat has been deleted successfully.
+   * @throws {ChatCommandError} If the chat could not be deleted.
+   */
+  async apiDeleteChat(chatType: ChatType, chatId: number): Promise<true> {
     const r = await this.sendChatCommand({type: "apiDeleteChat", chatType, chatId})
+    // The following chat types indicate that the chat has been deleted successfully.
     switch (chatType) {
       case ChatType.Direct:
-        if (r.type === "contactDeleted") return
+        if (r.type === "contactDeleted") return true
         break
       case ChatType.Group:
-        if (r.type === "groupDeletedUser") return
+        if (r.type === "groupDeletedUser") return true
         break
       case ChatType.ContactRequest:
-        if (r.type === "contactConnectionDeleted") return
+        if (r.type === "contactConnectionDeleted") return true
         break
     }
     throw new ChatCommandError("error deleting chat", r)
   }
 
+  /**
+   * Deletes all messages from a chat.
+   * @param {ChatType} chatType The type of the chat to clear.
+   * @param {number} chatId The identifier of the chat to clear.
+   * @returns {Promise<ChatInfo>} Information about the cleared chat.
+   * @throws {ChatCommandError} If the chat could not be cleared.
+   */
   async apiClearChat(chatType: ChatType, chatId: number): Promise<ChatInfo> {
     const r = await this.sendChatCommand({type: "apiClearChat", chatType, chatId})
     if (r.type === "chatCleared") return r.chatInfo
     throw new ChatCommandError("error clearing chat", r)
   }
 
+  /**
+   * Edit the profile metadata of a user.
+   * @param {number} userId The identifier of the user whose profile to update.
+   * @param {Profile} profile The new profile data.
+   * @returns {Promise<Profile | undefined>} TODO: explain under which circumstances this returns undefined.
+   * @throws {ChatCommandError} If the profile could not be updated.
+   */
   async apiUpdateProfile(userId: number, profile: CC.Profile): Promise<CC.Profile | undefined> {
     const r = await this.sendChatCommand({type: "apiUpdateProfile", userId, profile})
     switch (r.type) {
@@ -239,6 +305,13 @@ export class ChatClient {
     }
   }
 
+  /**
+   * TODO: explain what an alias is
+   * @param {number} contactId The identifier of the contact whose alias to set.
+   * @param {string} localAlias TODO: explain what this is
+   * @returns {Promise<Contact>} The updated contact.
+   * @throws {ChatCommandError} If the alias could not be set.
+   */
   async apiSetContactAlias(contactId: number, localAlias: string): Promise<CR.Contact> {
     const r = await this.sendChatCommand({type: "apiSetContactAlias", contactId, localAlias})
     if (r.type === "contactAliasUpdated") return r.toContact
@@ -282,10 +355,24 @@ export class ChatClient {
     throw new ChatCommandError("error rejecting contact request", r)
   }
 
+  /**
+   * TODO: explain what this does
+   * @param {ChatType} chatType - The kind of the chat
+   * @param {number} chatId - The identifier of the chat
+   * @param {ItemRange} itemRange TODO: explain
+   * @returns {Promise<void>} - A promise that resolves once TODO: finish sentence
+   */
   apiChatRead(chatType: ChatType, chatId: number, itemRange?: CC.ItemRange): Promise<void> {
     return this.okChatCommand({type: "apiChatRead", chatType, chatId, itemRange})
   }
 
+  /**
+   * Get metadata about a contact.
+   * @param {number} contactId The identifier of the contact.
+   * @returns {Promise<[(ConnectionStats | undefined), (Profile | undefined)]>} statistics about the connection to the
+   * contact; the contact's profile. TODO: explain under which circumstances these return undefined.
+   * @throws {ChatCommandError} If the contact info could not be retrieved.
+   */
   async apiContactInfo(contactId: number): Promise<[CR.ConnectionStats?, Profile?]> {
     const r = await this.sendChatCommand({type: "apiContactInfo", contactId})
     if (r.type === "contactInfo") return [r.connectionStats, r.customUserProfile]
@@ -304,12 +391,25 @@ export class ChatClient {
     throw new ChatCommandError("error receiving file", r)
   }
 
+  /**
+   * Create a new group chat.
+   * @param {GroupProfile} groupProfile TODO: explain
+   * @returns {Promise<GroupInfo>} Metadata about the new group chat.
+   */
   async apiNewGroup(groupProfile: CR.GroupProfile): Promise<CR.GroupInfo> {
     const r = await this.sendChatCommand({type: "newGroup", groupProfile})
     if (r.type === "groupCreated") return r.groupInfo
     throw new ChatCommandError("error creating group", r)
   }
 
+  /**
+   * Adds a contact to a group chat.
+   * @param {number} groupId The identifier of the group chat.
+   * @param {number} contactId The identifier of the contact to add.
+   * @param {GroupMemberRole} memberRole The permissions to grant the contact.
+   * @returns {Promise<GroupMember>} Metadata about the new group chat member.
+   * @throws {ChatCommandError} If the contact could not be added to the group chat.
+   */
   async apiAddMember(groupId: number, contactId: number, memberRole: CC.GroupMemberRole): Promise<CR.GroupMember> {
     const r = await this.sendChatCommand({type: "apiAddMember", groupId, contactId, memberRole})
     if (r.type === "sentGroupInvitation") return r.member
@@ -322,6 +422,13 @@ export class ChatClient {
     throw new ChatCommandError("error joining group", r)
   }
 
+  /**
+   * Removes a group chat member.
+   * @param {number} groupId The identifier of the group chat.
+   * @param {number} memberId The identifier of the member to remove.
+   * @returns {Promise<GroupMember>} Metadata about the removed group chat member.
+   * @throws {ChatCommandError} If the member could not be removed.
+   */
   async apiRemoveMember(groupId: number, memberId: number): Promise<CR.GroupMember> {
     const r = await this.sendChatCommand({type: "apiRemoveMember", groupId, memberId})
     if (r.type === "userDeletedMember") return r.member
@@ -346,6 +453,13 @@ export class ChatClient {
     throw new ChatCommandError("error updating group", r)
   }
 
+  /**
+   * TODO: explain what this does
+   * @param {ChatCommand} command TODO: specify
+   * @returns {Promise<void>} TODO: specify
+   * @throws {ChatCommandError} if the command fails
+   * @private
+   */
   private async okChatCommand(command: ChatCommand): Promise<void> {
     const r = await this.sendChatCommand(command)
     if (r.type !== "cmdOk") throw new ChatCommandError(`${command.type} command error`, r)

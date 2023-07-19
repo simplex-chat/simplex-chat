@@ -152,6 +152,11 @@ async function processWSQueue(c: ChatTransport, ws: WSTransport): Promise<void> 
   await c.queue.close()
 }
 
+/**
+ * Sleep for a given number of milliseconds.
+ * @param {number} ms How long to sleep.
+ * @returns {Promise<void>} A promise that resolves after the given number of milliseconds.
+ */
 function delay(ms?: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
 }
