@@ -2206,7 +2206,7 @@
       </trans-unit>
       <trans-unit id="Find chats faster" xml:space="preserve" approved="no">
         <source>Find chats faster</source>
-        <target state="translated">Trouver les chats plus rapidement</target>
+        <target state="translated">Trouver des messages plus rapidement</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -2829,7 +2829,7 @@
       </trans-unit>
       <trans-unit id="Make one message disappear" xml:space="preserve" approved="no">
         <source>Make one message disappear</source>
-        <target state="translated">Faire disparaître un message</target>
+        <target state="translated">Rendre un message éphémère</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make profile private!" xml:space="preserve">
@@ -4540,7 +4540,7 @@ Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.
       </trans-unit>
       <trans-unit id="The second tick we missed! ✅" xml:space="preserve" approved="no">
         <source>The second tick we missed! ✅</source>
-        <target state="translated">La deuxième coche que nous avons manquée ! ✅</target>
+        <target state="translated">Le deuxième coche que nous avons manqué ! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -5408,9 +5408,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>acceptant le chiffrement pour %@…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="agreeing encryption…" xml:space="preserve">
+      <trans-unit id="agreeing encryption…" xml:space="preserve" approved="no">
         <source>agreeing encryption…</source>
-        <target>acceptant le chiffrement…</target>
+        <target state="translated">accord sur le chiffrement…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="always" xml:space="preserve">
