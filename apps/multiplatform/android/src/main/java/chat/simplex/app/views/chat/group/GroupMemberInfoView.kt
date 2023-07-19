@@ -242,22 +242,22 @@ fun GroupMemberInfoLayout(
     val contactId = member.memberContactId
 
     if (member.memberActive) {
-      if (contactId != null) {
-        SectionView {
+      SectionView {
+        if (contactId != null) {
           if (knownDirectChat(contactId) != null || groupInfo.fullGroupPreferences.directMessages.on) {
             OpenChatButton(onClick = { openDirectChat(contactId) })
           }
-          if (connectionCode != null) {
-            VerifyCodeButton(member.verified, verifyClicked)
-          }
-          if (cStats != null && cStats.ratchetSyncAllowed) {
-            SynchronizeConnectionButton(syncMemberConnection)
-          } else if (developerTools) {
-            SynchronizeConnectionButtonForce(syncMemberConnectionForce)
-          }
         }
-        SectionDividerSpaced()
+        if (connectionCode != null) {
+          VerifyCodeButton(member.verified, verifyClicked)
+        }
+        if (cStats != null && cStats.ratchetSyncAllowed) {
+          SynchronizeConnectionButton(syncMemberConnection)
+        } else if (developerTools) {
+          SynchronizeConnectionButtonForce(syncMemberConnectionForce)
+        }
       }
+      SectionDividerSpaced()
     }
 
     if (member.contactLink != null) {
