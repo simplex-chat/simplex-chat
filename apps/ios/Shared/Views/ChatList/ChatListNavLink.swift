@@ -380,6 +380,7 @@ struct ChatListNavLink: View {
             .onTapGesture { showInvalidJSON = true }
             .sheet(isPresented: $showInvalidJSON) {
                 invalidJSONView(json)
+                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
     }
 }
