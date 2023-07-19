@@ -72,8 +72,9 @@
         <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ at %@:" xml:space="preserve">
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
         <source>%1$@ at %2$@:</source>
+        <target state="translated">%1$@ na %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -301,10 +302,13 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve">
+      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve" approved="no">
         <source>- more stable message delivery.
 - a bit better groups.
 - and more!</source>
+        <target state="translated">- více stabilní doručování zpráv.
+- o trochu lepší skupiny.
+- a více!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
@@ -383,8 +387,9 @@
 &lt;p&gt;&lt;a href="%@"&gt; Připojte se ke mne přes SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
-      <trans-unit id="A few more things" xml:space="preserve">
+      <trans-unit id="A few more things" xml:space="preserve" approved="no">
         <source>A few more things</source>
+        <target state="translated">Ještě pár věcí</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -414,16 +419,19 @@
 **Upozornění**: Pokud máte mnoho připojení, spotřeba baterie a provozu může být podstatně vyšší a některá připojení mohou selhat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort" xml:space="preserve">
+      <trans-unit id="Abort" xml:space="preserve" approved="no">
         <source>Abort</source>
+        <target state="translated">Přerušit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address" xml:space="preserve">
+      <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
         <source>Abort changing address</source>
+        <target state="translated">Přerušit změnu adresy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address?" xml:space="preserve">
+      <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
         <source>Abort changing address?</source>
+        <target state="translated">Přerušit změnu adresy?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -507,8 +515,9 @@
         <target>Adresa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
+      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve" approved="no">
         <source>Address change will be aborted. Old receiving address will be used.</source>
+        <target state="translated">Změna adresy bude přerušena. Budou použity staré přijímací adresy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -601,8 +610,9 @@
         <target>Povolit nevratné smazání odeslaných zpráv.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send files and media." xml:space="preserve">
+      <trans-unit id="Allow to send files and media." xml:space="preserve" approved="no">
         <source>Allow to send files and media.</source>
+        <target state="translated">Povolit odesílání souborů a médii.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send voice messages." xml:space="preserve">
@@ -1141,8 +1151,9 @@
         <target>Předvolby kontaktů</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contacts" xml:space="preserve">
+      <trans-unit id="Contacts" xml:space="preserve" approved="no">
         <source>Contacts</source>
+        <target state="translated">Kontakty</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts can mark messages for deletion; you will be able to view them." xml:space="preserve">
@@ -1538,12 +1549,14 @@
         <target>Smazáno v: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
+      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve" approved="no">
         <source>Delivery receipts are disabled!</source>
+        <target state="translated">Potvrzení o doručení jsou vypnuté!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts!" xml:space="preserve">
+      <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
         <source>Delivery receipts!</source>
+        <target state="translated">Potvrzení o doručení!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1591,8 +1604,9 @@
         <target>Přímé zprávy mezi členy jsou v této skupině zakázány.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable (keep overrides)" xml:space="preserve">
+      <trans-unit id="Disable (keep overrides)" xml:space="preserve" approved="no">
         <source>Disable (keep overrides)</source>
+        <target state="translated">Vypnout (zachovat přepsání)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -1600,8 +1614,9 @@
         <target>Vypnutí zámku SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Disable for all" xml:space="preserve">
+      <trans-unit id="Disable for all" xml:space="preserve" approved="no">
         <source>Disable for all</source>
+        <target state="translated">Vypnout pro všechny</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing message" xml:space="preserve">
@@ -1664,8 +1679,9 @@
         <target>Nevytvářet adresu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't enable" xml:space="preserve">
+      <trans-unit id="Don't enable" xml:space="preserve" approved="no">
         <source>Don't enable</source>
+        <target state="translated">Nepovolovat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
@@ -1708,8 +1724,9 @@
         <target>Zapnout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable (keep overrides)" xml:space="preserve">
+      <trans-unit id="Enable (keep overrides)" xml:space="preserve" approved="no">
         <source>Enable (keep overrides)</source>
+        <target state="translated">Povolit (zachovat přepsání)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -1727,8 +1744,9 @@
         <target>Povolit automatické mazání zpráv?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable for all" xml:space="preserve">
+      <trans-unit id="Enable for all" xml:space="preserve" approved="no">
         <source>Enable for all</source>
+        <target state="translated">Povolit pro všechny</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
@@ -1846,8 +1864,9 @@
         <target>Chyba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error aborting address change" xml:space="preserve">
+      <trans-unit id="Error aborting address change" xml:space="preserve" approved="no">
         <source>Error aborting address change</source>
+        <target state="translated">Chyba přerušení změny adresy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
