@@ -2064,14 +2064,6 @@ public struct ChatItem: Identifiable, Decodable {
         return nil
     }
 
-    public var showMutableNotification: Bool {
-        switch content {
-        case .rcvCall: return false
-        case .rcvChatFeature: return false
-        default: return showNtfDir
-        }
-    }
-
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
