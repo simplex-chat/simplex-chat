@@ -17,7 +17,7 @@ android {
     defaultConfig {
         applicationId = "chat.simplex.app"
         minSdkVersion(26)
-        targetSdkVersion(33)
+        targetSdkVersion(32)
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
         versionCode = (extra["android.version_code"] as String).toInt()
