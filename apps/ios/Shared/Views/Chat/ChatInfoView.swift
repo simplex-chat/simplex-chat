@@ -242,20 +242,30 @@ struct ChatInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            HStack {
-                if contact.verified {
-                    Image(systemName: "checkmark.shield")
+            if contact.verified {
+                (
+                    Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(.secondary)
-                }
+                        .font(.title2)
+                    + Text(" ")
+                    + Text(contact.profile.displayName)
+                        .font(.largeTitle)
+                )
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.bottom, 2)
+            } else {
                 Text(contact.profile.displayName)
                     .font(.largeTitle)
-                    .lineLimit(1)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
                     .padding(.bottom, 2)
             }
             if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName {
                 Text(cInfo.fullName)
                     .font(.title2)
-                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)

@@ -3119,7 +3119,7 @@ func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
 public enum SndConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
     case ratchetSync(syncStatus: RatchetSyncState, member: GroupMemberRef?)
-    
+
     var text: String {
         switch self {
         case let .switchQueue(phase, member):

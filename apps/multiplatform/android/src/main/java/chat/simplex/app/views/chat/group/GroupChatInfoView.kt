@@ -21,11 +21,11 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -244,14 +244,16 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
     Text(
       cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
-      maxLines = 1,
+      textAlign = TextAlign.Center,
+      maxLines = 4,
       overflow = TextOverflow.Ellipsis
     )
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
       Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
-        maxLines = 2,
+        textAlign = TextAlign.Center,
+        maxLines = 8,
         overflow = TextOverflow.Ellipsis
       )
     }
