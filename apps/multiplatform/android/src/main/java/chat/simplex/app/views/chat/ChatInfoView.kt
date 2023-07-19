@@ -495,7 +495,7 @@ fun SimplexServers(text: String, servers: List<String>) {
 
 @Composable
 fun SwitchAddressButton(disabled: Boolean, switchAddress: () -> Unit) {
-  SectionItemView(switchAddress) {
+  SectionItemView(switchAddress, disabled = disabled) {
     Text(
       stringResource(MR.strings.switch_receiving_address),
       color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -505,7 +505,7 @@ fun SwitchAddressButton(disabled: Boolean, switchAddress: () -> Unit) {
 
 @Composable
 fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) {
-  SectionItemView(abortSwitchAddress) {
+  SectionItemView(abortSwitchAddress, disabled = disabled) {
     Text(
       stringResource(MR.strings.abort_switch_receiving_address),
       color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
