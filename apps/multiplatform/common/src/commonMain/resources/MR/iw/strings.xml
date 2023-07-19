@@ -1326,4 +1326,18 @@
     <string name="enable_receipts_all">הפעל</string>
     <string name="delivery_receipts_are_disabled">קבלות על משלוח מושבתות!</string>
     <string name="error_enabling_delivery_receipts">שגיאה בהפעלת קבלות משלוח!</string>
+    <string name="v5_2_more_things_descr">- שליחת הודעות יציבה יותר.
+\n- קבוצות קצת יותר טובות.
+\n- ועוד!</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">שליחת קבלות שליחה תתאפשר עבור כל אנשי הקשר בכל פרופילי הצ\'אט הגלויים.</string>
+    <string name="receipts_section_description">הגדרות אלו מיועדות לפרופיל הנוכחי שלך</string>
+    <string name="receipts_section_description_1">ניתן לעקוף אותם בהגדרות אנשי הקשר</string>
+    <string name="receipts_contacts_override_disabled">שליחת קבלות מושבתת עבור %d אנשי קשר</string>
+    <string name="receipts_contacts_override_enabled">שליחת קבלות מאופשרת עבור %d אנשי קשר</string>
+    <string name="settings_section_title_delivery_receipts">שלח קבלות משלוח אל</string>
+    <string name="send_receipts">שלח קבלות</string>
+    <string name="v5_2_message_delivery_receipts_descr">הסימון השני שפספסנו! ✅</string>
+    <string name="sending_delivery_receipts_will_be_enabled">שליחת קבלות שליחה תתאפשר עבור כל אנשי הקשר.</string>
+    <string name="you_can_enable_delivery_receipts_later">תוכל לאפשר מאוחר יותר דרך הגדרות</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">תוכל לאפשר אותם מאוחר יותר באמצעות הגדרות פרטיות ואבטחה של האפליקציה.</string>
 </resources>
