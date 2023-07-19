@@ -457,7 +457,7 @@ private fun exportArchive(
     try {
       val archiveFile = exportChatArchive(m, chatArchiveName, chatArchiveTime, chatArchiveFile)
       chatArchiveFile.value = archiveFile
-      saveArchiveLauncher.launch(archiveFile.substringAfterLast("/"))
+      saveArchiveLauncher.launch(archiveFile.substringAfterLast(File.separator))
       progressIndicator.value = false
     } catch (e: Error) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_exporting_chat_database), e.toString())

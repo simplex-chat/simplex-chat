@@ -44,13 +44,8 @@ actual fun GetImageBottomSheet(
         }
       }
       val pickImageLauncher = rememberFileChooserLauncher(true, processPickedImage)
-      // LALAL
-      /*ActionButton(null, stringResource(MR.strings.use_camera_button), icon = painterResource(MR.images.ic_photo_camera)) {
-        hideBottomSheet()
-      }*/
       ActionButton(null, stringResource(MR.strings.from_gallery_button), icon = painterResource(MR.images.ic_image)) {
-        // LALAL support providing file extensions
-        withApi { pickImageLauncher.launch("") }
+        withApi { pickImageLauncher.launch("image/*") }
       }
     }
   }

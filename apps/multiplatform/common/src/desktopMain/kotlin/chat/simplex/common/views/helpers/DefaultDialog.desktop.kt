@@ -3,6 +3,8 @@ package chat.simplex.common.views.helpers
 import androidx.compose.runtime.*
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.window.*
+import chat.simplex.common.DialogParams
+import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.awt.FileDialog
@@ -35,13 +37,13 @@ actual fun DefaultDialog(
 fun FrameWindowScope.FileDialogChooser(
   title: String,
   isLoad: Boolean,
-  extensions: List<FileFilter> = emptyList(),
-  onResult: (result: File?) -> Unit
+  params: DialogParams,
+  onResult: (result: List<File>) -> Unit
 ) {
   if (isLinux()) {
-    FileDialogChooserMultiple(title, isLoad, extensions) { onResult(it.firstOrNull()) }
+    FileDialogChooserMultiple(title, isLoad, params.allowMultiple, params.fileFilter, params.fileFilterDescription, onResult)
   } else {
-    FileDialogAwt(title, isLoad, onResult)
+    FileDialogAwt(title, isLoad, params.allowMultiple, params.fileFilter, onResult)
   }
 }
 
@@ -49,7 +51,9 @@ fun FrameWindowScope.FileDialogChooser(
 fun FrameWindowScope.FileDialogChooserMultiple(
   title: String,
   isLoad: Boolean,
-  extensions: List<FileFilter> = emptyList(),
+  allowMultiple: Boolean,
+  fileFilter: ((File?) -> Boolean)? = null,
+  fileFilterDescription: String? = null,
   onResult: (result: List<File>) -> Unit
 ) {
   val scope = rememberCoroutineScope()
@@ -57,9 +61,15 @@ fun FrameWindowScope.FileDialogChooserMultiple(
     val job = scope.launch(Dispatchers.Main) {
       val fileChooser = JFileChooser()
       fileChooser.dialogTitle = title
-      fileChooser.isMultiSelectionEnabled = isLoad
-      fileChooser.isAcceptAllFileFilterUsed = extensions.isEmpty()
-      extensions.forEach { fileChooser.addChoosableFileFilter(it) }
+      fileChooser.isMultiSelectionEnabled = allowMultiple && isLoad
+      fileChooser.isAcceptAllFileFilterUsed = fileFilter == null
+      if (fileFilter != null && fileFilterDescription != null) {
+        fileChooser.addChoosableFileFilter(object: FileFilter() {
+          override fun accept(file: File?): Boolean = fileFilter(file)
+
+          override fun getDescription(): String = fileFilterDescription
+        })
+      }
       val returned = if (isLoad) {
         fileChooser.showOpenDialog(window)
       } else {
@@ -69,7 +79,11 @@ fun FrameWindowScope.FileDialogChooserMultiple(
       val result = when (returned) {
         JFileChooser.APPROVE_OPTION -> {
           if (isLoad) {
-            fileChooser.selectedFiles.filter { it.canRead() }
+            when {
+              allowMultiple -> fileChooser.selectedFiles.filter { it.canRead() }
+              fileChooser.selectedFile != null && fileChooser.selectedFile.canRead() -> listOf(fileChooser.selectedFile)
+              else -> emptyList()
+            }
           } else {
             if (!fileChooser.fileFilter.accept(fileChooser.selectedFile)) {
               val ext = (fileChooser.fileFilter as FileNameExtensionFilter).extensions[0]
@@ -78,7 +92,7 @@ fun FrameWindowScope.FileDialogChooserMultiple(
             listOf(fileChooser.selectedFile)
           }
         }
-        else -> listOf();
+        else -> emptyList()
       }
       onResult(result)
     }
@@ -95,22 +109,30 @@ fun FrameWindowScope.FileDialogChooserMultiple(
 private fun FrameWindowScope.FileDialogAwt(
   title: String,
   isLoad: Boolean,
-  onResult: (result: File?) -> Unit
+  allowMultiple: Boolean,
+  fileFilter: ((File?) -> Boolean)? = null,
+  onResult: (result: List<File>) -> Unit
 ) = AwtWindow(
   create = {
-    object: FileDialog(window, "Choose a file", if (isLoad) LOAD else SAVE) {
+    object: FileDialog(window, generalGetString(MR.strings.choose_file_title), if (isLoad) LOAD else SAVE) {
       override fun setVisible(value: Boolean) {
         super.setVisible(value)
         if (value) {
-          if (file != null) {
-            onResult(File(directory).resolve(file))
+          if (files != null) {
+            onResult(files.toList())
           } else {
-            onResult(null)
+            onResult(emptyList())
           }
         }
       }
     }.apply {
       this.title = title
+      this.isMultipleMode = allowMultiple && isLoad
+      if (fileFilter != null) {
+        this.setFilenameFilter { dir, file ->
+          fileFilter(File(dir.absolutePath + File.separator + file))
+        }
+      }
     }
   },
   dispose = FileDialog::dispose
