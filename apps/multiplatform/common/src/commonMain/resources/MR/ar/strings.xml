@@ -718,4 +718,42 @@
     <string name="error_saving_user_password">خطأ في حفظ كلمة مرور المستخدم</string>
     <string name="many_people_asked_how_can_it_deliver">سأل الكثير من الناس: <i>إذا SimpleX ليس لديه معرّفات مستخدم، كيف يمكنه توصيل الرسائل؟</i></string>
     <string name="error_saving_group_profile">خطأ في حفظ ملف تعريف المجموعة</string>
+    <string name="notification_preview_mode_message">رسالة نصية</string>
+    <string name="message_reactions">ردود فعل الرسائل</string>
+    <string name="delete_message_mark_deleted_warning">سيتم وضع علامة على الرسالة للحذف. سيتمكن المستلم/مون من الكشف عن هذه الرسالة.</string>
+    <string name="delete_message_cannot_be_undone_warning">سيتم حذف الرسالة - لا يمكن التراجع عن هذا!</string>
+    <string name="message_delivery_error_title">خطأ في تسليم الرسالة</string>
+    <string name="network_and_servers">الشبكة والخوادم</string>
+    <string name="moderate_verb">إشراف</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 للجوال: انقر فوق <b>فتح في تطبيق الجوال</b> ، ثم انقر فوق <b>اتصال</b> في التطبيق.</string>
+    <string name="share_text_moderated_at">تحت الإشراف في: %s</string>
+    <string name="message_reactions_prohibited_in_this_chat">ردود الفعل الرسائل ممنوعة في هذه الدردشة.</string>
+    <string name="moderated_item_description">مُشرف بواسطة %s</string>
+    <string name="message_delivery_error_desc">من المرجح أن جهة الاتصال هذه قد حذفت الاتصال بك.</string>
+    <string name="v5_1_message_reactions">ردود فعل الرسائل</string>
+    <string name="callstatus_missed">مكالمة فائتة</string>
+    <string name="info_row_moderated_at">تحت الإشراف في</string>
+    <string name="v4_6_reduced_battery_usage_descr">المزيد من التحسينات قريبا!</string>
+    <string name="muted_when_inactive">كتم عندما يكون غير نشط!</string>
+    <string name="v4_5_reduced_battery_usage_descr">المزيد من التحسينات قريبا!</string>
+    <string name="settings_section_title_messages">الرسائل والملفات</string>
+    <string name="moderated_description">تحت الإشراف</string>
+    <string name="mute_chat">كتم</string>
+    <string name="messages_section_title">الرسائل</string>
+    <string name="chat_item_ttl_none">مطلقًا</string>
+    <string name="database_migrations">عمليات الترحيل: %s</string>
+    <string name="v5_2_message_delivery_receipts">إيصالات تسليم الرسائل!</string>
+    <string name="custom_time_unit_minutes">دقائق</string>
+    <string name="custom_time_unit_months">شهور</string>
+    <string name="v5_2_more_things_descr">- توصيل رسائل أكثر استقرارًا.
+\n- مجموعات أفضل قليلاً.
+\n- و اكثر!</string>
+    <string name="network_status">حالة الشبكة</string>
+    <string name="user_mute">كتم</string>
+    <string name="message_reactions_are_prohibited">ردود الفعل الرسائل ممنوعة في هذه المجموعة.</string>
+    <string name="icon_descr_more_button">المزيد</string>
+    <string name="network_settings_title">اعدادات الشبكة</string>
+    <string name="icon_descr_call_missed">مكالمة فائتة</string>
+    <string name="v4_5_message_draft">مسودة الرسالة</string>
+    <string name="v4_5_multiple_chat_profiles">ملفات تعريف دردشة متعددة</string>
 </resources>
