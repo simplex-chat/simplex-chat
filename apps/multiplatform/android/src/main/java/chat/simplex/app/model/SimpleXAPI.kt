@@ -1414,11 +1414,11 @@ object ChatController {
       is CR.ChatItemStatusUpdated -> {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
-        if (active(r.user) && !cItem.isDeletedContent && chatModel.upsertChatItem(cInfo, cItem)) {
-          ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
-        }
-        if (!active(r.user) && !cItem.isDeletedContent) {
-          ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
+        if (!cItem.isDeletedContent) {
+          val added = if (active(r.user)) chatModel.upsertChatItem(cInfo, cItem) else true
+          if (added && !cItem.chatDir.sent) {
+            ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
+          }
         }
       }
       is CR.ChatItemUpdated ->
