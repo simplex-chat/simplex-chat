@@ -1416,7 +1416,7 @@ object ChatController {
         val cItem = r.chatItem.chatItem
         if (!cItem.isDeletedContent) {
           val added = if (active(r.user)) chatModel.upsertChatItem(cInfo, cItem) else true
-          if (added && !cItem.chatDir.sent) {
+          if (added && cItem.showNotification) {
             ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
           }
         }

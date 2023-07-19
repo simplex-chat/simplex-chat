@@ -1328,7 +1328,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             let cItem = aChatItem.chatItem
             if !cItem.isDeletedContent {
                 let added = active(user) ? m.upsertChatItem(cInfo, cItem) : true
-                if added && !cItem.chatDir.sent {
+                if added && cItem.showNotification {
                     NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
                 }
             }
