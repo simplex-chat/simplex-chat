@@ -12,7 +12,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -20,18 +20,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.chat.item.appendSender
 import chat.simplex.app.views.chatlist.updateChatSettings
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
@@ -354,26 +356,27 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
-    if (contact.verified) {
-      Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
-        Text(
-          contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-          color = MaterialTheme.colors.onBackground,
-          textAlign = TextAlign.Left,
-          maxLines = 2,
-          overflow = TextOverflow.Ellipsis,
-        )
+    val text = buildAnnotatedString {
+      if (contact.verified) {
+        appendInlineContent(id = "shieldIcon")
       }
-    } else {
-      Text(
-        contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-        color = MaterialTheme.colors.onBackground,
-        textAlign = TextAlign.Center,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-      )
+      append(contact.profile.displayName)
     }
+    val inlineContent: Map<String, InlineTextContent> = mapOf(
+      "shieldIcon" to InlineTextContent(
+        Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
+      ) {
+        Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+      }
+    )
+    Text(
+      text,
+      inlineContent = inlineContent,
+      style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      textAlign = TextAlign.Center,
+      maxLines = 3,
+      overflow = TextOverflow.Ellipsis
+    )
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
       Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
