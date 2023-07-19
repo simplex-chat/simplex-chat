@@ -2,6 +2,7 @@ package chat.simplex.app.views.helpers
 
 import android.Manifest
 import android.app.Activity
+import android.app.Application
 import android.content.*
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager
@@ -30,6 +31,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
+import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.json
 import chat.simplex.app.views.chat.PickFromGallery
 import chat.simplex.app.views.newchat.ActionButton
@@ -112,9 +114,11 @@ fun base64ToBitmap(base64ImageString: String): Bitmap {
 class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Uri?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
-    tmpFile = File.createTempFile("image", ".bmp", File(getAppFilesDirectory()))
+    val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
+    tmpFile = File.createTempFile("image", ".bmp", tmpDir)
     // Since the class should return Uri, the file should be deleted somewhere else. And in order to be sure, delegate this to system
     tmpFile?.deleteOnExit()
+    ChatModel.filesToDelete.add(tmpFile!!)
     uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", tmpFile!!)
     return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
       .putExtra(MediaStore.EXTRA_OUTPUT, uri)
