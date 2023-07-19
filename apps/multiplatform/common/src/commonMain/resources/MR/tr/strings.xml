@@ -336,7 +336,7 @@
     <string name="failed_to_active_user_title">Profil değiştirilirken hata!</string>
     <string name="network_error_desc">Lütfen, %1$s ile ağ bağlantınızı denetleyin ve yeniden deneyin.</string>
     <string name="error_adding_members">Üye(ler) eklenirken hata oluştu</string>
-    <string name="error_loading_details">Ayrıntılar yüklenirken hata oluştu</string>
+    <string name="error_loading_details">Ayrıntıları yüklerken hata oluştu</string>
     <string name="error_sending_message">İleti gönderirken hata oluştu</string>
     <string name="error_creating_address">Adres oluştururken hata oluştu</string>
     <string name="error_changing_address">Adres değiştirirken hata oluştu</string>
@@ -348,7 +348,14 @@
     <string name="error_deleting_contact">Konuştuğun kişiyi silerken hata oluştu</string>
     <string name="error_deleting_contact_request">Konuşma isteği silinirken hata oluştu</string>
     <string name="error_deleting_group">Toplu konuşma silinirken hata oluştu</string>
-    <string name="error_deleting_pending_contact_connection">Bekleyen konuşma bağlantısı silinirken hata oluştu</string>
+    <string name="error_deleting_pending_contact_connection">Bekleyen konuşma bağlantısını silerken hata oluştu</string>
     <string name="error_deleting_user">Kullanıcı profili silinirken hata oluştu</string>
     <string name="error_deleting_database">Konuşma veri tabanı silinirken hata oluştu</string>
+    <string name="error_encrypting_database">Veri tabanı şifrelerken hata oluştu</string>
+    <string name="error_joining_group">Toplu konuşmaya katılırken hata oluştu</string>
+    <string name="connection_error_auth">Bağlantı hatası (DOĞRULAMA)</string>
+    <string name="database_initialization_error_title">Veri tabanı oluşturulamıyor</string>
+    <string name="error_exporting_chat_database">Konuşma veri tabanını dışarı aktarırken hata oluştu</string>
+    <string name="error_importing_database">Konuşma veri tabanını içe aktarırken hata oluştu</string>
+    <string name="database_error">Veri tabanı hatası</string>
 </resources>
