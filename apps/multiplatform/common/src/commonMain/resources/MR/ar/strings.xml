@@ -839,4 +839,5 @@
     <string name="call_connection_peer_to_peer">ند لند</string>
     <string name="people_can_connect_only_via_links_you_share">يمكن للناس التواصل معك فقط عبر الرابط الذي تقوم بمشاركته</string>
     <string name="icon_descr_call_pending_sent">مكالمة في الانتظار</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل المرسلة باستخدام <b>تشفير ثنائي الطبقات من بين الطريفين</b>.</string>
 </resources>
