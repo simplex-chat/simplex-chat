@@ -1307,21 +1307,21 @@
     <string name="conn_event_ratchet_sync_allowed">versleuteling heronderhandeling toegestaan</string>
     <string name="error_synchronizing_connection">Fout bij het synchroniseren van de verbinding</string>
     <string name="sync_connection_force_desc">De versleuteling werkt en de nieuwe versleutelingsovereenkomst is niet vereist. Dit kan leiden tot verbindingsfouten!</string>
-    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</string>
-    <string name="v5_2_message_delivery_receipts">Ontvangstbevestiging voor berichten!</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</string>
+    <string name="v5_2_message_delivery_receipts">Ontvangst bevestiging voor berichten!</string>
     <string name="receipts_section_description_1">Ze kunnen worden overschreven in contactinstellingen</string>
     <string name="receipts_section_contacts">Contacten</string>
-    <string name="receipts_contacts_title_disable">Ontvangstbevestiging uitschakelen\?</string>
-    <string name="receipts_contacts_title_enable">Ontvangstbevestiging inschakelen\?</string>
-    <string name="receipts_contacts_override_enabled">Het verzenden van ontvangstbevestiging is ingeschakeld voor %d-contactpersonen</string>
+    <string name="receipts_contacts_title_disable">Ontvangst bevestiging uitschakelen\?</string>
+    <string name="receipts_contacts_title_enable">Ontvangst bevestiging inschakelen\?</string>
+    <string name="receipts_contacts_override_enabled">Het verzenden van ontvangst bevestiging is ingeschakeld voor %d-contactpersonen</string>
     <string name="receipts_section_description">Deze instellingen gelden voor uw huidige profiel</string>
     <string name="receipts_contacts_disable_keep_overrides">Uitschakelen (overschrijvingen behouden)</string>
     <string name="receipts_contacts_enable_for_all">Inschakelen voor iedereen</string>
     <string name="receipts_contacts_enable_keep_overrides">Inschakelen (overschrijvingen behouden)</string>
-    <string name="receipts_contacts_override_disabled">Het verzenden van ontvangstbevestiging is uitgeschakeld voor %d-contactpersonen</string>
+    <string name="receipts_contacts_override_disabled">Het verzenden van ontvangst bevestiging is uitgeschakeld voor %d-contactpersonen</string>
     <string name="receipts_contacts_disable_for_all">Uitschakelen voor iedereen</string>
-    <string name="settings_section_title_delivery_receipts">STUUR ONTVANGSTBEVESTIGING NAAR</string>
-    <string name="send_receipts">Ontvangstbevestiging verzenden</string>
+    <string name="settings_section_title_delivery_receipts">STUUR ONTVANGST BEVESTIGING NAAR</string>
+    <string name="send_receipts">Ontvangst bevestiging verzenden</string>
     <string name="v5_2_message_delivery_receipts_descr">De tweede vink die we gemist hebben! ✅</string>
     <string name="v5_2_favourites_filter_descr">Filter ongelezen en favoriete chats.</string>
     <string name="v5_2_favourites_filter">Vind gesprekken sneller</string>
@@ -1329,16 +1329,16 @@
     <string name="v5_2_fix_encryption">Behoud uw verbindingen</string>
     <string name="v5_2_disappear_one_message">Eén bericht laten verdwijnen</string>
     <string name="v5_2_more_things">Nog een paar dingen</string>
-    <string name="delivery_receipts_are_disabled">Ontvangstbevestiging is uitgeschakeld!</string>
-    <string name="delivery_receipts_title">Ontvangstbevestiging!</string>
+    <string name="delivery_receipts_are_disabled">Ontvangst bevestiging is uitgeschakeld!</string>
+    <string name="delivery_receipts_title">Ontvangst bevestiging!</string>
     <string name="dont_enable_receipts">Niet inschakelen</string>
     <string name="enable_receipts_all">Inschakelen</string>
     <string name="v5_2_disappear_one_message_descr">Zelfs wanneer uitgeschakeld in het gesprek.</string>
     <string name="v5_2_more_things_descr">- stabielere berichtbezorging.
 \n- een beetje betere groepen.
 \n- en meer!</string>
-    <string name="sending_delivery_receipts_will_be_enabled">Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contactpersonen.</string>
+    <string name="sending_delivery_receipts_will_be_enabled">Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contactpersonen.</string>
     <string name="you_can_enable_delivery_receipts_later">U kunt later inschakelen via Instellingen</string>
     <string name="you_can_enable_delivery_receipts_later_alert">U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.</string>
-    <string name="error_enabling_delivery_receipts">Fout bij het inschakelen van ontvangstbevestiging!</string>
+    <string name="error_enabling_delivery_receipts">Fout bij het inschakelen van ontvangst bevestiging!</string>
 </resources>
