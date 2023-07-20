@@ -252,13 +252,13 @@ toChatInfo = \case
   CDGroupSnd g -> GroupChat g
   CDGroupRcv g _ -> GroupChat g
 
-data NewChatItem d = NewChatItem
+data NewChatItem c d = NewChatItem
   { createdByMsgId :: Maybe MessageId,
     itemSent :: SMsgDirection d,
     itemTs :: ChatItemTs,
     itemContent :: CIContent d,
     itemText :: Text,
-    itemStatus :: CIStatus d,
+    itemStatus :: CIStatus c d,
     itemSharedMsgId :: Maybe SharedMsgId,
     itemQuotedMsg :: Maybe QuotedMsg,
     createdAt :: UTCTime
@@ -333,7 +333,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   { itemId :: ChatItemId,
     itemTs :: ChatItemTs,
     itemText :: Text,
-    itemStatus :: CIStatus d,
+    itemStatus :: CIStatus c d,
     itemSharedMsgId :: Maybe SharedMsgId,
     itemDeleted :: Maybe (CIDeleted c),
     itemEdited :: Bool,
@@ -345,7 +345,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus c d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs createdAt updatedAt =
   let editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
@@ -621,32 +621,34 @@ data CIFileInfo = CIFileInfo
   }
   deriving (Show)
 
-data CIStatus (d :: MsgDirection) where
-  CISSndNew :: CIStatus 'MDSnd
-  CISSndSent :: CIStatus 'MDSnd
-  CISSndRcvd :: MsgReceiptStatus -> CIStatus 'MDSnd
-  CISGroupSndSent :: GroupSndCIStatusProgress -> CIStatus 'MDSnd
-  CISGroupSndRcvd :: GroupSndCIStatusProgress -> CIStatus 'MDSnd
-  CISSndErrorAuth :: CIStatus 'MDSnd
-  CISSndError :: String -> CIStatus 'MDSnd
-  CISRcvNew :: CIStatus 'MDRcv
-  CISRcvRead :: CIStatus 'MDRcv
+data CIStatus (c :: ChatType) (d :: MsgDirection) where
+  CISSndNew :: CIStatus c 'MDSnd
+  CISSndSent :: CIStatus 'CTDirect 'MDSnd
+  CISSndRcvd :: MsgReceiptStatus -> CIStatus 'CTDirect 'MDSnd
+  CISGroupSndSent :: GroupSndCIStatusProgress -> CIStatus 'CTGroup 'MDSnd
+  CISGroupSndRcvd :: GroupSndCIStatusProgress -> CIStatus 'CTGroup 'MDSnd
+  CISSndErrorAuth :: CIStatus 'CTDirect 'MDSnd
+  CISSndError :: String -> CIStatus 'CTDirect 'MDSnd
+  CISRcvNew :: CIStatus c 'MDRcv
+  CISRcvRead :: CIStatus c 'MDRcv
 
-deriving instance Show (CIStatus d)
+deriving instance Show (CIStatus c d)
 
-instance ToJSON (CIStatus d) where
+instance ToJSON (CIStatus c d) where
   toJSON = J.toJSON . jsonCIStatus
   toEncoding = J.toEncoding . jsonCIStatus
 
-instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decodeLatin1 . strEncode
+instance (ChatTypeI c, MsgDirectionI d) => ToField (CIStatus c d) where toField = toField . decodeLatin1 . strEncode
 
-instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+instance (Typeable c, ChatTypeI c) => FromField (ACIStatus c) where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
-data ACIStatus = forall d. MsgDirectionI d => ACIStatus (SMsgDirection d) (CIStatus d)
+data ACIStatus c = forall d. MsgDirectionI d => ACIStatus (SMsgDirection d) (CIStatus c d)
 
-deriving instance Show ACIStatus
+deriving instance Show (ACIStatus c)
 
-instance MsgDirectionI d => StrEncoding (CIStatus d) where
+data AnyCIStatus = forall c. ChatTypeI c => AnyCIStatus (SChatType c) (ACIStatus c)
+
+instance (ChatTypeI c, MsgDirectionI d) => StrEncoding (CIStatus c d) where
   strEncode = \case
     CISSndNew -> "snd_new"
     CISSndSent -> "snd_sent"
@@ -659,20 +661,21 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
     CISRcvRead -> "rcv_read"
   strP = (\(ACIStatus _ st) -> checkDirection st) <$?> strP
 
-instance StrEncoding ACIStatus where
+instance ChatTypeI c => StrEncoding (ACIStatus c) where
   strEncode (ACIStatus _ s) = strEncode s
-  strP =
-    A.takeTill (== ' ') >>= \case
-      "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
-      "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
-      "snd_rcvd" -> ACIStatus SMDSnd . CISSndRcvd <$> (A.space *> strP)
-      "group_snd_sent" -> ACIStatus SMDSnd . CISGroupSndSent <$> (A.space *> strP)
-      "group_snd_rcvd" -> ACIStatus SMDSnd . CISGroupSndRcvd <$> (A.space *> strP)
-      "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-      "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
-      "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
-      "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
-      _ -> fail "bad status"
+  strP = (\(AnyCIStatus _ st) -> checkChatType st) <$?> statusP
+    where
+      statusP = A.takeTill (== ' ') >>= \case
+        "snd_new" -> pure $ AnyCIStatus (chatTypeI @c) $ ACIStatus SMDSnd CISSndNew
+        "snd_sent" -> pure $ AnyCIStatus SCTDirect $ ACIStatus SMDSnd CISSndSent
+        "snd_rcvd" -> AnyCIStatus SCTDirect . ACIStatus SMDSnd . CISSndRcvd <$> (A.space *> strP)
+        "group_snd_sent" -> AnyCIStatus SCTGroup . ACIStatus SMDSnd . CISGroupSndSent <$> (A.space *> strP)
+        "group_snd_rcvd" -> AnyCIStatus SCTGroup . ACIStatus SMDSnd . CISGroupSndRcvd <$> (A.space *> strP)
+        "snd_error_auth" -> pure $ AnyCIStatus SCTDirect $ ACIStatus SMDSnd CISSndErrorAuth
+        "snd_error" -> AnyCIStatus SCTDirect . ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+        "rcv_new" -> pure $ AnyCIStatus (chatTypeI @c) $ ACIStatus SMDRcv CISRcvNew
+        "rcv_read" -> pure $ AnyCIStatus (chatTypeI @c) $ ACIStatus SMDRcv CISRcvRead
+        _ -> fail "bad status"
 
 data JSONCIStatus
   = JCISSndNew
@@ -690,7 +693,7 @@ instance ToJSON JSONCIStatus where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIS"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIS"
 
-jsonCIStatus :: CIStatus d -> JSONCIStatus
+jsonCIStatus :: CIStatus c d -> JSONCIStatus
 jsonCIStatus = \case
   CISSndNew -> JCISSndNew
   CISSndSent -> JCISSndSent
@@ -702,12 +705,12 @@ jsonCIStatus = \case
   CISRcvNew -> JCISRcvNew
   CISRcvRead -> JCISRcvRead
 
-ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
+ciStatusNew :: forall c d. MsgDirectionI d => CIStatus c d
 ciStatusNew = case msgDirection @d of
   SMDSnd -> CISSndNew
   SMDRcv -> CISRcvNew
 
-ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
+ciCreateStatus :: forall c d. MsgDirectionI d => CIContent d -> CIStatus c d
 ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
@@ -884,6 +887,11 @@ checkDirection :: forall t d d'. (MsgDirectionI d, MsgDirectionI d') => t d' -> 
 checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
   Just Refl -> Right x
   Nothing -> Left "bad direction"
+
+checkChatType :: forall t c c'. (ChatTypeI c, ChatTypeI c') => t c' -> Either String (t c)
+checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
+  Just Refl -> Right x
+  Nothing -> Left "bad chat type"
 
 data CIDeleted (c :: ChatType) where
   CIDeleted :: Maybe UTCTime -> CIDeleted c

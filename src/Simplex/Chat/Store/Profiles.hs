@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -58,9 +59,9 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import Data.Functor (($>))
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
-import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
@@ -129,7 +130,7 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
               JOIN contacts ct USING (contact_id)
               WHERE i.user_id = ? AND i.item_status = ? AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL) AND ct.deleted = 0
             |]
-            (userId, CISRcvNew)
+            (userId, CISRcvNew @'CTDirect)
       gCount <-
         maybeFirstRow fromOnly $
           DB.query
@@ -140,7 +141,7 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
               JOIN groups g USING (group_id)
               WHERE i.user_id = ? AND i.item_status = ? AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
             |]
-            (userId, CISRcvNew)
+            (userId, CISRcvNew @'CTGroup)
       pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount}
 
 getUsers :: DB.Connection -> IO [User]
@@ -441,9 +442,6 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
     ucl = case autoAccept of
       Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
       _ -> (False, False, Nothing)
-
-
-
 
 getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> IO [ServerCfg p]
 getProtocolServers db User {userId} =
