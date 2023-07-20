@@ -22,8 +22,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.*
@@ -32,7 +30,6 @@ import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -81,7 +78,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         fontSize = 16.sp,
         modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
       )
-      ProfileNameField(fullName, "", ::isValidDisplayName)
+      ProfileNameField(fullName, "")
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
     Row {

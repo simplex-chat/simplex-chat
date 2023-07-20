@@ -154,9 +154,10 @@ struct ChatInfoView: View {
                     if let connStats = connectionStats,
                        connStats.ratchetSyncAllowed {
                         synchronizeConnectionButton()
-                    } else if developerTools {
-                        synchronizeConnectionButtonForce()
                     }
+//                    } else if developerTools {
+//                        synchronizeConnectionButtonForce()
+//                    }
                 }
 
                 if let contactLink = contact.contactLink {
