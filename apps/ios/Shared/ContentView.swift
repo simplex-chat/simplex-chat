@@ -179,13 +179,13 @@ struct ContentView: View {
     }
 
     private func runAuthenticate() {
-        logger.debug("runAuthenticate")
+        logger.debug("DEBUGGING: runAuthenticate")
         if !prefPerformLA {
             userAuthorized = true
         } else {
-            logger.debug("before dismissAllSheets")
+            logger.debug("DEBUGGING: before dismissAllSheets")
             dismissAllSheets(animated: false) {
-                logger.debug("in dismissAllSheets callback")
+                logger.debug("DEBUGGING: in dismissAllSheets callback")
                 chatModel.chatId = nil
                 justAuthenticate()
             }
