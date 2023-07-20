@@ -227,7 +227,7 @@
     <string name="icon_descr_server_status_error">Ошибка соединения с сервером</string>
     <string name="icon_descr_server_status_pending">Ожидается соединение с сервером</string>
     <string name="switch_receiving_address_question">Переключить адрес получения?</string>
-    <string name="switch_receiving_address_desc">Это экспериментальная функция! Она будет работать, только если на другом клиенте установлена версия 4.2. После завершения смены адреса Вы увидите сообщение — убедитесь, что Вы все еще можете получать сообщения от этого контакта (или члена группы).</string>
+    <string name="switch_receiving_address_desc">Адрес получения сообщений будет перемещён на другой сервер. Изменение адреса завершится после того как отправитель будет онлайн.</string>
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
     <string name="icon_descr_record_voice_message">Записать голосовое сообщение</string>
@@ -1345,12 +1345,12 @@
     <string name="item_info_no_text">нет текста</string>
     <string name="search_verb">Поиск</string>
     <string name="la_mode_off">Отключено</string>
-    <string name="receipts_section_description_1">Они могут быть предопределены в настройках контактов</string>
+    <string name="receipts_section_description_1">Они могут быть переопределены в настройках контактов</string>
     <string name="delivery_receipts_are_disabled">Отчёты о доставке выключены!</string>
-    <string name="snd_conn_event_ratchet_sync_ok">шифрование ок для %s</string>
+    <string name="snd_conn_event_ratchet_sync_ok">шифрование работает для %s</string>
     <string name="snd_conn_event_ratchet_sync_required">требуется новое соглашение о шифровании для %s</string>
     <string name="abort_switch_receiving_address_desc">Изменение адреса будет прекращено. Будет использоваться старый адрес.</string>
-    <string name="abort_switch_receiving_address">Прекратить изменения адреса</string>
+    <string name="abort_switch_receiving_address">Прекратить изменение адреса</string>
     <string name="receipts_section_contacts">Контакты</string>
     <string name="receipts_contacts_disable_keep_overrides">Выключить (кроме исключений)</string>
     <string name="conn_event_ratchet_sync_started">шифрование согласовывается…</string>
@@ -1365,16 +1365,16 @@
     <string name="no_history">Нет истории</string>
     <string name="receipts_contacts_override_enabled">Отправка отчётов о доставке включена для %d контактов.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Отправка отчётов о доставке будет включена для всех контактов во всех видимых профилях чата.</string>
-    <string name="receipts_section_description">Эти установки для Вашего активного профиля</string>
+    <string name="receipts_section_description">Установки для Вашего активного профиля</string>
     <string name="receipts_contacts_override_disabled">Отправка отчётов о доставке выключена для %d контактов.</string>
     <string name="sync_connection_force_desc">Шифрование работает, и новое соглашение не требуется. Это может привести к ошибкам соединения!</string>
-    <string name="v5_2_message_delivery_receipts_descr">Вторая галочка, которой нам не хватало! ✅</string>
+    <string name="v5_2_message_delivery_receipts_descr">Вторая галочка - знать, что доставлено! ✅</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Вы можете включить их позже в настройках Конфиденциальности.</string>
     <string name="error_aborting_address_change">Ошибка при прекращении изменения адреса</string>
     <string name="abort_switch_receiving_address_confirm">Прекратить</string>
-    <string name="abort_switch_receiving_address_question">Прекратить изменения адреса\?</string>
-    <string name="unfavorite_chat">Отменить избранный</string>
-    <string name="shutdown_alert_desc">Нотификации перестанут работать пока вы не перезапустите приложение</string>
+    <string name="abort_switch_receiving_address_question">Прекратить изменение адреса\?</string>
+    <string name="unfavorite_chat">Не избранный</string>
+    <string name="shutdown_alert_desc">Нотификации перестанут работать, пока вы не перезапустите приложение</string>
     <string name="network_option_protocol_timeout_per_kb">Таймаут протокола на KB</string>
     <string name="allow_to_send_files">Разрешить посылать файлы и медиа.</string>
     <string name="group_members_can_send_files">Члены группы могут слать файлы и медиа.</string>
@@ -1393,7 +1393,7 @@
     <string name="settings_section_title_delivery_receipts">ОТПРАВКА ОТЧЁТОВ О ДОСТАВКЕ</string>
     <string name="conn_event_ratchet_sync_agreed">шифрование согласовано</string>
     <string name="snd_conn_event_ratchet_sync_agreed">шифрование согласовано для %s</string>
-    <string name="conn_event_ratchet_sync_ok">шифрование ок</string>
+    <string name="conn_event_ratchet_sync_ok">шифрование работает</string>
     <string name="conn_event_ratchet_sync_allowed">новое соглашение о шифровании разрешено</string>
     <string name="rcv_conn_event_verification_code_reset">код безопасности изменился</string>
     <string name="send_receipts">Отправлять отчёты о доставке</string>
