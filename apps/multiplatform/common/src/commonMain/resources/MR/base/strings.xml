@@ -654,7 +654,7 @@
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Display name:</string>
-  <string name="full_name__field">"Full name:</string>
+  <string name="full_name__field">Full name:</string>
   <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>

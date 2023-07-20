@@ -419,7 +419,7 @@
     <string name="delete_address">Adresse löschen</string>
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Angezeigter Name:</string>
-    <string name="full_name__field">"Vollständiger Name:</string>
+    <string name="full_name__field">Vollständiger Name:</string>
     <string name="your_current_profile">Mein aktuelles Chat-Profil</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt. SimpleX-Server können Ihr Profil nicht sehen.</string>
     <string name="edit_image">Bild bearbeiten</string>
