@@ -2111,13 +2111,9 @@
         <target>Архив чата экспортирован.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Exporting database archive..." xml:space="preserve">
-        <source>Exporting database archive...</source>
-        <target>Архив чата экспортируется...</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Exporting database archive…" xml:space="preserve">
         <source>Exporting database archive…</source>
+        <target>Архив чата экспортируется…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Failed to remove passphrase" xml:space="preserve">
@@ -2906,13 +2902,9 @@
         <target>Сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrating database archive..." xml:space="preserve">
-        <source>Migrating database archive...</source>
-        <target>Данные чата перемещаются...</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Migrating database archive…" xml:space="preserve">
         <source>Migrating database archive…</source>
+        <target>Данные чата перемещаются…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration error:" xml:space="preserve">

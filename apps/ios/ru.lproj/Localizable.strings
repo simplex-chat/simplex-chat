@@ -1360,7 +1360,7 @@
 "Exported database archive." = "Архив чата экспортирован.";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "Архив чата экспортируется...";
+"Exporting database archive…" = "Архив чата экспортируется…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Ошибка удаления пароля";
@@ -1861,7 +1861,7 @@
 "Messages & files" = "Сообщения";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "Данные чата перемещаются...";
+"Migrating database archive…" = "Данные чата перемещаются…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Ошибка при перемещении данных:";

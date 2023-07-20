@@ -1360,7 +1360,7 @@
 "Exported database archive." = "Exportovaný archiv databáze.";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "Exportuji archiv databáze...";
+"Exporting database archive…" = "Exportuji archiv databáze…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Přístupovou frázi se nepodařilo odstranit";
@@ -1861,7 +1861,7 @@
 "Messages & files" = "Zprávy";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "Přenášení archivu databáze...";
+"Migrating database archive…" = "Přenášení archivu databáze…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Chyba přenášení:";

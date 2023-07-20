@@ -226,10 +226,10 @@ fun ChatItemView(
                 }
               )
             }
+            ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
               CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
             }
-            ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             if (!(live && cItem.meta.isLive)) {
               DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
             }
@@ -252,8 +252,8 @@ fun ChatItemView(
                   showMenu.value = false
                 }
               )
-              ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             }
+            ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
           }
         }
@@ -283,6 +283,7 @@ fun ChatItemView(
         @Composable fun DeletedItem() {
           DeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
           DefaultDropdownMenu(showMenu) {
+            ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
           }
         }
@@ -295,6 +296,7 @@ fun ChatItemView(
         fun ModeratedItem() {
           MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
           DefaultDropdownMenu(showMenu) {
+            ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage)
           }
         }

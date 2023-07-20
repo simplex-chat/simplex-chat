@@ -11,20 +11,24 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
@@ -238,22 +242,23 @@ fun GroupMemberInfoLayout(
     val contactId = member.memberContactId
 
     if (member.memberActive) {
-      if (contactId != null) {
-        SectionView {
+      SectionView {
+        if (contactId != null) {
           if (knownDirectChat(contactId) != null || groupInfo.fullGroupPreferences.directMessages.on) {
             OpenChatButton(onClick = { openDirectChat(contactId) })
           }
-          if (connectionCode != null) {
-            VerifyCodeButton(member.verified, verifyClicked)
-          }
-          if (cStats != null && cStats.ratchetSyncAllowed) {
-            SynchronizeConnectionButton(syncMemberConnection)
-          } else if (developerTools) {
-            SynchronizeConnectionButtonForce(syncMemberConnectionForce)
-          }
         }
-        SectionDividerSpaced()
+        if (connectionCode != null) {
+          VerifyCodeButton(member.verified, verifyClicked)
+        }
+        if (cStats != null && cStats.ratchetSyncAllowed) {
+          SynchronizeConnectionButton(syncMemberConnection)
+        }
+//        } else if (developerTools) {
+//          SynchronizeConnectionButtonForce(syncMemberConnectionForce)
+//        }
       }
+      SectionDividerSpaced()
     }
 
     if (member.contactLink != null) {
@@ -338,22 +343,33 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    val text = buildAnnotatedString {
       if (member.verified) {
-        Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
+        appendInlineContent(id = "shieldIcon")
       }
-      Text(
-        member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-        color = MaterialTheme.colors.onBackground,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
+      append(member.displayName)
     }
+    val inlineContent: Map<String, InlineTextContent> = mapOf(
+      "shieldIcon" to InlineTextContent(
+        Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
+      ) {
+        Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+      }
+    )
+    Text(
+      text,
+      inlineContent = inlineContent,
+      style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      textAlign = TextAlign.Center,
+      maxLines = 3,
+      overflow = TextOverflow.Ellipsis
+    )
     if (member.fullName != "" && member.fullName != member.displayName) {
       Text(
         member.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
-        maxLines = 2,
+        textAlign = TextAlign.Center,
+        maxLines = 4,
         overflow = TextOverflow.Ellipsis
       )
     }

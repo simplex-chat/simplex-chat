@@ -2064,14 +2064,6 @@ public struct ChatItem: Identifiable, Decodable {
         return nil
     }
 
-    public var showMutableNotification: Bool {
-        switch content {
-        case .rcvCall: return false
-        case .rcvChatFeature: return false
-        default: return showNtfDir
-        }
-    }
-
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
@@ -3127,7 +3119,7 @@ func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
 public enum SndConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
     case ratchetSync(syncStatus: RatchetSyncState, member: GroupMemberRef?)
-    
+
     var text: String {
         switch self {
         case let .switchQueue(phase, member):

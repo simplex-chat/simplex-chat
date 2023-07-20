@@ -1380,7 +1380,7 @@ updateGroupChatItemModerated db User {userId} gInfo@GroupInfo {groupId} (CChatIt
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just currentTs) m)}, formattedText = Nothing})
+  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just currentTs) m), editable = False}, formattedText = Nothing})
 
 markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> Maybe GroupMember -> UTCTime -> IO ()
 markGroupChatItemDeleted db User {userId} GroupInfo {groupId} (CChatItem _ ci) msgId byGroupMember_ deletedTs = do

@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalView
@@ -25,7 +24,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ChatInfoToolbarTitle
@@ -323,7 +321,10 @@ fun ContactCheckRow(
     ProfileImage(size = 36.dp, contact.image)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     Text(
-      contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+      contact.chatViewName,
+      modifier = Modifier.weight(10f, fill = true),
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
       color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))
