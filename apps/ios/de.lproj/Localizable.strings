@@ -20,6 +20,9 @@
 "_italic_" = "\\_kursiv_";
 
 /* No comment provided by engineer. */
+"- more stable message delivery.\n- a bit better groups.\n- and more!" = "- stabilere Zustellung von Nachrichten.\n- ein bisschen verbesserte Gruppen.\n- und mehr!";
+
+/* No comment provided by engineer. */
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- Bis zu 5 Minuten lange Sprachnachrichten.\n- Zeitdauer für verschwindende Nachrichten anpassen.\n- Nachrichten-Historie bearbeiten.";
 
 /* No comment provided by engineer. */
@@ -234,6 +237,9 @@
 
 /* No comment provided by engineer. */
 "30 seconds" = "30 Sekunden";
+
+/* No comment provided by engineer. */
+"A few more things" = "Ein paar weitere Dinge";
 
 /* notification title */
 "A new contact" = "Ein neuer Kontakt";
@@ -1092,6 +1098,12 @@
 /* No comment provided by engineer. */
 "Direct messages between members are prohibited in this group." = "In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.";
 
+/* No comment provided by engineer. */
+"Disable (keep overrides)" = "Deaktivieren (vorgenommene Einstellungen bleiben erhalten)";
+
+/* No comment provided by engineer. */
+"Disable for all" = "Für Alle deaktivieren";
+
 /* authentication reason */
 "Disable SimpleX Lock" = "SimpleX Sperre deaktivieren";
 
@@ -1132,6 +1144,9 @@
 "Don't create address" = "Keine Adresse erstellt";
 
 /* No comment provided by engineer. */
+"Don't enable" = "Nicht aktivieren";
+
+/* No comment provided by engineer. */
 "Don't show again" = "Nicht nochmals anzeigen";
 
 /* No comment provided by engineer. */
@@ -1162,7 +1177,13 @@
 "Enable" = "Aktivieren";
 
 /* No comment provided by engineer. */
+"Enable (keep overrides)" = "Aktivieren (vorgenommene Einstellungen bleiben erhalten)";
+
+/* No comment provided by engineer. */
 "Enable automatic message deletion?" = "Automatisches Löschen von Nachrichten aktivieren?";
+
+/* No comment provided by engineer. */
+"Enable for all" = "Für Alle aktivieren";
 
 /* No comment provided by engineer. */
 "Enable instant notifications?" = "Sofortige Benachrichtigungen aktivieren?";
@@ -1339,6 +1360,9 @@
 "Error deleting user profile" = "Fehler beim Löschen des Benutzerprofils";
 
 /* No comment provided by engineer. */
+"Error enabling delivery receipts!" = "Fehler beim Aktivieren der Empfangsbestätigungen!";
+
+/* No comment provided by engineer. */
 "Error enabling notifications" = "Fehler beim Aktivieren der Benachrichtigungen";
 
 /* No comment provided by engineer. */
@@ -1387,6 +1411,9 @@
 "Error sending message" = "Fehler beim Senden der Nachricht";
 
 /* No comment provided by engineer. */
+"Error setting delivery receipts!" = "Fehler beim Setzen der Empfangsbestätigungen!";
+
+/* No comment provided by engineer. */
 "Error starting chat" = "Fehler beim Starten des Chats";
 
 /* No comment provided by engineer. */
@@ -1421,6 +1448,9 @@
 
 /* No comment provided by engineer. */
 "Error: URL is invalid" = "Fehler: URL ist ungültig";
+
+/* No comment provided by engineer. */
+"Even when disabled in the conversation." = "Auch wenn sie im Chat deaktiviert sind.";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Beenden ohne Speichern";
@@ -1471,7 +1501,13 @@
 "Files and media prohibited!" = "Dateien und Medien sind nicht erlaubt!";
 
 /* No comment provided by engineer. */
+"Filter unread and favorite chats." = "Nach ungelesenen und favorisierten Chats filtern.";
+
+/* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "Endlich haben wir sie! 🚀";
+
+/* No comment provided by engineer. */
+"Find chats faster" = "Chats schneller finden";
 
 /* No comment provided by engineer. */
 "Fix" = "Reparieren";
@@ -1481,6 +1517,9 @@
 
 /* No comment provided by engineer. */
 "Fix connection?" = "Verbindung reparieren?";
+
+/* No comment provided by engineer. */
+"Fix encryption after restoring backups." = "Reparatur der Verschlüsselung nach wiedereinspielen von Backups.";
 
 /* No comment provided by engineer. */
 "Fix not supported by contact" = "Reparatur wird vom Kontakt nicht unterstützt";
@@ -1837,6 +1876,9 @@
 "Joining group" = "Der Gruppe beitreten";
 
 /* No comment provided by engineer. */
+"Keep your connections" = "Ihre Verbindungen beibehalten";
+
+/* No comment provided by engineer. */
 "Keychain error" = "KeyChain Fehler";
 
 /* No comment provided by engineer. */
@@ -1894,6 +1936,9 @@
 "Make a private connection" = "Stellen Sie eine private Verbindung her";
 
 /* No comment provided by engineer. */
+"Make one message disappear" = "Eine verschwindende Nachricht verfassen";
+
+/* No comment provided by engineer. */
 "Make profile private!" = "Privates Profil erzeugen!";
 
 /* No comment provided by engineer. */
@@ -1943,6 +1988,9 @@
 
 /* No comment provided by engineer. */
 "Message delivery error" = "Fehler bei der Nachrichtenzustellung";
+
+/* No comment provided by engineer. */
+"Message delivery receipts!" = "Empfangsbestätigungen für Nachrichten!";
 
 /* No comment provided by engineer. */
 "Message draft" = "Nachrichtenentwurf";
@@ -2705,7 +2753,19 @@
 "Sender may have deleted the connection request." = "Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.";
 
 /* No comment provided by engineer. */
+"Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Das Senden von Empfangsbestätigungen an alle Kontakte in allen sichtbaren Chat-Profilen wird aktiviert.";
+
+/* No comment provided by engineer. */
+"Sending delivery receipts will be enabled for all contacts." = "Das Senden von Empfangsbestätigungen an alle Kontakte wird aktiviert.";
+
+/* No comment provided by engineer. */
 "Sending file will be stopped." = "Das Senden der Datei wird beendet.";
+
+/* No comment provided by engineer. */
+"Sending receipts is disabled for %lld contacts" = "Das Senden von Empfangsbestätigungen an %lld Kontakte ist deaktiviert";
+
+/* No comment provided by engineer. */
+"Sending receipts is enabled for %lld contacts" = "Das Senden von Empfangsbestätigungen an %lld Kontakte ist aktiviert";
 
 /* No comment provided by engineer. */
 "Sending via" = "Senden über";
@@ -3000,6 +3060,9 @@
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Das Profil wird nur mit Ihren Kontakten geteilt.";
+
+/* No comment provided by engineer. */
+"The second tick we missed! ✅" = "Das zweite Häkchen, welches wir vermisst haben! ✅";
 
 /* No comment provided by engineer. */
 "The sender will NOT be notified" = "Der Absender wird NICHT benachrichtigt";
@@ -3356,7 +3419,10 @@
 "You can create it later" = "Sie können dies später erstellen";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Diese können später in den Datenschutz & Sicherheits-Einstellungen durch Sie aktiviert werden.";
+"You can enable later via Settings" = "Sie können diese später in den Einstellungen aktivieren";
+
+/* No comment provided by engineer. */
+"You can enable them later via app Privacy & Security settings." = "Sie können diese später in den Datenschutz & Sicherheits-Einstellungen der App aktivieren.";
 
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "Sie können ein Benutzerprofil verbergen oder stummschalten - wischen Sie es nach rechts.";
