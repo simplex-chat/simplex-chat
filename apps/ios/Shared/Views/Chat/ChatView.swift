@@ -627,6 +627,7 @@ struct ChatView: View {
                 menu.append(viewInfoUIAction())
                 menu.append(deleteUIAction())
             } else if ci.isDeletedContent {
+                menu.append(viewInfoUIAction())
                 menu.append(deleteUIAction())
             }
             return menu
