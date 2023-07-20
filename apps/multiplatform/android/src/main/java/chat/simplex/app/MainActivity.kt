@@ -66,11 +66,11 @@ class MainActivity: FragmentActivity() {
   private val destroyedAfterBackPress = mutableStateOf(false)
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     super.onCreate(savedInstanceState)
     SimplexApp.context.mainActivity = WeakReference(this)
     // testJson()
     val m = vm.chatModel
-    applyAppLocale(m.controller.appPrefs.appLanguage)
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
