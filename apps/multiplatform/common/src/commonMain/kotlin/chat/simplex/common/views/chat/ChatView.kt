@@ -708,19 +708,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
             val showMember = showMemberImage(member, prevItem)
             Row(Modifier.padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp).then(swipeableModifier)) {
               if (showMember) {
-                val contactId = member.memberContactId
-                if (contactId == null) {
+                Box(
+                  Modifier
+                    .clip(CircleShape)
+                    .clickable {
+                      showMemberInfo(chat.chatInfo.groupInfo, member)
+                    }
+                ) {
                   MemberImage(member)
-                } else {
-                  Box(
-                    Modifier
-                      .clip(CircleShape)
-                      .clickable {
-                        showMemberInfo(chat.chatInfo.groupInfo, member)
-                      }
-                  ) {
-                    MemberImage(member)
-                  }
                 }
                 Spacer(Modifier.size(4.dp))
               } else {

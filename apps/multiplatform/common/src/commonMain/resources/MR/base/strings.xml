@@ -655,7 +655,7 @@
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Display name:</string>
-  <string name="full_name__field">"Full name:</string>
+  <string name="full_name__field">Full name:</string>
   <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
@@ -865,6 +865,17 @@
   <string name="empty_chat_profile_is_created">An empty chat profile with the provided name is created, and the app opens as usual.</string>
   <string name="if_you_enter_passcode_data_removed">If you enter this passcode when opening the app, all app data will be irreversibly removed!</string>
   <string name="set_passcode">Set passcode</string>
+  <string name="receipts_section_description">These settings are for your current profile</string>
+  <string name="receipts_section_description_1">They can be overridden in contact settings</string>
+  <string name="receipts_section_contacts">Contacts</string>
+  <string name="receipts_contacts_title_enable">Enable receipts?</string>
+  <string name="receipts_contacts_title_disable">Disable receipts?</string>
+  <string name="receipts_contacts_override_enabled">Sending receipts is enabled for %d contacts</string>
+  <string name="receipts_contacts_override_disabled">Sending receipts is disabled for %d contacts</string>
+  <string name="receipts_contacts_enable_keep_overrides">Enable (keep overrides)</string>
+  <string name="receipts_contacts_disable_keep_overrides">Disable (keep overrides)</string>
+  <string name="receipts_contacts_enable_for_all">Enable for all</string>
+  <string name="receipts_contacts_disable_for_all">Disable for all</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
@@ -874,6 +885,7 @@
   <string name="settings_section_title_app">APP</string>
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
+  <string name="settings_section_title_delivery_receipts">SEND DELIVERY RECEIPTS TO</string>
   <string name="settings_restart_app">Restart</string>
   <string name="settings_shutdown">Shutdown</string>
   <string name="settings_developer_tools">Developer tools</string>
@@ -1079,7 +1091,7 @@
   <string name="snd_conn_event_ratchet_sync_ok">encryption ok for %s</string>
   <string name="snd_conn_event_ratchet_sync_allowed">encryption re-negotiation allowed for %s</string>
   <string name="snd_conn_event_ratchet_sync_required">encryption re-negotiation required for %s</string>
-  <string name="snd_conn_event_ratchet_sync_started">agreeing encryption for %s</string>
+  <string name="snd_conn_event_ratchet_sync_started">agreeing encryption for %s…</string>
   <string name="snd_conn_event_ratchet_sync_agreed">encryption agreed for %s</string>
   <string name="rcv_conn_event_verification_code_reset">security code changed</string>
 
@@ -1145,6 +1157,7 @@
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
   <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
+  <string name="send_receipts">Send receipts</string>
 
   <!-- Chat / Chat item info -->
   <string name="section_title_for_console">FOR CONSOLE</string>
@@ -1479,6 +1492,16 @@
   <string name="v5_1_better_messages_descr">- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history.</string>
   <string name="v5_1_japanese_portuguese_interface">Japanese and Portuguese UI</string>
   <string name="whats_new_thanks_to_users_contribute_weblate">Thanks to the users – contribute via Weblate!</string>
+  <string name="v5_2_message_delivery_receipts">Message delivery receipts!</string>
+  <string name="v5_2_message_delivery_receipts_descr">The second tick we missed! ✅</string>
+  <string name="v5_2_favourites_filter">Find chats faster</string>
+  <string name="v5_2_favourites_filter_descr">Filter unread and favorite chats.</string>
+  <string name="v5_2_fix_encryption">Keep your connections</string>
+  <string name="v5_2_fix_encryption_descr">Fix encryption after restoring backups.</string>
+  <string name="v5_2_disappear_one_message">Make one message disappear</string>
+  <string name="v5_2_disappear_one_message_descr">Even when disabled in the conversation.</string>
+  <string name="v5_2_more_things">A few more things</string>
+  <string name="v5_2_more_things_descr">- more stable message delivery.\n- a bit better groups.\n- and more!</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
@@ -1489,4 +1512,15 @@
   <string name="custom_time_unit_months">months</string>
   <string name="custom_time_picker_select">Select</string>
   <string name="custom_time_picker_custom">custom</string>
+
+  <!--  SetDeliveryReceiptsView.kt -->
+  <string name="delivery_receipts_title">Delivery receipts!</string>
+  <string name="enable_receipts_all">Enable</string>
+  <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</string>
+  <string name="sending_delivery_receipts_will_be_enabled">Sending delivery receipts will be enabled for all contacts.</string>
+  <string name="dont_enable_receipts">Don\'t enable</string>
+  <string name="you_can_enable_delivery_receipts_later">You can enable later via Settings</string>
+  <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
+  <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
+  <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
 </resources>

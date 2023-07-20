@@ -66,10 +66,25 @@ enum SendReceipts: Identifiable, Hashable {
 
     var text: LocalizedStringKey {
         switch self {
-        case .yes: "yes"
-        case .no: "no"
-        case let .userDefault(on): on ? "default (yes)" : "default (no)"
+        case .yes: return "yes"
+        case .no: return "no"
+        case let .userDefault(on): return on ? "default (yes)" : "default (no)"
         }
+    }
+
+    func bool() -> Bool? {
+        switch self {
+        case .yes: return true
+        case .no: return false
+        case .userDefault: return nil
+        }
+    }
+
+    static func fromBool(_ enable: Bool?, userDefault def: Bool) -> SendReceipts {
+        if let enable = enable {
+            return enable ? .yes : .no
+        }
+        return .userDefault(def)
     }
 }
 
@@ -84,7 +99,8 @@ struct ChatInfoView: View {
     @Binding var connectionCode: String?
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
-    @State private var sendReceipts = SendReceipts.yes
+    @State private var sendReceipts = SendReceipts.userDefault(true)
+    @State private var sendReceiptsUserDefault = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
@@ -138,9 +154,10 @@ struct ChatInfoView: View {
                     if let connStats = connectionStats,
                        connStats.ratchetSyncAllowed {
                         synchronizeConnectionButton()
-                    } else if developerTools {
-                        synchronizeConnectionButtonForce()
                     }
+//                    } else if developerTools {
+//                        synchronizeConnectionButtonForce()
+//                    }
                 }
 
                 if let contactLink = contact.contactLink {
@@ -200,6 +217,12 @@ struct ChatInfoView: View {
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            if let currentUser = chatModel.currentUser {
+                sendReceiptsUserDefault = currentUser.sendRcptsContacts
+            }
+            sendReceipts = SendReceipts.fromBool(contact.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
+        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteContactAlert: return deleteContactAlert()
@@ -220,20 +243,30 @@ struct ChatInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            HStack {
-                if contact.verified {
-                    Image(systemName: "checkmark.shield")
+            if contact.verified {
+                (
+                    Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(.secondary)
-                }
+                        .font(.title2)
+                    + Text(" ")
+                    + Text(contact.profile.displayName)
+                        .font(.largeTitle)
+                )
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.bottom, 2)
+            } else {
                 Text(contact.profile.displayName)
                     .font(.largeTitle)
-                    .lineLimit(1)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
                     .padding(.bottom, 2)
             }
             if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName {
                 Text(cInfo.fullName)
                     .font(.title2)
-                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -315,13 +348,22 @@ struct ChatInfoView: View {
 
     private func sendReceiptsOption() -> some View {
         Picker(selection: $sendReceipts) {
-            ForEach([.yes, .no, .userDefault(true)]) { (opt: SendReceipts) in
+            ForEach([.yes, .no, .userDefault(sendReceiptsUserDefault)]) { (opt: SendReceipts) in
                 Text(opt.text)
             }
         } label: {
             Label("Send receipts", systemImage: "checkmark.message")
         }
         .frame(height: 36)
+        .onChange(of: sendReceipts) { _ in
+            setSendReceipts()
+        }
+    }
+
+    private func setSendReceipts() {
+        var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
+        chatSettings.sendRcpts = sendReceipts.bool()
+        updateChatSettings(chat, chatSettings: chatSettings)
     }
 
     private func synchronizeConnectionButton() -> some View {

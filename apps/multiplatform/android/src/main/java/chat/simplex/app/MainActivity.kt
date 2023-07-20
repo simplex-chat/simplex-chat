@@ -19,7 +19,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
-import java.net.URI
 
 class MainActivity: FragmentActivity() {
 

@@ -573,12 +573,6 @@
 /* rcv group event chat item */
 "changed your role to %@" = "поменял(а) Вашу роль на: %@";
 
-/* chat item text */
-"changing address for %@..." = "смена адреса для %@...";
-
-/* chat item text */
-"changing address..." = "смена адреса...";
-
 /* No comment provided by engineer. */
 "Chat archive" = "Архив чата";
 
@@ -897,7 +891,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "Децентрализованный";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "Ошибка расшифровки";
 
 /* pref value */
@@ -1366,7 +1360,7 @@
 "Exported database archive." = "Архив чата экспортирован.";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "Архив чата экспортируется...";
+"Exporting database archive…" = "Архив чата экспортируется…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Ошибка удаления пароля";
@@ -1867,7 +1861,7 @@
 "Messages & files" = "Сообщения";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "Данные чата перемещаются...";
+"Migrating database archive…" = "Данные чата перемещаются…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Ошибка при перемещении данных:";
@@ -2271,9 +2265,6 @@
 
 /* No comment provided by engineer. */
 "Rate the app" = "Оценить приложение";
-
-/* chat item menu */
-"React..." = "Реакция...";
 
 /* No comment provided by engineer. */
 "Read" = "Прочитано";
@@ -2874,9 +2865,6 @@
 
 /* notification title */
 "this contact" = "этот контакт";
-
-/* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "Эта ошибка постоянная для этого соединения, пожалуйста, соединитесь снова.";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Эта группа больше не существует.";

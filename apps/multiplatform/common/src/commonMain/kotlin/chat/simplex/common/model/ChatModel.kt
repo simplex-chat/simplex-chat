@@ -39,6 +39,7 @@ import kotlin.time.*
 object ChatModel {
   val controller: ChatController = ChatController
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
+  val setDeliveryReceipts = mutableStateOf(false)
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()
   val userCreated = mutableStateOf<Boolean?>(null)
@@ -505,6 +506,8 @@ data class User(
   val fullPreferences: FullChatPreferences,
   val activeUser: Boolean,
   val showNtfs: Boolean,
+  val sendRcptsContacts: Boolean,
+  val sendRcptsSmallGroups: Boolean,
   val viewPwdHash: UserPwdHash?
 ): NamedChat {
   override val displayName: String get() = profile.displayName
@@ -527,6 +530,8 @@ data class User(
       fullPreferences = FullChatPreferences.sampleData,
       activeUser = true,
       showNtfs = true,
+      sendRcptsContacts = true,
+      sendRcptsSmallGroups = false,
       viewPwdHash = null,
     )
   }
@@ -832,7 +837,7 @@ data class Contact(
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
       contactUsed = true,
-      chatSettings = ChatSettings(true, false),
+      chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
@@ -981,7 +986,7 @@ data class GroupInfo (
       fullGroupPreferences = FullGroupPreferences.sampleData,
       membership = GroupMember.sampleData,
       hostConnCustomUserProfileId = null,
-      chatSettings = ChatSettings(true, false),
+      chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -1621,6 +1626,10 @@ data class CIMeta (
   fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<ImageResource, Color>? =
     when (itemStatus) {
       is CIStatus.SndSent -> MR.images.ic_check_filled to metaColor
+      is CIStatus.SndRcvd -> when(itemStatus.msgRcptStatus) {
+        MsgReceiptStatus.Ok -> MR.images.ic_double_check to metaColor
+        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
+      }
       is CIStatus.SndErrorAuth -> MR.images.ic_close to Color.Red
       is CIStatus.SndError -> MR.images.ic_warning_filled to WarningYellow
       is CIStatus.RcvNew -> MR.images.ic_circle_filled to primaryColor
@@ -1705,10 +1714,17 @@ fun localTimestamp(t: Instant): String {
 sealed class CIStatus {
   @Serializable @SerialName("sndNew") class SndNew: CIStatus()
   @Serializable @SerialName("sndSent") class SndSent: CIStatus()
+  @Serializable @SerialName("sndRcvd") class SndRcvd(val msgRcptStatus: MsgReceiptStatus): CIStatus()
   @Serializable @SerialName("sndErrorAuth") class SndErrorAuth: CIStatus()
   @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
+}
+
+@Serializable
+enum class MsgReceiptStatus {
+  @SerialName("ok") Ok,
+  @SerialName("badMsgHash") BadMsgHash;
 }
 
 @Serializable

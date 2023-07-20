@@ -70,6 +70,52 @@ fun PrivacySettingsView(
     if (chatModel.simplexLinkMode.value == SimplexLinkMode.BROWSER) {
       SectionTextFooter(stringResource(MR.strings.simplex_link_mode_browser_warning))
     }
+    SectionDividerSpaced()
+
+    val currentUser = chatModel.currentUser.value
+    if (currentUser != null) {
+      fun setSendReceiptsContacts(enable: Boolean, clearOverrides: Boolean) {
+        withApi {
+          val mrs = UserMsgReceiptSettings(enable, clearOverrides)
+          chatModel.controller.apiSetUserContactReceipts(currentUser.userId, mrs)
+          chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
+          chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
+          if (clearOverrides) {
+            // For loop here is to prevent ConcurrentModificationException that happens with forEach
+            for (i in 0 until chatModel.chats.size) {
+              val chat = chatModel.chats[i]
+              if (chat.chatInfo is ChatInfo.Direct) {
+                var contact = chat.chatInfo.contact
+                val sendRcpts = contact.chatSettings.sendRcpts
+                if (sendRcpts != null && sendRcpts != enable) {
+                  contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
+                  chatModel.updateContact(contact)
+                }
+              }
+            }
+          }
+        }
+      }
+
+      DeliveryReceiptsSection(
+        currentUser = currentUser,
+        setOrAskSendReceiptsContacts = { enable ->
+          val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            if (chat.chatInfo is ChatInfo.Direct) {
+              val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
+              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+            } else {
+              count
+            }
+          }
+          if (contactReceiptsOverrides == 0) {
+            setSendReceiptsContacts(enable, clearOverrides = false)
+          } else {
+            showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
+          }
+        }
+      )
+    }
     SectionBottomSpacer()
   }
 }
@@ -100,6 +146,70 @@ expect fun PrivacyDeviceSection(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit,
 )
+
+@Composable
+private fun DeliveryReceiptsSection(
+  currentUser: User,
+  setOrAskSendReceiptsContacts: (Boolean) -> Unit,
+) {
+  SectionView(stringResource(MR.strings.settings_section_title_delivery_receipts)) {
+    SettingsActionItemWithContent(painterResource(MR.images.ic_person), stringResource(MR.strings.receipts_section_contacts)) {
+      DefaultSwitch(
+        checked = currentUser.sendRcptsContacts ?: false,
+        onCheckedChange = { enable ->
+          setOrAskSendReceiptsContacts(enable)
+        }
+      )
+    }
+  }
+  SectionTextFooter(
+    remember(currentUser.displayName) {
+      buildAnnotatedString {
+        append(generalGetString(MR.strings.receipts_section_description) + " ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+          append(currentUser.displayName)
+        }
+        append(".\n")
+        append(generalGetString(MR.strings.receipts_section_description_1))
+      }
+    }
+  )
+}
+
+private fun showUserContactsReceiptsAlert(
+  enable: Boolean,
+  contactReceiptsOverrides: Int,
+  setSendReceiptsContacts: (Boolean, Boolean) -> Unit
+) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(if (enable) MR.strings.receipts_contacts_title_enable else MR.strings.receipts_contacts_title_disable),
+    text = AnnotatedString(String.format(generalGetString(if (enable) MR.strings.receipts_contacts_override_disabled else MR.strings.receipts_contacts_override_enabled), contactReceiptsOverrides)),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          setSendReceiptsContacts(enable, false)
+        }) {
+          val t = stringResource(if (enable) MR.strings.receipts_contacts_enable_keep_overrides else MR.strings.receipts_contacts_disable_keep_overrides)
+          Text(t, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          setSendReceiptsContacts(enable, true)
+        }
+        ) {
+          val t = stringResource(if (enable) MR.strings.receipts_contacts_enable_for_all else MR.strings.receipts_contacts_disable_for_all)
+          Text(t, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+        }
+      }
+    }
+  )
+}
 
 private val laDelays = listOf(10, 30, 60, 180, 0)
 

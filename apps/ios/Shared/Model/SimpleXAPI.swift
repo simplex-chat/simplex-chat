@@ -159,6 +159,18 @@ func apiSetActiveUserAsync(_ userId: Int64, viewPwd: String?) async throws -> Us
     throw r
 }
 
+func apiSetAllContactReceipts(enable: Bool) async throws {
+    let r = await chatSendCmd(.setAllContactReceipts(enable: enable))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiSetUserContactReceipts(_ userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings) async throws {
+    let r = await chatSendCmd(.apiSetUserContactReceipts(userId: userId, userMsgReceiptSettings: userMsgReceiptSettings))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
 }
@@ -1314,8 +1326,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .chatItemStatusUpdated(user, aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
-            if !cItem.isDeletedContent && (!active(user) || m.upsertChatItem(cInfo, cItem)) {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            if !cItem.isDeletedContent {
+                let added = active(user) ? m.upsertChatItem(cInfo, cItem) : true
+                if added && cItem.showNotification {
+                    NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+                }
             }
             if let endTask = m.messageDelivery[cItem.id] {
                 switch cItem.meta.itemStatus {

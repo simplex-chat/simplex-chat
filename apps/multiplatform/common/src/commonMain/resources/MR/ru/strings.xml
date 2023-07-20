@@ -418,7 +418,7 @@
     <string name="delete_address">Удалить адрес</string>
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Имя профиля:</string>
-    <string name="full_name__field">"Полное имя:</string>
+    <string name="full_name__field">Полное имя:</string>
     <string name="your_current_profile">Ваш активный профиль</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>

@@ -51,7 +51,11 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
   val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color)
   if (statusIcon != null) {
     val (icon, statusColor) = statusIcon
-    StatusIconText(painterResource(icon), statusColor)
+    if (meta.itemStatus is CIStatus.SndSent || meta.itemStatus is CIStatus.SndRcvd) {
+      Icon(painterResource(icon), null, Modifier.height(17.dp), tint = statusColor)
+    } else {
+      StatusIconText(painterResource(icon), statusColor)
+    }
     Spacer(Modifier.width(4.dp))
   } else if (!meta.disappearing) {
     StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)

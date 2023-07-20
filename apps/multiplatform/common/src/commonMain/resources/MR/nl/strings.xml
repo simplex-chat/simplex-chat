@@ -1094,7 +1094,6 @@
     <string name="alert_text_decryption_error_too_many_skipped">%1$d berichten overgeslagen.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.</string>
     <string name="alert_text_fragment_please_report_to_developers">Meld het alsjeblieft aan de ontwikkelaars.</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">Deze fout is permanent voor deze verbinding, maak opnieuw verbinding.</string>
     <string name="alert_title_msg_bad_hash">Onjuiste bericht hash</string>
     <string name="alert_title_msg_bad_id">Onjuiste bericht ID</string>
     <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
@@ -1283,4 +1282,29 @@
     <string name="group_members_can_send_files">Groepsleden kunnen bestanden en media verzenden.</string>
     <string name="search_verb">Zoeken</string>
     <string name="la_mode_off">Uit</string>
+    <string name="network_option_protocol_timeout_per_kb">Protocol timeout per KB</string>
+    <string name="no_history">Geen geschiedenis</string>
+    <string name="in_reply_to">In antwoord op</string>
+    <string name="sync_connection_force_confirm">Opnieuw onderhandelen</string>
+    <string name="sync_connection_force_question">Heronderhandelen over versleuteling\?</string>
+    <string name="snd_conn_event_ratchet_sync_allowed">versleuteling heronderhandeling toegestaan voor %s</string>
+    <string name="conn_event_ratchet_sync_required">heronderhandeling van versleuteling vereist</string>
+    <string name="snd_conn_event_ratchet_sync_required">heronderhandeling over versleuteling vereist voor %s</string>
+    <string name="sender_at_ts">%s bij %s</string>
+    <string name="rcv_conn_event_verification_code_reset">beveiligingscode gewijzigd</string>
+    <string name="fix_connection_not_supported_by_contact">Herstel wordt niet ondersteund door contact</string>
+    <string name="fix_connection_not_supported_by_group_member">Herstel wordt niet ondersteund door groepslid</string>
+    <string name="renegotiate_encryption">Heronderhandel over versleuteling</string>
+    <string name="conn_event_ratchet_sync_started">versleuteling overeenkomen…</string>
+    <string name="snd_conn_event_ratchet_sync_started">versleuteling overeenkomen voor %s…</string>
+    <string name="conn_event_ratchet_sync_agreed">versleuteling overeengekomen</string>
+    <string name="snd_conn_event_ratchet_sync_agreed">versleuteling overeengekomen voor %s</string>
+    <string name="conn_event_ratchet_sync_ok">versleuteling ok</string>
+    <string name="snd_conn_event_ratchet_sync_ok">versleuteling ok voor %s</string>
+    <string name="fix_connection">Verbinding herstellen</string>
+    <string name="fix_connection_confirm">Herstel</string>
+    <string name="fix_connection_question">Verbinding herstellen\?</string>
+    <string name="conn_event_ratchet_sync_allowed">versleuteling heronderhandeling toegestaan</string>
+    <string name="error_synchronizing_connection">Fout bij het synchroniseren van de verbinding</string>
+    <string name="sync_connection_force_desc">De versleuteling werkt en de nieuwe versleutelingsovereenkomst is niet vereist. Dit kan leiden tot verbindingsfouten!</string>
 </resources>

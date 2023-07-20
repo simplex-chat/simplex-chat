@@ -372,6 +372,9 @@
 "Allow to irreversibly delete sent messages." = "Permetti di eliminare irreversibilmente i messaggi inviati.";
 
 /* No comment provided by engineer. */
+"Allow to send files and media." = "Consenti l'invio di file e contenuti multimediali.";
+
+/* No comment provided by engineer. */
 "Allow to send voice messages." = "Permetti l'invio di messaggi vocali.";
 
 /* No comment provided by engineer. */
@@ -584,12 +587,6 @@
 
 /* rcv group event chat item */
 "changed your role to %@" = "cambiato il tuo ruolo in %@";
-
-/* chat item text */
-"changing address for %@..." = "cambio indirizzo per %@...";
-
-/* chat item text */
-"changing address..." = "cambio indirizzo...";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Archivio chat";
@@ -909,7 +906,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "Decentralizzato";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "Errore di decifrazione";
 
 /* pref value */
@@ -1381,7 +1378,7 @@
 "Exported database archive." = "Archivio database esportato.";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "Esportazione archivio database...";
+"Exporting database archive…" = "Esportazione archivio database…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Rimozione della password fallita";
@@ -1406,6 +1403,15 @@
 
 /* No comment provided by engineer. */
 "Files & media" = "File e multimediali";
+
+/* chat feature */
+"Files and media" = "File e multimediali";
+
+/* No comment provided by engineer. */
+"Files and media are prohibited in this group." = "File e contenuti multimediali sono vietati in questo gruppo.";
+
+/* No comment provided by engineer. */
+"Files and media prohibited!" = "File e contenuti multimediali vietati!";
 
 /* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "Finalmente le abbiamo! 🚀";
@@ -1475,6 +1481,9 @@
 
 /* No comment provided by engineer. */
 "Group members can send disappearing messages." = "I membri del gruppo possono inviare messaggi a tempo.";
+
+/* No comment provided by engineer. */
+"Group members can send files and media." = "I membri del gruppo possono inviare file e contenuti multimediali.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "I membri del gruppo possono inviare messaggi vocali.";
@@ -1885,7 +1894,7 @@
 "Messages & files" = "Messaggi";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "Migrazione archivio del database...";
+"Migrating database archive…" = "Migrazione archivio del database…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Errore di migrazione:";
@@ -2005,6 +2014,9 @@
 "no e2e encryption" = "nessuna crittografia e2e";
 
 /* No comment provided by engineer. */
+"No filtered chats" = "Nessuna chat filtrata";
+
+/* No comment provided by engineer. */
 "No group!" = "Gruppo non trovato!";
 
 /* No comment provided by engineer. */
@@ -2073,6 +2085,9 @@
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Solo i proprietari del gruppo possono modificarne le preferenze.";
+
+/* No comment provided by engineer. */
+"Only group owners can enable files and media." = "Solo i proprietari del gruppo possono attivare file e contenuti multimediali.";
 
 /* No comment provided by engineer. */
 "Only group owners can enable voice messages." = "Solo i proprietari del gruppo possono attivare i messaggi vocali.";
@@ -2276,6 +2291,9 @@
 "Prohibit sending disappearing messages." = "Proibisci l'invio di messaggi a tempo.";
 
 /* No comment provided by engineer. */
+"Prohibit sending files and media." = "Proibisci l'invio di file e contenuti multimediali.";
+
+/* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Proibisci l'invio di messaggi vocali.";
 
 /* No comment provided by engineer. */
@@ -2292,9 +2310,6 @@
 
 /* No comment provided by engineer. */
 "Rate the app" = "Valuta l'app";
-
-/* chat item menu */
-"React..." = "Reagisci...";
 
 /* No comment provided by engineer. */
 "Read" = "Leggi";
@@ -2901,9 +2916,6 @@
 
 /* notification title */
 "this contact" = "questo contatto";
-
-/* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "L'errore è permanente per questa connessione, riconnettiti.";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Questo gruppo non esiste più.";

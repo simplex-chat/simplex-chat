@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
@@ -113,11 +114,15 @@ fun MainScreen() {
                   translationX = -offset.value.dp.toPx()
                 }
             ) {
-              val stopped = chatModel.chatRunning.value == false
-              if (chatModel.sharedContent.value == null)
-                ChatListView(chatModel, AppLock::setPerformLA, stopped)
-              else
-                ShareListView(chatModel, stopped)
+              if (chatModel.setDeliveryReceipts.value) {
+                SetDeliveryReceiptsView(chatModel)
+              } else {
+                val stopped = chatModel.chatRunning.value == false
+                if (chatModel.sharedContent.value == null)
+                  ChatListView(chatModel, AppLock::setPerformLA, stopped)
+                else
+                  ShareListView(chatModel, stopped)
+              }
             }
             val scope = rememberCoroutineScope()
             val onComposed: () -> Unit = {

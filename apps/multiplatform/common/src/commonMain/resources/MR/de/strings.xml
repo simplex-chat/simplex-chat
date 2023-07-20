@@ -419,7 +419,7 @@
     <string name="delete_address">Adresse löschen</string>
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Angezeigter Name:</string>
-    <string name="full_name__field">"Vollständiger Name:</string>
+    <string name="full_name__field">Vollständiger Name:</string>
     <string name="your_current_profile">Mein aktuelles Chat-Profil</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt. SimpleX-Server können Ihr Profil nicht sehen.</string>
     <string name="edit_image">Bild bearbeiten</string>
@@ -1178,7 +1178,6 @@
     <string name="you_can_turn_on_lock">Sie können die SimpleX Sperre über die Einstellungen aktivieren.</string>
     <string name="network_socks_proxy_settings">SOCKS-Proxy Einstellungen</string>
     <string name="la_lock_mode_system">System-Authentifizierung</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">Es handelt sich um einen permanenten Fehler für diese Verbindung - bitte verbinden Sie sich neu.</string>
     <string name="smp_server_test_upload_file">Datei hochladen</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d Nachrichten übersprungen.</string>
     <string name="allow_calls_only_if">Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.</string>
@@ -1360,8 +1359,33 @@
     <string name="group_members_can_send_files">Gruppenmitglieder können Dateien und Medien senden.</string>
     <string name="abort_switch_receiving_address_desc">Der Wechsel der Adresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</string>
     <string name="files_are_prohibited_in_group">In dieser Gruppe sind Dateien und Medien nicht erlaubt.</string>
-    <string name="unfavorite_chat">Favorit löschen</string>
+    <string name="unfavorite_chat">Favorit entfernen</string>
     <string name="favorite_chat">Favorit</string>
     <string name="no_filtered_chats">Keine gefilterten Chats</string>
     <string name="la_mode_off">Aus</string>
+    <string name="network_option_protocol_timeout_per_kb">Protokollzeitüberschreitung pro kB</string>
+    <string name="conn_event_ratchet_sync_started">Verschlüsselung zustimmen…</string>
+    <string name="snd_conn_event_ratchet_sync_started">Verschlüsselung von %s zustimmen</string>
+    <string name="conn_event_ratchet_sync_allowed">Neuaushandlung der Verschlüsselung erlaubt</string>
+    <string name="error_synchronizing_connection">Fehler beim Synchronisieren der Verbindung</string>
+    <string name="sync_connection_force_question">Verschlüsselung neu aushandeln\?</string>
+    <string name="fix_connection_question">Verbindung reparieren\?</string>
+    <string name="no_history">Keine Vergangenheit</string>
+    <string name="sync_connection_force_confirm">Neu aushandeln</string>
+    <string name="sync_connection_force_desc">Die Verschlüsselung funktioniert und ein neues Verschlüsselungsabkommen ist nicht erforderlich. Es kann zu Verbindungsfehlern kommen!</string>
+    <string name="renegotiate_encryption">Verschlüsselung neu aushandeln</string>
+    <string name="snd_conn_event_ratchet_sync_ok">Verschlüsselung von %s ist in Ordnung</string>
+    <string name="in_reply_to">Als Antwort auf</string>
+    <string name="snd_conn_event_ratchet_sync_allowed">Neuaushandlung der Verschlüsselung von %s erlaubt</string>
+    <string name="conn_event_ratchet_sync_required">Neuaushandlung der Verschlüsselung notwendig</string>
+    <string name="snd_conn_event_ratchet_sync_required">Neuaushandlung der Verschlüsselung von %s notwendig</string>
+    <string name="rcv_conn_event_verification_code_reset">Sicherheitscode wurde geändert</string>
+    <string name="conn_event_ratchet_sync_ok">Verschlüsselung ist in Ordnung</string>
+    <string name="conn_event_ratchet_sync_agreed">Verschlüsselung wurde zugestimmt</string>
+    <string name="snd_conn_event_ratchet_sync_agreed">Verschlüsselung von %s wurde zugestimmt…</string>
+    <string name="fix_connection_confirm">Reparieren</string>
+    <string name="fix_connection_not_supported_by_contact">Reparatur wird vom Kontakt nicht unterstützt</string>
+    <string name="fix_connection_not_supported_by_group_member">Reparatur wird vom Gruppenmitglied nicht unterstützt</string>
+    <string name="sender_at_ts">%s an %s</string>
+    <string name="fix_connection">Verbindung reparieren</string>
 </resources>

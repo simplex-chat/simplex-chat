@@ -275,7 +275,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
             cItem = autoReceiveFile(file) ?? cItem
         }
         let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(notification: createMessageReceivedNtf(user, cInfo, cItem)) : .empty
-        return cItem.showMutableNotification ? (aChatItem.chatId, ntf) : nil
+        return cItem.showNotification ? (aChatItem.chatId, ntf) : nil
     case let .rcvFileSndCancelled(_, aChatItem, _):
         cleanupFile(aChatItem)
         return nil

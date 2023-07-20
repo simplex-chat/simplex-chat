@@ -1284,4 +1284,5 @@
     <string name="only_owners_can_enable_files_and_media">Tylko właściciele grup mogą włączać pliki i media.</string>
     <string name="search_verb">Szukaj</string>
     <string name="la_mode_off">Wyłączono</string>
+    <string name="network_option_protocol_timeout_per_kb">Limit czasu protokołu na KB</string>
 </resources>

@@ -220,6 +220,37 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
+    ),
+    VersionDescription(
+        version: "v5.2",
+        post: URL(string: "https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html"),
+        features: [
+            FeatureDescription(
+                icon: "checkmark",
+                title: "Message delivery receipts!",
+                description: "The second tick we missed! ✅"
+            ),
+            FeatureDescription(
+                icon: "star",
+                title: "Find chats faster",
+                description: "Filter unread and favorite chats."
+            ),
+            FeatureDescription(
+                icon: "exclamationmark.arrow.triangle.2.circlepath",
+                title: "Keep your connections",
+                description: "Fix encryption after restoring backups."
+            ),
+            FeatureDescription(
+                icon: "stopwatch",
+                title: "Make one message disappear",
+                description: "Even when disabled in the conversation."
+            ),
+            FeatureDescription(
+                icon: "gift",
+                title: "A few more things",
+                description: "- more stable message delivery.\n- a bit better groups.\n- and more!"
+            ),
+        ]
     )
 ]
 
