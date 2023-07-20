@@ -1,7 +1,6 @@
-package chat.simplex.app.views.usersettings
+package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,11 +11,12 @@ import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import chat.simplex.app.TAG
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.*
+import chat.simplex.common.model.ChatModel
 import chat.simplex.res.MR
+import chat.simplex.common.platform.TAG
+import chat.simplex.common.platform.Log
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.views.helpers.*
 
 @Composable
 fun SetDeliveryReceiptsView(m: ChatModel) {
