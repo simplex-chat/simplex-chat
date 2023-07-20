@@ -302,11 +302,11 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve" approved="no">
+      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve">
         <source>- more stable message delivery.
 - a bit better groups.
 - and more!</source>
-        <target state="translated">- stabielere berichtbezorging.
+        <target>- stabielere berichtbezorging.
 - een beetje betere groepen.
 - en meer!</target>
         <note>No comment provided by engineer.</note>
@@ -387,9 +387,9 @@
 &lt;p&gt;&lt;a href="%@"&gt;Maak verbinding met mij via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
-      <trans-unit id="A few more things" xml:space="preserve" approved="no">
+      <trans-unit id="A few more things" xml:space="preserve">
         <source>A few more things</source>
-        <target state="translated">Nog een paar dingen</target>
+        <target>Nog een paar dingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -1604,9 +1604,9 @@
         <target>Directe berichten tussen leden zijn verboden in deze groep.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable (keep overrides)" xml:space="preserve" approved="no">
+      <trans-unit id="Disable (keep overrides)" xml:space="preserve">
         <source>Disable (keep overrides)</source>
-        <target state="translated">Uitschakelen (overschrijvingen behouden)</target>
+        <target>Uitschakelen (overschrijvingen behouden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -1614,9 +1614,9 @@
         <target>SimpleX Vergrendelen uitschakelen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Disable for all" xml:space="preserve" approved="no">
+      <trans-unit id="Disable for all" xml:space="preserve">
         <source>Disable for all</source>
-        <target state="translated">Uitschakelen voor iedereen</target>
+        <target>Uitschakelen voor iedereen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing message" xml:space="preserve">
@@ -1679,9 +1679,9 @@
         <target>Maak geen adres aan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't enable" xml:space="preserve" approved="no">
+      <trans-unit id="Don't enable" xml:space="preserve">
         <source>Don't enable</source>
-        <target state="translated">Niet inschakelen</target>
+        <target>Niet inschakelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
@@ -1724,9 +1724,9 @@
         <target>Inschakelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable (keep overrides)" xml:space="preserve" approved="no">
+      <trans-unit id="Enable (keep overrides)" xml:space="preserve">
         <source>Enable (keep overrides)</source>
-        <target state="translated">Inschakelen (overschrijvingen behouden)</target>
+        <target>Inschakelen (overschrijvingen behouden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -1744,9 +1744,9 @@
         <target>Automatisch verwijderen van berichten aanzetten?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable for all" xml:space="preserve" approved="no">
+      <trans-unit id="Enable for all" xml:space="preserve">
         <source>Enable for all</source>
-        <target state="translated">Inschakelen voor iedereen</target>
+        <target>Inschakelen voor iedereen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
@@ -1959,9 +1959,9 @@
         <target>Fout bij het verwijderen van gebruikers profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error enabling delivery receipts!" xml:space="preserve" approved="no">
+      <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
         <source>Error enabling delivery receipts!</source>
-        <target state="translated">Fout bij het inschakelen van ontvangstbevestiging!</target>
+        <target>Fout bij het inschakelen van ontvangstbevestiging!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
@@ -2044,9 +2044,9 @@
         <target>Fout bij verzenden van bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting delivery receipts!" xml:space="preserve" approved="no">
+      <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
         <source>Error setting delivery receipts!</source>
-        <target state="translated">Fout bij het instellen van ontvangstbevestiging!</target>
+        <target>Fout bij het instellen van ontvangstbevestiging!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -2109,9 +2109,9 @@
         <target>Fout: geen database bestand</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Even when disabled in the conversation." xml:space="preserve" approved="no">
+      <trans-unit id="Even when disabled in the conversation." xml:space="preserve">
         <source>Even when disabled in the conversation.</source>
-        <target state="translated">Zelfs wanneer uitgeschakeld in het gesprek.</target>
+        <target>Zelfs wanneer uitgeschakeld in het gesprek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Exit without saving" xml:space="preserve">
@@ -2194,9 +2194,9 @@
         <target>Bestanden en media verboden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Filter unread and favorite chats." xml:space="preserve" approved="no">
+      <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
         <source>Filter unread and favorite chats.</source>
-        <target state="translated">Filter ongelezen en favoriete chats.</target>
+        <target>Filter ongelezen en favoriete chats.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
@@ -2204,9 +2204,9 @@
         <target>Eindelijk, we hebben ze! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Find chats faster" xml:space="preserve" approved="no">
+      <trans-unit id="Find chats faster" xml:space="preserve">
         <source>Find chats faster</source>
-        <target state="translated">Vind gesprekken sneller</target>
+        <target>Vind gesprekken sneller</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -2224,9 +2224,9 @@
         <target>Verbinding herstellen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix encryption after restoring backups." xml:space="preserve" approved="no">
+      <trans-unit id="Fix encryption after restoring backups." xml:space="preserve">
         <source>Fix encryption after restoring backups.</source>
-        <target state="translated">Repareer versleuteling na het herstellen van back-ups.</target>
+        <target>Repareer versleuteling na het herstellen van back-ups.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix not supported by contact" xml:space="preserve">
@@ -2732,9 +2732,9 @@
         <target>Deel nemen aan groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep your connections" xml:space="preserve" approved="no">
+      <trans-unit id="Keep your connections" xml:space="preserve">
         <source>Keep your connections</source>
-        <target state="translated">Behoud uw verbindingen</target>
+        <target>Behoud uw verbindingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="KeyChain error" xml:space="preserve">
@@ -2827,9 +2827,9 @@
         <target>Maak een privéverbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make one message disappear" xml:space="preserve" approved="no">
+      <trans-unit id="Make one message disappear" xml:space="preserve">
         <source>Make one message disappear</source>
-        <target state="translated">Eén bericht laten verdwijnen</target>
+        <target>Eén bericht laten verdwijnen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make profile private!" xml:space="preserve">
@@ -2902,9 +2902,9 @@
         <target>Fout bij bezorging van bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message delivery receipts!" xml:space="preserve" approved="no">
+      <trans-unit id="Message delivery receipts!" xml:space="preserve">
         <source>Message delivery receipts!</source>
-        <target state="translated">Ontvangstbevestiging voor berichten!</target>
+        <target>Ontvangstbevestiging voor berichten!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
@@ -4036,14 +4036,14 @@
         <target>De afzender heeft mogelijk het verbindingsverzoek verwijderd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve" approved="no">
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
-        <target state="translated">Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</target>
+        <target>Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve" approved="no">
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
-        <target state="translated">Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contactpersonen.</target>
+        <target>Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contactpersonen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
@@ -4051,14 +4051,14 @@
         <target>Het verzenden van het bestand wordt gestopt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve" approved="no">
+      <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve">
         <source>Sending receipts is disabled for %lld contacts</source>
-        <target state="translated">Het verzenden van ontvangstbevestiging is uitgeschakeld voor %lld-contactpersonen</target>
+        <target>Het verzenden van ontvangstbevestiging is uitgeschakeld voor %lld-contactpersonen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve" approved="no">
+      <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve">
         <source>Sending receipts is enabled for %lld contacts</source>
-        <target state="translated">Het verzenden van ontvangstbevestiging is ingeschakeld voor %lld-contactpersonen</target>
+        <target>Het verzenden van ontvangstbevestiging is ingeschakeld voor %lld-contactpersonen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -4538,9 +4538,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Het profiel wordt alleen gedeeld met uw contacten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The second tick we missed! ✅" xml:space="preserve" approved="no">
+      <trans-unit id="The second tick we missed! ✅" xml:space="preserve">
         <source>The second tick we missed! ✅</source>
-        <target state="translated">De tweede vink die we gemist hebben! ✅</target>
+        <target>De tweede vink die we gemist hebben! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -5057,9 +5057,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>U kan het later maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can enable later via Settings" xml:space="preserve" approved="no">
+      <trans-unit id="You can enable later via Settings" xml:space="preserve">
         <source>You can enable later via Settings</source>
-        <target state="translated">U kunt later inschakelen via Instellingen</target>
+        <target>U kunt later inschakelen via Instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
@@ -5152,9 +5152,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Je bent lid geworden van deze groep. Verbinding maken met uitnodigend groepslid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve" approved="no">
+      <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
         <source>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</source>
-        <target state="translated">U mag ALLEEN de meest recente versie van uw chat database op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</target>
+        <target>U mag ALLEEN de meest recente versie van uw chat database op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve">
