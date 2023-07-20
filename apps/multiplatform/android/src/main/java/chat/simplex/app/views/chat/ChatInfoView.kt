@@ -286,9 +286,10 @@ fun ChatInfoLayout(
       SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
       if (cStats != null && cStats.ratchetSyncAllowed) {
         SynchronizeConnectionButton(syncContactConnection)
-      } else if (developerTools) {
-        SynchronizeConnectionButtonForce(syncContactConnectionForce)
       }
+//      } else if (developerTools) {
+//        SynchronizeConnectionButtonForce(syncContactConnectionForce)
+//      }
     }
 
     SectionDividerSpaced()
