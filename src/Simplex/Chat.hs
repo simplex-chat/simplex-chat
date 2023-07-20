@@ -3115,9 +3115,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         incAuthErrCounter connEntity conn err
-      ERR _err -> do
-        -- group errors are silenced to reduce load on UI event log
-        -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+      ERR err -> do
+        toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
