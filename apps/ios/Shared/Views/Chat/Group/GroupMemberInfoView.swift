@@ -82,9 +82,10 @@ struct GroupMemberInfoView: View {
                         if let connStats = connectionStats,
                            connStats.ratchetSyncAllowed {
                             synchronizeConnectionButton()
-                        } else if developerTools {
-                            synchronizeConnectionButtonForce()
                         }
+//                        } else if developerTools {
+//                            synchronizeConnectionButtonForce()
+//                        }
                     }
                 }
 

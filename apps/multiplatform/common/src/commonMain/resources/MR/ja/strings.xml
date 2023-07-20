@@ -1070,7 +1070,6 @@
     <string name="stop_file__confirm">停止</string>
     <string name="stop_snd_file__title">ファイルの送信を停止しますか？</string>
     <string name="alert_text_fragment_please_report_to_developers">開発者に報告してください。</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">このエラーはこの接続では永続的なものです。再接続してください。</string>
     <string name="v5_0_large_files_support">1GBまでのビデオとファイル</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d メッセージの復号化に失敗しました。</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d メッセージをスキップしました</string>
