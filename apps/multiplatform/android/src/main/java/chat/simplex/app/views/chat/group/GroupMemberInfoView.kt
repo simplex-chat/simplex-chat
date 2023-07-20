@@ -253,9 +253,10 @@ fun GroupMemberInfoLayout(
         }
         if (cStats != null && cStats.ratchetSyncAllowed) {
           SynchronizeConnectionButton(syncMemberConnection)
-        } else if (developerTools) {
-          SynchronizeConnectionButtonForce(syncMemberConnectionForce)
         }
+//        } else if (developerTools) {
+//          SynchronizeConnectionButtonForce(syncMemberConnectionForce)
+//        }
       }
       SectionDividerSpaced()
     }
