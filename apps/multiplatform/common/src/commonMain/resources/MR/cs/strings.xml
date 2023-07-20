@@ -168,7 +168,6 @@
     <string name="icon_descr_server_status_connected">Připojeno</string>
     <string name="icon_descr_server_status_disconnected">Odpojeno</string>
     <string name="icon_descr_server_status_error">Chyba</string>
-    <string name="switch_receiving_address_desc">Tato funkce je experimentální! Bude fungovat pouze v případě, že druhý klient má nainstalovanou verzi 4.2. Po dokončení změny adresy by se měla v konverzaci zobrazit zpráva - zkontrolujte, zda můžete od tohoto kontaktu (nebo člena skupiny) stále přijímat zprávy.</string>
     <string name="switch_receiving_address_question">Přepnout přijímací adresu\?</string>
     <string name="send_verb">Poslat</string>
     <string name="you_need_to_allow_to_send_voice">Abyste mohli odesílat hlasové zprávy, musíte svému kontaktu odesílání hlasových zpráv povolit.</string>
