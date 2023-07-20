@@ -3112,10 +3112,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
           when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
       MERR _ err -> do
-        toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+        -- group errors are silenced to reduce load on UI event log
+        -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         incAuthErrCounter connEntity conn err
-      ERR err -> do
-        toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+      ERR _err -> do
+        -- group errors are silenced to reduce load on UI event log
+        -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
