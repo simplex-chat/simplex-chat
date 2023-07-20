@@ -625,6 +625,8 @@ data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
   CISSndSent :: CIStatus 'MDSnd
   CISSndRcvd :: MsgReceiptStatus -> CIStatus 'MDSnd
+  CISGroupSndSent :: GroupSndCIStatusProgress -> CIStatus 'MDSnd
+  CISGroupSndRcvd :: GroupSndCIStatusProgress -> CIStatus 'MDSnd
   CISSndErrorAuth :: CIStatus 'MDSnd
   CISSndError :: String -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
@@ -649,6 +651,8 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
     CISSndNew -> "snd_new"
     CISSndSent -> "snd_sent"
     CISSndRcvd status -> "snd_rcvd " <> strEncode status
+    CISGroupSndSent gsp -> "group_snd_sent " <> strEncode gsp
+    CISGroupSndRcvd gsp -> "group_snd_rcvd " <> strEncode gsp
     CISSndErrorAuth -> "snd_error_auth"
     CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
     CISRcvNew -> "rcv_new"
@@ -662,6 +666,8 @@ instance StrEncoding ACIStatus where
       "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
       "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
       "snd_rcvd" -> ACIStatus SMDSnd . CISSndRcvd <$> (A.space *> strP)
+      "group_snd_sent" -> ACIStatus SMDSnd . CISGroupSndSent <$> (A.space *> strP)
+      "group_snd_rcvd" -> ACIStatus SMDSnd . CISGroupSndRcvd <$> (A.space *> strP)
       "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
       "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
@@ -672,6 +678,8 @@ data JSONCIStatus
   = JCISSndNew
   | JCISSndSent
   | JCISSndRcvd {msgRcptStatus :: MsgReceiptStatus}
+  | JCISGroupSndSent {groupSndProgress :: GroupSndCIStatusProgress}
+  | JCISGroupSndRcvd {groupSndProgress :: GroupSndCIStatusProgress}
   | JCISSndErrorAuth
   | JCISSndError {agentError :: String}
   | JCISRcvNew
@@ -687,6 +695,8 @@ jsonCIStatus = \case
   CISSndNew -> JCISSndNew
   CISSndSent -> JCISSndSent
   CISSndRcvd ok -> JCISSndRcvd ok
+  CISGroupSndSent gsp -> JCISGroupSndSent gsp
+  CISGroupSndRcvd gsp -> JCISGroupSndRcvd gsp
   CISSndErrorAuth -> JCISSndErrorAuth
   CISSndError e -> JCISSndError e
   CISRcvNew -> JCISRcvNew
@@ -701,6 +711,25 @@ ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
+
+data GroupSndCIStatusProgress
+  = GSPPartial
+  | GSPComplete
+  deriving (Show, Generic)
+
+instance ToJSON GroupSndCIStatusProgress where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "GSP"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "GSP"
+
+instance StrEncoding GroupSndCIStatusProgress where
+  strEncode = \case
+    GSPPartial -> "partial"
+    GSPComplete -> "complete"
+  strP =
+    A.takeWhile1 (/= ' ') >>= \case
+      "partial" -> pure GSPPartial
+      "complete" -> pure GSPComplete
+      _ -> fail "bad GroupSndCIStatusProgress"
 
 type ChatItemId = Int64
 
