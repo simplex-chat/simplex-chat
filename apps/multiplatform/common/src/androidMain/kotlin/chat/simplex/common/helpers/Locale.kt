@@ -22,8 +22,7 @@ fun Activity.saveAppLocale(pref: SharedPreference<String?>, languageCode: String
 
 fun Activity.applyAppLocale(pref: SharedPreference<String?>) {
   //  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-  val lang = pref.get()
-  if (lang == null || lang == Locale.getDefault().language) return
+  val lang = pref.get() ?: return
   applyLocale(Locale.forLanguageTag(lang))
   //  }
 }
