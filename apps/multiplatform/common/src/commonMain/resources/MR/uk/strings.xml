@@ -679,7 +679,6 @@
     <string name="icon_descr_call_ended">Дзвінок завершено</string>
     <string name="alert_text_msg_bad_id">Ідентифікатор наступного повідомлення неправильний (менше або дорівнює попередньому).
 \nЦе може статися через помилку або коли з\'єднання скомпрометовано.</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">Ця помилка є постійною для цього з\'єднання, будь ласка, перепідключіться.</string>
     <string name="self_destruct_passcode_enabled">Пароль самознищення ввімкнено!</string>
     <string name="self_destruct_passcode_changed">Пароль самознищення змінено!</string>
     <string name="your_profile_is_stored_on_your_device">Ваш профіль, контакти та доставлені повідомлення зберігаються на вашому пристрої.</string>
