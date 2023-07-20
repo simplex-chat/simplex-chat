@@ -1290,9 +1290,9 @@
     <string name="conn_event_ratchet_sync_ok">cifrado ok</string>
     <string name="conn_event_ratchet_sync_required">se requiere renegociar el cifrado</string>
     <string name="error_synchronizing_connection">Error al sincronizar conexión</string>
-    <string name="fix_connection_not_supported_by_contact">Reparación no compatible con el contacto</string>
+    <string name="fix_connection_not_supported_by_contact">Corrección no compatible con el contacto</string>
     <string name="sync_connection_force_confirm">Renegociar</string>
-    <string name="fix_connection_not_supported_by_group_member">Reparación no compatible con miembro del grupo</string>
+    <string name="fix_connection_not_supported_by_group_member">Corrección no compatible con miembro del grupo</string>
     <string name="sync_connection_force_desc">El cifrado funciona y un cifrado nuevo no es necesario. ¡Podría dar lugar a errores de conexión!</string>
     <string name="in_reply_to">En respuesta a</string>
     <string name="no_history">Sin historial</string>
