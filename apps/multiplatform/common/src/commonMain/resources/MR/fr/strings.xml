@@ -1342,4 +1342,5 @@
     <string name="error_synchronizing_connection">Erreur de synchronisation de connexion</string>
     <string name="no_history">Aucun historique</string>
     <string name="sync_connection_force_question">Renégocier le chiffrement\?</string>
+    <string name="choose_file_title">Choisissez un fichier</string>
 </resources>
