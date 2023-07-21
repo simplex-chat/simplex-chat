@@ -197,6 +197,9 @@ chatItemTs (CChatItem _ ci) = chatItemTs' ci
 chatItemTs' :: ChatItem c d -> UTCTime
 chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 
+chatItemStatus' :: ChatItem c d -> CIStatus d
+chatItemStatus' ChatItem {meta = CIMeta {itemStatus}} = itemStatus
+
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
 
@@ -630,6 +633,8 @@ data CIStatus (d :: MsgDirection) where
   CISRcvNew :: CIStatus 'MDRcv
   CISRcvRead :: CIStatus 'MDRcv
 
+deriving instance Eq (CIStatus d)
+
 deriving instance Show (CIStatus d)
 
 instance ToJSON (CIStatus d) where
@@ -637,6 +642,8 @@ instance ToJSON (CIStatus d) where
   toEncoding = J.toEncoding . jsonCIStatus
 
 instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decodeLatin1 . strEncode
+
+instance (Typeable d, MsgDirectionI d) => FromField (CIStatus d) where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
@@ -702,10 +709,56 @@ ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
+shouldUpdateSndCIStatus :: CIStatus 'MDSnd -> CIStatus 'MDSnd -> Bool
+shouldUpdateSndCIStatus currentStatus newStatus
+  | currentStatus == newStatus = False
+  | otherwise = case (currentStatus, newStatus) of
+    (CISSndNew, _) -> True
+    (_, CISSndNew) -> False
+    (CISSndSent _, _) -> True
+    (_, CISSndSent _) -> False
+    (_, CISSndRcvd _ _) -> True
+    _ -> False
+
+shouldUpdateGroupCIStatus :: CIStatus 'MDSnd -> [CIStatus 'MDSnd] -> Maybe (CIStatus 'MDSnd)
+shouldUpdateGroupCIStatus currentStatus memberStatuses = do
+  case statusFromMemStatuses of
+    Nothing -> Nothing
+    Just newStatus ->
+      if currentStatus == newStatus
+        then Nothing
+        else case (currentStatus, newStatus) of
+          (CISSndNew, _) -> Just newStatus
+          (CISSndSent SSPComplete, CISSndSent SSPPartial) -> Nothing
+          (CISSndSent _, _) -> Just newStatus
+          (CISSndRcvd _ SSPComplete, CISSndRcvd _ SSPPartial) -> Nothing
+          (CISSndRcvd _ SSPPartial, CISSndRcvd _ SSPComplete) -> Just newStatus
+          (CISSndRcvd MROk SSPPartial, CISSndRcvd MRBadMsgHash SSPPartial) -> Just newStatus
+          (CISSndRcvd MROk SSPComplete, CISSndRcvd MRBadMsgHash SSPComplete) -> Just newStatus
+          _ -> Nothing
+  where
+    statusFromMemStatuses
+      | all isSndRcvdOk memberStatuses = Just $ CISSndRcvd MROk SSPComplete
+      | all (\s -> isSndRcvdOk s || isSndRcvdBad s) memberStatuses = Just $ CISSndRcvd MRBadMsgHash SSPComplete
+      | any isSndRcvdBad memberStatuses = Just $ CISSndRcvd MRBadMsgHash SSPPartial
+      | any isSndRcvdOk memberStatuses = Just $ CISSndRcvd MROk SSPPartial
+      | all isSndSent memberStatuses = Just $ CISSndSent SSPComplete
+      | any isSndSent memberStatuses = Just $ CISSndSent SSPPartial
+      | otherwise = Nothing
+    isSndSent = \case
+      CISSndSent _ -> True
+      _ -> False
+    isSndRcvdOk = \case
+      CISSndRcvd MROk _ -> True
+      _ -> False
+    isSndRcvdBad = \case
+      CISSndRcvd MRBadMsgHash _ -> True
+      _ -> False
+
 data SndCIStatusProgress
   = SSPPartial
   | SSPComplete
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON SndCIStatusProgress where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "SSP"

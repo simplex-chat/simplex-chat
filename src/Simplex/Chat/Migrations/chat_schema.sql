@@ -496,6 +496,14 @@ CREATE TABLE chat_item_moderations(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE TABLE group_snd_item_statuses(
+  group_snd_item_status_id INTEGER PRIMARY KEY,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  group_snd_item_status TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -686,4 +694,10 @@ CREATE INDEX idx_chat_item_moderations_group ON chat_item_moderations(
   group_id,
   item_member_id,
   shared_msg_id
+);
+CREATE INDEX idx_group_snd_item_statuses_chat_item_id ON group_snd_item_statuses(
+  chat_item_id
+);
+CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statuses(
+  group_member_id
 );

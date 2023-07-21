@@ -44,6 +44,7 @@ module Simplex.Chat.Store.Messages
     createChatItemVersion,
     deleteDirectChatItem,
     markDirectChatItemDeleted,
+    updateGroupChatItemStatus,
     updateGroupChatItem,
     deleteGroupChatItem,
     updateGroupChatItemModerated,
@@ -69,6 +70,7 @@ module Simplex.Chat.Store.Messages
     getGroupChatItem,
     getGroupChatItemBySharedMsgId,
     getGroupMemberCIBySharedMsgId,
+    getGroupChatItemByAgentMsgId,
     getGroupMemberChatItemLast,
     getDirectChatItemIdByText,
     getDirectChatItemIdByText',
@@ -87,6 +89,9 @@ module Simplex.Chat.Store.Messages
     createCIModeration,
     getCIModeration,
     deleteCIModeration,
+    createGroupSndStatus,
+    updateGroupSndStatus,
+    getGroupSndStatuses,
   )
 where
 
@@ -97,6 +102,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (sortOn)
+import Data.Map.Strict (Map, fromList)
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -1325,6 +1331,16 @@ getDirectChatItemIdByText' db User {userId} contactId msg =
       |]
       (userId, contactId, msg <> "%")
 
+updateGroupChatItemStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> GroupId -> ChatItemId -> CIStatus d -> ExceptT StoreError IO (ChatItem 'CTGroup d)
+updateGroupChatItemStatus db user@User {userId} groupId itemId itemStatus = do
+  ci <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
+  currentTs <- liftIO getCurrentTime
+  liftIO $ DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?" (itemStatus, currentTs, userId, groupId, itemId)
+  pure ci {meta = (meta ci) {itemStatus}}
+  where
+    correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
+    correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+
 updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTGroup d)
 updateGroupChatItem db user groupId ci newContent live msgId_ = do
   currentTs <- liftIO getCurrentTime
@@ -1433,6 +1449,11 @@ getGroupMemberCIBySharedMsgId db user@User {userId} groupId memberId sharedMsgId
         |]
         (GCUserMember, userId, groupId, memberId, sharedMsgId)
   getGroupChatItem db user groupId itemId
+
+getGroupChatItemByAgentMsgId :: DB.Connection -> User -> GroupId -> Int64 -> AgentMsgId -> IO (Maybe (CChatItem 'CTGroup))
+getGroupChatItemByAgentMsgId db user groupId connId msgId = do
+  itemId_ <- getChatItemIdByAgentMsgId db connId msgId
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupChatItem db user groupId) itemId_
 
 getGroupChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
@@ -1847,3 +1868,34 @@ deleteCIModeration db GroupInfo {groupId} itemMemberId (Just sharedMsgId) =
     db
     "DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?"
     (groupId, itemMemberId, sharedMsgId)
+
+createGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
+createGroupSndStatus db itemId memberId status =
+  DB.execute
+    db
+    "INSERT INTO group_snd_item_statuses (chat_item_id, group_member_id, group_snd_item_status) VALUES (?,?,?)"
+    (itemId, memberId, status)
+
+updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
+updateGroupSndStatus db itemId memberId status = do
+  currentTs <- liftIO getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_snd_item_statuses
+      SET group_snd_item_status = ?, updated_at = ?
+      WHERE chat_item_id = ? AND group_member_id = ?
+    |]
+    (status, currentTs, itemId, memberId)
+
+getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO (Map GroupMemberId (CIStatus 'MDSnd))
+getGroupSndStatuses db itemId =
+  fromList
+    <$> DB.query
+      db
+      [sql|
+          SELECT group_member_id, group_snd_item_status
+          FROM group_snd_item_statuses
+          WHERE chat_item_id = ?
+        |]
+      (Only itemId)
