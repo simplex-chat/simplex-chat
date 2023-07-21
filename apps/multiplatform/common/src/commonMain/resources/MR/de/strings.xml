@@ -1388,4 +1388,38 @@
     <string name="fix_connection_not_supported_by_group_member">Reparatur wird vom Gruppenmitglied nicht unterstützt</string>
     <string name="sender_at_ts">%s an %s</string>
     <string name="fix_connection">Verbindung reparieren</string>
+    <string name="delivery_receipts_are_disabled">Empfangsbestätigungen sind deaktiviert!</string>
+    <string name="delivery_receipts_title">Empfangsbestätigungen!</string>
+    <string name="error_enabling_delivery_receipts">Fehler beim Aktivieren der Empfangsbestätigungen!</string>
+    <string name="receipts_contacts_disable_for_all">Für Alle deaktivieren</string>
+    <string name="enable_receipts_all">Aktivieren</string>
+    <string name="v5_2_favourites_filter">Chats schneller finden</string>
+    <string name="v5_2_disappear_one_message">Eine verschwindende Nachricht verfassen</string>
+    <string name="you_can_enable_delivery_receipts_later">Sie können diese später in den Einstellungen aktivieren</string>
+    <string name="receipts_contacts_enable_keep_overrides">Aktivieren (vorgenommene Einstellungen bleiben erhalten)</string>
+    <string name="v5_2_favourites_filter_descr">Nach ungelesenen und favorisierten Chats filtern.</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Das Senden von Empfangsbestätigungen an alle Kontakte in allen sichtbaren Chat-Profilen wird aktiviert.</string>
+    <string name="receipts_contacts_override_disabled">Das Senden von Empfangsbestätigungen an %d Kontakte ist deaktiviert</string>
+    <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Profil</string>
+    <string name="receipts_section_description_1">Diese können in den Kontakt-Einstellungen überschrieben werden</string>
+    <string name="receipts_section_contacts">Kontakte</string>
+    <string name="receipts_contacts_title_disable">Empfangsbestätigungen deaktivieren\?</string>
+    <string name="receipts_contacts_title_enable">Empfangsbestätigungen aktivieren\?</string>
+    <string name="receipts_contacts_override_enabled">Das Senden von Empfangsbestätigungen an %d Kontakte ist aktiviert</string>
+    <string name="receipts_contacts_enable_for_all">Für Alle aktivieren</string>
+    <string name="settings_section_title_delivery_receipts">EMPFANGSBESTÄTIGUNGEN SENDEN AN</string>
+    <string name="receipts_contacts_disable_keep_overrides">Deaktivieren (vorgenommene Einstellungen bleiben erhalten)</string>
+    <string name="send_receipts">Empfangsbestätigungen senden</string>
+    <string name="v5_2_fix_encryption">Ihre Verbindungen beibehalten</string>
+    <string name="v5_2_message_delivery_receipts">Empfangsbestätigungen für Nachrichten!</string>
+    <string name="v5_2_message_delivery_receipts_descr">Das zweite Häkchen, welches wir vermisst haben! ✅</string>
+    <string name="v5_2_fix_encryption_descr">Reparatur der Verschlüsselung nach wiedereinspielen von Backups.</string>
+    <string name="v5_2_more_things">Ein paar weitere Dinge</string>
+    <string name="v5_2_disappear_one_message_descr">Auch wenn sie im Chat deaktiviert sind.</string>
+    <string name="v5_2_more_things_descr">- stabilere Zustellung von Nachrichten.
+\n- ein bisschen verbesserte Gruppen.
+\n- und mehr!</string>
+    <string name="dont_enable_receipts">Nicht aktivieren</string>
+    <string name="sending_delivery_receipts_will_be_enabled">Das Senden von Empfangsbestätigungen an alle Kontakte wird aktiviert.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Sie können diese später in den Datenschutz &amp; Sicherheits-Einstellungen der App aktivieren.</string>
 </resources>

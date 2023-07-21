@@ -76,9 +76,11 @@ private func _chatSuspended() {
 }
 
 func activateChat(appState: AppState = .active) {
+    logger.debug("DEBUGGING: activateChat")
     suspendLockQueue.sync {
         appStateGroupDefault.set(appState)
         if ChatModel.ok { apiActivateChat() }
+        logger.debug("DEBUGGING: activateChat: after apiActivateChat")
     }
 }
 
@@ -95,10 +97,14 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
 }
 
 func startChatAndActivate() {
+    logger.debug("DEBUGGING: startChatAndActivate")
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.start()
+        logger.debug("DEBUGGING: startChatAndActivate: after ChatReceiver.shared.start")
     }
     if .active != appStateGroupDefault.get()  {
+        logger.debug("DEBUGGING: startChatAndActivate: before activateChat")
         activateChat()
+        logger.debug("DEBUGGING: startChatAndActivate: after activateChat")
     }
 }
