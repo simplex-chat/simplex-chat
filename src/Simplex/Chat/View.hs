@@ -464,7 +464,7 @@ localTs tz ts = do
 viewChatItemStatusUpdated :: AChatItem -> CurrentTime -> TimeZone -> Bool -> Bool -> [StyledString]
 viewChatItemStatusUpdated (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) ts tz testView showReceipts =
   case itemStatus of
-    CISSndRcvd rcptStatus ->
+    CISSndRcvd rcptStatus _ ->
       if testView && showReceipts
         then prependFirst (viewDeliveryReceipt rcptStatus <> " ") $ viewChatItem chat item False ts tz
         else []

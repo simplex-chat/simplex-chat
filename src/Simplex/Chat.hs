@@ -2870,9 +2870,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
           withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId msgId) >>= \case
-            Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _}}) -> pure ()
+            Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ _}}) -> pure ()
             Just (CChatItem SMDSnd ci) -> do
-              chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) CISSndSent
+              chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) (CISSndSent SSPComplete)
               toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
             _ -> pure ()
         SWITCH qd phase cStats -> do
@@ -4299,7 +4299,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         withStore $ \db -> createSndMsgDeliveryEvent db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId agentMsgId) >>= \case
           Just (CChatItem SMDSnd ci) -> do
-            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) $ CISSndRcvd msgRcptStatus
+            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) (CISSndRcvd msgRcptStatus SSPComplete)
             toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
           _ -> pure ()
 
