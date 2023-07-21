@@ -1230,9 +1230,9 @@
     <string name="item_info_current">(huidig)</string>
     <string name="share_text_database_id">Database-ID: %d</string>
     <string name="info_menu">Info</string>
-    <string name="info_row_disappears_at">Verdwijnt om</string>
+    <string name="info_row_disappears_at">Verdwijnt op</string>
     <string name="share_text_moderated_at">Gemodereerd op: %s</string>
-    <string name="share_text_disappears_at">Verdwijnt om: %s</string>
+    <string name="share_text_disappears_at">Verdwijnt op: %s</string>
     <string name="current_version_timestamp">%s (huidig)</string>
     <string name="share_text_sent_at">Verzonden op: %s</string>
     <string name="error_loading_details">Fout bij het laden van details</string>
