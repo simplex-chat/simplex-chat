@@ -1278,7 +1278,7 @@
     <string name="unfavorite_chat">No favorito</string>
     <string name="abort_switch_receiving_address">Cancelar cambio de dirección</string>
     <string name="files_and_media">Archivos y multimedia</string>
-    <string name="prohibit_sending_files">No permitir el envío de archivos y multimedia.</string>
+    <string name="prohibit_sending_files">No se permite el envío de archivos y multimedia.</string>
     <string name="files_are_prohibited_in_group">No se permiten archivos y multimedia en este grupo.</string>
     <string name="group_members_can_send_files">Los miembros del grupo pueden enviar archivos y multimedia.</string>
     <string name="allow_to_send_files">Se permite enviar archivos y multimedia</string>
