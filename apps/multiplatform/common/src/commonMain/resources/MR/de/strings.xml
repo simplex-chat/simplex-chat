@@ -876,10 +876,10 @@
     <string name="feature_off">Aus</string>
     <string name="feature_received_prohibited">empfangen, nicht erlaubt</string>
     <string name="allow_your_contacts_irreversibly_delete">Erlauben Sie Ihren Kontakten gesendete Nachrichten unwiederbringlich zu löschen.</string>
-    <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="contacts_can_mark_messages_for_deletion">Ihre Kontakte können Nachrichten zum Löschen markieren. Sie können diese Nachrichten trotzdem anschauen.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Erlauben Sie Ihre Kontakten Sprachnachrichten zu versenden.</string>
-    <string name="allow_voice_messages_only_if">Erlauben Sie Sprachnachrichten nur dann, wenn Ihr Kontakt diese ebenfalls erlaubt.</string>
+    <string name="allow_voice_messages_only_if">Erlauben Sie Sprachnachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="prohibit_sending_voice_messages">Das Senden von Sprachnachrichten nicht erlauben.</string>
     <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt, als auch Sie können Nachrichten unwiederbringlich löschen.</string>
     <string name="only_you_can_delete_messages">Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).</string>
@@ -980,7 +980,7 @@
     <string name="v4_4_live_messages_desc">Die Empfänger sehen Nachrichtenaktualisierungen, während Sie sie eingeben.</string>
     <string name="v4_4_disappearing_messages_desc">Gesendete Nachrichten werden nach der eingestellten Zeit gelöscht.</string>
     <string name="v4_3_voice_messages">Sprachnachrichten</string>
-    <string name="allow_disappearing_messages_only_if">Erlauben Sie verschwindende Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</string>
+    <string name="allow_disappearing_messages_only_if">Erlauben Sie verschwindende Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="invalid_data">Ungültige Daten</string>
     <string name="v4_4_verify_connection_security">Sicherheit der Verbindung überprüfen</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Mit optionaler Begrüßungsmeldung.</string>
@@ -1180,8 +1180,8 @@
     <string name="la_lock_mode_system">System-Authentifizierung</string>
     <string name="smp_server_test_upload_file">Datei hochladen</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d Nachrichten übersprungen.</string>
-    <string name="allow_calls_only_if">Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.</string>
-    <string name="allow_your_contacts_to_call">Erlaubt Ihren Kontakten Sie anzurufen.</string>
+    <string name="allow_calls_only_if">Erlauben Sie Anrufe nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
+    <string name="allow_your_contacts_to_call">Erlaubt es Ihren Kontakten Sie anzurufen.</string>
     <string name="audio_video_calls">Audio/Video Anrufe</string>
     <string name="available_in_v51">"
 \nVerfügbar in v5.1"</string>
@@ -1306,7 +1306,7 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">Sowohl Sie, als auch Ihr Kontakt können Reaktionen auf Nachrichten geben.</string>
     <string name="only_you_can_add_message_reactions">Nur Sie können Reaktionen auf Nachrichten geben.</string>
     <string name="prohibit_message_reactions">Reaktionen auf Nachrichten nicht erlauben.</string>
-    <string name="allow_message_reactions_only_if">Reaktionen auf Nachrichten sind nur möglich, falls Ihr Kontakt dies erlaubt.</string>
+    <string name="allow_message_reactions_only_if">Erlauben Sie Reaktionen auf Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="only_your_contact_can_add_message_reactions">Nur Ihr Kontakt kann Reaktionen auf Nachrichten geben.</string>
     <string name="allow_message_reactions">Reaktionen auf Nachrichten erlauben.</string>
     <string name="prohibit_message_reactions_group">Reaktionen auf Nachrichten nicht erlauben.</string>
@@ -1401,7 +1401,7 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Das Senden von Empfangsbestätigungen an alle Kontakte in allen sichtbaren Chat-Profilen wird aktiviert.</string>
     <string name="receipts_contacts_override_disabled">Das Senden von Empfangsbestätigungen an %d Kontakte ist deaktiviert</string>
     <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Profil</string>
-    <string name="receipts_section_description_1">Diese können in den Kontakt-Einstellungen überschrieben werden</string>
+    <string name="receipts_section_description_1">Sie können in den Kontakteinstellungen überschrieben werden</string>
     <string name="receipts_section_contacts">Kontakte</string>
     <string name="receipts_contacts_title_disable">Empfangsbestätigungen deaktivieren\?</string>
     <string name="receipts_contacts_title_enable">Empfangsbestätigungen aktivieren\?</string>
@@ -1412,7 +1412,7 @@
     <string name="send_receipts">Empfangsbestätigungen senden</string>
     <string name="v5_2_fix_encryption">Ihre Verbindungen beibehalten</string>
     <string name="v5_2_message_delivery_receipts">Empfangsbestätigungen für Nachrichten!</string>
-    <string name="v5_2_message_delivery_receipts_descr">Das zweite Häkchen, welches wir vermisst haben! ✅</string>
+    <string name="v5_2_message_delivery_receipts_descr">Wir haben das zweite Häkchen vermisst! ✅</string>
     <string name="v5_2_fix_encryption_descr">Reparatur der Verschlüsselung nach wiedereinspielen von Backups.</string>
     <string name="v5_2_more_things">Ein paar weitere Dinge</string>
     <string name="v5_2_disappear_one_message_descr">Auch wenn sie im Chat deaktiviert sind.</string>
