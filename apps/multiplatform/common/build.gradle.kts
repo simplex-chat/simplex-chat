@@ -94,6 +94,7 @@ kotlin {
     val desktopMain by getting {
       dependencies {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.1")
+        implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
       }
     }
     val desktopTest by getting

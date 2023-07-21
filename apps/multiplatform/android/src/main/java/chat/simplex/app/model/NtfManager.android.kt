@@ -15,7 +15,6 @@ import chat.simplex.app.*
 import chat.simplex.app.TAG
 import chat.simplex.app.views.call.IncomingCallActivity
 import chat.simplex.app.views.call.getKeyguardManager
-import chat.simplex.common.views.chatlist.acceptContactRequest
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -261,18 +260,7 @@ object NtfManager {
       val chatId = intent?.getStringExtra(ChatIdKey) ?: return
       val m = SimplexApp.context.chatModel
       when (intent.action) {
-        NotificationAction.ACCEPT_CONTACT_REQUEST.name -> {
-          val isCurrentUser = m.currentUser.value?.userId == userId
-          val cInfo: ChatInfo.ContactRequest? = if (isCurrentUser) {
-            (m.getChat(chatId)?.chatInfo as? ChatInfo.ContactRequest) ?: return
-          } else {
-            null
-          }
-          val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
-          acceptContactRequest(apiId, cInfo, isCurrentUser, m)
-          cancelNotificationsForChat(chatId)
-        }
-
+        NotificationAction.ACCEPT_CONTACT_REQUEST.name -> ntfManager.acceptContactRequestAction(userId, chatId)
         RejectCallAction -> {
           val invitation = m.callInvitations[chatId]
           if (invitation != null) {

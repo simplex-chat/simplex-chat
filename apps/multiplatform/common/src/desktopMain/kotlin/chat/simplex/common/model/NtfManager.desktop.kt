@@ -5,15 +5,17 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.call.RcvCallInvitation
-import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.common.views.helpers.generateNewFileName
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import com.sshtools.twoslices.*
 import java.awt.*
 import java.awt.TrayIcon.MessageType
 import java.io.File
 import javax.imageio.ImageIO
 
 object NtfManager {
+  private val prevNtfs = arrayListOf<Pair<ChatId, Slice>>()
+
   fun notifyCallInvitation(invitation: RcvCallInvitation) {
     if (simplexWindowState.windowFocused.value) return
     val contactId = invitation.contact.id
@@ -36,10 +38,36 @@ object NtfManager {
     else
       base64ToBitmap(image)
 
-    displayNotification(title, text, largeIcon)
+    val actions = listOf(
+      generalGetString(MR.strings.accept) to { ntfManager.acceptCallAction(invitation.contact.id) },
+      generalGetString(MR.strings.reject) to { ChatModel.callManager.endCall(invitation = invitation) }
+    )
+    displayNotificationViaLib(contactId, title, text, prepareIconPath(largeIcon), actions) {
+      ntfManager.openChatAction(invitation.user.userId, contactId)
+    }
   }
 
-  fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<NotificationAction>) {
+  fun hasNotificationsForChat(chatId: ChatId) = prevNtfs.any { it.first == chatId }
+
+  fun cancelNotificationsForChat(chatId: ChatId) {
+    val ntf = prevNtfs.firstOrNull { it.first == chatId }
+    if (ntf != null) {
+      prevNtfs.remove(ntf)
+      try {
+        ntf.second.close()
+      } catch (e: Exception) {
+        // Can be java.lang.UnsupportedOperationException, for example. May do nothing
+        println("Failed to close notification: ${e.stackTraceToString()}")
+      }
+    }
+  }
+
+  fun cancelAllNotifications() {
+    prevNtfs.forEach { try { it.second.close() } catch (e: Exception) { println("Failed to close notification: ${e.stackTraceToString()}") } }
+    prevNtfs.clear()
+  }
+
+  fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
     if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
     val previewMode = appPreferences.notificationPreviewMode.get()
@@ -51,30 +79,57 @@ object NtfManager {
       else -> base64ToBitmap(image)
     }
 
-    displayNotification(title, content, largeIcon)
+    displayNotificationViaLib(chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
+      ntfManager.openChatAction(user.userId, chatId)
+    }
   }
+
+  private fun displayNotificationViaLib(
+    chatId: String,
+    title: String,
+    text: String,
+    iconPath: String?,
+    actions: List<Pair<String, () -> Unit>>,
+    defaultAction: (() -> Unit)?
+  ) {
+    val builder = Toast.builder()
+      .title(title)
+      .content(text)
+    if (iconPath != null) {
+      builder.icon(iconPath)
+    }
+    if (defaultAction != null) {
+      builder.defaultAction(defaultAction)
+    }
+    actions.forEach {
+      builder.action(it.first, it.second)
+    }
+    prevNtfs.add(chatId to builder.toast())
+  }
+
+  private fun prepareIconPath(icon: ImageBitmap?): String? = if (icon != null) {
+    tmpDir.mkdir()
+    val newFile = File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", "png"))
+    try {
+      ImageIO.write(icon.toAwtImage(), "PNG", newFile.outputStream())
+      newFile.absolutePath
+    } catch (e: Exception) {
+      println("Failed to write an icon to tmpDir: ${e.stackTraceToString()}")
+      null
+    }
+  } else null
 
   private fun displayNotification(title: String, text: String, icon: ImageBitmap?) = when (desktopPlatform) {
-    DesktopPlatform.LINUX_X86_64, DesktopPlatform.LINUX_AARCH64 -> linuxDisplayNotification(title, text, icon)
+    DesktopPlatform.LINUX_X86_64, DesktopPlatform.LINUX_AARCH64 -> linuxDisplayNotification(title, text, prepareIconPath(icon))
     DesktopPlatform.WINDOWS_X86_64 -> windowsDisplayNotification(title, text, icon)
-    DesktopPlatform.MAC_X86_64, DesktopPlatform.MAC_AARCH64 -> macDisplayNotification(title, text, icon)
+    DesktopPlatform.MAC_X86_64, DesktopPlatform.MAC_AARCH64 -> macDisplayNotification(title, text, prepareIconPath(icon))
   }
 
-  private fun linuxDisplayNotification(title: String, text: String, icon: ImageBitmap?) {
-    val iconPath = if (icon != null) {
-      tmpDir.mkdir()
-      val newFile = File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", "png"))
-      try {
-        ImageIO.write(icon.toAwtImage(), "PNG", newFile.outputStream())
-        newFile.absolutePath
-      } catch (e: Exception) {
-        println("Failed to write an icon to tmpDir: ${e.stackTraceToString()}")
-        null
-      }
-    } else null
+  private fun linuxDisplayNotification(title: String, text: String, iconPath: String?) {
     if (iconPath != null) {
       Runtime.getRuntime().exec(arrayOf("notify-send", "-i", iconPath, title, text))
     } else {
+      Toast.toast(ToastType.INFO, title, text)
       Runtime.getRuntime().exec(arrayOf("notify-send", title, text))
     }
   }
@@ -92,7 +147,7 @@ object NtfManager {
     }
   }
 
-  private fun macDisplayNotification(title: String, text: String, icon: ImageBitmap?) {
+  private fun macDisplayNotification(title: String, text: String, iconPath: String?) {
     Runtime.getRuntime().exec(arrayOf("osascript", "-e", """display notification "${text.replace("\"", "\\\"")}" with title "${title.replace("\"", "\\\"")}""""))
   }
 }

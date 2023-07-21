@@ -15,14 +15,14 @@ actual val appPlatform = AppPlatform.DESKTOP
 val defaultLocale: Locale = Locale.getDefault()
 
 fun initApp() {
-  ntfManager = object : NtfManager() { // LALAL
+  ntfManager = object : NtfManager() {
     override fun notifyCallInvitation(invitation: RcvCallInvitation) = chat.simplex.common.model.NtfManager.notifyCallInvitation(invitation)
-    override fun hasNotificationsForChat(chatId: String): Boolean = false
-    override fun cancelNotificationsForChat(chatId: String) {}
-    override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<NotificationAction>) = chat.simplex.common.model.NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
+    override fun hasNotificationsForChat(chatId: String): Boolean = chat.simplex.common.model.NtfManager.hasNotificationsForChat(chatId)
+    override fun cancelNotificationsForChat(chatId: String) = chat.simplex.common.model.NtfManager.cancelNotificationsForChat(chatId)
+    override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = chat.simplex.common.model.NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
     override fun androidCreateNtfChannelsMaybeShowAlert() {}
     override fun cancelCallNotification() {}
-    override fun cancelAllNotifications() {}
+    override fun cancelAllNotifications() = chat.simplex.common.model.NtfManager.cancelAllNotifications()
   }
   applyAppLocale()
   withBGApi {
