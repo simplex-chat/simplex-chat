@@ -76,7 +76,7 @@ class NotificationService: UNNotificationServiceExtension {
     var badgeCount: Int = 0
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
-        logger.debug("NotificationService.didReceive")
+        logger.debug("DEBUGGING: NotificationService.didReceive")
         if let ntf = request.content.mutableCopy() as? UNMutableNotificationContent {
             setBestAttemptNtf(ntf)
         }
@@ -149,7 +149,7 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     override func serviceExtensionTimeWillExpire() {
-        logger.debug("NotificationService.serviceExtensionTimeWillExpire")
+        logger.debug("DEBUGGING: NotificationService.serviceExtensionTimeWillExpire")
         deliverBestAttemptNtf()
     }
 
