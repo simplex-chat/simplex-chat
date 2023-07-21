@@ -413,7 +413,7 @@
     <string name="decentralized">Özeksiz</string>
     <string name="confirm_passcode">Erişim kodunu onayla</string>
     <string name="incorrect_passcode">Yanlış erişim kodu</string>
-    <string name="new_passcode">Yeni Erişim Kodu</string>
+    <string name="new_passcode">Yeni Şifre</string>
     <string name="submit_passcode">Gönder</string>
     <string name="la_mode_passcode">Erişim kodu</string>
     <string name="passcode_changed">Erişim kodu değişti!</string>
@@ -475,7 +475,7 @@
     <string name="group_member_role_owner">iye/sahip</string>
     <string name="icon_descr_expand_role">Yetki seçimini genişlet</string>
     <string name="initial_member_role">İlk olarak verilen yetki</string>
-    <string name="new_member_role">Yeni üye yetkisi</string>
+    <string name="new_member_role">Yeni üye rolü</string>
     <string name="button_delete_group">Toplu konuşmayı sil</string>
     <string name="delete_group_question">Toplu konuşmayı sil\?</string>
     <string name="button_create_group_link">Bağlantı oluştur</string>
@@ -532,8 +532,8 @@
     <string name="encrypt_database_question">Veri tabanını şifrele\?</string>
     <string name="conn_event_ratchet_sync_ok">şifreleme etkin</string>
     <string name="button_edit_group_profile">Toplu konuşma profilini düzenle</string>
-    <string name="conn_event_ratchet_sync_agreed">şifreleme kararlaştı</string>
-    <string name="snd_conn_event_ratchet_sync_agreed">%s üyesi için şifreleme kararlaştı</string>
+    <string name="conn_event_ratchet_sync_agreed">şifreleme kabul edildi</string>
+    <string name="snd_conn_event_ratchet_sync_agreed">%s üyesi için şifreleme kabul edildi</string>
     <string name="conn_level_desc_direct">doğrudan</string>
     <string name="dont_show_again">Yeniden gösterme</string>
     <string name="direct_messages_are_prohibited_in_chat">Bu toplu konuşmada üyeler arası doğrudan iletiler yasaklıdır.</string>
@@ -675,4 +675,41 @@
     <string name="v4_6_group_welcome_message">Toplu konuşma karşılama iletisi</string>
     <string name="v4_6_hidden_chat_profiles">Gizli konuşma profilleri</string>
     <string name="custom_time_unit_hours">Saat</string>
+    <string name="notifications_mode_off_desc">Yalnızca uygulama çalışırken bildirim alabileceksiniz, hiçbir arka plan hizmeti başlatılmayacaktır</string>
+    <string name="notification_preview_new_message">yeni mesaj</string>
+    <string name="welcome">Hoşgeldin!</string>
+    <string name="personal_welcome">Hoşgeldin %1$s!</string>
+    <string name="icon_descr_waiting_for_image">Resim bekleniyor</string>
+    <string name="waiting_for_image">Resim bekleniyor</string>
+    <string name="icon_descr_waiting_for_video">Video bekleniyor</string>
+    <string name="waiting_for_video">Video bekleniyor</string>
+    <string name="waiting_for_file">Dosya bekleniyor</string>
+    <string name="voice_messages_prohibited">Sesli mesajlar yasaktır!</string>
+    <string name="contact_wants_to_connect_with_you">sana bağlanmak istiyor!</string>
+    <string name="you_can_accept_or_reject_connection">İnsanlar bağlantı talebinde bulunduğunda, kabul edebilir veya reddedebilirsiniz.</string>
+    <string name="network_use_onion_hosts_prefer">Mevcut olduğunda</string>
+    <string name="auto_accept_contact">Otomatik kabul etme</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">Kişilerinizin veya mesajlarınızın hiçbirini (teslim edildikten sonra) sunucularda saklamıyoruz.</string>
+    <string name="callstate_waiting_for_answer">yanıt bekleniyor…</string>
+    <string name="callstate_waiting_for_confirmation">onay bekleniyor…</string>
+    <string name="onboarding_notifications_mode_off">Uygulama çalışıyorken</string>
+    <string name="webrtc_ice_servers">WebRTC ICE sunucuları</string>
+    <string name="auto_accept_images">Görüntüleri otomatik kabul et</string>
+    <string name="empty_chat_profile_is_created">Verilen adla boş bir sohbet profili oluşturulur ve uygulama her zamanki gibi açılır.</string>
+    <string name="voice_prohibited_in_this_chat">Bu sohbette sesli mesajlar yasaktır.</string>
+    <string name="v4_2_auto_accept_contact_requests">Bağlanma isteklerini otomatik kabul et</string>
+    <string name="database_downgrade_warning">Uyarı: Bazı verileri kaybedebilirsiniz!</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Tüm kişileriniz bağlı kalacaktır. Profil güncellemesi kişilerinize gönderilecektir.</string>
+    <string name="keychain_is_storing_securely">Android Keystore parolayı güvenli bir şekilde saklamak için kullanılır - bildirim hizmetinin çalışmasını sağlar.</string>
+    <string name="button_welcome_message">Karşılama mesajı</string>
+    <string name="group_welcome_title">Karşılama mesajı</string>
+    <string name="voice_messages_are_prohibited">Bu grupta sesli mesajlar yasaktır.</string>
+    <string name="whats_new">Neler yeni</string>
+    <string name="new_in_version">%s sürümünde yeni</string>
+    <string name="whats_new_read_more">Daha fazla bilgi edinin</string>
+    <string name="v4_3_voice_messages">Sesli mesajlar</string>
+    <string name="v5_1_better_messages_descr">- 5 dakikaya kadar sesli mesajlar.
+\n- özel mesaj kaybolma süreleri ayarlama 
+\n- mesag düzenleme geçmişi.</string>
+    <string name="custom_time_unit_weeks">hafta</string>
 </resources>
