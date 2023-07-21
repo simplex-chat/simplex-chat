@@ -145,12 +145,6 @@ Also read [this post](https://neilalexander.dev/2021/04/09/read-receipts-typing-
 
 There is also no discounting that the mere presense of read receipts, even as opt-in, creates a social pressure to enable them, with the same consequences – there are many scenarios when they would be non-optional in a given relationship. So many users belive, and we share this view, that it is better not to have these features at all. But we will be re-assessing this view.
 
-
-
-## Future of SimpleX Chat groups and communities
-
-TODO
-
 ## SimpleX platform
 
 Some links to answer the most common questions:
