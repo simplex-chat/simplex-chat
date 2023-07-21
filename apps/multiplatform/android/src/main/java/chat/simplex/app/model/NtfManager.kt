@@ -1,6 +1,5 @@
 package chat.simplex.app.model
 
-import android.Manifest
 import android.app.*
 import android.app.TaskStackBuilder
 import android.content.*
@@ -9,16 +8,21 @@ import android.graphics.BitmapFactory
 import android.hardware.display.DisplayManager
 import android.media.AudioAttributes
 import android.net.Uri
-import android.util.Log
 import android.view.Display
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.core.app.*
 import chat.simplex.app.*
-import chat.simplex.app.views.call.*
-import chat.simplex.app.views.chatlist.acceptContactRequest
-import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.usersettings.NotificationPreviewMode
-import chat.simplex.res.MR
+import chat.simplex.app.TAG
+import chat.simplex.app.views.call.IncomingCallActivity
+import chat.simplex.app.views.call.getKeyguardManager
+import chat.simplex.common.views.chatlist.acceptContactRequest
+import chat.simplex.common.views.helpers.*
+import chat.simplex.common.model.*
+import chat.simplex.common.platform.*
+import chat.simplex.common.views.call.CallMediaType
+import chat.simplex.common.views.call.RcvCallInvitation
 import kotlinx.datetime.Clock
+import chat.simplex.res.MR
 
 object NtfManager {
   const val MessageChannel: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
@@ -33,7 +37,7 @@ object NtfManager {
   const val CallNotificationId: Int = -1
   private const val UserIdKey: String = "userId"
   private const val ChatIdKey: String = "chatId"
-  private val appPreferences: AppPreferences by lazy { ChatController.appPrefs }
+  private val appPreferences: AppPreferences = ChatController.appPrefs
   private val context: Context
     get() = SimplexApp.context
 
@@ -42,16 +46,12 @@ object NtfManager {
     return if (userId == -1L || userId == null) null else userId
   }
 
-  private val manager: NotificationManager = SimplexApp.context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+  private val manager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
   private var prevNtfTime = mutableMapOf<String, Long>()
   private val msgNtfTimeoutMs = 30000L
 
   init {
     if (manager.areNotificationsEnabled()) createNtfChannelsMaybeShowAlert()
-  }
-
-  enum class NotificationAction {
-    ACCEPT_CONTACT_REQUEST
   }
 
   private fun callNotificationChannel(channelId: String, channelName: String): NotificationChannel {
@@ -119,7 +119,7 @@ object NtfManager {
     val largeIcon = when {
       actions.isEmpty() -> null
       image == null || previewMode == NotificationPreviewMode.HIDDEN.name -> BitmapFactory.decodeResource(context.resources, R.drawable.icon)
-      else -> base64ToBitmap(image)
+      else -> base64ToBitmap(image).asAndroidBitmap()
     }
     val builder = NotificationCompat.Builder(context, MessageChannel)
       .setContentTitle(title)
@@ -158,7 +158,7 @@ object NtfManager {
 
     with(NotificationManagerCompat.from(context)) {
       // using cInfo.id only shows one notification per chat and updates it when the message arrives
-      if (ActivityCompat.checkSelfPermission(SimplexApp.context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+      if (ActivityCompat.checkSelfPermission(SimplexApp.context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
         notify(chatId.hashCode(), builder.build())
         notify(0, summary)
       }
@@ -172,9 +172,9 @@ object NtfManager {
       "notifyCallInvitation pre-requests: " +
           "keyguard locked ${keyguardManager.isKeyguardLocked}, " +
           "callOnLockScreen ${appPreferences.callOnLockScreen.get()}, " +
-          "onForeground ${SimplexApp.context.isAppOnForeground}"
+          "onForeground ${isAppOnForeground}"
     )
-    if (SimplexApp.context.isAppOnForeground) return
+    if (isAppOnForeground) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
     val image = invitation.contact.image
@@ -212,7 +212,7 @@ object NtfManager {
     val largeIcon = if (image == null || previewMode == NotificationPreviewMode.HIDDEN.name)
       BitmapFactory.decodeResource(context.resources, R.drawable.icon)
     else
-      base64ToBitmap(image)
+      base64ToBitmap(image).asAndroidBitmap()
 
     ntfBuilder = ntfBuilder
       .setContentTitle(title)
@@ -227,7 +227,7 @@ object NtfManager {
     // This makes notification sound and vibration repeat endlessly
     notification.flags = notification.flags or NotificationCompat.FLAG_INSISTENT
     with(NotificationManagerCompat.from(context)) {
-      if (ActivityCompat.checkSelfPermission(SimplexApp.context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+      if (ActivityCompat.checkSelfPermission(SimplexApp.context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
         notify(CallNotificationId, notification)
       }
     }
