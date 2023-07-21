@@ -125,6 +125,8 @@ library
       Simplex.Chat.Terminal.Notification
       Simplex.Chat.Terminal.Output
       Simplex.Chat.Types
+      Simplex.Chat.Types.Preferences
+      Simplex.Chat.Types.Util
       Simplex.Chat.Util
       Simplex.Chat.View
   other-modules:
