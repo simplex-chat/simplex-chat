@@ -3,10 +3,47 @@ const markdownItAnchor = require("markdown-it-anchor")
 const markdownItReplaceLink = require('markdown-it-replace-link')
 const slugify = require("slugify")
 const uri = require('fast-uri')
-const i18n = require('eleventy-plugin-i18n');
-const fs = require("fs");
-const path = require("path");
-const pluginRss = require('@11ty/eleventy-plugin-rss');
+const i18n = require('eleventy-plugin-i18n')
+const fs = require("fs")
+const path = require("path")
+const pluginRss = require('@11ty/eleventy-plugin-rss')
+const { JSDOM } = require('jsdom')
+
+
+// The implementation of Glossary feature
+const md = new markdownIt()
+const glossaryMarkdownContent = fs.readFileSync(path.resolve(__dirname, '../docs/GLOSSARY.md'), 'utf8')
+const glossaryHtmlContent = md.render(glossaryMarkdownContent)
+const glossaryDOM = new JSDOM(glossaryHtmlContent)
+const glossaryDocument = glossaryDOM.window.document
+const glossary = require('./src/_data/glossary.json')
+
+glossary.forEach(item => {
+  const headers = Array.from(glossaryDocument.querySelectorAll("h2"))
+  const matchingHeader = headers.find(header => header.textContent.trim() === item.definition)
+
+  if (matchingHeader) {
+    let sibling = matchingHeader.nextElementSibling
+    let definition = ''
+    let firstParagraph = ''
+    let paragraphCount = 0
+
+    while (sibling && sibling.tagName !== 'H2') {
+      if (sibling.tagName === 'P') {
+        paragraphCount += 1
+        if (firstParagraph === '') {
+          firstParagraph = sibling.innerHTML
+        }
+      }
+      definition += sibling.outerHTML || sibling.textContent
+      sibling = sibling.nextElementSibling
+    }
+
+    item.definition = definition
+    item.tooltip = firstParagraph
+    item.hasMultipleParagraphs = paragraphCount > 1
+  }
+})
 
 
 const globalConfig = {
@@ -15,7 +52,7 @@ const globalConfig = {
 }
 
 const translationsDirectoryPath = './langs'
-const supportedRoutes = ["blog", "contact", "invitation", ""]
+const supportedRoutes = ["blog", "contact", "invitation", "docs", ""]
 let supportedLangs = []
 fs.readdir(translationsDirectoryPath, (err, files) => {
   if (err) {
@@ -26,7 +63,7 @@ fs.readdir(translationsDirectoryPath, (err, files) => {
     return file.endsWith('.json') && fs.statSync(translationsDirectoryPath + '/' + file).isFile()
   })
   supportedLangs = jsonFileNames.map(file => file.replace('.json', ''))
-});
+})
 
 const translations = require("./translations.json")
 
@@ -40,18 +77,137 @@ module.exports = function (ty) {
     return "en"
   })
 
-  ty.addShortcode("getlangRoute", (path) => {
-    const lang = path.split("/")[1]
-    if (supportedRoutes.includes(lang)) return ""
-    if (supportedLangs.includes(lang)) return `/${lang}`
-    return "/en"
+  ty.addFilter("getlang", (path) => {
+    const urlParts = path.split("/")
+    if (urlParts[1] === "docs") {
+      if (urlParts[2] === "lang") {
+        return urlParts[3]
+      }
+      return "en"
+    }
+    else {
+      if (supportedRoutes.includes(urlParts[1])) return "en"
+      else if (supportedLangs.includes(urlParts[1])) return urlParts[1]
+      return "en"
+    }
+  })
+
+  ty.addFilter('applyGlossary', function (content) {
+    const dom = new JSDOM(content)
+    const { document } = dom.window
+    const body = document.querySelector('body')
+    const allContentNodes = document.querySelectorAll('p, td, a, h1, h2, h3, h4')
+    const overlayIds = []
+
+    glossary.forEach((term, index) => {
+      let changeNoted = false
+      const id = term.term.toLowerCase().replace(/\s/g, '-')
+
+      allContentNodes.forEach((node) => {
+        const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
+        const replacement = `<span data-glossary="tooltip-${id}" class="glossary-term">${term.term}</span>`
+        const beforeContent = node.innerHTML
+        node.innerHTML = node.innerHTML.replace(regex, replacement)
+        if (beforeContent !== node.innerHTML && !changeNoted) {
+          changeNoted = true
+        }
+      })
+
+      if (changeNoted) {
+        const definitionTooltipDiv = document.createElement('div')
+        definitionTooltipDiv.id = `tooltip-${id}`
+        definitionTooltipDiv.className = "glossary-tooltip"
+        const titleH4 = document.createElement('h4')
+        titleH4.innerHTML = term.term
+        titleH4.className = "tooltip-title"
+        const p = document.createElement('p')
+        p.innerHTML = term.tooltip
+        const innerDiv = document.createElement('div')
+        innerDiv.appendChild(titleH4)
+        innerDiv.appendChild(p)
+        if (term.hasMultipleParagraphs) {
+          const readMoreBtn = document.createElement('button')
+          readMoreBtn.innerHTML = "Read more"
+          readMoreBtn.className = "read-more-btn open-overlay-btn"
+          readMoreBtn.setAttribute('data-show-overlay', id)
+          innerDiv.appendChild(readMoreBtn)
+        }
+        innerDiv.className = "tooltip-content"
+        definitionTooltipDiv.appendChild(innerDiv)
+        body.appendChild(definitionTooltipDiv)
+      }
+
+      let tooltipDom = new JSDOM(term.definition)
+      let tooltipDocument = tooltipDom.window.document
+      const hashList = [term.term.toLowerCase().replace(/\s/g, '-')]
+      tooltipDocument.querySelectorAll('a[href*="#"]').forEach(a => {
+        let hashIndex = a.href.indexOf("#")
+        if (hashIndex !== -1) {
+          let hash = a.href.substring(hashIndex + 1)
+          hashList.push(hash)
+        }
+      })
+
+      hashList.forEach(hash => {
+        if (!overlayIds.includes(hash)) {
+          let termFromHash = glossary.find(term => term.term.toLowerCase().replace(/\s/g, '-') === hash)
+          if (!termFromHash) return
+
+          const overlayDiv = document.createElement('div')
+          overlayDiv.id = hash
+          overlayDiv.className = "overlay glossary-overlay hidden"
+          const overlayCardDiv = document.createElement('div')
+          overlayCardDiv.className = "overlay-card"
+          const overlayTitleH1 = document.createElement('h1')
+          overlayTitleH1.className = "overlay-title"
+          overlayTitleH1.innerHTML = termFromHash.term
+          const overlayContent = document.createElement('div')
+          overlayContent.className = "overlay-content"
+          overlayContent.innerHTML = termFromHash.definition
+          const crossSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+          crossSVG.setAttribute('class', 'close-overlay-btn')
+          crossSVG.setAttribute('id', 'cross')
+          crossSVG.setAttribute('width', '16')
+          crossSVG.setAttribute('height', '16')
+          crossSVG.setAttribute('viewBox', '0 0 13 13')
+          crossSVG.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+          const crossPath = document.createElementNS("http://www.w3.org/2000/svg", "path")
+          crossPath.setAttribute('d', 'M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.805 0.002228 0.430001 0.002228 0.135211 0.182228C-0.159579 0.362228 -0.159579 0.697228 0.135211 0.877228L5.68885 6.27528L0.4918 11.3295C0.231501 11.5825 0.220703 12.0042 0.467664 12.2709C0.714625 12.5376 1.12625 12.5486 1.38655 12.2956L6.63302 7.196L12.1867 12.5941C12.4815 12.7741 12.8565 12.7741 13.1513 12.5941C13.4461 12.4141 13.4461 12.0791 13.1513 11.8991L12.7973 11.5525Z')
+          crossSVG.appendChild(crossPath)
+
+          overlayCardDiv.appendChild(overlayTitleH1)
+          overlayCardDiv.appendChild(overlayContent)
+          overlayCardDiv.appendChild(crossSVG)
+          overlayDiv.appendChild(overlayCardDiv)
+          body.appendChild(overlayDiv)
+          overlayIds.push(hash)
+        }
+      })
+    })
+
+    return dom.serialize()
   })
 
   ty.addShortcode("completeRoute", (obj) => {
     const urlParts = obj.url.split("/")
+
     if (supportedRoutes.includes(urlParts[1])) {
       if (urlParts[1] == "blog")
         return `/blog`
+
+      else if (urlParts[1] === "docs") {
+        if (urlParts[2] === "lang") {
+          if (obj.lang === "en")
+            return `/docs/${urlParts.slice(4).join('/')}`
+          return `/docs/lang/${obj.lang}/${urlParts.slice(4).join('/')}`
+        }
+        else {
+          if (obj.lang === "en")
+            return `${obj.url}`
+          return `/docs/lang/${obj.lang}/${urlParts.slice(2).join('/')}`
+        }
+      }
+
       else if (obj.lang === "en")
         return `${obj.url}`
       return `/${obj.lang}${obj.url}`
@@ -65,7 +221,7 @@ module.exports = function (ty) {
     }
   })
 
-  ty.addPlugin(pluginRss);
+  ty.addPlugin(pluginRss)
 
   ty.addPlugin(i18n, {
     translations,
@@ -73,7 +229,7 @@ module.exports = function (ty) {
       '*': 'en'
     },
     defaultLocale: 'en',
-  });
+  })
 
   // Keeps the same directory structure.
   ty.addPassthroughCopy("src/assets/")
@@ -87,13 +243,93 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/hero-phone")
   ty.addPassthroughCopy("src/hero-phone-dark")
   ty.addPassthroughCopy("src/blog/images")
-  supportedLangs.forEach(lang => ty.addPassthroughCopy(`src/${lang}/blog/images`))
+  ty.addPassthroughCopy("src/docs/*.png")
+  ty.addPassthroughCopy("src/docs/images")
+  ty.addPassthroughCopy("src/docs/protocol/diagrams")
+  ty.addPassthroughCopy("src/docs/protocol/*.json")
   ty.addPassthroughCopy("src/images")
   ty.addPassthroughCopy("src/CNAME")
   ty.addPassthroughCopy("src/.well-known")
 
   ty.addCollection('blogs', function (collection) {
     return collection.getFilteredByGlob('src/blog/*.md').reverse()
+  })
+
+  ty.addCollection('docs', function (collection) {
+    const docs = collection.getFilteredByGlob('src/docs/**/*.md')
+      .map(doc => {
+        return { url: doc.url, title: doc.data.title, inputPath: doc.inputPath }
+      })
+
+    let referenceContent = fs.readFileSync(path.resolve(__dirname, 'src/_data/docs_sidebar.json'), 'utf-8')
+    referenceContent = JSON.parse(referenceContent).items
+
+    const newDocs = []
+
+    referenceContent.forEach(referenceMenu => {
+      referenceMenu.data.forEach(referenceSubmenu => {
+        docs.forEach(doc => {
+          const url = doc.url.replace("/docs/", "")
+          const urlParts = url.split("/")
+
+          if (doc.inputPath.split('/').includes(referenceSubmenu)) {
+            if (urlParts.length === 1 && urlParts[0] !== "") {
+              const index = newDocs.findIndex((ele) => ele.lang === 'en' && ele.menu === referenceMenu.menu)
+              if (index !== -1) {
+                newDocs[index].data.push(doc)
+              }
+              else {
+                newDocs.push({
+                  lang: 'en',
+                  menu: referenceMenu.menu,
+                  data: [doc],
+                })
+              }
+            }
+            else if (urlParts.length > 1 && urlParts[0] !== "" && urlParts[0] !== "lang") {
+              const index = newDocs.findIndex((ele) => ele.lang === 'en' && ele.menu === referenceMenu.menu)
+              if (index !== -1) {
+                newDocs[index].data.push(doc)
+              } else {
+                newDocs.push({
+                  lang: 'en',
+                  menu: referenceMenu.menu,
+                  data: [doc],
+                })
+              }
+            }
+            else if (urlParts.length === 3 && urlParts[0] === "lang" && urlParts[2] !== '') {
+              const index = newDocs.findIndex((ele) => ele.lang === urlParts[1] && ele.menu === referenceMenu.menu)
+              if (index !== -1) {
+                newDocs[index].data.push(doc)
+              }
+              else {
+                newDocs.push({
+                  lang: urlParts[1],
+                  menu: referenceMenu.menu,
+                  data: [doc],
+                })
+              }
+            }
+            else if (urlParts.length > 3 && urlParts[0] === "lang" && urlParts[2] !== '') {
+              const index = newDocs.findIndex((ele) => ele.lang === urlParts[1] && ele.menu === referenceMenu.menu)
+              if (index !== -1) {
+                newDocs[index].data.push(doc)
+              }
+              else {
+                newDocs.push({
+                  lang: urlParts[1],
+                  menu: referenceMenu.menu,
+                  data: [doc],
+                })
+              }
+            }
+          }
+        })
+      })
+    })
+
+    return newDocs
   })
 
   ty.addWatchTarget("src/css")
@@ -108,6 +344,9 @@ module.exports = function (ty) {
       let parsed = uri.parse(link)
       if (parsed.scheme || parsed.host || !parsed.path.endsWith(".md")) {
         return link
+      }
+      if (parsed.path.startsWith("../../blog")) {
+        parsed.path = parsed.path.replace("../../blog", "/blog")
       }
       parsed.path = parsed.path.replace(/\.md$/, ".html")
       return uri.serialize(parsed)

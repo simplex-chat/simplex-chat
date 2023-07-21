@@ -27,7 +27,7 @@ private let rowHeights: [DynamicTypeSize: CGFloat] = [
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @State var chat: Chat
+    @ObservedObject var chat: Chat
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
@@ -57,6 +57,8 @@ struct ChatListNavLink: View {
         )
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
+            toggleFavoriteButton()
+            toggleNtfsButton(chat)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             if !chat.chatItems.isEmpty {
@@ -108,6 +110,14 @@ struct ChatListNavLink: View {
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
+                .swipeActions(edge: .trailing) {
+                    if (groupInfo.membership.memberCurrent) {
+                        leaveGroupChatButton(groupInfo)
+                    }
+                    if groupInfo.canDelete {
+                        deleteGroupChatButton(groupInfo)
+                    }
+                }
         default:
             NavLinkPlain(
                 tag: chat.chatInfo.id,
@@ -118,21 +128,16 @@ struct ChatListNavLink: View {
             .frame(height: rowHeights[dynamicTypeSize])
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 markReadButton()
+                toggleFavoriteButton()
+                toggleNtfsButton(chat)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 if !chat.chatItems.isEmpty {
                     clearChatButton()
                 }
                 if (groupInfo.membership.memberCurrent) {
-                    Button {
-                        AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
-                    } label: {
-                        Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
-                    }
-                    .tint(Color.yellow)
+                    leaveGroupChatButton(groupInfo)
                 }
-            }
-            .swipeActions(edge: .trailing) {
                 if groupInfo.canDelete {
                     deleteGroupChatButton(groupInfo)
                 }
@@ -168,6 +173,24 @@ struct ChatListNavLink: View {
 
     }
 
+    @ViewBuilder private func toggleFavoriteButton() -> some View {
+        if chat.chatInfo.chatSettings?.favorite == true {
+            Button {
+                toggleChatFavorite(chat, favorite: false)
+            } label: {
+                Label("Unfav.", systemImage: "star.slash")
+            }
+            .tint(.green)
+        } else {
+            Button {
+                toggleChatFavorite(chat, favorite: true)
+            } label: {
+                Label("Favorite", systemImage: "star.fill")
+            }
+            .tint(.green)
+        }
+    }
+
     private func clearChatButton() -> some View {
         Button {
             AlertManager.shared.showAlert(clearChatAlert())
@@ -177,7 +200,16 @@ struct ChatListNavLink: View {
         .tint(Color.orange)
     }
 
-    @ViewBuilder private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
+    private func leaveGroupChatButton(_ groupInfo: GroupInfo) -> some View {
+        Button {
+            AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
+        } label: {
+            Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
+        }
+        .tint(Color.yellow)
+    }
+
+    private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
         Button {
             AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
         } label: {
@@ -231,6 +263,7 @@ struct ChatListNavLink: View {
         .sheet(isPresented: $showContactConnectionInfo) {
             if case let .contactConnection(contactConnection) = chat.chatInfo {
                 ContactConnectionInfo(contactConnection: contactConnection)
+                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
         }
         .onTapGesture {
@@ -347,6 +380,7 @@ struct ChatListNavLink: View {
             .onTapGesture { showInvalidJSON = true }
             .sheet(isPresented: $showInvalidJSON) {
                 invalidJSONView(json)
+                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
     }
 }

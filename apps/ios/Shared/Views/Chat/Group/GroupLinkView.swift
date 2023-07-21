@@ -29,43 +29,33 @@ struct GroupLinkView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack (alignment: .leading) {
-                Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
-                    .padding(.bottom)
+        List {
+            Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            Section {
                 if let groupLink = groupLink {
-                    HStack {
-                        Text("Initial role")
-                        Picker("Initial role", selection: $groupLinkMemberRole) {
-                            ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
-                                Text(role.text)
-                            }
+                    Picker("Initial role", selection: $groupLinkMemberRole) {
+                        ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
+                            Text(role.text)
                         }
-                        .frame(height: 36)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 36)
                     QRCode(uri: groupLink)
-                    HStack {
-                        Button {
-                            showShareSheet(items: [groupLink])
-                        } label: {
-                            Label("Share link", systemImage: "square.and.arrow.up")
-                        }
-                        .padding()
-
-                        Button(role: .destructive) { alert = .deleteLink } label: {
-                            Label("Delete link", systemImage: "trash")
-                        }
-                        .padding()
+                    Button {
+                        showShareSheet(items: [groupLink])
+                    } label: {
+                        Label("Share link", systemImage: "square.and.arrow.up")
                     }
-                    .frame(maxWidth: .infinity)
+
+                    Button(role: .destructive) { alert = .deleteLink } label: {
+                        Label("Delete link", systemImage: "trash")
+                    }
                 } else {
                     Button(action: createGroupLink) {
                         Label("Create link", systemImage: "link.badge.plus")
                     }
-                    .frame(maxWidth: .infinity)
                     .disabled(creatingLink)
-                    .padding(.bottom)
                     if creatingLink {
                         ProgressView()
                             .scaleEffect(2)
@@ -73,8 +63,6 @@ struct GroupLinkView: View {
                     }
                 }
             }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .alert(item: $alert) { alert in
                 switch alert {
                 case .deleteLink:

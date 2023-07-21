@@ -9,7 +9,6 @@ import SimpleXChat
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
-    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
     @AppStorage(DEFAULT_SHOW_MUTE_PROFILE_ALERT) private var showMuteProfileAlert = true
     @State private var showDeleteConfirmation = false
@@ -157,7 +156,7 @@ struct UserProfilesView: View {
             case .hiddenProfilesNotice:
                 return Alert(
                     title: Text("Make profile private!"),
-                    message: Text("You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled."),
+                    message: Text("You can hide or mute a user profile - swipe it to the right."),
                     primaryButton: .default(Text("Don't show again")) {
                         showHiddenProfilesNotice = false
                     },
@@ -338,7 +337,7 @@ struct UserProfilesView: View {
                 }
                 .tint(.green)
             } else {
-                if visibleUsersCount > 1 && prefPerformLA {
+                if visibleUsersCount > 1 {
                     Button("Hide") {
                         selectedUser = user
                     }

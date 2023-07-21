@@ -18,9 +18,10 @@ struct TerminalView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State var composeState: ComposeState = ComposeState()
-    @FocusState private var keyboardVisible: Bool
+    @State private var keyboardVisible = false
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
+    @State private var scrolled = false
 
     var body: some View {
         if authorized {
@@ -51,7 +52,12 @@ struct TerminalView: View {
                                 .padding(.horizontal)
                             }
                         }
-                        .onAppear { scrollToBottom(proxy) }
+                        .onAppear {
+                            if !scrolled {
+                                scrollToBottom(proxy)
+                                scrolled = true
+                            }
+                        }
                         .onChange(of: chatModel.terminalItems.count) { _ in scrollToBottom(proxy) }
                         .onChange(of: keyboardVisible) { _ in
                             if keyboardVisible {
@@ -72,7 +78,7 @@ struct TerminalView: View {
 
                 SendMessageView(
                     composeState: $composeState,
-                    sendMessage: sendMessage,
+                    sendMessage: { _ in consoleSendMessage() },
                     showVoiceMessageButton: false,
                     onMediaAdded: { _ in },
                     keyboardVisible: $keyboardVisible
@@ -108,7 +114,7 @@ struct TerminalView: View {
         .onDisappear { terminalItem = nil }
     }
     
-    func sendMessage() {
+    func consoleSendMessage() {
         let cmd = ChatCommand.string(composeState.message)
         if composeState.message.starts(with: "/sql") && (!prefPerformLA || !developerTools) {
             let resp = ChatResponse.chatCmdError(user_: nil, chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))

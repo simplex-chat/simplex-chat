@@ -24,19 +24,19 @@ struct AddGroupView: View {
 
     var body: some View {
         if let chat = chat, let groupInfo = groupInfo {
-            AddGroupMembersView(
+            AddGroupMembersViewCommon(
                 chat: chat,
                 groupInfo: groupInfo,
                 creatingGroup: true,
                 showFooterCounter: false
             ) { _ in
                 dismiss()
-                DispatchQueue.main.async {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     m.chatId = groupInfo.id
                 }
             }
         } else {
-            createGroupView()
+            createGroupView().keyboardPadding()
         }
     }
 

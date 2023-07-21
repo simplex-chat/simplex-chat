@@ -65,7 +65,7 @@ struct MigrateToAppGroupView: View {
             case .exporting:
                 center {
                     ProgressView(value: 0.33)
-                    Text("Exporting database archive...")
+                    Text("Exporting database archive…")
                 }
                 migrationProgress()
             case .export_error:
@@ -82,7 +82,7 @@ struct MigrateToAppGroupView: View {
             case .migrating:
                 center {
                     ProgressView(value: 0.67)
-                    Text("Migrating database archive...")
+                    Text("Migrating database archive…")
                 }
                 migrationProgress()
             case .migration_error:
@@ -109,7 +109,8 @@ struct MigrateToAppGroupView: View {
                         do {
                             resetChatCtrl()
                             try initializeChat(start: true)
-                            chatModel.onboardingStage = .step3_SetNotificationsMode
+                            onboardingStageDefault.set(.step4_SetNotificationsMode)
+                            chatModel.onboardingStage = .step4_SetNotificationsMode
                             setV3DBMigration(.ready)
                         } catch let error {
                             dbContainerGroupDefault.set(.documents)
@@ -202,7 +203,7 @@ struct MigrateToAppGroupView: View {
                 dbContainerGroupDefault.set(.group)
                 resetChatCtrl()
                 try await MainActor.run { try initializeChat(start: false) }
-                try await apiImportArchive(config: config)
+                let _ = try await apiImportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.migrated) }
             } catch let error {
                 dbContainerGroupDefault.set(.documents)

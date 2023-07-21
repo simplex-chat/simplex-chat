@@ -11,20 +11,20 @@ import OSLog
 
 let logger = Logger()
 
-// maximum image file size to be auto-accepted
-public let MAX_IMAGE_SIZE: Int64 = 236700
+// image file size for complession
+public let MAX_IMAGE_SIZE: Int64 = 261_120 // 255KB
 
 public let MAX_IMAGE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
-public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 8000000
+public let MAX_VOICE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
-public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824
+public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 1_047_552 // 1023KB
+
+public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824 // 1GB
 
 public let MAX_FILE_SIZE_SMP: Int64 = 8000000
 
-public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(30)
-
-public let MAX_VOICE_MESSAGE_SIZE_INLINE_SEND: Int64 = 94680
+public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300)
 
 private let CHAT_DB: String = "_chat.db"
 

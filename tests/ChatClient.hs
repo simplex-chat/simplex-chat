@@ -23,6 +23,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDataba
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
@@ -36,6 +37,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
+import Simplex.Messaging.Transport.Server (defaultTransportServerConfig)
 import Simplex.Messaging.Version
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import System.FilePath ((</>))
@@ -72,7 +74,10 @@ testOpts =
       chatCmdDelay = 3,
       chatServerPort = Nothing,
       optFilesFolder = Nothing,
+      showReactions = True,
       allowInstantFiles = True,
+      autoAcceptFileSize = 0,
+      muteNotifications = True,
       maintenance = False
     }
 
@@ -93,7 +98,8 @@ data TestCC = TestCC
     virtualTerminal :: VirtualTerminal,
     chatAsync :: Async (),
     termAsync :: Async (),
-    termQ :: TQueue String
+    termQ :: TQueue String,
+    printOutput :: Bool
   }
 
 aCfg :: AgentConfig
@@ -110,6 +116,7 @@ testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
+      showReceipts = False,
       testView = True,
       tbqSize = 16,
       xftpFileConfig = Nothing
@@ -120,7 +127,7 @@ testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = mkVersionRange 1 1,
       smpAgentVRange = mkVersionRange 1 1,
-      smpCfg = (smpCfg testAgentCfg) {smpServerVRange = mkVersionRange 1 1}
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange 1 1}
     }
 
 testCfgV1 :: ChatConfig
@@ -147,7 +154,7 @@ startTestChat_ db cfg opts user = do
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
-  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
+  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput = False}
 
 stopTestChat :: TestCC -> IO ()
 stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
@@ -189,6 +196,9 @@ withTestChatOpts tmp = withTestChatCfgOpts tmp testCfg
 
 withTestChatCfgOpts :: HasCallStack => FilePath -> ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatCfgOpts tmp cfg opts dbPrefix = bracket (startTestChat tmp cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
+
+withTestOutput :: HasCallStack => TestCC -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestOutput cc runTest = runTest cc {printOutput = True}
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
@@ -237,14 +247,16 @@ getTermLine :: HasCallStack => TestCC -> IO String
 getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
-      -- uncomment 2 lines below to echo virtual terminal
-      -- name <- userName cc
-      -- putStrLn $ name <> ": " <> s
+      -- remove condition to always echo virtual terminal
+      when (printOutput cc) $ do
+      -- when True $ do
+        name <- userName cc
+        putStrLn $ name <> ": " <> s
       pure s
     _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
+userName (TestCC ChatController {currentUser} _ _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
 
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts
@@ -290,7 +302,7 @@ serverCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
-      serverTbqSize = 1,
+      -- serverTbqSize = 1,
       msgQueueQuota = 16,
       queueIdBytes = 12,
       msgIdBytes = 6,
@@ -309,7 +321,8 @@ serverCfg =
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       smpServerVRange = supportedSMPServerVRange,
-      logTLSErrors = True
+      transportConfig = defaultTransportServerConfig,
+      controlPort = Nothing
     }
 
 withSmpServer :: IO () -> IO ()
@@ -340,7 +353,7 @@ xftpServerConfig =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
-      logTLSErrors = True
+      transportConfig = defaultTransportServerConfig
     }
 
 withXFTPServer :: IO () -> IO ()

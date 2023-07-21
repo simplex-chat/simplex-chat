@@ -13,6 +13,7 @@ import SimpleXChat
 
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
+    @Published var setDeliveryReceipts = false
     @Published var v3DBMigration: V3DBMigrationState = v3DBMigrationDefault.get()
     @Published var currentUser: User?
     @Published var users: [UserInfo] = []
@@ -41,7 +42,7 @@ final class ChatModel: ObservableObject {
     @Published var tokenRegistered = false
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
-    @Published var notificationPreview: NotificationPreviewMode? = ntfPreviewModeGroupDefault.get()
+    @Published var notificationPreview: NotificationPreviewMode = ntfPreviewModeGroupDefault.get()
     @Published var incognito: Bool = incognitoGroupDefault.get()
     // pending notification actions
     @Published var ntfContactRequest: ChatId?
@@ -57,6 +58,8 @@ final class ChatModel: ObservableObject {
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
+    // tracks keyboard height via subscription in AppDelegate
+    @Published var keyboardHeight: CGFloat = 0
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -65,6 +68,14 @@ final class ChatModel: ObservableObject {
     static let shared = ChatModel()
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
+
+    var ntfEnableLocal: Bool {
+        notificationMode == .off || ntfEnableLocalGroupDefault.get()
+    }
+
+    var ntfEnablePeriodic: Bool {
+        notificationMode == .periodic || ntfEnablePeriodicGroupDefault.get()
+    }
 
     func getUser(_ userId: Int64) -> User? {
         currentUser?.userId == userId
@@ -131,6 +142,14 @@ final class ChatModel: ObservableObject {
 
     func updateContact(_ contact: Contact) {
         updateChat(.direct(contact: contact), addMissing: contact.directOrUsed)
+    }
+
+    func updateContactConnectionStats(_ contact: Contact, _ connectionStats: ConnectionStats) {
+        var updatedConn = contact.activeConn
+        updatedConn.connectionStats = connectionStats
+        var updatedContact = contact
+        updatedContact.activeConn = updatedConn
+        updateContact(updatedContact)
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {
@@ -238,16 +257,9 @@ final class ChatModel: ObservableObject {
     }
 
     private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
-        if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
-            let ci = reversedChatItems[i]
+        if let i = getChatItemIndex(cItem) {
             withAnimation {
-                self.reversedChatItems[i] = cItem
-                self.reversedChatItems[i].viewTimestamp = .now
-                // on some occasions the confirmation of message being accepted by the server (tick)
-                // arrives earlier than the response from API, and item remains without tick
-                if case .sndNew = cItem.meta.itemStatus {
-                    self.reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
-                }
+                _updateChatItem(at: i, with: cItem)
             }
             return false
         } else {
@@ -264,7 +276,30 @@ final class ChatModel: ObservableObject {
             }
         }
     }
-    
+
+    func updateChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
+            withAnimation {
+                _updateChatItem(at: i, with: cItem)
+            }
+        }
+    }
+
+    private func _updateChatItem(at i: Int, with cItem: ChatItem) {
+        let ci = reversedChatItems[i]
+        reversedChatItems[i] = cItem
+        reversedChatItems[i].viewTimestamp = .now
+        // on some occasions the confirmation of message being accepted by the server (tick)
+        // arrives earlier than the response from API, and item remains without tick
+        if case .sndNew = cItem.meta.itemStatus {
+            reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
+        }
+    }
+
+    private func getChatItemIndex(_ cItem: ChatItem) -> Int? {
+        reversedChatItems.firstIndex(where: { $0.id == cItem.id })
+    }
+
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         if cItem.isRcvNew {
             decreaseUnreadCounter(cInfo)
@@ -277,7 +312,7 @@ final class ChatModel: ObservableObject {
         }
         // remove from current chat
         if chatId == cInfo.id {
-            if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+            if let i = getChatItemIndex(cItem) {
                 _ = withAnimation {
                     self.reversedChatItems.remove(at: i)
                 }
@@ -357,7 +392,7 @@ final class ChatModel: ObservableObject {
 
     func markChatItemsRead(_ cInfo: ChatInfo, aboveItem: ChatItem? = nil) {
         if let cItem = aboveItem {
-            if chatId == cInfo.id, let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+            if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
                 markCurrentChatRead(fromIndex: i)
                 _updateChat(cInfo.id) { chat in
                     var unreadBelow = 0
@@ -405,7 +440,7 @@ final class ChatModel: ObservableObject {
         // update preview
         decreaseUnreadCounter(cInfo)
         // update current chat
-        if chatId == cInfo.id, let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+        if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
             markChatItemRead_(i)
         }
     }
@@ -450,7 +485,7 @@ final class ChatModel: ObservableObject {
     }
 
     func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
-        if let i = reversedChatItems.firstIndex(where: { $0.id == ci.id }), i < reversedChatItems.count - 1  {
+        if let i = getChatItemIndex(ci), i < reversedChatItems.count - 1  {
             return reversedChatItems[i + 1]
         } else {
             return nil
@@ -502,6 +537,16 @@ final class ChatModel: ObservableObject {
             }
         } else {
             return false
+        }
+    }
+
+    func updateGroupMemberConnectionStats(_ groupInfo: GroupInfo, _ member: GroupMember, _ connectionStats: ConnectionStats) {
+        if let conn = member.activeConn {
+            var updatedConn = conn
+            updatedConn.connectionStats = connectionStats
+            var updatedMember = member
+            updatedMember.activeConn = updatedConn
+            _ = upsertGroupMember(groupInfo, updatedMember)
         }
     }
 
@@ -565,6 +610,14 @@ final class Chat: ObservableObject, Identifiable {
         self.chatInfo = chatInfo
         self.chatItems = chatItems
         self.chatStats = chatStats
+    }
+
+    func copy(chatInfo: ChatInfo? = nil, chatItems: [ChatItem]? = nil, chatStats: ChatStats? = nil) -> Chat {
+        Chat(
+            chatInfo: chatInfo ?? self.chatInfo,
+            chatItems: chatItems ?? self.chatItems,
+            chatStats: chatStats ?? self.chatStats
+        )
     }
 
     var userCanSend: Bool {

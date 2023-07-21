@@ -22,10 +22,11 @@ import qualified Data.ByteString.Char8 as B
 import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionNumber, versionString)
+import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (ProtocolTypeI, ProtoServerWithAuth, SMPServerWithAuth, XFTPServerWithAuth)
+import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
 import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
 import System.FilePath (combine)
 
@@ -35,7 +36,10 @@ data ChatOpts = ChatOpts
     chatCmdDelay :: Int,
     chatServerPort :: Maybe String,
     optFilesFolder :: Maybe FilePath,
+    showReactions :: Bool,
     allowInstantFiles :: Bool,
+    autoAcceptFileSize :: Integer,
+    muteNotifications :: Bool,
     maintenance :: Bool
   }
 
@@ -86,7 +90,11 @@ coreChatOptsP appDir defaultDbFileName = do
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
-          <> help "Semicolon-separated list of SMP server(s) to use (each server can have more than one hostname)"
+          <> help
+            ( ("Space-separated list of SMP server(s) to use (each server can have more than one hostname)." <> "\n")
+                <> ("If you pass multiple servers, surround the entire list in quotes." <> "\n")
+                <> "Examples: smp1.example.com, \"smp1.example.com smp2.example.com smp3.example.com\""
+            )
           <> value []
       )
   xftpServers <-
@@ -94,7 +102,11 @@ coreChatOptsP appDir defaultDbFileName = do
       parseProtocolServers
       ( long "xftp-server"
           <> metavar "SERVER"
-          <> help "Semicolon-separated list of XFTP server(s) to use (each server can have more than one hostname)"
+          <> help
+            ( ("Space-separated list of XFTP server(s) to use (each server can have more than one hostname)." <> "\n")
+                <> ("If you pass multiple servers, surround the entire list in quotes." <> "\n")
+                <> "Examples: xftp1.example.com, \"xftp1.example.com xftp2.example.com xftp3.example.com\""
+            )
           <> value []
       )
   socksProxy <-
@@ -215,11 +227,30 @@ chatOptsP appDir defaultDbFileName = do
             <> metavar "FOLDER"
             <> help "Folder to use for sent and received files"
         )
+  showReactions <-
+    switch
+      ( long "reactions"
+          <> help "Show message reactions"
+      )
   allowInstantFiles <-
     switch
       ( long "allow-instant-files"
           <> short 'f'
           <> help "Send and receive instant files without acceptance"
+      )
+  autoAcceptFileSize <-
+    flag' (mb 1) (short 'a' <> help "Automatically accept files up to 1MB")
+      <|> option
+        auto
+        ( long "auto-accept-files"
+            <> metavar "FILE_SIZE"
+            <> help "Automatically accept files up to specified size"
+            <> value 0
+        )
+  muteNotifications <-
+    switch
+      ( long "mute"
+          <> help "Mute notifications"
       )
   maintenance <-
     switch
@@ -234,7 +265,10 @@ chatOptsP appDir defaultDbFileName = do
         chatCmdDelay,
         chatServerPort,
         optFilesFolder,
+        showReactions,
         allowInstantFiles,
+        autoAcceptFileSize,
+        muteNotifications,
         maintenance
       }
 
@@ -256,7 +290,7 @@ serverPortP :: A.Parser (Maybe String)
 serverPortP = Just . B.unpack <$> A.takeWhile A.isDigit
 
 protocolServersP :: ProtocolTypeI p => A.Parser [ProtoServerWithAuth p]
-protocolServersP = strP `A.sepBy1` A.char ';'
+protocolServersP = strP `A.sepBy1` A.char ' '
 
 parseLogLevel :: ReadM ChatLogLevel
 parseLogLevel = eitherReader $ \case

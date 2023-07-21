@@ -21,26 +21,25 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.Maybe (isNothing)
+import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
-import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import Data.Word (Word32)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgErrorType (..), MsgMeta (..), SwitchPhase (..))
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, tshow, (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord, Generic)
@@ -134,6 +133,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
+    reactions :: [CIReactionCount],
     file :: Maybe (CIFile d)
   }
   deriving (Show, Generic)
@@ -172,6 +172,11 @@ jsonCIDirection = \case
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
 
+data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
+  deriving (Show, Generic)
+
+instance ToJSON CIReactionCount where toEncoding = J.genericToEncoding J.defaultOptions
+
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (CChatItem c)
@@ -195,6 +200,18 @@ chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
 
+timedDeleteAt' :: CITimed -> Maybe UTCTime
+timedDeleteAt' CITimed {deleteAt} = deleteAt
+
+chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
+chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
+  CIGroupSnd -> membership
+  CIGroupRcv m -> m
+
+ciReactionAllowed :: ChatItem c d -> Bool
+ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
+ciReactionAllowed ChatItem {content} = isJust $ ciMsgContent content
+
 data CIDeletedState = CIDeletedState
   { markedDeleted :: Bool,
     deletedByMember :: Maybe GroupMember
@@ -212,8 +229,8 @@ chatItemDeletedState ChatItem {meta = CIMeta {itemDeleted}, content} =
         _ -> CIDeletedState {markedDeleted = True, deletedByMember = byMember cid}
     byMember :: CIDeleted c -> Maybe GroupMember
     byMember = \case
-      CIModerated m -> Just m
-      CIDeleted -> Nothing
+      CIModerated _ m -> Just m
+      CIDeleted _ -> Nothing
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
@@ -323,25 +340,23 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     editable :: Bool,
-    localItemTs :: ZonedTime,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive tz currentTs itemTs createdAt updatedAt =
-  let localItemTs = utcToZonedTime tz itemTs
-      editable = case itemContent of
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs createdAt updatedAt =
+  let editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, localItemTs, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, createdAt, updatedAt}
 
 instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds
-    deleteAt :: Maybe UTCTime
+    deleteAt :: Maybe UTCTime -- this is initially Nothing for received items, the timer starts when they are read
   }
   deriving (Show, Generic)
 
@@ -350,14 +365,14 @@ instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 ttl' :: CITimed -> Int
 ttl' CITimed {ttl} = ttl
 
-contactTimedTTL :: Contact -> Maybe Int
+contactTimedTTL :: Contact -> Maybe (Maybe Int)
 contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
-  | forUser enabled && forContact enabled = ttl
+  | forUser enabled && forContact enabled = Just ttl
   | otherwise = Nothing
   where
     TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
 
-groupTimedTTL :: GroupInfo -> Maybe Int
+groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
   | enable == FEOn = Just ttl
   | otherwise = Nothing
@@ -368,7 +383,7 @@ rcvContactCITimed = rcvCITimed_ . contactTimedTTL
 rcvGroupCITimed :: GroupInfo -> Maybe Int -> Maybe CITimed
 rcvGroupCITimed = rcvCITimed_ . groupTimedTTL
 
-rcvCITimed_ :: Maybe Int -> Maybe Int -> Maybe CITimed
+rcvCITimed_ :: Maybe (Maybe Int) -> Maybe Int -> Maybe CITimed
 rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> itemTTL)
 
 data CIQuote (c :: ChatType) = CIQuote
@@ -384,6 +399,33 @@ data CIQuote (c :: ChatType) = CIQuote
 instance ToJSON (CIQuote c) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data CIReaction (c :: ChatType) (d :: MsgDirection) = CIReaction
+  { chatDir :: CIDirection c d,
+    chatItem :: CChatItem c,
+    sentAt :: UTCTime,
+    reaction :: MsgReaction
+  }
+  deriving (Show, Generic)
+
+instance ToJSON (CIReaction c d) where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data ACIReaction = forall c d. ACIReaction (SChatType c) (SMsgDirection d) (ChatInfo c) (CIReaction c d)
+
+deriving instance Show ACIReaction
+
+instance ToJSON ACIReaction where
+  toJSON (ACIReaction _ _ chat reaction) = J.toJSON $ JSONCIReaction chat reaction
+  toEncoding (ACIReaction _ _ chat reaction) = J.toEncoding $ JSONCIReaction chat reaction
+
+data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
+  deriving (Generic)
+
+instance ToJSON (JSONCIReaction c d) where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
@@ -582,17 +624,13 @@ data CIFileInfo = CIFileInfo
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
   CISSndSent :: CIStatus 'MDSnd
+  CISSndRcvd :: MsgReceiptStatus -> CIStatus 'MDSnd
   CISSndErrorAuth :: CIStatus 'MDSnd
   CISSndError :: String -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
   CISRcvRead :: CIStatus 'MDRcv
 
 deriving instance Show (CIStatus d)
-
-ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
-ciStatusNew = case msgDirection @d of
-  SMDSnd -> CISSndNew
-  SMDRcv -> CISRcvNew
 
 instance ToJSON (CIStatus d) where
   toJSON = J.toJSON . jsonCIStatus
@@ -610,6 +648,7 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
   strEncode = \case
     CISSndNew -> "snd_new"
     CISSndSent -> "snd_sent"
+    CISSndRcvd status -> "snd_rcvd " <> strEncode status
     CISSndErrorAuth -> "snd_error_auth"
     CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
     CISRcvNew -> "rcv_new"
@@ -622,8 +661,9 @@ instance StrEncoding ACIStatus where
     A.takeTill (== ' ') >>= \case
       "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
       "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
+      "snd_rcvd" -> ACIStatus SMDSnd . CISSndRcvd <$> (A.space *> strP)
       "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-      "snd_error " -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> A.takeByteString
+      "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
       "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
       _ -> fail "bad status"
@@ -631,6 +671,7 @@ instance StrEncoding ACIStatus where
 data JSONCIStatus
   = JCISSndNew
   | JCISSndSent
+  | JCISSndRcvd {msgRcptStatus :: MsgReceiptStatus}
   | JCISSndErrorAuth
   | JCISSndError {agentError :: String}
   | JCISRcvNew
@@ -645,10 +686,21 @@ jsonCIStatus :: CIStatus d -> JSONCIStatus
 jsonCIStatus = \case
   CISSndNew -> JCISSndNew
   CISSndSent -> JCISSndSent
+  CISSndRcvd ok -> JCISSndRcvd ok
   CISSndErrorAuth -> JCISSndErrorAuth
   CISSndError e -> JCISSndError e
   CISRcvNew -> JCISRcvNew
   CISRcvRead -> JCISRcvRead
+
+ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
+ciStatusNew = case msgDirection @d of
+  SMDSnd -> CISSndNew
+  SMDRcv -> CISRcvNew
+
+ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
+ciCreateStatus content = case msgDirection @d of
+  SMDSnd -> ciStatusNew
+  SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
 type ChatItemId = Int64
 
@@ -659,551 +711,6 @@ data ChatPagination
   | CPAfter ChatItemId Int
   | CPBefore ChatItemId Int
   deriving (Show)
-
-data CIDeleteMode = CIDMBroadcast | CIDMInternal
-  deriving (Show, Generic)
-
-instance ToJSON CIDeleteMode where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CIDM"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CIDM"
-
-instance FromJSON CIDeleteMode where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CIDM"
-
-ciDeleteModeToText :: CIDeleteMode -> Text
-ciDeleteModeToText = \case
-  CIDMBroadcast -> "this item is deleted (broadcast)"
-  CIDMInternal -> "this item is deleted (internal)"
-
-ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
-ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
-  "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> (decodeLatin1 . strEncode $ role)
-
-rcvGroupEventToText :: RcvGroupEvent -> Text
-rcvGroupEventToText = \case
-  RGEMemberAdded _ p -> "added " <> profileToText p
-  RGEMemberConnected -> "connected"
-  RGEMemberLeft -> "left"
-  RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
-  RGEUserRole r -> "changed your role to " <> safeDecodeUtf8 (strEncode r)
-  RGEMemberDeleted _ p -> "removed " <> profileToText p
-  RGEUserDeleted -> "removed you"
-  RGEGroupDeleted -> "deleted group"
-  RGEGroupUpdated _ -> "group profile updated"
-  RGEInvitedViaGroupLink -> "invited via your group link"
-
-sndGroupEventToText :: SndGroupEvent -> Text
-sndGroupEventToText = \case
-  SGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
-  SGEUserRole r -> "changed role for yourself to " <> safeDecodeUtf8 (strEncode r)
-  SGEMemberDeleted _ p -> "removed " <> profileToText p
-  SGEUserLeft -> "left"
-  SGEGroupUpdated _ -> "group profile updated"
-
-rcvConnEventToText :: RcvConnEvent -> Text
-rcvConnEventToText = \case
-  RCESwitchQueue phase -> case phase of
-    SPCompleted -> "changed address for you"
-    _ -> decodeLatin1 (strEncode phase) <> " changing address for you..."
-
-sndConnEventToText :: SndConnEvent -> Text
-sndConnEventToText = \case
-  SCESwitchQueue phase m -> case phase of
-    SPCompleted -> "you changed address" <> forMember m
-    _ -> decodeLatin1 (strEncode phase) <> " changing address" <> forMember m <> "..."
-  where
-    forMember member_ =
-      maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
-
-profileToText :: Profile -> Text
-profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName
-
--- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
--- ! Nested sum types also have to use different encodings for database and API
--- ! to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
-data CIContent (d :: MsgDirection) where
-  CISndMsgContent :: MsgContent -> CIContent 'MDSnd
-  CIRcvMsgContent :: MsgContent -> CIContent 'MDRcv
-  CISndDeleted :: CIDeleteMode -> CIContent 'MDSnd -- legacy - since v4.3.0 item_deleted field is used
-  CIRcvDeleted :: CIDeleteMode -> CIContent 'MDRcv -- legacy - since v4.3.0 item_deleted field is used
-  CISndCall :: CICallStatus -> Int -> CIContent 'MDSnd
-  CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
-  CIRcvIntegrityError :: MsgErrorType -> CIContent 'MDRcv
-  CIRcvDecryptionError :: MsgDecryptError -> Word32 -> CIContent 'MDRcv
-  CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
-  CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
-  CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
-  CISndGroupEvent :: SndGroupEvent -> CIContent 'MDSnd
-  CIRcvConnEvent :: RcvConnEvent -> CIContent 'MDRcv
-  CISndConnEvent :: SndConnEvent -> CIContent 'MDSnd
-  CIRcvChatFeature :: ChatFeature -> PrefEnabled -> Maybe Int -> CIContent 'MDRcv
-  CISndChatFeature :: ChatFeature -> PrefEnabled -> Maybe Int -> CIContent 'MDSnd
-  CIRcvChatPreference :: ChatFeature -> FeatureAllowed -> Maybe Int -> CIContent 'MDRcv
-  CISndChatPreference :: ChatFeature -> FeatureAllowed -> Maybe Int -> CIContent 'MDSnd
-  CIRcvGroupFeature :: GroupFeature -> GroupPreference -> Maybe Int -> CIContent 'MDRcv
-  CISndGroupFeature :: GroupFeature -> GroupPreference -> Maybe Int -> CIContent 'MDSnd
-  CIRcvChatFeatureRejected :: ChatFeature -> CIContent 'MDRcv
-  CIRcvGroupFeatureRejected :: GroupFeature -> CIContent 'MDRcv
-  CISndModerated :: CIContent 'MDSnd
-  CIRcvModerated :: CIContent 'MDRcv
--- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
--- ! ^ Nested sum types also have to use different encodings for database and API
--- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
-
-deriving instance Show (CIContent d)
-
-data MsgDecryptError = MDERatchetHeader | MDETooManySkipped
-  deriving (Eq, Show, Generic)
-
-instance ToJSON MsgDecryptError where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MDE"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MDE"
-
-instance FromJSON MsgDecryptError where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MDE"
-
-ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
-ciRequiresAttention content = case msgDirection @d of
-  SMDSnd -> True
-  SMDRcv -> case content of
-    CIRcvMsgContent _ -> True
-    CIRcvDeleted _ -> True
-    CIRcvCall {} -> True
-    CIRcvIntegrityError _ -> True
-    CIRcvDecryptionError {} -> True
-    CIRcvGroupInvitation {} -> True
-    CIRcvGroupEvent rge -> case rge of
-      RGEMemberAdded {} -> False
-      RGEMemberConnected -> False
-      RGEMemberLeft -> False
-      RGEMemberRole {} -> False
-      RGEUserRole _ -> True
-      RGEMemberDeleted {} -> False
-      RGEUserDeleted -> True
-      RGEGroupDeleted -> True
-      RGEGroupUpdated _ -> False
-      RGEInvitedViaGroupLink -> False
-    CIRcvConnEvent _ -> True
-    CIRcvChatFeature {} -> False
-    CIRcvChatPreference {} -> False
-    CIRcvGroupFeature {} -> False
-    CIRcvChatFeatureRejected _ -> True
-    CIRcvGroupFeatureRejected _ -> True
-    CIRcvModerated -> True
-
-ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
-ciCreateStatus content = case msgDirection @d of
-  SMDSnd -> ciStatusNew
-  SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
-
-data RcvGroupEvent
-  = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
-  | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
-  | RGEMemberLeft -- CRLeftMember
-  | RGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
-  | RGEUserRole {role :: GroupMemberRole}
-  | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
-  | RGEUserDeleted -- CRDeletedMemberUser
-  | RGEGroupDeleted -- CRGroupDeleted
-  | RGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
-  -- RGEInvitedViaGroupLink chat items are not received - they're created when sending group invitations,
-  -- but being RcvGroupEvent allows them to be assigned to the respective member (and so enable "send direct message")
-  -- and be created as unread without adding / working around new status for sent items
-  | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
-  deriving (Show, Generic)
-
-instance FromJSON RcvGroupEvent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RGE"
-
-instance ToJSON RcvGroupEvent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RGE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RGE"
-
-newtype DBRcvGroupEvent = RGE RcvGroupEvent
-
-instance FromJSON DBRcvGroupEvent where
-  parseJSON v = RGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RGE") v
-
-instance ToJSON DBRcvGroupEvent where
-  toJSON (RGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RGE") v
-  toEncoding (RGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
-
-data SndGroupEvent
-  = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
-  | SGEUserRole {role :: GroupMemberRole}
-  | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
-  | SGEUserLeft -- CRLeftMemberUser
-  | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
-  deriving (Show, Generic)
-
-instance FromJSON SndGroupEvent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SGE"
-
-instance ToJSON SndGroupEvent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SGE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SGE"
-
-newtype DBSndGroupEvent = SGE SndGroupEvent
-
-instance FromJSON DBSndGroupEvent where
-  parseJSON v = SGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "SGE") v
-
-instance ToJSON DBSndGroupEvent where
-  toJSON (SGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
-  toEncoding (SGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
-
-data RcvConnEvent = RCESwitchQueue {phase :: SwitchPhase}
-  deriving (Show, Generic)
-
-data SndConnEvent = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
-  deriving (Show, Generic)
-
-instance FromJSON RcvConnEvent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RCE"
-
-instance ToJSON RcvConnEvent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RCE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RCE"
-
-newtype DBRcvConnEvent = RCE RcvConnEvent
-
-instance FromJSON DBRcvConnEvent where
-  parseJSON v = RCE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RCE") v
-
-instance ToJSON DBRcvConnEvent where
-  toJSON (RCE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RCE") v
-  toEncoding (RCE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RCE") v
-
-instance FromJSON SndConnEvent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SCE"
-
-instance ToJSON SndConnEvent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SCE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SCE"
-
-newtype DBSndConnEvent = SCE SndConnEvent
-
-instance FromJSON DBSndConnEvent where
-  parseJSON v = SCE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "SCE") v
-
-instance ToJSON DBSndConnEvent where
-  toJSON (SCE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SCE") v
-  toEncoding (SCE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SCE") v
-
-newtype DBMsgErrorType = DBME MsgErrorType
-
-instance FromJSON DBMsgErrorType where
-  parseJSON v = DBME <$> J.genericParseJSON (singleFieldJSON fstToLower) v
-
-instance ToJSON DBMsgErrorType where
-  toJSON (DBME v) = J.genericToJSON (singleFieldJSON fstToLower) v
-  toEncoding (DBME v) = J.genericToEncoding (singleFieldJSON fstToLower) v
-
-data CIGroupInvitation = CIGroupInvitation
-  { groupId :: GroupId,
-    groupMemberId :: GroupMemberId,
-    localDisplayName :: GroupName,
-    groupProfile :: GroupProfile,
-    status :: CIGroupInvitationStatus
-  }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON CIGroupInvitation where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-
-data CIGroupInvitationStatus
-  = CIGISPending
-  | CIGISAccepted
-  | CIGISRejected
-  | CIGISExpired
-  deriving (Eq, Show, Generic)
-
-instance FromJSON CIGroupInvitationStatus where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CIGIS"
-
-instance ToJSON CIGroupInvitationStatus where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CIGIS"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CIGIS"
-
-ciContentToText :: CIContent d -> Text
-ciContentToText = \case
-  CISndMsgContent mc -> msgContentText mc
-  CIRcvMsgContent mc -> msgContentText mc
-  CISndDeleted cidm -> ciDeleteModeToText cidm
-  CIRcvDeleted cidm -> ciDeleteModeToText cidm
-  CISndCall status duration -> "outgoing call: " <> ciCallInfoText status duration
-  CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
-  CIRcvIntegrityError err -> msgIntegrityError err
-  CIRcvDecryptionError err n -> msgDecryptErrorText err n
-  CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
-  CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
-  CIRcvGroupEvent event -> rcvGroupEventToText event
-  CISndGroupEvent event -> sndGroupEventToText event
-  CIRcvConnEvent event -> rcvConnEventToText event
-  CISndConnEvent event -> sndConnEventToText event
-  CIRcvChatFeature feature enabled param -> featureStateText feature enabled param
-  CISndChatFeature feature enabled param -> featureStateText feature enabled param
-  CIRcvChatPreference feature allowed param -> prefStateText feature allowed param
-  CISndChatPreference feature allowed param -> "you " <> prefStateText feature allowed param
-  CIRcvGroupFeature feature pref param -> groupPrefStateText feature pref param
-  CISndGroupFeature feature pref param -> groupPrefStateText feature pref param
-  CIRcvChatFeatureRejected feature -> chatFeatureNameText feature <> ": received, prohibited"
-  CIRcvGroupFeatureRejected feature -> groupFeatureNameText feature <> ": received, prohibited"
-  CISndModerated -> ciModeratedText
-  CIRcvModerated -> ciModeratedText
-
-msgIntegrityError :: MsgErrorType -> Text
-msgIntegrityError = \case
-  MsgSkipped fromId toId ->
-    "skipped message ID " <> tshow fromId
-      <> if fromId == toId then "" else ".." <> tshow toId
-  MsgBadId msgId -> "unexpected message ID " <> tshow msgId
-  MsgBadHash -> "incorrect message hash"
-  MsgDuplicate -> "duplicate message ID"
-
-msgDecryptErrorText :: MsgDecryptError -> Word32 -> Text
-msgDecryptErrorText err n =
-  "decryption error, possibly due to the device change (" <> errName <> if n == 1 then ")" else ", " <> tshow n <> " messages)"
-  where
-    errName = case err of
-      MDERatchetHeader -> "header"
-      MDETooManySkipped -> "too many skipped messages"
-
-msgDirToModeratedContent_ :: SMsgDirection d -> CIContent d
-msgDirToModeratedContent_ = \case
-  SMDRcv -> CIRcvModerated
-  SMDSnd -> CISndModerated
-
-ciModeratedText :: Text
-ciModeratedText = "moderated"
-
--- platform independent
-instance ToField (CIContent d) where
-  toField = toField . encodeJSON . dbJsonCIContent
-
--- platform specific
-instance ToJSON (CIContent d) where
-  toJSON = J.toJSON . jsonCIContent
-  toEncoding = J.toEncoding . jsonCIContent
-
-data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIContent d)
-
-deriving instance Show ACIContent
-
--- platform specific
-instance FromJSON ACIContent where
-  parseJSON = fmap aciContentJSON . J.parseJSON
-
--- platform independent
-instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContentDBJSON . decodeJSON
-
--- platform specific
-data JSONCIContent
-  = JCISndMsgContent {msgContent :: MsgContent}
-  | JCIRcvMsgContent {msgContent :: MsgContent}
-  | JCISndDeleted {deleteMode :: CIDeleteMode}
-  | JCIRcvDeleted {deleteMode :: CIDeleteMode}
-  | JCISndCall {status :: CICallStatus, duration :: Int} -- duration in seconds
-  | JCIRcvCall {status :: CICallStatus, duration :: Int}
-  | JCIRcvIntegrityError {msgError :: MsgErrorType}
-  | JCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
-  | JCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
-  | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
-  | JCIRcvGroupEvent {rcvGroupEvent :: RcvGroupEvent}
-  | JCISndGroupEvent {sndGroupEvent :: SndGroupEvent}
-  | JCIRcvConnEvent {rcvConnEvent :: RcvConnEvent}
-  | JCISndConnEvent {sndConnEvent :: SndConnEvent}
-  | JCIRcvChatFeature {feature :: ChatFeature, enabled :: PrefEnabled, param :: Maybe Int}
-  | JCISndChatFeature {feature :: ChatFeature, enabled :: PrefEnabled, param :: Maybe Int}
-  | JCIRcvChatPreference {feature :: ChatFeature, allowed :: FeatureAllowed, param :: Maybe Int}
-  | JCISndChatPreference {feature :: ChatFeature, allowed :: FeatureAllowed, param :: Maybe Int}
-  | JCIRcvGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
-  | JCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
-  | JCIRcvChatFeatureRejected {feature :: ChatFeature}
-  | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
-  | JCISndModerated
-  | JCIRcvModerated
-  deriving (Generic)
-
-instance FromJSON JSONCIContent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
-
-instance ToJSON JSONCIContent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
-
-jsonCIContent :: CIContent d -> JSONCIContent
-jsonCIContent = \case
-  CISndMsgContent mc -> JCISndMsgContent mc
-  CIRcvMsgContent mc -> JCIRcvMsgContent mc
-  CISndDeleted cidm -> JCISndDeleted cidm
-  CIRcvDeleted cidm -> JCIRcvDeleted cidm
-  CISndCall status duration -> JCISndCall {status, duration}
-  CIRcvCall status duration -> JCIRcvCall {status, duration}
-  CIRcvIntegrityError err -> JCIRcvIntegrityError err
-  CIRcvDecryptionError err n -> JCIRcvDecryptionError err n
-  CIRcvGroupInvitation groupInvitation memberRole -> JCIRcvGroupInvitation {groupInvitation, memberRole}
-  CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
-  CIRcvGroupEvent rcvGroupEvent -> JCIRcvGroupEvent {rcvGroupEvent}
-  CISndGroupEvent sndGroupEvent -> JCISndGroupEvent {sndGroupEvent}
-  CIRcvConnEvent rcvConnEvent -> JCIRcvConnEvent {rcvConnEvent}
-  CISndConnEvent sndConnEvent -> JCISndConnEvent {sndConnEvent}
-  CIRcvChatFeature feature enabled param -> JCIRcvChatFeature {feature, enabled, param}
-  CISndChatFeature feature enabled param -> JCISndChatFeature {feature, enabled, param}
-  CIRcvChatPreference feature allowed param -> JCIRcvChatPreference {feature, allowed, param}
-  CISndChatPreference feature allowed param -> JCISndChatPreference {feature, allowed, param}
-  CIRcvGroupFeature groupFeature preference param -> JCIRcvGroupFeature {groupFeature, preference, param}
-  CISndGroupFeature groupFeature preference param -> JCISndGroupFeature {groupFeature, preference, param}
-  CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
-  CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
-  CISndModerated -> JCISndModerated
-  CIRcvModerated -> JCISndModerated
-
-aciContentJSON :: JSONCIContent -> ACIContent
-aciContentJSON = \case
-  JCISndMsgContent mc -> ACIContent SMDSnd $ CISndMsgContent mc
-  JCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
-  JCISndDeleted cidm -> ACIContent SMDSnd $ CISndDeleted cidm
-  JCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
-  JCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
-  JCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
-  JCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
-  JCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
-  JCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
-  JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
-  JCIRcvGroupEvent {rcvGroupEvent} -> ACIContent SMDRcv $ CIRcvGroupEvent rcvGroupEvent
-  JCISndGroupEvent {sndGroupEvent} -> ACIContent SMDSnd $ CISndGroupEvent sndGroupEvent
-  JCIRcvConnEvent {rcvConnEvent} -> ACIContent SMDRcv $ CIRcvConnEvent rcvConnEvent
-  JCISndConnEvent {sndConnEvent} -> ACIContent SMDSnd $ CISndConnEvent sndConnEvent
-  JCIRcvChatFeature {feature, enabled, param} -> ACIContent SMDRcv $ CIRcvChatFeature feature enabled param
-  JCISndChatFeature {feature, enabled, param} -> ACIContent SMDSnd $ CISndChatFeature feature enabled param
-  JCIRcvChatPreference {feature, allowed, param} -> ACIContent SMDRcv $ CIRcvChatPreference feature allowed param
-  JCISndChatPreference {feature, allowed, param} -> ACIContent SMDSnd $ CISndChatPreference feature allowed param
-  JCIRcvGroupFeature {groupFeature, preference, param} -> ACIContent SMDRcv $ CIRcvGroupFeature groupFeature preference param
-  JCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
-  JCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
-  JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
-  JCISndModerated -> ACIContent SMDSnd CISndModerated
-  JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
-
--- platform independent
-data DBJSONCIContent
-  = DBJCISndMsgContent {msgContent :: MsgContent}
-  | DBJCIRcvMsgContent {msgContent :: MsgContent}
-  | DBJCISndDeleted {deleteMode :: CIDeleteMode}
-  | DBJCIRcvDeleted {deleteMode :: CIDeleteMode}
-  | DBJCISndCall {status :: CICallStatus, duration :: Int}
-  | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
-  | DBJCIRcvIntegrityError {msgError :: DBMsgErrorType}
-  | DBJCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
-  | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
-  | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
-  | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}
-  | DBJCISndGroupEvent {sndGroupEvent :: DBSndGroupEvent}
-  | DBJCIRcvConnEvent {rcvConnEvent :: DBRcvConnEvent}
-  | DBJCISndConnEvent {sndConnEvent :: DBSndConnEvent}
-  | DBJCIRcvChatFeature {feature :: ChatFeature, enabled :: PrefEnabled, param :: Maybe Int}
-  | DBJCISndChatFeature {feature :: ChatFeature, enabled :: PrefEnabled, param :: Maybe Int}
-  | DBJCIRcvChatPreference {feature :: ChatFeature, allowed :: FeatureAllowed, param :: Maybe Int}
-  | DBJCISndChatPreference {feature :: ChatFeature, allowed :: FeatureAllowed, param :: Maybe Int}
-  | DBJCIRcvGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
-  | DBJCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
-  | DBJCIRcvChatFeatureRejected {feature :: ChatFeature}
-  | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
-  | DBJCISndModerated
-  | DBJCIRcvModerated
-  deriving (Generic)
-
-instance FromJSON DBJSONCIContent where
-  parseJSON = J.genericParseJSON . singleFieldJSON $ dropPrefix "DBJCI"
-
-instance ToJSON DBJSONCIContent where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "DBJCI"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "DBJCI"
-
-dbJsonCIContent :: CIContent d -> DBJSONCIContent
-dbJsonCIContent = \case
-  CISndMsgContent mc -> DBJCISndMsgContent mc
-  CIRcvMsgContent mc -> DBJCIRcvMsgContent mc
-  CISndDeleted cidm -> DBJCISndDeleted cidm
-  CIRcvDeleted cidm -> DBJCIRcvDeleted cidm
-  CISndCall status duration -> DBJCISndCall {status, duration}
-  CIRcvCall status duration -> DBJCIRcvCall {status, duration}
-  CIRcvIntegrityError err -> DBJCIRcvIntegrityError $ DBME err
-  CIRcvDecryptionError err n -> DBJCIRcvDecryptionError err n
-  CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
-  CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
-  CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
-  CISndGroupEvent sge -> DBJCISndGroupEvent $ SGE sge
-  CIRcvConnEvent rce -> DBJCIRcvConnEvent $ RCE rce
-  CISndConnEvent sce -> DBJCISndConnEvent $ SCE sce
-  CIRcvChatFeature feature enabled param -> DBJCIRcvChatFeature {feature, enabled, param}
-  CISndChatFeature feature enabled param -> DBJCISndChatFeature {feature, enabled, param}
-  CIRcvChatPreference feature allowed param -> DBJCIRcvChatPreference {feature, allowed, param}
-  CISndChatPreference feature allowed param -> DBJCISndChatPreference {feature, allowed, param}
-  CIRcvGroupFeature groupFeature preference param -> DBJCIRcvGroupFeature {groupFeature, preference, param}
-  CISndGroupFeature groupFeature preference param -> DBJCISndGroupFeature {groupFeature, preference, param}
-  CIRcvChatFeatureRejected feature -> DBJCIRcvChatFeatureRejected {feature}
-  CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
-  CISndModerated -> DBJCISndModerated
-  CIRcvModerated -> DBJCIRcvModerated
-
-aciContentDBJSON :: DBJSONCIContent -> ACIContent
-aciContentDBJSON = \case
-  DBJCISndMsgContent mc -> ACIContent SMDSnd $ CISndMsgContent mc
-  DBJCIRcvMsgContent mc -> ACIContent SMDRcv $ CIRcvMsgContent mc
-  DBJCISndDeleted cidm -> ACIContent SMDSnd $ CISndDeleted cidm
-  DBJCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
-  DBJCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
-  DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
-  DBJCIRcvIntegrityError (DBME err) -> ACIContent SMDRcv $ CIRcvIntegrityError err
-  DBJCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
-  DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
-  DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
-  DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
-  DBJCISndGroupEvent (SGE sge) -> ACIContent SMDSnd $ CISndGroupEvent sge
-  DBJCIRcvConnEvent (RCE rce) -> ACIContent SMDRcv $ CIRcvConnEvent rce
-  DBJCISndConnEvent (SCE sce) -> ACIContent SMDSnd $ CISndConnEvent sce
-  DBJCIRcvChatFeature {feature, enabled, param} -> ACIContent SMDRcv $ CIRcvChatFeature feature enabled param
-  DBJCISndChatFeature {feature, enabled, param} -> ACIContent SMDSnd $ CISndChatFeature feature enabled param
-  DBJCIRcvChatPreference {feature, allowed, param} -> ACIContent SMDRcv $ CIRcvChatPreference feature allowed param
-  DBJCISndChatPreference {feature, allowed, param} -> ACIContent SMDSnd $ CISndChatPreference feature allowed param
-  DBJCIRcvGroupFeature {groupFeature, preference, param} -> ACIContent SMDRcv $ CIRcvGroupFeature groupFeature preference param
-  DBJCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
-  DBJCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
-  DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
-  DBJCISndModerated -> ACIContent SMDSnd CISndModerated
-  DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
-
-data CICallStatus
-  = CISCallPending
-  | CISCallMissed
-  | CISCallRejected -- only possible for received calls, not on type level
-  | CISCallAccepted
-  | CISCallNegotiated
-  | CISCallProgress
-  | CISCallEnded
-  | CISCallError
-  deriving (Show, Generic)
-
-instance FromJSON CICallStatus where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CISCall"
-
-instance ToJSON CICallStatus where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CISCall"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CISCall"
-
-ciCallInfoText :: CICallStatus -> Int -> Text
-ciCallInfoText status duration = case status of
-  CISCallPending -> "calling..."
-  CISCallMissed -> "missed"
-  CISCallRejected -> "rejected"
-  CISCallAccepted -> "accepted"
-  CISCallNegotiated -> "connecting..."
-  CISCallProgress -> "in progress " <> durationText duration
-  CISCallEnded -> "ended " <> durationText duration
-  CISCallError -> "error"
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
@@ -1257,63 +764,6 @@ type MessageId = Int64
 
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 
-data MsgDirection = MDRcv | MDSnd
-  deriving (Eq, Show, Generic)
-
-instance FromJSON MsgDirection where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MD"
-
-instance ToJSON MsgDirection where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MD"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MD"
-
-instance ToField MsgDirection where toField = toField . msgDirectionInt
-
-data SMsgDirection (d :: MsgDirection) where
-  SMDRcv :: SMsgDirection 'MDRcv
-  SMDSnd :: SMsgDirection 'MDSnd
-
-deriving instance Show (SMsgDirection d)
-
-instance TestEquality SMsgDirection where
-  testEquality SMDRcv SMDRcv = Just Refl
-  testEquality SMDSnd SMDSnd = Just Refl
-  testEquality _ _ = Nothing
-
-instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
-
-data AMsgDirection = forall d. MsgDirectionI d => AMsgDirection (SMsgDirection d)
-
-deriving instance Show AMsgDirection
-
-toMsgDirection :: SMsgDirection d -> MsgDirection
-toMsgDirection = \case
-  SMDRcv -> MDRcv
-  SMDSnd -> MDSnd
-
-fromMsgDirection :: MsgDirection -> AMsgDirection
-fromMsgDirection = \case
-  MDRcv -> AMsgDirection SMDRcv
-  MDSnd -> AMsgDirection SMDSnd
-
-class MsgDirectionI (d :: MsgDirection) where
-  msgDirection :: SMsgDirection d
-
-instance MsgDirectionI 'MDRcv where msgDirection = SMDRcv
-
-instance MsgDirectionI 'MDSnd where msgDirection = SMDSnd
-
-msgDirectionInt :: MsgDirection -> Int
-msgDirectionInt = \case
-  MDRcv -> 0
-  MDSnd -> 1
-
-msgDirectionIntP :: Int64 -> Maybe MsgDirection
-msgDirectionIntP = \case
-  0 -> Just MDRcv
-  1 -> Just MDSnd
-  _ -> Nothing
-
 data SndMsgDelivery = SndMsgDelivery
   { connId :: Int64,
     agentMsgId :: AgentMsgId
@@ -1360,7 +810,7 @@ data MsgDeliveryStatus (d :: MsgDirection) where
   MDSSndPending :: MsgDeliveryStatus 'MDSnd
   MDSSndAgent :: MsgDeliveryStatus 'MDSnd
   MDSSndSent :: MsgDeliveryStatus 'MDSnd
-  MDSSndReceived :: MsgDeliveryStatus 'MDSnd
+  MDSSndRcvd :: MsgReceiptStatus -> MsgDeliveryStatus 'MDSnd
   MDSSndRead :: MsgDeliveryStatus 'MDSnd
 
 data AMsgDeliveryStatus = forall d. AMDS (SMsgDirection d) (MsgDeliveryStatus d)
@@ -1377,19 +827,22 @@ serializeMsgDeliveryStatus = \case
   MDSSndPending -> "snd_pending"
   MDSSndAgent -> "snd_agent"
   MDSSndSent -> "snd_sent"
-  MDSSndReceived -> "snd_received"
+  MDSSndRcvd status -> "snd_rcvd " <> safeDecodeUtf8 (strEncode status)
   MDSSndRead -> "snd_read"
 
 msgDeliveryStatusT :: Text -> Maybe AMsgDeliveryStatus
-msgDeliveryStatusT = \case
-  "rcv_agent" -> Just $ AMDS SMDRcv MDSRcvAgent
-  "rcv_acknowledged" -> Just $ AMDS SMDRcv MDSRcvAcknowledged
-  "snd_pending" -> Just $ AMDS SMDSnd MDSSndPending
-  "snd_agent" -> Just $ AMDS SMDSnd MDSSndAgent
-  "snd_sent" -> Just $ AMDS SMDSnd MDSSndSent
-  "snd_received" -> Just $ AMDS SMDSnd MDSSndReceived
-  "snd_read" -> Just $ AMDS SMDSnd MDSSndRead
-  _ -> Nothing
+msgDeliveryStatusT = eitherToMaybe . parseAll statusP . encodeUtf8
+  where
+    statusP =
+      A.takeTill (== ' ') >>= \case
+        "rcv_agent" -> pure $ AMDS SMDRcv MDSRcvAgent
+        "rcv_acknowledged" -> pure $ AMDS SMDRcv MDSRcvAcknowledged
+        "snd_pending" -> pure $ AMDS SMDSnd MDSSndPending
+        "snd_agent" -> pure $ AMDS SMDSnd MDSSndAgent
+        "snd_sent" -> pure $ AMDS SMDSnd MDSSndSent
+        "snd_rcvd" -> AMDS SMDSnd . MDSSndRcvd <$> (A.space *> strP)
+        "snd_read" -> pure $ AMDS SMDSnd MDSSndRead
+        _ -> fail "bad AMsgDeliveryStatus"
 
 msgDeliveryStatusT' :: forall d. MsgDirectionI d => Text -> Maybe (MsgDeliveryStatus d)
 msgDeliveryStatusT' s =
@@ -1404,8 +857,8 @@ checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
   Nothing -> Left "bad direction"
 
 data CIDeleted (c :: ChatType) where
-  CIDeleted :: CIDeleted c
-  CIModerated :: GroupMember -> CIDeleted 'CTGroup
+  CIDeleted :: Maybe UTCTime -> CIDeleted c
+  CIModerated :: Maybe UTCTime -> GroupMember -> CIDeleted 'CTGroup
 
 deriving instance Show (CIDeleted c)
 
@@ -1414,8 +867,8 @@ instance ToJSON (CIDeleted d) where
   toEncoding = J.toEncoding . jsonCIDeleted
 
 data JSONCIDeleted
-  = JCIDDeleted
-  | JCIDModerated {byGroupMember :: GroupMember}
+  = JCIDDeleted {deletedTs :: Maybe UTCTime}
+  | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show, Generic)
 
 instance ToJSON JSONCIDeleted where
@@ -1424,5 +877,49 @@ instance ToJSON JSONCIDeleted where
 
 jsonCIDeleted :: CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
-  CIDeleted -> JCIDDeleted
-  CIModerated m -> JCIDModerated m
+  CIDeleted ts -> JCIDDeleted ts
+  CIModerated ts m -> JCIDModerated ts m
+
+itemDeletedTs :: CIDeleted d -> Maybe UTCTime
+itemDeletedTs = \case
+  CIDeleted ts -> ts
+  CIModerated ts _ -> ts
+
+data ChatItemInfo = ChatItemInfo
+  { itemVersions :: [ChatItemVersion]
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ChatItemInfo where toEncoding = J.genericToEncoding J.defaultOptions
+
+data ChatItemVersion = ChatItemVersion
+  { chatItemVersionId :: Int64,
+    msgContent :: MsgContent,
+    formattedText :: Maybe MarkdownList,
+    itemVersionTs :: UTCTime,
+    createdAt :: UTCTime
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ChatItemVersion where toEncoding = J.genericToEncoding J.defaultOptions
+
+mkItemVersion :: ChatItem c d -> Maybe ChatItemVersion
+mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
+  where
+    CIMeta {itemId, itemTs, createdAt} = meta
+    version mc =
+      ChatItemVersion
+        { chatItemVersionId = itemId,
+          msgContent = mc,
+          formattedText = parseMaybeMarkdownList $ msgContentText mc,
+          itemVersionTs = itemTs,
+          createdAt = createdAt
+        }
+
+data CIModeration = CIModeration
+  { moderationId :: Int64,
+    moderatorMember :: GroupMember,
+    createdByMsgId :: MessageId,
+    moderatedAt :: UTCTime
+  }
+  deriving (Show)

@@ -18,6 +18,7 @@ struct ContentView: View {
     @Binding var userAuthorized: Bool?
     @Binding var canConnectCall: Bool
     @Binding var lastSuccessfulUnlock: TimeInterval?
+    @Binding var showInitializationView: Bool
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -69,6 +70,8 @@ struct ContentView: View {
     @ViewBuilder private func contentView() -> some View {
         if prefPerformLA && userAuthorized != true {
             lockButton()
+        } else if chatModel.chatDbStatus == nil && showInitializationView {
+            initializationView()
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
@@ -104,6 +107,14 @@ struct ContentView: View {
         Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
     }
 
+    private func initializationView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+            Text("Opening database…")
+                .padding()
+        }
+    }
+
     private func mainView() -> some View {
         ZStack(alignment: .top) {
             ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
@@ -124,6 +135,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showWhatsNew) {
                 WhatsNewView()
+            }
+            if chatModel.setDeliveryReceipts {
+                SetDeliveryReceiptsView()
             }
             IncomingCallView()
         }
@@ -165,10 +179,13 @@ struct ContentView: View {
     }
 
     private func runAuthenticate() {
+        logger.debug("DEBUGGING: runAuthenticate")
         if !prefPerformLA {
             userAuthorized = true
         } else {
+            logger.debug("DEBUGGING: before dismissAllSheets")
             dismissAllSheets(animated: false) {
+                logger.debug("DEBUGGING: in dismissAllSheets callback")
                 chatModel.chatId = nil
                 justAuthenticate()
             }
@@ -178,8 +195,8 @@ struct ContentView: View {
     private func justAuthenticate() {
         userAuthorized = false
         let laMode = privacyLocalAuthModeDefault.get()
-        authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason")) { laResult in
-            logger.debug("authenticate callback: \(String(describing: laResult))")
+        authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
+            logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
             switch (laResult) {
             case .success:
                 userAuthorized = true

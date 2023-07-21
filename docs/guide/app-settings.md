@@ -1,3 +1,6 @@
+---
+title: App settings
+---
 # App settings
 
 ## Opening the app settings

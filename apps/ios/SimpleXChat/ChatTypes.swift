@@ -23,6 +23,8 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var localAlias: String { get { "" } }
 
     public var showNtfs: Bool
+    public var sendRcptsContacts: Bool
+    public var sendRcptsSmallGroups: Bool
     public var viewPwdHash: UserPwdHash?
 
     public var id: Int64 { userId }
@@ -33,6 +35,10 @@ public struct User: Decodable, NamedChat, Identifiable {
         activeUser || showNtfs
     }
 
+    public var addressShared: Bool {
+        profile.contactLink != nil
+    }
+
     public static let sampleData = User(
         userId: 1,
         userContactId: 1,
@@ -40,7 +46,9 @@ public struct User: Decodable, NamedChat, Identifiable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
-        showNtfs: true
+        showNtfs: true,
+        sendRcptsContacts: true,
+        sendRcptsSmallGroups: false
     )
 }
 
@@ -71,16 +79,24 @@ public typealias ContactName = String
 public typealias GroupName = String
 
 public struct Profile: Codable, NamedChat {
-    public init(displayName: String, fullName: String, image: String? = nil, preferences: Preferences? = nil) {
+    public init(
+        displayName: String,
+        fullName: String,
+        image: String? = nil,
+        contactLink: String? = nil,
+        preferences: Preferences? = nil
+    ) {
         self.displayName = displayName
         self.fullName = fullName
         self.image = image
+        self.contactLink = contactLink
         self.preferences = preferences
     }
 
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var contactLink: String?
     public var preferences: Preferences?
     public var localAlias: String { get { "" } }
 
@@ -95,11 +111,20 @@ public struct Profile: Codable, NamedChat {
 }
 
 public struct LocalProfile: Codable, NamedChat {
-    public init(profileId: Int64, displayName: String, fullName: String, image: String? = nil, preferences: Preferences? = nil, localAlias: String) {
+    public init(
+        profileId: Int64,
+        displayName: String,
+        fullName: String,
+        image: String? = nil,
+        contactLink: String? = nil,
+        preferences: Preferences? = nil,
+        localAlias: String
+    ) {
         self.profileId = profileId
         self.displayName = displayName
         self.fullName = fullName
         self.image = image
+        self.contactLink = contactLink
         self.preferences = preferences
         self.localAlias = localAlias
     }
@@ -108,6 +133,7 @@ public struct LocalProfile: Codable, NamedChat {
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var contactLink: String?
     public var preferences: Preferences?
     public var localAlias: String
 
@@ -127,11 +153,11 @@ public struct LocalProfile: Codable, NamedChat {
 }
 
 public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
-    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, preferences: profile.preferences, localAlias: localAlias)
+    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, contactLink: profile.contactLink, preferences: profile.preferences, localAlias: localAlias)
 }
 
 public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
-    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image, preferences: profile.preferences)
+    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image, contactLink: profile.contactLink, preferences: profile.preferences)
 }
 
 public enum ChatType: String {
@@ -161,12 +187,20 @@ public typealias ChatId = String
 public struct FullPreferences: Decodable, Equatable {
     public var timedMessages: TimedMessagesPreference
     public var fullDelete: SimplePreference
+    public var reactions: SimplePreference
     public var voice: SimplePreference
     public var calls: SimplePreference
 
-    public init(timedMessages: TimedMessagesPreference, fullDelete: SimplePreference, voice: SimplePreference, calls: SimplePreference) {
+    public init(
+        timedMessages: TimedMessagesPreference,
+        fullDelete: SimplePreference,
+        reactions: SimplePreference,
+        voice: SimplePreference,
+        calls: SimplePreference
+    ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
         self.calls = calls
     }
@@ -174,6 +208,7 @@ public struct FullPreferences: Decodable, Equatable {
     public static let sampleData = FullPreferences(
         timedMessages:  TimedMessagesPreference(allow: .no),
         fullDelete: SimplePreference(allow: .no),
+        reactions: SimplePreference(allow: .yes),
         voice: SimplePreference(allow: .yes),
         calls: SimplePreference(allow: .yes)
     )
@@ -182,20 +217,35 @@ public struct FullPreferences: Decodable, Equatable {
 public struct Preferences: Codable {
     public var timedMessages: TimedMessagesPreference?
     public var fullDelete: SimplePreference?
+    public var reactions: SimplePreference?
     public var voice: SimplePreference?
     public var calls: SimplePreference?
 
-    public init(timedMessages: TimedMessagesPreference?, fullDelete: SimplePreference?, voice: SimplePreference?, calls: SimplePreference?) {
+    public init(
+        timedMessages: TimedMessagesPreference?,
+        fullDelete: SimplePreference?,
+        reactions: SimplePreference?,
+        voice: SimplePreference?,
+        calls: SimplePreference?
+    ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
         self.calls = calls
     }
 
-    func copy(timedMessages: TimedMessagesPreference? = nil, fullDelete: SimplePreference? = nil, voice: SimplePreference? = nil, calls: SimplePreference? = nil) -> Preferences {
+    func copy(
+        timedMessages: TimedMessagesPreference? = nil,
+        fullDelete: SimplePreference? = nil,
+        reactions: SimplePreference? = nil,
+        voice: SimplePreference? = nil,
+        calls: SimplePreference? = nil
+    ) -> Preferences {
         Preferences(
             timedMessages: timedMessages ?? self.timedMessages,
             fullDelete: fullDelete ?? self.fullDelete,
+            reactions: reactions ?? self.reactions,
             voice: voice ?? self.voice,
             calls: calls ?? self.calls
         )
@@ -205,6 +255,7 @@ public struct Preferences: Codable {
         switch feature {
         case .timedMessages: return copy(timedMessages: TimedMessagesPreference(allow: allowed, ttl: param ?? timedMessages?.ttl))
         case .fullDelete: return copy(fullDelete: SimplePreference(allow: allowed))
+        case .reactions: return copy(reactions: SimplePreference(allow: allowed))
         case .voice: return copy(voice: SimplePreference(allow: allowed))
         case .calls: return copy(calls: SimplePreference(allow: allowed))
         }
@@ -213,6 +264,7 @@ public struct Preferences: Codable {
     public static let sampleData = Preferences(
         timedMessages: TimedMessagesPreference(allow: .no),
         fullDelete: SimplePreference(allow: .no),
+        reactions: SimplePreference(allow: .yes),
         voice: SimplePreference(allow: .yes),
         calls: SimplePreference(allow: .yes)
     )
@@ -222,6 +274,7 @@ public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> 
     Preferences(
         timedMessages: fullPreferences.timedMessages,
         fullDelete: fullPreferences.fullDelete,
+        reactions: fullPreferences.reactions,
         voice: fullPreferences.voice,
         calls: fullPreferences.calls
     )
@@ -231,6 +284,7 @@ public func contactUserPreferencesToPreferences(_ contactUserPreferences: Contac
     Preferences(
         timedMessages: contactUserPreferences.timedMessages.userPreference.preference,
         fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
+        reactions: contactUserPreferences.reactions.userPreference.preference,
         voice: contactUserPreferences.voice.userPreference.preference,
         calls: contactUserPreferences.calls.userPreference.preference
     )
@@ -258,76 +312,126 @@ public struct TimedMessagesPreference: Preference {
     }
 
     public static var ttlValues: [Int?] {
-        [30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400, nil]
+        [600, 3600, 86400, 7 * 86400, 30 * 86400, 3 * 30 * 86400, nil]
+    }
+}
+
+public enum CustomTimeUnit {
+    case second
+    case minute
+    case hour
+    case day
+    case week
+    case month
+
+    public var toSeconds: Int {
+        switch self {
+        case .second: return 1
+        case .minute: return 60
+        case .hour: return 3600
+        case .day: return 86400
+        case .week: return 7 * 86400
+        case .month: return 30 * 86400
+        }
     }
 
-    public static func ttlText(_ ttl: Int?) -> String {
-        guard let ttl = ttl else { return "off" }
-        if ttl == 0 { return "0 sec" }
-        let (m_, s) = divMod(ttl, by: 60)
-        let (h_, m) = divMod(m_, by: 60)
-        let (d_, h) = divMod(h_, by: 24)
-        let (mm, d) = divMod(d_, by: 30)
-        return maybe(mm,
-                     mm == 1
-                     ? NSLocalizedString("1 month", comment: "message ttl")
-                     : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "message ttl"), mm)
-                    )
-            + maybe(d,
-                    d == 1
-                    ? NSLocalizedString("1 day", comment: "message ttl")
-                    : d == 7
-                    ? NSLocalizedString("1 week", comment: "message ttl")
-                    : d == 14
-                    ? NSLocalizedString("2 weeks", comment: "message ttl")
-                    : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "message ttl"), d)
-                    )
-            + maybe(h,
-                    h == 1
-                    ? NSLocalizedString("1 hour", comment: "message ttl")
-                    : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "message ttl"), h)
-                    )
-            + maybe(m, String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "message ttl"), m))
-            + maybe(s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "message ttl"), s))
+    public var text: String {
+        switch self {
+        case .second: return NSLocalizedString("seconds", comment: "time unit")
+        case .minute: return NSLocalizedString("minutes", comment: "time unit")
+        case .hour: return NSLocalizedString("hours", comment: "time unit")
+        case .day: return NSLocalizedString("days", comment: "time unit")
+        case .week: return NSLocalizedString("weeks", comment: "time unit")
+        case .month: return NSLocalizedString("months", comment: "time unit")
+        }
     }
 
-    public static func shortTtlText(_ ttl: Int?) -> LocalizedStringKey {
-        guard let ttl = ttl else { return "off" }
-        let m = ttl / 60
-        if m == 0 { return "\(ttl)s" }
-        let h = m / 60
-        if h == 0 { return "\(m)m" }
-        let d = h / 24
-        if d == 0 { return "\(h)h" }
-        let mm = d / 30
-        if mm > 0 { return "\(mm)mth" }
-        let w = d / 7
-        return w == 0 || d % 7 != 0 ? "\(d)d" : "\(w)w"
+    public static func toTimeUnit(seconds: Int) -> (CustomTimeUnit, Int) {
+        let tryUnits = [month, week, day, hour, minute]
+        var selectedUnit: (CustomTimeUnit, Int)? = nil
+        for unit in tryUnits {
+            let (v, r) = divMod(seconds, by: unit.toSeconds)
+            if r == 0 {
+                selectedUnit = (unit, v)
+                break
+            }
+        }
+        return selectedUnit ?? (CustomTimeUnit.second, seconds)
     }
 
-    static func divMod(_ n: Int, by d: Int) -> (Int, Int) {
+    private static func divMod(_ n: Int, by d: Int) -> (Int, Int) {
         (n / d, n % d)
     }
 
-    static func maybe(_ n: Int, _ s: String) -> String {
-        n == 0 ? "" : s
+    public static func toText(seconds: Int) -> String {
+        let (unit, value) = toTimeUnit(seconds: seconds)
+        switch unit {
+        case .second:
+            return String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "time interval"), value)
+        case .minute:
+            return String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "time interval"), value)
+        case .hour:
+            return value == 1
+            ? NSLocalizedString("1 hour", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "time interval"), value)
+        case .day:
+            return value == 1
+            ? NSLocalizedString("1 day", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "time interval"), value)
+        case .week:
+            return value == 1
+            ? NSLocalizedString("1 week", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d weeks", comment: "time interval"), value)
+        case .month:
+            return value == 1
+            ? NSLocalizedString("1 month", comment: "time interval")
+            : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "time interval"), value)
+        }
     }
+
+    public static func toShortText(seconds: Int) -> LocalizedStringKey {
+        let (unit, value) = toTimeUnit(seconds: seconds)
+        switch unit {
+        case .second: return "\(value)s"
+        case .minute: return "\(value)m"
+        case .hour: return "\(value)h"
+        case .day: return "\(value)d"
+        case .week: return "\(value)w"
+        case .month: return "\(value)mth"
+        }
+    }
+}
+
+
+public func timeText(_ seconds: Int?) -> String {
+    guard let seconds = seconds else { return "off" }
+    if seconds == 0 { return "0 sec" }
+    return CustomTimeUnit.toText(seconds: seconds)
+}
+
+public func shortTimeText(_ seconds: Int?) -> LocalizedStringKey {
+    guard let seconds = seconds else { return "off" }
+    if seconds == 0 { return "0s" }
+    return CustomTimeUnit.toShortText(seconds: seconds)
 }
 
 public struct ContactUserPreferences: Decodable {
     public var timedMessages: ContactUserPreference<TimedMessagesPreference>
     public var fullDelete: ContactUserPreference<SimplePreference>
+    public var reactions: ContactUserPreference<SimplePreference>
     public var voice: ContactUserPreference<SimplePreference>
     public var calls: ContactUserPreference<SimplePreference>
 
     public init(
         timedMessages: ContactUserPreference<TimedMessagesPreference>,
         fullDelete: ContactUserPreference<SimplePreference>,
+        reactions: ContactUserPreference<SimplePreference>,
         voice: ContactUserPreference<SimplePreference>,
         calls: ContactUserPreference<SimplePreference>
     ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
         self.calls = calls
     }
@@ -342,6 +446,11 @@ public struct ContactUserPreferences: Decodable {
             enabled: FeatureEnabled(forUser: false, forContact: false),
             userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .no)),
             contactPreference: SimplePreference(allow: .no)
+        ),
+        reactions: ContactUserPreference<SimplePreference>(
+            enabled: FeatureEnabled(forUser: true, forContact: true),
+            userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .yes)),
+            contactPreference: SimplePreference(allow: .yes)
         ),
         voice: ContactUserPreference<SimplePreference>(
             enabled: FeatureEnabled(forUser: true, forContact: true),
@@ -422,10 +531,9 @@ public protocol Feature {
 public enum ChatFeature: String, Decodable, Feature {
     case timedMessages
     case fullDelete
+    case reactions
     case voice
     case calls
-
-    public var values: [ChatFeature] { [.fullDelete, .voice] }
 
     public var id: Self { self }
 
@@ -447,6 +555,7 @@ public enum ChatFeature: String, Decodable, Feature {
         switch self {
         case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
+        case .reactions: return NSLocalizedString("Message reactions", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         case .calls: return NSLocalizedString("Audio/video calls", comment: "chat feature")
         }
@@ -456,6 +565,7 @@ public enum ChatFeature: String, Decodable, Feature {
         switch self {
         case .timedMessages: return "stopwatch"
         case .fullDelete: return "trash.slash"
+        case .reactions: return "face.smiling"
         case .voice: return "mic"
         case .calls: return "phone"
         }
@@ -465,6 +575,7 @@ public enum ChatFeature: String, Decodable, Feature {
         switch self {
         case .timedMessages: return "stopwatch.fill"
         case .fullDelete: return "trash.slash.fill"
+        case .reactions: return "face.smiling.fill"
         case .voice: return "mic.fill"
         case .calls: return "phone.fill"
         }
@@ -490,6 +601,12 @@ public enum ChatFeature: String, Decodable, Feature {
             case .always: return "Allow your contacts to irreversibly delete sent messages."
             case .yes: return "Allow irreversible message deletion only if your contact allows it to you."
             case .no: return "Contacts can mark messages for deletion; you will be able to view them."
+            }
+        case .reactions:
+            switch allowed {
+            case .always: return "Allow your contacts adding message reactions."
+            case .yes: return "Allow message reactions only if your contact allows them."
+            case .no: return "Prohibit message reactions."
             }
         case .voice:
             switch allowed {
@@ -524,6 +641,14 @@ public enum ChatFeature: String, Decodable, Feature {
                     : enabled.forContact
                     ? "Only your contact can irreversibly delete messages (you can mark them for deletion)."
                     : "Irreversible message deletion is prohibited in this chat."
+        case .reactions:
+            return enabled.forUser && enabled.forContact
+                    ? "Both you and your contact can add message reactions."
+                    : enabled.forUser
+                    ? "Only you can add message reactions."
+                    : enabled.forContact
+                    ? "Only your contact can add message reactions."
+                    : "Message reactions are prohibited in this chat."
         case .voice:
             return enabled.forUser && enabled.forContact
                     ? "Both you and your contact can send voice messages."
@@ -546,11 +671,11 @@ public enum ChatFeature: String, Decodable, Feature {
 
 public enum GroupFeature: String, Decodable, Feature {
     case timedMessages
-    case fullDelete
-    case voice
     case directMessages
-
-    public var values: [GroupFeature] { [.directMessages, .fullDelete, .voice] }
+    case fullDelete
+    case reactions
+    case voice
+    case files
 
     public var id: Self { self }
 
@@ -566,7 +691,9 @@ public enum GroupFeature: String, Decodable, Feature {
         case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .directMessages: return NSLocalizedString("Direct messages", comment: "chat feature")
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
+        case .reactions: return NSLocalizedString("Message reactions", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
+        case .files: return NSLocalizedString("Files and media", comment: "chat feature")
         }
     }
 
@@ -575,7 +702,9 @@ public enum GroupFeature: String, Decodable, Feature {
         case .timedMessages: return "stopwatch"
         case .directMessages: return "arrow.left.and.right.circle"
         case .fullDelete: return "trash.slash"
+        case .reactions: return "face.smiling"
         case .voice: return "mic"
+        case .files: return "doc"
         }
     }
 
@@ -584,7 +713,9 @@ public enum GroupFeature: String, Decodable, Feature {
         case .timedMessages: return "stopwatch.fill"
         case .directMessages: return "arrow.left.and.right.circle.fill"
         case .fullDelete: return "trash.slash.fill"
+        case .reactions: return "face.smiling.fill"
         case .voice: return "mic.fill"
+        case .files: return "doc.fill"
         }
     }
 
@@ -613,10 +744,20 @@ public enum GroupFeature: String, Decodable, Feature {
                 case .on: return "Allow to irreversibly delete sent messages."
                 case .off: return "Prohibit irreversible message deletion."
                 }
+            case .reactions:
+                switch enabled {
+                case .on: return "Allow message reactions."
+                case .off: return "Prohibit messages reactions."
+                }
             case .voice:
                 switch enabled {
                 case .on: return "Allow to send voice messages."
                 case .off: return "Prohibit sending voice messages."
+                }
+            case .files:
+                switch enabled {
+                case .on: return "Allow to send files and media."
+                case .off: return "Prohibit sending files and media."
                 }
             }
         } else {
@@ -636,10 +777,20 @@ public enum GroupFeature: String, Decodable, Feature {
                 case .on: return "Group members can irreversibly delete sent messages."
                 case .off: return "Irreversible message deletion is prohibited in this group."
                 }
+            case .reactions:
+                switch enabled {
+                case .on: return "Group members can add message reactions."
+                case .off: return "Message reactions are prohibited in this group."
+                }
             case .voice:
                 switch enabled {
                 case .on: return "Group members can send voice messages."
                 case .off: return "Voice messages are prohibited in this group."
+                }
+            case .files:
+                switch enabled {
+                case .on: return "Group members can send files and media."
+                case .off: return "Files and media are prohibited in this group."
                 }
             }
         }
@@ -681,13 +832,22 @@ public struct ContactFeaturesAllowed: Equatable {
     public var timedMessagesAllowed: Bool
     public var timedMessagesTTL: Int?
     public var fullDelete: ContactFeatureAllowed
+    public var reactions: ContactFeatureAllowed
     public var voice: ContactFeatureAllowed
     public var calls: ContactFeatureAllowed
 
-    public init(timedMessagesAllowed: Bool, timedMessagesTTL: Int?, fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed, calls: ContactFeatureAllowed) {
+    public init(
+        timedMessagesAllowed: Bool,
+        timedMessagesTTL: Int?,
+        fullDelete: ContactFeatureAllowed,
+        reactions: ContactFeatureAllowed,
+        voice: ContactFeatureAllowed,
+        calls: ContactFeatureAllowed
+    ) {
         self.timedMessagesAllowed = timedMessagesAllowed
         self.timedMessagesTTL = timedMessagesTTL
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
         self.calls = calls
     }
@@ -696,6 +856,7 @@ public struct ContactFeaturesAllowed: Equatable {
         timedMessagesAllowed: false,
         timedMessagesTTL: nil,
         fullDelete: ContactFeatureAllowed.userDefault(.no),
+        reactions: ContactFeatureAllowed.userDefault(.yes),
         voice: ContactFeatureAllowed.userDefault(.yes),
         calls: ContactFeatureAllowed.userDefault(.yes)
     )
@@ -708,6 +869,7 @@ public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactU
         timedMessagesAllowed: allow == .yes || allow == .always,
         timedMessagesTTL: pref.preference.ttl,
         fullDelete: contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
+        reactions: contactUserPrefToFeatureAllowed(contactUserPreferences.reactions),
         voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice),
         calls: contactUserPrefToFeatureAllowed(contactUserPreferences.calls)
     )
@@ -729,6 +891,7 @@ public func contactFeaturesAllowedToPrefs(_ contactFeaturesAllowed: ContactFeatu
     Preferences(
         timedMessages: TimedMessagesPreference(allow: contactFeaturesAllowed.timedMessagesAllowed ? .yes : .no, ttl: contactFeaturesAllowed.timedMessagesTTL),
         fullDelete: contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
+        reactions: contactFeatureAllowedToPref(contactFeaturesAllowed.reactions),
         voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice),
         calls: contactFeatureAllowedToPref(contactFeaturesAllowed.calls)
     )
@@ -765,20 +928,33 @@ public struct FullGroupPreferences: Decodable, Equatable {
     public var timedMessages: TimedMessagesGroupPreference
     public var directMessages: GroupPreference
     public var fullDelete: GroupPreference
+    public var reactions: GroupPreference
     public var voice: GroupPreference
+    public var files: GroupPreference
 
-    public init(timedMessages:  TimedMessagesGroupPreference, directMessages: GroupPreference, fullDelete: GroupPreference, voice: GroupPreference) {
+    public init(
+        timedMessages: TimedMessagesGroupPreference,
+        directMessages: GroupPreference,
+        fullDelete: GroupPreference,
+        reactions: GroupPreference,
+        voice: GroupPreference,
+        files: GroupPreference
+    ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
+        self.files = files
     }
 
     public static let sampleData = FullGroupPreferences(
         timedMessages: TimedMessagesGroupPreference(enable: .off),
         directMessages: GroupPreference(enable: .off),
         fullDelete: GroupPreference(enable: .off),
-        voice: GroupPreference(enable: .on)
+        reactions: GroupPreference(enable: .on),
+        voice: GroupPreference(enable: .on),
+        files: GroupPreference(enable: .on)
     )
 }
 
@@ -786,20 +962,33 @@ public struct GroupPreferences: Codable {
     public var timedMessages: TimedMessagesGroupPreference?
     public var directMessages: GroupPreference?
     public var fullDelete: GroupPreference?
+    public var reactions: GroupPreference?
     public var voice: GroupPreference?
+    public var files: GroupPreference?
 
-    public init(timedMessages: TimedMessagesGroupPreference?, directMessages: GroupPreference?, fullDelete: GroupPreference?, voice: GroupPreference?) {
+    public init(
+        timedMessages: TimedMessagesGroupPreference?,
+        directMessages: GroupPreference?,
+        fullDelete: GroupPreference?,
+        reactions: GroupPreference?,
+        voice: GroupPreference?,
+        files: GroupPreference?
+    ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
+        self.reactions = reactions
         self.voice = voice
+        self.files = files
     }
 
     public static let sampleData = GroupPreferences(
         timedMessages: TimedMessagesGroupPreference(enable: .off),
         directMessages: GroupPreference(enable: .off),
         fullDelete: GroupPreference(enable: .off),
-        voice: GroupPreference(enable: .on)
+        reactions: GroupPreference(enable: .on),
+        voice: GroupPreference(enable: .on),
+        files: GroupPreference(enable: .on)
     )
 }
 
@@ -808,7 +997,9 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         timedMessages: fullPreferences.timedMessages,
         directMessages: fullPreferences.directMessages,
         fullDelete: fullPreferences.fullDelete,
-        voice: fullPreferences.voice
+        reactions: fullPreferences.reactions,
+        voice: fullPreferences.voice,
+        files: fullPreferences.files
     )
 }
 
@@ -1017,6 +1208,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             switch feature {
             case .timedMessages: return cups.timedMessages.enabled.forUser
             case .fullDelete: return cups.fullDelete.enabled.forUser
+            case .reactions: return cups.reactions.enabled.forUser
             case .voice: return cups.voice.enabled.forUser
             case .calls: return cups.calls.enabled.forUser
             }
@@ -1025,6 +1217,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             switch feature {
             case .timedMessages: return prefs.timedMessages.on
             case .fullDelete: return prefs.fullDelete.on
+            case .reactions: return prefs.reactions.on
             case .voice: return prefs.voice.on
             case .calls: return false
             }
@@ -1074,10 +1267,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
     }
 
     public var ntfsEnabled: Bool {
+        self.chatSettings?.enableNtfs ?? false
+    }
+
+    public var chatSettings: ChatSettings? {
         switch self {
-        case let .direct(contact): return contact.chatSettings.enableNtfs
-        case let .group(groupInfo): return groupInfo.chatSettings.enableNtfs
-        default: return false
+        case let .direct(contact): return contact.chatSettings
+        case let .group(groupInfo): return groupInfo.chatSettings
+        default: return nil
         }
     }
 
@@ -1160,10 +1357,11 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn.connStatus == .ready } }
-    public var sendMsgEnabled: Bool { get { true } }
+    public var sendMsgEnabled: Bool { get { !(activeConn.connectionStats?.ratchetSyncSendProhibited ?? false) } }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
+    public var contactLink: String? { get { profile.contactLink } }
     public var localAlias: String { profile.localAlias }
     public var verified: Bool { activeConn.connectionCode != nil }
 
@@ -1179,6 +1377,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         switch feature {
         case .timedMessages: return mergedPreferences.timedMessages.contactPreference.allow != .no
         case .fullDelete: return mergedPreferences.fullDelete.contactPreference.allow != .no
+        case .reactions: return mergedPreferences.reactions.contactPreference.allow != .no
         case .voice: return mergedPreferences.voice.contactPreference.allow != .no
         case .calls: return mergedPreferences.calls.contactPreference.allow != .no
         }
@@ -1188,6 +1387,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         switch feature {
         case .timedMessages: return mergedPreferences.timedMessages.userPreference.preference.allow != .no
         case .fullDelete: return mergedPreferences.fullDelete.userPreference.preference.allow != .no
+        case .reactions: return mergedPreferences.reactions.userPreference.preference.allow != .no
         case .voice: return mergedPreferences.voice.userPreference.preference.allow != .no
         case .calls: return mergedPreferences.calls.userPreference.preference.allow != .no
         }
@@ -1229,6 +1429,12 @@ public struct Connection: Decodable {
     public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
     public var connectionCode: SecurityCode?
+
+    public var connectionStats: ConnectionStats? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case connId, agentConnId, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode
+    }
 
     public var id: ChatId { get { ":\(connId)" } }
 
@@ -1508,6 +1714,7 @@ public struct GroupMember: Identifiable, Decodable {
     }
     public var fullName: String { get { memberProfile.fullName } }
     public var image: String? { get { memberProfile.image } }
+    public var contactLink: String? { get { memberProfile.contactLink } }
     public var verified: Bool { activeConn?.connectionCode != nil }
 
     var directChatId: ChatId? {
@@ -1731,13 +1938,26 @@ public struct AChatItem: Decodable {
     }
 }
 
+public struct ACIReaction: Decodable {
+    public var chatInfo: ChatInfo
+    public var chatReaction: CIReaction
+}
+
+public struct CIReaction: Decodable {
+    public var chatDir: CIDirection
+    public var chatItem: ChatItem
+    public var sentAt: Date
+    public var reaction: MsgReaction
+}
+
 public struct ChatItem: Identifiable, Decodable {
-    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, quotedItem: CIQuote? = nil, file: CIFile? = nil) {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
         self.content = content
         self.formattedText = formattedText
         self.quotedItem = quotedItem
+        self.reactions = reactions
         self.file = file
     }
 
@@ -1746,13 +1966,14 @@ public struct ChatItem: Identifiable, Decodable {
     public var content: CIContent
     public var formattedText: [FormattedText]?
     public var quotedItem: CIQuote?
+    public var reactions: [CIReactionCount]
     public var file: CIFile?
 
     public var viewTimestamp = Date.now
     public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case chatDir, meta, content, formattedText, quotedItem, file
+        case chatDir, meta, content, formattedText, quotedItem, reactions, file
     }
 
     public var id: Int64 { meta.itemId }
@@ -1827,12 +2048,20 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public var showMutableNotification: Bool {
-        switch content {
-        case .rcvCall: return false
-        case .rcvChatFeature: return false
-        default: return showNtfDir
+    public var allowAddReaction: Bool {
+        meta.itemDeleted == nil && !isLiveDummy && reactions.filter({ $0.userReacted }).count < 3
+    }
+
+    public func autoReceiveFile() -> CIFile? {
+        if let file = file,
+           let mc = content.msgContent,
+           privacyAcceptImagesGroupDefault.get(),
+           (mc.isImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
+            || (mc.isVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
+            || (mc.isVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus != .rcvAccepted) {
+            return file
         }
+        return nil
     }
 
     public var memberDisplayName: String? {
@@ -2012,10 +2241,10 @@ public enum CIDirection: Decodable {
 
 public struct CIMeta: Decodable {
     public var itemId: Int64
-    var itemTs: Date
+    public var itemTs: Date
     var itemText: String
     public var itemStatus: CIStatus
-    var createdAt: Date
+    public var createdAt: Date
     public var updatedAt: Date
     public var itemDeleted: CIDeleted?
     public var itemEdited: Bool
@@ -2036,6 +2265,11 @@ public struct CIMeta: Decodable {
     public func statusIcon(_ metaColor: Color = .secondary) -> (String, Color)? {
         switch itemStatus {
         case .sndSent: return ("checkmark", metaColor)
+        case let .sndRcvd(msgRcptStatus):
+            switch msgRcptStatus {
+            case .ok: return ("checkmark", metaColor) // ("checkmark.circle", metaColor)
+            case .badMsgHash: return ("checkmark", .red) // ("checkmark.circle", .red)
+            }
         case .sndErrorAuth: return ("multiply", .red)
         case .sndError: return ("exclamationmark.triangle.fill", .yellow)
         case .rcvNew: return ("circlebadge.fill", Color.accentColor)
@@ -2083,15 +2317,28 @@ let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
 let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
 
 public func formatTimestampText(_ date: Date) -> Text {
-    let now = Calendar.current.dateComponents([.day, .hour], from: .now)
-    let dc = Calendar.current.dateComponents([.day, .hour], from: date)
-    let recent = now.day == dc.day || ((now.day ?? 0) - (dc.day ?? 0) == 1 && (dc.hour ?? 0) >= 18 && (now.hour ?? 0) < 12)
-    return Text(date, format: recent ? msgTimeFormat : msgDateFormat)
+    return Text(date, format: recent(date) ? msgTimeFormat : msgDateFormat)
+}
+
+private func recent(_ date: Date) -> Bool {
+    let now = Date()
+    let calendar = Calendar.current
+
+    guard let previousDay = calendar.date(byAdding: DateComponents(day: -1), to: now),
+          let previousDay18 = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: previousDay),
+          let currentDay00 = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: now),
+          let currentDay12 = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) else {
+        return false
+    }
+
+    let isSameDay = calendar.isDate(date, inSameDayAs: now)
+    return isSameDay || (now < currentDay12 && date >= previousDay18 && date < currentDay00)
 }
 
 public enum CIStatus: Decodable {
     case sndNew
     case sndSent
+    case sndRcvd(msgRcptStatus: MsgReceiptStatus)
     case sndErrorAuth
     case sndError(agentError: String)
     case rcvNew
@@ -2099,19 +2346,25 @@ public enum CIStatus: Decodable {
 
     var id: String {
         switch self {
-        case .sndNew: return  "sndNew"
-        case .sndSent: return  "sndSent"
-        case .sndErrorAuth: return  "sndErrorAuth"
-        case .sndError: return  "sndError"
-        case .rcvNew: return  "rcvNew"
+        case .sndNew: return "sndNew"
+        case .sndSent: return "sndSent"
+        case .sndRcvd: return "sndRcvd"
+        case .sndErrorAuth: return "sndErrorAuth"
+        case .sndError: return "sndError"
+        case .rcvNew: return "rcvNew"
         case .rcvRead: return "rcvRead"
         }
     }
 }
 
+public enum MsgReceiptStatus: String, Decodable {
+    case ok
+    case badMsgHash
+}
+
 public enum CIDeleted: Decodable {
-    case deleted
-    case moderated(byGroupMember: GroupMember)
+    case deleted(deletedTs: Date?)
+    case moderated(deletedTs: Date?, byGroupMember: GroupMember)
 
     var id: String {
         switch self {
@@ -2191,13 +2444,13 @@ public enum CIContent: Decodable, ItemContent {
 
     static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {
         feature.hasParam
-        ? "\(feature.text): \(TimedMessagesPreference.ttlText(param))"
+        ? "\(feature.text): \(timeText(param))"
         : "\(feature.text): \(enabled)"
     }
 
     public static func preferenceText(_ feature: Feature, _ allowed: FeatureAllowed, _ param: Int?) -> String {
         allowed != .no && feature.hasParam && param != nil
-        ? String.localizedStringWithFormat(NSLocalizedString("offered %@: %@", comment: "feature offered item"), feature.text, TimedMessagesPreference.ttlText(param))
+        ? String.localizedStringWithFormat(NSLocalizedString("offered %@: %@", comment: "feature offered item"), feature.text, timeText(param))
         : allowed != .no
         ? String.localizedStringWithFormat(NSLocalizedString("offered %@", comment: "feature offered item"), feature.text)
         : String.localizedStringWithFormat(NSLocalizedString("cancelled %@", comment: "feature offered item"), feature.text)
@@ -2217,20 +2470,24 @@ public enum CIContent: Decodable, ItemContent {
 public enum MsgDecryptError: String, Decodable {
     case ratchetHeader
     case tooManySkipped
+    case ratchetEarlier
+    case other
 
     var text: String {
         switch self {
         case .ratchetHeader: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
         case .tooManySkipped: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
+        case .ratchetEarlier: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
+        case .other: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
         }
     }
 }
 
 public struct CIQuote: Decodable, ItemContent {
-    var chatDir: CIDirection?
+    public var chatDir: CIDirection?
     public var itemId: Int64?
     var sharedMsgId: String? = nil
-    var sentAt: Date
+    public var sentAt: Date
     public var content: MsgContent
     public var formattedText: [FormattedText]?
 
@@ -2245,7 +2502,7 @@ public struct CIQuote: Decodable, ItemContent {
         switch (chatDir) {
         case .directSnd: return "you"
         case .directRcv: return nil
-        case .groupSnd: return membership?.displayName
+        case .groupSnd: return membership?.displayName ?? "you"
         case let .groupRcv(member): return member.displayName
         case nil: return nil
         }
@@ -2259,6 +2516,76 @@ public struct CIQuote: Decodable, ItemContent {
             mc = .text(text)
         }
         return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
+    }
+}
+
+public struct CIReactionCount: Decodable {
+    public var reaction: MsgReaction
+    public var userReacted: Bool
+    public var totalReacted: Int
+}
+
+public enum MsgReaction: Hashable {
+    case emoji(emoji: MREmojiChar)
+    case unknown(type: String)
+
+    public var text: String {
+        switch self {
+        case let .emoji(emoji):
+            switch emoji {
+            case .heart: return "❤️"
+            default: return emoji.rawValue
+            }
+        case .unknown: return "?"
+        }
+    }
+
+    public static var values: [MsgReaction] = MREmojiChar.allCases.map { .emoji(emoji: $0) }
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case emoji
+    }
+}
+
+public enum MREmojiChar: String, Codable, CaseIterable {
+    case thumbsup = "👍"
+    case thumbsdown = "👎"
+    case smile = "😀"
+    case sad = "😢"
+    case heart = "❤"
+    case launch = "🚀"
+}
+
+extension MsgReaction: Decodable {
+    public init(from decoder: Decoder) throws {
+        do {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let type = try container.decode(String.self, forKey: CodingKeys.type)
+            switch type {
+            case "emoji":
+                let emoji = try container.decode(MREmojiChar.self, forKey: CodingKeys.emoji)
+                self = .emoji(emoji: emoji)
+            default:
+                self = .unknown(type: type)
+            }
+        } catch {
+            self = .unknown(type: "")
+        }
+    }
+}
+
+extension MsgReaction: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .emoji(emoji):
+            try container.encode("emoji", forKey: .type)
+            try container.encode(emoji, forKey: .emoji)
+        // TODO use original JSON and type
+        case let .unknown(type):
+            try container.encode(type, forKey: .type)
+        }
     }
 }
 
@@ -2359,7 +2686,7 @@ public enum FileProtocol: String, Decodable {
     case xftp = "xftp"
 }
 
-public enum CIFileStatus: Decodable {
+public enum CIFileStatus: Decodable, Equatable {
     case sndStored
     case sndTransfer(sndProgress: Int64, sndTotal: Int64)
     case sndComplete
@@ -2389,7 +2716,7 @@ public enum CIFileStatus: Decodable {
     }
 }
 
-public enum MsgContent {
+public enum MsgContent: Equatable {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
@@ -2449,6 +2776,19 @@ public enum MsgContent {
         case preview
         case image
         case duration
+    }
+
+    public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
+        switch (lhs, rhs) {
+        case let (.text(lt), .text(rt)): return lt == rt
+        case let (.link(lt, lp), .link(rt, rp)): return lt == rt && lp == rp
+        case let (.image(lt, li), .image(rt, ri)): return lt == rt && li == ri
+        case let (.video(lt, li, ld), .video(rt, ri, rd)): return lt == rt && li == ri && ld == rd
+        case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
+        case let (.file(lf), .file(rf)): return lf == rf
+        case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
+        default: return false
+        }
     }
 }
 
@@ -2748,6 +3088,8 @@ public enum SndGroupEvent: Decodable {
 
 public enum RcvConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase)
+    case ratchetSync(syncStatus: RatchetSyncState)
+    case verificationCodeReset
     
     var text: String {
         switch self {
@@ -2755,25 +3097,51 @@ public enum RcvConnEvent: Decodable {
             if case .completed = phase {
                 return NSLocalizedString("changed address for you", comment: "chat item text")
             }
-            return NSLocalizedString("changing address...", comment: "chat item text")
+            return NSLocalizedString("changing address…", comment: "chat item text")
+        case let .ratchetSync(syncStatus):
+            return ratchetSyncStatusToText(syncStatus)
+        case .verificationCodeReset:
+            return NSLocalizedString("security code changed", comment: "chat item text")
         }
+    }
+}
+
+func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
+    switch ratchetSyncStatus {
+    case .ok: return NSLocalizedString("encryption ok", comment: "chat item text")
+    case .allowed: return NSLocalizedString("encryption re-negotiation allowed", comment: "chat item text")
+    case .required: return NSLocalizedString("encryption re-negotiation required", comment: "chat item text")
+    case .started: return NSLocalizedString("agreeing encryption…", comment: "chat item text")
+    case .agreed: return NSLocalizedString("encryption agreed", comment: "chat item text")
     }
 }
 
 public enum SndConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
-    
+    case ratchetSync(syncStatus: RatchetSyncState, member: GroupMemberRef?)
+
     var text: String {
         switch self {
         case let .switchQueue(phase, member):
             if let name = member?.profile.profileViewName {
                 return phase == .completed
-                    ? String.localizedStringWithFormat(NSLocalizedString("you changed address for %@", comment: "chat item text"), name)
-                    : String.localizedStringWithFormat(NSLocalizedString("changing address for %@...", comment: "chat item text"), name)
+                ? String.localizedStringWithFormat(NSLocalizedString("you changed address for %@", comment: "chat item text"), name)
+                : String.localizedStringWithFormat(NSLocalizedString("changing address for %@…", comment: "chat item text"), name)
             }
             return phase == .completed
-                ? NSLocalizedString("you changed address", comment: "chat item text")
-                : NSLocalizedString("changing address...", comment: "chat item text")
+            ? NSLocalizedString("you changed address", comment: "chat item text")
+            : NSLocalizedString("changing address…", comment: "chat item text")
+        case let .ratchetSync(syncStatus, member):
+            if let name = member?.profile.profileViewName {
+                switch syncStatus {
+                case .ok: return String.localizedStringWithFormat(NSLocalizedString("encryption ok for %@", comment: "chat item text"), name)
+                case .allowed: return String.localizedStringWithFormat(NSLocalizedString("encryption re-negotiation allowed for %@", comment: "chat item text"), name)
+                case .required: return String.localizedStringWithFormat(NSLocalizedString("encryption re-negotiation required for %@", comment: "chat item text"), name)
+                case .started: return String.localizedStringWithFormat(NSLocalizedString("agreeing encryption for %@…", comment: "chat item text"), name)
+                case .agreed: return String.localizedStringWithFormat(NSLocalizedString("encryption agreed for %@", comment: "chat item text"), name)
+                }
+            }
+            return ratchetSyncStatusToText(syncStatus)
         }
     }
 }
@@ -2781,6 +3149,7 @@ public enum SndConnEvent: Decodable {
 public enum SwitchPhase: String, Decodable {
     case started
     case confirmed
+    case secured
     case completed
 }
 
@@ -2832,4 +3201,16 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
     public static func < (lhs: Self, rhs: Self) -> Bool {
         return lhs.comparisonValue < rhs.comparisonValue
     }
+}
+
+public struct ChatItemInfo: Decodable {
+    public var itemVersions: [ChatItemVersion]
+}
+
+public struct ChatItemVersion: Decodable {
+    public var chatItemVersionId: Int64
+    public var msgContent: MsgContent
+    public var formattedText: [FormattedText]?
+    public var itemVersionTs: Date
+    public var createdAt: Date
 }

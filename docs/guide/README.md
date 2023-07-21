@@ -1,3 +1,6 @@
+---
+title: Quick start
+---
 # SimpleX Chat User Guide
 
 The first messaging platform that has no user identifiers of any kind — 100% private by design.

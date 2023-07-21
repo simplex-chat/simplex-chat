@@ -41,8 +41,8 @@ terminalChatConfig =
 
 simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
 simplexChatTerminal cfg opts t = do
-  sendToast <- initializeNotifications
-  handle checkDBKeyError . simplexChatCore cfg opts (Just sendToast) $ \u cc -> do
+  sendToast <- if muteNotifications opts then pure Nothing else Just <$> initializeNotifications
+  handle checkDBKeyError . simplexChatCore cfg opts sendToast $ \u cc -> do
     ct <- newChatTerminal t
     when (firstTime cc) . printToTerminal ct $ chatWelcome u
     runChatTerminal ct cc

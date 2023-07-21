@@ -30,19 +30,26 @@ struct LocalAuthRequest {
     var title: LocalizedStringKey? // if title is null, reason is shown
     var reason: String
     var password: String
+    var selfDestruct: Bool
     var completed: (LAResult) -> Void
 
-    static var sample = LocalAuthRequest(title: "Enter Passcode", reason: "Authenticate", password: "", completed: { _ in })
+    static var sample = LocalAuthRequest(title: "Enter Passcode", reason: "Authenticate", password: "", selfDestruct: false, completed: { _ in })
 }
 
-func authenticate(title: LocalizedStringKey? = nil, reason: String, completed: @escaping (LAResult) -> Void) {
-    logger.debug("authenticate")
+func authenticate(title: LocalizedStringKey? = nil, reason: String, selfDestruct: Bool = false, completed: @escaping (LAResult) -> Void) {
+    logger.debug("DEBUGGING: authenticate")
     switch privacyLocalAuthModeDefault.get() {
     case .system: systemAuthenticate(reason, completed)
     case .passcode:
         if let password = kcAppPassword.get() {
             DispatchQueue.main.async {
-                ChatModel.shared.laRequest = LocalAuthRequest(title: title, reason: reason, password: password, completed: completed)
+                ChatModel.shared.laRequest = LocalAuthRequest(
+                    title: title,
+                    reason: reason,
+                    password: password,
+                    selfDestruct: selfDestruct && UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT),
+                    completed: completed
+                )
             }
         } else {
             completed(.unavailable(authError: NSLocalizedString("No app password", comment: "Authentication unavailable")))
@@ -51,21 +58,24 @@ func authenticate(title: LocalizedStringKey? = nil, reason: String, completed: @
 }
 
 func systemAuthenticate(_ reason: String, _ completed: @escaping (LAResult) -> Void) {
+    logger.debug("DEBUGGING: systemAuthenticate")
     let laContext = LAContext()
     var authAvailabilityError: NSError?
     if laContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authAvailabilityError) {
+        logger.debug("DEBUGGING: systemAuthenticate: canEvaluatePolicy callback")
         laContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
+            logger.debug("DEBUGGING: systemAuthenticate evaluatePolicy callback")
             DispatchQueue.main.async {
                 if success {
                     completed(LAResult.success)
                 } else {
-                    logger.error("authentication error: \(authError.debugDescription)")
+                    logger.error("DEBUGGING: systemAuthenticate authentication error: \(authError.debugDescription)")
                     completed(LAResult.failed(authError: authError?.localizedDescription))
                 }
             }
         }
     } else {
-        logger.error("authentication availability error: \(authAvailabilityError.debugDescription)")
+        logger.error("DEBUGGING: authentication availability error: \(authAvailabilityError.debugDescription)")
         completed(LAResult.unavailable(authError: authAvailabilityError?.localizedDescription))
     }
 }

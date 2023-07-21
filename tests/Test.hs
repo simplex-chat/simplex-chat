@@ -8,6 +8,7 @@ import ProtocolTests
 import SchemaDump
 import Test.Hspec
 import UnliftIO.Temporary (withTempDirectory)
+import ViewTests
 import WebRTCTests
 
 main :: IO ()
@@ -15,6 +16,7 @@ main = do
   setLogLevel LogError -- LogDebug
   withGlobalLogging logCfg . hspec $ do
     describe "SimpleX chat markdown" markdownTests
+    describe "SimpleX chat view" viewTests
     describe "SimpleX chat protocol" protocolTests
     describe "WebRTC encryption" webRTCTests
     describe "Schema dump" schemaDumpTest

@@ -154,7 +154,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || liveMessage != nil { return true }
+        if editing || liveMessage != nil || inProgress { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
@@ -234,7 +234,7 @@ struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
-    @FocusState.Binding var keyboardVisible: Bool
+    @Binding var keyboardVisible: Bool
 
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
@@ -264,7 +264,7 @@ struct ComposeView: View {
             default: previewView()
             }
             HStack (alignment: .bottom) {
-                Button {
+                let b = Button {
                     showChooseSource = true
                 } label: {
                     Image(systemName: "paperclip")
@@ -274,11 +274,22 @@ struct ComposeView: View {
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
+                if case let .group(g) = chat.chatInfo,
+                   !g.fullGroupPreferences.files.on {
+                    b.disabled(true).onTapGesture {
+                        AlertManager.shared.showAlertMsg(
+                            title: "Files and media prohibited!",
+                            message: "Only group owners can enable files and media."
+                        )
+                    }
+                } else {
+                    b
+                }
                 ZStack(alignment: .leading) {
                     SendMessageView(
                         composeState: $composeState,
-                        sendMessage: {
-                            sendMessage()
+                        sendMessage: { ttl in
+                            sendMessage(ttl: ttl)
                             resetLinkPreview()
                         },
                         sendLiveMessage: sendLiveMessage,
@@ -296,6 +307,7 @@ struct ComposeView: View {
                         },
                         finishVoiceMessageRecording: finishVoiceMessageRecording,
                         allowVoiceMessagesToContact: allowVoiceMessagesToContact,
+                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                         keyboardVisible: $keyboardVisible
                     )
@@ -425,8 +437,10 @@ struct ComposeView: View {
                 && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil) {
                 cancelCurrentVoiceRecording()
                 clearCurrentDraft()
-                sendMessage()
+                sendMessage(ttl: nil)
                 resetLinkPreview()
+            } else if (composeState.inProgress) {
+                clearCurrentDraft()
             } else if !composeState.empty  {
                 saveCurrentDraft()
             } else {
@@ -468,7 +482,7 @@ struct ComposeView: View {
         let lm = composeState.liveMessage
         if (composeState.sendEnabled || composeState.quoting)
             && (lm == nil || lm?.sentMsg == nil),
-           let ci = await sendMessageAsync(typedMsg, live: true) {
+           let ci = await sendMessageAsync(typedMsg, live: true, ttl: nil) {
             await MainActor.run {
                 composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: typedMsg))
             }
@@ -484,7 +498,7 @@ struct ComposeView: View {
         let typedMsg = composeState.message
         if let liveMessage = composeState.liveMessage {
             if let sentMsg = liveMessageToSend(liveMessage, typedMsg),
-               let ci = await sendMessageAsync(sentMsg, live: true) {
+               let ci = await sendMessageAsync(sentMsg, live: true, ttl: nil) {
                 await MainActor.run {
                     composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
                 }
@@ -522,7 +536,11 @@ struct ComposeView: View {
         case .noPreview:
             EmptyView()
         case let .linkPreview(linkPreview: preview):
-            ComposeLinkView(linkPreview: preview, cancelPreview: cancelLinkPreview)
+            ComposeLinkView(
+                linkPreview: preview,
+                cancelPreview: cancelLinkPreview,
+                cancelEnabled: !composeState.inProgress
+            )
         case let .mediaPreviews(mediaPreviews: media):
             ComposeImageView(
                 images: media.map { (img, _) in img },
@@ -530,7 +548,7 @@ struct ComposeView: View {
                     composeState = composeState.copy(preview: .noPreview)
                     chosenMedia = []
                 },
-                cancelEnabled: !composeState.editing)
+                cancelEnabled: !composeState.editing && !composeState.inProgress)
         case let .voicePreview(recordingFileName, _):
             ComposeVoiceView(
                 recordingFileName: recordingFileName,
@@ -540,7 +558,7 @@ struct ComposeView: View {
                     cancelVoiceMessageRecording($0)
                     clearState()
                 },
-                cancelEnabled: !composeState.editing,
+                cancelEnabled: !composeState.editing && !composeState.inProgress,
                 stopPlayback: $stopPlayback
             )
         case let .filePreview(fileName, _):
@@ -549,7 +567,7 @@ struct ComposeView: View {
                 cancelFile: {
                     composeState = composeState.copy(preview: .noPreview)
                 },
-                cancelEnabled: !composeState.editing)
+                cancelEnabled: !composeState.editing && !composeState.inProgress)
         }
     }
 
@@ -572,15 +590,15 @@ struct ComposeView: View {
         }
     }
 
-    private func sendMessage() {
+    private func sendMessage(ttl: Int?) {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            _ = await sendMessageAsync(nil, live: false)
+            _ = await sendMessageAsync(nil, live: false, ttl: ttl)
         }
     }
 
-    private func sendMessageAsync(_ text: String?, live: Bool) async -> ChatItem? {
+    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?) async -> ChatItem? {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
         let liveMessage = composeState.liveMessage
@@ -600,36 +618,36 @@ struct ComposeView: View {
 
             switch (composeState.preview) {
             case .noPreview:
-                sent = await send(.text(msgText), quoted: quoted, live: live)
+                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
             case .linkPreview:
-                sent = await send(checkLinkPreview(), quoted: quoted, live: live)
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
             case let .mediaPreviews(mediaPreviews: media):
                 let last = media.count - 1
                 if last >= 0 {
                     for i in 0..<last {
                         if case (_, .video(_, _, _)) = media[i] {
-                            sent = await sendVideo(media[i])
+                            sent = await sendVideo(media[i], ttl: ttl)
                         } else {
-                            sent = await sendImage(media[i])
+                            sent = await sendImage(media[i], ttl: ttl)
                         }
                         _ = try? await Task.sleep(nanoseconds: 100_000000)
                     }
                     if case (_, .video(_, _, _)) = media[last] {
-                        sent = await sendVideo(media[last], text: msgText, quoted: quoted, live: live)
+                        sent = await sendVideo(media[last], text: msgText, quoted: quoted, live: live, ttl: ttl)
                     } else {
-                        sent = await sendImage(media[last], text: msgText, quoted: quoted, live: live)
+                        sent = await sendImage(media[last], text: msgText, quoted: quoted, live: live, ttl: ttl)
                     }
                 }
                 if sent == nil {
-                    sent = await send(.text(msgText), quoted: quoted, live: live)
+                    sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
                 }
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 chatModel.filesToDelete.remove(getAppFilePath(recordingFileName))
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName, ttl: ttl)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
-                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live)
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
                 }
             }
         }
@@ -647,17 +665,21 @@ struct ComposeView: View {
             if let oldMsgContent = ei.content.msgContent {
                 do {
                     let mc = updateMsgContent(oldMsgContent)
-                    let chatItem = try await apiUpdateChatItem(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        itemId: ei.id,
-                        msg: mc,
-                        live: live
-                    )
-                    await MainActor.run {
-                        _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                    if mc != oldMsgContent || (ei.meta.itemLive ?? false) {
+                        let chatItem = try await apiUpdateChatItem(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            itemId: ei.id,
+                            msg: mc,
+                            live: live
+                        )
+                        await MainActor.run {
+                            _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                        }
+                        return chatItem
+                    } else {
+                        return nil
                     }
-                    return chatItem
                 } catch {
                     logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
                     AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
@@ -685,36 +707,40 @@ struct ComposeView: View {
             }
         }
 
-        func sendImage(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false) async -> ChatItem? {
+        func sendImage(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             let (image, data) = imageData
             if let data = data, let savedFile = saveAnyImage(data) {
-                return await send(.image(text: text, image: image), quoted: quoted, file: savedFile, live: live)
+                return await send(.image(text: text, image: image), quoted: quoted, file: savedFile, live: live, ttl: ttl)
             }
             return nil
         }
 
-        func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false) async -> ChatItem? {
+        func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             let (image, data) = imageData
             if case let .video(_, url, duration) = data, let savedFile = saveFileFromURLWithoutLoad(url) {
-                return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live)
+                return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live, ttl: ttl)
             }
             return nil
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil, live: Bool = false) async -> ChatItem? {
+        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             if let chatItem = await apiSendMessage(
                 type: chat.chatInfo.chatType,
                 id: chat.chatInfo.apiId,
                 file: file,
                 quotedItemId: quoted,
                 msg: mc,
-                live: live
+                live: live,
+                ttl: ttl
             ) {
                 await MainActor.run {
                     chatModel.removeLiveDummy(animated: false)
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
                 return chatItem
+            }
+            if let file = file {
+                removeFile(file)
             }
             return nil
         }
@@ -921,19 +947,18 @@ struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
         @State var composeState = ComposeState(message: "hello")
-        @FocusState var keyboardVisible: Bool
 
         return Group {
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
         }

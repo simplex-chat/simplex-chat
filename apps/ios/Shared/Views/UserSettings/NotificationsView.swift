@@ -11,9 +11,12 @@ import SimpleXChat
 
 struct NotificationsView: View {
     @EnvironmentObject var m: ChatModel
-    @State private var notificationMode: NotificationsMode?
+    @State private var notificationMode: NotificationsMode = ChatModel.shared.notificationMode
     @State private var showAlert: NotificationAlert?
     @State private var legacyDatabase = dbContainerGroupDefault.get() == .documents
+//    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+//    @AppStorage(GROUP_DEFAULT_NTF_ENABLE_LOCAL, store: groupDefaults) private var ntfEnableLocal = false
+//    @AppStorage(GROUP_DEFAULT_NTF_ENABLE_PERIODIC, store: groupDefaults) private var ntfEnablePeriodic = false
 
     var body: some View {
         List {
@@ -26,9 +29,7 @@ struct NotificationsView: View {
                             }
                         } footer: {
                             VStack(alignment: .leading) {
-                                if let mode = notificationMode {
-                                    Text(ntfModeDescription(mode))
-                                }
+                                Text(ntfModeDescription(notificationMode))
                             }
                             .font(.callout)
                             .padding(.top, 1)
@@ -43,7 +44,6 @@ struct NotificationsView: View {
                             return  Alert(title: Text("No device token!"))
                         }
                     }
-                    .onAppear { notificationMode = m.notificationMode }
                 } label: {
                     HStack {
                         Text("Send notifications")
@@ -76,7 +76,7 @@ struct NotificationsView: View {
                     HStack {
                         Text("Show preview")
                         Spacer()
-                        Text(m.notificationPreview?.label ?? "")
+                        Text(m.notificationPreview.label)
                     }
                 }
             } header: {
@@ -88,8 +88,15 @@ struct NotificationsView: View {
                         .padding(.top, 1)
                 }
             }
-            .disabled(legacyDatabase)
+
+//            if developerTools {
+//                Section(String("Experimental")) {
+//                    Toggle(String("Always enable local"), isOn: $ntfEnableLocal)
+//                    Toggle(String("Always enable periodic"), isOn: $ntfEnablePeriodic)
+//                }
+//            }
         }
+        .disabled(legacyDatabase)
     }
 
     private func notificationAlert(_ alert: NotificationAlert, _ token: DeviceToken) -> Alert {
@@ -166,7 +173,7 @@ func ntfModeDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
 
 struct SelectionListView<Item: SelectableItem>: View {
     var list: [Item]
-    @Binding var selection: Item?
+    @Binding var selection: Item
     var onSelection: ((Item) -> Void)?
     @State private var tapped: Item? = nil
 

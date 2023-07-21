@@ -21,6 +21,8 @@ let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_LA_MODE = "localAuthenticationMode"
 let DEFAULT_LA_LOCK_DELAY = "localAuthenticationLockDelay"
+let DEFAULT_LA_SELF_DESTRUCT = "localAuthenticationSelfDestruct"
+let DEFAULT_LA_SELF_DESTRUCT_DISPLAY_NAME = "localAuthenticationSelfDestructDisplayName"
 let DEFAULT_NOTIFICATION_ALERT_SHOWN = "notificationAlertShown"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
@@ -29,6 +31,7 @@ let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_PROTECT_SCREEN = "privacyProtectScreen"
+let DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET = "privacyDeliveryReceiptsSet"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
 let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
@@ -45,6 +48,9 @@ let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
 let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
+let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
+let DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME = "customDisappearingMessageTime"
+let DEFAULT_SHOW_UNREAD_AND_FAVORITES = "showUnreadAndFavorites"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -52,6 +58,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PERFORM_LA: false,
     DEFAULT_LA_MODE: LAMode.system.rawValue,
     DEFAULT_LA_LOCK_DELAY: 30,
+    DEFAULT_LA_SELF_DESTRUCT: false,
     DEFAULT_NOTIFICATION_ALERT_SHOWN: false,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_CALL_KIT_CALLS_IN_RECENTS: false,
@@ -59,6 +66,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: SimpleXLinkMode.description.rawValue,
     DEFAULT_PRIVACY_PROTECT_SCREEN: false,
+    DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET: false,
     DEFAULT_EXPERIMENTAL_CALLS: false,
     DEFAULT_CHAT_V3_DB_MIGRATION: V3DBMigrationState.offer.rawValue,
     DEFAULT_DEVELOPER_TOOLS: false,
@@ -71,6 +79,9 @@ let appDefaults: [String: Any] = [
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
+    DEFAULT_ONBOARDING_STAGE: OnboardingStage.onboardingComplete.rawValue,
+    DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME: 300,
+    DEFAULT_SHOW_UNREAD_AND_FAVORITES: false
 ]
 
 enum SimpleXLinkMode: String, Identifiable {
@@ -104,6 +115,12 @@ let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefa
 let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_SIMPLEX_LINK_MODE, withDefault: .description)
 
 let privacyLocalAuthModeDefault = EnumDefault<LAMode>(defaults: UserDefaults.standard, forKey: DEFAULT_LA_MODE, withDefault: .system)
+
+let privacyDeliveryReceiptsSet = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET)
+
+let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults.standard, forKey: DEFAULT_ONBOARDING_STAGE, withDefault: .onboardingComplete)
+
+let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME)
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
@@ -147,10 +164,11 @@ struct SettingsView: View {
                     incognitoRow()
 
                     NavigationLink {
-                        CreateLinkView(selection: .longTerm, viaNavLink: true)
-                            .navigationBarTitleDisplayMode(.inline)
+                        UserAddressView(shareViaProfile: chatModel.currentUser!.addressShared)
+                            .navigationTitle("SimpleX address")
+                            .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        settingsRow("qrcode") { Text("Your SimpleX contact address") }
+                        settingsRow("qrcode") { Text("Your SimpleX address") }
                     }
 
                     NavigationLink {
@@ -293,9 +311,8 @@ struct SettingsView: View {
                 .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
                 .foregroundColor(chatModel.incognito ? Color.indigo : .secondary)
             Toggle(isOn: $chatModel.incognito) {
-                HStack {
+                HStack(spacing: 6) {
                     Text("Incognito")
-                    Spacer().frame(width: 4)
                     Image(systemName: "info.circle")
                         .foregroundColor(.accentColor)
                         .font(.system(size: 14))

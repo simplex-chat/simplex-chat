@@ -10,16 +10,27 @@ import SwiftUI
 import SimpleXChat
 
 struct AddGroupMembersView: View {
-    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
+    var chat: Chat
+    var groupInfo: GroupInfo
+
+    var body: some View {
+        AddGroupMembersViewCommon(chat: chat, groupInfo: groupInfo, addedMembersCb: { _ in dismiss() })
+    }
+}
+
+struct AddGroupMembersViewCommon: View {
+    @EnvironmentObject var chatModel: ChatModel
     var chat: Chat
     @State var groupInfo: GroupInfo
     var creatingGroup: Bool = false
     var showFooterCounter: Bool = true
-    var addedMembersCb: ((Set<Int64>) -> Void)? = nil
+    var addedMembersCb: ((Set<Int64>) -> Void)
     @State private var selectedContacts = Set<Int64>()
     @State private var selectedRole: GroupMemberRole = .member
     @State private var alert: AddGroupMembersAlert?
+    @State private var searchText: String = ""
+    @FocusState private var searchFocussed
 
     private enum AddGroupMembersAlert: Identifiable {
         case prohibitedToInviteIncognito
@@ -39,7 +50,7 @@ struct AddGroupMembersView: View {
                 addGroupMembersView()
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
-                            Button ("Skip") { addedMembersCb?(selectedContacts) }
+                            Button ("Skip") { addedMembersCb(selectedContacts) }
                         }
                     }
             }
@@ -76,7 +87,7 @@ struct AddGroupMembersView: View {
                         if showFooterCounter {
                             if (count >= 1) {
                                 HStack {
-                                    Button { selectedContacts.removeAll() } label: { Text("Clear") }
+                                    Button { selectedContacts.removeAll() } label: { Text("Clear").font(.caption) }
                                     Spacer()
                                     Text("\(count) contact(s) selected")
                                 }
@@ -88,7 +99,11 @@ struct AddGroupMembersView: View {
                     }
 
                     Section {
-                        ForEach(membersToAdd) { contact in
+                        searchFieldView(text: $searchText, focussed: $searchFocussed)
+                            .padding(.leading, 2)
+                        let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+                        let members = s == "" ? membersToAdd : membersToAdd.filter { $0.chatViewName.localizedLowercase.contains(s) }
+                        ForEach(members) { contact in
                             contactCheckView(contact)
                         }
                     }
@@ -106,6 +121,9 @@ struct AddGroupMembersView: View {
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
+        }
+        .onChange(of: selectedContacts) { _ in
+            searchFocussed = false
         }
     }
 
@@ -128,8 +146,7 @@ struct AddGroupMembersView: View {
                     let member = try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
                     await MainActor.run { _ = ChatModel.shared.upsertGroupMember(groupInfo, member) }
                 }
-                await MainActor.run { dismiss() }
-                if let cb = addedMembersCb { cb(selectedContacts) }
+                addedMembersCb(selectedContacts)
             } catch {
                 let a = getErrorAlert(error, "Error adding member(s)")
                 alert = .error(title: a.title, error: a.message)
@@ -189,6 +206,31 @@ struct AddGroupMembersView: View {
             }
         }
     }
+}
+
+func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding) -> some View {
+    HStack {
+        Image(systemName: "magnifyingglass")
+            .resizable()
+            .scaledToFit()
+            .frame(height: 20)
+            .padding(.trailing, 10)
+        TextField("Search", text: text)
+            .focused(focussed)
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+        Image(systemName: "xmark.circle.fill")
+            .resizable()
+            .scaledToFit()
+            .opacity(text.wrappedValue == "" ? 0 : 1)
+            .frame(height: 20)
+            .onTapGesture {
+                text.wrappedValue = ""
+                focussed.wrappedValue = false
+            }
+    }
+    .foregroundColor(.secondary)
+    .frame(height: 36)
 }
 
 struct AddGroupMembersView_Previews: PreviewProvider {

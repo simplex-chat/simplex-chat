@@ -13,7 +13,7 @@ private let liveMsgInterval: UInt64 = 3000_000000
 
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
-    var sendMessage: () -> Void
+    var sendMessage: (Int?) -> Void
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
     var cancelLiveMessage: (() -> Void)? = nil
@@ -23,15 +23,19 @@ struct SendMessageView: View {
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
     var allowVoiceMessagesToContact: (() -> Void)? = nil
+    var timedMessageAllowed: Bool = false
     var onMediaAdded: ([UploadContent]) -> Void
     @State private var holdingVMR = false
     @Namespace var namespace
-    @FocusState.Binding var keyboardVisible: Bool
+    @Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     @State private var teUiFont: UIFont = UIFont.preferredFont(forTextStyle: .body)
     @State private var sendButtonSize: CGFloat = 29
     @State private var sendButtonOpacity: CGFloat = 1
+    @State private var showCustomDisappearingMessageDialogue = false
+    @State private var showCustomTimePicker = false
+    @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
     var maxHeight: CGFloat = 360
     var minHeight: CGFloat = 37
     @AppStorage(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
@@ -65,6 +69,7 @@ struct SendMessageView: View {
 
                         NativeTextEditor(
                             text: $composeState.message,
+                            disableEditing: $composeState.inProgress,
                             height: teHeight,
                             font: teUiFont,
                             focused: $keyboardVisible,
@@ -83,7 +88,7 @@ struct SendMessageView: View {
                         .padding([.bottom, .trailing], 3)
                 } else {
                     VStack(alignment: .trailing) {
-                        if teHeight > 100 {
+                        if teHeight > 100 && !composeState.inProgress {
                             deleteTextButton()
                             Spacer()
                         }
@@ -146,15 +151,17 @@ struct SendMessageView: View {
         .padding([.top, .trailing], 4)
     }
 
-    @ViewBuilder private func sendMessageButton() -> some View {
-        let v = Button(action: sendMessage) {
+    private func sendMessageButton() -> some View {
+        Button {
+            sendMessage(nil)
+        } label: {
             Image(systemName: composeState.editing || composeState.liveMessage != nil
-                                ? "checkmark.circle.fill"
-                                : "arrow.up.circle.fill")
-                .resizable()
-                .foregroundColor(.accentColor)
-                .frame(width: sendButtonSize, height: sendButtonSize)
-                .opacity(sendButtonOpacity)
+                  ? "checkmark.circle.fill"
+                  : "arrow.up.circle.fill")
+            .resizable()
+            .foregroundColor(.accentColor)
+            .frame(width: sendButtonSize, height: sendButtonSize)
+            .opacity(sendButtonOpacity)
         }
         .disabled(
             !composeState.sendEnabled ||
@@ -163,22 +170,61 @@ struct SendMessageView: View {
             composeState.endLiveDisabled
         )
         .frame(width: 29, height: 29)
+        .contextMenu{
+            sendButtonContextMenuItems()
+        }
+        .padding([.bottom, .trailing], 4)
+        .confirmationDialog("Send disappearing message", isPresented: $showCustomDisappearingMessageDialogue, titleVisibility: .visible) {
+            Button("30 seconds") { sendMessage(30) }
+            Button("1 minute") { sendMessage(60) }
+            Button("5 minutes") { sendMessage(300) }
+            Button("Custom time") { showCustomTimePicker = true }
+        }
+        .sheet(isPresented: $showCustomTimePicker, onDismiss: { selectedDisappearingMessageTime = customDisappearingMessageTimeDefault.get() }) {
+            if #available(iOS 16.0, *) {
+                disappearingMessageCustomTimePicker()
+                    .presentationDetents([.medium])
+            } else {
+                disappearingMessageCustomTimePicker()
+            }
+        }
+    }
 
+    private func disappearingMessageCustomTimePicker() -> some View {
+        CustomTimePickerView(
+            selection: $selectedDisappearingMessageTime,
+            confirmButtonText: "Send",
+            confirmButtonAction: {
+                if let time = selectedDisappearingMessageTime {
+                    sendMessage(time)
+                    customDisappearingMessageTimeDefault.set(time)
+                }
+            },
+            description: "Delete after"
+        )
+    }
+
+    @ViewBuilder private func sendButtonContextMenuItems() -> some View {
         if composeState.liveMessage == nil,
-           case .noContextItem = composeState.contextItem,
-           !composeState.voicePreview && !composeState.editing,
-           let send = sendLiveMessage,
-           let update = updateLiveMessage {
-            v.contextMenu{
+           !composeState.editing {
+            if case .noContextItem = composeState.contextItem,
+               !composeState.voicePreview,
+               let send = sendLiveMessage,
+               let update = updateLiveMessage {
                 Button {
                     startLiveMessage(send: send, update: update)
                 } label: {
                     Label("Send live message", systemImage: "bolt.fill")
                 }
             }
-            .padding([.bottom, .trailing], 4)
-        } else {
-            v.padding([.bottom, .trailing], 4)
+            if timedMessageAllowed {
+                Button {
+                    hideKeyboard()
+                    showCustomDisappearingMessageDialogue = true
+                } label: {
+                    Label("Disappearing message", systemImage: "stopwatch")
+                }
+            }
         }
     }
 
@@ -355,7 +401,6 @@ struct SendMessageView_Previews: PreviewProvider {
         @State var composeStateNew = ComposeState()
         let ci = ChatItem.getSample(1, .directSnd, .now, "hello")
         @State var composeStateEditing = ComposeState(editingItem: ci)
-        @FocusState var keyboardVisible: Bool
         @State var sendEnabled: Bool = true
 
         return Group {
@@ -364,9 +409,9 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     composeState: $composeStateNew,
-                    sendMessage: {},
+                    sendMessage: { _ in },
                     onMediaAdded: { _ in },
-                    keyboardVisible: $keyboardVisible
+                    keyboardVisible: Binding.constant(true)
                 )
             }
             VStack {
@@ -374,9 +419,9 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     composeState: $composeStateEditing,
-                    sendMessage: {},
+                    sendMessage: { _ in },
                     onMediaAdded: { _ in },
-                    keyboardVisible: $keyboardVisible
+                    keyboardVisible: Binding.constant(true)
                 )
             }
         }

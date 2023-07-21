@@ -10,12 +10,28 @@ import SwiftUI
 import SimpleXChat
 
 struct PrivacySettings: View {
+    @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
+    @State private var contactReceipts = false
+    @State private var contactReceiptsReset = false
+    @State private var contactReceiptsOverrides = 0
+    @State private var contactReceiptsDialogue = false
+    @State private var alert: PrivacySettingsViewAlert?
+
+    enum PrivacySettingsViewAlert: Identifiable {
+        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+
+        var id: String {
+            switch self {
+            case let .error(title, _): return "error \(title)"
+            }
+        }
+    }
 
     var body: some View {
         VStack {
@@ -68,6 +84,102 @@ struct PrivacySettings: View {
                         Text("Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.")
                     }
                 }
+
+                Section {
+                    settingsRow("person") {
+                        Toggle("Contacts", isOn: $contactReceipts)
+                    }
+//                    settingsRow("person.2") {
+//                        Toggle("Small groups (max 20)", isOn: Binding.constant(false))
+//                    }
+                } header: {
+                    Text("Send delivery receipts to")
+                } footer: {
+                    VStack(alignment: .leading) {
+                        Text("These settings are for your current profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                        Text("They can be overridden in contact settings")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .confirmationDialog(contactReceiptsDialogTitle, isPresented: $contactReceiptsDialogue, titleVisibility: .visible) {
+                    Button(contactReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
+                        setSendReceiptsContacts(contactReceipts, clearOverrides: false)
+                    }
+                    Button(contactReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
+                        setSendReceiptsContacts(contactReceipts, clearOverrides: true)
+                    }
+                    Button("Cancel", role: .cancel) {
+                        contactReceiptsReset = true
+                        contactReceipts.toggle()
+                    }
+                }
+            }
+        }
+        .onChange(of: contactReceipts) { _ in // sometimes there is race with onAppear
+            if contactReceiptsReset {
+                contactReceiptsReset = false
+            } else {
+                setOrAskSendReceiptsContacts(contactReceipts)
+            }
+        }
+        .onAppear {
+            if let u = m.currentUser, contactReceipts != u.sendRcptsContacts {
+                contactReceiptsReset = true
+                contactReceipts = u.sendRcptsContacts
+            }
+        }
+        .alert(item: $alert) { alert in
+            switch alert {
+            case let .error(title, error):
+                return Alert(title: Text(title), message: Text(error))
+            }
+        }
+    }
+
+    private func setOrAskSendReceiptsContacts(_ enable: Bool) {
+        contactReceiptsOverrides = m.chats.reduce(0) { count, chat in
+            let sendRcpts = chat.chatInfo.contact?.chatSettings.sendRcpts
+            return count + (sendRcpts == nil || sendRcpts == enable ? 0 : 1)
+        }
+        if contactReceiptsOverrides == 0 {
+            setSendReceiptsContacts(enable, clearOverrides: false)
+        } else {
+            contactReceiptsDialogue = true
+        }
+    }
+
+    private var contactReceiptsDialogTitle: LocalizedStringKey {
+        contactReceipts
+        ? "Sending receipts is disabled for \(contactReceiptsOverrides) contacts"
+        : "Sending receipts is enabled for \(contactReceiptsOverrides) contacts"
+    }
+
+    private func setSendReceiptsContacts(_ enable: Bool, clearOverrides: Bool) {
+        Task {
+            do {
+                if let currentUser = m.currentUser {
+                    let userMsgReceiptSettings = UserMsgReceiptSettings(enable: enable, clearOverrides: clearOverrides)
+                    try await apiSetUserContactReceipts(currentUser.userId, userMsgReceiptSettings: userMsgReceiptSettings)
+                    privacyDeliveryReceiptsSet.set(true)
+                    await MainActor.run {
+                        var updatedUser = currentUser
+                        updatedUser.sendRcptsContacts = enable
+                        m.updateUser(updatedUser)
+                        if clearOverrides {
+                            m.chats.forEach { chat in
+                                if var contact = chat.chatInfo.contact {
+                                    let sendRcpts = contact.chatSettings.sendRcpts
+                                    if sendRcpts != nil && sendRcpts != enable {
+                                        contact.chatSettings.sendRcpts = nil
+                                        m.updateContact(contact)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch let error {
+                alert = .error(title: "Error setting delivery receipts!", error: "Error: \(responseError(error))")
             }
         }
     }
@@ -102,9 +214,13 @@ struct SimplexLockView: View {
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @State private var laMode: LAMode = privacyLocalAuthModeDefault.get()
     @AppStorage(DEFAULT_LA_LOCK_DELAY) private var laLockDelay = 30
-    @State var performLA: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var performLA: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var selfDestruct: Bool = UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT)
+    @State private var currentSelfDestruct: Bool = UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT)
+    @AppStorage(DEFAULT_LA_SELF_DESTRUCT_DISPLAY_NAME) private var selfDestructDisplayName = ""
     @State private var performLAToggleReset = false
     @State private var performLAModeReset = false
+    @State private var performLASelfDestructReset = false
     @State private var showPasswordAction: PasswordAction? = nil
     @State private var showChangePassword = false
     @State var laAlert: LASettingViewAlert? = nil
@@ -116,6 +232,8 @@ struct SimplexLockView: View {
         case laUnavailableTurningOffAlert
         case laPasscodeSetAlert
         case laPasscodeChangedAlert
+        case laSelfDestructPasscodeSetAlert
+        case laSelfDestructPasscodeChangedAlert
         case laPasscodeNotChangedAlert
 
         var id: Self { self }
@@ -124,7 +242,10 @@ struct SimplexLockView: View {
     enum PasswordAction: Identifiable {
         case enableAuth
         case toggleMode
-        case changePassword
+        case changePasscode
+        case enableSelfDestruct
+        case changeSelfDestructPasscode
+        case selfDestructInfo
 
         var id: Self { self }
     }
@@ -159,8 +280,30 @@ struct SimplexLockView: View {
                             }
                         }
                         if showChangePassword && laMode == .passcode {
-                            Button("Change Passcode") {
+                            Button("Change passcode") {
                                 changeLAPassword()
+                            }
+                        }
+                    }
+                }
+
+                if performLA && laMode == .passcode {
+                    Section("Self-destruct passcode") {
+                        Toggle(isOn: $selfDestruct) {
+                            HStack(spacing: 6) {
+                                Text("Enable self-destruct")
+                                Image(systemName: "info.circle")
+                                    .foregroundColor(.accentColor)
+                                    .font(.system(size: 14))
+                            }
+                            .onTapGesture {
+                                showPasswordAction = .selfDestructInfo
+                            }
+                        }
+                        if selfDestruct {
+                            TextField("New display name", text: $selfDestructDisplayName)
+                            Button("Change self-destruct passcode") {
+                                changeSelfDestructPassword()
                             }
                         }
                     }
@@ -192,6 +335,13 @@ struct SimplexLockView: View {
                 updateLAMode()
             }
         }
+        .onChange(of: selfDestruct) { _ in
+            if performLASelfDestructReset {
+                performLASelfDestructReset = false
+            } else if prefPerformLA {
+                toggleSelfDestruct()
+            }
+        }
         .alert(item: $laAlert) { alertItem in
             switch alertItem {
             case .laTurnedOnAlert: return laTurnedOnAlert()
@@ -200,6 +350,8 @@ struct SimplexLockView: View {
             case .laUnavailableTurningOffAlert: return laUnavailableTurningOffAlert()
             case .laPasscodeSetAlert: return passcodeAlert("Passcode set!")
             case .laPasscodeChangedAlert: return passcodeAlert("Passcode changed!")
+            case .laSelfDestructPasscodeSetAlert: return selfDestructPasscodeAlert("Self-destruct passcode enabled!")
+            case .laSelfDestructPasscodeChangedAlert: return selfDestructPasscodeAlert("Self-destruct passcode changed!")
             case .laPasscodeNotChangedAlert: return mkAlert(title: "Passcode not changed!")
             }
         }
@@ -223,12 +375,27 @@ struct SimplexLockView: View {
                 } cancel: {
                     revertLAMode()
                 }
-            case .changePassword:
+            case .changePasscode:
                 SetAppPasscodeView {
                     showLAAlert(.laPasscodeChangedAlert)
                 } cancel: {
                     showLAAlert(.laPasscodeNotChangedAlert)
                 }
+            case .enableSelfDestruct:
+                SetAppPasscodeView(passcodeKeychain: kcSelfDestructPassword, title: "Set passcode", reason: NSLocalizedString("Enable self-destruct passcode", comment: "set passcode view")) {
+                    updateSelfDestruct()
+                    showLAAlert(.laSelfDestructPasscodeSetAlert)
+                } cancel: {
+                    revertSelfDestruct()
+                }
+            case .changeSelfDestructPasscode:
+                SetAppPasscodeView(passcodeKeychain: kcSelfDestructPassword, reason: NSLocalizedString("Change self-destruct passcode", comment: "set passcode view")) {
+                    showLAAlert(.laSelfDestructPasscodeChangedAlert)
+                } cancel: {
+                    showLAAlert(.laPasscodeNotChangedAlert)
+                }
+            case .selfDestructInfo:
+                selfDestructInfoView()
             }
         }
         .onAppear {
@@ -237,6 +404,30 @@ struct SimplexLockView: View {
         .onDisappear() {
             m.laRequest = nil
         }
+    }
+
+    private func selfDestructInfoView() -> some View {
+        VStack(alignment: .leading) {
+            Text("Self-destruct")
+                .font(.largeTitle)
+                .bold()
+                .padding(.vertical)
+            ScrollView {
+                VStack(alignment: .leading) {
+                    Group {
+                        Text("If you enter your self-destruct passcode while opening the app:")
+                        VStack(spacing: 8) {
+                            textListItem("1.", "All app data is deleted.")
+                            textListItem("2.", "App passcode is replaced with self-destruct passcode.")
+                            textListItem("3.", "An empty chat profile with the provided name is created, and the app opens as usual.")
+                        }
+                    }
+                    .padding(.bottom)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
     }
 
     private func  showLAAlert(_ a: LASettingViewAlert) {
@@ -259,6 +450,7 @@ struct SimplexLockView: View {
                         switch laResult {
                         case .success:
                             _ = kcAppPassword.remove()
+                            resetSelfDestruct()
                             laAlert = .laTurnedOnAlert
                         case .failed, .unavailable:
                             currentLAMode = .passcode
@@ -276,11 +468,39 @@ struct SimplexLockView: View {
         }
     }
 
+    private func toggleSelfDestruct() {
+        authenticate(reason: NSLocalizedString("Change self-destruct mode", comment: "authentication reason")) { laResult in
+            switch laResult {
+            case .failed:
+                revertSelfDestruct()
+                laAlert = .laFailedAlert
+            case .success:
+                if selfDestruct {
+                    showPasswordAction = .enableSelfDestruct
+                } else {
+                    resetSelfDestruct()
+                }
+            case .unavailable:
+                disableUnavailableLA()
+            }
+        }
+    }
+
     private func changeLAPassword() {
         authenticate(title: "Current Passcode", reason: NSLocalizedString("Change passcode", comment: "authentication reason")) { laResult in
             switch laResult {
             case .failed: laAlert = .laFailedAlert
-            case .success: showPasswordAction = .changePassword
+            case .success: showPasswordAction = .changePasscode
+            case .unavailable: disableUnavailableLA()
+            }
+        }
+    }
+
+    private func changeSelfDestructPassword() {
+        authenticate(reason: NSLocalizedString("Change self-destruct passcode", comment: "authentication reason")) { laResult in
+            switch laResult {
+            case .failed: laAlert = .laFailedAlert
+            case .success: showPasswordAction = .changeSelfDestructPasscode
             case .unavailable: disableUnavailableLA()
             }
         }
@@ -329,6 +549,7 @@ struct SimplexLockView: View {
         _ = kcAppPassword.remove()
         laLockDelay = 30
         showChangePassword = false
+        resetSelfDestruct()
     }
 
     private func resetLAEnabled(_ onOff: Bool) {
@@ -347,8 +568,28 @@ struct SimplexLockView: View {
         privacyLocalAuthModeDefault.set(laMode)
     }
 
+    private func resetSelfDestruct() {
+        _ = kcSelfDestructPassword.remove()
+        selfDestruct = false
+        updateSelfDestruct()
+    }
+
+    private func revertSelfDestruct() {
+        performLASelfDestructReset = true
+        withAnimation { selfDestruct = currentSelfDestruct }
+    }
+
+    private func updateSelfDestruct() {
+        UserDefaults.standard.set(selfDestruct, forKey: DEFAULT_LA_SELF_DESTRUCT)
+        currentSelfDestruct = selfDestruct
+    }
+
     private func passcodeAlert(_ title: LocalizedStringKey) -> Alert {
         mkAlert(title: title, message: "Please remember or store it securely - there is no way to recover a lost passcode!")
+    }
+
+    private func selfDestructPasscodeAlert(_ title: LocalizedStringKey) -> Alert {
+        mkAlert(title: title, message: "If you enter this passcode when opening the app, all app data will be irreversibly removed!")
     }
 }
 

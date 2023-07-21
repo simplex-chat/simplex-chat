@@ -24,8 +24,9 @@ struct ContactPreferencesView: View {
             List {
                 timedMessagesFeatureSection()
                 featureSection(.fullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, $featuresAllowed.fullDelete)
+                featureSection(.reactions, user.fullPreferences.reactions.allow, contact.mergedPreferences.reactions, $featuresAllowed.reactions)
                 featureSection(.voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, $featuresAllowed.voice)
-                featureSection(.calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, $featuresAllowed.calls).disabled(true)
+                featureSection(.calls, user.fullPreferences.calls.allow, contact.mergedPreferences.calls, $featuresAllowed.calls)
 
                 Section {
                     Button("Reset") { featuresAllowed = currentFeaturesAllowed }
@@ -89,9 +90,16 @@ struct ContactPreferencesView: View {
                 }
             infoRow("Contact allows", pref.contactPreference.allow.text)
             if featuresAllowed.timedMessagesAllowed {
-                timedMessagesTTLPicker($featuresAllowed.timedMessagesTTL)
+                DropdownCustomTimePicker(
+                    selection: $featuresAllowed.timedMessagesTTL,
+                    label: "Delete after",
+                    dropdownValues: TimedMessagesPreference.ttlValues,
+                    customPickerConfirmButtonText: "Select",
+                    customPickerDescription: "Delete after"
+                )
+                .frame(height: 36)
             } else if pref.contactPreference.allow == .yes || pref.contactPreference.allow == .always {
-                infoRow("Delete after", TimedMessagesPreference.ttlText(pref.contactPreference.ttl))
+                infoRow("Delete after", timeText(pref.contactPreference.ttl))
             }
         }
         header: { featureHeader(.timedMessages, enabled) }
@@ -107,7 +115,7 @@ struct ContactPreferencesView: View {
     }
 
     private func featureFooter(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> some View {
-        (Text(feature.enabledDescription(enabled)) + (feature == .calls ? Text("\nAvailable in v5.1").bold() : Text("")))
+        Text(feature.enabledDescription(enabled))
         .frame(height: 36, alignment: .topLeading)
     }
 
@@ -127,18 +135,6 @@ struct ContactPreferencesView: View {
             }
         }
     }
-}
-
-func timedMessagesTTLPicker(_ selection: Binding<Int?>) -> some View {
-    Picker("Delete after", selection: selection) {
-        let selectedTTL = selection.wrappedValue
-        let ttlValues = TimedMessagesPreference.ttlValues
-        let values = ttlValues + (ttlValues.contains(selectedTTL) ? [] : [selectedTTL])
-        ForEach(values, id: \.self) { ttl in
-            Text(TimedMessagesPreference.ttlText(ttl))
-        }
-    }
-    .frame(height: 36)
 }
 
 struct ContactPreferencesView_Previews: PreviewProvider {

@@ -76,7 +76,7 @@ class NotificationService: UNNotificationServiceExtension {
     var badgeCount: Int = 0
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
-        logger.debug("NotificationService.didReceive")
+        logger.debug("DEBUGGING: NotificationService.didReceive")
         if let ntf = request.content.mutableCopy() as? UNMutableNotificationContent {
             setBestAttemptNtf(ntf)
         }
@@ -149,7 +149,7 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     override func serviceExtensionTimeWillExpire() {
-        logger.debug("NotificationService.serviceExtensionTimeWillExpire")
+        logger.debug("DEBUGGING: NotificationService.serviceExtensionTimeWillExpire")
         deliverBestAttemptNtf()
     }
 
@@ -271,28 +271,11 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
         if !cInfo.ntfsEnabled {
             ntfBadgeCountGroupDefault.set(max(0, ntfBadgeCountGroupDefault.get() - 1))
         }
-        if case .image = cItem.content.msgContent {
-            if let file = cItem.file,
-               file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV,
-               privacyAcceptImagesGroupDefault.get() {
-                cItem = autoReceiveFile(file) ?? cItem
-            }
-        } else if case .video = cItem.content.msgContent {
-            if let file = cItem.file,
-               file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV,
-               privacyAcceptImagesGroupDefault.get() {
-                cItem = autoReceiveFile(file) ?? cItem
-            }
-        } else if case .voice = cItem.content.msgContent { // TODO check inlineFileMode != IFMSent
-            if let file = cItem.file,
-               file.fileSize <= MAX_IMAGE_SIZE,
-               file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND,
-               privacyAcceptImagesGroupDefault.get() {
-                cItem = autoReceiveFile(file) ?? cItem
-            }
+        if let file = cItem.autoReceiveFile() {
+            cItem = autoReceiveFile(file) ?? cItem
         }
         let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(notification: createMessageReceivedNtf(user, cInfo, cItem)) : .empty
-        return cItem.showMutableNotification ? (aChatItem.chatId, ntf) : nil
+        return cItem.showNotification ? (aChatItem.chatId, ntf) : nil
     case let .rcvFileSndCancelled(_, aChatItem, _):
         cleanupFile(aChatItem)
         return nil

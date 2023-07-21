@@ -23,6 +23,7 @@ struct SimpleXApp: App {
     @State private var enteredBackground: TimeInterval? = nil
     @State private var canConnectCall = false
     @State private var lastSuccessfulUnlock: TimeInterval? = nil
+    @State private var showInitializationView = false
 
     init() {
         hs_init(0, nil)
@@ -36,14 +37,23 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized, canConnectCall: $canConnectCall, lastSuccessfulUnlock: $lastSuccessfulUnlock)
+            ContentView(
+                doAuthenticate: $doAuthenticate,
+                userAuthorized: $userAuthorized,
+                canConnectCall: $canConnectCall,
+                lastSuccessfulUnlock: $lastSuccessfulUnlock,
+                showInitializationView: $showInitializationView
+            )
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    initChatAndMigrate()
+                    showInitializationView = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        initChatAndMigrate()
+                    }
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")

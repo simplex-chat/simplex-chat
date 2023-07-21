@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        5.0.0.2
+version:        5.2.0.3
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -16,6 +16,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
+    cabal.project
 
 flag swift
   description: Enable swift JSON format
@@ -33,6 +34,7 @@ library
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
+      Simplex.Chat.Messages.CIContent
       Simplex.Chat.Migrations.M20220101_initial
       Simplex.Chat.Migrations.M20220122_v1_1
       Simplex.Chat.Migrations.M20220205_chat_item_status
@@ -92,12 +94,31 @@ library
       Simplex.Chat.Migrations.M20230402_protocol_servers
       Simplex.Chat.Migrations.M20230411_extra_xftp_file_descriptions
       Simplex.Chat.Migrations.M20230420_rcv_files_to_receive
+      Simplex.Chat.Migrations.M20230422_profile_contact_links
+      Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events_cleanup_messages
+      Simplex.Chat.Migrations.M20230505_chat_item_versions
+      Simplex.Chat.Migrations.M20230511_reactions
+      Simplex.Chat.Migrations.M20230519_item_deleted_ts
+      Simplex.Chat.Migrations.M20230526_indexes
+      Simplex.Chat.Migrations.M20230529_indexes
+      Simplex.Chat.Migrations.M20230608_deleted_contacts
+      Simplex.Chat.Migrations.M20230618_favorite_chats
+      Simplex.Chat.Migrations.M20230621_chat_item_moderations
+      Simplex.Chat.Migrations.M20230705_delivery_receipts
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
       Simplex.Chat.Store
+      Simplex.Chat.Store.Connections
+      Simplex.Chat.Store.Direct
+      Simplex.Chat.Store.Files
+      Simplex.Chat.Store.Groups
+      Simplex.Chat.Store.Messages
+      Simplex.Chat.Store.Migrations
+      Simplex.Chat.Store.Profiles
+      Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
       Simplex.Chat.Terminal
       Simplex.Chat.Terminal.Input
@@ -366,6 +387,7 @@ test-suite simplex-chat-test
       MobileTests
       ProtocolTests
       SchemaDump
+      ViewTests
       WebRTCTests
       Paths_simplex_chat
   hs-source-dirs:
