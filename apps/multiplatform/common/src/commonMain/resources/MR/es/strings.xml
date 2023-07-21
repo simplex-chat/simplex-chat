@@ -142,7 +142,7 @@
     <string name="group_member_status_announced">conectando (anunciado)</string>
     <string name="connection_local_display_name">conexión %1$d</string>
     <string name="connect_via_link_or_qr">Conecta vía enlace / Código QR</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No se podrá deshacer!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No podrá deshacerse!</string>
     <string name="icon_descr_contact_checked">Contacto verificado</string>
     <string name="status_contact_has_e2e_encryption">el contacto dispone de cifrado de extremo a extremo</string>
     <string name="smp_server_test_disconnect">Desconectar</string>
@@ -916,7 +916,7 @@
     <string name="you_accepted_connection">Has aceptado la conexión</string>
     <string name="you_invited_your_contact">Has invitado a tu contacto</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
-    <string name="your_settings">Tu configuración</string>
+    <string name="your_settings">Configuración</string>
     <string name="your_SMP_servers">Servidores SMP</string>
     <string name="you_control_your_chat">¡Tú controlas tu chat!</string>
     <string name="your_profile_is_stored_on_your_device">Tu perfil, contactos y mensajes entregados se almacenan en tu dispositivo.</string>
@@ -1292,7 +1292,7 @@
     <string name="error_synchronizing_connection">Error al sincronizar conexión</string>
     <string name="fix_connection_not_supported_by_contact">Corrección no compatible con el contacto</string>
     <string name="sync_connection_force_confirm">Renegociar</string>
-    <string name="fix_connection_not_supported_by_group_member">Corrección no compatible con miembro del grupo</string>
+    <string name="fix_connection_not_supported_by_group_member">Reparación no compatible con miembro del grupo</string>
     <string name="sync_connection_force_desc">El cifrado funciona y un cifrado nuevo no es necesario. ¡Podría dar lugar a errores de conexión!</string>
     <string name="in_reply_to">En respuesta a</string>
     <string name="no_history">Sin historial</string>
