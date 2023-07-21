@@ -23,6 +23,7 @@ import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow')
 
 getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
