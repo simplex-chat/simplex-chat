@@ -1340,4 +1340,7 @@
     <string name="sending_delivery_receipts_will_be_enabled">שליחת קבלות שליחה תתאפשר עבור כל אנשי הקשר.</string>
     <string name="you_can_enable_delivery_receipts_later">תוכל לאפשר מאוחר יותר דרך הגדרות</string>
     <string name="you_can_enable_delivery_receipts_later_alert">תוכל לאפשר אותם מאוחר יותר באמצעות הגדרות פרטיות ואבטחה של האפליקציה.</string>
+    <string name="v5_2_message_delivery_receipts">קבלות על הודעות!</string>
+    <string name="v5_2_disappear_one_message_descr">גם אם הוא מושבת בשיחה.</string>
+    <string name="v5_2_fix_encryption">שימרו על הקשרים שלכם</string>
 </resources>
