@@ -540,9 +540,9 @@
         <target>Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is erased when it is entered." xml:space="preserve">
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
         <source>All data is erased when it is entered.</source>
-        <target>Alle Daten werden gelöscht, sobald diese eingegeben wird.</target>
+        <target state="translated">Alle Daten werden gelöscht, sobald dieser eingegeben wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -570,14 +570,14 @@
         <target>Erlauben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow calls only if your contact allows them.</source>
-        <target>Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.</target>
+        <target state="translated">Erlauben Sie Anrufe nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
+      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve" approved="no">
         <source>Allow disappearing messages only if your contact allows it to you.</source>
-        <target>Verschwindende Nachrichten nur erlauben, wenn Ihr Kontakt das ebenfalls erlaubt.</target>
+        <target state="translated">Erlauben Sie verschwindende Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
@@ -585,9 +585,9 @@
         <target>Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow message reactions only if your contact allows them.</source>
-        <target>Reaktionen auf Nachrichten sind nur möglich, falls Ihr Kontakt dies erlaubt.</target>
+        <target state="translated">Erlauben Sie Reaktionen auf Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions." xml:space="preserve">
@@ -620,9 +620,9 @@
         <target>Das Senden von Sprachnachrichten erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow voice messages only if your contact allows them.</source>
-        <target>Erlauben Sie Sprachnachrichten nur dann, wenn Ihr Kontakt diese ebenfalls erlaubt.</target>
+        <target state="translated">Erlauben Sie Sprachnachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow voice messages?" xml:space="preserve">
@@ -1549,14 +1549,14 @@
         <target>Gelöscht um: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
+      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve" approved="no">
         <source>Delivery receipts are disabled!</source>
-        <target>Zustellungs-Quittierungen sind deaktiviert!</target>
+        <target state="translated">Empfangsbestätigungen sind deaktiviert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts!" xml:space="preserve">
+      <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
         <source>Delivery receipts!</source>
-        <target>Zustellungs-Quittierungen!</target>
+        <target state="translated">Empfangsbestätigungen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -3976,9 +3976,9 @@
         <target>Eine Live Nachricht senden - der/die Empfänger sieht/sehen Nachrichtenaktualisierungen, während Sie sie eingeben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send delivery receipts to" xml:space="preserve">
+      <trans-unit id="Send delivery receipts to" xml:space="preserve" approved="no">
         <source>Send delivery receipts to</source>
-        <target>Zustellungs-Quittierungen versenden an</target>
+        <target state="translated">Empfangsbestätigungen senden an</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
@@ -4538,9 +4538,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Das Profil wird nur mit Ihren Kontakten geteilt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The second tick we missed! ✅" xml:space="preserve">
+      <trans-unit id="The second tick we missed! ✅" xml:space="preserve" approved="no">
         <source>The second tick we missed! ✅</source>
-        <target>Das zweite Häkchen, welches wir vermisst haben! ✅</target>
+        <target state="translated">Wir haben das zweite Häkchen vermisst! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -4573,9 +4573,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Diese Einstellungen betreffen Ihr aktuelles Profil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="They can be overridden in contact settings" xml:space="preserve">
+      <trans-unit id="They can be overridden in contact settings" xml:space="preserve" approved="no">
         <source>They can be overridden in contact settings</source>
-        <target>Diese können in den Kontakteinstellungen überschrieben werden</target>
+        <target state="translated">Sie können in den Kontakteinstellungen überschrieben werden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
