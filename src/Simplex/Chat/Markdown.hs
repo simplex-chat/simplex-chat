@@ -252,7 +252,7 @@ data EditingOperation = EOAdd | EODelete | EOSubstitute
 type EditedString  = [EditedChar]
 
 formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
-formattedEditedText s s' = wagnerFisher (toEditedChars s) (toEditedChars s')
+formattedEditedText s s' = _BAD_wagnerFisher (toEditedChars s) (toEditedChars s')
 
 toEditedChars :: [FormattedText] -> [EditedChar]
 toEditedChars = concatMap toChars
@@ -275,8 +275,9 @@ toEditedChars = concatMap toChars
 --     appendChar :: EditedText -> EditedChar -> EditedText
 --     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
 
-wagnerFisher :: [EditedChar] -> [EditedChar] -> EditedString
-wagnerFisher s1 s2 = extractEdits $ foldl' computeRow initialRow s2
+
+_BAD_wagnerFisher :: [EditedChar] -> [EditedChar] -> EditedString
+_BAD_wagnerFisher s1 s2 = extractEdits $ foldl' computeRow initialRow s2
   where
     computeRow :: ([(Int, EditedString)], [(Int, EditedString)]) -> EditedChar -> ([(Int, EditedString)], [(Int, EditedString)])
     computeRow (prevRow, currRow) c2 = (currRow, computeNewRow prevRow currRow c2)

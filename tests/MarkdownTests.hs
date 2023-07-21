@@ -224,5 +224,5 @@ formattedEditedTextTests :: Spec
 formattedEditedTextTests = fdescribe "show edits using Wagner-Fisher algorithm" do
   it "one character change" do
     formattedEditedText [plainText "Hrllo"] [plainText "Hello"]
-      `shouldBe` []
-      -- `shouldBe` [plainText "H", plainEdited "r" False, plainEdited "e" True, plainText "llo"]
+      -- `shouldBe` []
+      `shouldBe` [plainText "H", plainEdited "r" False, plainEdited "e" True, plainText "llo"]
