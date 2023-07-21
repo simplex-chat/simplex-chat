@@ -890,7 +890,7 @@
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">La base de datos actual será ELIMINADA y SUSTITUIDA por la importada.
 \nEsta acción no se puede deshacer. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.</string>
     <string name="incognito_random_profile">Tu perfil aleatorio</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando se acepte tu solicitud de conexión, por favor espere o compruébalo más tarde.</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando se acepte tu solicitud de conexión, por favor espera o compruébalo más tarde.</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Te conectarás cuando el dispositivo de tu contacto esté en línea, por favor espera o compruébalo más tarde.</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Se te pedirá identificarte cuándo inicies o continues usando la aplicación tras 30 segundos en segundo plano.</string>
     <string name="invite_prohibited_description">Estás intentando invitar a un contacto con el que compartes un perfil incógnito a un grupo en el que usas tu perfil principal</string>
@@ -1343,4 +1343,5 @@
     <string name="you_can_enable_delivery_receipts_later">Puedes activar más tarde en Configuración</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Puedes activarlos más tarde en la configuración de Privacidad y Seguridad.</string>
     <string name="v5_2_more_things">Algunas cosas más</string>
+    <string name="choose_file_title">Selecciona un archivo</string>
 </resources>
