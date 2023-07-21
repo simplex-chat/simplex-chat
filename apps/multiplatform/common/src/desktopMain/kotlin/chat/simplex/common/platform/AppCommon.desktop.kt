@@ -16,14 +16,11 @@ val defaultLocale: Locale = Locale.getDefault()
 
 fun initApp() {
   ntfManager = object : NtfManager() { // LALAL
-    override fun notifyContactConnected(user: User, contact: Contact) {}
-    override fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) {}
-    override fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) {}
-    override fun notifyCallInvitation(invitation: RcvCallInvitation) {}
+    override fun notifyCallInvitation(invitation: RcvCallInvitation) = chat.simplex.common.model.NtfManager.notifyCallInvitation(invitation)
     override fun hasNotificationsForChat(chatId: String): Boolean = false
     override fun cancelNotificationsForChat(chatId: String) {}
-    override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<NotificationAction>) {}
-    override fun createNtfChannelsMaybeShowAlert() {}
+    override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<NotificationAction>) = chat.simplex.common.model.NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
+    override fun androidCreateNtfChannelsMaybeShowAlert() {}
     override fun cancelCallNotification() {}
     override fun cancelAllNotifications() {}
   }

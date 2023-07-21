@@ -82,31 +82,6 @@ object NtfManager {
     }
   }
 
-  fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) {
-    displayNotification(
-      user = user,
-      chatId = cInfo.id,
-      displayName = cInfo.displayName,
-      msgText = generalGetString(MR.strings.notification_new_contact_request),
-      image = cInfo.image,
-      listOf(NotificationAction.ACCEPT_CONTACT_REQUEST)
-    )
-  }
-
-  fun notifyContactConnected(user: User, contact: Contact) {
-    displayNotification(
-      user = user,
-      chatId = contact.id,
-      displayName = contact.displayName,
-      msgText = generalGetString(MR.strings.notification_contact_connected)
-    )
-  }
-
-  fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) {
-    if (!cInfo.ntfsEnabled) return
-    displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
-  }
-
   fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList()) {
     if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
@@ -242,19 +217,6 @@ object NtfManager {
   }
 
   fun hasNotificationsForChat(chatId: String): Boolean = manager.activeNotifications.any { it.id == chatId.hashCode() }
-
-  private fun hideSecrets(cItem: ChatItem): String {
-    val md = cItem.formattedText
-    return if (md != null) {
-      var res = ""
-      for (ft in md) {
-        res += if (ft.format is Format.Secret) "..." else ft.text
-      }
-      res
-    } else {
-      cItem.text
-    }
-  }
 
   private fun chatPendingIntent(intentAction: String, userId: Long?, chatId: String? = null, broadcast: Boolean = false): PendingIntent {
     Log.d(TAG, "chatPendingIntent for $intentAction")
