@@ -520,7 +520,7 @@ fun ChatInfoToolbar(
   }
 
   DefaultTopAppBar(
-    navigationButton = { NavigationButtonBack(onBackClicked) },
+    navigationButton = { if (appPlatform.isAndroid) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chat.chatInfo) },
     onTitleClick = info,
     showSearch = showSearch,

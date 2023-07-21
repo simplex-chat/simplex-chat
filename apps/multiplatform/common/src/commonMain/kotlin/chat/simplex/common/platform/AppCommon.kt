@@ -10,6 +10,9 @@ enum class AppPlatform {
 
   val isAndroid: Boolean
     get() = this == ANDROID
+
+  val isDesktop: Boolean
+    get() = this == DESKTOP
 }
 
 expect val appPlatform: AppPlatform

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.appVersionInfo
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.DatabaseView
@@ -32,7 +33,7 @@ import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.res.MR
 
 @Composable
-fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
+fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, closeSettings: () -> Unit) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
 
@@ -104,6 +105,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
           }
         }
       },
+      closeSettings = closeSettings,
     )
   }
 }
@@ -125,15 +127,21 @@ fun SettingsLayout(
   showSettingsModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
-  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
+  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
+  closeSettings: () -> Unit,
 ) {
   val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
   Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).themedBackground(theme.value.base)) {
+    if (appPlatform.isDesktop) {
+      Box(Modifier.padding(start = 3.dp, top = 8.dp)) {
+        NavigationButtonBack(closeSettings)
+      }
+    }
     Column(
       Modifier
         .fillMaxSize()
-        .padding(top = DEFAULT_PADDING)
+        .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 3)
     ) {
       AppBarTitle(stringResource(MR.strings.your_settings))
 
@@ -510,6 +518,7 @@ fun PreviewSettingsLayout() {
       showCustomModal = { {} },
       showVersion = {},
       withAuth = { _, _, _ -> },
+      closeSettings = {},
     )
   }
 }

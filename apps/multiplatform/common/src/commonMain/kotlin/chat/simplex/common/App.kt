@@ -105,52 +105,10 @@ fun MainScreen() {
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
         Box {
           showAdvertiseLAAlert = true
-          BoxWithConstraints {
-            var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
-            val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
-            Box(
-              Modifier
-                .graphicsLayer {
-                  translationX = -offset.value.dp.toPx()
-                }
-            ) {
-              if (chatModel.setDeliveryReceipts.value) {
-                SetDeliveryReceiptsView(chatModel)
-              } else {
-                val stopped = chatModel.chatRunning.value == false
-                if (chatModel.sharedContent.value == null)
-                  ChatListView(chatModel, AppLock::setPerformLA, stopped)
-                else
-                  ShareListView(chatModel, stopped)
-              }
-            }
-            val scope = rememberCoroutineScope()
-            val onComposed: () -> Unit = {
-              scope.launch {
-                offset.animateTo(
-                  if (chatModel.chatId.value == null) 0f else maxWidth.value,
-                  chatListAnimationSpec()
-                )
-                if (offset.value == 0f) {
-                  currentChatId = null
-                }
-              }
-            }
-            LaunchedEffect(Unit) {
-              launch {
-                snapshotFlow { chatModel.chatId.value }
-                  .distinctUntilChanged()
-                  .collect {
-                    if (it != null) currentChatId = it
-                    else onComposed()
-                  }
-              }
-            }
-            Box(Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) Box2@{
-              currentChatId?.let {
-                ChatView(it, chatModel, onComposed)
-              }
-            }
+          if (appPlatform.isAndroid) {
+            AndroidScreen()
+          } else {
+            DesktopScreen()
           }
         }
       }
@@ -159,7 +117,9 @@ fun MainScreen() {
       onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel)
       onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
-    ModalManager.shared.showInView()
+    if (appPlatform.isAndroid) {
+      ModalManager.shared.showInView()
+    }
 
     val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
     if (unauthorized.value && !(chatModel.activeCallViewIsVisible.value && chatModel.showCallView.value)) {
@@ -196,6 +156,85 @@ fun MainScreen() {
     // Let's prolong the unlocked period to 3 sec for screen rotation to take place
     if (chatModel.controller.appPrefs.laLockDelay.get() == 0) {
       AppLock.enteredBackground.value = AppLock.elapsedRealtime() + 3000
+    }
+  }
+}
+
+@Composable
+fun AndroidScreen() {
+  BoxWithConstraints {
+    var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
+    val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
+    Box(
+      Modifier
+        .graphicsLayer {
+          translationX = -offset.value.dp.toPx()
+        }
+    ) {
+      LeftPartOfScreen()
+    }
+    val scope = rememberCoroutineScope()
+    val onComposed: () -> Unit = {
+      scope.launch {
+        offset.animateTo(
+          if (chatModel.chatId.value == null) 0f else maxWidth.value,
+          chatListAnimationSpec()
+        )
+        if (offset.value == 0f) {
+          currentChatId = null
+        }
+      }
+    }
+    LaunchedEffect(Unit) {
+      launch {
+        snapshotFlow { chatModel.chatId.value }
+          .distinctUntilChanged()
+          .collect {
+            if (it != null) currentChatId = it
+            else onComposed()
+          }
+      }
+    }
+    Box(Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) Box2@{
+      currentChatId?.let {
+        ChatView(it, chatModel, onComposed)
+      }
+    }
+  }
+}
+
+@Composable
+fun LeftPartOfScreen() {
+  if (chatModel.setDeliveryReceipts.value) {
+    SetDeliveryReceiptsView(chatModel)
+  } else {
+    val stopped = chatModel.chatRunning.value == false
+    if (chatModel.sharedContent.value == null)
+      ChatListView(chatModel, AppLock::setPerformLA, stopped)
+    else
+      ShareListView(chatModel, stopped)
+  }
+}
+
+@Composable
+fun CenterPartOfScreen() {
+  val currentChatId by remember { ChatModel.chatId }
+  currentChatId?.let {
+    ChatView(it, chatModel) {}
+  }
+}
+
+@Composable
+fun DesktopScreen() {
+  Box {
+    Box(Modifier.width(400.dp + 56.dp)) {
+      LeftPartOfScreen()
+    }
+    Box(Modifier.widthIn(max = 400.dp)) {
+      ModalManager.shared.showInView()
+    }
+    Box(Modifier.padding(start = 400.dp)) {
+      CenterPartOfScreen()
     }
   }
 }

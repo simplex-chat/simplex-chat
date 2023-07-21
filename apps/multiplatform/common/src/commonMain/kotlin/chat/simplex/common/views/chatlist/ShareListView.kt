@@ -18,6 +18,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.Chat
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.BackHandler
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -26,7 +27,9 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
   val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
   val switchingUsers = rememberSaveable { mutableStateOf(false) }
+  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   Scaffold(
+    Modifier.padding(end = endPadding),
     topBar = { Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
   ) {
     Box(Modifier.padding(it)) {

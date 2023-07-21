@@ -60,13 +60,14 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       connectIfOpenedViaUri(url, chatModel)
     }
   }
+  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scaffoldState = rememberScaffoldState()
   val scope = rememberCoroutineScope()
   val switchingUsers = rememberSaveable { mutableStateOf(false) }
-  Scaffold(topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } },
+  Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } } },
     scaffoldState = scaffoldState,
-    drawerContent = { SettingsView(chatModel, setPerformLA) },
+    drawerContent = { SettingsView(chatModel, setPerformLA) { scope.launch { scaffoldState.drawerState.close() } } },
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     floatingActionButton = {
       if (searchInList.isEmpty()) {
@@ -76,7 +77,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
               if (newChatSheetState.value.isVisible()) hideNewChatSheet(true) else showNewChatSheet()
             }
           },
-          Modifier.padding(end = DEFAULT_PADDING - 16.dp, bottom = DEFAULT_PADDING - 16.dp),
+          Modifier.padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp),
           elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 0.dp,
             pressedElevation = 0.dp,
@@ -91,7 +92,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       }
     }
   ) {
-    Box(Modifier.padding(it)) {
+    Box(Modifier.padding(it).padding(end = endPadding)) {
       Column(
         modifier = Modifier
           .fillMaxSize()

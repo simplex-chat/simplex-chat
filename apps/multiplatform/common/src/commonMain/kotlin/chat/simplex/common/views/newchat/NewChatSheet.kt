@@ -93,10 +93,12 @@ private fun NewChatSheetLayout(
       }
     }
   }
+  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val maxWidth = with(LocalDensity.current) { screenWidth() * density }
   Column(
     Modifier
       .fillMaxSize()
+      .padding(end = endPadding)
       .offset { IntOffset(if (newChat.isGone()) -maxWidth.value.roundToInt() else 0, 0) }
       .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { closeNewChatSheet(true) }
       .drawBehind { drawRect(animatedColor.value) },
