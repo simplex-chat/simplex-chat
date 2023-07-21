@@ -28,9 +28,9 @@ import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.InfoAboutIncognito
 import chat.simplex.common.views.usersettings.SettingsActionItem
-import chat.simplex.common.model.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.group.GroupPreferencesView
 import chat.simplex.res.MR
 
 @Composable
@@ -322,7 +322,10 @@ fun ContactCheckRow(
     ProfileImage(size = 36.dp, contact.image)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     Text(
-      contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+      contact.chatViewName,
+      modifier = Modifier.weight(10f, fill = true),
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
       color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))

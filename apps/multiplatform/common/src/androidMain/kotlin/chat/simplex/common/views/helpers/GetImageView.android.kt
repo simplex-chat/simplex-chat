@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.toURI
+import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.json
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.newchat.ActionButton
@@ -43,9 +44,10 @@ val errorBitmap: Bitmap = BitmapFactory.decodeByteArray(errorBitmapBytes, 0, err
 class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Uri?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
-    tmpFile = File.createTempFile("image", ".bmp", appFilesDir)
+    tmpFile = File.createTempFile("image", ".bmp", tmpDir)
     // Since the class should return Uri, the file should be deleted somewhere else. And in order to be sure, delegate this to system
     tmpFile?.deleteOnExit()
+    ChatModel.filesToDelete.add(tmpFile!!)
     uri = FileProvider.getUriForFile(context, "$APPLICATION_ID.provider", tmpFile!!)
     return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
       .putExtra(MediaStore.EXTRA_OUTPUT, uri)

@@ -11,7 +11,7 @@ import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -19,22 +19,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.ContactPreferencesView
-import chat.simplex.common.views.chat.VerifyCodeView
+import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -52,15 +51,26 @@ fun ChatInfoView(
 ) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val currentUser = chatModel.currentUser.value
   val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
-  if (chat != null) {
+  if (chat != null && currentUser != null) {
     val contactNetworkStatus = remember(chatModel.networkStatuses.toMap()) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
     }
+    val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     ChatInfoLayout(
       chat,
       contact,
+      currentUser,
+      sendReceipts = sendReceipts,
+      setSendReceipts = { sendRcpts ->
+        withApi {
+          val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
+          updateChatSettings(chat, chatSettings, chatModel)
+          sendReceipts.value = sendRcpts
+        }
+      },
       connStats = connStats,
       contactNetworkStatus.value,
       customUserProfile,
@@ -154,6 +164,34 @@ fun ChatInfoView(
   }
 }
 
+sealed class SendReceipts {
+  object Yes: SendReceipts()
+  object No: SendReceipts()
+  data class UserDefault(val enable: Boolean): SendReceipts()
+
+  val text: String get() = when (this) {
+    is Yes -> generalGetString(MR.strings.chat_preferences_yes)
+    is No -> generalGetString(MR.strings.chat_preferences_no)
+    is UserDefault -> String.format(
+      generalGetString(MR.strings.chat_preferences_default),
+      generalGetString(if (enable) MR.strings.chat_preferences_yes else MR.strings.chat_preferences_no)
+    )
+  }
+
+  val bool: Boolean? get() = when (this) {
+    is Yes -> true
+    is No -> false
+    is UserDefault -> null
+  }
+
+  companion object {
+    fun fromBool(enable: Boolean?, userDefault: Boolean): SendReceipts {
+      return if (enable == null) UserDefault(userDefault)
+      else if (enable) Yes else No
+    }
+  }
+}
+
 fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_contact_question),
@@ -197,6 +235,9 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
 fun ChatInfoLayout(
   chat: Chat,
   contact: Contact,
+  currentUser: User,
+  sendReceipts: State<SendReceipts>,
+  setSendReceipts: (SendReceipts) -> Unit,
   connStats: MutableState<ConnectionStats?>,
   contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
@@ -240,11 +281,13 @@ fun ChatInfoLayout(
         VerifyCodeButton(contact.verified, verifyClicked)
       }
       ContactPreferencesButton(openPreferences)
+      SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
       if (cStats != null && cStats.ratchetSyncAllowed) {
         SynchronizeConnectionButton(syncContactConnection)
-      } else if (developerTools) {
-        SynchronizeConnectionButtonForce(syncContactConnectionForce)
       }
+//      } else if (developerTools) {
+//        SynchronizeConnectionButtonForce(syncContactConnectionForce)
+//      }
     }
 
     SectionDividerSpaced()
@@ -311,22 +354,33 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
-    Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    val text = buildAnnotatedString {
       if (contact.verified) {
-        Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = MaterialTheme.colors.secondary)
+        appendInlineContent(id = "shieldIcon")
       }
-      Text(
-        contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-        color = MaterialTheme.colors.onBackground,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-      )
+      append(contact.profile.displayName)
     }
+    val inlineContent: Map<String, InlineTextContent> = mapOf(
+      "shieldIcon" to InlineTextContent(
+        Placeholder(24.sp, 24.sp, PlaceholderVerticalAlign.TextCenter)
+      ) {
+        Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
+      }
+    )
+    Text(
+      text,
+      inlineContent = inlineContent,
+      style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      textAlign = TextAlign.Center,
+      maxLines = 3,
+      overflow = TextOverflow.Ellipsis
+    )
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
       Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
-        maxLines = 2,
+        textAlign = TextAlign.Center,
+        maxLines = 4,
         overflow = TextOverflow.Ellipsis
       )
     }
@@ -441,7 +495,7 @@ fun SimplexServers(text: String, servers: List<String>) {
 
 @Composable
 fun SwitchAddressButton(disabled: Boolean, switchAddress: () -> Unit) {
-  SectionItemView(switchAddress) {
+  SectionItemView(switchAddress, disabled = disabled) {
     Text(
       stringResource(MR.strings.switch_receiving_address),
       color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -451,7 +505,7 @@ fun SwitchAddressButton(disabled: Boolean, switchAddress: () -> Unit) {
 
 @Composable
 fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) {
-  SectionItemView(abortSwitchAddress) {
+  SectionItemView(abortSwitchAddress, disabled = disabled) {
     Text(
       stringResource(MR.strings.abort_switch_receiving_address),
       color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -497,6 +551,21 @@ private fun ContactPreferencesButton(onClick: () -> Unit) {
     painterResource(MR.images.ic_toggle_on),
     stringResource(MR.strings.contact_preferences),
     click = onClick
+  )
+}
+
+@Composable
+private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
+  val values = remember {
+    mutableListOf(SendReceipts.Yes, SendReceipts.No, SendReceipts.UserDefault(currentUser.sendRcptsContacts)).map { it to it.text }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(MR.strings.send_receipts),
+    values,
+    state,
+    icon = painterResource(MR.images.ic_double_check),
+    enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
   )
 }
 
@@ -578,6 +647,9 @@ fun PreviewChatInfoLayout() {
         chatItems = arrayListOf()
       ),
       Contact.sampleData,
+      User.sampleData,
+      sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
+      setSendReceipts = {},
       localAlias = "",
       connectionCode = "123",
       developerTools = false,

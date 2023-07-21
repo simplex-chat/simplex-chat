@@ -135,7 +135,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                   AlertManager.shared.hideAlert()
                   servers = (servers + addAllPresets(presetServers, servers, m)).sortedByDescending { it.preset }
                 }) {
-                  Text(stringResource(MR.strings.smp_servers_preset_add), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+                  Text(stringResource(MR.strings.smp_servers_preset_add), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
                 }
               }
             }

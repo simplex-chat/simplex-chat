@@ -23,6 +23,8 @@ public struct User: Decodable, NamedChat, Identifiable {
     public var localAlias: String { get { "" } }
 
     public var showNtfs: Bool
+    public var sendRcptsContacts: Bool
+    public var sendRcptsSmallGroups: Bool
     public var viewPwdHash: UserPwdHash?
 
     public var id: Int64 { userId }
@@ -44,7 +46,9 @@ public struct User: Decodable, NamedChat, Identifiable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true,
-        showNtfs: true
+        showNtfs: true,
+        sendRcptsContacts: true,
+        sendRcptsSmallGroups: false
     )
 }
 
@@ -2060,14 +2064,6 @@ public struct ChatItem: Identifiable, Decodable {
         return nil
     }
 
-    public var showMutableNotification: Bool {
-        switch content {
-        case .rcvCall: return false
-        case .rcvChatFeature: return false
-        default: return showNtfDir
-        }
-    }
-
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
@@ -2269,6 +2265,11 @@ public struct CIMeta: Decodable {
     public func statusIcon(_ metaColor: Color = .secondary) -> (String, Color)? {
         switch itemStatus {
         case .sndSent: return ("checkmark", metaColor)
+        case let .sndRcvd(msgRcptStatus):
+            switch msgRcptStatus {
+            case .ok: return ("checkmark", metaColor) // ("checkmark.circle", metaColor)
+            case .badMsgHash: return ("checkmark", .red) // ("checkmark.circle", .red)
+            }
         case .sndErrorAuth: return ("multiply", .red)
         case .sndError: return ("exclamationmark.triangle.fill", .yellow)
         case .rcvNew: return ("circlebadge.fill", Color.accentColor)
@@ -2337,6 +2338,7 @@ private func recent(_ date: Date) -> Bool {
 public enum CIStatus: Decodable {
     case sndNew
     case sndSent
+    case sndRcvd(msgRcptStatus: MsgReceiptStatus)
     case sndErrorAuth
     case sndError(agentError: String)
     case rcvNew
@@ -2344,14 +2346,20 @@ public enum CIStatus: Decodable {
 
     var id: String {
         switch self {
-        case .sndNew: return  "sndNew"
-        case .sndSent: return  "sndSent"
-        case .sndErrorAuth: return  "sndErrorAuth"
-        case .sndError: return  "sndError"
-        case .rcvNew: return  "rcvNew"
+        case .sndNew: return "sndNew"
+        case .sndSent: return "sndSent"
+        case .sndRcvd: return "sndRcvd"
+        case .sndErrorAuth: return "sndErrorAuth"
+        case .sndError: return "sndError"
+        case .rcvNew: return "rcvNew"
         case .rcvRead: return "rcvRead"
         }
     }
+}
+
+public enum MsgReceiptStatus: String, Decodable {
+    case ok
+    case badMsgHash
 }
 
 public enum CIDeleted: Decodable {
@@ -2708,7 +2716,7 @@ public enum CIFileStatus: Decodable, Equatable {
     }
 }
 
-public enum MsgContent {
+public enum MsgContent: Equatable {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
@@ -2768,6 +2776,19 @@ public enum MsgContent {
         case preview
         case image
         case duration
+    }
+
+    public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
+        switch (lhs, rhs) {
+        case let (.text(lt), .text(rt)): return lt == rt
+        case let (.link(lt, lp), .link(rt, rp)): return lt == rt && lp == rp
+        case let (.image(lt, li), .image(rt, ri)): return lt == rt && li == ri
+        case let (.video(lt, li, ld), .video(rt, ri, rd)): return lt == rt && li == ri && ld == rd
+        case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
+        case let (.file(lf), .file(rf)): return lf == rf
+        case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
+        default: return false
+        }
     }
 }
 
@@ -3098,7 +3119,7 @@ func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
 public enum SndConnEvent: Decodable {
     case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
     case ratchetSync(syncStatus: RatchetSyncState, member: GroupMemberRef?)
-    
+
     var text: String {
         switch self {
         case let .switchQueue(phase, member):

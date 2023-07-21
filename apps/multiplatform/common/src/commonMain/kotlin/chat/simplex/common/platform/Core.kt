@@ -49,6 +49,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     val user = chatController.apiGetActiveUser()
     if (user == null) {
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+      chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
       chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
       chatModel.currentUser.value = null
       chatModel.users.clear()
@@ -58,6 +59,9 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
         OnboardingStage.Step3_CreateSimpleXAddress
       } else {
         savedOnboardingStage
+      }
+      if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete && !chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.get()) {
+        chatModel.setDeliveryReceipts.value = true
       }
       chatController.startChat(user)
       platform.androidChatInitializedAndStarted()

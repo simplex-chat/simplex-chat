@@ -1094,7 +1094,6 @@
     <string name="alert_title_msg_bad_id">错误消息 ID</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d 消息解密失败。</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d 已跳过消息。</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">此错误对于此连接是永久性的，请重新连接。</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">当您或您的连接使用旧数据库备份时，可能会发生这种情况。</string>
     <string name="decryption_error">解密错误</string>
     <string name="alert_text_fragment_please_report_to_developers">请向开发者报告。</string>
@@ -1284,4 +1283,5 @@
     <string name="favorite_chat">最喜欢</string>
     <string name="search_verb">搜索</string>
     <string name="la_mode_off">已关闭</string>
+    <string name="network_option_protocol_timeout_per_kb">协议超时每 KB</string>
 </resources>

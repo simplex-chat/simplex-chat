@@ -61,7 +61,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
            m.notificationMode != .off {
             if let verification = ntfData["verification"] as? String,
                let nonce = ntfData["nonce"] as? String {
-                if let token = ChatModel.shared.deviceToken {
+                if let token = m.deviceToken {
                     logger.debug("AppDelegate: didReceiveRemoteNotification: verification, confirming \(verification)")
                     Task {
                         do {
@@ -81,7 +81,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                if appStateGroupDefault.get().inactive {
+                if appStateGroupDefault.get().inactive && m.ntfEnablePeriodic {
                     receiveMessages(completionHandler)
                 } else {
                     completionHandler(.noData)
@@ -95,7 +95,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
-        logger.debug("AppDelegate: applicationWillTerminate")
+        logger.debug("DEBUGGING: AppDelegate: applicationWillTerminate")
         ChatModel.shared.filesToDelete.forEach {
             removeFile($0)
         }

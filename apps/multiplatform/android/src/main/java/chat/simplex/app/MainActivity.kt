@@ -19,15 +19,14 @@ import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
-import java.net.URI
 
 class MainActivity: FragmentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     super.onCreate(savedInstanceState)
     // testJson()
     mainActivity = WeakReference(this)
-    applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {

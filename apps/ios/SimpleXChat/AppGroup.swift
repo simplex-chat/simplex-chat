@@ -13,6 +13,8 @@ let GROUP_DEFAULT_APP_STATE = "appState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
+public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal"
+public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic"
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline" // no longer used
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
@@ -39,6 +41,8 @@ public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
 
 public func registerGroupDefaults() {
     groupDefaults.register(defaults: [
+        GROUP_DEFAULT_NTF_ENABLE_LOCAL: false,
+        GROUP_DEFAULT_NTF_ENABLE_PERIODIC: false,
         GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
         GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.user.rawValue,
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
@@ -102,6 +106,10 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 )
 
 public let incognitoGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INCOGNITO)
+
+public let ntfEnableLocalGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_ENABLE_LOCAL)
+
+public let ntfEnablePeriodicGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_ENABLE_PERIODIC)
 
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 

@@ -78,7 +78,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
         fontSize = 16.sp,
         modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
       )
-      ProfileNameField(fullName, "", ::isValidDisplayName)
+      ProfileNameField(fullName, "")
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
     Row {
