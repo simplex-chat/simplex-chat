@@ -2194,9 +2194,9 @@
         <target>¡Archivos y multimedia no permitidos!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
+      <trans-unit id="Filter unread and favorite chats." xml:space="preserve" approved="no">
         <source>Filter unread and favorite chats.</source>
-        <target>Filtrar chats no leídos y favoritos.</target>
+        <target state="translated">Filtra chats no leídos y favoritos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
@@ -2204,9 +2204,9 @@
         <target>¡Por fin los tenemos! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Find chats faster" xml:space="preserve">
+      <trans-unit id="Find chats faster" xml:space="preserve" approved="no">
         <source>Find chats faster</source>
-        <target>Encontrar chats mas rápido</target>
+        <target state="translated">Encuentra chats mas rápido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -2224,9 +2224,9 @@
         <target>¿Reparar conexión?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fix encryption after restoring backups." xml:space="preserve">
+      <trans-unit id="Fix encryption after restoring backups." xml:space="preserve" approved="no">
         <source>Fix encryption after restoring backups.</source>
-        <target>Reparar el cifrado tras restaurar copias de seguridad.</target>
+        <target state="translated">Repara el cifrado tras restaurar copias de seguridad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix not supported by contact" xml:space="preserve">
@@ -3646,19 +3646,19 @@
         <target>¿Reconectar servidores?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at" xml:space="preserve">
+      <trans-unit id="Record updated at" xml:space="preserve" approved="no">
         <source>Record updated at</source>
-        <target>Registro actualizado a las</target>
+        <target state="translated">Registro actualiz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Record updated at: %@" xml:space="preserve">
+      <trans-unit id="Record updated at: %@" xml:space="preserve" approved="no">
         <source>Record updated at: %@</source>
-        <target>Registro actualizado a las: %@</target>
+        <target state="translated">Registro actualiz: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Reduced battery usage" xml:space="preserve">
+      <trans-unit id="Reduced battery usage" xml:space="preserve" approved="no">
         <source>Reduced battery usage</source>
-        <target>Uso de la batería reducido</target>
+        <target state="translated">Reducción del uso de batería</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reject" xml:space="preserve">
@@ -3701,9 +3701,9 @@
         <target>¿Expulsar miembro?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
+      <trans-unit id="Remove passphrase from keychain?" xml:space="preserve" approved="no">
         <source>Remove passphrase from keychain?</source>
-        <target>¿Eliminar la contraseña del llavero?</target>
+        <target state="translated">¿Eliminar contraseña de Keychain?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
@@ -3846,9 +3846,9 @@
         <target>Guardar archivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save auto-accept settings" xml:space="preserve">
+      <trans-unit id="Save auto-accept settings" xml:space="preserve" approved="no">
         <source>Save auto-accept settings</source>
-        <target>Guardar configuración de aceptación automática (auto-accept)</target>
+        <target state="translated">Guardar configuración de auto aceptar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
