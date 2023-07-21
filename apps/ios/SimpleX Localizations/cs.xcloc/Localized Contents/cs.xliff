@@ -2044,8 +2044,9 @@
         <target>Chyba při odesílání zprávy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
+      <trans-unit id="Error setting delivery receipts!" xml:space="preserve" approved="no">
         <source>Error setting delivery receipts!</source>
+        <target state="translated">Chyba nastavování potvrzení o doručení!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -2253,9 +2254,9 @@
         <target>Úplný odkaz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Full name (optional)" xml:space="preserve">
+      <trans-unit id="Full name (optional)" xml:space="preserve" approved="no">
         <source>Full name (optional)</source>
-        <target>Celé jméno (volitelné)</target>
+        <target state="translated">Celé jméno (volitelně)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Full name:" xml:space="preserve">
@@ -3545,8 +3546,9 @@
         <target>Časový limit protokolu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol timeout per KB" xml:space="preserve">
+      <trans-unit id="Protocol timeout per KB" xml:space="preserve" approved="no">
         <source>Protocol timeout per KB</source>
+        <target state="translated">Časový limit protokolu na KB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -3559,8 +3561,9 @@
         <target>Ohodnoťte aplikaci</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="React…" xml:space="preserve">
+      <trans-unit id="React…" xml:space="preserve" approved="no">
         <source>React…</source>
+        <target state="translated">Reagovat…</target>
         <note>chat item menu</note>
       </trans-unit>
       <trans-unit id="Read" xml:space="preserve">
@@ -3613,8 +3616,9 @@
         <target>Přijatá zpráva</target>
         <note>message info title</note>
       </trans-unit>
-      <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
+      <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve" approved="no">
         <source>Receiving address will be changed to a different server. Address change will complete after sender comes online.</source>
+        <target state="translated">Přijímací adresa bude změněna na jiný server. Změna adresy bude dokončena po připojení odesílatele.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -3632,12 +3636,14 @@
         <target>Příjemci uvidí aktualizace během jejich psaní.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reconnect all connected servers to force message delivery. It uses additional traffic." xml:space="preserve">
+      <trans-unit id="Reconnect all connected servers to force message delivery. It uses additional traffic." xml:space="preserve" approved="no">
         <source>Reconnect all connected servers to force message delivery. It uses additional traffic.</source>
+        <target state="translated">Znovu připojte všechny připojené servery a vynuťte doručení zprávy. Využívá další provoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reconnect servers?" xml:space="preserve">
+      <trans-unit id="Reconnect servers?" xml:space="preserve" approved="no">
         <source>Reconnect servers?</source>
+        <target state="translated">Znovu připojit servery?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Record updated at" xml:space="preserve">
@@ -3970,8 +3976,9 @@
         <target>Poslat živou zprávu - zpráva se bude aktualizovat pro příjemce během psaní</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send delivery receipts to" xml:space="preserve">
+      <trans-unit id="Send delivery receipts to" xml:space="preserve" approved="no">
         <source>Send delivery receipts to</source>
+        <target state="translated">Potvrzení o doručení zasílat na</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
@@ -4531,8 +4538,9 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
         <target>Profil je sdílen pouze s vašimi kontakty.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The second tick we missed! ✅" xml:space="preserve">
+      <trans-unit id="The second tick we missed! ✅" xml:space="preserve" approved="no">
         <source>The second tick we missed! ✅</source>
+        <target state="translated">Druhé zaškrtnutí jsme přehlédli! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -5575,12 +5583,14 @@ Servery SimpleX nevidí váš profil.</target>
         <target>výchozí (%@)</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="default (no)" xml:space="preserve">
+      <trans-unit id="default (no)" xml:space="preserve" approved="no">
         <source>default (no)</source>
+        <target state="translated">výchozí (ne)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="default (yes)" xml:space="preserve">
+      <trans-unit id="default (yes)" xml:space="preserve" approved="no">
         <source>default (yes)</source>
+        <target state="translated">výchozí (ano)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
