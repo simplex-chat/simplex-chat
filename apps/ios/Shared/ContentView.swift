@@ -196,7 +196,7 @@ struct ContentView: View {
         userAuthorized = false
         let laMode = privacyLocalAuthModeDefault.get()
         authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
-            logger.debug("authenticate callback: \(String(describing: laResult))")
+            logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
             switch (laResult) {
             case .success:
                 userAuthorized = true

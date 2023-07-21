@@ -37,7 +37,7 @@ struct LocalAuthRequest {
 }
 
 func authenticate(title: LocalizedStringKey? = nil, reason: String, selfDestruct: Bool = false, completed: @escaping (LAResult) -> Void) {
-    logger.debug("authenticate")
+    logger.debug("DEBUGGING: authenticate")
     switch privacyLocalAuthModeDefault.get() {
     case .system: systemAuthenticate(reason, completed)
     case .passcode:
@@ -58,21 +58,24 @@ func authenticate(title: LocalizedStringKey? = nil, reason: String, selfDestruct
 }
 
 func systemAuthenticate(_ reason: String, _ completed: @escaping (LAResult) -> Void) {
+    logger.debug("DEBUGGING: systemAuthenticate")
     let laContext = LAContext()
     var authAvailabilityError: NSError?
     if laContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authAvailabilityError) {
+        logger.debug("DEBUGGING: systemAuthenticate: canEvaluatePolicy callback")
         laContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
+            logger.debug("DEBUGGING: systemAuthenticate evaluatePolicy callback")
             DispatchQueue.main.async {
                 if success {
                     completed(LAResult.success)
                 } else {
-                    logger.error("authentication error: \(authError.debugDescription)")
+                    logger.error("DEBUGGING: systemAuthenticate authentication error: \(authError.debugDescription)")
                     completed(LAResult.failed(authError: authError?.localizedDescription))
                 }
             }
         }
     } else {
-        logger.error("authentication availability error: \(authAvailabilityError.debugDescription)")
+        logger.error("DEBUGGING: authentication availability error: \(authAvailabilityError.debugDescription)")
         completed(LAResult.unavailable(authError: authAvailabilityError?.localizedDescription))
     }
 }
