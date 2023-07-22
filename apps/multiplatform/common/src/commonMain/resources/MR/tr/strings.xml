@@ -156,7 +156,7 @@
     <string name="role_in_group">Yetki</string>
     <string name="allow_voice_messages_question">Sesli iletilere izin ver\?</string>
     <string name="users_add">Profil ekle</string>
-    <string name="allow_direct_messages">Üyelere doğrudan ileti gönderilmesine izin ver.</string>
+    <string name="allow_direct_messages">Üyelere direkt mesaj gönderilmesine izin ver.</string>
     <string name="allow_to_send_disappearing">Kendiliğinden yok olan iletiler göndermeye izin ver.</string>
     <string name="allow_to_delete_messages">Gönderilen iletilerin kalıcı olarak silinmesine izin ver.</string>
     <string name="allow_to_send_files">Dosya ve medya göndermeye izin ver.</string>
@@ -244,7 +244,7 @@
     <string name="icon_descr_call_progress">Arama yapılıyor</string>
     <string name="icon_descr_call_rejected">Geri çevrilmiş çağrı</string>
     <string name="icon_descr_call_ended">Görüşme bitti.</string>
-    <string name="alert_text_decryption_error_too_many_skipped">%1$d ileti atlanıldı.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d mesaj atlanıldı.</string>
     <string name="chat_database_deleted">Konuşma veri tabanı silindi</string>
     <string name="error_with_info">Hata: %s</string>
     <string name="unknown_error">Bilinmeyen hata</string>
@@ -274,9 +274,9 @@
     <string name="timed_messages">Kendiliğinden yok olan iletiler</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Konuştuğun kişilerin sana, kendiğinden yok olan iletiler göndermesine izin ver.</string>
     <string name="disappearing_messages_are_prohibited">Bu toplu konuşmada kendiliğinden yok olan iletilere izin verilmiyor.</string>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d ileti deşifrelenemedi.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mesaj deşifrelenemedi.</string>
     <string name="group_info_section_title_num_members">%1$s ÜYE</string>
-    <string name="integrity_msg_skipped">%1$d atlanılmış ileti</string>
+    <string name="integrity_msg_skipped">%1$d atlanılmış mesaj</string>
     <string name="allow_calls_only_if">Konuştuğun kişi, aramalara izin veriyorsa sen de ver.</string>
     <string name="allow_your_contacts_adding_message_reactions">Konuştuğun kişilerin iletilerine tepki eklemesine izin ver.</string>
     <string name="allow_your_contacts_to_call">Konuştuğun kişilerin seni aramasına izin ver.</string>
@@ -512,8 +512,8 @@
     <string name="info_row_disappears_at">Kendiliğinden şu sürede yok olacak</string>
     <string name="share_text_disappears_at">Kendiliğinden şu sürede yok olacak: %s</string>
     <string name="feature_enabled">etkinleşti</string>
-    <string name="direct_messages">Doğrudan iletiler</string>
-    <string name="no_call_on_lock_screen">Etkinsizleştir</string>
+    <string name="direct_messages">Direkt mesaj</string>
+    <string name="no_call_on_lock_screen">Devre dışı bırak</string>
     <string name="display_name_cannot_contain_whitespace">Görünen ad, boşluk gibi aralıklama türleri içeremez.</string>
     <string name="display_name">Görünen Ad</string>
     <string name="display_name__field">Görünen ad:</string>
@@ -524,8 +524,8 @@
     <string name="edit_verb">Düzelt</string>
     <string name="network_option_enable_tcp_keep_alive">TCP keep-alive özelliğini etkinleştir</string>
     <string name="encrypted_database">Şifrelenmiş veri tabanı</string>
-    <string name="receipts_contacts_disable_for_all">Tüm kişiler için etkinsizleştir.</string>
-    <string name="receipts_contacts_disable_keep_overrides">Etkisizleştir (ayrıcalıklar kalsın)</string>
+    <string name="receipts_contacts_disable_for_all">Herkes için devre dışı bırak</string>
+    <string name="receipts_contacts_disable_keep_overrides">Devre dışı bırak (ayrıcalıklar kalsın)</string>
     <string name="receipts_contacts_enable_for_all">tüm kişiler için etkinleştir</string>
     <string name="enable_automatic_deletion_question">Kendi kendine silinen iletileri etkinleştir\?</string>
     <string name="encrypt_database">Şifrele</string>
@@ -534,9 +534,9 @@
     <string name="button_edit_group_profile">Toplu konuşma profilini düzenle</string>
     <string name="conn_event_ratchet_sync_agreed">şifreleme kabul edildi</string>
     <string name="snd_conn_event_ratchet_sync_agreed">%s üyesi için şifreleme kabul edildi</string>
-    <string name="conn_level_desc_direct">doğrudan</string>
+    <string name="conn_level_desc_direct">direkt</string>
     <string name="dont_show_again">Yeniden gösterme</string>
-    <string name="direct_messages_are_prohibited_in_chat">Bu toplu konuşmada üyeler arası doğrudan iletiler yasaklıdır.</string>
+    <string name="direct_messages_are_prohibited_in_chat">Bu toplu konuşmada üyeler arası direkt mesajlar yasaklıdır.</string>
     <string name="feature_enabled_for_contact">konuşulan kişi için etkinleşti</string>
     <string name="feature_enabled_for_you">senin için etkinleşti</string>
     <string name="ttl_sec">%d sn</string>
@@ -660,7 +660,7 @@
     <string name="group_display_name_field">Toplu konuşmanın görünen adı:</string>
     <string name="group_full_name_field">Toplu konuşmanın tam adı:</string>
     <string name="files_and_media">Dosya ve medya</string>
-    <string name="group_members_can_send_dms">Toplu konuşma üyeleri doğrudan iletiler gönderebilir.</string>
+    <string name="group_members_can_send_dms">Toplu konuşma üyeleri direkt mesaj gönderebilir.</string>
     <string name="group_members_can_delete">Toplu konuşma üyeleri, gönderilen iletileri kalıcı olarak silebilir.</string>
     <string name="group_members_can_send_voice">Toplu konuşma üyeleri sesli ileti gönderebilirler.</string>
     <string name="files_are_prohibited_in_group">Bu toplu konuşmada, dosya ve medya yasaklanmıştır.</string>
