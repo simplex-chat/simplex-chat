@@ -1342,4 +1342,5 @@
     <string name="in_reply_to">In risposta a</string>
     <string name="no_history">Nessuna cronologia</string>
     <string name="sync_connection_force_question">Rinegoziare la crittografia\?</string>
+    <string name="choose_file_title">Scegli un file</string>
 </resources>
