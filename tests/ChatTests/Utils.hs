@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
 import Simplex.Messaging.Encoding.String
 import System.Directory (doesFileExist)
