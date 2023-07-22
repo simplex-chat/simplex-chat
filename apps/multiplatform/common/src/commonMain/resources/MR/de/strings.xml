@@ -1422,4 +1422,5 @@
     <string name="dont_enable_receipts">Nicht aktivieren</string>
     <string name="sending_delivery_receipts_will_be_enabled">Das Senden von Empfangsbestätigungen an alle Kontakte wird aktiviert.</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Sie können diese später in den Datenschutz &amp; Sicherheits-Einstellungen der App aktivieren.</string>
+    <string name="choose_file_title">Datei auswählen</string>
 </resources>
