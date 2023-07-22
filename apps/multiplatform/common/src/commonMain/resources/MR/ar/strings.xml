@@ -1161,4 +1161,10 @@
     <string name="alert_text_msg_bad_hash">تجزئة الرسالة السابقة مختلفة.</string>
     <string name="alert_text_msg_bad_id">معرف الرسالة التالية غير صحيح (أقل أو يساوي السابق).
 \nيمكن أن يحدث ذلك بسبب بعض العلل أو عندما يُخترق الاتصال.</string>
+    <string name="unfavorite_chat">غير مفضلة</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لتلقي الرسائل من جهة الاتصال هذه.</string>
+    <string name="choose_file_title">اختيار ملف</string>
+    <string name="icon_descr_sent_msg_status_unauthorized_send">إرسال غير مصرح به</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">محاولة الاتصال بالخادم المستخدم لتلقي الرسائل من جهة الاتصال هذه (خطأ: %1$s).</string>
+    <string name="la_notice_turn_on">تشغيل</string>
 </resources>
