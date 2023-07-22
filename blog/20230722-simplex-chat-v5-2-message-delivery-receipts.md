@@ -2,10 +2,8 @@
 layout: layouts/article.html
 title: "SimpleX Chat v5.2 released: message delivery receipts"
 date: 2023-07-22
-# image: images/20230523-reactions.png
-# imageBottom: true
-# previewBody: blog_previews/20230523.html
-preview: TODO this is a placeholder for the release announcement
+image: images/20230722-receipts-full.png
+previewBody: blog_previews/20230722.html
 permalink: "/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html"
 ---
 
@@ -13,22 +11,23 @@ permalink: "/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html"
 
 **Published:** July 22, 2023
 
-What's new in v5.2:
+**What's new in v5.2:**
 - [message delivery receipts](#message-delivery-receipts) – with opt-out per contact!
 - [filter favorite and unread chats](#filter-favorite-and-unread-chats).
-- a bit [more usable groups](#more-usable-groups):
-  - view full original replied to message in info.
+- [more usable groups](#more-usable-groups):
+  - view full original replied message in info.
   - share your address with your contacts and group members via your chat profile.
-  - search for new and existing members.
+  - search new and existing members.
 - [stability improvements](#stability-improvements):
   - keep your connections working after restoring from backup.
   - restart app (Android) or reconnect servers (iOS).
+  - more reliable switching of the receiving address.
   - more stable message delivery.
 - other improvements:
   - [better disappearing messages](#better-disappearing-messages).
   - [prohibit message reactions](#prohibit-message-reactions).
 
-Platform evolution:
+**Platform evolution:**
 - [problems of public groups](#problems-of-public-groups):
   - why not all messages are received.
   - how to cope with these problems.
@@ -39,6 +38,8 @@ Platform evolution:
 
 ### Message delivery receipts
 
+<img src="./images/20230722-receipts.png" width="330">
+
 Most messaging apps add two ticks to sent messages – the first one to show that the message is accepted by the server, and the second – that it is delivered to the recipient's device. It confirms that the network is functioning, and that the message is not lost or delayed. SimpleX Chat now has this feature too!
 
 In some cases it may compromise recipients' privacy, as they show that the recipient is online, so we made sending delivery receipts optional – it can be disabled separately for each chat profile or contact. For the new chat profiles this feature is enabled by default.
@@ -46,6 +47,8 @@ In some cases it may compromise recipients' privacy, as they show that the recip
 To avoid compromising your privacy, sending delivery receipts is disabled for all your existing chat profiles. The first time you start the app after the update, you will be offered to enable them for all [visible profiles](./20230328-simplex-chat-v4-6-hidden-profiles.md#hidden-chat-profiles), and they can be enabled later via Privacy and Security settings.
 
 ### Filter favorite and unread chats
+
+<img src="./images/20230722-filter.png" width="288">
 
 You can now mark your contacts and groups as _favorite_, to be able to find them faster. With filter enabled, you will only see favorite chats, chats that contain unread messages and also any unaccepted group invitations and contact requests.
 
@@ -55,9 +58,13 @@ Active SimpleX Chat users know how broken the current group experience is, and t
 
 #### What is this in reply to?
 
+<img src="./images/20230722-quoted.png" width="330">
+
 A major problem is that you can see replies to the messages you've not seen before - this would happen both when you just join the group, and didn't connect to most other members, and also when other new members join the group and they didn't yet connect to you – so literally all the time, and the bigger the group gets, the worse it becomes. While this problem cannot be solved without major group protocol changes, at least there is now ability to see the original message that was replied to via the message information.
 
 #### How to connect to this member?
+
+<img src="./images/20230722-search.png" width="330">
 
 To simplify direct connections with other group members, you can now share your SimpleX address via your chat profile, and group members can send you a contact request even if the group does not allow direct messages.
 
@@ -81,7 +88,7 @@ v5.2 added the extension to the messaging protocol allowing to negotiate the new
 
 The negotiation of the new ratchet keys still happens via the end-to-end encrypted messages, as the protocol has two layers of end-to-end encryption, so it cannot be compromised by the messaging relays.
 
-You may still lose connection if you or your contact changed the receiving address before you made the backup, so make sure to make a new backup after any receiving address changes.
+You may still lose connection if you or your contact changed the receiving address after you made the backup, so make sure to make a new backup after any receiving address changes.
 
 #### Reconnect the servers
 
@@ -97,7 +104,7 @@ You can now send a separate disappearing message if the chat preferences allow t
 
 While most people like message reactions, some conversations make them inappropriate - you can disable them now.
 
-## Platform evolution
+## Platform evolution
 
 ### Problems of public groups
 
@@ -117,7 +124,7 @@ Initially, we considered the design with the dedicated servers, potentially self
 
 #### Why not fully decentralized groups?
 
-We also [considered](../docs/rfcs/2023-05-02-groups.md) roumor-mongering protocol, where all members are equal and participate in message dissemination. The problem with this approach is that it adds a lot of traffic for all members, even those who mostly read messages. Also, it still requires establishing a fully connected graph, and with large groups it becomes prohibitively expensive and unreliable, given that many members join public groups for a limited time.
+We also [considered](../docs/rfcs/2023-05-02-groups.md) rumour-mongering protocol, where all members are equal and participate in message dissemination. The problem with this approach is that it adds a lot of traffic for all members, even those who mostly read messages. Also, it still requires establishing a fully connected graph, and with large groups it becomes prohibitively expensive and unreliable, given that many members join public groups for a limited time.
 
 #### Members host the groups
 
@@ -137,7 +144,7 @@ We have an approximately equal number of users who ask us to add receipts, and t
 
 While read receipts provide some convenience to the message senders, they introduce a lot of stress for the recipients.
 
-As one of the users in the group wrote it: "The existence of read receipts in other platforms is exhausting and is often a source of undue stress. I have to make a decision to read something and let someone know that I have read something and decided not to respond or merely didn't have the time to respond. the outcome of that is a complex social negotiation with non-theoretical social fallout as a consequence. All in all, it's an invasion of privacy of being able to read things at the pace of the individual as opposed to the pace dictated by others... Most people don't need a read receipt, so leave it to a group of individuals to decide if having read receipts make sense to them for their workflow".
+As one of the users in the group wrote it: "The existence of read receipts in other platforms is exhausting and is often a source of undue stress. I have to make a decision to read something and let someone know that I have read something and decided not to respond or merely didn't have the time to respond. The outcome of that is a complex social negotiation with non-theoretical social fallout as a consequence. All in all, it's an invasion of privacy of being able to read things at the pace of the individual as opposed to the pace dictated by others... Most people don't need a read receipt, so leave it to a group of individuals to decide if having read receipts make sense to them for their workflow".
 
 Also read [this post](https://neilalexander.dev/2021/04/09/read-receipts-typing-notifs) about the damage from read receipts and other invasive features, like typing and presense notifications.
 
