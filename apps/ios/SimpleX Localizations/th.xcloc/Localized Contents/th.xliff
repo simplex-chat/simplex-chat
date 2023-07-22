@@ -79,12 +79,12 @@
       </trans-unit>
       <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
         <source>%@ is not verified</source>
-        <target state="translated">%@ ไม่ได้รับการยืนยัน</target>
+        <target state="translated">%@ ไม่ได้รับการตรวจสอบ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
         <source>%@ is verified</source>
-        <target state="translated">%@ ได้รับการยืนยันแล้ว</target>
+        <target state="translated">%@ ได้รับการตรวจสอบแล้ว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ servers" xml:space="preserve" approved="no">
@@ -279,7 +279,7 @@
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
-        <target state="translated">**encrypted จากต้นจนจบ** โทรด้วยเสียง</target>
+        <target state="translated">การโทรเสียงแบบ **encrypted จากต้นจนจบ**</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
@@ -869,7 +869,7 @@
       </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve" approved="no">
         <source>Chat archive</source>
-        <target state="translated">ที่เก็บแชท</target>
+        <target state="translated">ที่เก็บแชทถาวร</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat console" xml:space="preserve" approved="no">
@@ -1024,7 +1024,7 @@
       </trans-unit>
       <trans-unit id="Connect via one-time link?" xml:space="preserve" approved="no">
         <source>Connect via one-time link?</source>
-        <target state="translated">เชื่อมต่อผ่านลิงค์แบบครั้งเดียว?</target>
+        <target state="translated">เชื่อมต่อผ่านลิงค์แบบใช้ครั้งเดียว?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve" approved="no">
@@ -1034,7 +1034,7 @@
       </trans-unit>
       <trans-unit id="Connecting server… (error: %@)" xml:space="preserve" approved="no">
         <source>Connecting to server… (error: %@)</source>
-        <target state="translated">กำลังเชื่อมต่อกับเซิร์ฟเวอร์... (ผิดพลาด: %@)</target>
+        <target state="translated">กำลังเชื่อมต่อกับเซิร์ฟเวอร์... (ข้อผิดพลาด: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection" xml:space="preserve" approved="no">
@@ -1044,12 +1044,12 @@
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve" approved="no">
         <source>Connection error</source>
-        <target state="translated">การเชื่อมต่อล้มเหลว</target>
+        <target state="translated">การเชื่อมต่อผิดพลาด</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error (AUTH)" xml:space="preserve" approved="no">
         <source>Connection error (AUTH)</source>
-        <target state="translated">การเชื่อมต่อล้มเหลว (AUTH)</target>
+        <target state="translated">การเชื่อมต่อผิดพลาด (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection request" xml:space="preserve" approved="no">
@@ -1084,7 +1084,7 @@
       </trans-unit>
       <trans-unit id="Contact hidden:" xml:space="preserve" approved="no">
         <source>Contact hidden:</source>
-        <target state="translated">ซ่อนผู้ติดต่อ:</target>
+        <target state="translated">ผู้ติดต่อถูกซ่อน:</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Contact is connected" xml:space="preserve" approved="no">
@@ -1104,7 +1104,7 @@
       </trans-unit>
       <trans-unit id="Contact preferences" xml:space="preserve" approved="no">
         <source>Contact preferences</source>
-        <target state="translated">การตั้งค่าผู้ติดต่อ</target>
+        <target state="translated">การกําหนดลักษณะการติดต่อ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts can mark messages for deletion; you will be able to view them." xml:space="preserve" approved="no">
@@ -1139,7 +1139,7 @@
       </trans-unit>
       <trans-unit id="Create an address to let people connect with you." xml:space="preserve" approved="no">
         <source>Create an address to let people connect with you.</source>
-        <target state="translated">สร้างที่อยู่เพื่อให้ผู้คนติดต่อกับคุณ</target>
+        <target state="translated">สร้างที่อยู่เพื่อให้ผู้อื่นเชื่อมต่อกับคุณ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve" approved="no">
@@ -1229,7 +1229,7 @@
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve" approved="no">
         <source>Database encrypted!</source>
-        <target state="translated">encrypt ฐานข้อมูลอย่างปลอดภัยแล้ว!</target>
+        <target state="translated">ฐานข้อมูลถูก encrypt แล้ว!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve" approved="no">
@@ -1242,7 +1242,7 @@
       <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated.
 </source>
-        <target state="translated">รหัส encryption ของฐานข้อมูลจะได้รับการอัปเดต
+        <target state="translated">รหัสผ่าน encryption ของฐานข้อมูลจะได้รับการอัปเดต
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1307,12 +1307,12 @@
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve" approved="no">
         <source>Decentralized</source>
-        <target state="translated">กระจายอำนาจ</target>
+        <target state="translated">กระจายอำนาจแล้ว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decryption error" xml:space="preserve" approved="no">
         <source>Decryption error</source>
-        <target state="translated">ข้อผิดพลาดในการถอดรหัส</target>
+        <target state="translated">ข้อผิดพลาดในการ decrypt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete" xml:space="preserve" approved="no">
@@ -1417,7 +1417,7 @@
       </trans-unit>
       <trans-unit id="Delete group?" xml:space="preserve" approved="no">
         <source>Delete group?</source>
-        <target state="translated">ลบกลุ่มไหม?</target>
+        <target state="translated">ลบกลุ่ม?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete invitation" xml:space="preserve" approved="no">
@@ -1452,7 +1452,7 @@
       </trans-unit>
       <trans-unit id="Delete messages after" xml:space="preserve" approved="no">
         <source>Delete messages after</source>
-        <target state="translated">ลบข้อความทีหลัง</target>
+        <target state="translated">ลบข้อความหลังจาก</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete old database" xml:space="preserve" approved="no">
@@ -1537,12 +1537,12 @@
       </trans-unit>
       <trans-unit id="Direct messages" xml:space="preserve" approved="no">
         <source>Direct messages</source>
-        <target state="translated">ข้อความส่วนตัว</target>
+        <target state="translated">ข้อความโดยตรง</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve" approved="no">
         <source>Direct messages between members are prohibited in this group.</source>
-        <target state="translated">ข้อความส่วนตัวระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้</target>
+        <target state="translated">ข้อความโดยตรงระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve" approved="no">
@@ -1662,7 +1662,7 @@
       </trans-unit>
       <trans-unit id="Enable automatic message deletion?" xml:space="preserve" approved="no">
         <source>Enable automatic message deletion?</source>
-        <target state="translated">เปิดใช้งานการลบข้อความอัตโนมัติไหม?</target>
+        <target state="translated">เปิดใช้งานการลบข้อความอัตโนมัติ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve" approved="no">
@@ -1937,7 +1937,7 @@
       </trans-unit>
       <trans-unit id="Error saving user password" xml:space="preserve" approved="no">
         <source>Error saving user password</source>
-        <target state="translated">เกิดข้อผิดพลาดในการบันทึกรหัสผ่านของผู้ใช้</target>
+        <target state="translated">เกิดข้อผิดพลาดในการบันทึกรหัสผ่านผู้ใช้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending email" xml:space="preserve" approved="no">
@@ -2142,7 +2142,7 @@
       </trans-unit>
       <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve" approved="no">
         <source>Group invitation is no longer valid, it was removed by sender.</source>
-        <target state="translated">คำเชิญเข้าร่วมกลุ่มใช้ไม่ได้อีกต่อไป คำเชิญถูกลบโดยผู้ส่ง</target>
+        <target state="translated">คำเชิญเข้าร่วมกลุ่มใช้ไม่ถูกต้องอีกต่อไป คำเชิญถูกลบโดยผู้ส่ง</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve" approved="no">
@@ -2167,7 +2167,7 @@
       </trans-unit>
       <trans-unit id="Group members can send direct messages." xml:space="preserve" approved="no">
         <source>Group members can send direct messages.</source>
-        <target state="translated">สมาชิกกลุ่มสามารถส่งข้อความส่วนตัวได้</target>
+        <target state="translated">สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send disappearing messages." xml:space="preserve" approved="no">
@@ -2187,12 +2187,12 @@
       </trans-unit>
       <trans-unit id="Group moderation" xml:space="preserve" approved="no">
         <source>Group moderation</source>
-        <target state="translated">การดูแลกลุ่ม</target>
+        <target state="translated">การกลั่นกรองกลุ่ม</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group preferences" xml:space="preserve" approved="no">
         <source>Group preferences</source>
-        <target state="translated">การตั้งค่ากลุ่ม</target>
+        <target state="translated">ค่ากําหนดลักษณะกลุ่ม</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile" xml:space="preserve" approved="no">
@@ -2312,7 +2312,7 @@
       </trans-unit>
       <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve" approved="no">
         <source>If you enter your self-destruct passcode while opening the app:</source>
-        <target state="translated">หากคุณใส่รหัสทำลายตัวเองขณะเปิดแอป:</target>
+        <target state="translated">หากคุณใส่รหัสผ่านทำลายตัวเองขณะเปิดแอป:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve" approved="no">
@@ -2342,7 +2342,7 @@
       </trans-unit>
       <trans-unit id="Immune to spam and abuse" xml:space="preserve" approved="no">
         <source>Immune to spam and abuse</source>
-        <target state="translated">ป้องกันจากสแปมและการละเมิด</target>
+        <target state="translated">มีภูมิคุ้มกันต่อสแปมและการละเมิด</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Import" xml:space="preserve" approved="no">
@@ -2367,7 +2367,7 @@
       </trans-unit>
       <trans-unit id="Improved server configuration" xml:space="preserve" approved="no">
         <source>Improved server configuration</source>
-        <target state="translated">ปรับปรุงการตั้งค่าเซิร์ฟเวอร์แล้ว</target>
+        <target state="translated">ปรับปรุงการกําหนดค่าเซิร์ฟเวอร์แล้ว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve" approved="no">
@@ -2494,7 +2494,7 @@
       </trans-unit>
       <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve" approved="no">
         <source>Irreversible message deletion is prohibited in this group.</source>
-        <target state="translated">การลบข้อความแบบกลับไม่ได้เป็นสิ่งที่ห้ามในกลุ่มนี้</target>
+        <target state="translated">การลบข้อความแบบแก้ไขไม่ได้เป็นสิ่งที่ห้ามในกลุ่มนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve" approved="no">
@@ -2595,7 +2595,7 @@
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve" approved="no">
         <source>Let's talk in SimpleX Chat</source>
-        <target state="translated">มาพูดคุยกันใน SimpleX Chat</target>
+        <target state="translated">มาคุยกันใน SimpleX Chat</target>
         <note>email subject</note>
       </trans-unit>
       <trans-unit id="Light" xml:space="preserve" approved="no">
@@ -2640,7 +2640,7 @@
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve" approved="no">
         <source>Make a private connection</source>
-        <target state="translated">สร้างการเชื่อมต่อส่วนตัว</target>
+        <target state="translated">สร้างการเชื่อมต่อแบบส่วนตัว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make profile private!" xml:space="preserve" approved="no">
@@ -2675,7 +2675,7 @@
       </trans-unit>
       <trans-unit id="Mark verified" xml:space="preserve" approved="no">
         <source>Mark verified</source>
-        <target state="translated">ทำเครื่องหมายยืนยัน</target>
+        <target state="translated">ทําเครื่องหมายว่าตรวจสอบแล้ว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve" approved="no">
@@ -2964,7 +2964,7 @@
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve" approved="no">
         <source>One-time invitation link</source>
-        <target state="translated">ลิงก์คำเชิญแบบครั้งเดียว</target>
+        <target state="translated">ลิงก์คำเชิญแบบใช้ครั้งเดียว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve" approved="no">
@@ -2989,7 +2989,7 @@
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
-        <target state="translated">เฉพาะเจ้าของกลุ่มเท่านั้นที่สามารถเปลี่ยนการตั้งค่ากลุ่มได้</target>
+        <target state="translated">เฉพาะเจ้าของกลุ่มเท่านั้นที่สามารถเปลี่ยนค่ากําหนดลักษณะกลุ่มได้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable voice messages." xml:space="preserve" approved="no">
@@ -3229,7 +3229,7 @@
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve" approved="no">
         <source>Preserve the last message draft, with attachments.</source>
-        <target state="translated">เก็บร่างข้อความล่าสุดพร้อมไฟล์แนบ</target>
+        <target state="translated">เก็บข้อความที่ร่างไว้ล่าสุดพร้อมไฟล์แนบ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preset server" xml:space="preserve" approved="no">
@@ -3304,7 +3304,7 @@
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve" approved="no">
         <source>Prohibit sending direct messages to members.</source>
-        <target state="translated">ห้ามส่งข้อความส่วนตัวถึงสมาชิก</target>
+        <target state="translated">ห้ามส่งข้อความโดยตรงถึงสมาชิก</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve" approved="no">
@@ -3774,7 +3774,7 @@
       </trans-unit>
       <trans-unit id="Sender may have deleted the connection request." xml:space="preserve" approved="no">
         <source>Sender may have deleted the connection request.</source>
-        <target state="translated">ผู้ส่งอาจลบคําขอการเชื่อมต่อ</target>
+        <target state="translated">ผู้ส่งอาจลบคําขอการเชื่อมต่อแล้ว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve" approved="no">
@@ -4815,7 +4815,7 @@ SimpleX Lock must be enabled.</source>
       </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve" approved="no">
         <source>You could not be verified; please try again.</source>
-        <target state="translated">เราไม่สามารถยืนยันคุณได้ กรุณาลองอีกครั้ง.</target>
+        <target state="translated">เราไม่สามารถตรวจสอบคุณได้ กรุณาลองอีกครั้ง.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have no chats" xml:space="preserve" approved="no">
@@ -5205,7 +5205,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="connecting (introduced)" xml:space="preserve" approved="no">
         <source>connecting (introduced)</source>
-        <target state="translated">กำลังการเชื่อมต่อ (แนะนําแล้ว)</target>
+        <target state="translated">กำลังเชื่อมต่อ (แนะนํา)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (introduction invitation)" xml:space="preserve" approved="no">
@@ -5255,7 +5255,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve" approved="no">
         <source>database version is newer than the app, but no down migration for: %@</source>
-        <target state="translated">เวอร์ชันฐานข้อมูลใหม่กว่าแอป แต่ไม่มีการย้ายข้อมูลสำหรับ: %@</target>
+        <target state="translated">เวอร์ชันฐานข้อมูลใหม่กว่าแอป แต่ไม่มีการย้ายข้อมูลลงสำหรับ: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="days" xml:space="preserve" approved="no">
@@ -5365,7 +5365,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="incognito via one-time link" xml:space="preserve" approved="no">
         <source>incognito via one-time link</source>
-        <target state="translated">ไม่ระบุตัวตนผ่านลิงก์แบบครั้งเดียว</target>
+        <target state="translated">ไม่ระบุตัวตนผ่านลิงก์แบบใช้ครั้งเดียว</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="indirect (%d)" xml:space="preserve" approved="no">
@@ -5410,7 +5410,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="invited via your group link" xml:space="preserve" approved="no">
         <source>invited via your group link</source>
-        <target state="translated">เชิญผ่านลิงค์กลุ่มของคุณ</target>
+        <target state="translated">ถูกเชิญผ่านลิงค์กลุ่มของคุณ</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve" approved="no">
@@ -5511,12 +5511,12 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="offered %@" xml:space="preserve" approved="no">
         <source>offered %@</source>
-        <target state="translated">เสนอ %@</target>
+        <target state="translated">เสนอแล้ว %@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="offered %@: %@" xml:space="preserve" approved="no">
         <source>offered %1$@: %2$@</source>
-        <target state="translated">เสนอ %1$@: %2$@</target>
+        <target state="translated">เสนอแล้ว %1$@: %2$@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve" approved="no">
@@ -5626,7 +5626,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="via one-time link" xml:space="preserve" approved="no">
         <source>via one-time link</source>
-        <target state="translated">ผ่านลิงค์แบบครั้งเดียว</target>
+        <target state="translated">ผ่านลิงค์แบบใช้ครั้งเดียว</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via relay" xml:space="preserve" approved="no">
