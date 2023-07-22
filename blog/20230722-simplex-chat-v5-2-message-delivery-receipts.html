@@ -43,7 +43,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:title" content="SimpleX Chat v5.2 released: message delivery receipts" />
     
-      <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
+      <meta property="og:image" content="https://simplex.chat/blog/images/20230722-receipts-full.png" />
     
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
@@ -356,30 +356,101 @@ window.addEventListener('scroll',changeHeaderBg);
     <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
       <div class="py-6 md:p-[60px]"><h1 id="simplex-chat-v52-released-message-delivery-receipts" tabindex="-1">SimpleX Chat v5.2 released: message delivery receipts</h1>
 <p><strong>Published:</strong> July 22, 2023</p>
-<p>TODO this is a draft of the release announcement</p>
-<p>What's new in v5.2:</p>
+<p><strong>What's new in v5.2:</strong></p>
 <ul>
-<li>message delivery receipts</li>
-<li>improvements for groups
+<li><a href="#message-delivery-receipts">message delivery receipts</a> – with opt-out per contact!</li>
+<li><a href="#filter-favorite-and-unread-chats">filter favorite and unread chats</a>.</li>
+<li><a href="#more-usable-groups">more usable groups</a>:
 <ul>
-<li>view quoted messages</li>
-<li>share SimpleX address with your contacts via your chat profile</li>
-<li>search for group members</li>
+<li>view full original replied message in info.</li>
+<li>share your address with your contacts and group members via your chat profile.</li>
+<li>search new and existing members.</li>
 </ul>
 </li>
-<li>feature allowing to fix connection encryption (for example after importing old database)</li>
-<li>mark chats as favorite and filter chats</li>
-<li>restart/reconnect</li>
-<li>chat preference to allow/prohibit message reactions</li>
-<li>disappearing messages improvements:
+<li><a href="#stability-improvements">stability improvements</a>:
 <ul>
-<li>send with custom timer when allowed but not enabled in the conversation</li>
-<li>increased timer limit</li>
+<li>keep your connections working after restoring from backup.</li>
+<li>restart app (Android) or reconnect servers (iOS).</li>
+<li>more reliable switching of the receiving address.</li>
+<li>more stable message delivery.</li>
+</ul>
+</li>
+<li>other improvements:
+<ul>
+<li><a href="#better-disappearing-messages">better disappearing messages</a>.</li>
+<li><a href="#prohibit-message-reactions">prohibit message reactions</a>.</li>
 </ul>
 </li>
 </ul>
-<h2 id="future-of-simplex-chat-groups-and-communities" tabindex="-1">Future of SimpleX Chat groups and communities</h2>
-<p>TODO</p>
+<p><strong>Platform evolution:</strong></p>
+<ul>
+<li><a href="#problems-of-public-groups">problems of public groups</a>:
+<ul>
+<li>why not all messages are received.</li>
+<li>how to cope with these problems.</li>
+<li>when will public groups be more usable.</li>
+</ul>
+</li>
+<li><a href="#what-about-read-receipts">what about read receipts?</a></li>
+</ul>
+<h2 id="whats-new-in-v52" tabindex="-1">What's new in v5.2</h2>
+<h3 id="message-delivery-receipts" tabindex="-1">Message delivery receipts</h3>
+<img src="./images/20230722-receipts.png" width="330">
+<p>Most messaging apps add two ticks to sent messages – the first one to show that the message is accepted by the server, and the second – that it is delivered to the recipient's device. It confirms that the network is functioning, and that the message is not lost or delayed. SimpleX Chat now has this feature too!</p>
+<p>In some cases it may compromise recipients' privacy, as they show that the recipient is online, so we made sending delivery receipts optional – it can be disabled separately for each chat profile or contact. For the new chat profiles this feature is enabled by default.</p>
+<p>To avoid compromising your privacy, sending delivery receipts is disabled for all your existing chat profiles. The first time you start the app after the update, you will be offered to enable them for all <a href="20230328-simplex-chat-v4-6-hidden-profiles.html#hidden-chat-profiles">visible profiles</a>, and they can be enabled later via Privacy and Security settings.</p>
+<h3 id="filter-favorite-and-unread-chats" tabindex="-1">Filter favorite and unread chats</h3>
+<img src="./images/20230722-filter.png" width="288">
+<p>You can now mark your contacts and groups as <em>favorite</em>, to be able to find them faster. With filter enabled, you will only see favorite chats, chats that contain unread messages and also any unaccepted group invitations and contact requests.</p>
+<h3 id="more-usable-groups" tabindex="-1">More usable groups</h3>
+<p>Active SimpleX Chat users know how broken the current group experience is, and that we plan some major overhaul of the groups protocol – more on that below. In the meanwhile, we added some simple features that make groups in their current state a bit more usable.</p>
+<h4 id="what-is-this-in-reply-to" tabindex="-1">What is this in reply to?</h4>
+<img src="./images/20230722-quoted.png" width="330">
+<p>A major problem is that you can see replies to the messages you've not seen before - this would happen both when you just join the group, and didn't connect to most other members, and also when other new members join the group and they didn't yet connect to you – so literally all the time, and the bigger the group gets, the worse it becomes. While this problem cannot be solved without major group protocol changes, at least there is now ability to see the original message that was replied to via the message information.</p>
+<h4 id="how-to-connect-to-this-member" tabindex="-1">How to connect to this member?</h4>
+<img src="./images/20230722-search.png" width="330">
+<p>To simplify direct connections with other group members, you can now share your SimpleX address via your chat profile, and group members can send you a contact request even if the group does not allow direct messages.</p>
+<h4 id="how-to-find-a-member-in-the-list" tabindex="-1">How to find a member in the list?</h4>
+<p>Large member lists (and also the long lists of contacts, if you have many of them) become hard to scroll through, so now there is a search in both lists.</p>
+<h3 id="stability-improvements" tabindex="-1">Stability improvements</h3>
+<p>This version fixes many long-standing problems with the message delivery, failed connections with group members (that also contributed to group fragmentation), and reduces traffic in groups (beta users experienced a traffic spike because of this fix, but it doesn't affect the final v5.2 release). It's not the end of the road to making SimpleX Chat as stable as mainstream messengers, but it is a big improvement.</p>
+<p>Please report the cases when messages are not delivered – delivery receipts should help with that.</p>
+<h4 id="messages-failed-to-decrypt-problem-solved" tabindex="-1">Messages failed to decrypt? Problem solved!</h4>
+<p>Previously, a growing number of users had the issue when after restoring the chat database from backup, messages from some contacts failed to decrypt and were showing an error in the app.</p>
+<p>This happens due to double ratchet protocol protecting the integrity of end-to-end encryption after the compromise - <a href="docs/GLOSSARY.html#post-compromise-security">post-compromise security</a>. The protocol logic does not allow to use the old version of the database to decrypt the message.</p>
+<p>v5.2 added the extension to the messaging protocol allowing to negotiate the new ratchet keys in such cases - both with the contacts and the group members. This requires a user action, and it resets the security code verification status for this contact or member – you need to verify it again to have the additional protection from <a href="docs/GLOSSARY.html#man-in-the-middle-attack">man-in-the-middle attacks</a>.</p>
+<p>The negotiation of the new ratchet keys still happens via the end-to-end encrypted messages, as the protocol has two layers of end-to-end encryption, so it cannot be compromised by the messaging relays.</p>
+<p>You may still lose connection if you or your contact changed the receiving address after you made the backup, so make sure to make a new backup after any receiving address changes.</p>
+<h4 id="reconnect-the-servers" tabindex="-1">Reconnect the servers</h4>
+<p>While v5.2 solved many message delivery issues, there may be some others, but they are usually resolved with app restart. It was difficult to fully restart Android app, as there is a continuosly running background service for notifications that doesn't restart with the app. Now Android app has both Restart and Shutdown buttons that take background service into account.</p>
+<p>On iOS you can now pull down the list of conversations to reconnect to all relays without restarting the app.</p>
+<h3 id="better-disappearing-messages" tabindex="-1">Better disappearing messages</h3>
+<p>You can now send a separate disappearing message if the chat preferences allow them, but do not have any time to disappear enabled – this applies both to groups and to contacts. You can also set the time to disappear up to 12 months.</p>
+<h3 id="prohibit-message-reactions" tabindex="-1">Prohibit message reactions</h3>
+<p>While most people like message reactions, some conversations make them inappropriate - you can disable them now.</p>
+<h2 id="platform-evolution" tabindex="-1">Platform evolution</h2>
+<h3 id="problems-of-public-groups" tabindex="-1">Problems of public groups</h3>
+<p>As I wrote above, the major problem is that not all messages are received by all members, or, at least, they may be substantially delayed. Additional problems are various scenarios when the list of members gets out of sync for different members.</p>
+<p>How to cope with these problems?</p>
+<p>It really helps to only use one link shared with the members to join the group - the one created by the client that is most frequently online, ideally always online. This is sometimes confusing, as any group admin can create another group link, and share it with the members, and if this admin is not online, the new member won't be able to join.</p>
+<p>We will add new group features to manage fragmentation - there will be an option to fix the connection with the member that you failed to connect to by passing the link out-of-band. This can be particularly helpful for stable groups of 20-50 people where it's important to see all messages.</p>
+<p>In the long term, the only way to make groups usable is to move to a new design. We considered several options.</p>
+<h4 id="why-not-hosted-groups-with-mls" tabindex="-1">Why not hosted groups with MLS?</h4>
+<p>Initially, we considered the design with the dedicated servers, potentially self-hosted, that host groups. This design would require adopting MLS (or similar) protocol for group-wide key agreement. Unfortunately, this design is not sufficiently resilient and easier to censor than decentralized design. Also, MLS protocol is very complex to implement, requires a centralized component, and reduces forward secrecy. So we decided against this approach.</p>
+<h4 id="why-not-fully-decentralized-groups" tabindex="-1">Why not fully decentralized groups?</h4>
+<p>We also <a href="docs/rfcs/2023-05-02-groups.html">considered</a> rumour-mongering protocol, where all members are equal and participate in message dissemination. The problem with this approach is that it adds a lot of traffic for all members, even those who mostly read messages. Also, it still requires establishing a fully connected graph, and with large groups it becomes prohibitively expensive and unreliable, given that many members join public groups for a limited time.</p>
+<h4 id="members-host-the-groups" tabindex="-1">Members host the groups</h4>
+<p>We are now considering a middle-ground - the design where the owners and admins host the group, synchronising the state between them, receiving and re-broadcasting the messages between all members. This puts a higher burden on these members, but these clients can be hosted in the cloud, and also group owners have a larger incentive to maintain group integrity. At the same time, this design is better for the rest of the group members, as they don't need to establish connections with all other members, only with a limited number of &quot;hosting&quot; members, and it also better protects their privacy, due to the lack of direct connections between most members.</p>
+<p>This approach avoids the need for a group-wide key agreement protocol, as hosting members are expected to have access to all content anyway, so pair-wise ratchets are sufficient. At the same time the content remains end-to-end encrypted, and protected from the outsiders.</p>
+<p>This approach also simplifies moderation - the message that needs to be removed simply won't reach the members before it is moderated (in case of automatic or policy-based moderation).</p>
+<p>Discovery and content search in such groups will be provided via a dedicated discovery server that will participate in the group, provide an always-online client, and also automatic content moderation functionality - a possible approach to moderation is <a href="docs/rfcs/2023-05-22-groups-moderation.html">described here</a>.</p>
+<p>We really look forward to your feedback on this design.</p>
+<h3 id="what-about-read-receipts" tabindex="-1">What about read receipts?</h3>
+<p>We have an approximately equal number of users who ask us to add receipts, and those who ask not to add them, even as optional.</p>
+<p>While read receipts provide some convenience to the message senders, they introduce a lot of stress for the recipients.</p>
+<p>As one of the users in the group wrote it: &quot;The existence of read receipts in other platforms is exhausting and is often a source of undue stress. I have to make a decision to read something and let someone know that I have read something and decided not to respond or merely didn't have the time to respond. The outcome of that is a complex social negotiation with non-theoretical social fallout as a consequence. All in all, it's an invasion of privacy of being able to read things at the pace of the individual as opposed to the pace dictated by others... Most people don't need a read receipt, so leave it to a group of individuals to decide if having read receipts make sense to them for their workflow&quot;.</p>
+<p>Also read <a href="https://neilalexander.dev/2021/04/09/read-receipts-typing-notifs">this post</a> about the damage from read receipts and other invasive features, like typing and presense notifications.</p>
+<p>There is also no discounting that the presense of read receipts functionality, even as opt-in, creates a social pressure to enable them, with the same consequences – there are many scenarios when they become non-optional in some relationships. So many users belive, and we share this view, that it is better not to have these features at all. We will be re-assessing this view.</p>
 <h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
 <p>Some links to answer the most common questions:</p>
 <p><a href="20221108-simplex-chat-v4.2-security-audit-new-website.html">SimpleX Chat security assessment</a>.</p>
