@@ -364,7 +364,7 @@ private fun filteredChats(showUnreadAndFavorites: Boolean, searchText: String): 
   val chatModel = ChatModel
   val s = searchText.trim().lowercase()
   return if (s.isEmpty() && !showUnreadAndFavorites)
-    chatModel.chats
+    chatModel.chats.toList()
   else {
     chatModel.chats.filter { chat ->
       when (val cInfo = chat.chatInfo) {
