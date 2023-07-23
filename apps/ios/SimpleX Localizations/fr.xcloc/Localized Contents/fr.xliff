@@ -710,9 +710,9 @@
         <target>Apparence</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Attach" xml:space="preserve">
+      <trans-unit id="Attach" xml:space="preserve" approved="no">
         <source>Attach</source>
-        <target>Attacher</target>
+        <target state="translated">Joindre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio &amp; video calls" xml:space="preserve">
@@ -755,9 +755,9 @@
         <target>Authentification indisponible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept" xml:space="preserve">
+      <trans-unit id="Auto-accept" xml:space="preserve" approved="no">
         <source>Auto-accept</source>
-        <target>Auto-acceptation</target>
+        <target state="translated">Auto-accepter</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept contact requests" xml:space="preserve">
@@ -1266,9 +1266,9 @@
         <target>ID de base de données : %d</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
+      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve" approved="no">
         <source>Database IDs and Transport isolation option.</source>
-        <target>IDs de base de données et option d'isolation du transport.</target>
+        <target state="translated">IDs de base de données et option d'isolement du transport.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database downgrade" xml:space="preserve">
@@ -1589,9 +1589,9 @@
         <target>L'authentification de l'appareil n'est pas activée. Vous pouvez activer SimpleX Lock via Paramètres, une fois que vous avez activé l'authentification de l'appareil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
+      <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve" approved="no">
         <source>Different names, avatars and transport isolation.</source>
-        <target>Différents noms, avatars et mode d'isolation de transport.</target>
+        <target state="translated">Différents noms, avatars et modes d'isolement de transport.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Direct messages" xml:space="preserve">
@@ -3921,9 +3921,9 @@
         <target>Scanner un code QR de serveur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search" xml:space="preserve">
+      <trans-unit id="Search" xml:space="preserve" approved="no">
         <source>Search</source>
-        <target>Chercher</target>
+        <target state="translated">Recherche</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secure queue" xml:space="preserve">
@@ -4406,9 +4406,9 @@
         <target>Appuyez sur le bouton </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to activate profile." xml:space="preserve">
+      <trans-unit id="Tap to activate profile." xml:space="preserve" approved="no">
         <source>Tap to activate profile.</source>
-        <target>Appuyez pour activer le profil.</target>
+        <target state="translated">Appuyez pour activer un profil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
@@ -4660,9 +4660,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Transport isolation" xml:space="preserve">
+      <trans-unit id="Transport isolation" xml:space="preserve" approved="no">
         <source>Transport isolation</source>
-        <target>Isolement du transport</target>
+        <target state="translated">Transport isolé</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
@@ -4797,9 +4797,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Mettre à jour les paramètres réseau ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update transport isolation mode?" xml:space="preserve">
+      <trans-unit id="Update transport isolation mode?" xml:space="preserve" approved="no">
         <source>Update transport isolation mode?</source>
-        <target>Mettre à jour le mode d'isolation du transport ?</target>
+        <target state="translated">Mettre à jour le mode d'isolement du transport ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
