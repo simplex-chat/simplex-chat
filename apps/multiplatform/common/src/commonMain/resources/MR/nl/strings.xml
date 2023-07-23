@@ -1341,4 +1341,5 @@
     <string name="you_can_enable_delivery_receipts_later">U kunt later inschakelen via Instellingen</string>
     <string name="you_can_enable_delivery_receipts_later_alert">U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.</string>
     <string name="error_enabling_delivery_receipts">Fout bij het inschakelen van ontvangst bevestiging!</string>
+    <string name="choose_file_title">Kies een bestand</string>
 </resources>
