@@ -127,23 +127,29 @@ instance ToJSON ParsedMarkdown where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+
 unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
+
 
 parseMaybeMarkdownList :: Text -> Maybe MarkdownList
 parseMaybeMarkdownList s =
   let m = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
    in if all (isNothing . (format :: FormattedText -> Maybe Format)) m then Nothing else Just m
 
+
 parseMarkdownList :: Text -> MarkdownList
 parseMarkdownList = markdownToList . parseMarkdown
+
 
 markdownToList :: Markdown -> MarkdownList
 markdownToList (Markdown f s) = [FormattedText f s]
 markdownToList (m1 :|: m2) = markdownToList m1 <> markdownToList m2
 
+
 parseMarkdown :: Text -> Markdown
 parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInput) s
+
 
 markdownP :: Parser Markdown
 markdownP = mconcat <$> A.many' fragmentP
@@ -164,17 +170,21 @@ markdownP = mconcat <$> A.many' fragmentP
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
         Nothing -> fail ""
+
     formattedP :: Char -> Format -> Parser Markdown
     formattedP c f = do
       s <- A.char c *> A.takeTill (== c)
       (A.char c $> md c f s) <|> noFormat (c `T.cons` s)
+
     md :: Char -> Format -> Text -> Markdown
     md c f s
       | T.null s || T.head s == ' ' || T.last s == ' ' =
         unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
+
     secretP :: Parser Markdown
     secretP = secret <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile (== '#')
+    
     secret :: Text -> Text -> Text -> Markdown
     secret b s a
       | T.null a || T.null s || T.head s == ' ' || T.last s == ' ' =
@@ -182,6 +192,7 @@ markdownP = mconcat <$> A.many' fragmentP
       | otherwise = markdown Secret $ T.init ss
       where
         ss = b <> s <> a
+
     coloredP :: Parser Markdown
     coloredP = do
       clr <- A.char '!' *> colorP <* A.space
@@ -189,6 +200,7 @@ markdownP = mconcat <$> A.many' fragmentP
       if T.null s || T.last s == ' '
         then fail "not colored"
         else pure $ markdown (colored clr) s
+
     colorP =
       A.anyChar >>= \case
         'r' -> "ed" $> Red <|> pure Red
@@ -204,6 +216,7 @@ markdownP = mconcat <$> A.many' fragmentP
         '5' -> pure Cyan
         '6' -> pure Magenta
         _ -> fail "not color"
+
     phoneP = do
       country <- optional $ T.cons <$> A.char '+' <*> A.takeWhile1 isDigit
       code <- optional $ conc4 <$> phoneSep <*> "(" <*> A.takeWhile1 isDigit <*> ")"
@@ -213,8 +226,10 @@ markdownP = mconcat <$> A.many' fragmentP
       if 7 <= len && len <= 22 then pure $ markdown Phone s else fail "not phone"
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
+
     wordP :: Parser Markdown
     wordP = wordMD <$> A.takeTill (== ' ')
+
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
@@ -223,9 +238,11 @@ markdownP = mconcat <$> A.many' fragmentP
         _ -> markdown Uri s
       | isEmail s = markdown Email s
       | otherwise = unmarked s
+
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
+
     simplexUriFormat :: AConnectionRequestUri -> Format
     simplexUriFormat = \case
       ACR _ (CRContactUri crData) ->
@@ -243,22 +260,28 @@ markdownP = mconcat <$> A.many' fragmentP
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact
 
+
 data EditedChar = EditedChar {format :: Maybe Format, char :: Char, operation :: Maybe EditingOperation}
   deriving (Show, Eq)
+
 
 data EditingOperation = EOAdd | EODelete | EOSubstitute
   deriving (Show, Eq)
 
+
 type EditedString  = [EditedChar]
+
 
 formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
 formattedEditedText s s' = _BAD_wagnerFisher (toEditedChars s) (toEditedChars s')
+
 
 toEditedChars :: [FormattedText] -> [EditedChar]
 toEditedChars = concatMap toChars
   where
     toChars FormattedText {format, text} =
       map (\char -> EditedChar {format, char, operation = Nothing}) $ T.unpack $ text
+
 
 -- fromEditedChars :: [EditedChar] -> [EditedText]
 -- fromEditedChars = reverse . foldl' addChar []
@@ -268,12 +291,16 @@ toEditedChars = concatMap toChars
 --     addChar ts@(t : rest) c
 --       | sameFormat t c = appendChar t c : rest
 --       | otherwise = toText c : ts
+
 --     toText :: EditedChar -> EditedText
 --     toText EditedChar {format, char, added} = EditedText {format, text = T.singleton char, added}
+    
 --     sameFormat :: EditedText -> EditedChar -> Bool
 --     sameFormat EditedText {format, added} EditedChar {format = format', added = added'} = format == format' && added == added'
+    
 --     appendChar :: EditedText -> EditedChar -> EditedText
 --     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
+
 
 
 _BAD_wagnerFisher :: [EditedChar] -> [EditedChar] -> EditedString
