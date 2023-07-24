@@ -234,7 +234,7 @@ struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
-    @FocusState.Binding var keyboardVisible: Bool
+    @Binding var keyboardVisible: Bool
 
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
@@ -665,17 +665,21 @@ struct ComposeView: View {
             if let oldMsgContent = ei.content.msgContent {
                 do {
                     let mc = updateMsgContent(oldMsgContent)
-                    let chatItem = try await apiUpdateChatItem(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        itemId: ei.id,
-                        msg: mc,
-                        live: live
-                    )
-                    await MainActor.run {
-                        _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                    if mc != oldMsgContent || (ei.meta.itemLive ?? false) {
+                        let chatItem = try await apiUpdateChatItem(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            itemId: ei.id,
+                            msg: mc,
+                            live: live
+                        )
+                        await MainActor.run {
+                            _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                        }
+                        return chatItem
+                    } else {
+                        return nil
                     }
-                    return chatItem
                 } catch {
                     logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
                     AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
@@ -943,19 +947,18 @@ struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
         @State var composeState = ComposeState(message: "hello")
-        @FocusState var keyboardVisible: Bool
 
         return Group {
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
         }

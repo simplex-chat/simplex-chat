@@ -1,5 +1,31 @@
 # Blog
 
+July 22, 2023 [SimpleX Chat v5.2 released](./20230722-simplex-chat-v5-2-message-delivery-receipts.md)
+
+**What's new in v5.2:**
+
+- message delivery receipts – with opt-out per contact!
+- filter favorite and unread chats.
+- more usable groups:
+  - view full original replied message in info.
+  - share your address with your contacts and group members via your chat profile.
+  - search new and existing members.
+- stability improvements:
+  - keep your connections working after restoring from backup.
+  - restart app (Android) or reconnect servers (iOS).
+  - more reliable switching of the receiving address.
+  - more stable message delivery.
+- other improvements:
+  - better disappearing messages.
+  - prohibit message reactions.
+
+**Platform evolution:**
+
+- problems of public groups problems of public groups and their future.
+- what about read receipts?
+
+---
+
 May 23, 2023 [SimpleX Chat v5.1 released](./20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md)
 
 What's new in v5.1:

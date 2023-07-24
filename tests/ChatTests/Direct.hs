@@ -86,9 +86,14 @@ chatDirectTests = do
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
   describe "message errors" $ do
-    it "show message decryption error and update count" testMsgDecryptError
+    it "show message decryption error" testMsgDecryptError
+    it "should report ratchet de-synchronization, synchronize ratchets" testSyncRatchet
+    it "synchronize ratchets, reset connection code" testSyncRatchetCodeReset
   describe "message reactions" $ do
     it "set message reactions" testSetMessageReactions
+  describe "delivery receipts" $ do
+    it "should send delivery receipts" testSendDeliveryReceipts
+    it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -354,6 +359,12 @@ testDirectMessageDelete =
     \alice bob -> do
       connectUsers alice bob
 
+      -- Test for exception not interrupting the delivery - uncomment lines in newContentMessage
+      -- alice #> "@bob hello 111"
+      -- bob <## "exception: user error (#####################)"
+      -- -- bob <## "bad chat command: #####################"
+      -- -- bob <# "alice> hello 111"
+
       -- alice, bob: msg id 1
       alice #> "@bob hello 🙂"
       bob <# "alice> hello 🙂"
@@ -483,6 +494,7 @@ testRepeatAuthErrorsDisableContact =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     alice <##> bob
+    threadDelay 500000
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
     forM_ [1 .. authErrDisableCount] $ \_ -> sendAuth alice
@@ -1995,42 +2007,128 @@ testMsgDecryptError tmp =
       bob <# "alice> hi"
       bob #> "@alice hey"
       alice <# "bob> hey"
-    copyDb "bob" "bob_old"
-    withTestChat tmp "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
-      alice #> "@bob hello"
-      bob <# "alice> hello"
-      bob #> "@alice hello too"
-      alice <# "bob> hello too"
-    withTestChat tmp "bob_old" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
-      alice #> "@bob 1"
-      bob <# "alice> decryption error, possibly due to the device change (header)"
-      alice #> "@bob 2"
-      alice #> "@bob 3"
-      (bob </)
-      bob ##> "/tail @alice 1"
-      bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
-      bob #> "@alice 1"
-      alice <# "bob> decryption error, possibly due to the device change (header)"
-      bob #> "@alice 2"
-      bob #> "@alice 3"
-      (alice </)
-      alice ##> "/tail @bob 1"
-      alice <# "bob> decryption error, possibly due to the device change (header, 3 messages)"
-      alice #> "@bob 4"
-      bob <# "alice> decryption error, possibly due to the device change (header)"
+    setupDesynchronizedRatchet tmp alice
     withTestChat tmp "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       alice #> "@bob hello again"
-      bob <# "alice> skipped message ID 5..8"
+      bob <# "alice> skipped message ID 9..11"
       bob <# "alice> hello again"
       bob #> "@alice received!"
       alice <# "bob> received!"
+
+setupDesynchronizedRatchet :: HasCallStack => FilePath -> TestCC -> IO ()
+setupDesynchronizedRatchet tmp alice = do
+  copyDb "bob" "bob_old"
+  withTestChat tmp "bob" $ \bob -> do
+    bob <## "1 contacts connected (use /cs for the list)"
+    alice #> "@bob 1"
+    bob <# "alice> 1"
+    bob #> "@alice 2"
+    alice <# "bob> 2"
+    alice #> "@bob 3"
+    bob <# "alice> 3"
+    bob #> "@alice 4"
+    alice <# "bob> 4"
+    threadDelay 500000
+  withTestChat tmp "bob_old" $ \bob -> do
+    bob <## "1 contacts connected (use /cs for the list)"
+    bob ##> "/sync alice"
+    bob <## "error: command is prohibited"
+    alice #> "@bob 1"
+    bob <## "alice: decryption error (connection out of sync), synchronization required"
+    bob <## "use /sync alice to synchronize"
+    alice #> "@bob 2"
+    alice #> "@bob 3"
+    (bob </)
+    bob ##> "/tail @alice 1"
+    bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
+    bob ##> "@alice 1"
+    bob <## "error: command is prohibited"
+    (alice </)
   where
     copyDb from to = do
       copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
       copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+
+testSyncRatchet :: HasCallStack => FilePath -> IO ()
+testSyncRatchet tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+    setupDesynchronizedRatchet tmp alice
+    withTestChat tmp "bob_old" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob ##> "/sync alice"
+      bob <## "connection synchronization started"
+      alice <## "bob: connection synchronization agreed"
+      bob <## "alice: connection synchronization agreed"
+      alice <## "bob: connection synchronized"
+      bob <## "alice: connection synchronized"
+
+      bob #$> ("/_get chat @2 count=3", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
+      alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+
+      alice #> "@bob hello again"
+      bob <# "alice> hello again"
+      bob #> "@alice received!"
+      alice <# "bob> received!"
+
+testSyncRatchetCodeReset :: HasCallStack => FilePath -> IO ()
+testSyncRatchetCodeReset tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+      -- connection not verified
+      bob ##> "/i alice"
+      aliceInfo bob
+      bob <## "connection not verified, use /code command to see security code"
+      -- verify connection
+      alice ##> "/code bob"
+      bCode <- getTermLine alice
+      bob ##> ("/verify alice " <> bCode)
+      bob <## "connection verified"
+      -- connection verified
+      bob ##> "/i alice"
+      aliceInfo bob
+      bob <## "connection verified"
+    setupDesynchronizedRatchet tmp alice
+    withTestChat tmp "bob_old" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob ##> "/sync alice"
+      bob <## "connection synchronization started"
+      alice <## "bob: connection synchronization agreed"
+      bob <## "alice: connection synchronization agreed"
+      bob <## "alice: security code changed"
+      alice <## "bob: connection synchronized"
+      bob <## "alice: connection synchronized"
+
+      bob #$> ("/_get chat @2 count=4", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
+      alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+
+      -- connection not verified
+      bob ##> "/i alice"
+      aliceInfo bob
+      bob <## "connection not verified, use /code command to see security code"
+
+      alice #> "@bob hello again"
+      bob <# "alice> hello again"
+      bob #> "@alice received!"
+      alice <# "bob> received!"
+  where
+    aliceInfo :: HasCallStack => TestCC -> IO ()
+    aliceInfo bob = do
+      bob <## "contact ID: 2"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
+      bob <## "you've shared main profile with this contact"
 
 testSetMessageReactions :: HasCallStack => FilePath -> IO ()
 testSetMessageReactions =
@@ -2079,3 +2177,97 @@ testSetMessageReactions =
       bob ##> "/tail @alice 1"
       bob <# "alice> hi"
       bob <## "      👍 1"
+
+testSendDeliveryReceipts :: HasCallStack => FilePath -> IO ()
+testSendDeliveryReceipts tmp =
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      alice ⩗ "@bob hi"
+
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+      bob ⩗ "@alice hey"
+  where
+    cfg = testCfg {showReceipts = True}
+
+testConfigureDeliveryReceipts :: HasCallStack => FilePath -> IO ()
+testConfigureDeliveryReceipts tmp =
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
+        connectUsers alice bob
+        connectUsers alice cath
+
+        -- for new users receipts are enabled by default
+        receipt bob alice "1"
+        receipt cath alice "2"
+
+        -- configure receipts in all chats
+        alice ##> "/set receipts all off"
+        alice <## "ok"
+        noReceipt bob alice "3"
+        noReceipt cath alice "4"
+
+        -- configure receipts for user contacts
+        alice ##> "/_set receipts 1 on"
+        alice <## "ok"
+        receipt bob alice "5"
+        receipt cath alice "6"
+
+        -- configure receipts for user contacts (terminal api)
+        alice ##> "/set receipts off"
+        alice <## "ok"
+        noReceipt bob alice "7"
+        noReceipt cath alice "8"
+
+        -- configure receipts for contact
+        alice ##> "/receipts @bob on"
+        alice <## "ok"
+        receipt bob alice "9"
+        noReceipt cath alice "10"
+
+        -- configure receipts for user contacts (don't clear overrides)
+        alice ##> "/_set receipts 1 off"
+        alice <## "ok"
+        receipt bob alice "11"
+        noReceipt cath alice "12"
+
+        alice ##> "/_set receipts 1 off clear_overrides=off"
+        alice <## "ok"
+        receipt bob alice "13"
+        noReceipt cath alice "14"
+
+        -- configure receipts for user contacts (clear overrides)
+        alice ##> "/set receipts off clear_overrides=on"
+        alice <## "ok"
+        noReceipt bob alice "15"
+        noReceipt cath alice "16"
+
+        -- configure receipts for contact, reset to default
+        alice ##> "/receipts @bob on"
+        alice <## "ok"
+        receipt bob alice "17"
+        noReceipt cath alice "18"
+
+        alice ##> "/receipts @bob default"
+        alice <## "ok"
+        noReceipt bob alice "19"
+        noReceipt cath alice "20"
+  where
+    cfg = testCfg {showReceipts = True}
+    receipt cc1 cc2 msg = do
+      name1 <- userName cc1
+      name2 <- userName cc2
+      cc1 #> ("@" <> name2 <> " " <> msg)
+      cc2 <# (name1 <> "> " <> msg)
+      cc1 ⩗ ("@" <> name2 <> " " <> msg)
+    noReceipt cc1 cc2 msg = do
+      name1 <- userName cc1
+      name2 <- userName cc2
+      cc1 #> ("@" <> name2 <> " " <> msg)
+      cc2 <# (name1 <> "> " <> msg)
+      cc1 <// 50000

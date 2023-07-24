@@ -53,6 +53,7 @@ struct AdvancedNetworkSettings: View {
 
                     timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [2_500000, 5_000000, 7_500000, 10_000000, 15_000000, 20_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000], label: secondsLabel)
+                    timeoutSettingPicker("Protocol timeout per KB", selection: $netCfg.tcpTimeoutPerKb, values: [5_000, 10_000, 20_000, 40_000], label: secondsLabel)
                     timeoutSettingPicker("PING interval", selection: $netCfg.smpPingInterval, values: [120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000], label: secondsLabel)
                     intSettingPicker("PING count", selection: $netCfg.smpPingCount, values: [1, 2, 3, 5, 8], label: "")
                     Toggle("Enable TCP keep-alive", isOn: $enableKeepAlive)

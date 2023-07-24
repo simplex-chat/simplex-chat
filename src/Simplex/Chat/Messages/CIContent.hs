@@ -29,7 +29,9 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), SwitchPhase (..))
+import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Util
+import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), RatchetSyncState (..), SwitchPhase (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -157,7 +159,7 @@ ciMsgContent = \case
   CIRcvMsgContent mc -> Just mc
   _ -> Nothing
 
-data MsgDecryptError = MDERatchetHeader | MDETooManySkipped
+data MsgDecryptError = MDERatchetHeader | MDETooManySkipped | MDERatchetEarlier | MDEOther
   deriving (Eq, Show, Generic)
 
 instance ToJSON MsgDecryptError where
@@ -253,10 +255,15 @@ instance ToJSON DBSndGroupEvent where
   toJSON (SGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
   toEncoding (SGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
 
-data RcvConnEvent = RCESwitchQueue {phase :: SwitchPhase}
+data RcvConnEvent
+  = RCESwitchQueue {phase :: SwitchPhase}
+  | RCERatchetSync {syncStatus :: RatchetSyncState}
+  | RCEVerificationCodeReset
   deriving (Show, Generic)
 
-data SndConnEvent = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
+data SndConnEvent
+  = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
+  | SCERatchetSync {syncStatus :: RatchetSyncState, member :: Maybe GroupMemberRef}
   deriving (Show, Generic)
 
 instance FromJSON RcvConnEvent where
@@ -387,6 +394,16 @@ rcvConnEventToText = \case
     SPConfirmed -> "confirmed changing address for you..."
     SPSecured -> "secured new address for you..."
     SPCompleted -> "changed address for you"
+  RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
+  RCEVerificationCodeReset -> "security code changed"
+
+ratchetSyncStatusToText :: RatchetSyncState -> Text
+ratchetSyncStatusToText = \case
+  RSOk -> "connection synchronized"
+  RSAllowed -> "decryption error (connection may be out of sync), synchronization allowed"
+  RSRequired -> "decryption error (connection out of sync), synchronization required"
+  RSStarted -> "connection synchronization started"
+  RSAgreed -> "connection synchronization agreed"
 
 sndConnEventToText :: SndConnEvent -> Text
 sndConnEventToText = \case
@@ -395,6 +412,7 @@ sndConnEventToText = \case
     SPConfirmed -> "confirmed changing address" <> forMember m <> "..."
     SPSecured -> "secured new address" <> forMember m <> "..."
     SPCompleted -> "you changed address" <> forMember m
+  SCERatchetSync syncStatus m -> ratchetSyncStatusToText syncStatus <> forMember m
   where
     forMember member_ =
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
@@ -413,11 +431,16 @@ msgIntegrityError = \case
 
 msgDecryptErrorText :: MsgDecryptError -> Word32 -> Text
 msgDecryptErrorText err n =
-  "decryption error, possibly due to the device change (" <> errName <> if n == 1 then ")" else ", " <> tshow n <> " messages)"
+  "decryption error, possibly due to the device change"
+    <> maybe "" (\ed -> " (" <> ed <> ")") errDesc
   where
-    errName = case err of
-      MDERatchetHeader -> "header"
-      MDETooManySkipped -> "too many skipped messages"
+    errDesc = case err of
+      MDERatchetHeader -> Just $ "header" <> counter
+      MDETooManySkipped -> Just $ "too many skipped messages" <> counter
+      MDERatchetEarlier -> Just $ "earlier message" <> counter
+      MDEOther -> counter_
+    counter_ = if n == 1 then Nothing else Just $ tshow n <> " messages"
+    counter = maybe "" (", " <>) counter_
 
 msgDirToModeratedContent_ :: SMsgDirection d -> CIContent d
 msgDirToModeratedContent_ = \case

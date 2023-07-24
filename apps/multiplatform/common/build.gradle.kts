@@ -31,7 +31,6 @@ kotlin {
     }
 
     val commonMain by getting {
-      kotlin.srcDir("./build/generated/moko/commonMain/src/")
       dependencies {
         api(compose.runtime)
         api(compose.foundation)
@@ -48,6 +47,8 @@ kotlin {
         implementation("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")
         // Link Previews
         implementation("org.jsoup:jsoup:1.13.1")
+        // Resources
+        implementation("dev.icerock.moko:resources:0.22.3")
       }
     }
     val commonTest by getting {
@@ -55,57 +56,43 @@ kotlin {
         implementation(kotlin("test"))
       }
     }
-    // LALAL CHANGE TO IMPLEMENTATION
     val androidMain by getting {
       dependencies {
-        api("androidx.appcompat:appcompat:1.5.1")
-        api("androidx.core:core-ktx:1.9.0")
-        api("androidx.activity:activity-compose:1.5.0")
+        implementation("androidx.activity:activity-compose:1.5.0")
         val work_version = "2.7.1"
-        api("androidx.work:work-runtime-ktx:$work_version")
-        api("androidx.work:work-multiprocess:$work_version")
-        api("com.google.accompanist:accompanist-insets:0.23.0")
-        api("dev.icerock.moko:resources:0.22.3")
+        implementation("androidx.work:work-runtime-ktx:$work_version")
+        implementation("com.google.accompanist:accompanist-insets:0.23.0")
+        implementation("dev.icerock.moko:resources:0.22.3")
 
         // Video support
-        api("com.google.android.exoplayer:exoplayer:2.17.1")
+        implementation("com.google.android.exoplayer:exoplayer:2.17.1")
 
         // Biometric authentication
-        api("androidx.biometric:biometric:1.2.0-alpha04")
+        implementation("androidx.biometric:biometric:1.2.0-alpha04")
 
         //Barcode
-        api("org.boofcv:boofcv-android:0.40.1")
+        implementation("org.boofcv:boofcv-android:0.40.1")
 
         //Camera Permission
-        api("com.google.accompanist:accompanist-permissions:0.23.0")
+        implementation("com.google.accompanist:accompanist-permissions:0.23.0")
 
-        api("androidx.webkit:webkit:1.4.0")
+        implementation("androidx.webkit:webkit:1.4.0")
 
         // GIFs support
-        api("io.coil-kt:coil-compose:2.1.0")
-        api("io.coil-kt:coil-gif:2.1.0")
+        implementation("io.coil-kt:coil-compose:2.1.0")
+        implementation("io.coil-kt:coil-gif:2.1.0")
 
-        api("com.jakewharton:process-phoenix:2.1.2")
+        implementation("com.jakewharton:process-phoenix:2.1.2")
 
         val camerax_version = "1.1.0-beta01"
-        api("androidx.camera:camera-core:${camerax_version}")
-        api("androidx.camera:camera-camera2:${camerax_version}")
-        api("androidx.camera:camera-lifecycle:${camerax_version}")
-        api("androidx.camera:camera-view:${camerax_version}")
-
-        // LALAL REPLACE IT WITH SOURCE
-        // Wheel picker
-        api("com.github.zj565061763:compose-wheel-picker:1.0.0-alpha10")
-
-        // LALAL REMOVE
-        api("org.jsoup:jsoup:1.13.1")
-        api("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")
-        api("androidx.compose.ui:ui-tooling-preview:${extra["compose.version"]}")
+        implementation("androidx.camera:camera-core:${camerax_version}")
+        implementation("androidx.camera:camera-camera2:${camerax_version}")
+        implementation("androidx.camera:camera-lifecycle:${camerax_version}")
+        implementation("androidx.camera:camera-view:${camerax_version}")
       }
     }
     val desktopMain by getting {
       dependencies {
-        implementation("dev.icerock.moko:resources:0.22.3")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.1")
       }
     }
@@ -127,7 +114,7 @@ android {
 }
 
 multiplatformResources {
-  multiplatformResourcesPackage = "com.icerockdev.library"
+  multiplatformResourcesPackage = "chat.simplex.res"
   //  multiplatformResourcesClassName = "MR"
 }
 

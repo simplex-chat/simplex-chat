@@ -17,6 +17,8 @@ public enum ChatCommand {
     case createActiveUser(profile: Profile?, sameServers: Bool, pastTimestamp: Bool)
     case listUsers
     case apiSetActiveUser(userId: Int64, viewPwd: String?)
+    case setAllContactReceipts(enable: Bool)
+    case apiSetUserContactReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
     case apiHideUser(userId: Int64, viewPwd: String)
     case apiUnhideUser(userId: Int64, viewPwd: String)
     case apiMuteUser(userId: Int64)
@@ -66,6 +68,7 @@ public enum ChatCommand {
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
+    case reconnectAllServers
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
@@ -73,6 +76,8 @@ public enum ChatCommand {
     case apiSwitchGroupMember(groupId: Int64, groupMemberId: Int64)
     case apiAbortSwitchContact(contactId: Int64)
     case apiAbortSwitchGroupMember(groupId: Int64, groupMemberId: Int64)
+    case apiSyncContactRatchet(contactId: Int64, force: Bool)
+    case apiSyncGroupMemberRatchet(groupId: Int64, groupMemberId: Int64, force: Bool)
     case apiGetContactCode(contactId: Int64)
     case apiGetGroupMemberCode(groupId: Int64, groupMemberId: Int64)
     case apiVerifyContact(contactId: Int64, connectionCode: String?)
@@ -119,6 +124,10 @@ public enum ChatCommand {
                 return "/_create user \(encodeJSON(user))"
             case .listUsers: return "/users"
             case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
+            case let .setAllContactReceipts(enable): return "/set receipts all \(onOff(enable))"
+            case let .apiSetUserContactReceipts(userId, userMsgReceiptSettings):
+                let umrs = userMsgReceiptSettings
+                return "/_set receipts \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
@@ -176,6 +185,7 @@ public enum ChatCommand {
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
+            case .reconnectAllServers: return "/reconnect"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
@@ -183,6 +193,16 @@ public enum ChatCommand {
             case let .apiSwitchGroupMember(groupId, groupMemberId): return "/_switch #\(groupId) \(groupMemberId)"
             case let .apiAbortSwitchContact(contactId): return "/_abort switch @\(contactId)"
             case let .apiAbortSwitchGroupMember(groupId, groupMemberId): return "/_abort switch #\(groupId) \(groupMemberId)"
+            case let .apiSyncContactRatchet(contactId, force): if force {
+                return "/_sync @\(contactId) force=on"
+            } else {
+                return "/_sync @\(contactId)"
+            }
+            case let .apiSyncGroupMemberRatchet(groupId, groupMemberId, force): if force {
+                return "/_sync #\(groupId) \(groupMemberId) force=on"
+            } else {
+                return "/_sync #\(groupId) \(groupMemberId)"
+            }
             case let .apiGetContactCode(contactId): return "/_get code @\(contactId)"
             case let .apiGetGroupMemberCode(groupId, groupMemberId): return "/_get code #\(groupId) \(groupMemberId)"
             case let .apiVerifyContact(contactId, .some(connectionCode)): return "/_verify code @\(contactId) \(connectionCode)"
@@ -235,6 +255,8 @@ public enum ChatCommand {
             case .createActiveUser: return "createActiveUser"
             case .listUsers: return "listUsers"
             case .apiSetActiveUser: return "apiSetActiveUser"
+            case .setAllContactReceipts: return "setAllContactReceipts"
+            case .apiSetUserContactReceipts: return "apiSetUserContactReceipts"
             case .apiHideUser: return "apiHideUser"
             case .apiUnhideUser: return "apiUnhideUser"
             case .apiMuteUser: return "apiMuteUser"
@@ -284,6 +306,7 @@ public enum ChatCommand {
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
+            case .reconnectAllServers: return "reconnectAllServers"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
@@ -291,6 +314,8 @@ public enum ChatCommand {
             case .apiSwitchGroupMember: return "apiSwitchGroupMember"
             case .apiAbortSwitchContact: return "apiAbortSwitchContact"
             case .apiAbortSwitchGroupMember: return "apiAbortSwitchGroupMember"
+            case .apiSyncContactRatchet: return "apiSyncContactRatchet"
+            case .apiSyncGroupMemberRatchet: return "apiSyncGroupMemberRatchet"
             case .apiGetContactCode: return "apiGetContactCode"
             case .apiGetGroupMemberCode: return "apiGetGroupMemberCode"
             case .apiVerifyContact: return "apiVerifyContact"
@@ -407,6 +432,14 @@ public enum ChatResponse: Decodable, Error {
     case groupMemberSwitchStarted(user: User, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
     case contactSwitchAborted(user: User, contact: Contact, connectionStats: ConnectionStats)
     case groupMemberSwitchAborted(user: User, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
+    case contactSwitch(user: User, contact: Contact, switchProgress: SwitchProgress)
+    case groupMemberSwitch(user: User, groupInfo: GroupInfo, member: GroupMember, switchProgress: SwitchProgress)
+    case contactRatchetSyncStarted(user: User, contact: Contact, connectionStats: ConnectionStats)
+    case groupMemberRatchetSyncStarted(user: User, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
+    case contactRatchetSync(user: User, contact: Contact, ratchetSyncProgress: RatchetSyncProgress)
+    case groupMemberRatchetSync(user: User, groupInfo: GroupInfo, member: GroupMember, ratchetSyncProgress: RatchetSyncProgress)
+    case contactVerificationReset(user: User, contact: Contact)
+    case groupMemberVerificationReset(user: User, groupInfo: GroupInfo, member: GroupMember)
     case contactCode(user: User, contact: Contact, connectionCode: String)
     case groupMemberCode(user: User, groupInfo: GroupInfo, member: GroupMember, connectionCode: String)
     case connectionVerified(user: User, verified: Bool, expectedCode: String)
@@ -530,6 +563,14 @@ public enum ChatResponse: Decodable, Error {
             case .groupMemberSwitchStarted: return "groupMemberSwitchStarted"
             case .contactSwitchAborted: return "contactSwitchAborted"
             case .groupMemberSwitchAborted: return "groupMemberSwitchAborted"
+            case .contactSwitch: return "contactSwitch"
+            case .groupMemberSwitch: return "groupMemberSwitch"
+            case .contactRatchetSyncStarted: return "contactRatchetSyncStarted"
+            case .groupMemberRatchetSyncStarted: return "groupMemberRatchetSyncStarted"
+            case .contactRatchetSync: return "contactRatchetSync"
+            case .groupMemberRatchetSync: return "groupMemberRatchetSync"
+            case .contactVerificationReset: return "contactVerificationReset"
+            case .groupMemberVerificationReset: return "groupMemberVerificationReset"
             case .contactCode: return "contactCode"
             case .groupMemberCode: return "groupMemberCode"
             case .connectionVerified: return "connectionVerified"
@@ -652,6 +693,14 @@ public enum ChatResponse: Decodable, Error {
             case let .groupMemberSwitchStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
             case let .contactSwitchAborted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
             case let .groupMemberSwitchAborted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
+            case let .contactSwitch(u, contact, switchProgress): return withUser(u, "contact: \(String(describing: contact))\nswitchProgress: \(String(describing: switchProgress))")
+            case let .groupMemberSwitch(u, groupInfo, member, switchProgress): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nswitchProgress: \(String(describing: switchProgress))")
+            case let .contactRatchetSyncStarted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
+            case let .groupMemberRatchetSyncStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
+            case let .contactRatchetSync(u, contact, ratchetSyncProgress): return withUser(u, "contact: \(String(describing: contact))\nratchetSyncProgress: \(String(describing: ratchetSyncProgress))")
+            case let .groupMemberRatchetSync(u, groupInfo, member, ratchetSyncProgress): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nratchetSyncProgress: \(String(describing: ratchetSyncProgress))")
+            case let .contactVerificationReset(u, contact): return withUser(u, "contact: \(String(describing: contact))")
+            case let .groupMemberVerificationReset(u, groupInfo, member): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))")
             case let .contactCode(u, contact, connectionCode): return withUser(u, "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)")
             case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
@@ -994,6 +1043,7 @@ public struct NetCfg: Codable, Equatable {
     public var sessionMode: TransportSessionMode
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
+    public var tcpTimeoutPerKb: Int // microseconds
     public var tcpKeepAlive: KeepAliveOpts?
     public var smpPingInterval: Int // microseconds
     public var smpPingCount: Int // times
@@ -1004,6 +1054,7 @@ public struct NetCfg: Codable, Equatable {
         sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 10_000_000,
         tcpTimeout: 7_000_000,
+        tcpTimeoutPerKb: 10_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1015,6 +1066,7 @@ public struct NetCfg: Codable, Equatable {
         sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 20_000_000,
         tcpTimeout: 15_000_000,
+        tcpTimeoutPerKb: 20_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1090,19 +1142,42 @@ public struct KeepAliveOpts: Codable, Equatable {
 
 public struct ChatSettings: Codable {
     public var enableNtfs: Bool
+    public var sendRcpts: Bool?
     public var favorite: Bool
 
-    public init(enableNtfs: Bool, favorite: Bool) {
+    public init(enableNtfs: Bool, sendRcpts: Bool?, favorite: Bool) {
         self.enableNtfs = enableNtfs
+        self.sendRcpts = sendRcpts
         self.favorite = favorite
     }
 
-    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true, favorite: false)
+    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true, sendRcpts: nil, favorite: false)
 }
 
-public struct ConnectionStats: Codable {
+public struct UserMsgReceiptSettings: Codable {
+    public var enable: Bool
+    public var clearOverrides: Bool
+
+    public init(enable: Bool, clearOverrides: Bool) {
+        self.enable = enable
+        self.clearOverrides = clearOverrides
+    }
+}
+
+public struct ConnectionStats: Decodable {
+    public var connAgentVersion: Int
     public var rcvQueuesInfo: [RcvQueueInfo]
     public var sndQueuesInfo: [SndQueueInfo]
+    public var ratchetSyncState: RatchetSyncState
+    public var ratchetSyncSupported: Bool
+
+    public var ratchetSyncAllowed: Bool {
+        ratchetSyncSupported && [.allowed, .required].contains(ratchetSyncState)
+    }
+
+    public var ratchetSyncSendProhibited: Bool {
+        [.required, .started, .agreed].contains(ratchetSyncState)
+    }
 }
 
 public struct RcvQueueInfo: Codable {
@@ -1126,6 +1201,30 @@ public struct SndQueueInfo: Codable {
 public enum SndSwitchStatus: String, Codable {
     case sendingQKEY = "sending_qkey"
     case sendingQTEST = "sending_qtest"
+}
+
+public enum QueueDirection: String, Decodable {
+    case rcv
+    case snd
+}
+
+public struct SwitchProgress: Decodable {
+    public var queueDirection: QueueDirection
+    public var switchPhase: SwitchPhase
+    public var connectionStats: ConnectionStats
+}
+
+public struct RatchetSyncProgress: Decodable {
+    public var ratchetSyncStatus: RatchetSyncState
+    public var connectionStats: ConnectionStats
+}
+
+public enum RatchetSyncState: String, Decodable {
+    case ok
+    case allowed
+    case required
+    case started
+    case agreed
 }
 
 public struct UserContactLink: Decodable {

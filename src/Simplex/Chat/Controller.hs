@@ -8,6 +8,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -44,8 +45,9 @@ import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
+import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
@@ -60,6 +62,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, 
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
+import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors)
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
@@ -107,6 +110,7 @@ data ChatConfig = ChatConfig
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     tempDir :: Maybe FilePath,
     showReactions :: Bool,
+    showReceipts :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -196,6 +200,9 @@ data ChatCommand
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
   | SetActiveUser UserName (Maybe UserPwd)
+  | SetAllContactReceipts Bool
+  | APISetUserContactReceipts UserId UserMsgReceiptSettings
+  | SetUserContactReceipts UserMsgReceiptSettings
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId
@@ -279,6 +286,7 @@ data ChatCommand
   | GetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
+  | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
   | APIGroupMemberInfo GroupId GroupMemberId
@@ -286,19 +294,24 @@ data ChatCommand
   | APISwitchGroupMember GroupId GroupMemberId
   | APIAbortSwitchContact ContactId
   | APIAbortSwitchGroupMember GroupId GroupMemberId
+  | APISyncContactRatchet ContactId Bool
+  | APISyncGroupMemberRatchet GroupId GroupMemberId Bool
   | APIGetContactCode ContactId
   | APIGetGroupMemberCode GroupId GroupMemberId
   | APIVerifyContact ContactId (Maybe Text)
   | APIVerifyGroupMember GroupId GroupMemberId (Maybe Text)
   | APIEnableContact ContactId
   | APIEnableGroupMember GroupId GroupMemberId
-  | ShowMessages ChatName Bool
+  | SetShowMessages ChatName Bool
+  | SetSendReceipts ChatName (Maybe Bool)
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
   | AbortSwitchContact ContactName
   | AbortSwitchGroupMember GroupName ContactName
+  | SyncContactRatchet ContactName Bool
+  | SyncGroupMemberRatchet GroupName ContactName Bool
   | GetContactCode ContactName
   | GetGroupMemberCode GroupName ContactName
   | VerifyContact ContactName (Maybe Text)
@@ -414,6 +427,12 @@ data ChatResponse
   | CRGroupMemberSwitchAborted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitch {user :: User, contact :: Contact, switchProgress :: SwitchProgress}
   | CRGroupMemberSwitch {user :: User, groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
+  | CRContactRatchetSyncStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
+  | CRGroupMemberRatchetSyncStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
+  | CRContactRatchetSync {user :: User, contact :: Contact, ratchetSyncProgress :: RatchetSyncProgress}
+  | CRGroupMemberRatchetSync {user :: User, groupInfo :: GroupInfo, member :: GroupMember, ratchetSyncProgress :: RatchetSyncProgress}
+  | CRContactVerificationReset {user :: User, contact :: Contact}
+  | CRGroupMemberVerificationReset {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
@@ -718,6 +737,14 @@ data SwitchProgress = SwitchProgress
 
 instance ToJSON SwitchProgress where toEncoding = J.genericToEncoding J.defaultOptions
 
+data RatchetSyncProgress = RatchetSyncProgress
+  { ratchetSyncStatus :: RatchetSyncState,
+    connectionStats :: ConnectionStats
+  }
+  deriving (Show, Generic)
+
+instance ToJSON RatchetSyncProgress where toEncoding = J.genericToEncoding J.defaultOptions
+
 data ParsedServerAddress = ParsedServerAddress
   { serverAddress :: Maybe ServerAddress,
     parseError :: String
@@ -880,6 +907,22 @@ throwDBError = throwError . ChatErrorDatabase
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
+
+tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
+tryChatError = tryAllErrors mkChatError
+{-# INLINE tryChatError #-}
+
+catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
+catchChatError = catchAllErrors mkChatError
+{-# INLINE catchChatError #-}
+
+chatFinally :: ChatMonad m => m a -> m b -> m a
+chatFinally = allFinally mkChatError
+{-# INLINE chatFinally #-}
+
+mkChatError :: SomeException -> ChatError
+mkChatError = ChatError . CEException . show
+{-# INLINE mkChatError #-}
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError

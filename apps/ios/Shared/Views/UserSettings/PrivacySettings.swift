@@ -10,12 +10,28 @@ import SwiftUI
 import SimpleXChat
 
 struct PrivacySettings: View {
+    @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
+    @State private var contactReceipts = false
+    @State private var contactReceiptsReset = false
+    @State private var contactReceiptsOverrides = 0
+    @State private var contactReceiptsDialogue = false
+    @State private var alert: PrivacySettingsViewAlert?
+
+    enum PrivacySettingsViewAlert: Identifiable {
+        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+
+        var id: String {
+            switch self {
+            case let .error(title, _): return "error \(title)"
+            }
+        }
+    }
 
     var body: some View {
         VStack {
@@ -68,6 +84,102 @@ struct PrivacySettings: View {
                         Text("Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.")
                     }
                 }
+
+                Section {
+                    settingsRow("person") {
+                        Toggle("Contacts", isOn: $contactReceipts)
+                    }
+//                    settingsRow("person.2") {
+//                        Toggle("Small groups (max 20)", isOn: Binding.constant(false))
+//                    }
+                } header: {
+                    Text("Send delivery receipts to")
+                } footer: {
+                    VStack(alignment: .leading) {
+                        Text("These settings are for your current profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                        Text("They can be overridden in contact settings")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .confirmationDialog(contactReceiptsDialogTitle, isPresented: $contactReceiptsDialogue, titleVisibility: .visible) {
+                    Button(contactReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
+                        setSendReceiptsContacts(contactReceipts, clearOverrides: false)
+                    }
+                    Button(contactReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
+                        setSendReceiptsContacts(contactReceipts, clearOverrides: true)
+                    }
+                    Button("Cancel", role: .cancel) {
+                        contactReceiptsReset = true
+                        contactReceipts.toggle()
+                    }
+                }
+            }
+        }
+        .onChange(of: contactReceipts) { _ in // sometimes there is race with onAppear
+            if contactReceiptsReset {
+                contactReceiptsReset = false
+            } else {
+                setOrAskSendReceiptsContacts(contactReceipts)
+            }
+        }
+        .onAppear {
+            if let u = m.currentUser, contactReceipts != u.sendRcptsContacts {
+                contactReceiptsReset = true
+                contactReceipts = u.sendRcptsContacts
+            }
+        }
+        .alert(item: $alert) { alert in
+            switch alert {
+            case let .error(title, error):
+                return Alert(title: Text(title), message: Text(error))
+            }
+        }
+    }
+
+    private func setOrAskSendReceiptsContacts(_ enable: Bool) {
+        contactReceiptsOverrides = m.chats.reduce(0) { count, chat in
+            let sendRcpts = chat.chatInfo.contact?.chatSettings.sendRcpts
+            return count + (sendRcpts == nil || sendRcpts == enable ? 0 : 1)
+        }
+        if contactReceiptsOverrides == 0 {
+            setSendReceiptsContacts(enable, clearOverrides: false)
+        } else {
+            contactReceiptsDialogue = true
+        }
+    }
+
+    private var contactReceiptsDialogTitle: LocalizedStringKey {
+        contactReceipts
+        ? "Sending receipts is disabled for \(contactReceiptsOverrides) contacts"
+        : "Sending receipts is enabled for \(contactReceiptsOverrides) contacts"
+    }
+
+    private func setSendReceiptsContacts(_ enable: Bool, clearOverrides: Bool) {
+        Task {
+            do {
+                if let currentUser = m.currentUser {
+                    let userMsgReceiptSettings = UserMsgReceiptSettings(enable: enable, clearOverrides: clearOverrides)
+                    try await apiSetUserContactReceipts(currentUser.userId, userMsgReceiptSettings: userMsgReceiptSettings)
+                    privacyDeliveryReceiptsSet.set(true)
+                    await MainActor.run {
+                        var updatedUser = currentUser
+                        updatedUser.sendRcptsContacts = enable
+                        m.updateUser(updatedUser)
+                        if clearOverrides {
+                            m.chats.forEach { chat in
+                                if var contact = chat.chatInfo.contact {
+                                    let sendRcpts = contact.chatSettings.sendRcpts
+                                    if sendRcpts != nil && sendRcpts != enable {
+                                        contact.chatSettings.sendRcpts = nil
+                                        m.updateContact(contact)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch let error {
+                alert = .error(title: "Error setting delivery receipts!", error: "Error: \(responseError(error))")
             }
         }
     }

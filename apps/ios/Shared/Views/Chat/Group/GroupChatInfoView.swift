@@ -126,6 +126,7 @@ struct GroupChatInfoView: View {
                 logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
         }
+         .keyboardPadding()
     }
 
     private func groupInfoHeader() -> some View {
@@ -137,12 +138,14 @@ struct GroupChatInfoView: View {
                 .padding()
             Text(cInfo.displayName)
                 .font(.largeTitle)
-                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .lineLimit(4)
                 .padding(.bottom, 2)
             if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
                 Text(cInfo.fullName)
                     .font(.title2)
-                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(8)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
