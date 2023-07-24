@@ -24,6 +24,12 @@ import chat.simplex.common.platform.*
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
+  val close = {
+    close()
+    if (appPlatform.isDesktop) {
+      ModalManager.center.closeModals()
+    }
+  }
   BackHandler(onBack = {
     close()
   })
@@ -126,7 +132,8 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
         modifier = Modifier
           .fillMaxWidth()
           .clickable {
-            ModalManager.shared.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
+            ModalManager.center.closeModals()
+            ModalManager.center.showModal(showClose = appPlatform.isAndroid, endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
               }

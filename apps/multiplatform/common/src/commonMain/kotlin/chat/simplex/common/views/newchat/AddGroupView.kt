@@ -45,7 +45,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
           chatModel.chatId.value = groupInfo.id
           setGroupMembers(groupInfo, chatModel)
           close.invoke()
-          ModalManager.shared.showModalCloseable(true) { close ->
+          ModalManager.end.showModalCloseable(true) { close ->
             AddGroupMembersView(groupInfo, true, chatModel, close)
           }
         }

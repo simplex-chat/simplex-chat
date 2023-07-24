@@ -44,7 +44,7 @@ fun CIVideoView(
       val view = LocalMultiplatformView()
       VideoView(uri, file, preview, duration * 1000L, showMenu, onClick = {
         hideKeyboard(view)
-        ModalManager.shared.showCustomModal(animated = false) { close ->
+        ModalManager.fullscreen.showCustomModal(animated = false) { close ->
           ImageFullScreenView(imageProvider, close)
         }
       })
@@ -113,7 +113,7 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
   }
   Box {
     val windowWidth = LocalWindowWidth()
-    val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 1000.dp }
+    val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 500.dp }
     PlayerView(
       player,
       width,
@@ -202,7 +202,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
 @Composable
 private fun ImageView(preview: ImageBitmap, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
   val windowWidth = LocalWindowWidth()
-  val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 1000.dp }
+  val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 500.dp }
   Image(
     preview,
     contentDescription = stringResource(MR.strings.video_descr),
@@ -311,5 +311,5 @@ private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
 
 private fun videoViewFullWidth(windowWidth: Dp): Dp {
   val approximatePadding = 100.dp
-  return minOf(1000.dp, windowWidth - approximatePadding)
+  return minOf(500.dp, windowWidth - approximatePadding)
 }

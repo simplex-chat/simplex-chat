@@ -1,18 +1,21 @@
 package chat.simplex.common
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.SimpleButton
 import chat.simplex.common.views.SplashView
 import chat.simplex.common.views.call.ActiveCallView
@@ -22,6 +25,7 @@ import chat.simplex.common.views.chatlist.ChatListView
 import chat.simplex.common.views.chatlist.ShareListView
 import chat.simplex.common.views.database.DatabaseErrorView
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -66,7 +70,7 @@ fun MainScreen() {
   }
   LaunchedEffect(chatModel.clearOverlays.value) {
     if (chatModel.clearOverlays.value) {
-      ModalManager.shared.closeModals()
+      ModalManager.closeAllModalsEverywhere()
       chatModel.clearOverlays.value = false
     }
   }
@@ -112,13 +116,18 @@ fun MainScreen() {
           }
         }
       }
-      onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
+      onboarding == OnboardingStage.Step1_SimpleXInfo -> {
+        SimpleXInfo(chatModel, onboarding = true)
+        if (appPlatform.isDesktop) {
+          ModalManager.fullscreen.showInView()
+        }
+      }
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel) {}
       onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel)
       onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     if (appPlatform.isAndroid) {
-      ModalManager.shared.showInView()
+      ModalManager.fullscreen.showInView()
     }
 
     val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
@@ -138,7 +147,7 @@ fun MainScreen() {
     } else if (chatModel.showCallView.value) {
       ActiveCallView()
     }
-    ModalManager.shared.showPasscodeInView()
+    ModalManager.fullscreen.showPasscodeInView()
     val invitation = chatModel.activeCallInvitation.value
     if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()
@@ -171,7 +180,7 @@ fun AndroidScreen() {
           translationX = -offset.value.dp.toPx()
         }
     ) {
-      LeftPartOfScreen()
+      StartPartOfScreen()
     }
     val scope = rememberCoroutineScope()
     val onComposed: () -> Unit = {
@@ -204,7 +213,7 @@ fun AndroidScreen() {
 }
 
 @Composable
-fun LeftPartOfScreen() {
+fun StartPartOfScreen() {
   if (chatModel.setDeliveryReceipts.value) {
     SetDeliveryReceiptsView(chatModel)
   } else {
@@ -219,23 +228,52 @@ fun LeftPartOfScreen() {
 @Composable
 fun CenterPartOfScreen() {
   val currentChatId by remember { ChatModel.chatId }
-  currentChatId?.let {
-    ChatView(it, chatModel) {}
+  when (val id = currentChatId) {
+    null -> {
+      if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
+        Box(
+          Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.background),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(stringResource(MR.strings.no_selected_chat))
+        }
+      } else {
+        ModalManager.center.showInView()
+      }
+    }
+    else -> ChatView(id, chatModel) {}
   }
+}
+
+@Composable
+fun EndPartOfScreen() {
+  ModalManager.end.showInView()
 }
 
 @Composable
 fun DesktopScreen() {
   Box {
-    Box(Modifier.width(400.dp + 56.dp)) {
-      LeftPartOfScreen()
+    // 56.dp is a size of unused space of settings drawer
+    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH + 56.dp)) {
+      StartPartOfScreen()
     }
-    Box(Modifier.widthIn(max = 400.dp)) {
-      ModalManager.shared.showInView()
+    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH)) {
+      ModalManager.start.showInView()
     }
-    Box(Modifier.padding(start = 400.dp)) {
-      CenterPartOfScreen()
+    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH).clipToBounds()) {
+      Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
+        CenterPartOfScreen()
+      }
+      VerticalDivider()
+      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH).clipToBounds()) {
+        EndPartOfScreen()
+      }
     }
+    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH))
+    ModalManager.fullscreen.showInView()
+    ModalManager.fullscreen.showPasscodeInView()
   }
 }
 

@@ -23,17 +23,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.appPlatform
-import chat.simplex.common.platform.appVersionInfo
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, closeSettings: () -> Unit) {
+fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerState: DrawerState) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
 
@@ -49,10 +49,10 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, closeSet
       chatModel.controller.appPrefs.incognito,
       user.displayName,
       setPerformLA = setPerformLA,
-      showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
-      showSettingsModal = { modalView -> { ModalManager.shared.showModal(true) { modalView(chatModel) } } },
+      showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
+      showSettingsModal = { modalView -> { ModalManager.start.showModal(true) { modalView(chatModel) } } },
       showSettingsModalWithSearch = { modalView ->
-        ModalManager.shared.showCustomModal { close ->
+        ModalManager.start.showCustomModal { close ->
           val search = rememberSaveable { mutableStateOf("") }
           ModalView(
             { close() },
@@ -62,12 +62,12 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, closeSet
             content = { modalView(chatModel, search) })
         }
       },
-      showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
+      showCustomModal = { modalView -> { ModalManager.start.showCustomModal { close -> modalView(chatModel, close) } } },
       showVersion = {
         withApi {
           val info = chatModel.controller.apiGetVersion()
           if (info != null) {
-            ModalManager.shared.showModal { VersionInfoView(info) }
+            ModalManager.start.showModal { VersionInfoView(info) }
           }
         }
       },
@@ -76,7 +76,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, closeSet
           block()
         } else {
           var autoShow = true
-          ModalManager.shared.showModalCloseable { close ->
+          ModalManager.fullscreen.showModalCloseable { close ->
             val onFinishAuth = { success: Boolean ->
               if (success) {
                 close()
@@ -105,7 +105,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, closeSet
           }
         }
       },
-      closeSettings = closeSettings,
+      drawerState = drawerState,
     )
   }
 }
@@ -128,19 +128,23 @@ fun SettingsLayout(
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
-  closeSettings: () -> Unit,
+  drawerState: DrawerState,
 ) {
+  val scope = rememberCoroutineScope()
+  val closeSettings: () -> Unit = { scope.launch { drawerState.close() } }
+  if (drawerState.isOpen) {
+    BackHandler {
+      closeSettings()
+    }
+  }
   val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
-  Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).themedBackground(theme.value.base)) {
-    if (appPlatform.isDesktop) {
-      Box(Modifier.padding(start = 3.dp, top = 8.dp)) {
-        NavigationButtonBack(closeSettings)
-      }
-    }
+  Box(Modifier.fillMaxSize()) {
     Column(
       Modifier
         .fillMaxSize()
+        .verticalScroll(rememberScrollState())
+        .themedBackground(theme.value.base)
         .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 3)
     ) {
       AppBarTitle(stringResource(MR.strings.your_settings))
@@ -185,6 +189,11 @@ fun SettingsLayout(
 
       SettingsSectionApp(showSettingsModal, showCustomModal, showVersion, withAuth)
       SectionBottomSpacer()
+    }
+    if (appPlatform.isDesktop) {
+      Box(Modifier.fillMaxWidth().background(MaterialTheme.colors.background).background(if (isInDarkTheme()) ToolbarDark else ToolbarLight).padding(start = 3.dp, top = 8.dp)) {
+        NavigationButtonBack(closeSettings)
+      }
     }
   }
 }
@@ -518,7 +527,7 @@ fun PreviewSettingsLayout() {
       showCustomModal = { {} },
       showVersion = {},
       withAuth = { _, _, _ -> },
-      closeSettings = {},
+      drawerState = DrawerState(DrawerValue.Closed),
     )
   }
 }

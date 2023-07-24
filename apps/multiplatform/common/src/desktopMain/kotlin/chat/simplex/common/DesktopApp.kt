@@ -24,7 +24,8 @@ import java.io.File
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() = application {
-  val windowState = rememberWindowState(placement = WindowPlacement.Floating)
+  val windowState = rememberWindowState(placement = WindowPlacement.Floating, width = 1000.dp)
+  simplexWindowState.windowState = windowState
   Window(state = windowState, onCloseRequest = ::exitApplication, onKeyEvent = {
     if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
       simplexWindowState.backstack.lastOrNull()?.invoke() != null
@@ -108,6 +109,7 @@ fun showApp() = application {
 }
 
 class SimplexWindowState {
+  lateinit var windowState: WindowState
   val backstack = mutableStateListOf<() -> Unit>()
   val openDialog = DialogState<File?>()
   val openMultipleDialog = DialogState<List<File>>()

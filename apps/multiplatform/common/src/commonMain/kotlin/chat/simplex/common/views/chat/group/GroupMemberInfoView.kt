@@ -149,7 +149,7 @@ fun GroupMemberInfoView(
         })
       },
       verifyClicked = {
-        ModalManager.shared.showModalCloseable { close ->
+        ModalManager.end.showModalCloseable { close ->
           remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
             VerifyCodeView(
               mem.displayName,

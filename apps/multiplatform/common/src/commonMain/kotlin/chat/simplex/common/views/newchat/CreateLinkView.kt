@@ -35,7 +35,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
    **/
   DisposableEffect(Unit) {
     onDispose {
-      if (!ModalManager.shared.hasModalsOpen()) {
+      if (!ModalManager.center.hasModalsOpen()) {
         m.connReqInv.value = null
       }
     }

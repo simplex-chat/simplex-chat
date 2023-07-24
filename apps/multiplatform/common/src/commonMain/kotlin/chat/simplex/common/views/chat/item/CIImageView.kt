@@ -85,7 +85,7 @@ fun CIImageView(
   @Composable
   fun imageViewFullWidth(): Dp {
     val approximatePadding = 100.dp
-    return with(LocalDensity.current) { minOf(1000.dp, LocalWindowWidth() - approximatePadding) }
+    return with(LocalDensity.current) { minOf(500.dp, LocalWindowWidth() - approximatePadding) }
   }
 
   @Composable
@@ -93,10 +93,10 @@ fun CIImageView(
     Image(
       imageBitmap,
       contentDescription = stringResource(MR.strings.image_descr),
-      // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
+      // .width(500.dp) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else 1000.dp)
+        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else 500.dp)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
@@ -110,10 +110,10 @@ fun CIImageView(
     Image(
       painter,
       contentDescription = stringResource(MR.strings.image_descr),
-      // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
+      // .width(500.dp) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else 1000.dp)
+        .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else 500.dp)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
