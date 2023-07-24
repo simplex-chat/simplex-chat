@@ -2869,12 +2869,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         SENT msgId -> do
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
-          withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId msgId) >>= \case
-            Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ _}}) -> pure ()
-            Just (CChatItem SMDSnd ci) -> do
-              chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) (CISSndSent SSPComplete)
-              toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
-            _ -> pure ()
+          updateDirectItemStatus ct conn msgId $ CISSndSent SSPComplete
         SWITCH qd phase cStats -> do
           toView $ CRContactSwitch user ct (SwitchProgress qd phase cStats)
           when (phase `elem` [SPStarted, SPCompleted]) $ case qd of
@@ -2915,10 +2910,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
             when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
         MERR msgId err -> do
-          chatItemId_ <- withStore' $ \db -> getChatItemIdByAgentMsgId db connId msgId
-          forM_ chatItemId_ $ \chatItemId -> do
-            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId chatItemId (agentErrToItemStatus err)
-            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+          updateDirectItemStatus ct conn msgId $ agentErrToItemStatus err
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           incAuthErrCounter connEntity conn err
         ERR err -> do
@@ -3064,7 +3056,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
-          pure False -- no receipts in group now $ hasDeliveryReceipt $ toCMEventTag event
+          -- pure False -- no receipts in group now $ hasDeliveryReceipt $ toCMEventTag event
+          pure True
         where
           canSend a
             | memberRole (m :: GroupMember) <= GRObserver = messageError "member is not allowed to send messages"
@@ -4303,15 +4296,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
-    directMsgReceived ct@Contact {contactId} Connection {connId} msgMeta msgRcpts = do
+    directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore $ \db -> createSndMsgDeliveryEvent db connId agentMsgId $ MDSSndRcvd msgRcptStatus
-        withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId agentMsgId) >>= \case
-          Just (CChatItem SMDSnd ci) -> do
-            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) (CISSndRcvd msgRcptStatus SSPComplete)
-            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
-          _ -> pure ()
+        updateDirectItemStatus ct conn agentMsgId $ CISSndRcvd msgRcptStatus SSPComplete
 
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     groupMsgReceived gInfo m conn@Connection {connId} msgMeta msgRcpts = do
@@ -4319,6 +4308,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore $ \db -> createSndMsgDeliveryEvent db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         updateGroupItemStatus gInfo m conn agentMsgId $ CISSndRcvd msgRcptStatus SSPComplete
+
+    updateDirectItemStatus :: Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> m ()
+    updateDirectItemStatus ct@Contact {contactId} Connection {connId} msgId newStatus =
+      withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId msgId) >>= \case
+        Just (CChatItem SMDSnd ci) -> do
+          let currentStatus = chatItemStatus' ci
+          when (shouldUpdateSndCIStatus currentStatus newStatus) $ do
+            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) newStatus
+            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+        _ -> pure ()
 
     updateGroupItemStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> m ()
     updateGroupItemStatus gInfo@GroupInfo {groupId} m Connection {connId} msgId newMemStatus =

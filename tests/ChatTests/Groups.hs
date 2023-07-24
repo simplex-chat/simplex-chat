@@ -61,6 +61,8 @@ chatGroupTests = do
     it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
   describe "message reactions" $ do
     it "set group message reactions" testSetGroupMessageReactions
+  describe "delivery receipts" $ do
+    it "should send delivery receipts in group" testSendGroupDeliveryReceipts
 
 testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup
@@ -198,6 +200,7 @@ testGroupShared alice bob cath checkMessages = do
     alice @@@ [("@cath", "sent invitation to join group team as admin"), ("#team", "received")]
     bob @@@ [("@alice", "received invitation to join group team as admin"), ("@cath", "hey"), ("#team", "received")]
   -- test clearing chat
+  threadDelay 1000000
   alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
   alice #$> ("/_get chat #1 count=100", chat, [])
   bob #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
@@ -976,6 +979,7 @@ testGroupMessageDelete =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
+      threadDelay 1000000
       msgItemId1 <- lastItemId alice
       alice #$> ("/_delete item #1 " <> msgItemId1 <> " internal", id, "message deleted")
 
@@ -2197,47 +2201,46 @@ testGroupLinkLeaveDelete =
 testGroupMsgDecryptError :: HasCallStack => FilePath -> IO ()
 testGroupMsgDecryptError tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "cath" cathProfile $ \cath -> do
-      withNewTestChat tmp "bob" bobProfile $ \bob -> do
-        createGroup3 "team" alice bob cath
-        alice #> "#team hi"
-        [bob, cath] *<# "#team alice> hi"
-        bob #> "#team hey"
-        [alice, cath] *<# "#team bob> hey"
-      setupDesynchronizedRatchet tmp alice cath
-      withTestChat tmp "bob" $ \bob -> do
-        bob <## "2 contacts connected (use /cs for the list)"
-        bob <## "#team: connected to server(s)"
-        alice #> "#team hello again"
-        bob <# "#team alice> skipped message ID 8..10"
-        [bob, cath] *<# "#team alice> hello again"
-        bob #> "#team received!"
-        alice <# "#team bob> received!"
-        cath <# "#team bob> received!"
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      bob #> "#team hey"
+      alice <# "#team bob> hey"
+    setupDesynchronizedRatchet tmp alice
+    withTestChat tmp "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "#team: connected to server(s)"
+      alice #> "#team hello again"
+      bob <# "#team alice> skipped message ID 10..12"
+      bob <# "#team alice> hello again"
+      bob #> "#team received!"
+      alice <# "#team bob> received!"
 
-setupDesynchronizedRatchet :: HasCallStack => FilePath -> TestCC -> TestCC -> IO ()
-setupDesynchronizedRatchet tmp alice cath = do
+setupDesynchronizedRatchet :: HasCallStack => FilePath -> TestCC -> IO ()
+setupDesynchronizedRatchet tmp alice = do
   copyDb "bob" "bob_old"
   withTestChat tmp "bob" $ \bob -> do
-    bob <## "2 contacts connected (use /cs for the list)"
+    bob <## "1 contacts connected (use /cs for the list)"
     bob <## "#team: connected to server(s)"
-    alice #> "#team hello"
-    [bob, cath] *<# "#team alice> hello"
-    bob #> "#team hello too"
-    [alice, cath] *<# "#team bob> hello too"
+    alice #> "#team 1"
+    bob <# "#team alice> 1"
+    bob #> "#team 2"
+    alice <# "#team bob> 2"
+    alice #> "#team 3"
+    bob <# "#team alice> 3"
+    bob #> "#team 4"
+    alice <# "#team bob> 4"
   withTestChat tmp "bob_old" $ \bob -> do
-    bob <## "2 contacts connected (use /cs for the list)"
+    bob <## "1 contacts connected (use /cs for the list)"
     bob <## "#team: connected to server(s)"
     bob ##> "/sync #team alice"
     bob <## "error: command is prohibited"
     alice #> "#team 1"
     bob <## "#team alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync #team alice to synchronize"
-    cath <# "#team alice> 1"
     alice #> "#team 2"
-    cath <# "#team alice> 2"
     alice #> "#team 3"
-    cath <# "#team alice> 3"
     (bob </)
     bob ##> "/tail #team 1"
     bob <# "#team alice> decryption error, possibly due to the device change (header, 3 messages)"
@@ -2249,99 +2252,82 @@ setupDesynchronizedRatchet tmp alice cath = do
 testGroupSyncRatchet :: HasCallStack => FilePath -> IO ()
 testGroupSyncRatchet tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "cath" cathProfile $ \cath -> do
-      withNewTestChat tmp "bob" bobProfile $ \bob -> do
-        createGroup3 "team" alice bob cath
-        alice #> "#team hi"
-        [bob, cath] *<# "#team alice> hi"
-        bob #> "#team hey"
-        [alice, cath] *<# "#team bob> hey"
-      setupDesynchronizedRatchet tmp alice cath
-      withTestChat tmp "bob_old" $ \bob -> do
-        bob <## "2 contacts connected (use /cs for the list)"
-        bob <## "#team: connected to server(s)"
-        -- cath and bob are not fully de-synchronized
-        bob `send` "#team 1"
-        bob <## "error: command is prohibited" -- silence?
-        bob <# "#team 1"
-        (alice </)
-        (cath </)
-        cath #> "#team 1"
-        [alice, bob] *<# "#team cath> 1"
-        bob `send` "#team 2"
-        bob <## "error: command is prohibited"
-        bob <# "#team 2"
-        cath <# "#team bob> incorrect message hash"
-        cath <# "#team bob> 2"
-        bob `send` "#team 3"
-        bob <## "error: command is prohibited"
-        bob <# "#team 3"
-        cath <# "#team bob> 3"
-        -- synchronize bob and alice
-        bob ##> "/sync #team alice"
-        bob <## "connection synchronization started"
-        alice <## "#team bob: connection synchronization agreed"
-        bob <## "#team alice: connection synchronization agreed"
-        alice <## "#team bob: connection synchronized"
-        bob <## "#team alice: connection synchronized"
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      bob #> "#team hey"
+      alice <# "#team bob> hey"
+    setupDesynchronizedRatchet tmp alice
+    withTestChat tmp "bob_old" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "#team: connected to server(s)"
+      bob `send` "#team 1"
+      bob <## "error: command is prohibited" -- silence?
+      bob <# "#team 1"
+      (alice </)
+      -- synchronize bob and alice
+      bob ##> "/sync #team alice"
+      bob <## "connection synchronization started"
+      alice <## "#team bob: connection synchronization agreed"
+      bob <## "#team alice: connection synchronization agreed"
+      alice <## "#team bob: connection synchronized"
+      bob <## "#team alice: connection synchronized"
 
-        bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
-        alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+      bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
-        alice #> "#team hello again"
-        [bob, cath] *<# "#team alice> hello again"
-        bob #> "#team received!"
-        alice <# "#team bob> received!"
-        cath <# "#team bob> received!"
+      alice #> "#team hello again"
+      bob <# "#team alice> hello again"
+      bob #> "#team received!"
+      alice <# "#team bob> received!"
 
 testGroupSyncRatchetCodeReset :: HasCallStack => FilePath -> IO ()
 testGroupSyncRatchetCodeReset tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "cath" cathProfile $ \cath -> do
-      withNewTestChat tmp "bob" bobProfile $ \bob -> do
-        createGroup3 "team" alice bob cath
-        alice #> "#team hi"
-        [bob, cath] *<# "#team alice> hi"
-        bob #> "#team hey"
-        [alice, cath] *<# "#team bob> hey"
-        -- connection not verified
-        bob ##> "/i #team alice"
-        aliceInfo bob
-        bob <## "connection not verified, use /code command to see security code"
-        -- verify connection
-        alice ##> "/code #team bob"
-        bCode <- getTermLine alice
-        bob ##> ("/verify #team alice " <> bCode)
-        bob <## "connection verified"
-        -- connection verified
-        bob ##> "/i #team alice"
-        aliceInfo bob
-        bob <## "connection verified"
-      setupDesynchronizedRatchet tmp alice cath
-      withTestChat tmp "bob_old" $ \bob -> do
-        bob <## "2 contacts connected (use /cs for the list)"
-        bob <## "#team: connected to server(s)"
-        bob ##> "/sync #team alice"
-        bob <## "connection synchronization started"
-        alice <## "#team bob: connection synchronization agreed"
-        bob <## "#team alice: connection synchronization agreed"
-        bob <## "#team alice: security code changed"
-        alice <## "#team bob: connection synchronized"
-        bob <## "#team alice: connection synchronized"
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      bob #> "#team hey"
+      alice <# "#team bob> hey"
+      -- connection not verified
+      bob ##> "/i #team alice"
+      aliceInfo bob
+      bob <## "connection not verified, use /code command to see security code"
+      -- verify connection
+      alice ##> "/code #team bob"
+      bCode <- getTermLine alice
+      bob ##> ("/verify #team alice " <> bCode)
+      bob <## "connection verified"
+      -- connection verified
+      bob ##> "/i #team alice"
+      aliceInfo bob
+      bob <## "connection verified"
+    setupDesynchronizedRatchet tmp alice
+    withTestChat tmp "bob_old" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "#team: connected to server(s)"
+      bob ##> "/sync #team alice"
+      bob <## "connection synchronization started"
+      alice <## "#team bob: connection synchronization agreed"
+      bob <## "#team alice: connection synchronization agreed"
+      bob <## "#team alice: security code changed"
+      alice <## "#team bob: connection synchronized"
+      bob <## "#team alice: connection synchronized"
 
-        bob #$> ("/_get chat #1 count=4", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
-        alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+      bob #$> ("/_get chat #1 count=4", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
-        -- connection not verified
-        bob ##> "/i #team alice"
-        aliceInfo bob
-        bob <## "connection not verified, use /code command to see security code"
+      -- connection not verified
+      bob ##> "/i #team alice"
+      aliceInfo bob
+      bob <## "connection not verified, use /code command to see security code"
 
-        alice #> "#team hello again"
-        [bob, cath] *<# "#team alice> hello again"
-        bob #> "#team received!"
-        alice <# "#team bob> received!"
-        (cath </) -- bob is partially de-synchronized with cath - see test above
+      alice #> "#team hello again"
+      bob <# "#team alice> hello again"
+      bob #> "#team received!"
+      alice <# "#team bob> received!"
   where
     aliceInfo :: HasCallStack => TestCC -> IO ()
     aliceInfo bob = do
@@ -2418,3 +2404,33 @@ testSetGroupMessageReactions =
       cath ##> "/tail #team 1"
       cath <# "#team alice> hi"
       cath <## "      👍 1"
+
+testSendGroupDeliveryReceipts :: HasCallStack => FilePath -> IO ()
+testSendGroupDeliveryReceipts tmp =
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
+        -- turn off contacts receipts for tests
+        alice ##> "/_set receipts 1 off"
+        alice <## "ok"
+        bob ##> "/_set receipts 1 off"
+        bob <## "ok"
+        cath ##> "/_set receipts 1 off"
+        cath <## "ok"
+
+        createGroup3 "team" alice bob cath
+        threadDelay 1000000
+
+        alice #> "#team hi"
+        bob <# "#team alice> hi"
+        cath <# "#team alice> hi"
+        alice % "#team hi"
+        alice ⩗ "#team hi"
+
+        bob #> "#team hey"
+        alice <# "#team bob> hey"
+        cath <# "#team bob> hey"
+        bob % "#team hey"
+        bob ⩗ "#team hey"
+  where
+    cfg = testCfg {showReceipts = True}
