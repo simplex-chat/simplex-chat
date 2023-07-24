@@ -506,14 +506,14 @@ processChatCommand = \case
     (aci@(AChatItem cType dir _ ci), versions) <- withStore $ \db ->
       (,) <$> getAChatItem db user chatRef itemId <*> liftIO (getChatItemVersions db itemId)
     let itemVersions = if null versions then maybeToList $ mkItemVersion ci else versions
-    memDeliveryStatuses_ <- case (cType, dir) of
+    memberDeliveryStatuses <- case (cType, dir) of
       (SCTGroup, SMDSnd) -> do
         memStatuses <- withStore' (`getGroupSndStatuses` itemId)
         pure $ if M.null memStatuses
           then Nothing
           else Just $ map (uncurry MemberDeliveryStatus) (M.toList memStatuses)
       _ -> pure Nothing
-    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses = memDeliveryStatuses_}
+    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses}
   APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {contactId, localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
