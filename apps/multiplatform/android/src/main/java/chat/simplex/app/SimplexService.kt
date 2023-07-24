@@ -7,23 +7,26 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.*
 import android.provider.Settings
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.platform.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
-import chat.simplex.app.model.ChatController
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.usersettings.NotificationsMode
+import chat.simplex.common.AppLock
+import chat.simplex.common.AppLock.clearAuthState
+import chat.simplex.common.helpers.requiresIgnoringBattery
+import chat.simplex.common.model.ChatController
+import chat.simplex.common.model.NotificationsMode
+import chat.simplex.common.platform.androidAppContext
+import chat.simplex.common.views.helpers.*
+import kotlinx.coroutines.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.*
 
 // based on:
 // https://robertohuertas.com/2019/06/29/android_foreground_services/
@@ -97,7 +100,7 @@ class SimplexService: Service() {
     val self = this
     isStartingService = true
     withApi {
-      val chatController = (application as SimplexApp).chatController
+      val chatController = ChatController
       waitDbMigrationEnds(chatController)
       try {
         Log.w(TAG, "Starting foreground service")
@@ -105,7 +108,7 @@ class SimplexService: Service() {
         if (chatDbStatus != DBMigrationResult.OK) {
           Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
           showPassphraseNotification(chatDbStatus)
-          safeStopService(self)
+          safeStopService()
           return@withApi
         }
         saveServiceState(self, ServiceState.STARTED)
@@ -167,7 +170,7 @@ class SimplexService: Service() {
   // re-schedules the task when "Clear recent apps" is pressed
   override fun onTaskRemoved(rootIntent: Intent) {
     // Just to make sure that after restart of the app the user will need to re-authenticate
-    MainActivity.clearAuthState()
+    AppLock.clearAuthState()
 
     // If notification service isn't enabled or battery optimization isn't disabled, we shouldn't restart the service
     if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {
@@ -265,9 +268,9 @@ class SimplexService: Service() {
      * If there is a need to stop the service, use this function only. It makes sure that the service will be stopped without an
      * exception related to foreground services lifecycle
      * */
-    fun safeStopService(context: Context) {
+    fun safeStopService() {
       if (isServiceStarted) {
-        context.stopService(Intent(context, SimplexService::class.java))
+        androidAppContext.stopService(Intent(androidAppContext, SimplexService::class.java))
       } else {
         stopAfterStart = true
       }
@@ -276,9 +279,9 @@ class SimplexService: Service() {
     private suspend fun serviceAction(action: Action) {
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")
       withContext(Dispatchers.IO) {
-        Intent(SimplexApp.context, SimplexService::class.java).also {
+        Intent(androidAppContext, SimplexService::class.java).also {
           it.action = action.name
-          ContextCompat.startForegroundService(SimplexApp.context, it)
+          ContextCompat.startForegroundService(androidAppContext, it)
         }
       }
     }
@@ -352,7 +355,7 @@ class SimplexService: Service() {
 
     fun showBackgroundServiceNoticeIfNeeded() {
       val appPrefs = ChatController.appPrefs
-      val mode = NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!)
+      val mode = appPrefs.notificationsMode.get()
       Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
       // Nothing to do if mode is OFF. Can be selected on on-boarding stage
       if (mode == NotificationsMode.OFF) return
@@ -373,11 +376,10 @@ class SimplexService: Service() {
         if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
           // users have been presented with battery notice before - they did not allow ignoring optimizations -> disable service
           showDisablingServiceNotice(mode)
-          appPrefs.notificationsMode.set(NotificationsMode.OFF.name)
-          ChatModel.notificationsMode.value = NotificationsMode.OFF
-          SimplexService.StartReceiver.toggleReceiver(false)
+          appPrefs.notificationsMode.set(NotificationsMode.OFF)
+          StartReceiver.toggleReceiver(false)
           MessagesFetcherWorker.cancelAll()
-          SimplexService.safeStopService(SimplexApp.context)
+          safeStopService()
         } else {
           // show battery optimization notice
           showBGServiceNoticeIgnoreOptimization(mode)
@@ -489,18 +491,18 @@ class SimplexService: Service() {
     }
 
     fun isIgnoringBatteryOptimizations(): Boolean {
-      val powerManager = SimplexApp.context.getSystemService(Application.POWER_SERVICE) as PowerManager
-      return powerManager.isIgnoringBatteryOptimizations(SimplexApp.context.packageName)
+      val powerManager = androidAppContext.getSystemService(Application.POWER_SERVICE) as PowerManager
+      return powerManager.isIgnoringBatteryOptimizations(androidAppContext.packageName)
     }
 
     private fun askAboutIgnoringBatteryOptimization() {
       Intent().apply {
         @SuppressLint("BatteryLife")
         action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-        data = Uri.parse("package:${SimplexApp.context.packageName}")
+        data = Uri.parse("package:${androidAppContext.packageName}")
         // This flag is needed when you start a new activity from non-Activity context
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        SimplexApp.context.startActivity(this)
+        androidAppContext.startActivity(this)
       }
     }
   }
