@@ -722,7 +722,7 @@ shouldUpdateSndCIStatus currentStatus newStatus
     _ -> False
 
 shouldUpdateGroupCIStatus :: CIStatus 'MDSnd -> [CIStatus 'MDSnd] -> Maybe (CIStatus 'MDSnd)
-shouldUpdateGroupCIStatus currentStatus memberStatuses = do
+shouldUpdateGroupCIStatus currentStatus memberStatuses =
   case statusFromMemStatuses of
     Nothing -> Nothing
     Just newStatus ->
