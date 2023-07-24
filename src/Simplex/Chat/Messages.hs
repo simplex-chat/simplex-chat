@@ -958,7 +958,8 @@ itemDeletedTs = \case
   CIModerated ts _ -> ts
 
 data ChatItemInfo = ChatItemInfo
-  { itemVersions :: [ChatItemVersion]
+  { itemVersions :: [ChatItemVersion],
+    memberDeliveryStatuses :: Maybe [MemberDeliveryStatus]
   }
   deriving (Eq, Show, Generic)
 
@@ -987,6 +988,14 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
           itemVersionTs = itemTs,
           createdAt = createdAt
         }
+
+data MemberDeliveryStatus = MemberDeliveryStatus
+  { groupMemberId :: GroupMemberId,
+    memberDeliveryStatus :: CIStatus 'MDSnd
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON MemberDeliveryStatus where toEncoding = J.genericToEncoding J.defaultOptions
 
 data CIModeration = CIModeration
   { moderationId :: Int64,
