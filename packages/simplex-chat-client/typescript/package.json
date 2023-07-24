@@ -32,7 +32,8 @@
   },
   "homepage": "https://github.com/simplex-chat/simplex-chat/packages/simplex-chat-client/typescript#readme",
   "dependencies": {
-    "isomorphic-ws": "^4.0.1"
+    "isomorphic-ws": "^4.0.1",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "@types/jest": "^27.5.1",
