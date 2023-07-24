@@ -1875,7 +1875,7 @@ sealed class CC {
     is SetAllContactReceipts -> "/set receipts all ${onOff(enable)}"
     is ApiSetUserContactReceipts -> {
       val mrs = userMsgReceiptSettings
-      "/_set receipts $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
+      "/_set receipts contacts $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
     }
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
     is ApiUnhideUser -> "/_unhide user $userId ${json.encodeToString(viewPwd)}"

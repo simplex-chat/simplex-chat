@@ -1539,7 +1539,10 @@ memberActive m = case memberStatus m of
   GSMemCreator -> True
 
 memberCurrent :: GroupMember -> Bool
-memberCurrent m = case memberStatus m of
+memberCurrent = memberCurrent' . memberStatus
+
+memberCurrent' :: GroupMemberStatus -> Bool
+memberCurrent' = \case
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False

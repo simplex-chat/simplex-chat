@@ -717,6 +717,9 @@ hasDeliveryReceipt = \case
   XMsgNew_ -> True
   XGrpInv_ -> True
   XCallInv_ -> True
+  XGrpMemRole_ -> True
+  XGrpMemDel_ -> True
+  XGrpInfo_ -> True
   _ -> False
 
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)

@@ -157,6 +157,9 @@ maxMsgReactions = 3
 fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
 
+smallGroupsRcptsMemLimit :: Int
+smallGroupsRcptsMemLimit = 20
+
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
@@ -395,6 +398,12 @@ processChatCommand = \case
     withStore' $ \db -> updateUserContactReceipts db user' settings
     ok user
   SetUserContactReceipts settings -> withUser $ \User {userId} -> processChatCommand $ APISetUserContactReceipts userId settings
+  APISetUserGroupReceipts userId' settings -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' Nothing
+    withStore' $ \db -> updateUserGroupReceipts db user' settings
+    ok user
+  SetUserGroupReceipts settings -> withUser $ \User {userId} -> processChatCommand $ APISetUserGroupReceipts userId settings
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -3056,8 +3065,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
-          -- pure False -- no receipts in group now $ hasDeliveryReceipt $ toCMEventTag event
-          pure True
+          currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
+          let GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
+          pure $
+            fromMaybe (sendRcptsSmallGroups user) sendRcpts
+              && hasDeliveryReceipt (toCMEventTag event)
+              && currentMemCount <= smallGroupsRcptsMemLimit
         where
           canSend a
             | memberRole (m :: GroupMember) <= GRObserver = messageError "member is not allowed to send messages"
@@ -3369,7 +3382,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- 1) retry processing several times
       -- 2) stabilize database
       -- 3) show screen of death to the user asking to restart
-      -- TODO send receipt depending on contact/group settings
       tryChatError action >>= \case
         Right withRcpt -> ack $ if withRcpt then Just "" else Nothing
         Left e -> ack Nothing >> throwError e
@@ -4960,8 +4972,10 @@ chatCommandP =
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (A.space *> pwdP)),
       "/set receipts all " *> (SetAllContactReceipts <$> onOffP),
-      "/_set receipts " *> (APISetUserContactReceipts <$> A.decimal <* A.space <*> receiptSettings),
-      "/set receipts " *> (SetUserContactReceipts <$> receiptSettings),
+      "/_set receipts contacts " *> (APISetUserContactReceipts <$> A.decimal <* A.space <*> receiptSettings),
+      "/set receipts contacts " *> (SetUserContactReceipts <$> receiptSettings),
+      "/_set receipts groups " *> (APISetUserGroupReceipts <$> A.decimal <* A.space <*> receiptSettings),
+      "/set receipts groups " *> (SetUserGroupReceipts <$> receiptSettings),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
       "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
       "/_mute user " *> (APIMuteUser <$> A.decimal),

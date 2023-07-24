@@ -63,6 +63,7 @@ chatGroupTests = do
     it "set group message reactions" testSetGroupMessageReactions
   describe "delivery receipts" $ do
     it "should send delivery receipts in group" testSendGroupDeliveryReceipts
+    it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
 
 testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup
@@ -2411,11 +2412,11 @@ testSendGroupDeliveryReceipts tmp =
     withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
       withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
         -- turn off contacts receipts for tests
-        alice ##> "/_set receipts 1 off"
+        alice ##> "/_set receipts contacts 1 off"
         alice <## "ok"
-        bob ##> "/_set receipts 1 off"
+        bob ##> "/_set receipts contacts 1 off"
         bob <## "ok"
-        cath ##> "/_set receipts 1 off"
+        cath ##> "/_set receipts contacts 1 off"
         cath <## "ok"
 
         createGroup3 "team" alice bob cath
@@ -2434,3 +2435,152 @@ testSendGroupDeliveryReceipts tmp =
         bob ⩗ "#team hey"
   where
     cfg = testCfg {showReceipts = True}
+
+testConfigureGroupDeliveryReceipts :: HasCallStack => FilePath -> IO ()
+testConfigureGroupDeliveryReceipts tmp =
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
+        -- turn off contacts receipts for tests
+        alice ##> "/_set receipts contacts 1 off"
+        alice <## "ok"
+        bob ##> "/_set receipts contacts 1 off"
+        bob <## "ok"
+        cath ##> "/_set receipts contacts 1 off"
+        cath <## "ok"
+
+        -- create group 1
+        createGroup3 "team" alice bob cath
+        threadDelay 1000000
+
+        -- create group 2
+        alice ##> "/g club"
+        alice <## "group #club is created"
+        alice <## "to add members use /a club <name> or /create link #club"
+        alice ##> "/a club bob"
+        concurrentlyN_
+          [ alice <## "invitation to join the group #club sent to bob",
+            do
+              bob <## "#club: alice invites you to join the group as admin"
+              bob <## "use /j club to accept"
+          ]
+        bob ##> "/j club"
+        concurrently_
+          (alice <## "#club: bob joined the group")
+          (bob <## "#club: you joined the group")
+        alice ##> "/a club cath"
+        concurrentlyN_
+          [ alice <## "invitation to join the group #club sent to cath",
+            do
+              cath <## "#club: alice invites you to join the group as admin"
+              cath <## "use /j club to accept"
+          ]
+        cath ##> "/j club"
+        concurrentlyN_
+          [ alice <## "#club: cath joined the group",
+            do
+              cath <## "#club: you joined the group"
+              cath <## "#club: member bob_1 (Bob) is connected"
+              cath <## "contact bob_1 is merged into bob"
+              cath <## "use @bob <message> to send messages",
+            do
+              bob <## "#club: alice added cath_1 (Catherine) to the group (connecting...)"
+              bob <## "#club: new member cath_1 is connected"
+              bob <## "contact cath_1 is merged into cath"
+              bob <## "use @cath <message> to send messages"
+          ]
+        threadDelay 1000000
+
+        -- for new users receipts are enabled by default
+        receipt bob alice cath "team" "1"
+        receipt bob alice cath "club" "2"
+
+        -- configure receipts in all chats
+        alice ##> "/set receipts all off"
+        alice <## "ok"
+        partialReceipt bob alice cath "team" "3"
+        partialReceipt bob alice cath "club" "4"
+
+        -- configure receipts for user groups
+        alice ##> "/_set receipts groups 1 on"
+        alice <## "ok"
+        receipt bob alice cath "team" "5"
+        receipt bob alice cath "club" "6"
+
+        -- configure receipts for user groups (terminal api)
+        alice ##> "/set receipts groups off"
+        alice <## "ok"
+        partialReceipt bob alice cath "team" "7"
+        partialReceipt bob alice cath "club" "8"
+
+        -- configure receipts for group
+        alice ##> "/receipts #team on"
+        alice <## "ok"
+        receipt bob alice cath "team" "9"
+        partialReceipt bob alice cath "club" "10"
+
+        -- configure receipts for user groups (don't clear overrides)
+        alice ##> "/_set receipts groups 1 off"
+        alice <## "ok"
+        receipt bob alice cath "team" "11"
+        partialReceipt bob alice cath "club" "12"
+
+        alice ##> "/_set receipts groups 1 off clear_overrides=off"
+        alice <## "ok"
+        receipt bob alice cath "team" "13"
+        partialReceipt bob alice cath "club" "14"
+
+        -- configure receipts for user groups (clear overrides)
+        alice ##> "/set receipts groups off clear_overrides=on"
+        alice <## "ok"
+        partialReceipt bob alice cath "team" "15"
+        partialReceipt bob alice cath "club" "16"
+
+        -- configure receipts for group, reset to default
+        alice ##> "/receipts #team on"
+        alice <## "ok"
+        receipt bob alice cath "team" "17"
+        partialReceipt bob alice cath "club" "18"
+
+        alice ##> "/receipts #team default"
+        alice <## "ok"
+        partialReceipt bob alice cath "team" "19"
+        partialReceipt bob alice cath "club" "20"
+
+        -- cath - disable receipts for user groups
+        cath ##> "/_set receipts groups 1 off"
+        cath <## "ok"
+        noReceipt bob alice cath "team" "21"
+        noReceipt bob alice cath "club" "22"
+
+        -- partial, all receipts in one group; no receipts in other group
+        cath ##> "/receipts #team on"
+        cath <## "ok"
+        partialReceipt bob alice cath "team" "23"
+        noReceipt bob alice cath "club" "24"
+
+        alice ##> "/receipts #team on"
+        alice <## "ok"
+        receipt bob alice cath "team" "25"
+        noReceipt bob alice cath "club" "26"
+  where
+    cfg = testCfg {showReceipts = True}
+    receipt cc1 cc2 cc3 gName msg = do
+      name1 <- userName cc1
+      cc1 #> ("#" <> gName <> " " <> msg)
+      cc2 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
+      cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
+      cc1 % ("#" <> gName <> " " <> msg)
+      cc1 ⩗ ("#" <> gName <> " " <> msg)
+    partialReceipt cc1 cc2 cc3 gName msg = do
+      name1 <- userName cc1
+      cc1 #> ("#" <> gName <> " " <> msg)
+      cc2 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
+      cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
+      cc1 % ("#" <> gName <> " " <> msg)
+    noReceipt cc1 cc2 cc3 gName msg = do
+      name1 <- userName cc1
+      cc1 #> ("#" <> gName <> " " <> msg)
+      cc2 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
+      cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
+      cc1 <// 50000

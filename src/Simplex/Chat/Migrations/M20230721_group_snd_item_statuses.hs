@@ -19,6 +19,8 @@ CREATE TABLE group_snd_item_statuses (
 
 CREATE INDEX idx_group_snd_item_statuses_chat_item_id ON group_snd_item_statuses(chat_item_id);
 CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statuses(group_member_id);
+
+UPDATE users SET send_rcpts_small_groups = 1 WHERE send_rcpts_contacts = 1;
 |]
 
 down_m20230721_group_snd_item_statuses :: Query
