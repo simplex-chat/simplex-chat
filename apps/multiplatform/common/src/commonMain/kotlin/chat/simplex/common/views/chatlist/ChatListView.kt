@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
@@ -28,9 +29,8 @@ import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
@@ -344,7 +344,11 @@ private fun ChatList(chatModel: ChatModel, search: String) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-  val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search) } }
+  val allChats = remember { chatModel.chats }
+  // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
+  // which is related to [derivedStateOf]. Using safe alternative instead
+  // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
+  val chats = filteredChats(showUnreadAndFavorites, search, allChats.toList())
   LazyColumn(
     modifier = Modifier.fillMaxWidth(),
     listState
@@ -360,13 +364,12 @@ private fun ChatList(chatModel: ChatModel, search: String) {
   }
 }
 
-private fun filteredChats(showUnreadAndFavorites: Boolean, searchText: String): List<Chat> {
-  val chatModel = ChatModel
+private fun filteredChats(showUnreadAndFavorites: Boolean, searchText: String, chats: List<Chat>): List<Chat> {
   val s = searchText.trim().lowercase()
   return if (s.isEmpty() && !showUnreadAndFavorites)
-    chatModel.chats.toList()
+    chats
   else {
-    chatModel.chats.filter { chat ->
+    chats.filter { chat ->
       when (val cInfo = chat.chatInfo) {
         is ChatInfo.Direct -> if (s.isEmpty()) {
           filtered(chat)
