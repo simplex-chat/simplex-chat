@@ -266,7 +266,9 @@ fun DesktopScreen() {
       Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
         CenterPartOfScreen()
       }
-      VerticalDivider()
+      if (ModalManager.end.hasModalsOpen()) {
+        VerticalDivider()
+      }
       Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH).clipToBounds()) {
         EndPartOfScreen()
       }
