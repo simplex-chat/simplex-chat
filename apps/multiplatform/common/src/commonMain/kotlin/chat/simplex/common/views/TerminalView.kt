@@ -132,7 +132,9 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
         modifier = Modifier
           .fillMaxWidth()
           .clickable {
-            ModalManager.center.closeModals()
+            if (appPlatform.isDesktop) {
+              ModalManager.center.closeModals()
+            }
             ModalManager.center.showModal(showClose = appPlatform.isAndroid, endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
