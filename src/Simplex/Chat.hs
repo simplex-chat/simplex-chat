@@ -1466,8 +1466,11 @@ processChatCommand = \case
   ListMembers gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
-  ListGroups -> withUser $ \user ->
-    CRGroupsList user <$> withStore' (`getUserGroupDetails` user)
+  APIListGroups userId contactId_ search_ -> withUserId userId $ \user ->
+    CRGroupsList user <$> withStore' (\db -> getUserGroupDetails db user contactId_ search_)
+  ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
+    ct_ <- forM cName_ $ \cName -> withStore $ \db -> getContactByName db user cName
+    processChatCommand $ APIListGroups userId (contactId' <$> ct_) search_
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     g <- withStore $ \db -> getGroup db user groupId
     runUpdateGroupProfile user g p'
@@ -2514,7 +2517,7 @@ expireChatItems user@User {userId} ttl sync = do
       createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   contacts <- withStoreCtx' (Just "expireChatItems, getUserContacts") (`getUserContacts` user)
   loop contacts $ processContact expirationDate
-  groups <- withStoreCtx' (Just "expireChatItems, getUserGroupDetails") (`getUserGroupDetails` user)
+  groups <- withStoreCtx' (Just "expireChatItems, getUserGroupDetails") (\db -> getUserGroupDetails db user Nothing Nothing)
   loop groups $ processGroup expirationDate createdAtCutoff
   where
     loop :: [a] -> (a -> m ()) -> m ()
@@ -5067,7 +5070,8 @@ chatCommandP =
       "/clear #" *> (ClearGroup <$> displayName),
       "/clear " *> char_ '@' *> (ClearContact <$> displayName),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayName),
-      ("/groups" <|> "/gs") $> ListGroups,
+      "/_groups" *> (APIListGroups <$> A.decimal <*> optional (" @" *> A.decimal) <*> optional (A.space *> stringP)),
+      ("/groups" <|> "/gs") *> (ListGroups <$> optional (" @" *> displayName) <*> optional (A.space *> stringP)),
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayName <* A.space <*> groupProfile),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayName),

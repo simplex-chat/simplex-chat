@@ -98,6 +98,14 @@ executables:
     ghc-options:
       - -threaded
 
+  simplex-directory-service:
+     source-dirs: apps/simplex-directory-service
+     main: Main.hs
+     dependencies:
+       - simplex-chat
+     ghc-options:
+       - -threaded
+
 tests:
   simplex-chat-test:
     source-dirs: tests

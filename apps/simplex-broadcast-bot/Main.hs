@@ -13,6 +13,7 @@ import Control.Monad.Reader
 import qualified Data.Text as T
 import Options
 import Simplex.Chat.Bot
+import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
@@ -61,7 +62,7 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
           deleteMessage cc ct $ chatItemId' ci
         where
           sendReply = sendComposedMessage cc ct (Just $ chatItemId' ci) . textMsgContent
-          publisher = Publisher {contactId = contactId' ct, localDisplayName = localDisplayName' ct}
+          publisher = KnownContact {contactId = contactId' ct, localDisplayName = localDisplayName' ct}
           allowContent = \case
             MCText _ -> True
             MCLink {} -> True

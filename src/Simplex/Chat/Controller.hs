@@ -360,7 +360,8 @@ data ChatCommand
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
-  | ListGroups -- UserId (not used in UI)
+  | APIListGroups UserId (Maybe ContactId) (Maybe String)
+  | ListGroups (Maybe ContactName) (Maybe String)
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)

@@ -447,8 +447,8 @@ getUserGroups db user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroup db user) groupIds
 
-getUserGroupDetails :: DB.Connection -> User -> IO [GroupInfo]
-getUserGroupDetails db User {userId, userContactId} =
+getUserGroupDetails :: DB.Connection -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
+getUserGroupDetails db User {userId, userContactId} contactId_ search_ =
   map (toGroupInfo userContactId)
     <$> DB.query
       db

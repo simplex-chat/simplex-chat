@@ -13,39 +13,31 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
+import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts, coreChatOptsP)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
-data Publisher = Publisher
-  { contactId :: Int64,
-    localDisplayName :: Text
-  }
-  deriving (Eq)
-
 data BroadcastBotOpts = BroadcastBotOpts
   { coreOptions :: CoreChatOpts,
-    publishers :: [Publisher],
+    publishers :: [KnownContact],
     welcomeMessage :: String,
     prohibitedMessage :: String
   }
 
-defaultWelcomeMessage :: [Publisher] -> String
-defaultWelcomeMessage ps = "Hello! I am a broadcast bot.\nI broadcast messages to all connected users from " <> publisherNames ps <> "."
+defaultWelcomeMessage :: [KnownContact] -> String
+defaultWelcomeMessage ps = "Hello! I am a broadcast bot.\nI broadcast messages to all connected users from " <> knownContactNames ps <> "."
 
-defaultProhibitedMessage :: [Publisher] -> String
-defaultProhibitedMessage ps = "Sorry, only these users can broadcast messages: " <> publisherNames ps <> ". Your message is deleted."
-
-publisherNames :: [Publisher] -> String
-publisherNames = T.unpack . T.intercalate ", " . map (("@" <>) . localDisplayName)
+defaultProhibitedMessage :: [KnownContact] -> String
+defaultProhibitedMessage ps = "Sorry, only these users can broadcast messages: " <> knownContactNames ps <> ". Your message is deleted."
 
 broadcastBotOpts :: FilePath -> FilePath -> Parser BroadcastBotOpts
 broadcastBotOpts appDir defaultDbFileName = do
   coreOptions <- coreChatOptsP appDir defaultDbFileName
   publishers <-
     option
-      parsePublishers
+      parseKnownContacts
       ( long "publishers"
           <> metavar "PUBLISHERS"
           <> help "Comma-separated list of publishers in the format CONTACT_ID:DISPLAY_NAME whose messages will be broadcasted"
@@ -73,17 +65,6 @@ broadcastBotOpts appDir defaultDbFileName = do
         welcomeMessage = fromMaybe (defaultWelcomeMessage publishers) welcomeMessage_,
         prohibitedMessage = fromMaybe (defaultProhibitedMessage publishers) prohibitedMessage_
       }
-
-parsePublishers :: ReadM [Publisher]
-parsePublishers = eitherReader $ parseAll publishersP . encodeUtf8 . T.pack
-
-publishersP :: A.Parser [Publisher]
-publishersP = publisherP `A.sepBy1` A.char ','
-  where
-    publisherP = do
-      contactId <- A.decimal <* A.char ':'
-      localDisplayName <- safeDecodeUtf8 <$> A.takeTill (A.inClass ", ")
-      pure Publisher {contactId, localDisplayName}
 
 getBroadcastBotOpts :: FilePath -> FilePath -> IO BroadcastBotOpts
 getBroadcastBotOpts appDir defaultDbFileName =
