@@ -37,6 +37,7 @@ import Simplex.Messaging.Protocol (ProtocolServer (..), SrvLoc (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
+import Data.Diff.Myers
 
 data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
@@ -273,7 +274,7 @@ type EditedString  = [EditedChar]
 
 
 formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
-formattedEditedText s s' = _BAD_wagnerFisher (toEditedChars s) (toEditedChars s')
+formattedEditedText s s' = myersDiff (toEditedChars s) (toEditedChars s')
 
 
 toEditedChars :: [FormattedText] -> [EditedChar]
@@ -303,27 +304,6 @@ toEditedChars = concatMap toChars
 
 
 
-_BAD_wagnerFisher :: [EditedChar] -> [EditedChar] -> EditedString
-_BAD_wagnerFisher s1 s2 = extractEdits $ foldl' computeRow initialRow s2
-  where
-    computeRow :: ([(Int, EditedString)], [(Int, EditedString)]) -> EditedChar -> ([(Int, EditedString)], [(Int, EditedString)])
-    computeRow (prevRow, currRow) c2 = (currRow, computeNewRow prevRow currRow c2)
-
-    computeNewRow :: [(Int, EditedString)] -> [(Int, EditedString)] -> EditedChar -> [(Int, EditedString)]
-    computeNewRow prevRow currRow c2 = foldl' (computeCell c2 prevRow) [(head currRow)] (zip3 s1 prevRow (tail currRow))
-
-    computeCell :: EditedChar -> [(Int, EditedString)] -> [(Int, EditedString)] -> (EditedChar, (Int, EditedString), (Int, EditedString)) -> [(Int, EditedString)]
-    computeCell c2 prevRow newRow (c1, (diagScore, _), (leftScore, _)) = newRow ++ [minimumBy (comparing fst) 
-            [ (diagScore + if char c1 == char c2 then 0 else 1, if char c1 == char c2 then snd (prevRow !! (length newRow)) ++ [EditedChar (format' c1) (char c1) Nothing] else snd (prevRow !! (length newRow)) ++ [EditedChar (format' c1) (char c1) (Just EOSubstitute), EditedChar (format' c2) (char c2) (Just EOSubstitute)])
-            , (leftScore + 1, snd (prevRow !! (length newRow)) ++ [EditedChar (format' c2) (char c2) (Just EOAdd)])
-            , (fst (prevRow !! (length newRow)) + 1, snd (newRow !! (length prevRow)) ++ [EditedChar (format' c1) (char c1) (Just EODelete)])
-            ]]
-
-    initialRow :: ([(Int, EditedString)], [(Int, EditedString)])
-    initialRow = ([(0, [])] ++ zipWith (\i c -> (i + 1, [EditedChar (format' c) (char c) (Just EODelete)])) [1..] s1, 
-                  [(0, [])] ++ zipWith (\i c -> (i + 1, [EditedChar (format' c) (char c) (Just EOAdd)])) [1..] s2)
-
-    extractEdits :: ([(Int, EditedString)], [(Int, EditedString)]) -> EditedString
-    extractEdits = snd . last . snd
-
-    format' = format :: EditedChar -> Maybe Format
+-- use https://hackage.haskell.org/package/myers-diff-0.2.0.0/docs/Data-Diff-Myers.html#t:Edit
+myersDiff :: [EditedChar] -> [EditedChar] -> EditedString
+myersDiff s1 s2 = undefined

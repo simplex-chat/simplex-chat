@@ -136,6 +136,7 @@ library
     , http-types ==0.12.*
     , memory ==0.15.*
     , mtl ==2.2.*
+    , myers-diff >= 0.2.0.0
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -184,6 +185,7 @@ executable simplex-bot
     , http-types ==0.12.*
     , memory ==0.15.*
     , mtl ==2.2.*
+    , myers-diff >= 0.2.0.0
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -233,6 +235,7 @@ executable simplex-bot-advanced
     , http-types ==0.12.*
     , memory ==0.15.*
     , mtl ==2.2.*
+    , myers-diff >= 0.2.0.0
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -283,6 +286,7 @@ executable simplex-broadcast-bot
     , http-types ==0.12.*
     , memory ==0.15.*
     , mtl ==2.2.*
+    , myers-diff >= 0.2.0.0
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -333,6 +337,7 @@ executable simplex-chat
     , http-types ==0.12.*
     , memory ==0.15.*
     , mtl ==2.2.*
+    , myers-diff >= 0.2.0.0
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -398,6 +403,7 @@ test-suite simplex-chat-test
     , http-types ==0.12.*
     , memory ==0.15.*
     , mtl ==2.2.*
+    , myers-diff >= 0.2.0.0    
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
