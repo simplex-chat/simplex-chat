@@ -723,7 +723,7 @@ shouldUpdateSndCIStatus currentStatus newStatus
 
 shouldUpdateGroupCIStatus :: CIStatus 'MDSnd -> [CIStatus 'MDSnd] -> Maybe (CIStatus 'MDSnd)
 shouldUpdateGroupCIStatus currentStatus memberStatuses =
-  case statusFromMemStatuses of
+  case memStatusesToNewStatus of
     Nothing -> Nothing
     Just newStatus ->
       if currentStatus == newStatus
@@ -738,7 +738,7 @@ shouldUpdateGroupCIStatus currentStatus memberStatuses =
           (CISSndRcvd MROk SSPComplete, CISSndRcvd MRBadMsgHash SSPComplete) -> Just newStatus
           _ -> Nothing
   where
-    statusFromMemStatuses
+    memStatusesToNewStatus
       | all isSndRcvdOk memberStatuses = Just $ CISSndRcvd MROk SSPComplete
       | all (\s -> isSndRcvdOk s || isSndRcvdBad s) memberStatuses = Just $ CISSndRcvd MRBadMsgHash SSPComplete
       | any isSndRcvdBad memberStatuses = Just $ CISSndRcvd MRBadMsgHash SSPPartial
