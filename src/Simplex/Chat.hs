@@ -4581,7 +4581,7 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
   -- TODO collect failed deliveries into a single error
   rs <- forM (filter memberCurrent members) $ \m ->
-    messageMember m msg `catchChatError` (\e -> toView (CRChatError (Just user) e) >> pure Nothing)
+    messageMember m msg `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
   let sentToMembers = catMaybes rs
   pure (msg, sentToMembers)
   where
