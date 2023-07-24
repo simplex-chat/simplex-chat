@@ -1,20 +1,39 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Directory.Events where
 
 import Data.Int (Int64)
 import Data.Text (Text)
+import Simplex.Chat.Controller
 import Simplex.Chat.Protocol (MsgContent)
 import Simplex.Chat.Types
 
 data DirectoryEvent
   = DENewUserConnected Contact
-  | DEGroupInvitation Contact GroupInfo GroupMemberRole
+  | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
+  | DEJoinedGroup Contact GroupInfo
   | DEGroupUpdated Contact GroupInfo
+  | DEUserRoleChanged Contact
+  | DEUserLeftGroup Contact
+  | DEServiceRoleChanged
+  | DEServiceRemovedFromGroup
   | DEGroupDeleted Contact GroupInfo
   | DEUserCommand Contact ADirectoryCmd
+
+crDirectoryEvent :: ChatResponse -> Maybe DirectoryEvent
+crDirectoryEvent = \case
+  CRContactConnected {contact} -> Just $ DENewUserConnected contact
+  CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
+  CRUserJoinedGroup {groupInfo, hostContact} -> (`DEJoinedGroup` groupInfo) <$> hostContact
+  -- | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
+  -- | CRMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
+  -- | CRMemberRoleUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
+  _ -> Nothing
 
 data DirectoryRole = DRUser | DRSuperUser
 
