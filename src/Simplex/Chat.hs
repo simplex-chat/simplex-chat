@@ -4355,7 +4355,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           memStatusChanged <- updateGroupMemSndStatus itemId groupMemberId newMemStatus
           when memStatusChanged $ do
             memStatuses <- map snd <$> withStore' (`getGroupSndStatuses` itemId)
-            let newStatus = memStatusesToGroupItemStatus memStatuses
+            let newStatus = membersGroupItemStatus memStatuses
             when (newStatus /= itemStatus) $ do
               chatItem <- withStore $ \db -> updateGroupChatItemStatus db user groupId itemId newStatus
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
