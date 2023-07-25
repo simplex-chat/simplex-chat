@@ -18,26 +18,24 @@ import qualified Data.Attoparsec.Text as A
 import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
-import Data.List (foldl', intercalate, minimumBy)
+import Data.List ( intercalate ) 
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isNothing)
-import Data.Ord (comparing)
 import Data.Semigroup (sconcat)
-import Data.String
+import Data.String ( IsString(..) )
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import GHC.Generics
-import Simplex.Chat.Types
+import GHC.Generics ( Generic )
+import Simplex.Chat.Types ( decodeJSON, CReqClientData(CRDataGroup) )
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
-import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Encoding.String( StrEncoding(strEncode, strDecode) )
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SrvLoc (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
-import System.Console.ANSI.Types
+import System.Console.ANSI.Types ( Color(..) )
 import qualified Text.Email.Validate as Email
-import Data.Diff.Myers
 
 data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
@@ -115,11 +113,6 @@ instance IsString FormattedText where
 
 type MarkdownList = [FormattedText]
 
-data EditedText =  EditedText {format :: Maybe Format, text :: Text, added :: Maybe Bool}
-  deriving (Eq, Show, Generic)
-
-instance ToJSON EditedText where
-  toEncoding = J.genericToEncoding $ sumTypeJSON id
 
 data ParsedMarkdown = ParsedMarkdown {formattedText :: Maybe MarkdownList}
   deriving (Generic)
@@ -261,49 +254,3 @@ markdownP = mconcat <$> A.many' fragmentP
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact
 
-
-data EditedChar = EditedChar {format :: Maybe Format, char :: Char, operation :: Maybe EditingOperation}
-  deriving (Show, Eq)
-
-
-data EditingOperation = EOAdd | EODelete | EOSubstitute
-  deriving (Show, Eq)
-
-
-type EditedString  = [EditedChar]
-
-
-formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
-formattedEditedText s s' = myersDiff (toEditedChars s) (toEditedChars s')
-
-
-toEditedChars :: [FormattedText] -> [EditedChar]
-toEditedChars = concatMap toChars
-  where
-    toChars FormattedText {format, text} =
-      map (\char -> EditedChar {format, char, operation = Nothing}) $ T.unpack $ text
-
-
--- fromEditedChars :: [EditedChar] -> [EditedText]
--- fromEditedChars = reverse . foldl' addChar []
---   where
---     addChar :: [EditedText] -> EditedChar -> [EditedText]
---     addChar [] c = [toText c]
---     addChar ts@(t : rest) c
---       | sameFormat t c = appendChar t c : rest
---       | otherwise = toText c : ts
-
---     toText :: EditedChar -> EditedText
---     toText EditedChar {format, char, added} = EditedText {format, text = T.singleton char, added}
-    
---     sameFormat :: EditedText -> EditedChar -> Bool
---     sameFormat EditedText {format, added} EditedChar {format = format', added = added'} = format == format' && added == added'
-    
---     appendChar :: EditedText -> EditedChar -> EditedText
---     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
-
-
-
--- use https://hackage.haskell.org/package/myers-diff-0.2.0.0/docs/Data-Diff-Myers.html#t:Edit
-myersDiff :: [EditedChar] -> [EditedChar] -> EditedString
-myersDiff s1 s2 = undefined
