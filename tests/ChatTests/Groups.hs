@@ -59,9 +59,9 @@ chatGroupTests = do
     it "show message decryption error" testGroupMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
     it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
-  describe "message reactions" $ do
+  describe "group message reactions" $ do
     it "set group message reactions" testSetGroupMessageReactions
-  describe "delivery receipts" $ do
+  describe "group delivery receipts" $ do
     it "should send delivery receipts in group" testSendGroupDeliveryReceipts
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
 
