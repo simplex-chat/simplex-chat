@@ -769,7 +769,7 @@
     <string name="group_member_status_invited">ha invitato</string>
     <string name="rcv_group_event_invited_via_your_group_link">invitato via link del tuo gruppo</string>
     <string name="rcv_group_event_member_added">ha invitato %1$s</string>
-    <string name="rcv_group_event_member_left">uscito/a</string>
+    <string name="rcv_group_event_member_left">è uscito/a</string>
     <string name="group_member_status_left">è uscito/a</string>
     <string name="group_member_role_member">membro</string>
     <string name="group_member_role_owner">proprietario</string>
