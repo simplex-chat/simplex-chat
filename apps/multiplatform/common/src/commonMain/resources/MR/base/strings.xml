@@ -1526,4 +1526,8 @@
   <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
   <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
   <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
+
+  <!-- Under development -->
+  <string name="in_developing_title">In developing</string>
+  <string name="in_developing_desc">This feature is not available yet. Try it in the next releases</string>
 </resources>
