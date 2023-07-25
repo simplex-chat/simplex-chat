@@ -78,8 +78,8 @@ actual fun PlatformTextField(
               Modifier
                 .weight(1f)
                 .padding(horizontal = 12.dp)
-                .padding(top = 4.dp)
-                .padding(bottom = 6.dp)
+                .padding(top = 8.dp)
+                .padding(bottom = 10.dp)
             ) {
               innerTextField()
             }

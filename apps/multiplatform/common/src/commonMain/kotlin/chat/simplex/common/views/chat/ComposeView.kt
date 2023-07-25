@@ -655,7 +655,11 @@ fun ComposeView(
       } else {
         showChooseAttachment
       }
-      IconButton(attachmentClicked, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
+      IconButton(
+        attachmentClicked,
+        Modifier.padding(bottom = if (appPlatform.isAndroid) 0.dp else 7.dp),
+        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value
+      ) {
         Icon(
           painterResource(MR.images.ic_attach_file_filled_500),
           contentDescription = stringResource(MR.strings.attach),
