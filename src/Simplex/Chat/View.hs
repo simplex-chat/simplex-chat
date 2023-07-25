@@ -201,7 +201,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
   CRGroupInvitation u g -> ttyUser u [groupInvitation' g]
   CRReceivedGroupInvitation u g c role _fromRole -> ttyUser u $ viewReceivedGroupInvitation g c role
-  CRUserJoinedGroup u g _ _ -> ttyUser u $ viewUserJoinedGroup g
+  CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CRHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]

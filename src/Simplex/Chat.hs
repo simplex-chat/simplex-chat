@@ -3008,8 +3008,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ enableNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
-            hostContact <- (forM (memberContactId membership) $ \contactId -> withStore $ \db -> getContact db user contactId) `catchChatError` \_ -> pure Nothing
-            toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected} hostContact
+            toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
             createGroupFeatureItems gInfo m
             let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
