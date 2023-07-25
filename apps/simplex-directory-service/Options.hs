@@ -55,7 +55,7 @@ getDirectoryOpts appDir defaultDbFileName =
   execParser $
     info
       (helper <*> versionOption <*> directoryOpts appDir defaultDbFileName)
-      (header versionStr <> fullDesc <> progDesc "Start SimpleX Directory Service with DB_FILE, DIRECTORY-FILE and SUPER-USERS options")
+      (header versionStr <> fullDesc <> progDesc "Start SimpleX Directory Service with DB_FILE, DIRECTORY_FILE and SUPER_USERS options")
   where
     versionStr = versionString versionNumber
     versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")
