@@ -4354,8 +4354,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}}) -> do
           memStatusChanged <- updateGroupMemSndStatus itemId groupMemberId newMemStatus
           when memStatusChanged $ do
-            memStatuses <- map snd <$> withStore' (`getGroupSndStatuses` itemId)
-            let newStatus = membersGroupItemStatus memStatuses
+            -- memStatuses <- map snd <$> withStore' (`getGroupSndStatuses` itemId)
+            -- let newStatus = membersGroupItemStatus memStatuses
+            memStatusCounts <- withStore' (`getGroupSndStatusCounts` itemId)
+            let newStatus = membersGroupItemStatus memStatusCounts
             when (newStatus /= itemStatus) $ do
               chatItem <- withStore $ \db -> updateGroupChatItemStatus db user groupId itemId newStatus
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)

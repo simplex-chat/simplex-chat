@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -21,7 +22,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -727,26 +728,41 @@ ciCreateStatus content = case msgDirection @d of
 --       CISSndRcvd MRBadMsgHash _ -> True
 --       _ -> False
 
-membersGroupItemStatus :: [CIStatus 'MDSnd] -> CIStatus 'MDSnd
-membersGroupItemStatus [] = CISSndNew
-membersGroupItemStatus (s : ss) = foldr combineStatus s ss
-  where
-    -- still this doesn't take into account that if only element is snd error, then item status would be that
-    combineStatus :: CIStatus 'MDSnd -> CIStatus 'MDSnd -> CIStatus 'MDSnd
-    combineStatus memStatus accStatus = case (accStatus, memStatus) of
-      (CISSndRcvd MROk SSPComplete, CISSndRcvd MROk _) -> CISSndRcvd MROk SSPComplete
-      (CISSndRcvd MROk SSPComplete, CISSndRcvd MRBadMsgHash _) -> CISSndRcvd MRBadMsgHash SSPComplete
-      (CISSndRcvd MROk SSPComplete, _) -> CISSndRcvd MROk SSPPartial
-      (CISSndRcvd MROk SSPPartial, CISSndRcvd MRBadMsgHash _) -> CISSndRcvd MRBadMsgHash SSPPartial
-      (CISSndRcvd MROk SSPPartial, _) -> CISSndRcvd MROk SSPPartial
-      (CISSndRcvd MRBadMsgHash SSPComplete, CISSndRcvd _ _) -> CISSndRcvd MRBadMsgHash SSPComplete
-      (CISSndRcvd MRBadMsgHash _, _) -> CISSndRcvd MRBadMsgHash SSPPartial
-      (_, CISSndRcvd mr _) -> CISSndRcvd mr SSPPartial
-      (CISSndSent SSPComplete, CISSndSent _) -> CISSndSent SSPComplete
-      (CISSndSent _, _) -> CISSndSent SSPPartial
-      (_, CISSndSent _) -> CISSndSent SSPPartial
-      (CISSndNew, _) -> CISSndNew
-      _ -> CISSndNew
+-- membersGroupItemStatus :: [CIStatus 'MDSnd] -> CIStatus 'MDSnd
+-- membersGroupItemStatus [] = CISSndNew
+-- membersGroupItemStatus (s : ss) = foldr combineStatus s ss
+--   where
+--     -- still this doesn't take into account that if only element is snd error, then item status would be that
+--     combineStatus :: CIStatus 'MDSnd -> CIStatus 'MDSnd -> CIStatus 'MDSnd
+--     combineStatus memStatus accStatus = case (accStatus, memStatus) of
+--       (CISSndRcvd MROk SSPComplete, CISSndRcvd MROk _) -> CISSndRcvd MROk SSPComplete
+--       (CISSndRcvd MROk SSPComplete, CISSndRcvd MRBadMsgHash _) -> CISSndRcvd MRBadMsgHash SSPComplete
+--       (CISSndRcvd MROk SSPComplete, _) -> CISSndRcvd MROk SSPPartial
+--       (CISSndRcvd MROk SSPPartial, CISSndRcvd MRBadMsgHash _) -> CISSndRcvd MRBadMsgHash SSPPartial
+--       (CISSndRcvd MROk SSPPartial, _) -> CISSndRcvd MROk SSPPartial
+--       (CISSndRcvd MRBadMsgHash SSPComplete, CISSndRcvd _ _) -> CISSndRcvd MRBadMsgHash SSPComplete
+--       (CISSndRcvd MRBadMsgHash _, _) -> CISSndRcvd MRBadMsgHash SSPPartial
+--       (_, CISSndRcvd mr _) -> CISSndRcvd mr SSPPartial
+--       (CISSndSent SSPComplete, CISSndSent _) -> CISSndSent SSPComplete
+--       (CISSndSent _, _) -> CISSndSent SSPPartial
+--       (_, CISSndSent _) -> CISSndSent SSPPartial
+--       (CISSndNew, _) -> CISSndNew
+--       _ -> CISSndNew
+
+membersGroupItemStatus :: [(CIStatus 'MDSnd, Int)] -> CIStatus 'MDSnd
+membersGroupItemStatus memStatusCounts = do
+  let total = sum $ map snd memStatusCounts
+      rcvdOk = fromMaybe 0 $ lookup (CISSndRcvd MROk SSPComplete) memStatusCounts
+      rcvdBad = fromMaybe 0 $ lookup (CISSndRcvd MRBadMsgHash SSPComplete) memStatusCounts
+      rcvdSent = fromMaybe 0 $ lookup (CISSndSent SSPComplete) memStatusCounts
+  if
+      | rcvdOk == total -> CISSndRcvd MROk SSPComplete
+      | rcvdOk + rcvdBad == total -> CISSndRcvd MRBadMsgHash SSPComplete
+      | rcvdBad > 0 -> CISSndRcvd MRBadMsgHash SSPPartial
+      | rcvdOk > 0 -> CISSndRcvd MROk SSPPartial
+      | rcvdSent == total -> CISSndSent SSPComplete
+      | rcvdSent > 0 -> CISSndSent SSPPartial
+      | otherwise -> CISSndNew
 
 data SndCIStatusProgress
   = SSPPartial

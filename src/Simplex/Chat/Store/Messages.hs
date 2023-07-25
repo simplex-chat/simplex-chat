@@ -93,6 +93,7 @@ module Simplex.Chat.Store.Messages
     getGroupSndStatus,
     updateGroupSndStatus,
     getGroupSndStatuses,
+    getGroupSndStatusCounts,
   )
 where
 
@@ -1906,8 +1907,20 @@ getGroupSndStatuses db itemId =
   DB.query
     db
     [sql|
-        SELECT group_member_id, group_snd_item_status
-        FROM group_snd_item_statuses
-        WHERE chat_item_id = ?
-      |]
+      SELECT group_member_id, group_snd_item_status
+      FROM group_snd_item_statuses
+      WHERE chat_item_id = ?
+    |]
+    (Only itemId)
+
+getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(CIStatus 'MDSnd, Int)]
+getGroupSndStatusCounts db itemId =
+  DB.query
+    db
+    [sql|
+      SELECT group_snd_item_status, COUNT(1)
+      FROM group_snd_item_statuses
+      WHERE chat_item_id = ?
+      GROUP BY group_snd_item_status
+    |]
     (Only itemId)
