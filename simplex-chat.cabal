@@ -28,6 +28,7 @@ library
       Simplex.Chat
       Simplex.Chat.Archive
       Simplex.Chat.Bot
+      Simplex.Chat.Bot.Commands
       Simplex.Chat.Bot.KnownContacts
       Simplex.Chat.Call
       Simplex.Chat.Controller
@@ -328,8 +329,8 @@ executable simplex-directory-service
   main-is: Main.hs
   other-modules:
       Directory.Events
+      Directory.Options
       Directory.Store
-      Options
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-directory-service

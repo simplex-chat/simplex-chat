@@ -11,9 +11,9 @@ module Directory.Events where
 import Control.Applicative ((<|>))
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Directory.Store
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
@@ -26,24 +26,24 @@ data DirectoryEvent
   = DEContactConnected Contact
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup ContactId GroupInfo
-  | DEGroupUpdated GroupInfo
+  | DEGroupUpdated ContactId GroupInfo
   | DEContactRoleChanged ContactId GroupInfo GroupMemberRole
   | DEServiceRoleChanged GroupInfo GroupMemberRole
   | DEContactRemovedFromGroup ContactId GroupInfo
   | DEContactLeftGroup ContactId GroupInfo
   | DEServiceRemovedFromGroup GroupInfo
   | DEGroupDeleted GroupInfo
-  | DEContactCommand Contact ADirectoryCmd
   | DEUnsupportedMessage Contact ChatItemId
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
+  | DEContactCommand Contact ADirectoryCmd
 
 crDirectoryEvent :: ChatResponse -> Maybe DirectoryEvent
 crDirectoryEvent = \case
   CRContactConnected {contact} -> Just $ DEContactConnected contact
   CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CRUserJoinedGroup {groupInfo, hostMember} -> (`DEServiceJoinedGroup` groupInfo) <$> memberContactId hostMember
-  CRGroupUpdated {toGroup} -> Just $ DEGroupUpdated toGroup
+  CRGroupUpdated {toGroup, member_} -> (`DEGroupUpdated` toGroup) <$> (memberContactId =<< member_)
   CRMemberRole {groupInfo, member, toRole} -> (\ctId -> DEContactRoleChanged ctId groupInfo toRole) <$> memberContactId member
   CRMemberRoleUser {groupInfo, toRole} -> Just $ DEServiceRoleChanged groupInfo toRole
   CRDeletedMember {groupInfo, deletedMember} -> (`DEContactRemovedFromGroup` groupInfo) <$> memberContactId deletedMember
@@ -66,12 +66,6 @@ data DirectoryRole = DRUser | DRSuperUser
 data SDirectoryRole (r :: DirectoryRole) where
   SDRUser :: SDirectoryRole 'DRUser
   SDRSuperUser :: SDirectoryRole 'DRSuperUser
-
-type GroupRegId = Int64
-
-type UserGroupRegId = Int64
-
-type GroupApprovalId = Int64
 
 data DirectoryCmdTag (r :: DirectoryRole) where
   DCHelp_ :: DirectoryCmdTag 'DRUser
@@ -104,35 +98,36 @@ data ADirectoryCmd = forall r. ADC (SDirectoryRole r) (DirectoryCmd r)
 
 directoryCmdP :: ChatItemId -> Parser ADirectoryCmd
 directoryCmdP ciId =
-  (A.char '/' *> A.choice [tagP >>= \t@(ADCT u t') -> A.choice [cmdP t, pure . ADC u $ DCCommandError ciId t'], pure . ADC SDRUser $ DCUnknownCommand ciId])
-    <|> (ADC SDRUser . DCSearchGroup <$> A.takeText)
+  (A.char '/' *> cmdStrP) <|> (ADC SDRUser . DCSearchGroup <$> A.takeText)
   where
+    cmdStrP =
+      (tagP >>= \(ADCT u t) -> ADC u <$> (cmdP t <|> pure (DCCommandError ciId t)))
+        <|> pure (ADC SDRUser $ DCUnknownCommand ciId)
     tagP = A.takeTill (== ' ') >>= \case
-      "help" -> pure $ ADCT SDRUser DCHelp_
-      "h" -> pure $ ADCT SDRUser DCHelp_
-      "confim" -> pure $ ADCT SDRUser DCConfirmDuplicateGroup_
-      "list" -> pure $ ADCT SDRUser DCListUserGroups_
-      "delete" -> pure $ ADCT SDRUser DCDeleteGroup_
-      "approve" -> pure $ ADCT SDRSuperUser DCApproveGroup_
-      "reject" -> pure $ ADCT SDRSuperUser DCRejectGroup_
-      "suspend" -> pure $ ADCT SDRSuperUser DCSuspendGroup_
-      "resume" -> pure $ ADCT SDRSuperUser DCResumeGroup_
-      "all" -> pure $ ADCT SDRSuperUser DCListGroups_
+      "help" -> u DCHelp_
+      "h" -> u DCHelp_
+      "confim" -> u DCConfirmDuplicateGroup_
+      "list" -> u DCListUserGroups_
+      "delete" -> u DCDeleteGroup_
+      "approve" -> su DCApproveGroup_
+      "reject" -> su DCRejectGroup_
+      "suspend" -> su DCSuspendGroup_
+      "resume" -> su DCResumeGroup_
+      "all" -> su DCListGroups_
       _ -> fail "bad command tag"
-    cmdP :: ADirectoryCmdTag -> Parser ADirectoryCmd
+      where
+        u = pure . ADCT SDRUser
+        su = pure . ADCT SDRSuperUser
+    cmdP :: DirectoryCmdTag r -> Parser (DirectoryCmd r)
     cmdP = \case
-      ADCT SDRUser tag ->
-        ADC SDRUser <$> case tag of
-          DCHelp_ -> pure DCHelp
-          DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
-          DCListUserGroups_ -> pure DCListUserGroups
-          DCDeleteGroup_ -> gc DCDeleteGroup
-      ADCT SDRSuperUser tag ->
-        ADC SDRSuperUser <$> case tag of
-          DCApproveGroup_ -> gc DCApproveGroup
-          DCRejectGroup_ -> gc DCRejectGroup
-          DCSuspendGroup_ -> gc DCSuspendGroup
-          DCResumeGroup_ -> gc DCResumeGroup
-          DCListGroups_ -> pure DCListGroups
+      DCHelp_ -> pure DCHelp
+      DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
+      DCListUserGroups_ -> pure DCListUserGroups
+      DCDeleteGroup_ -> gc DCDeleteGroup
+      DCApproveGroup_ -> gc DCApproveGroup
+      DCRejectGroup_ -> gc DCRejectGroup
+      DCSuspendGroup_ -> gc DCSuspendGroup
+      DCResumeGroup_ -> gc DCResumeGroup
+      DCListGroups_ -> pure DCListGroups
       where
         gc f = f <$> A.decimal <* A.char ':' <*> A.takeText

@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Options where
+module Directory.Options where
 
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts

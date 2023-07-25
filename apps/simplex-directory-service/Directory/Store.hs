@@ -3,8 +3,8 @@
 module Directory.Store where
 
 import Control.Concurrent.STM
+import Data.Int (Int64)
 import Data.Set (Set)
-import Directory.Events
 import Simplex.Chat.Types
 
 data DirectoryStore = DirectoryStore
@@ -20,6 +20,12 @@ data GroupReg = GroupReg
     groupRegStatus :: TVar GroupRegStatus
   }
 
+type GroupRegId = Int64
+
+type UserGroupRegId = Int64
+
+type GroupApprovalId = Int64
+
 data GroupRegStatus
   = GRSProposed
   | GRSPendingConfirmation
@@ -28,6 +34,24 @@ data GroupRegStatus
   | GRSPendingApproval GroupApprovalId
   | GRSActive
   | GRSSuspended
+
+addGroupReg :: DirectoryStore -> GroupInfo -> STM ()
+addGroupReg st g = undefined
+
+getGroupReg :: DirectoryStore -> GroupRegId -> STM (Maybe GroupReg)
+getGroupReg st grId = undefined
+
+getUserGroupRegId :: DirectoryStore -> UserGroupRegId -> STM (Maybe GroupReg)
+getUserGroupRegId st ugrId = undefined
+
+getGroupRegViaGroupId :: DirectoryStore -> GroupId -> STM (Maybe GroupReg)
+getGroupRegViaGroupId st gId = undefined
+
+getContactGroupRegs :: DirectoryStore -> ContactId -> STM [GroupReg]
+getContactGroupRegs st ctId = undefined
+
+filterListedGroups :: DirectoryStore -> [GroupInfo] -> STM [GroupInfo]
+filterListedGroups st gs = undefined
 
 data DirectoryLogRecord
   = CreateGroupReg GroupReg
