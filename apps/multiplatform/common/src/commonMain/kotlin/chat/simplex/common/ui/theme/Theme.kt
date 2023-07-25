@@ -1,7 +1,6 @@
 package chat.simplex.common.ui.theme
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -259,6 +258,15 @@ val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow
 @Composable
 fun isInDarkTheme(): Boolean = !CurrentColors.collectAsState().value.colors.isLight
 
+expect fun isSystemInDarkTheme(): Boolean
+
+fun reactOnDarkThemeChanges(isDark: Boolean) {
+  if (ChatController.appPrefs.currentTheme.get() == DefaultTheme.SYSTEM.name && CurrentColors.value.colors.isLight == isDark) {
+    // Change active colors from light to dark and back based on system theme
+    ThemeManager.applyTheme(DefaultTheme.SYSTEM.name, isDark)
+  }
+}
+
 @Composable
 fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
   LaunchedEffect(darkTheme) {
@@ -268,10 +276,7 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
   }
   val systemDark = isSystemInDarkTheme()
   LaunchedEffect(systemDark) {
-    if (ChatController.appPrefs.currentTheme.get() == DefaultTheme.SYSTEM.name && CurrentColors.value.colors.isLight == systemDark) {
-      // Change active colors from light to dark and back based on system theme
-      ThemeManager.applyTheme(DefaultTheme.SYSTEM.name, systemDark)
-    }
+    reactOnDarkThemeChanges(systemDark)
   }
   val theme by CurrentColors.collectAsState()
   MaterialTheme(
