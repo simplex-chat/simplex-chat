@@ -467,7 +467,9 @@ fun ChatInfoToolbar(
       showSearch = false
     }
   }
-  BackHandler(onBack = onBackClicked)
+  if (appPlatform.isAndroid) {
+    BackHandler(onBack = onBackClicked)
+  }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   menuItems.add {

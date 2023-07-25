@@ -191,7 +191,13 @@ fun SettingsLayout(
       SectionBottomSpacer()
     }
     if (appPlatform.isDesktop) {
-      Box(Modifier.fillMaxWidth().background(MaterialTheme.colors.background).background(if (isInDarkTheme()) ToolbarDark else ToolbarLight).padding(start = 3.dp, top = 8.dp)) {
+      Box(
+        Modifier
+        .fillMaxWidth()
+        .background(MaterialTheme.colors.background)
+        .background(if (isInDarkTheme()) ToolbarDark else ToolbarLight)
+        .padding(start = 4.dp, top = 8.dp)
+      ) {
         NavigationButtonBack(closeSettings)
       }
     }

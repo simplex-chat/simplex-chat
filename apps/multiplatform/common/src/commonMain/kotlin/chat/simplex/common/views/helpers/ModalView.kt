@@ -22,7 +22,9 @@ fun ModalView(
   endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable () -> Unit,
 ) {
-  BackHandler(onBack = close)
+  if (showClose) {
+    BackHandler(onBack = close)
+  }
   Surface(Modifier.fillMaxSize()) {
     Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
       CloseSheetBar(close, showClose, endButtons)

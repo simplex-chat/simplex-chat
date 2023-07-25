@@ -14,10 +14,9 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.*
+import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -34,9 +33,8 @@ import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
+fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val newChatSheetState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
-  val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
   val showNewChatSheet = {
     newChatSheetState.value = AnimatedViewState.VISIBLE
   }
@@ -62,9 +60,8 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   }
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   var searchInList by rememberSaveable { mutableStateOf("") }
-  val scaffoldState = rememberScaffoldState()
   val scope = rememberCoroutineScope()
-  val switchingUsers = rememberSaveable { mutableStateOf(false) }
+  val (userPickerState, scaffoldState, switchingUsers ) = settingsState
   Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } } },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
@@ -113,8 +110,10 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   if (searchInList.isEmpty()) {
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
-  UserPicker(chatModel, userPickerState, switchingUsers) {
-    scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+  if (appPlatform.isAndroid) {
+    UserPicker(chatModel, userPickerState, switchingUsers) {
+      scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+    }
   }
   if (switchingUsers.value) {
     Box(
