@@ -61,7 +61,7 @@ chatGroupTests = do
     it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
   describe "message reactions" $ do
     it "set group message reactions" testSetGroupMessageReactions
-  fdescribe "delivery receipts" $ do
+  describe "delivery receipts" $ do
     it "should send delivery receipts in group" testSendGroupDeliveryReceipts
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
 
