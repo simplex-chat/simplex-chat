@@ -170,7 +170,7 @@ fun ComposeView(
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
-  val textStyle = remember { mutableStateOf(smallFont) }
+  val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val processPickedMedia = { uris: List<URI>, text: String? ->
     val content = ArrayList<UploadContent>()
     val imagesPreview = ArrayList<String>()
