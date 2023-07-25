@@ -529,7 +529,7 @@ processChatCommand = \case
             Just ft@FileTransferMeta {fileInline = Just IFMSent} ->
               sendDirectFileInline ct ft sharedMsgId
             _ -> pure ()
-          ci <- saveSndChatItem' user (CDDirectSnd ct) msg [] (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
+          ci <- saveSndChatItem' user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
           forM_ (timed_ >>= timedDeleteAt') $
             startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId' ci)
           setActive $ ActiveC c
@@ -587,9 +587,12 @@ processChatCommand = \case
             (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
             timed_ <- sndGroupCITimed live gInfo itemTTL
             (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
-            (msg@SndMessage {sharedMsgId}, mems) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
+            (msg@SndMessage {sharedMsgId}, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
             mapM_ (sendGroupFileInline ms sharedMsgId) ft_
-            ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg mems (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
+            ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
+            withStore' $ \db ->
+              forM_ sentToMembers $ \GroupMember {groupMemberId} ->
+                createGroupSndStatus db (chatItemId' ci) groupMemberId CISSndNew
             forM_ (timed_ >>= timedDeleteAt') $
               startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
             setActive $ ActiveG gName
@@ -952,7 +955,7 @@ processChatCommand = \case
           let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
           (msg, _) <- sendDirectContactMessage ct (XCallInv callId invitation)
-          ci <- saveSndChatItem user (CDDirectSnd ct) msg [] (CISndCall CISCallPending 0)
+          ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0)
           let call' = Call {contactId, callId, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
           call_ <- atomically $ TM.lookupInsert contactId call' calls
           forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
@@ -1325,7 +1328,7 @@ processChatCommand = \case
         (sendToContact user ct $> (s + 1, f)) `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
       sendToContact user ct = do
         (sndMsg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-        void $ saveSndChatItem user (CDDirectSnd ct) sndMsg [] (CISndMsgContent mc)
+        void $ saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -1425,7 +1428,7 @@ processChatCommand = \case
                   _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
               _ -> do
                 (msg, _) <- sendGroupMessage user gInfo members $ XGrpMemRole mId memRole
-                ci <- saveSndChatItem user (CDGroupSnd gInfo) msg [] (CISndGroupEvent gEvent)
+                ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent)
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
   APIRemoveMember groupId memberId -> withUser $ \user -> do
@@ -1441,7 +1444,7 @@ processChatCommand = \case
               withStore' $ \db -> deleteGroupMember db user m
             _ -> do
               (msg, _) <- sendGroupMessage user gInfo members $ XGrpMemDel mId
-              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg [] (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
+              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
               toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
               deleteMemberConnection user m
               -- undeleted "member connected" chat item will prevent deletion of member record
@@ -1451,7 +1454,7 @@ processChatCommand = \case
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     withChatLock "leaveGroup" . procCmd $ do
       (msg, _) <- sendGroupMessage user gInfo members XGrpLeave
-      ci <- saveSndChatItem user (CDGroupSnd gInfo) msg [] (CISndGroupEvent SGEUserLeft)
+      ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
       -- TODO delete direct connections that were unused
       deleteGroupLinkIfExists user gInfo
@@ -1841,7 +1844,7 @@ processChatCommand = \case
       (msg, _) <- sendGroupMessage user g' ms (XGrpInfo p')
       let cd = CDGroupSnd g'
       unless (sameGroupProfileInfo p p') $ do
-        ci <- saveSndChatItem user cd msg [] (CISndGroupEvent $ SGEGroupUpdated p')
+        ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
         toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat g') ci)
       createGroupFeatureChangedItems user cd CISndGroupFeature g g'
       pure $ CRGroupUpdated user g g' Nothing
@@ -1912,7 +1915,7 @@ processChatCommand = \case
           groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile Nothing
       (msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
       let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
-      ci <- saveSndChatItem user (CDDirectSnd ct) msg [] content
+      ci <- saveSndChatItem user (CDDirectSnd ct) msg content
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
       setActive $ ActiveG localDisplayName
     sendTextMessage chatName msg live = withUser $ \user -> do
@@ -2871,7 +2874,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_, gLinkMemRole) -> do
                     forM_ mc_ $ \mc -> do
                       (msg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-                      ci <- saveSndChatItem user (CDDirectSnd ct) msg [] (CISndMsgContent mc)
+                      ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
                       toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
                     forM_ groupId_ $ \groupId -> do
                       gVar <- asks idsDrg
@@ -4626,16 +4629,15 @@ saveRcvMSG conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckC
     (Just $ "createNewMessageAndRcvMsgDelivery, rcvMsgDelivery: " <> show rcvMsgDelivery <> ", sharedMsgId_: " <> show sharedMsgId_ <> ", msgDeliveryStatus: MDSRcvAgent")
     $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
 
-saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> [GroupMember] -> CIContent 'MDSnd -> m (ChatItem c 'MDSnd)
-saveSndChatItem user cd msg sentToMembers content = saveSndChatItem' user cd msg sentToMembers content Nothing Nothing Nothing False
+saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> m (ChatItem c 'MDSnd)
+saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing False
 
-saveSndChatItem' :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> [GroupMember] -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CITimed -> Bool -> m (ChatItem c 'MDSnd)
-saveSndChatItem' user cd msg@SndMessage {sharedMsgId} sentToMembers content ciFile quotedItem itemTimed live = do
+saveSndChatItem' :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CITimed -> Bool -> m (ChatItem c 'MDSnd)
+saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem itemTimed live = do
   createdAt <- liftIO getCurrentTime
   ciId <- withStore' $ \db -> do
     when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
     ciId <- createNewSndChatItem db user cd msg content quotedItem itemTimed live createdAt
-    forM_ sentToMembers $ \GroupMember {groupMemberId} -> createGroupSndStatus db ciId groupMemberId CISSndNew
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure ciId
   liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt createdAt
