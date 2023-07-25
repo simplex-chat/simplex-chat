@@ -6,6 +6,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
+{-# LANGUAGE InstanceSigs #-}
 
 
 module Simplex.Chat.MarkdownEditing where
@@ -14,10 +15,10 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import Data.Text (Text)
 import qualified Data.Text as T
-import GHC.Generics
+import GHC.Generics ( Generic )
 import Simplex.Messaging.Parsers ( sumTypeJSON ) 
 import Data.Diff.Myers
-import Simplex.Chat.Markdown
+import Simplex.Chat.Markdown ( FormattedText(..), Format )
 
 
 data EditingOperation = EOAdd | EODelete | EOSubstitute
@@ -37,6 +38,7 @@ data EditedText =  EditedText {format :: Maybe Format, text :: Text, added :: Ma
   deriving (Eq, Show, Generic)
 
 instance ToJSON EditedText where
+  toEncoding :: EditedText -> J.Encoding
   toEncoding = J.genericToEncoding $ sumTypeJSON id
 
 
@@ -48,7 +50,7 @@ toEditedChars :: [FormattedText] -> [EditedChar]
 toEditedChars = concatMap toChars
   where
     toChars FormattedText {format, text} =
-      map (\char -> EditedChar {format, char, operation = Nothing}) $ T.unpack $ text
+      map (\char -> EditedChar {format, char, operation = Nothing}) $ T.unpack text
 
 
 -- TODO delete?
