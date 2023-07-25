@@ -25,14 +25,14 @@ directoryOpts appDir defaultDbFileName = do
     option
       parseKnownContacts
       ( long "super-users"
-          <> metavar "SUPER-USERS"
+          <> metavar "SUPER_USERS"
           <> help "Comma-separated list of super-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
           <> value []
       )
   directoryLog <-
     strOption
       ( long "directory-file"
-          <> metavar "DIRECTORY-FILE"
+          <> metavar "DIRECTORY_FILE"
           <> help "Append only log for directory state"
       )
   welcomeMessage <-
