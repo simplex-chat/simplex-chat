@@ -710,42 +710,16 @@ ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
-shouldUpdateSndCIStatus :: CIStatus 'MDSnd -> CIStatus 'MDSnd -> Bool
-shouldUpdateSndCIStatus currentStatus newStatus
-  | currentStatus == newStatus = False
-  | otherwise = case (currentStatus, newStatus) of
-    (CISSndNew, _) -> True
-    (_, CISSndNew) -> False
-    (CISSndSent _, _) -> True
-    (_, CISSndSent _) -> False
-    (_, CISSndRcvd _ _) -> True
-    _ -> False
-
-shouldUpdateGroupCIStatus :: CIStatus 'MDSnd -> [CIStatus 'MDSnd] -> Maybe (CIStatus 'MDSnd)
-shouldUpdateGroupCIStatus currentStatus memberStatuses =
-  case memStatusesToNewStatus of
-    Nothing -> Nothing
-    Just newStatus ->
-      if currentStatus == newStatus
-        then Nothing
-        else case (currentStatus, newStatus) of
-          (CISSndNew, _) -> Just newStatus
-          (CISSndSent SSPComplete, CISSndSent SSPPartial) -> Nothing
-          (CISSndSent _, _) -> Just newStatus
-          (CISSndRcvd _ SSPComplete, CISSndRcvd _ SSPPartial) -> Nothing
-          (CISSndRcvd _ SSPPartial, CISSndRcvd _ SSPComplete) -> Just newStatus
-          (CISSndRcvd MROk SSPPartial, CISSndRcvd MRBadMsgHash SSPPartial) -> Just newStatus
-          (CISSndRcvd MROk SSPComplete, CISSndRcvd MRBadMsgHash SSPComplete) -> Just newStatus
-          _ -> Nothing
+memStatusesToGroupItemStatus :: [CIStatus 'MDSnd] -> CIStatus 'MDSnd
+memStatusesToGroupItemStatus memberStatuses
+  | all isSndRcvdOk memberStatuses = CISSndRcvd MROk SSPComplete
+  | all (\s -> isSndRcvdOk s || isSndRcvdBad s) memberStatuses = CISSndRcvd MRBadMsgHash SSPComplete
+  | any isSndRcvdBad memberStatuses = CISSndRcvd MRBadMsgHash SSPPartial
+  | any isSndRcvdOk memberStatuses = CISSndRcvd MROk SSPPartial
+  | all isSndSent memberStatuses = CISSndSent SSPComplete
+  | any isSndSent memberStatuses = CISSndSent SSPPartial
+  | otherwise = CISSndNew
   where
-    memStatusesToNewStatus
-      | all isSndRcvdOk memberStatuses = Just $ CISSndRcvd MROk SSPComplete
-      | all (\s -> isSndRcvdOk s || isSndRcvdBad s) memberStatuses = Just $ CISSndRcvd MRBadMsgHash SSPComplete
-      | any isSndRcvdBad memberStatuses = Just $ CISSndRcvd MRBadMsgHash SSPPartial
-      | any isSndRcvdOk memberStatuses = Just $ CISSndRcvd MROk SSPPartial
-      | all isSndSent memberStatuses = Just $ CISSndSent SSPComplete
-      | any isSndSent memberStatuses = Just $ CISSndSent SSPPartial
-      | otherwise = Nothing
     isSndSent = \case
       CISSndSent _ -> True
       _ -> False

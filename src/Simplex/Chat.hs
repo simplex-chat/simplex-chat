@@ -509,9 +509,10 @@ processChatCommand = \case
     memberDeliveryStatuses <- case (cType, dir) of
       (SCTGroup, SMDSnd) -> do
         memStatuses <- withStore' (`getGroupSndStatuses` itemId)
-        pure $ if M.null memStatuses
-          then Nothing
-          else Just $ map (uncurry MemberDeliveryStatus) (M.toList memStatuses)
+        pure $
+          if M.null memStatuses
+            then Nothing
+            else Just $ map (uncurry MemberDeliveryStatus) (M.toList memStatuses)
       _ -> pure Nothing
     pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses}
   APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
@@ -3130,13 +3131,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       MERR msgId err -> do
         chatItemId_ <- withStore' $ \db -> getChatItemIdByAgentMsgId db connId msgId
         forM_ chatItemId_ $ \itemId -> do
-          memStatuses <- withStore' (`getGroupSndStatuses` itemId)
           let GroupMember {groupMemberId} = m
-              current_ = M.lookup groupMemberId memStatuses
-              newMemStatus = agentErrToItemStatus err
-          forM_ current_ $ \currentMemStatus ->
-            when (shouldUpdateSndCIStatus currentMemStatus newMemStatus) $ do
-              withStore' $ \db -> updateGroupSndStatus db itemId groupMemberId newMemStatus
+          updateGroupMemSndStatus itemId groupMemberId $ agentErrToItemStatus err
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         incAuthErrCounter connEntity conn err
@@ -4333,29 +4329,39 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     updateDirectItemStatus :: Contact -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> m ()
     updateDirectItemStatus ct@Contact {contactId} Connection {connId} msgId newStatus =
       withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId msgId) >>= \case
+        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ _}}) -> pure ()
         Just (CChatItem SMDSnd ci) -> do
-          let currentStatus = chatItemStatus' ci
-          when (shouldUpdateSndCIStatus currentStatus newStatus) $ do
-            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) newStatus
-            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+          chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) newStatus
+          toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         _ -> pure ()
+
+    updateGroupMemSndStatus :: ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> m (Maybe [CIStatus 'MDSnd])
+    updateGroupMemSndStatus itemId groupMemberId newMemStatus = do
+      memStatuses <- withStore' (`getGroupSndStatuses` itemId)
+      let current_ = M.lookup groupMemberId memStatuses
+      case current_ of
+        Just (CISSndRcvd _ _) -> pure Nothing
+        Just _ -> do
+          withStore' $ \db -> updateGroupSndStatus db itemId groupMemberId newMemStatus
+          let memStatuses' = M.elems $ M.insert groupMemberId newMemStatus memStatuses
+          pure $ Just memStatuses'
+        _ -> pure Nothing
 
     updateGroupItemStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> m ()
     updateGroupItemStatus gInfo@GroupInfo {groupId} m Connection {connId} msgId newMemStatus =
       withStore' (\db -> getGroupChatItemByAgentMsgId db user groupId connId msgId) >>= \case
+        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ SSPComplete}}) -> pure ()
         Just (CChatItem SMDSnd ci) -> do
           let itemId = chatItemId' ci
-          memStatuses <- withStore' (`getGroupSndStatuses` itemId)
-          let GroupMember {groupMemberId} = m
-              current_ = M.lookup groupMemberId memStatuses
-          forM_ current_ $ \currentMemStatus ->
-            when (shouldUpdateSndCIStatus currentMemStatus newMemStatus) $ do
-              withStore' $ \db -> updateGroupSndStatus db itemId groupMemberId newMemStatus
-              let memStatuses' = M.elems $ M.insert groupMemberId newMemStatus memStatuses
-                  itemStatus = chatItemStatus' ci
-              forM_ (shouldUpdateGroupCIStatus itemStatus memStatuses') $ \newItemStatus -> do
-                chatItem <- withStore $ \db -> updateGroupChatItemStatus db user groupId itemId newItemStatus
+              GroupMember {groupMemberId} = m
+          updateGroupMemSndStatus itemId groupMemberId newMemStatus >>= \case
+            Just memStatuses -> do
+              let itemStatus = chatItemStatus' ci
+                  itemStatus' = memStatusesToGroupItemStatus memStatuses
+              when (itemStatus' /= itemStatus) $ do
+                chatItem <- withStore $ \db -> updateGroupChatItemStatus db user groupId itemId itemStatus'
                 toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
+            _ -> pure ()
         _ -> pure ()
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
