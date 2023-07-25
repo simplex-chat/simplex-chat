@@ -198,9 +198,6 @@ chatItemTs (CChatItem _ ci) = chatItemTs' ci
 chatItemTs' :: ChatItem c d -> UTCTime
 chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 
-chatItemStatus' :: ChatItem c d -> CIStatus d
-chatItemStatus' ChatItem {meta = CIMeta {itemStatus}} = itemStatus
-
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
 

@@ -508,11 +508,9 @@ processChatCommand = \case
     let itemVersions = if null versions then maybeToList $ mkItemVersion ci else versions
     memberDeliveryStatuses <- case (cType, dir) of
       (SCTGroup, SMDSnd) -> do
-        memStatuses <- withStore' (`getGroupSndStatuses` itemId)
-        pure $
-          if M.null memStatuses
-            then Nothing
-            else Just $ map (uncurry MemberDeliveryStatus) (M.toList memStatuses)
+        withStore' (`getGroupSndStatuses` itemId) >>= \case
+          [] -> pure Nothing
+          memStatuses -> pure $ Just $ map (uncurry MemberDeliveryStatus) memStatuses
       _ -> pure Nothing
     pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses}
   APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
@@ -4330,38 +4328,34 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     updateDirectItemStatus ct@Contact {contactId} Connection {connId} msgId newStatus =
       withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId msgId) >>= \case
         Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ _}}) -> pure ()
-        Just (CChatItem SMDSnd ci) -> do
-          chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) newStatus
-          toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}})
+          | itemStatus == newStatus -> pure ()
+          | otherwise -> do
+            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId itemId newStatus
+            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         _ -> pure ()
 
-    updateGroupMemSndStatus :: ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> m (Maybe [CIStatus 'MDSnd])
-    updateGroupMemSndStatus itemId groupMemberId newMemStatus = do
-      memStatuses <- withStore' (`getGroupSndStatuses` itemId)
-      let current_ = M.lookup groupMemberId memStatuses
-      case current_ of
-        Just (CISSndRcvd _ _) -> pure Nothing
-        Just _ -> do
-          withStore' $ \db -> updateGroupSndStatus db itemId groupMemberId newMemStatus
-          let memStatuses' = M.elems $ M.insert groupMemberId newMemStatus memStatuses
-          pure $ Just memStatuses'
-        _ -> pure Nothing
+    updateGroupMemSndStatus :: ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> m Bool
+    updateGroupMemSndStatus itemId groupMemberId newStatus =
+      runExceptT (withStore $ \db -> getGroupSndStatus db itemId groupMemberId) >>= \case
+        Right (CISSndRcvd _ _) -> pure False
+        Right memStatus
+          | memStatus == newStatus -> pure False
+          | otherwise -> withStore' (\db -> updateGroupSndStatus db itemId groupMemberId newStatus) $> True
+        _ -> pure False
 
     updateGroupItemStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> m ()
-    updateGroupItemStatus gInfo@GroupInfo {groupId} m Connection {connId} msgId newMemStatus =
+    updateGroupItemStatus gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus =
       withStore' (\db -> getGroupChatItemByAgentMsgId db user groupId connId msgId) >>= \case
         Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ SSPComplete}}) -> pure ()
-        Just (CChatItem SMDSnd ci) -> do
-          let itemId = chatItemId' ci
-              GroupMember {groupMemberId} = m
-          updateGroupMemSndStatus itemId groupMemberId newMemStatus >>= \case
-            Just memStatuses -> do
-              let itemStatus = chatItemStatus' ci
-                  itemStatus' = memStatusesToGroupItemStatus memStatuses
-              when (itemStatus' /= itemStatus) $ do
-                chatItem <- withStore $ \db -> updateGroupChatItemStatus db user groupId itemId itemStatus'
-                toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
-            _ -> pure ()
+        Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}}) -> do
+          memStatusChanged <- updateGroupMemSndStatus itemId groupMemberId newMemStatus
+          when memStatusChanged $ do
+            memStatuses <- map snd <$> withStore' (`getGroupSndStatuses` itemId)
+            let newStatus = memStatusesToGroupItemStatus memStatuses
+            when (newStatus /= itemStatus) $ do
+              chatItem <- withStore $ \db -> updateGroupChatItemStatus db user groupId itemId newStatus
+              toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
         _ -> pure ()
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)

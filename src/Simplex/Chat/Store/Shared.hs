@@ -92,6 +92,7 @@ data StoreError
   | SEGroupLinkNotFound {groupInfo :: GroupInfo}
   | SEHostMemberIdNotFound {groupId :: Int64}
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
+  | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where

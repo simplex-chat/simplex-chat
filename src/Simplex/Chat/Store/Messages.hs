@@ -90,6 +90,7 @@ module Simplex.Chat.Store.Messages
     getCIModeration,
     deleteCIModeration,
     createGroupSndStatus,
+    getGroupSndStatus,
     updateGroupSndStatus,
     getGroupSndStatuses,
   )
@@ -102,7 +103,6 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (sortOn)
-import Data.Map.Strict (Map, fromList)
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -1876,6 +1876,19 @@ createGroupSndStatus db itemId memberId status =
     "INSERT INTO group_snd_item_statuses (chat_item_id, group_member_id, group_snd_item_status) VALUES (?,?,?)"
     (itemId, memberId, status)
 
+getGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> ExceptT StoreError IO (CIStatus 'MDSnd)
+getGroupSndStatus db itemId memberId =
+  ExceptT . firstRow fromOnly (SENoGroupSndStatus itemId memberId) $
+    DB.query
+      db
+      [sql|
+        SELECT group_snd_item_status
+        FROM group_snd_item_statuses
+        WHERE chat_item_id = ? AND group_member_id = ?
+        LIMIT 1
+      |]
+      (itemId, memberId)
+
 updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
 updateGroupSndStatus db itemId memberId status = do
   currentTs <- liftIO getCurrentTime
@@ -1884,18 +1897,17 @@ updateGroupSndStatus db itemId memberId status = do
     [sql|
       UPDATE group_snd_item_statuses
       SET group_snd_item_status = ?, updated_at = ?
-      WHERE chat_item_id = ? AND group_member_id = ?
+      WHERE chat_item_id = ? AND group_member_id  = ?
     |]
     (status, currentTs, itemId, memberId)
 
-getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO (Map GroupMemberId (CIStatus 'MDSnd))
+getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO [(GroupMemberId, CIStatus 'MDSnd)]
 getGroupSndStatuses db itemId =
-  fromList
-    <$> DB.query
-      db
-      [sql|
-          SELECT group_member_id, group_snd_item_status
-          FROM group_snd_item_statuses
-          WHERE chat_item_id = ?
-        |]
-      (Only itemId)
+  DB.query
+    db
+    [sql|
+        SELECT group_member_id, group_snd_item_status
+        FROM group_snd_item_statuses
+        WHERE chat_item_id = ?
+      |]
+    (Only itemId)
