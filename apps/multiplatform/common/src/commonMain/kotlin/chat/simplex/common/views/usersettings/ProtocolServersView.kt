@@ -62,7 +62,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
   }
 
   fun showServer(server: ServerCfg) {
-    ModalManager.shared.showModalCloseable(true) { close ->
+    ModalManager.start.showModalCloseable(true) { close ->
       var old by remember { mutableStateOf(server) }
       val index = servers.indexOf(old)
       ProtocolServerView(
@@ -117,7 +117,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
               if (appPlatform.isAndroid) {
                 SectionItemView({
                   AlertManager.shared.hideAlert()
-                  ModalManager.shared.showModalCloseable { close ->
+                  ModalManager.start.showModalCloseable { close ->
                     ScanProtocolServer {
                       close()
                       servers = servers + it

@@ -72,7 +72,7 @@ class AppPreferences {
     set = fun(action: CallOnLockScreen) { _callOnLockScreen.set(action.name) }
   )
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
-  val laMode = mkEnumPreference(SHARED_PREFS_LA_MODE, LAMode.SYSTEM) { LAMode.values().firstOrNull { it.name == this } }
+  val laMode = mkEnumPreference(SHARED_PREFS_LA_MODE, LAMode.default) { LAMode.values().firstOrNull { it.name == this } }
   val laLockDelay = mkIntPreference(SHARED_PREFS_LA_LOCK_DELAY, 30)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)

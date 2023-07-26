@@ -278,7 +278,7 @@ fun SimplexLockView(
               }
             }
             LAMode.PASSCODE -> {
-              ModalManager.shared.showCustomModal { close ->
+              ModalManager.fullscreen.showCustomModal { close ->
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
                   SetAppPasscodeView(
                     submit = {
@@ -306,7 +306,7 @@ fun SimplexLockView(
         is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
         LAResult.Success -> {
           if (!selfDestruct.get()) {
-            ModalManager.shared.showCustomModal { close ->
+            ModalManager.fullscreen.showCustomModal { close ->
               EnableSelfDestruct(selfDestruct, close)
             }
           } else {
@@ -322,7 +322,7 @@ fun SimplexLockView(
     authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.la_change_app_passcode)) { laResult ->
       when (laResult) {
         LAResult.Success -> {
-          ModalManager.shared.showCustomModal { close ->
+          ModalManager.fullscreen.showCustomModal { close ->
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
               SetAppPasscodeView(
                 submit = {
@@ -345,7 +345,7 @@ fun SimplexLockView(
     authenticate(generalGetString(MR.strings.la_current_app_passcode), generalGetString(MR.strings.change_self_destruct_passcode)) { laResult ->
       when (laResult) {
         LAResult.Success -> {
-          ModalManager.shared.showCustomModal { close ->
+          ModalManager.fullscreen.showCustomModal { close ->
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
               SetAppPasscodeView(
                 passcodeKeychain = ksSelfDestructPassword,
@@ -380,7 +380,7 @@ fun SimplexLockView(
               setPerformLA(true)
             }
             LAMode.PASSCODE -> {
-              ModalManager.shared.showCustomModal { close ->
+              ModalManager.fullscreen.showCustomModal { close ->
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
                   SetAppPasscodeView(
                     submit = {
@@ -427,7 +427,7 @@ fun SimplexLockView(
         SectionDividerSpaced()
         SectionView(stringResource(MR.strings.self_destruct_passcode).uppercase()) {
           val openInfo = {
-            ModalManager.shared.showModal {
+            ModalManager.start.showModal {
               SelfDestructInfoView()
             }
           }

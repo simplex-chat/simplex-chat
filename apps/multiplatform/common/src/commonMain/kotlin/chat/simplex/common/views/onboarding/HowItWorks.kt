@@ -42,7 +42,7 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
 
     if (onboardingStage != null) {
       Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
-        OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.shared.closeModal() })
+        OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.fullscreen.closeModal() })
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))
     }

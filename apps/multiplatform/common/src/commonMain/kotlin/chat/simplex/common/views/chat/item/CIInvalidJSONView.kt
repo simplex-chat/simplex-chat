@@ -21,7 +21,11 @@ import chat.simplex.res.MR
 @Composable
 fun CIInvalidJSONView(json: String) {
   Row(Modifier
-    .clickable { ModalManager.shared.showModal(true) { InvalidJSONView(json) } }
+    .clickable {
+      ModalManager.center.closeModals()
+      ModalManager.end.closeModals()
+      ModalManager.center.showModal(true) { InvalidJSONView(json) }
+    }
     .padding(horizontal = 10.dp, vertical = 6.dp)
   ) {
     Text(stringResource(MR.strings.invalid_data), color = Color.Red, fontStyle = FontStyle.Italic)

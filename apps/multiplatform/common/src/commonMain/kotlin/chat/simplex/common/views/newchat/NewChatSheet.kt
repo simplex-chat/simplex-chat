@@ -40,15 +40,18 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
     stopped,
     addContact = {
       closeNewChatSheet(false)
-      ModalManager.shared.showModal { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
+      ModalManager.center.closeModals()
+      ModalManager.center.showModal { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
     },
     connectViaLink = {
       closeNewChatSheet(false)
-      ModalManager.shared.showModalCloseable { close -> ConnectViaLinkView(chatModel, close) }
+      ModalManager.center.closeModals()
+      ModalManager.center.showModalCloseable { close -> ConnectViaLinkView(chatModel, close) }
     },
     createGroup = {
       closeNewChatSheet(false)
-      ModalManager.shared.showCustomModal { close -> AddGroupView(chatModel, close) }
+      ModalManager.center.closeModals()
+      ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, close) }
     },
     closeNewChatSheet,
   )
@@ -93,10 +96,12 @@ private fun NewChatSheetLayout(
       }
     }
   }
+  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   val maxWidth = with(LocalDensity.current) { screenWidth() * density }
   Column(
     Modifier
       .fillMaxSize()
+      .padding(end = endPadding)
       .offset { IntOffset(if (newChat.isGone()) -maxWidth.value.roundToInt() else 0, 0) }
       .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { closeNewChatSheet(true) }
       .drawBehind { drawRect(animatedColor.value) },

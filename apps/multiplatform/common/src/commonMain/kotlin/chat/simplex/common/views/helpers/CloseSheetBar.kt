@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.*
 
 @Composable
-fun CloseSheetBar(close: (() -> Unit)?, endButtons: @Composable RowScope.() -> Unit = {}) {
+fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}) {
   Column(
     Modifier
       .fillMaxWidth()
@@ -32,7 +32,11 @@ fun CloseSheetBar(close: (() -> Unit)?, endButtons: @Composable RowScope.() -> U
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically
         ) {
-          NavigationButtonBack(onButtonClicked = close)
+          if (showClose)  {
+            NavigationButtonBack(onButtonClicked = close)
+          } else {
+            Spacer(Modifier)
+          }
           Row {
             endButtons()
           }

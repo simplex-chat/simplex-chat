@@ -28,4 +28,6 @@ expect fun screenOrientation(): ScreenOrientation
 @Composable
 expect fun screenWidth(): Dp
 
+expect fun desktopExpandWindowToWidth(width: Dp)
+
 expect fun isRtl(text: CharSequence): Boolean
