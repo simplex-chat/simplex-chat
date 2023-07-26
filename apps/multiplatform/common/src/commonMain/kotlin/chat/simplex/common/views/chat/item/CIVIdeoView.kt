@@ -113,7 +113,7 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
   }
   Box {
     val windowWidth = LocalWindowWidth()
-    val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 500.dp }
+    val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
     PlayerView(
       player,
       width,
@@ -202,7 +202,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
 @Composable
 private fun ImageView(preview: ImageBitmap, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
   val windowWidth = LocalWindowWidth()
-  val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 500.dp }
+  val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
   Image(
     preview,
     contentDescription = stringResource(MR.strings.video_descr),
@@ -311,5 +311,5 @@ private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
 
 private fun videoViewFullWidth(windowWidth: Dp): Dp {
   val approximatePadding = 100.dp
-  return minOf(500.dp, windowWidth - approximatePadding)
+  return minOf(DEFAULT_MAX_IMAGE_WIDTH, windowWidth - approximatePadding)
 }

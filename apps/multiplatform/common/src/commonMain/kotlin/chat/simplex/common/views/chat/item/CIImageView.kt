@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import java.io.File
@@ -85,7 +86,7 @@ fun CIImageView(
   @Composable
   fun imageViewFullWidth(): Dp {
     val approximatePadding = 100.dp
-    return with(LocalDensity.current) { minOf(500.dp, LocalWindowWidth() - approximatePadding) }
+    return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
   }
 
   @Composable
@@ -93,10 +94,10 @@ fun CIImageView(
     Image(
       imageBitmap,
       contentDescription = stringResource(MR.strings.image_descr),
-      // .width(500.dp) is a hack for image to increase IntrinsicSize of FramedItemView
+      // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else 500.dp)
+        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
@@ -110,10 +111,10 @@ fun CIImageView(
     Image(
       painter,
       contentDescription = stringResource(MR.strings.image_descr),
-      // .width(500.dp) is a hack for image to increase IntrinsicSize of FramedItemView
+      // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else 500.dp)
+        .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
