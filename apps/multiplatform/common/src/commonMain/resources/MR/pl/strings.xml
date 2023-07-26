@@ -1342,4 +1342,8 @@
     <string name="no_history">Brak historii</string>
     <string name="sync_connection_force_confirm">Renegocjuj</string>
     <string name="sender_at_ts">%s o %s</string>
+    <string name="choose_file_title">Wybierz plik</string>
+    <string name="in_developing_desc">Ta funkcja nie jest jeszcze obsługiwana. Wypróbuj następną wersję.</string>
+    <string name="no_selected_chat">Nie wybrano czatu</string>
+    <string name="in_developing_title">Już wkrótce!</string>
 </resources>
