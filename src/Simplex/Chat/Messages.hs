@@ -5,7 +5,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -709,19 +708,19 @@ ciCreateStatus content = case msgDirection @d of
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
 membersGroupItemStatus :: [(CIStatus 'MDSnd, Int)] -> CIStatus 'MDSnd
-membersGroupItemStatus memStatusCounts = do
-  let total = sum $ map snd memStatusCounts
-      rcvdOk = fromMaybe 0 $ lookup (CISSndRcvd MROk SSPComplete) memStatusCounts
-      rcvdBad = fromMaybe 0 $ lookup (CISSndRcvd MRBadMsgHash SSPComplete) memStatusCounts
-      sent = fromMaybe 0 $ lookup (CISSndSent SSPComplete) memStatusCounts
-  if
-      | rcvdOk == total -> CISSndRcvd MROk SSPComplete
-      | rcvdOk + rcvdBad == total -> CISSndRcvd MRBadMsgHash SSPComplete
-      | rcvdBad > 0 -> CISSndRcvd MRBadMsgHash SSPPartial
-      | rcvdOk > 0 -> CISSndRcvd MROk SSPPartial
-      | sent == total -> CISSndSent SSPComplete
-      | sent > 0 -> CISSndSent SSPPartial
-      | otherwise -> CISSndNew
+membersGroupItemStatus memStatusCounts
+  | rcvdOk == total = CISSndRcvd MROk SSPComplete
+  | rcvdOk + rcvdBad == total = CISSndRcvd MRBadMsgHash SSPComplete
+  | rcvdBad > 0 = CISSndRcvd MRBadMsgHash SSPPartial
+  | rcvdOk > 0 = CISSndRcvd MROk SSPPartial
+  | sent == total = CISSndSent SSPComplete
+  | sent > 0 = CISSndSent SSPPartial
+  | otherwise = CISSndNew
+  where
+    total = sum $ map snd memStatusCounts
+    rcvdOk = fromMaybe 0 $ lookup (CISSndRcvd MROk SSPComplete) memStatusCounts
+    rcvdBad = fromMaybe 0 $ lookup (CISSndRcvd MRBadMsgHash SSPComplete) memStatusCounts
+    sent = fromMaybe 0 $ lookup (CISSndSent SSPComplete) memStatusCounts
 
 data SndCIStatusProgress
   = SSPPartial
