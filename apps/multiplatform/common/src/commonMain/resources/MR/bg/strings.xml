@@ -623,4 +623,12 @@
     <string name="error_loading_details">Грешка при зареждане на подробности</string>
     <string name="error_receiving_file">Грешка при получаване на файл</string>
     <string name="error_deleting_user">Грешка при изтриване на потребителския профил</string>
+    <string name="error_saving_user_password">Грешка при запазване на потребителска парола</string>
+    <string name="error_starting_chat">Грешка при стартиране на чата</string>
+    <string name="error_stopping_chat">Грешка при спиране на чата</string>
+    <string name="error_saving_xftp_servers">Грешка при запазване на XFTP сървърите</string>
+    <string name="error_sending_message">Грешка при изпращане на съобщение</string>
+    <string name="error_setting_address">Грешка при задаване на адрес</string>
+    <string name="failed_to_active_user_title">Грешка при смяна на профил!</string>
+    <string name="error_synchronizing_connection">Грешка при синхронизиране на връзката</string>
 </resources>
