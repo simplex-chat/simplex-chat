@@ -105,6 +105,7 @@ library
       Simplex.Chat.Migrations.M20230618_favorite_chats
       Simplex.Chat.Migrations.M20230621_chat_item_moderations
       Simplex.Chat.Migrations.M20230705_delivery_receipts
+      Simplex.Chat.Migrations.M20230721_group_snd_item_statuses
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options
