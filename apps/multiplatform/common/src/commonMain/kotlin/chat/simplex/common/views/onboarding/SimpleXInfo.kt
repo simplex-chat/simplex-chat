@@ -41,6 +41,7 @@ fun SimpleXInfoLayout(
       .fillMaxSize()
       .verticalScroll(rememberScrollState())
       .padding(start = DEFAULT_PADDING , end = DEFAULT_PADDING, top = DEFAULT_PADDING),
+    horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
