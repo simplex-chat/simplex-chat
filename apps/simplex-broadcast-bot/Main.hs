@@ -50,7 +50,7 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
         | publisher `elem` publishers ->
           if allowContent mc
             then do
-              sendChatCmd cc "/contacts" >>= \case
+              sendChatCmd cc ListContacts >>= \case
                 CRContactsList _ cts -> void . forkIO $ do
                   let cts' = filter broadcastTo cts
                   forM_ cts' $ \ct' -> sendComposedMessage cc ct' Nothing mc

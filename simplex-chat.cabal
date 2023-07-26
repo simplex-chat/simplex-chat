@@ -28,7 +28,6 @@ library
       Simplex.Chat
       Simplex.Chat.Archive
       Simplex.Chat.Bot
-      Simplex.Chat.Bot.Commands
       Simplex.Chat.Bot.KnownContacts
       Simplex.Chat.Call
       Simplex.Chat.Controller

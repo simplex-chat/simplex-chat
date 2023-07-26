@@ -12,12 +12,12 @@ import Control.Concurrent.STM
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Directory.Events
 import Directory.Options
 import Directory.Store
 import Simplex.Chat.Bot
-import Simplex.Chat.Bot.Commands
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
@@ -59,14 +59,14 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage} _user cc = 
         Nothing -> do
           let GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = g
           atomically $ addGroupReg st g
-          r <- sendChatCmd' cc $ APIJoinGroup groupId
+          r <- sendChatCmd cc $ APIJoinGroup groupId
           sendMessage cc ct $ T.unpack $ case r of
             CRUserAcceptedGroupSent {} -> "Joining the group #" <> displayName <> "…"
             _ -> "Error joining group " <> displayName <> ", please re-send the invitation!"
       DEServiceJoinedGroup ctId g -> withContact ctId g "joined group" $ \ct -> do
         let GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = g
         sendMessage cc ct $ T.unpack $ "Joined the group #" <> displayName <> ", creating the link…"
-        r <- sendChatCmd' cc $ APICreateGroupLink groupId GRMember
+        r <- sendChatCmd cc $ APICreateGroupLink groupId GRMember
         sendMessage cc ct $ case r of
           CRGroupLinkCreated {connReqContact} ->
               "Created the public link to join the group via this service that is always online\n\n\
@@ -80,13 +80,31 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage} _user cc = 
             CEGroupMemberNotActive -> unexpectedError "service membership is not active"
             _ -> unexpectedError "can't create group link"
           _ -> unexpectedError "can't create group link"
-      DEGroupUpdated ctId g -> withContact ctId g "group updated" $ \ct -> do
+      DEGroupUpdated {contactId, fromGroup, toGroup} -> withContact contactId toGroup "group updated" $ \ct -> do
         -- TODO we need to find registration here to see if link is expected in profile or we can ignore it at this point
-        let GroupInfo {groupId, groupProfile = GroupProfile {displayName, description}} = g
-        sendChatCmd' cc (APIGetGroupLink groupId) >>= \case
-          CRGroupLink {connReqContact} -> do
-            pure ()
-          _ -> pure ()
+        let GroupInfo {groupId, groupProfile = p@GroupProfile {displayName = n, description}} = fromGroup
+            GroupInfo {groupProfile = p'@GroupProfile {displayName = n', description = description'}} = toGroup
+        unless (sameProfile p p') $ do
+          sendChatCmd cc (APIGetGroupLink groupId) >>= \case
+            CRGroupLink {connReqContact} -> pure ()
+              -- let groupLink = safeDecodeUtf8 $ strEncode connReqContact
+              --     hadLinkBefore = groupLink `isInfix` description
+              --     hasLinkNow = groupLink `isInfix` description'
+
+              -- if hasLinkNow
+              --   then sendMessage cc ct $ "The group link added to the welcome message - thank you!"
+              --   else sendMessage cc ct $ "The group link added to the welcome message - thank you!"
+              --     let description' = description <> "\n\nLink to join the group: " <> T.pack groupLink
+              --     sendChatCmd cc (APISetGroupProfile groupId (GroupProfile displayName description')) >>= \case
+              --       CRGroupProfileUpdated {} -> pure ()
+              --       _ -> unexpectedError "can't update group profile"
+            _ -> pure () -- TODO handle errors
+        where
+          isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
+          sameProfile
+            GroupProfile {displayName = n, fullName = fn, image = i, description = d}
+            GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
+              n == n' && fn == fn' && i == i' && d == d'
       DEContactRoleChanged _ctId _g _role -> pure ()
       DEServiceRoleChanged _g _role -> pure ()
       DEContactRemovedFromGroup _ctId _g -> pure ()
@@ -155,7 +173,7 @@ badInvitation contactRole serviceRole = case (contactRole, serviceRole) of
   _ -> Just "You must have a group _owner_ role and you must grant directory service _admin_ role to register the group"
 
 getContact :: ChatController -> Int64 -> IO (Maybe Contact)
-getContact cc ctId = resp <$> sendChatCmd' cc (APIGetChat (ChatRef CTDirect ctId) (CPLast 0) Nothing)
+getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId) (CPLast 0) Nothing)
   where
     resp :: ChatResponse -> Maybe Contact
     resp = \case

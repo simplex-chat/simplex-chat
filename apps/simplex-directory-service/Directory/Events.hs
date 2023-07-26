@@ -26,7 +26,7 @@ data DirectoryEvent
   = DEContactConnected Contact
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup ContactId GroupInfo
-  | DEGroupUpdated ContactId GroupInfo
+  | DEGroupUpdated {contactId :: ContactId, fromGroup :: GroupInfo, toGroup :: GroupInfo}
   | DEContactRoleChanged ContactId GroupInfo GroupMemberRole
   | DEServiceRoleChanged GroupInfo GroupMemberRole
   | DEContactRemovedFromGroup ContactId GroupInfo
@@ -43,7 +43,7 @@ crDirectoryEvent = \case
   CRContactConnected {contact} -> Just $ DEContactConnected contact
   CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CRUserJoinedGroup {groupInfo, hostMember} -> (`DEServiceJoinedGroup` groupInfo) <$> memberContactId hostMember
-  CRGroupUpdated {toGroup, member_} -> (`DEGroupUpdated` toGroup) <$> (memberContactId =<< member_)
+  CRGroupUpdated {fromGroup, toGroup, member_} -> (\contactId -> DEGroupUpdated {contactId, fromGroup, toGroup}) <$> (memberContactId =<< member_)
   CRMemberRole {groupInfo, member, toRole} -> (\ctId -> DEContactRoleChanged ctId groupInfo toRole) <$> memberContactId member
   CRMemberRoleUser {groupInfo, toRole} -> Just $ DEServiceRoleChanged groupInfo toRole
   CRDeletedMember {groupInfo, deletedMember} -> (`DEContactRemovedFromGroup` groupInfo) <$> memberContactId deletedMember
