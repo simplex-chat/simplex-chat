@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Directory.Events where
 
@@ -36,7 +37,7 @@ data DirectoryEvent
   | DEUnsupportedMessage Contact ChatItemId
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
-  | DEContactCommand Contact ADirectoryCmd
+  | DEContactCommand Contact ChatItemId ADirectoryCmd
 
 crDirectoryEvent :: ChatResponse -> Maybe DirectoryEvent
 crDirectoryEvent = \case
@@ -54,11 +55,11 @@ crDirectoryEvent = \case
   CRChatItemDeleted {deletedChatItem = AChatItem _ SMDRcv (DirectChat ct) _, byUser = False} -> Just $ DEItemDeleteIgnored ct
   CRNewChatItem {chatItem = AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}} ->
     Just $ case (mc, itemLive) of
-      (MCText t, Nothing) -> DEContactCommand ct $ fromRight err $ A.parseOnly (directoryCmdP ciId) $ T.dropWhileEnd isSpace t
+      (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly directoryCmdP $ T.dropWhileEnd isSpace t
       _ -> DEUnsupportedMessage ct ciId
     where
       ciId = chatItemId' ci
-      err = ADC SDRUser $ DCUnknownCommand ciId      
+      err = ADC SDRUser DCUnknownCommand
   _ -> Nothing
 
 data DirectoryRole = DRUser | DRSuperUser
@@ -78,6 +79,8 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCResumeGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCListGroups_ :: DirectoryCmdTag 'DRSuperUser
 
+deriving instance Show (DirectoryCmdTag r)
+
 data ADirectoryCmdTag = forall r. ADCT (SDirectoryRole r) (DirectoryCmdTag r)
 
 data DirectoryCmd (r :: DirectoryRole) where
@@ -86,23 +89,23 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCConfirmDuplicateGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
-  DCApproveGroup :: GroupApprovalId -> GroupName -> DirectoryCmd 'DRSuperUser
-  DCRejectGroup :: GroupApprovalId -> GroupName -> DirectoryCmd 'DRSuperUser
+  DCApproveGroup :: {groupId :: GroupId, localDisplayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRSuperUser
+  DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCListGroups :: DirectoryCmd 'DRSuperUser
-  DCUnknownCommand :: ChatItemId -> DirectoryCmd 'DRUser
-  DCCommandError :: ChatItemId -> DirectoryCmdTag r -> DirectoryCmd r
+  DCUnknownCommand :: DirectoryCmd 'DRUser
+  DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
 
 data ADirectoryCmd = forall r. ADC (SDirectoryRole r) (DirectoryCmd r)
 
-directoryCmdP :: ChatItemId -> Parser ADirectoryCmd
-directoryCmdP ciId =
+directoryCmdP :: Parser ADirectoryCmd
+directoryCmdP =
   (A.char '/' *> cmdStrP) <|> (ADC SDRUser . DCSearchGroup <$> A.takeText)
   where
     cmdStrP =
-      (tagP >>= \(ADCT u t) -> ADC u <$> (cmdP t <|> pure (DCCommandError ciId t)))
-        <|> pure (ADC SDRUser $ DCUnknownCommand ciId)
+      (tagP >>= \(ADCT u t) -> ADC u <$> (cmdP t <|> pure (DCCommandError t)))
+        <|> pure (ADC SDRUser DCUnknownCommand)
     tagP = A.takeTill (== ' ') >>= \case
       "help" -> u DCHelp_
       "h" -> u DCHelp_
@@ -124,10 +127,13 @@ directoryCmdP ciId =
       DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
       DCListUserGroups_ -> pure DCListUserGroups
       DCDeleteGroup_ -> gc DCDeleteGroup
-      DCApproveGroup_ -> gc DCApproveGroup
+      DCApproveGroup_ -> do
+        (groupId, localDisplayName) <- gc (,)
+        groupApprovalId <- A.space *> A.decimal
+        pure $ DCApproveGroup {groupId, localDisplayName, groupApprovalId}
       DCRejectGroup_ -> gc DCRejectGroup
       DCSuspendGroup_ -> gc DCSuspendGroup
       DCResumeGroup_ -> gc DCResumeGroup
       DCListGroups_ -> pure DCListGroups
       where
-        gc f = f <$> A.decimal <* A.char ':' <*> A.takeText
+        gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> A.takeTill (== ' ')

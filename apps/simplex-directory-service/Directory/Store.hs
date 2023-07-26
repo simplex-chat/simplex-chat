@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Directory.Store where
@@ -35,8 +36,11 @@ data GroupRegStatus
   | GRSActive
   | GRSSuspended
 
-addGroupReg :: DirectoryStore -> GroupInfo -> STM ()
-addGroupReg _st _g = undefined
+addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> STM ()
+addGroupReg st ct GroupInfo {groupId} = do
+  groupRegStatus <- newTVar GRSProposed
+  let gr = GroupReg {userGroupRegId = groupId, dbGroupId = groupId, dbContactId = contactId' ct, groupRegStatus}
+  modifyTVar' (groupRegs st) (gr :)
 
 getGroupReg :: DirectoryStore -> GroupRegId -> STM (Maybe GroupReg)
 getGroupReg st gId = find ((gId ==) . dbGroupId) <$> readTVar (groupRegs st)
@@ -50,6 +54,9 @@ getContactGroupRegs st ctId = filter ((ctId ==) . dbContactId) <$> readTVar (gro
 filterListedGroups :: DirectoryStore -> [GroupInfo] -> STM [GroupInfo]
 filterListedGroups _st _gs = undefined
 
+listGroup :: DirectoryStore -> GroupId -> STM ()
+listGroup st gId = modifyTVar' (listedGroups st) $ S.insert gId
+
 unlistGroup :: DirectoryStore -> GroupId -> STM ()
 unlistGroup st gId = modifyTVar' (listedGroups st) $ S.delete gId
 
@@ -61,11 +68,11 @@ getDirectoryStore :: FilePath -> IO DirectoryStore
 getDirectoryStore path = do
   groupRegs <- readDirectoryState path
   st <- atomically newDirectoryStore
-  atomically $ mapM_ (addGroupReg st) groupRegs
+  atomically $ mapM_ (add st) groupRegs
   pure st
   where
-    addGroupReg :: DirectoryStore -> GroupReg -> STM ()
-    addGroupReg st gr = modifyTVar' (groupRegs st) (gr :) -- TODO set listedGroups
+    add :: DirectoryStore -> GroupReg -> STM ()
+    add st gr = modifyTVar' (groupRegs st) (gr :) -- TODO set listedGroups
 
 newDirectoryStore :: STM DirectoryStore
 newDirectoryStore = do

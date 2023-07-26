@@ -17,7 +17,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store
-import Simplex.Chat.Types (Contact (..), IsContact (..), User (..))
+import Simplex.Chat.Types (Contact (..), ContactId, IsContact (..), User (..))
 import Simplex.Messaging.Encoding.String (strEncode)
 import System.Exit (exitFailure)
 
@@ -55,7 +55,7 @@ initializeBotAddress cc = do
 sendMessage :: ChatController -> Contact -> String -> IO ()
 sendMessage cc ct = sendComposedMessage cc ct Nothing . textMsgContent
 
-sendMessage' :: ChatController -> Contact -> String -> IO ()
+sendMessage' :: ChatController -> ContactId -> String -> IO ()
 sendMessage' cc ctId = sendComposedMessage' cc ctId Nothing . textMsgContent
 
 sendComposedMessage :: ChatController -> Contact -> Maybe ChatItemId -> MsgContent -> IO ()
@@ -65,7 +65,7 @@ sendComposedMessage' :: ChatController -> ContactId -> Maybe ChatItemId -> MsgCo
 sendComposedMessage' cc ctId quotedItemId msgContent = do
   let cm = ComposedMessage {filePath = Nothing, quotedItemId, msgContent}
   sendChatCmd cc (APISendMessage (ChatRef CTDirect ctId) False Nothing cm) >>= \case
-    CRNewChatItem {} -> printLog cc CLLInfo $ "sent message to " <> contactInfo ct
+    CRNewChatItem {} -> printLog cc CLLInfo $ "sent message to contact ID " <> show ctId
     r -> putStrLn $ "unexpected send message response: " <> show r
 
 deleteMessage :: ChatController -> Contact -> ChatItemId -> IO ()
