@@ -27,7 +27,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Directory (getAppUserDataDirectory)
 
 main :: IO ()
@@ -100,7 +100,7 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage} _user cc = 
                 (False, True) -> do
                   sendMessage cc ct $ "The group link added to the welcome message - thank you!"
                   -- check status and possibly send for approval
-                (False, False) -> 
+                (False, False) -> pure ()
                   -- check status, remove approval code, remove listing
             _ -> pure () -- TODO handle errors
         where

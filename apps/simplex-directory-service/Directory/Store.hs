@@ -6,6 +6,7 @@ import Control.Concurrent.STM
 import Data.Int (Int64)
 import Data.Set (Set)
 import Simplex.Chat.Types
+import Data.List (find)
 
 data DirectoryStore = DirectoryStore
   { groupRegs :: TVar [GroupReg],
@@ -13,8 +14,7 @@ data DirectoryStore = DirectoryStore
   }
 
 data GroupReg = GroupReg
-  { groupRegId :: GroupRegId,
-    userGroupRegId :: UserGroupRegId,
+  { userGroupRegId :: UserGroupRegId,
     dbGroupId :: GroupId,
     dbContactId :: ContactId,
     groupRegStatus :: TVar GroupRegStatus
@@ -36,22 +36,19 @@ data GroupRegStatus
   | GRSSuspended
 
 addGroupReg :: DirectoryStore -> GroupInfo -> STM ()
-addGroupReg st g = undefined
+addGroupReg _st _g = undefined
 
 getGroupReg :: DirectoryStore -> GroupRegId -> STM (Maybe GroupReg)
-getGroupReg st grId = undefined
+getGroupReg st gId = find ((gId ==) . dbGroupId) <$> readTVar (groupRegs st)
 
-getUserGroupRegId :: DirectoryStore -> UserGroupRegId -> STM (Maybe GroupReg)
-getUserGroupRegId st ugrId = undefined
-
-getGroupRegViaGroupId :: DirectoryStore -> GroupId -> STM (Maybe GroupReg)
-getGroupRegViaGroupId st gId = undefined
+getUserGroupRegId :: DirectoryStore -> ContactId -> UserGroupRegId -> STM (Maybe GroupReg)
+getUserGroupRegId st ctId ugrId = find (\r -> ctId == dbContactId r && ugrId == userGroupRegId r) <$> readTVar (groupRegs st)
 
 getContactGroupRegs :: DirectoryStore -> ContactId -> STM [GroupReg]
-getContactGroupRegs st ctId = undefined
+getContactGroupRegs st ctId = filter ((ctId ==) . dbContactId) <$> readTVar (groupRegs st)
 
 filterListedGroups :: DirectoryStore -> [GroupInfo] -> STM [GroupInfo]
-filterListedGroups st gs = undefined
+filterListedGroups _st _gs = undefined
 
 data DirectoryLogRecord
   = CreateGroupReg GroupReg
