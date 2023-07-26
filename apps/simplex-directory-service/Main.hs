@@ -46,7 +46,7 @@ welcomeGetOpts = do
   pure opts
 
 directoryService :: DirectoryStore -> DirectoryOpts -> User -> ChatController -> IO ()
-directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers} _user cc = do
+directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers} User {userId} cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
@@ -83,7 +83,6 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
             _ -> sendMessage' cc ctId $ unexpectedError "can't create group link"
           _ -> sendMessage' cc ctId $ unexpectedError "can't create group link"
       DEGroupUpdated {contactId, fromGroup, toGroup} -> do
-        putStrLn "DEGroupUpdated"
         unless (sameProfile p p') $ do
           atomically $ unlistGroup st groupId
           withGroupReg toGroup "group updated" $ \gr@GroupReg {dbContactId, groupRegStatus} -> do
@@ -97,8 +96,6 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
                       let groupLink = safeDecodeUtf8 $ strEncode connReqContact
                           hadLinkBefore = groupLink `isInfix` description
                           hasLinkNow = groupLink `isInfix` description'
-                      putStrLn $ "hadLinkBefore " <> show hadLinkBefore
-                      putStrLn $ "hasLinkNow " <> show hasLinkNow
                       case (hadLinkBefore, hasLinkNow) of
                         (True, True) -> do
                           sendMessage' cc contactId $ "The group profile is updated: the group registration is suspended and it will not appear in search results until re-approved"
@@ -149,7 +146,16 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
       DEContactCommand ct ciId aCmd -> case aCmd of
         ADC SDRUser cmd -> case cmd of
           DCHelp -> pure ()
-          DCSearchGroup _s -> pure ()
+          DCSearchGroup s -> do
+            sendChatCmd cc (APIListGroups userId Nothing $ Just $ T.unpack s) >>= \case
+              CRGroupsList {groups} ->
+                atomically (filterListedGroups st groups) >>= \case
+                  [] -> sendReply ct ciId "No groups found"
+                  gs -> do
+                    sendReply ct ciId $ "Found " <> show (length gs) <> " group(s)"
+                    void . forkIO $ forM_ gs $ \GroupInfo {groupProfile = GroupProfile {displayName}} -> do
+                      sendMessage cc ct $ T.unpack displayName
+              _ -> sendReply ct ciId "Unexpected error"
           DCConfirmDuplicateGroup _ugrId _gName -> pure ()
           DCListUserGroups -> pure ()
           DCDeleteGroup _ugrId _gName -> pure ()

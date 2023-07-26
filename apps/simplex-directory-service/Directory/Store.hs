@@ -52,7 +52,9 @@ getContactGroupRegs :: DirectoryStore -> ContactId -> STM [GroupReg]
 getContactGroupRegs st ctId = filter ((ctId ==) . dbContactId) <$> readTVar (groupRegs st)
 
 filterListedGroups :: DirectoryStore -> [GroupInfo] -> STM [GroupInfo]
-filterListedGroups _st _gs = undefined
+filterListedGroups st gs = do
+  lgs <- readTVar $ listedGroups st
+  pure $ filter (\GroupInfo {groupId} -> groupId `S.member` lgs) gs
 
 listGroup :: DirectoryStore -> GroupId -> STM ()
 listGroup st gId = modifyTVar' (listedGroups st) $ S.insert gId

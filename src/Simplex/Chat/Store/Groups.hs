@@ -449,7 +449,7 @@ getUserGroups db user@User {userId} = do
   rights <$> mapM (runExceptT . getGroup db user) groupIds
 
 getUserGroupDetails :: DB.Connection -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
-getUserGroupDetails db User {userId, userContactId} contactId_ search_ =
+getUserGroupDetails db User {userId, userContactId} _contactId_ search_ =
   map (toGroupInfo userContactId)
     <$> DB.query
       db
@@ -462,8 +462,11 @@ getUserGroupDetails db User {userId, userContactId} contactId_ search_ =
         JOIN group_members mu USING (group_id)
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         WHERE g.user_id = ? AND mu.contact_id = ?
+          AND (gp.display_name LIKE '%' || ? || '%' OR gp.full_name LIKE '%' || ? || '%' OR gp.description LIKE '%' || ? || '%')
       |]
-      (userId, userContactId)
+      (userId, userContactId, search, search, search)
+  where
+    search = fromMaybe "" search_
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [FullGroupPreferences]
 getContactGroupPreferences db User {userId} Contact {contactId} = do
