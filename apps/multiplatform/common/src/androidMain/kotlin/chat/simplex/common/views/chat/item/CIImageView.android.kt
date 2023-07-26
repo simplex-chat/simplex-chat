@@ -35,7 +35,7 @@ actual fun SimpleAndAnimatedImageView(
   ImageView(imagePainter) {
     hideKeyboard(view)
     if (getLoadedFilePath(file) != null) {
-      ModalManager.shared.showCustomModal(animated = false) { close ->
+      ModalManager.fullscreen.showCustomModal(animated = false) { close ->
         ImageFullScreenView(imageProvider, close)
       }
     }

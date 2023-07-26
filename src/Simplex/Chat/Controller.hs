@@ -203,6 +203,8 @@ data ChatCommand
   | SetAllContactReceipts Bool
   | APISetUserContactReceipts UserId UserMsgReceiptSettings
   | SetUserContactReceipts UserMsgReceiptSettings
+  | APISetUserGroupReceipts UserId UserMsgReceiptSettings
+  | SetUserGroupReceipts UserMsgReceiptSettings
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId

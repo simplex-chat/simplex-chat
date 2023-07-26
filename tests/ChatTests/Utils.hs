@@ -311,6 +311,9 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 (⩗) :: HasCallStack => TestCC -> String -> Expectation
 cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
 
+(%) :: HasCallStack => TestCC -> String -> Expectation
+cc % line = (dropTime . dropPartialReceipt <$> getTermLine cc) `shouldReturn` line
+
 (</) :: HasCallStack => TestCC -> Expectation
 (</) = (<// 500000)
 
@@ -354,6 +357,16 @@ dropReceipt msg = fromMaybe err $ dropReceipt_ msg
 dropReceipt_ :: String -> Maybe String
 dropReceipt_ msg = case splitAt 2 msg of
   ("⩗ ", text) -> Just text
+  _ -> Nothing
+
+dropPartialReceipt :: HasCallStack => String -> String
+dropPartialReceipt msg = fromMaybe err $ dropPartialReceipt_ msg
+  where
+    err = error $ "invalid partial receipt: " <> msg
+
+dropPartialReceipt_ :: String -> Maybe String
+dropPartialReceipt_ msg = case splitAt 2 msg of
+  ("% ", text) -> Just text
   _ -> Nothing
 
 getInvitation :: HasCallStack => TestCC -> IO String

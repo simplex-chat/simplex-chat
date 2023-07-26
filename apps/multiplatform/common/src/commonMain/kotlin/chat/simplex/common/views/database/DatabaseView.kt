@@ -357,11 +357,11 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastSta
       }
       if (m.chatDbStatus.value !is DBMigrationResult.OK) {
         /** Hide current view and show [DatabaseErrorView] */
-        ModalManager.shared.closeModals()
+        ModalManager.closeAllModalsEverywhere()
         return@withApi
       }
       if (m.currentUser.value == null) {
-        ModalManager.shared.closeModals()
+        ModalManager.closeAllModalsEverywhere()
         return@withApi
       } else {
         m.controller.apiStartChat()

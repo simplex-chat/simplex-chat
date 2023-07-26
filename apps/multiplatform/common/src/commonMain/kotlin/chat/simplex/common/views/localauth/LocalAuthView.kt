@@ -70,7 +70,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       if (createdUser != null) {
         m.controller.startChat(createdUser)
       }
-      ModalManager.shared.closeModals()
+      ModalManager.fullscreen.closeModals()
       AlertManager.shared.hideAlert()
       completed(LAResult.Success)
     } catch (e: Exception) {
