@@ -285,7 +285,7 @@
     <string name="chat_with_developers">Чат с разработчиците</string>
     <string name="contact_connection_pending">свързване…</string>
     <string name="group_connection_pending">свързване…</string>
-    <string name="icon_descr_server_status_connected">Свързан</string>
+    <string name="icon_descr_server_status_connected">Свързан със сървъра</string>
     <string name="confirm_verb">Потвърди</string>
     <string name="switch_receiving_address_question">Промени адреса за получаване\?</string>
     <string name="clear_verb">Изчисти</string>
@@ -560,7 +560,7 @@
     <string name="delete_member_message__question">Изтрий съобщението на члена\?</string>
     <string name="delete_message__question">Изтрий съобщението\?</string>
     <string name="icon_descr_edited">редактиран</string>
-    <string name="icon_descr_server_status_disconnected">Връзката прекъсната</string>
+    <string name="icon_descr_server_status_disconnected">Връзката със сървъра е прекъсната</string>
     <string name="scan_QR_code">Сканирай QR код</string>
     <string name="disappearing_message">Изчезващо съобщение</string>
     <string name="add_contact">Линк за еднократна покана</string>
@@ -584,7 +584,7 @@
     <string name="enter_welcome_message_optional">Въведи съобщение при посрещане…(незадължително)</string>
     <string name="button_welcome_message">Съобщение при посрещане</string>
     <string name="full_name_optional__prompt">Пълно име (незадължително)</string>
-    <string name="icon_descr_server_status_error">Грешка</string>
+    <string name="icon_descr_server_status_error">Грешка при свързване със сървъра</string>
     <string name="v4_2_auto_accept_contact_requests_desc">С незадължително съобщение при посрещане.</string>
     <string name="error_deleting_database">Грешка при изтриване на чат базата данни</string>
     <string name="error_changing_message_deletion">Грешка при промяна на настройката</string>
@@ -606,4 +606,21 @@
     <string name="error_deleting_contact_request">Грешка при изтриване на заявка за контакт</string>
     <string name="error_deleting_group">Грешка при изтриване на група</string>
     <string name="error_deleting_pending_contact_connection">Грешка при изтриване на предстоящата контактна връзка</string>
+    <string name="error_saving_ICE_servers">Грешка при запазване на ICE сървърите</string>
+    <string name="icon_descr_server_status_pending">Предстояща връзка със сървъра</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Вашият контакт трябва да бъде онлайн, за да осъществите връзката.
+\nМожете да откажете тази връзка и да премахнете контакта (и да опитате по -късно с нов линк).</string>
+    <string name="error_exporting_chat_database">Грешка при експортиране на чат базата данни</string>
+    <string name="error_with_info">Грешка: %s</string>
+    <string name="error_saving_file">Грешка при запазване на файл</string>
+    <string name="error_importing_database">Грешка при импортиране на чат базата данни</string>
+    <string name="error_removing_member">Грешка при отстраняване на член</string>
+    <string name="error_saving_group_profile">Грешка при запазване на профила на групата</string>
+    <string name="error_loading_smp_servers">Грешка при зареждане на SMP сървъри</string>
+    <string name="error_loading_xftp_servers">Грешка при зареждане на XFTP сървъри</string>
+    <string name="error_saving_smp_servers">Грешка при запазване на SMP сървърите</string>
+    <string name="error_joining_group">Група при присъединяване към група</string>
+    <string name="error_loading_details">Грешка при зареждане на подробности</string>
+    <string name="error_receiving_file">Грешка при получаване на файл</string>
+    <string name="error_deleting_user">Грешка при изтриване на потребителския профил</string>
 </resources>
