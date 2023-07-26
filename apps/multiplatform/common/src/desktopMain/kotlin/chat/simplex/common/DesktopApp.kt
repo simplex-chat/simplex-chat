@@ -146,6 +146,3 @@ fun AppPreview() {
     AppScreen()
   }
 }
-
-/** Needed for [chat.simplex.common.platform.Files] to get path to jar file */
-class DesktopApp()
