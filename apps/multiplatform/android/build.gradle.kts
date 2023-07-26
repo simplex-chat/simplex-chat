@@ -7,10 +7,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-repositories {
-    maven("https://jitpack.io")
-}
-
 android {
     compileSdkVersion(33)
 
@@ -124,9 +120,16 @@ dependencies {
     //implementation("androidx.compose.ui:ui:${rootProject.extra["compose.version"] as String}")
     //implementation("androidx.compose.material:material:$compose_version")
     //implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
+    implementation("androidx.appcompat:appcompat:1.5.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.4.1")
     implementation("androidx.lifecycle:lifecycle-process:2.4.1")
     implementation("androidx.activity:activity-compose:1.5.0")
+    val work_version = "2.7.1"
+    implementation("androidx.work:work-runtime-ktx:$work_version")
+    implementation("androidx.work:work-multiprocess:$work_version")
+
+    implementation("com.jakewharton:process-phoenix:2.1.2")
+
     //implementation("androidx.compose.material:material-icons-extended:$compose_version")
     //implementation("androidx.compose.ui:ui-util:$compose_version")
 

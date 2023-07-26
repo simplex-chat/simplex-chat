@@ -267,6 +267,9 @@
   <string name="you_have_no_chats">You have no chats</string>
   <string name="no_filtered_chats">No filtered chats</string>
 
+  <!-- ChatView.kt -->
+  <string name="no_selected_chat">No selected chat</string>
+
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
   <string name="share_image">Share media…</string>
@@ -394,6 +397,7 @@
   <string name="use_camera_button">Camera</string>
   <string name="from_gallery_button">From Gallery</string>
   <string name="choose_file">File</string>
+  <string name="choose_file_title">Choose a file</string>
   <string name="gallery_image_button">Image</string>
   <string name="gallery_video_button">Video</string>
 

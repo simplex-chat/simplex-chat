@@ -28,6 +28,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)

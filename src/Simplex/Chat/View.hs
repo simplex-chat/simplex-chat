@@ -42,6 +42,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import qualified Simplex.FileTransfer.Protocol as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
@@ -464,11 +465,20 @@ localTs tz ts = do
 viewChatItemStatusUpdated :: AChatItem -> CurrentTime -> TimeZone -> Bool -> Bool -> [StyledString]
 viewChatItemStatusUpdated (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) ts tz testView showReceipts =
   case itemStatus of
-    CISSndRcvd rcptStatus ->
+    CISSndRcvd rcptStatus SSPPartial ->
+      if testView && showReceipts
+        then prependFirst (viewDeliveryReceiptPartial rcptStatus <> " ") $ viewChatItem chat item False ts tz
+        else []
+    CISSndRcvd rcptStatus SSPComplete ->
       if testView && showReceipts
         then prependFirst (viewDeliveryReceipt rcptStatus <> " ") $ viewChatItem chat item False ts tz
         else []
     _ -> []
+
+viewDeliveryReceiptPartial :: MsgReceiptStatus -> StyledString
+viewDeliveryReceiptPartial = \case
+  MROk -> "%"
+  MRBadMsgHash -> ttyError' "%!"
 
 viewDeliveryReceipt :: MsgReceiptStatus -> StyledString
 viewDeliveryReceipt = \case

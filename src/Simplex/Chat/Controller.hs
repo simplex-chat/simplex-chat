@@ -47,6 +47,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
@@ -202,6 +203,8 @@ data ChatCommand
   | SetAllContactReceipts Bool
   | APISetUserContactReceipts UserId UserMsgReceiptSettings
   | SetUserContactReceipts UserMsgReceiptSettings
+  | APISetUserGroupReceipts UserId UserMsgReceiptSettings
+  | SetUserGroupReceipts UserMsgReceiptSettings
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId

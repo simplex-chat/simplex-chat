@@ -4,16 +4,14 @@ import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
+import chat.simplex.common.platform.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -24,27 +22,27 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.model.*
+import chat.simplex.common.model.*
 import chat.simplex.app.model.NtfManager.OpenChatAction
-import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.ProfileImage
+import chat.simplex.common.platform.ntfManager
+import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.call.*
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
 
 class IncomingCallActivity: ComponentActivity() {
-  private val vm by viewModels<SimplexViewModel>()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    setContent { IncomingCallActivityView(vm.chatModel) }
+    setContent { IncomingCallActivityView(ChatModel) }
     unlockForIncomingCall()
   }
 
@@ -103,7 +101,7 @@ fun IncomingCallActivityView(m: ChatModel) {
     ) {
       if (showCallView) {
         Box {
-          ActiveCallView(m)
+          ActiveCallView()
           if (invitation != null) IncomingCallAlertView(invitation, m)
         }
       } else if (invitation != null) {
@@ -121,7 +119,7 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
   DisposableEffect(Unit) {
     onDispose {
       // Cancel notification whatever happens next since otherwise sound from notification and from inside the app can co-exist
-      chatModel.controller.ntfManager.cancelCallNotification()
+      ntfManager.cancelCallNotification()
     }
   }
   IncomingCallLockScreenAlertLayout(
@@ -131,7 +129,7 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
     rejectCall = { cm.endCall(invitation = invitation) },
     ignoreCall = {
       chatModel.activeCallInvitation.value = null
-      chatModel.controller.ntfManager.cancelCallNotification()
+      ntfManager.cancelCallNotification()
     },
     acceptCall = { cm.acceptIncomingCall(invitation = invitation) },
     openApp = {
@@ -171,18 +169,18 @@ fun IncomingCallLockScreenAlertLayout(
       Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Row {
-        LockScreenCallButton(stringResource(MR.strings.reject), painterResource(MR.images.ic_call_end_filled), Color.Red, rejectCall)
+        LockScreenCallButton(stringResource(MR.strings.reject), painterResource(R.drawable.ic_call_end_filled), Color.Red, rejectCall)
         Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(MR.strings.ignore), painterResource(MR.images.ic_close), MaterialTheme.colors.primary, ignoreCall)
+        LockScreenCallButton(stringResource(MR.strings.ignore), painterResource(R.drawable.ic_close), MaterialTheme.colors.primary, ignoreCall)
         Spacer(Modifier.size(48.dp))
-        LockScreenCallButton(stringResource(MR.strings.accept), painterResource(MR.images.ic_check_filled), SimplexGreen, acceptCall)
+        LockScreenCallButton(stringResource(MR.strings.accept), painterResource(R.drawable.ic_check_filled), SimplexGreen, acceptCall)
       }
     } else if (callOnLockScreen == CallOnLockScreen.SHOW) {
       SimpleXLogo()
       Text(stringResource(MR.strings.open_simplex_chat_to_accept_call), textAlign = TextAlign.Center, lineHeight = 22.sp)
       Text(stringResource(MR.strings.allow_accepting_calls_from_lock_screen), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2, lineHeight = 22.sp)
       Spacer(Modifier.fillMaxHeight().weight(1f))
-      SimpleButton(text = stringResource(MR.strings.open_verb), icon = painterResource(MR.images.ic_check_filled), click = openApp)
+      SimpleButton(text = stringResource(MR.strings.open_verb), icon = painterResource(R.drawable.ic_check_filled), click = openApp)
     }
   }
 }
@@ -190,7 +188,7 @@ fun IncomingCallLockScreenAlertLayout(
 @Composable
 private fun SimpleXLogo() {
   Image(
-    painter = painterResource(if (isInDarkTheme()) MR.images.logo_light else MR.images.logo),
+    painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
     contentDescription = stringResource(MR.strings.image_descr_simplex_logo),
     modifier = Modifier
       .padding(vertical = DEFAULT_PADDING)
@@ -219,10 +217,10 @@ private fun LockScreenCallButton(text: String, icon: Painter, color: Color, acti
   }
 }
 
-@Preview(
+@Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
   showBackground = true
-)
+)*/
 @Composable
 fun PreviewIncomingCallLockScreenAlert() {
   SimpleXTheme(true) {

@@ -207,6 +207,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
+[July 22, 2023. SimpleX Chat: v5.2 released with message delivery receipts](./blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
+
 [May 23, 2023. SimpleX Chat: v5.1 released with message reactions and self-destruct passcode](./blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md).
 
 [Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
@@ -337,8 +339,8 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 - ✅ Message reactions
 - ✅ Message editing history
 - ✅ Reduced battery and traffic usage in large groups.
+- ✅ Message delivery confirmation (with sender opt-out per contact).
 - 🏗 Desktop client.
-- 🏗 Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
 - SMP queue redundancy and rotation (manual is supported).
 - Include optional message into connection request sent via contact address.
 - Local app files encryption.
