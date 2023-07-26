@@ -130,10 +130,11 @@ object ChatModel {
     }
   }
 
-  fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
-  fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
-  fun getContactChat(contactId: Long): Chat? = chats.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
-  private fun getChatIndex(id: String): Int = chats.indexOfFirst { it.id == id }
+  // toList() here is to prevent ConcurrentModificationException that is rarely happens but happens
+  fun hasChat(id: String): Boolean = chats.toList().firstOrNull { it.id == id } != null
+  fun getChat(id: String): Chat? = chats.toList().firstOrNull { it.id == id }
+  fun getContactChat(contactId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
+  private fun getChatIndex(id: String): Int = chats.toList().indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
   fun updateChatInfo(cInfo: ChatInfo) {
