@@ -24,6 +24,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -83,7 +84,7 @@ fun SendMsgView(
     if (showDeleteTextButton.value) {
       DeleteTextButton(composeState)
     }
-    Box(Modifier.align(Alignment.BottomEnd)) {
+    Box(Modifier.align(Alignment.BottomEnd).padding(bottom = if (appPlatform.isAndroid) 0.dp else 5.dp)) {
       val sendButtonSize = remember { Animatable(36f) }
       val sendButtonAlpha = remember { Animatable(1f) }
       val scope = rememberCoroutineScope()
@@ -320,7 +321,10 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
     LockToCurrentOrientationUntilDispose()
     StopRecordButton(stopRecordingAndAddAudio)
   } else {
-    val startRecording: () -> Unit = {
+    val startRecording: () -> Unit = out@ {
+      if (appPlatform.isDesktop) {
+        return@out showInDevelopingAlert()
+      }
       recState.value = RecordingState.Started(
         filePath = rec.start { progress: Int?, finished: Boolean ->
           val state = recState.value

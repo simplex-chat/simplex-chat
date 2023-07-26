@@ -39,6 +39,7 @@ module Simplex.Chat.Store.Groups
     getGroupMemberById,
     getGroupMembers,
     getGroupMembersForExpiration,
+    getGroupCurrentMembersCount,
     deleteGroupConnectionsAndFiles,
     deleteGroupItemsAndMembers,
     deleteGroup,
@@ -97,6 +98,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Crypto as C
@@ -546,6 +548,20 @@ getGroupMembersForExpiration db user@User {userId, userContactId} GroupInfo {gro
 toContactMember :: User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember User {userContactId} (memberRow :. connRow) =
   (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection connRow}
+
+getGroupCurrentMembersCount :: DB.Connection -> User -> GroupInfo -> IO Int
+getGroupCurrentMembersCount db User {userId} GroupInfo {groupId} = do
+  statuses :: [GroupMemberStatus] <-
+    map fromOnly
+      <$> DB.query
+        db
+        [sql|
+          SELECT member_status
+          FROM group_members
+          WHERE group_id = ? AND user_id = ?
+        |]
+        (groupId, userId)
+  pure $ length $ filter memberCurrent' statuses
 
 getGroupInvitation :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db user groupId =

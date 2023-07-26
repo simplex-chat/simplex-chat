@@ -41,7 +41,7 @@ object AppearanceScope {
   ) {
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
-      val darkTheme = isSystemInDarkTheme()
+      val darkTheme = chat.simplex.common.ui.theme.isSystemInDarkTheme()
       val state = remember { derivedStateOf { currentTheme.name } }
       ThemeSelector(state) {
         ThemeManager.applyTheme(it, darkTheme)
@@ -226,7 +226,7 @@ object AppearanceScope {
 
   @Composable
   private fun ThemeSelector(state: State<String>, onSelected: (String) -> Unit) {
-    val darkTheme = isSystemInDarkTheme()
+    val darkTheme = chat.simplex.common.ui.theme.isSystemInDarkTheme()
     val values by remember { mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second.name to it.third }) }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.theme),

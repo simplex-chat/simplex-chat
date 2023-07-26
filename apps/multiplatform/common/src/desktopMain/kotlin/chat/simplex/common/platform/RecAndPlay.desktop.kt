@@ -2,6 +2,7 @@ package chat.simplex.common.platform
 
 import androidx.compose.runtime.MutableState
 import chat.simplex.common.model.ChatItem
+import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import kotlinx.coroutines.CoroutineScope
 
 actual class RecorderNative: RecorderInterface {
@@ -18,7 +19,7 @@ actual class RecorderNative: RecorderInterface {
 
 actual object AudioPlayer: AudioPlayerInterface {
   override fun play(filePath: String?, audioPlaying: MutableState<Boolean>, progress: MutableState<Int>, duration: MutableState<Int>, resetOnEnd: Boolean) {
-    /*LALAL*/
+    showInDevelopingAlert()
   }
 
   override fun stop() {

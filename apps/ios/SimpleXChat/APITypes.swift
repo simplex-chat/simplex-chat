@@ -127,7 +127,7 @@ public enum ChatCommand {
             case let .setAllContactReceipts(enable): return "/set receipts all \(onOff(enable))"
             case let .apiSetUserContactReceipts(userId, userMsgReceiptSettings):
                 let umrs = userMsgReceiptSettings
-                return "/_set receipts \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
+                return "/_set receipts contacts \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiMuteUser(userId): return "/_mute user \(userId)"

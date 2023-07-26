@@ -4,9 +4,11 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import boofcv.alg.drawing.FiducialImageEngine
 import boofcv.alg.fiducial.qrcode.*
@@ -25,7 +27,7 @@ fun QRCode(
 ) {
   val scope = rememberCoroutineScope()
 
-  BoxWithConstraints {
+  BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     val maxWidthInPx = with(LocalDensity.current) { maxWidth.roundToPx() }
     val qr = remember(maxWidthInPx, connReq, tintColor, withLogo) {
       qrCodeBitmap(connReq, maxWidthInPx).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
@@ -34,7 +36,9 @@ fun QRCode(
     Image(
       bitmap = qr,
       contentDescription = stringResource(MR.strings.image_descr_qr_code),
-      modifier
+      Modifier
+        .widthIn(max = 500.dp)
+        .then(modifier)
         .clickable {
           scope.launch {
             val image = qrCodeBitmap(connReq, 1024).replaceColor(Color.Black.toArgb(), tintColor.toArgb())

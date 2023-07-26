@@ -81,7 +81,7 @@ fun ChatInfoView(
         setContactAlias(chat.chatInfo.apiId, it, chatModel)
       },
       openPreferences = {
-        ModalManager.shared.showCustomModal { close ->
+        ModalManager.end.showCustomModal { close ->
           val user = chatModel.currentUser.value
           if (user != null) {
             ContactPreferencesView(chatModel, user, contact.contactId, close)
@@ -136,7 +136,7 @@ fun ChatInfoView(
         })
       },
       verifyClicked = {
-        ModalManager.shared.showModalCloseable { close ->
+        ModalManager.end.showModalCloseable { close ->
           remember { derivedStateOf { (chatModel.getContactChat(contact.contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }.value?.let { ct ->
             VerifyCodeView(
               ct.displayName,

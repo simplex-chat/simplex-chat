@@ -20,7 +20,7 @@ actual fun SimpleAndAnimatedImageView(
   // LALAL make it animated too
   ImageView(imageBitmap.toAwtImage().toPainter()) {
     if (getLoadedFilePath(file) != null) {
-      ModalManager.shared.showCustomModal(animated = false) { close ->
+      ModalManager.fullscreen.showCustomModal(animated = false) { close ->
         ImageFullScreenView(imageProvider, close)
       }
     }

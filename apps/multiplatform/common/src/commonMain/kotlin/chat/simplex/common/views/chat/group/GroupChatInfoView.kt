@@ -54,7 +54,7 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(true) { close ->
+          ModalManager.end.showModalCloseable(true) { close ->
             AddGroupMembersView(groupInfo, false, chatModel, close)
           }
         }
@@ -73,7 +73,7 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
           } else {
             member to null
           }
-          ModalManager.shared.showModalCloseable(true) { closeCurrent ->
+          ModalManager.end.showModalCloseable(true) { closeCurrent ->
             remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
               GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, closeCurrent) {
                 closeCurrent()
@@ -84,13 +84,13 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
         }
       },
       editGroupProfile = {
-        ModalManager.shared.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
+        ModalManager.end.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
       },
       addOrEditWelcomeMessage = {
-        ModalManager.shared.showCustomModal { close -> GroupWelcomeView(chatModel, groupInfo, close) }
+        ModalManager.end.showCustomModal { close -> GroupWelcomeView(chatModel, groupInfo, close) }
       },
       openPreferences = {
-        ModalManager.shared.showCustomModal { close ->
+        ModalManager.end.showCustomModal { close ->
           GroupPreferencesView(
             chatModel,
             chat.id,
@@ -102,7 +102,7 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
       manageGroupLink = {
-          ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
+          ModalManager.end.showModal { GroupLinkView(chatModel, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
       }
     )
   }

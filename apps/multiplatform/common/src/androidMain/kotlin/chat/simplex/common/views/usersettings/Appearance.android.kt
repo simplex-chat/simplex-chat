@@ -69,7 +69,7 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
     changeIcon = ::setAppIcon,
     showSettingsModal = showSettingsModal,
     editColor = { name, initialColor ->
-      ModalManager.shared.showModalCloseable { close ->
+      ModalManager.start.showModalCloseable { close ->
         ColorEditor(name, initialColor, close)
       }
     },

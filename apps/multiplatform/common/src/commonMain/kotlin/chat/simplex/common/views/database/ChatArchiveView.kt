@@ -83,7 +83,7 @@ private fun deleteArchiveAlert(m: ChatModel, archivePath: String) {
       if (fileDeleted) {
         m.controller.appPrefs.chatArchiveName.set(null)
         m.controller.appPrefs.chatArchiveTime.set(null)
-        ModalManager.shared.closeModal()
+        ModalManager.start.closeModal()
       } else {
         Log.e(TAG, "deleteArchiveAlert delete() error")
       }

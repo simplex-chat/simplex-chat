@@ -42,7 +42,7 @@ fun ContactConnectionInfoView(
    **/
   DisposableEffect(Unit) {
     onDispose {
-      if (!ModalManager.shared.hasModalsOpen()) {
+      if (!ModalManager.center.hasModalsOpen()) {
         chatModel.connReqInv.value = null
       }
     }
@@ -57,7 +57,7 @@ fun ContactConnectionInfoView(
     onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
     share = { if (connReqInvitation != null) clipboard.shareText(connReqInvitation) },
     learnMore = {
-      ModalManager.shared.showModal {
+      ModalManager.center.showModal {
         Column(
           Modifier
             .fillMaxHeight()

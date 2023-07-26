@@ -71,7 +71,7 @@ object AppLock {
   private fun initialEnableLA() {
     val m = ChatModel
     val appPrefs = ChatController.appPrefs
-    appPrefs.laMode.set(LAMode.SYSTEM)
+    appPrefs.laMode.set(LAMode.default)
     authenticate(
       generalGetString(MR.strings.auth_enable_simplex_lock),
       generalGetString(MR.strings.auth_confirm_credential),
@@ -100,7 +100,7 @@ object AppLock {
 
   private fun setPasscode() {
     val appPrefs = ChatController.appPrefs
-    ModalManager.shared.showCustomModal { close ->
+    ModalManager.fullscreen.showCustomModal { close ->
       Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
         SetAppPasscodeView(
           submit = {

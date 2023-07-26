@@ -34,6 +34,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.AudioPlayer
+import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -139,7 +140,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           if (chat.chatInfo is ChatInfo.Direct) {
             val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
             val (_, code) = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)
-            ModalManager.shared.showModalCloseable(true) { close ->
+            ModalManager.end.closeModals()
+            ModalManager.end.showModalCloseable(true) { close ->
               remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.apiId)?.chatInfo as? ChatInfo.Direct)?.contact } }.value?.let { ct ->
                 ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
               }
@@ -149,7 +151,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             val link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
             var groupLink = link?.first
             var groupLinkMemberRole = link?.second
-            ModalManager.shared.showModalCloseable(true) { close ->
+            ModalManager.end.closeModals()
+            ModalManager.end.showModalCloseable(true) { close ->
               GroupChatInfoView(chatModel, groupLink, groupLinkMemberRole, {
                 groupLink = it.first;
                 groupLinkMemberRole = it.second
@@ -174,7 +177,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             member to null
           }
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(true) { close ->
+          ModalManager.end.closeModals()
+          ModalManager.end.showModalCloseable(true) { close ->
             remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
               GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, close, close)
             }
@@ -233,7 +237,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       joinGroup = { groupId ->
         withApi { chatModel.controller.apiJoinGroup(groupId) }
       },
-      startCall = { media ->
+      startCall = out@ { media ->
+        if (appPlatform.isDesktop) {
+          return@out showInDevelopingAlert()
+        }
         val cInfo = chat.chatInfo
         if (cInfo is ChatInfo.Direct) {
           chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
@@ -314,7 +321,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         withApi {
           val ciInfo = chatModel.controller.apiGetChatItemInfo(cInfo.chatType, cInfo.apiId, cItem.id)
           if (ciInfo != null) {
-            ModalManager.shared.showModal(endButtons = { ShareButton {
+            ModalManager.end.closeModals()
+            ModalManager.end.showModal(endButtons = { ShareButton {
               clipboard.shareText(itemInfoShareText(cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
             } }) {
               ChatItemInfoView(cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
@@ -326,8 +334,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         hideKeyboard(view)
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(true) { close ->
-              AddGroupMembersView(groupInfo, false, chatModel, close)
+          ModalManager.end.closeModals()
+          ModalManager.end.showModalCloseable(true) { close ->
+            AddGroupMembersView(groupInfo, false, chatModel, close)
           }
         }
       },
@@ -462,7 +471,9 @@ fun ChatInfoToolbar(
       showSearch = false
     }
   }
-  BackHandler(onBack = onBackClicked)
+  if (appPlatform.isAndroid) {
+    BackHandler(onBack = onBackClicked)
+  }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   menuItems.add {
@@ -520,7 +531,7 @@ fun ChatInfoToolbar(
   }
 
   DefaultTopAppBar(
-    navigationButton = { NavigationButtonBack(onBackClicked) },
+    navigationButton = { if (appPlatform.isAndroid || showSearch) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chat.chatInfo) },
     onTitleClick = info,
     showSearch = showSearch,
