@@ -86,18 +86,22 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage} _user cc = 
             GroupInfo {groupProfile = p'@GroupProfile {displayName = n', description = description'}} = toGroup
         unless (sameProfile p p') $ do
           sendChatCmd cc (APIGetGroupLink groupId) >>= \case
-            CRGroupLink {connReqContact} -> pure ()
-              -- let groupLink = safeDecodeUtf8 $ strEncode connReqContact
-              --     hadLinkBefore = groupLink `isInfix` description
-              --     hasLinkNow = groupLink `isInfix` description'
-
-              -- if hasLinkNow
-              --   then sendMessage cc ct $ "The group link added to the welcome message - thank you!"
-              --   else sendMessage cc ct $ "The group link added to the welcome message - thank you!"
-              --     let description' = description <> "\n\nLink to join the group: " <> T.pack groupLink
-              --     sendChatCmd cc (APISetGroupProfile groupId (GroupProfile displayName description')) >>= \case
-              --       CRGroupProfileUpdated {} -> pure ()
-              --       _ -> unexpectedError "can't update group profile"
+            CRGroupLink {connReqContact} -> do
+              let groupLink = safeDecodeUtf8 $ strEncode connReqContact
+                  hadLinkBefore = groupLink `isInfix` description
+                  hasLinkNow = groupLink `isInfix` description'
+              case (hadLinkBefore, hasLinkNow) of
+                (True, True) -> do
+                  sendMessage cc ct $ "The group profile is updated: the group registration is suspended and it will not appear in search results until re-approved"
+                  -- TODO suspend group listing, send for approval
+                (True, False) -> do
+                  sendMessage cc ct $ "The group link is removed, the group registration is suspended and it will not appear in search results"
+                  -- TODO suspend group listing, remove approval code
+                (False, True) -> do
+                  sendMessage cc ct $ "The group link added to the welcome message - thank you!"
+                  -- check status and possibly send for approval
+                (False, False) -> 
+                  -- check status, remove approval code, remove listing
             _ -> pure () -- TODO handle errors
         where
           isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
