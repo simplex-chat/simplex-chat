@@ -15,7 +15,7 @@ data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     superUsers :: [KnownContact],
     directoryLog :: FilePath,
-    welcomeMessage :: String
+    serviceName :: String
   }
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
@@ -35,19 +35,19 @@ directoryOpts appDir defaultDbFileName = do
           <> metavar "DIRECTORY_FILE"
           <> help "Append only log for directory state"
       )
-  welcomeMessage <-
+  serviceName <-
     strOption
-      ( long "welcome"
-          <> metavar "WELCOME"
-          <> help "Welcome message to be sent to all connecting users"
-          <> value "Welcome to SimpleX Directory Service!\nSend search string to find groups or /help for supported commands."
+      ( long "service-name"
+          <> metavar "SERVICE_NAME"
+          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX-Directory)"
+          <> value "SimpleX-Directory"
       )
   pure
     DirectoryOpts
       { coreOptions,
         superUsers,
         directoryLog,
-        welcomeMessage
+        serviceName
       }
 
 getDirectoryOpts :: FilePath -> FilePath -> IO DirectoryOpts

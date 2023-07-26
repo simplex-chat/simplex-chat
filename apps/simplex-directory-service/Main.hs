@@ -45,14 +45,17 @@ welcomeGetOpts = do
   pure opts
 
 directoryService :: DirectoryStore -> DirectoryOpts -> User -> ChatController -> IO ()
-directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers} User {userId} cc = do
+directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
     forM_ (crDirectoryEvent resp) $ \case
       DEContactConnected ct -> do
         contactConnected ct
-        sendMessage cc ct welcomeMessage
+        sendMessage cc ct $
+          "Welcome to " <> serviceName <> " service!\n\
+          \Send a search string to find groups or */help* to learn how to add groups to directory.\n\n\
+          \For example, send _politics_ to find groups about politics."
       DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> case badInvitation fromMemberRole memberRole of
         -- TODO check duplicate group name and ask to confirm
         Just msg -> sendMessage cc ct msg
@@ -73,7 +76,7 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
               "Created the public link to join the group via this directory service that is always online.\n\n\
               \Please add it to the group welcome message.\n\
               \For example, add:"
-            sendMessage' cc ctId $ "Link to join the group #" <> T.unpack displayName <> ": " <> B.unpack (strEncode connReqContact)
+            sendMessage' cc ctId $ "Link to join the group " <> T.unpack displayName <> ": " <> B.unpack (strEncode connReqContact)
           CRChatCmdError _ (ChatError e) -> case e of
             CEGroupUserRole {} -> sendMessage' cc ctId "Failed creating group link, as service is no longer an admin."
             CEGroupMemberUserRemoved -> sendMessage' cc ctId "Failed creating group link, as service is removed from the group."
@@ -97,14 +100,14 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
                           hasLinkNow = groupLink `isInfix` description p'
                       case (hadLinkBefore, hasLinkNow) of
                         (True, True) -> do
-                          sendMessage' cc contactId $ "The group profile is updated: the group registration is suspended and it will not appear in search results until re-approved"
+                          sendMessage' cc contactId "The group profile is updated: the group registration is suspended and it will not appear in search results until re-approved"
                           -- TODO suspend group listing, send for approval
                         (True, False) -> do
-                          sendMessage' cc contactId $ "The group link is removed, the group registration is suspended and it will not appear in search results"
+                          sendMessage' cc contactId "The group link is removed, the group registration is suspended and it will not appear in search results"
                           -- TODO suspend group listing, remove approval code
                           atomically $ writeTVar groupRegStatus GRSPendingUpdate
                         (False, True) -> do
-                          sendMessage' cc contactId $ "The group link for group ID " <> show groupId <> " " <> T.unpack displayName <> " added to the welcome message - thank you!\nThe group registration is sent for approval."
+                          sendMessage' cc contactId $ "Thank you! The group link for group ID " <> show groupId <> " (" <> T.unpack displayName <> ") added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
                           let gaId = 1
                           atomically $ writeTVar groupRegStatus $ GRSPendingApproval gaId
                           sendForApproval gr gaId
@@ -114,12 +117,12 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
               GRSPendingApproval n -> do
                 let gaId = n + 1
                 atomically $ writeTVar groupRegStatus $ GRSPendingApproval gaId
-                notifySuperUsers $ T.unpack $ "Group registration updated for ID " <> tshow groupId <> ": " <> localDisplayName
+                notifySuperUsers $ T.unpack $ "The group registration updated for ID " <> tshow groupId <> ": " <> localDisplayName
                 sendForApproval gr gaId
               GRSActive -> do
                 let gaId = 1
                 atomically $ writeTVar groupRegStatus $ GRSPendingApproval gaId
-                notifySuperUsers $ T.unpack $ "Group profile updated, group suspended for ID " <> tshow groupId <> ": " <> localDisplayName
+                notifySuperUsers $ T.unpack $ "The group profile updated, group suspended for ID " <> tshow groupId <> ": " <> localDisplayName
                 sendForApproval gr gaId
                 sendMessage' cc dbContactId $ T.unpack $ "The group profile is updated, the group registration is suspended until re-approved for ID " <> tshow (userGroupRegId gr) <> ": " <> displayName
               GRSSuspended -> pure ()
@@ -133,7 +136,7 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
               n == n' && fn == fn' && i == i' && d == d'
           sendForApproval GroupReg {dbGroupId, dbContactId} gaId = do
             ct_ <-  getContact cc dbContactId
-            let text = maybe ("Group ID " <> tshow dbGroupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted group ID " <> tshow dbGroupId <> ": ") ct_
+            let text = maybe ("The group ID " <> tshow dbGroupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow dbGroupId <> ": ") ct_
                         <> groupInfoText p' <> "\n\nTo approve send:"
                 msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
             withSuperUsers $ \ctId -> do
@@ -150,7 +153,14 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
       DEItemDeleteIgnored _ct -> pure ()
       DEContactCommand ct ciId aCmd -> case aCmd of
         ADC SDRUser cmd -> case cmd of
-          DCHelp -> pure ()
+          DCHelp ->
+            sendMessage cc ct $
+              "You must be the owner to add the group to the directory:\n\
+              \1. Invite " <> serviceName <> " bot to your group as *admin*.\n\
+              \2. " <> serviceName <> " bot will create a public group link for the new members to join even when you are offline.\n\
+              \3. You will then need to add this link to the group welcome message.\n\
+              \4. Once the link is added, service admins will approve the group (it can take up to 24 hours), and everybody will be able to find it in directory.\n\n\
+              \Start from inviting the bot to your group as admin - it will guide you through the process"
           DCSearchGroup s -> do
             sendChatCmd cc (APIListGroups userId Nothing $ Just $ T.unpack s) >>= \case
               CRGroupsList {groups} ->
@@ -184,7 +194,7 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
                                 writeTVar groupRegStatus GRSActive
                                 listGroup st groupId
                               sendReply "Group approved!"
-                              sendMessage' cc dbContactId $ "Group ID " <> show groupId <> " (" <> T.unpack n <> ") approved and listed in directory!"
+                              sendMessage' cc dbContactId $ "The group ID " <> show groupId <> " (" <> T.unpack n <> ") is approved and listed in directory!\nPlease note: if you change the group profile it will be hidden from directory until it is re-approved."
                             | otherwise -> sendReply "Incorrect group name"
                           Nothing -> pure ()
                       | otherwise -> sendReply "Incorrect approval code"
@@ -222,9 +232,9 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
 badInvitation :: GroupMemberRole -> GroupMemberRole -> Maybe String
 badInvitation contactRole serviceRole = case (contactRole, serviceRole) of
   (GROwner, GRAdmin) -> Nothing
-  (_, GRAdmin) -> Just "You must have a group _owner_ role to register the group"
-  (GROwner, _) -> Just "You must grant directory service _admin_ role to register the group"
-  _ -> Just "You must have a group _owner_ role and you must grant directory service _admin_ role to register the group"
+  (_, GRAdmin) -> Just "You must have a group *owner* role to register the group"
+  (GROwner, _) -> Just "You must grant directory service *admin* role to register the group"
+  _ -> Just "You must have a group *owner* role and you must grant directory service *admin* role to register the group"
 
 getContact :: ChatController -> ContactId -> IO (Maybe Contact)
 getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId) (CPLast 0) Nothing)
