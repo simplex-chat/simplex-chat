@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        5.2.0.2
+version:        5.2.0.4
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -16,6 +16,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
+    cabal.project
 
 flag swift
   description: Enable swift JSON format
@@ -124,6 +125,8 @@ library
       Simplex.Chat.Terminal.Notification
       Simplex.Chat.Terminal.Output
       Simplex.Chat.Types
+      Simplex.Chat.Types.Preferences
+      Simplex.Chat.Types.Util
       Simplex.Chat.Util
       Simplex.Chat.View
   other-modules:

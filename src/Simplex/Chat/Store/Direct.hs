@@ -69,6 +69,7 @@ import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId, InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 

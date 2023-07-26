@@ -1222,7 +1222,6 @@
     <string name="your_ice_servers">ICE-palvelimesi</string>
     <string name="icon_descr_video_off">Video pois päältä</string>
     <string name="icon_descr_video_on">Video päällä</string>
-    <string name="alert_text_fragment_permanent_error_reconnect">Tämä virhe on pysyvä tälle yhteydelle, yhdistä uudelleen.</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Et enää saa viestejä tästä ryhmästä. Keskusteluhistoria säilytetään.</string>
     <string name="you_are_invited_to_group">Sinut on kutsuttu ryhmään</string>
     <string name="you_joined_this_group">Liityit tähän ryhmään</string>

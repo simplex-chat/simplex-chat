@@ -263,6 +263,7 @@ struct ChatListNavLink: View {
         .sheet(isPresented: $showContactConnectionInfo) {
             if case let .contactConnection(contactConnection) = chat.chatInfo {
                 ContactConnectionInfo(contactConnection: contactConnection)
+                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
         }
         .onTapGesture {
@@ -379,6 +380,7 @@ struct ChatListNavLink: View {
             .onTapGesture { showInvalidJSON = true }
             .sheet(isPresented: $showInvalidJSON) {
                 invalidJSONView(json)
+                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
     }
 }
