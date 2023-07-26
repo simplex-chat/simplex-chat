@@ -38,7 +38,7 @@ actual fun PlatformTextField(
   val cs = composeState.value
   val focusRequester = remember { FocusRequester() }
   val keyboard = LocalSoftwareKeyboardController.current
-  val padding = PaddingValues(12.dp, 7.dp, 45.dp, 0.dp)
+  val padding = PaddingValues(12.dp, 12.dp, 45.dp, 0.dp)
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
@@ -74,14 +74,10 @@ actual fun PlatformTextField(
           CompositionLocalProvider(
             LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
           ) {
-            Box(
-              Modifier
-                .weight(1f)
-                .padding(horizontal = 12.dp)
-                .padding(top = 8.dp)
-                .padding(bottom = 10.dp)
-            ) {
+            Column(Modifier.weight(1f).padding(start = 12.dp, end = 32.dp)) {
+              Spacer(Modifier.height(8.dp))
               innerTextField()
+              Spacer(Modifier.height(10.dp))
             }
           }
         }
