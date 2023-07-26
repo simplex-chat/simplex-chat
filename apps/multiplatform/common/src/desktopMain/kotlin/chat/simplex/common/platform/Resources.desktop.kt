@@ -4,8 +4,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.*
+import chat.simplex.common.simplexWindowState
 import com.russhwolf.settings.*
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.desc
@@ -48,6 +48,11 @@ actual fun screenWidth(): Dp {
   }
   return width*/
 }// LALAL java.awt.Desktop.getDesktop()
+
+actual fun desktopExpandWindowToWidth(width: Dp) {
+  if (simplexWindowState.windowState.size.width >= width) return
+  simplexWindowState.windowState.size = simplexWindowState.windowState.size.copy(width = width)
+}
 
 actual fun isRtl(text: CharSequence): Boolean {
   if (text.isEmpty()) return false

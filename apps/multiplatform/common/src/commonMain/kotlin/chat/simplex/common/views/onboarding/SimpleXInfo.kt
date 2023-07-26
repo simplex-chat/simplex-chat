@@ -26,7 +26,7 @@ fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   SimpleXInfoLayout(
     user = chatModel.currentUser.value,
     onboardingStage = if (onboarding) chatModel.onboardingStage else null,
-    showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
+    showModal = { modalView -> { if (onboarding) ModalManager.fullscreen.showModal { modalView(chatModel) } else ModalManager.start.showModal { modalView(chatModel) } } },
   )
 }
 

@@ -7,15 +7,6 @@ import chat.simplex.res.MR
 import java.io.*
 import java.net.URI
 
-private fun applicationParentPath(): String = try {
-  DesktopApp::class.java.protectionDomain!!.codeSource.location.toURI().path
-    .replaceAfterLast("/", "")
-    .replaceAfterLast(File.separator, "")
-    .replace("/", File.separator)
-} catch (e: Exception) {
-  "./"
-}
-
 actual val dataDir: File = File(desktopPlatform.dataPath)
 actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex").also { it.deleteOnExit() }
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")

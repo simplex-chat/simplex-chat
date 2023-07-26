@@ -267,6 +267,9 @@
   <string name="you_have_no_chats">You have no chats</string>
   <string name="no_filtered_chats">No filtered chats</string>
 
+  <!-- ChatView.kt -->
+  <string name="no_selected_chat">No selected chat</string>
+
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
   <string name="share_image">Share media…</string>

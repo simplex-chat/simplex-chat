@@ -45,7 +45,7 @@ fun authenticateWithPasscode(
   completed: (LAResult) -> Unit
 ) {
   val password = DatabaseUtils.ksAppPassword.get() ?: return completed(LAResult.Unavailable(generalGetString(MR.strings.la_no_app_password)))
-  ModalManager.shared.showPasscodeCustomModal { close ->
+  ModalManager.fullscreen.showPasscodeCustomModal { close ->
     BackHandler {
       close()
       completed(LAResult.Error(generalGetString(MR.strings.authentication_cancelled)))

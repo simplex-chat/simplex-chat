@@ -83,7 +83,7 @@ fun SendMsgView(
     if (showDeleteTextButton.value) {
       DeleteTextButton(composeState)
     }
-    Box(Modifier.align(Alignment.BottomEnd)) {
+    Box(Modifier.align(Alignment.BottomEnd).padding(bottom = if (appPlatform.isAndroid) 0.dp else 5.dp)) {
       val sendButtonSize = remember { Animatable(36f) }
       val sendButtonAlpha = remember { Animatable(1f) }
       val scope = rememberCoroutineScope()

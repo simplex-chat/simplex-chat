@@ -85,7 +85,7 @@ fun UserAddressView(
         }
       },
       learnMore = {
-        ModalManager.shared.showModal {
+        ModalManager.start.showModal {
           Column(
             Modifier
               .fillMaxHeight()

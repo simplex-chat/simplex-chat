@@ -30,6 +30,7 @@ module Simplex.Chat.Store.Profiles
     updateUserPrivacy,
     updateAllContactReceipts,
     updateUserContactReceipts,
+    updateUserGroupReceipts,
     updateUserProfile,
     setUserProfileContactLink,
     getUserContactProfiles,
@@ -92,7 +93,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
         sendRcptsContacts = True
-        sendRcptsSmallGroups = False
+        sendRcptsSmallGroups = True
     DB.execute
       db
       "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,0,?,?,?,?,?)"
@@ -222,12 +223,20 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
 
 updateAllContactReceipts :: DB.Connection -> Bool -> IO ()
 updateAllContactReceipts db onOff =
-  DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE view_pwd_hash IS NULL" (Only onOff)
+  DB.execute
+    db
+    "UPDATE users SET send_rcpts_contacts = ?, send_rcpts_small_groups = ? WHERE view_pwd_hash IS NULL"
+    (onOff, onOff)
 
 updateUserContactReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
 updateUserContactReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
   DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE user_id = ?" (enable, userId)
   when clearOverrides $ DB.execute_ db "UPDATE contacts SET send_rcpts = NULL"
+
+updateUserGroupReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
+updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
+  DB.execute db "UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?" (enable, userId)
+  when clearOverrides $ DB.execute_ db "UPDATE groups SET send_rcpts = NULL"
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'

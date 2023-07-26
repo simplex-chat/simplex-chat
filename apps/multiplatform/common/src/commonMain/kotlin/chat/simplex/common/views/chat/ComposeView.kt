@@ -170,7 +170,7 @@ fun ComposeView(
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
-  val textStyle = remember { mutableStateOf(smallFont) }
+  val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val processPickedMedia = { uris: List<URI>, text: String? ->
     val content = ArrayList<UploadContent>()
     val imagesPreview = ArrayList<String>()
@@ -655,7 +655,11 @@ fun ComposeView(
       } else {
         showChooseAttachment
       }
-      IconButton(attachmentClicked, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
+      IconButton(
+        attachmentClicked,
+        Modifier.padding(bottom = if (appPlatform.isAndroid) 0.dp else 7.dp),
+        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value
+      ) {
         Icon(
           painterResource(MR.images.ic_attach_file_filled_500),
           contentDescription = stringResource(MR.strings.attach),

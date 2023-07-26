@@ -113,7 +113,7 @@ private fun VerifyCodeLayout(
       } else {
         if (appPlatform.isAndroid) {
           SimpleButton(generalGetString(MR.strings.scan_code), painterResource(MR.images.ic_qr_code)) {
-            ModalManager.shared.showModal {
+            ModalManager.end.showModal {
               ScanCodeView(verifyCode) { }
             }
           }
