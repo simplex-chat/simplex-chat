@@ -195,7 +195,7 @@ struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
         let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, itemEdited: true),
+            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .file("")),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)

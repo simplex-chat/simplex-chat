@@ -19,6 +19,7 @@ struct ChatItemInfoView: View {
     enum CIInfoTab {
         case history
         case quote
+        case delivery
     }
     
     var body: some View {
@@ -40,19 +41,44 @@ struct ChatItemInfoView: View {
         : NSLocalizedString("Received message", comment: "message info title")
     }
 
+    private var numTabs: Int {
+        var numTabs = 1
+        if ci.quotedItem != nil {
+            numTabs += 1
+        }
+        if chatItemInfo?.memberDeliveryStatuses != nil {
+            numTabs += 1
+        }
+        return numTabs
+    }
+
     @ViewBuilder private func itemInfoView() -> some View {
-        if let qi = ci.quotedItem {
+        if numTabs > 1 {
             TabView(selection: $selection) {
+                if let mdss = chatItemInfo?.memberDeliveryStatuses {
+                    deliveryTab(mdss)
+                        .tabItem {
+                            Label("Delivery", systemImage: "checkmark.message")
+                        }
+                        .tag(CIInfoTab.delivery)
+                }
                 historyTab()
                     .tabItem {
                         Label("History", systemImage: "clock")
                     }
                     .tag(CIInfoTab.history)
-                quoteTab(qi)
-                    .tabItem {
-                        Label("In reply to", systemImage: "arrowshape.turn.up.left")
-                    }
-                    .tag(CIInfoTab.quote)
+                if let qi = ci.quotedItem {
+                    quoteTab(qi)
+                        .tabItem {
+                            Label("In reply to", systemImage: "arrowshape.turn.up.left")
+                        }
+                        .tag(CIInfoTab.quote)
+                }
+            }
+            .onAppear {
+                if chatItemInfo?.memberDeliveryStatuses != nil {
+                    selection = .delivery
+                }
             }
         } else {
             historyTab()
@@ -215,6 +241,53 @@ struct ChatItemInfoView: View {
         (qi.chatDir?.sent ?? false)
         ? (colorScheme == .light ? sentColorLight : sentColorDark)
         : Color(uiColor: .tertiarySystemGroupedBackground)
+    }
+
+    @ViewBuilder private func deliveryTab(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                details()
+                Divider().padding(.vertical)
+                Text("Delivery")
+                    .font(.title2)
+                    .padding(.bottom, 4)
+                memberDeliveryStatusesView(memberDeliveryStatuses)
+            }
+            .padding()
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    @ViewBuilder private func memberDeliveryStatusesView(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if !memberDeliveryStatuses.isEmpty {
+                ForEach(memberDeliveryStatuses, id: \.groupMemberId) { mds in
+                    memberDeliveryStatusView(mds)
+                }
+            } else {
+                Text("No info on delivery")
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private func memberDeliveryStatusView(_ memberDeliveryStatus: MemberDeliveryStatus) -> some View {
+        let groupMember = GroupMember.sampleData // TODO find in model
+        return HStack{
+            ProfileImage(imageStr: groupMember.image)
+                .frame(width: 30, height: 30)
+                .padding(.trailing, 2)
+            Text(groupMember.chatViewName)
+                .lineLimit(1)
+            Spacer()
+            if let (icon, statusColor) = memberDeliveryStatus.memberDeliveryStatus.statusIcon(Color.secondary) {
+                Image(systemName: icon)
+                    .foregroundColor(statusColor)
+            } else {
+                Image(systemName: "ellipsis")
+                    .foregroundColor(Color.secondary)
+            }
+        }
     }
 
     private func itemInfoShareText() -> String {
