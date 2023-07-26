@@ -45,7 +45,7 @@ welcomeGetOpts = do
   pure opts
 
 directoryService :: DirectoryStore -> DirectoryOpts -> User -> ChatController -> IO ()
-directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage} _user cc = do
+directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers} _user cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
@@ -80,31 +80,57 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage} _user cc = 
             CEGroupMemberNotActive -> unexpectedError "service membership is not active"
             _ -> unexpectedError "can't create group link"
           _ -> unexpectedError "can't create group link"
-      DEGroupUpdated {contactId, fromGroup, toGroup} -> withContact contactId toGroup "group updated" $ \ct -> do
-        -- TODO we need to find registration here to see if link is expected in profile or we can ignore it at this point
-        let GroupInfo {groupId, groupProfile = p@GroupProfile {displayName = n, description}} = fromGroup
-            GroupInfo {groupProfile = p'@GroupProfile {displayName = n', description = description'}} = toGroup
+      DEGroupUpdated {contactId, fromGroup, toGroup} ->
         unless (sameProfile p p') $ do
-          sendChatCmd cc (APIGetGroupLink groupId) >>= \case
-            CRGroupLink {connReqContact} -> do
-              let groupLink = safeDecodeUtf8 $ strEncode connReqContact
-                  hadLinkBefore = groupLink `isInfix` description
-                  hasLinkNow = groupLink `isInfix` description'
-              case (hadLinkBefore, hasLinkNow) of
-                (True, True) -> do
-                  sendMessage cc ct $ "The group profile is updated: the group registration is suspended and it will not appear in search results until re-approved"
-                  -- TODO suspend group listing, send for approval
-                (True, False) -> do
-                  sendMessage cc ct $ "The group link is removed, the group registration is suspended and it will not appear in search results"
-                  -- TODO suspend group listing, remove approval code
-                (False, True) -> do
-                  sendMessage cc ct $ "The group link added to the welcome message - thank you!"
-                  -- check status and possibly send for approval
-                (False, False) -> pure ()
-                  -- check status, remove approval code, remove listing
-            _ -> pure () -- TODO handle errors
+          atomically $ unlistGroup st groupId
+          withGroupReg toGroup "group updated" $ \gr@GroupReg {dbContactId, groupRegStatus} -> do
+            readTVarIO groupRegStatus >>= \case
+              GRSPendingConfirmation -> pure ()
+              GRSProposed -> pure ()
+              GRSPendingUpdate ->
+                when (contactId == dbContactId) $ -- we do not need to process updates made by other members in this case
+                  sendChatCmd cc (APIGetGroupLink groupId) >>= \case
+                    CRGroupLink {connReqContact} -> do
+                      let groupLink = safeDecodeUtf8 $ strEncode connReqContact
+                          hadLinkBefore = groupLink `isInfix` description
+                          hasLinkNow = groupLink `isInfix` description'
+                      case (hadLinkBefore, hasLinkNow) of
+                        (True, True) -> do
+                          sendMessage cc ct $ "The group profile is updated: the group registration is suspended and it will not appear in search results until re-approved"
+                          -- TODO suspend group listing, send for approval
+                        (True, False) -> do
+                          sendMessage cc ct $ "The group link is removed, the group registration is suspended and it will not appear in search results"
+                          -- TODO suspend group listing, remove approval code
+                          atomically (writeTVar groupRegStatus GRSPendingUpdate)
+                        (False, True) -> do
+                          sendMessage cc ct $ "The group link added to the welcome message - thank you!"
+                          atomically (writeTVar groupRegStatus $ GRSPendingApproval 1)
+                        (False, False) -> pure ()
+                          -- check status, remove approval code, remove listing
+                    _ -> pure () -- TODO handle errors
+              GRSPendingApproval n -> do
+                atomically $ writeTVar groupRegStatus $ GRSPendingApproval (n + 1)
+                notifySuperUsers $ "Group registration updated for ID " <> show groupId <> ": " <> localDisplayName
+                sendForApproval toGroup gr
+              GRSActive -> do
+                atomically $ writeTVar groupRegStatus $ GRSPendingApproval (n + 1)
+                notifySuperUsers $ "Group profile updated, group suspended for ID " <> show groupId <> ": " <> localDisplayName
+                sendForApproval toGroup gr
+                sendMessage' cc dbContactId $ "The group profile is updated, the group registration is suspended until re-approved for ID " <> show userGroupRegId <> ": " <> displayName
+              GRSSuspended -> pure ()
+
+        -- when (contactId == dbContactId) $ do -- we only need to process group updates by the
+        
+        -- withContactGroupReg contactId toGroup "group updated" $ \ct gr -> do
+        -- -- TODO we need to find registration here to see if link is expected in profile or we can ignore it at this point
+        -- let GroupInfo {groupId, groupProfile = p@GroupProfile {displayName = n, description}} = fromGroup
+        --     GroupInfo {groupProfile = p'@GroupProfile {displayName = n', description = description'}} = toGroup
+        -- unless (sameProfile p p') $ do
+          
         where
           isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
+          GroupInfo {groupId, groupProfile = p@GroupProfile {displayName = n, description}} = fromGroup
+          GroupInfo {localDisplayName, groupProfile = p'@GroupProfile {displayName = n', description = description'}} = toGroup
           sameProfile
             GroupProfile {displayName = n, fullName = fn, image = i, description = d}
             GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
@@ -164,10 +190,17 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage} _user cc = 
     --           && contactId' ct' /= contactId' ct
   where
     contactConnected ct = putStrLn $ T.unpack (localDisplayName' ct) <> " connected"
+    withContactGroupReg ctId g err action = withContact ctId g err $ withGroupReg g err . action
+    notifySuperUsers s = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> sendMessage' cc contactId s
+    sendForApproval toGroup gr = undefined -- TODO
     withContact ctId GroupInfo {localDisplayName} err action = do
       getContact cc ctId >>= \case
         Just ct -> action ct
         Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find contact ID " <> tshow ctId
+    withGroupReg GroupInfo {groupId, localDisplayName} err action = do
+      atomically (getGroupReg st groupId) >>= \case
+        Just gr -> action gr
+        Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find group registration ID " <> tshow groupId
 
 badInvitation :: GroupMemberRole -> GroupMemberRole -> Maybe String
 badInvitation contactRole serviceRole = case (contactRole, serviceRole) of

@@ -55,10 +55,16 @@ initializeBotAddress cc = do
 sendMessage :: ChatController -> Contact -> String -> IO ()
 sendMessage cc ct = sendComposedMessage cc ct Nothing . textMsgContent
 
+sendMessage' :: ChatController -> Contact -> String -> IO ()
+sendMessage' cc ctId = sendComposedMessage' cc ctId Nothing . textMsgContent
+
 sendComposedMessage :: ChatController -> Contact -> Maybe ChatItemId -> MsgContent -> IO ()
-sendComposedMessage cc ct quotedItemId msgContent = do
+sendComposedMessage cc = sendComposedMessage' cc . contactId'
+
+sendComposedMessage' :: ChatController -> ContactId -> Maybe ChatItemId -> MsgContent -> IO ()
+sendComposedMessage' cc ctId quotedItemId msgContent = do
   let cm = ComposedMessage {filePath = Nothing, quotedItemId, msgContent}
-  sendChatCmd cc (APISendMessage (contactRef ct) False Nothing cm) >>= \case
+  sendChatCmd cc (APISendMessage (ChatRef CTDirect ctId) False Nothing cm) >>= \case
     CRNewChatItem {} -> printLog cc CLLInfo $ "sent message to " <> contactInfo ct
     r -> putStrLn $ "unexpected send message response: " <> show r
 

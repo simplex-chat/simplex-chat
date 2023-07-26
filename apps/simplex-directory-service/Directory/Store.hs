@@ -7,6 +7,7 @@ import Data.Int (Int64)
 import Data.Set (Set)
 import Simplex.Chat.Types
 import Data.List (find)
+import qualified Data.Set as S
 
 data DirectoryStore = DirectoryStore
   { groupRegs :: TVar [GroupReg],
@@ -27,9 +28,8 @@ type UserGroupRegId = Int64
 type GroupApprovalId = Int64
 
 data GroupRegStatus
-  = GRSProposed
-  | GRSPendingConfirmation
-  | GRSConfirmed
+  = GRSPendingConfirmation
+  | GRSProposed
   | GRSPendingUpdate
   | GRSPendingApproval GroupApprovalId
   | GRSActive
@@ -49,6 +49,9 @@ getContactGroupRegs st ctId = filter ((ctId ==) . dbContactId) <$> readTVar (gro
 
 filterListedGroups :: DirectoryStore -> [GroupInfo] -> STM [GroupInfo]
 filterListedGroups _st _gs = undefined
+
+unlistGroup :: DirectoryStore -> GroupId -> STM ()
+unlistGroup st gId = modifyTVar' (listedGroups st) $ S.delete gId
 
 data DirectoryLogRecord
   = CreateGroupReg GroupReg
