@@ -708,60 +708,19 @@ ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
--- membersGroupItemStatus :: [CIStatus 'MDSnd] -> CIStatus 'MDSnd
--- membersGroupItemStatus memberStatuses
---   | all isSndRcvdOk memberStatuses = CISSndRcvd MROk SSPComplete
---   | all (\s -> isSndRcvdOk s || isSndRcvdBad s) memberStatuses = CISSndRcvd MRBadMsgHash SSPComplete
---   | any isSndRcvdBad memberStatuses = CISSndRcvd MRBadMsgHash SSPPartial
---   | any isSndRcvdOk memberStatuses = CISSndRcvd MROk SSPPartial
---   | all isSndSent memberStatuses = CISSndSent SSPComplete
---   | any isSndSent memberStatuses = CISSndSent SSPPartial
---   | otherwise = CISSndNew
---   where
---     isSndSent = \case
---       CISSndSent _ -> True
---       _ -> False
---     isSndRcvdOk = \case
---       CISSndRcvd MROk _ -> True
---       _ -> False
---     isSndRcvdBad = \case
---       CISSndRcvd MRBadMsgHash _ -> True
---       _ -> False
-
--- membersGroupItemStatus :: [CIStatus 'MDSnd] -> CIStatus 'MDSnd
--- membersGroupItemStatus [] = CISSndNew
--- membersGroupItemStatus (s : ss) = foldr combineStatus s ss
---   where
---     -- still this doesn't take into account that if only element is snd error, then item status would be that
---     combineStatus :: CIStatus 'MDSnd -> CIStatus 'MDSnd -> CIStatus 'MDSnd
---     combineStatus memStatus accStatus = case (accStatus, memStatus) of
---       (CISSndRcvd MROk SSPComplete, CISSndRcvd MROk _) -> CISSndRcvd MROk SSPComplete
---       (CISSndRcvd MROk SSPComplete, CISSndRcvd MRBadMsgHash _) -> CISSndRcvd MRBadMsgHash SSPComplete
---       (CISSndRcvd MROk SSPComplete, _) -> CISSndRcvd MROk SSPPartial
---       (CISSndRcvd MROk SSPPartial, CISSndRcvd MRBadMsgHash _) -> CISSndRcvd MRBadMsgHash SSPPartial
---       (CISSndRcvd MROk SSPPartial, _) -> CISSndRcvd MROk SSPPartial
---       (CISSndRcvd MRBadMsgHash SSPComplete, CISSndRcvd _ _) -> CISSndRcvd MRBadMsgHash SSPComplete
---       (CISSndRcvd MRBadMsgHash _, _) -> CISSndRcvd MRBadMsgHash SSPPartial
---       (_, CISSndRcvd mr _) -> CISSndRcvd mr SSPPartial
---       (CISSndSent SSPComplete, CISSndSent _) -> CISSndSent SSPComplete
---       (CISSndSent _, _) -> CISSndSent SSPPartial
---       (_, CISSndSent _) -> CISSndSent SSPPartial
---       (CISSndNew, _) -> CISSndNew
---       _ -> CISSndNew
-
 membersGroupItemStatus :: [(CIStatus 'MDSnd, Int)] -> CIStatus 'MDSnd
 membersGroupItemStatus memStatusCounts = do
   let total = sum $ map snd memStatusCounts
       rcvdOk = fromMaybe 0 $ lookup (CISSndRcvd MROk SSPComplete) memStatusCounts
       rcvdBad = fromMaybe 0 $ lookup (CISSndRcvd MRBadMsgHash SSPComplete) memStatusCounts
-      rcvdSent = fromMaybe 0 $ lookup (CISSndSent SSPComplete) memStatusCounts
+      sent = fromMaybe 0 $ lookup (CISSndSent SSPComplete) memStatusCounts
   if
       | rcvdOk == total -> CISSndRcvd MROk SSPComplete
       | rcvdOk + rcvdBad == total -> CISSndRcvd MRBadMsgHash SSPComplete
       | rcvdBad > 0 -> CISSndRcvd MRBadMsgHash SSPPartial
       | rcvdOk > 0 -> CISSndRcvd MROk SSPPartial
-      | rcvdSent == total -> CISSndSent SSPComplete
-      | rcvdSent > 0 -> CISSndSent SSPPartial
+      | sent == total -> CISSndSent SSPComplete
+      | sent > 0 -> CISSndSent SSPPartial
       | otherwise -> CISSndNew
 
 data SndCIStatusProgress
