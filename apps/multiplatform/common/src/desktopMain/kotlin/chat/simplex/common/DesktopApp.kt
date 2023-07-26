@@ -24,7 +24,7 @@ import java.io.File
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() = application {
-  val windowState = rememberWindowState(placement = WindowPlacement.Floating, width = 1210.dp, height = 800.dp)
+  val windowState = rememberWindowState(placement = WindowPlacement.Floating, width = 1366.dp, height = 768.dp)
   simplexWindowState.windowState = windowState
   Window(state = windowState, onCloseRequest = ::exitApplication, onKeyEvent = {
     if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
