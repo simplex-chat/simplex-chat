@@ -1528,6 +1528,6 @@
   <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
 
   <!-- Under development -->
-  <string name="in_developing_title">In developing</string>
-  <string name="in_developing_desc">This feature is not available yet. Try it in the next releases</string>
+  <string name="in_developing_title">Coming soon!</string>
+  <string name="in_developing_desc">This feature is not yet supported. Try the next release.</string>
 </resources>
