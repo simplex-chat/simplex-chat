@@ -11,7 +11,6 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
-import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Directory.Events
@@ -24,7 +23,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Messages
 -- import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
--- import Simplex.Chat.Protocol (MsgContent (..))
+import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
@@ -64,17 +63,17 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
           sendMessage cc ct $ T.unpack $ case r of
             CRUserAcceptedGroupSent {} -> "Joining the group #" <> displayName <> "…"
             _ -> "Error joining group " <> displayName <> ", please re-send the invitation!"
-      DEServiceJoinedGroup ctId g -> withGroupReg g "joined group" $ \gr@GroupReg {dbContactId, groupRegStatus} -> do
+      DEServiceJoinedGroup ctId g -> withGroupReg g "joined group" $ \GroupReg {groupRegStatus} -> do
         let GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = g
         sendMessage' cc ctId $ T.unpack $ "Joined the group #" <> displayName <> ", creating the link…"
         sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
           CRGroupLinkCreated {connReqContact} -> do
             atomically $ writeTVar groupRegStatus GRSPendingUpdate
-            sendMessage' cc ctId $
-              "Created the public link to join the group via this service that is always online\n\n\
+            sendMessage' cc ctId
+              "Created the public link to join the group via this directory service that is always online.\n\n\
               \Please add it to the group welcome message.\n\
-              \For example, add:\n\n\
-              \Link to join the group: " <> B.unpack (strEncode connReqContact)
+              \For example, add:"
+            sendMessage' cc ctId $ "Link to join the group #" <> T.unpack displayName <> ": " <> B.unpack (strEncode connReqContact)
           CRChatCmdError _ (ChatError e) -> case e of
             CEGroupUserRole {} -> sendMessage' cc ctId "Failed creating group link, as service is no longer an admin."
             CEGroupMemberUserRemoved -> sendMessage' cc ctId "Failed creating group link, as service is removed from the group."
@@ -94,8 +93,8 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
                   sendChatCmd cc (APIGetGroupLink groupId) >>= \case
                     CRGroupLink {connReqContact} -> do
                       let groupLink = safeDecodeUtf8 $ strEncode connReqContact
-                          hadLinkBefore = groupLink `isInfix` description
-                          hasLinkNow = groupLink `isInfix` description'
+                          hadLinkBefore = groupLink `isInfix` description p
+                          hasLinkNow = groupLink `isInfix` description p'
                       case (hadLinkBefore, hasLinkNow) of
                         (True, True) -> do
                           sendMessage' cc contactId $ "The group profile is updated: the group registration is suspended and it will not appear in search results until re-approved"
@@ -105,10 +104,10 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
                           -- TODO suspend group listing, remove approval code
                           atomically $ writeTVar groupRegStatus GRSPendingUpdate
                         (False, True) -> do
-                          sendMessage' cc contactId $ "The group link added to the welcome message - thank you!"
+                          sendMessage' cc contactId $ "The group link for group ID " <> show groupId <> " " <> T.unpack displayName <> " added to the welcome message - thank you!\nThe group registration is sent for approval."
                           let gaId = 1
                           atomically $ writeTVar groupRegStatus $ GRSPendingApproval gaId
-                          sendForApproval toGroup gr gaId
+                          sendForApproval gr gaId
                         (False, False) -> pure ()
                           -- check status, remove approval code, remove listing
                     _ -> pure () -- TODO handle errors
@@ -116,24 +115,30 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
                 let gaId = n + 1
                 atomically $ writeTVar groupRegStatus $ GRSPendingApproval gaId
                 notifySuperUsers $ T.unpack $ "Group registration updated for ID " <> tshow groupId <> ": " <> localDisplayName
-                sendForApproval toGroup gr gaId
+                sendForApproval gr gaId
               GRSActive -> do
                 let gaId = 1
                 atomically $ writeTVar groupRegStatus $ GRSPendingApproval gaId
                 notifySuperUsers $ T.unpack $ "Group profile updated, group suspended for ID " <> tshow groupId <> ": " <> localDisplayName
-                sendForApproval toGroup gr gaId
-                sendMessage' cc dbContactId $ T.unpack $ "The group profile is updated, the group registration is suspended until re-approved for ID " <> tshow (userGroupRegId gr) <> ": " <> n'
+                sendForApproval gr gaId
+                sendMessage' cc dbContactId $ T.unpack $ "The group profile is updated, the group registration is suspended until re-approved for ID " <> tshow (userGroupRegId gr) <> ": " <> displayName
               GRSSuspended -> pure ()
         where
           isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
-          GroupInfo {groupId, groupProfile = p@GroupProfile {displayName = n, description}} = fromGroup
-          GroupInfo {localDisplayName, groupProfile = p'@GroupProfile {displayName = n', description = description'}} = toGroup
+          GroupInfo {groupId, groupProfile = p} = fromGroup
+          GroupInfo {localDisplayName, groupProfile = p'@GroupProfile {displayName, image = image'}} = toGroup
           sameProfile
             GroupProfile {displayName = n, fullName = fn, image = i, description = d}
             GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
               n == n' && fn == fn' && i == i' && d == d'
-          sendForApproval GroupInfo {localDisplayName} GroupReg {dbGroupId} gaId = do
-            notifySuperUsers $ T.unpack $ "To approve group ID " <> tshow dbGroupId <> ": " <> localDisplayName <> " send:\n/approve " <> tshow dbGroupId <> ":" <> localDisplayName <> " " <> tshow gaId
+          sendForApproval GroupReg {dbGroupId, dbContactId} gaId = do
+            ct_ <-  getContact cc dbContactId
+            let text = maybe ("Group ID " <> tshow dbGroupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted group ID " <> tshow dbGroupId <> ": ") ct_
+                        <> groupInfoText p' <> "\n\nTo approve send:"
+                msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
+            withSuperUsers $ \ctId -> do
+              sendComposedMessage' cc ctId Nothing msg
+              sendMessage' cc ctId $ "/approve " <> show dbGroupId <> ":" <> T.unpack localDisplayName <> " " <> show gaId
       DEContactRoleChanged _ctId _g _role -> pure ()
       DEServiceRoleChanged _g _role -> pure ()
       DEContactRemovedFromGroup _ctId _g -> pure ()
@@ -150,49 +155,59 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
             sendChatCmd cc (APIListGroups userId Nothing $ Just $ T.unpack s) >>= \case
               CRGroupsList {groups} ->
                 atomically (filterListedGroups st groups) >>= \case
-                  [] -> sendReply ct ciId "No groups found"
+                  [] -> sendReply "No groups found"
                   gs -> do
-                    sendReply ct ciId $ "Found " <> show (length gs) <> " group(s)"
-                    void . forkIO $ forM_ gs $ \GroupInfo {groupProfile = GroupProfile {displayName}} -> do
-                      sendMessage cc ct $ T.unpack displayName
-              _ -> sendReply ct ciId "Unexpected error"
+                    sendReply $ "Found " <> show (length gs) <> " group(s)"
+                    void . forkIO $ forM_ gs $ \GroupInfo {groupProfile = p@GroupProfile {image = image_}} -> do
+                      let text = groupInfoText p
+                          msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
+                      sendComposedMessage cc ct Nothing msg
+              _ -> sendReply "Unexpected error"
           DCConfirmDuplicateGroup _ugrId _gName -> pure ()
           DCListUserGroups -> pure ()
           DCDeleteGroup _ugrId _gName -> pure ()
-          DCUnknownCommand -> sendReply ct ciId "Unknown command"
-          DCCommandError tag -> sendReply ct ciId $ "Command error: " <> show tag
+          DCUnknownCommand -> sendReply "Unknown command"
+          DCCommandError tag -> sendReply $ "Command error: " <> show tag
         ADC SDRSuperUser cmd -- TODO check group status
           | superUser `elem` superUsers -> case cmd of
             DCApproveGroup {groupId, localDisplayName = n, groupApprovalId} ->
-              withGroupReg' groupId "approve group" $ \GroupReg {dbContactId, groupRegStatus} ->
-                getGroup cc groupId >>= \case
-                  Just GroupInfo {localDisplayName = n'}
-                    | n == n' -> do
-                      atomically $ do
-                        writeTVar groupRegStatus GRSActive
-                        listGroup st groupId
-                      sendMessage cc ct "Group approved!"
-                      sendMessage' cc dbContactId $ T.unpack $ "Group approved and listed for ID " <> tshow groupId <> ": " <> n'
-                    | otherwise -> sendMessage cc ct "Incorrect group name"
-                  Nothing -> pure ()
+              atomically (getGroupReg st groupId) >>= \case
+                Nothing -> sendMessage cc ct $ "Group ID " <> show groupId <> " not found"
+                Just GroupReg {dbContactId, groupRegStatus} -> do
+                  readTVarIO groupRegStatus >>= \case
+                    GRSPendingApproval gaId
+                      | gaId == groupApprovalId -> do
+                        getGroup cc groupId >>= \case
+                          Just GroupInfo {localDisplayName = n'}
+                            | n == n' -> do
+                              atomically $ do
+                                writeTVar groupRegStatus GRSActive
+                                listGroup st groupId
+                              sendReply "Group approved!"
+                              sendMessage' cc dbContactId $ "Group ID " <> show groupId <> " (" <> T.unpack n <> ") approved and listed in directory!"
+                            | otherwise -> sendReply "Incorrect group name"
+                          Nothing -> pure ()
+                      | otherwise -> sendReply "Incorrect approval code"
+                    _ -> sendMessage cc ct $ "Error: the group ID " <> show groupId <> " (" <> T.unpack n <> ") is not pending approval."
             DCRejectGroup _gaId _gName -> pure ()
             DCSuspendGroup _gId _gName -> pure ()
             DCResumeGroup _gId _gName -> pure ()
             DCListGroups -> pure ()
-            DCCommandError tag -> sendReply ct ciId $ "Command error: " <> show tag
-          | otherwise -> sendReply ct ciId "You are not allowed to use this command"
+            DCCommandError tag -> sendReply $ "Command error: " <> show tag
+          | otherwise -> sendReply "You are not allowed to use this command"
           where
             superUser = KnownContact {contactId = contactId' ct, localDisplayName = localDisplayName' ct}
         where
-          sendReply ct ciId = sendComposedMessage cc ct (Just ciId) . textMsgContent
+          sendReply = sendComposedMessage cc ct (Just ciId) . textMsgContent
   where
     contactConnected ct = putStrLn $ T.unpack (localDisplayName' ct) <> " connected"
-    withContactGroupReg ctId g err action = withContact ctId g err $ withGroupReg g err . action
-    notifySuperUsers s = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> sendMessage' cc contactId s
-    withContact ctId GroupInfo {localDisplayName} err action = do
-      getContact cc ctId >>= \case
-        Just ct -> action ct
-        Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find contact ID " <> tshow ctId
+    -- withContactGroupReg ctId g err action = withContact ctId g err $ withGroupReg g err . action
+    withSuperUsers action = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> action contactId
+    notifySuperUsers s = withSuperUsers $ \contactId -> sendMessage' cc contactId s
+    -- withContact ctId GroupInfo {localDisplayName} err action = do
+    --   getContact cc ctId >>= \case
+    --     Just ct -> action ct
+    --     Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find contact ID " <> tshow ctId
     withGroupReg GroupInfo {groupId, localDisplayName} err action = do
       atomically (getGroupReg st groupId) >>= \case
         Just gr -> action gr
@@ -201,6 +216,8 @@ directoryService st@DirectoryStore {} DirectoryOpts {welcomeMessage, superUsers}
       atomically (getGroupReg st groupId) >>= \case
         Just gr -> action gr
         Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", can't find group registration ID " <> tshow groupId
+    groupInfoText GroupProfile {displayName = n, fullName = fn, description = d} =
+      n <> (if n == fn || T.null fn then "" else " (" <> fn <> ")") <> maybe "" ("\nWelcome message:\n" <>) d
 
 badInvitation :: GroupMemberRole -> GroupMemberRole -> Maybe String
 badInvitation contactRole serviceRole = case (contactRole, serviceRole) of
