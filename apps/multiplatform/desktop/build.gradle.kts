@@ -41,7 +41,7 @@ compose {
         )
         linux {
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.png"))
-          appCategory = "Chat"
+          appCategory = "Messenger"
         }
         windows {
           packageName = "SimpleX"
