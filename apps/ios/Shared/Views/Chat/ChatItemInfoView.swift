@@ -14,12 +14,25 @@ struct ChatItemInfoView: View {
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
     @State private var selection: CIInfoTab = .history
+    @State private var alert: CIInfoViewAlert? = nil
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum CIInfoTab {
         case history
         case quote
         case delivery
+    }
+
+    enum CIInfoViewAlert: Identifiable {
+        case deliveryStatusAlert(status: CIStatus)
+        case deliveryPendingAlert
+
+        var id: String {
+            switch self {
+            case .deliveryStatusAlert: return "deliveryStatusAlert"
+            case .deliveryPendingAlert: return "deliveryPendingAlert"
+            }
+        }
     }
     
     var body: some View {
@@ -30,6 +43,12 @@ struct ChatItemInfoView: View {
                         Button { showShareSheet(items: [itemInfoShareText()]) } label: {
                             Image(systemName: "square.and.arrow.up")
                         }
+                    }
+                }
+                .alert(item: $alert) { alertItem in
+                    switch(alertItem) {
+                    case let .deliveryStatusAlert(status): return deliveryStatusAlert(status)
+                    case .deliveryPendingAlert: return deliveryPendingAlert()
                     }
                 }
         }
@@ -43,10 +62,10 @@ struct ChatItemInfoView: View {
 
     private var numTabs: Int {
         var numTabs = 1
-        if ci.quotedItem != nil {
+        if chatItemInfo?.memberDeliveryStatuses != nil {
             numTabs += 1
         }
-        if chatItemInfo?.memberDeliveryStatuses != nil {
+        if ci.quotedItem != nil {
             numTabs += 1
         }
         return numTabs
@@ -260,9 +279,10 @@ struct ChatItemInfoView: View {
 
     @ViewBuilder private func memberDeliveryStatusesView(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            if !memberDeliveryStatuses.isEmpty {
-                ForEach(memberDeliveryStatuses, id: \.groupMemberId) { mds in
-                    memberDeliveryStatusView(mds)
+            let mss = membersStatuses(memberDeliveryStatuses)
+            if !mss.isEmpty {
+                ForEach(mss, id: \.0.groupMemberId) { memberStatus in
+                    memberDeliveryStatusView(memberStatus.0, memberStatus.1)
                 }
             } else {
                 Text("No info on delivery")
@@ -271,28 +291,57 @@ struct ChatItemInfoView: View {
         }
     }
 
-    private func memberDeliveryStatusView(_ memberDeliveryStatus: MemberDeliveryStatus) -> some View {
-        let groupMember = GroupMember.sampleData // TODO find in model
-        return HStack{
-            ProfileImage(imageStr: groupMember.image)
+    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus)] {
+        memberDeliveryStatuses.compactMap({ mds in
+            if let mem = ChatModel.shared.groupMembers.first(where: { $0.groupMemberId == mds.groupMemberId }) {
+                return (mem, mds.memberDeliveryStatus)
+            } else {
+                return nil
+            }
+        })
+    }
+
+    private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus) -> some View {
+        HStack{
+            ProfileImage(imageStr: member.image)
                 .frame(width: 30, height: 30)
                 .padding(.trailing, 2)
-            Text(groupMember.chatViewName)
+            Text(member.chatViewName)
                 .lineLimit(1)
             Spacer()
-            if let (icon, statusColor) = memberDeliveryStatus.memberDeliveryStatus.statusIcon(Color.secondary) {
+            if let (icon, statusColor) = status.statusIcon(Color.secondary) {
                 Image(systemName: icon)
                     .foregroundColor(statusColor)
+                    .onTapGesture {
+                        alert = .deliveryStatusAlert(status: status)
+                    }
             } else {
                 Image(systemName: "ellipsis")
                     .foregroundColor(Color.secondary)
+                    .onTapGesture {
+                        alert = .deliveryPendingAlert
+                    }
             }
         }
     }
 
+    func deliveryStatusAlert(_ status: CIStatus) -> Alert {
+        Alert(
+            title: Text(status.statusText),
+            message: Text(status.statusDescription)
+         )
+    }
+
+    func deliveryPendingAlert() -> Alert {
+        Alert(
+            title: Text("Pending delivery"),
+            message: Text("Delivery to recipient is pending. Message will be sent once recipient is connected.")
+         )
+    }
+
     private func itemInfoShareText() -> String {
         let meta = ci.meta
-        var shareText: [String] = [title, ""]
+        var shareText: [String] = [String.localizedStringWithFormat(NSLocalizedString("# %@", comment: "copied message info title, # <title>"), title), ""]
         shareText += [String.localizedStringWithFormat(NSLocalizedString("Sent at: %@", comment: "copied message info"), localTimestamp(meta.itemTs))]
         if !ci.chatDir.sent {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Received at: %@", comment: "copied message info"), localTimestamp(meta.createdAt))]
@@ -318,7 +367,7 @@ struct ChatItemInfoView: View {
             ]
         }
         if let qi = ci.quotedItem {
-            shareText += ["", NSLocalizedString("In reply to", comment: "copied message info")]
+            shareText += ["", NSLocalizedString("## In reply to", comment: "copied message info")]
             let t = qi.text
             shareText += [""]
             if let sender = qi.getSender(nil) {
@@ -335,9 +384,23 @@ struct ChatItemInfoView: View {
             }
             shareText += [t != "" ? t : NSLocalizedString("no text", comment: "copied message info in history")]
         }
+        if let mdss = chatItemInfo?.memberDeliveryStatuses {
+            let mss = membersStatuses(mdss)
+            if !mss.isEmpty {
+                shareText += ["", NSLocalizedString("## Delivery", comment: "copied message info")]
+                shareText += [""]
+                for (member, status) in mss {
+                    shareText += [String.localizedStringWithFormat(
+                        NSLocalizedString("%@: %@", comment: "copied message info, <recipient>: <message delivery status>"),
+                        member.chatViewName,
+                        status.statusText
+                    )]
+                }
+            }
+        }
         if let chatItemInfo = chatItemInfo,
            !chatItemInfo.itemVersions.isEmpty {
-            shareText += ["", NSLocalizedString("History", comment: "copied message info")]
+            shareText += ["", NSLocalizedString("## History", comment: "copied message info")]
             for (index, itemVersion) in chatItemInfo.itemVersions.enumerated() {
                 let t = itemVersion.msgContent.text
                 shareText += [
