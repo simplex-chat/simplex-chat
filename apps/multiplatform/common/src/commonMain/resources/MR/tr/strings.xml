@@ -777,4 +777,5 @@
     <string name="alert_title_group_invitation_expired">Davetiyenin süresi dolmuş!</string>
     <string name="message_deletion_prohibited_in_chat">Geri alınamaz mesaj silme bu grupta yasaktır</string>
     <string name="delivery_receipts_title">Mesaj gönderildi bilgisi!</string>
+    <string name="joining_group">Gruba katılınıyor</string>
 </resources>
