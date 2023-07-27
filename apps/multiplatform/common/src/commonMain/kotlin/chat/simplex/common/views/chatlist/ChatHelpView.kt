@@ -28,7 +28,7 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
     Text(stringResource(MR.strings.thank_you_for_installing_simplex), lineHeight = 22.sp)
-    ReadableTextWithLink(MR.strings.you_can_connect_to_simplex_chat_founder, simplexTeamUri)
+    ReadableTextWithLink(MR.strings.you_can_connect_to_simplex_chat_founder, simplexTeamUri, simplexLink = true)
     Column(
       Modifier.padding(top = 24.dp),
       verticalArrangement = Arrangement.spacedBy(10.dp)
