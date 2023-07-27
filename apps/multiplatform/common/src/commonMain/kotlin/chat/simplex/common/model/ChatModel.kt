@@ -1714,8 +1714,8 @@ fun localTimestamp(t: Instant): String {
 @Serializable
 sealed class CIStatus {
   @Serializable @SerialName("sndNew") class SndNew: CIStatus()
-  @Serializable @SerialName("sndSent") class SndSent: CIStatus()
-  @Serializable @SerialName("sndRcvd") class SndRcvd(val msgRcptStatus: MsgReceiptStatus): CIStatus()
+  @Serializable @SerialName("sndSent") class SndSent(val sndProgress: SndCIStatusProgress): CIStatus()
+  @Serializable @SerialName("sndRcvd") class SndRcvd(val msgRcptStatus: MsgReceiptStatus, val sndProgress: SndCIStatusProgress): CIStatus()
   @Serializable @SerialName("sndErrorAuth") class SndErrorAuth: CIStatus()
   @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
@@ -1726,6 +1726,12 @@ sealed class CIStatus {
 enum class MsgReceiptStatus {
   @SerialName("ok") Ok,
   @SerialName("badMsgHash") BadMsgHash;
+}
+
+@Serializable
+enum class SndCIStatusProgress {
+  @SerialName("partial") Partial,
+  @SerialName("complete") Complete;
 }
 
 @Serializable
