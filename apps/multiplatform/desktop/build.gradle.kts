@@ -41,7 +41,7 @@ compose {
         )
         linux {
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.png"))
-          appCategory = "Messenger"
+          appCategory = "Chat"
         }
         windows {
           // LALAL
@@ -51,8 +51,7 @@ compose {
           dirChooser = true
         }
         macOS {
-          // LALAL
-          //iconFile.set(project.file("../desktop/src/jvmMain/resources/distribute/simplex.icns"))
+          iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
         }
