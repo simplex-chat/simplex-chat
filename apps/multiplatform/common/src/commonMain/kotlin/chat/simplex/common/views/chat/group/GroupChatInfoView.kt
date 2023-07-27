@@ -289,6 +289,21 @@ private fun GroupPreferencesButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
+  val values = remember {
+    mutableListOf(SendReceipts.Yes, SendReceipts.No, SendReceipts.UserDefault(currentUser.sendRcptsSmallGroups)).map { it to it.text }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(MR.strings.send_receipts),
+    values,
+    state,
+    icon = painterResource(MR.images.ic_double_check),
+    enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
+  )
+}
+
+@Composable
 fun SendReceiptsOptionDisabled() {
   SettingsActionItemWithContent(
     icon = painterResource(MR.images.ic_double_check),
