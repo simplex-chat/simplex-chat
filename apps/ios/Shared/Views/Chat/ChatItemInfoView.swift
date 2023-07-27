@@ -308,9 +308,19 @@ struct ChatItemInfoView: View {
             Spacer()
             Group {
                 if let (icon, statusColor) = status.statusIcon(Color.secondary) {
-                    Image(systemName: icon)
-                        .foregroundColor(statusColor)
-
+                    switch status {
+                    case .sndRcvd:
+                        ZStack(alignment: .trailing) {
+                            Image(systemName: icon)
+                                .foregroundColor(statusColor.opacity(0.67))
+                                .padding(.trailing, 6)
+                            Image(systemName: icon)
+                                .foregroundColor(statusColor.opacity(0.67))
+                        }
+                    default:
+                        Image(systemName: icon)
+                            .foregroundColor(statusColor)
+                    }
                 } else {
                     Image(systemName: "ellipsis")
                         .foregroundColor(Color.secondary)
