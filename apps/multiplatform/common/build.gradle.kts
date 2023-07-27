@@ -95,6 +95,7 @@ kotlin {
       dependencies {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.1")
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.6")
+        implementation("org.slf4j:slf4j-simple:2.0.7")
       }
     }
     val desktopTest by getting
