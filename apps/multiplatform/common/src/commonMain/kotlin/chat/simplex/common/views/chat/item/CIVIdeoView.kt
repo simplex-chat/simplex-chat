@@ -142,7 +142,8 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
     Box(
       Modifier
         .defaultMinSize(minWidth = 40.dp, minHeight = 40.dp)
-        .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        .contextMenuOpenDetector { onLongClick.invoke() },
       contentAlignment = Alignment.Center
     ) {
       Icon(
@@ -211,7 +212,8 @@ private fun ImageView(preview: ImageBitmap, showMenu: MutableState<Boolean>, onC
       .combinedClickable(
         onLongClick = { showMenu.value = true },
         onClick = onClick
-      ),
+      )
+      .contextMenuOpenDetector { showMenu.value = true },
     contentScale = ContentScale.FillWidth,
   )
 }

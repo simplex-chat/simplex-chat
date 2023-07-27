@@ -450,7 +450,8 @@ private fun SendMsgButton(
         role = Role.Button,
         interactionSource = interactionSource,
         indication = rememberRipple(bounded = false, radius = 24.dp)
-      ),
+      )
+      .contextMenuOpenDetector { onLongClick?.invoke() },
     contentAlignment = Alignment.Center
   ) {
     Icon(

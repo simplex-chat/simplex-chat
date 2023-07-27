@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
@@ -101,7 +100,8 @@ fun CIImageView(
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
-        ),
+        )
+        .contextMenuOpenDetector { showMenu.value = true },
       contentScale = ContentScale.FillWidth,
     )
   }
@@ -118,7 +118,8 @@ fun CIImageView(
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
-        ),
+        )
+        .contextMenuOpenDetector { showMenu.value = true },
       contentScale = ContentScale.FillWidth,
     )
   }

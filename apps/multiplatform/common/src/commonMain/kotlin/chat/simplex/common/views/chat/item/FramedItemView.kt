@@ -110,6 +110,7 @@ fun FramedItemView(
           onLongClick = { showMenu.value = true },
           onClick = { scrollToItem(qi.itemId?: return@combinedClickable) }
         )
+        .contextMenuOpenDetector { showMenu.value = true }
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {

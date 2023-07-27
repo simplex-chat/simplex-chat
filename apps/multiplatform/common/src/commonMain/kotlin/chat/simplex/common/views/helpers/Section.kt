@@ -1,8 +1,8 @@
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
+import androidx.compose.material.contextMenuOpenDetector
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -132,7 +132,9 @@ fun SectionItemViewSpaceBetween(
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
-    if (click == null || disabled) modifier.padding(padding) else modifier.combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding),
+    if (click == null || disabled) modifier.padding(padding) else modifier
+      .combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding)
+      .contextMenuOpenDetector { onLongClick?.invoke() },
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
