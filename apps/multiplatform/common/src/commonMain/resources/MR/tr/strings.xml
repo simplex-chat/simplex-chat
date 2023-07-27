@@ -821,7 +821,7 @@
     <string name="call_on_lock_screen">Kilit ekranında aramalar:</string>
     <string name="alert_title_msg_bad_id">Kötü mesaj kimliği</string>
     <string name="settings_section_title_messages">MESAJLAR VE DOSYALAR</string>
-    <string name="change_database_passphrase_question">Veritabanı parolasını değiştir\?</string>
+    <string name="change_database_passphrase_question">Veri tabanı parolasını değiştir\?</string>
     <string name="restore_passphrase_not_found_desc">Parola Keystore\'da bulunamadı, lütfen manuel olarak girin. Bu, uygulamanın verilerini bir yedekleme aracı kullanarak geri yüklediyseniz olabilir. Eğer durum böyle değilse, lütfen geliştiricilerle iletişime geçin.</string>
     <string name="leave_group_button">Ayrıl</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">adres değiştiriliyor…</string>
@@ -854,4 +854,68 @@
     <string name="message_reactions">Mesaj tepkileri</string>
     <string name="your_preferences">Tercihleriniz</string>
     <string name="message_reactions_are_prohibited">Mesaj tepkileri bu grupta yasaklıdır</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Bu kişiden mesaj almak için kullanılan sunucuya bağlısınız.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Zaten şuna bağlısınız: %1$s</string>
+    <string name="la_could_not_be_verified">Doğrulanamadınız; lütfen tekrar deneyin.</string>
+    <string name="you_can_turn_on_lock">SimpleX Kilidini Ayarlar üzerinden açabilirsiniz.</string>
+    <string name="group_preview_you_are_invited">gruba davet edildiniz</string>
+    <string name="you_have_no_chats">Hiç sohbetiniz yok</string>
+    <string name="you_are_observer">Gözlemcisiniz</string>
+    <string name="observer_cant_send_message_title">Mesaj gönderemezsiniz</string>
+    <string name="view_security_code">Güvenlik kodunu görüntüle</string>
+    <string name="you_need_to_allow_to_send_voice">Sesli mesaj gönderebilmeniz için kişinizin de sesli mesaj göndermesine izin vermeniz gerekir.</string>
+    <string name="your_profile_will_be_sent">Sohbet profiliniz kişinize gönderilecek</string>
+    <string name="xftp_servers">XFTP sunucuları</string>
+    <string name="your_ICE_servers">ICE sunucularınız</string>
+    <string name="how_to">Nasıl</string>
+    <string name="your_current_profile">Mevcut profiliniz</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Mesajların hangi sunucu(lar)dan <b>alınacağını</b> siz kontrol edersiniz, kişileriniz - onlara mesaj göndermek için kullandığınız sunucular.</string>
+    <string name="video_call_no_encryption">video arama (uçtan uca şifreli değil)</string>
+    <string name="your_ice_servers">ICE sunucularınız</string>
+    <string name="icon_descr_video_off">Video kapalı</string>
+    <string name="icon_descr_video_on">Video açık</string>
+    <string name="you_have_to_enter_passphrase_every_time">Uygulama her başladığında parola girmeniz gerekir - parola cihazınızda saklanmaz.</string>
+    <string name="snd_group_event_member_deleted">%1$s kişisini çıkardınız</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">%s kişisi için bağlantı değiştirdiniz</string>
+    <string name="incognito_info_share">Biriyle gizli bir profil paylaştığınızda, bu profil sizi davet ettikleri gruplar için kullanılacaktır.</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">İsteğe bağlı karşılama mesajı ile.</string>
+    <string name="your_contacts_will_remain_connected">Kişileriniz bağlı kalacaktır.</string>
+    <string name="your_contacts_will_see_it">SimpleX\'teki kişileriniz bunu görecektir.
+\nBunu Ayarlardan değiştirebilirsiniz.</string>
+    <string name="you_can_create_it_later">Daha sonra oluşturabilirsiniz</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">Mesajları biçimlendirmek için markdown kullanabilirsiniz:</string>
+    <string name="your_chat_database">Mesaj veri tabanınız</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Mevcut sohbet veritabanınız SİLİNECEK ve içe aktarılan veritabanıyla DEĞİŞTİRİLECEKTİR.
+\nBu işlem geri alınamaz - profiliniz, kişileriniz, mesajlarınız ve dosyalarınız geri alınamaz şekilde kaybolacaktır.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Bu gruba katıldınız. Davet eden grup üyesine bağlanılıyor.</string>
+    <string name="you_are_invited_to_group_join_to_connect_with_group_members">Gruba davetlisiniz. Grup üyeleriyle bağlantı kurmak için katılın.</string>
+    <string name="alert_title_cant_invite_contacts_descr">Bu grup için gizli bir profil kullanıyorsunuz - ana profilinizi paylaşmayı önlemek için kişileri davet etmeye izin verilmiyor</string>
+    <string name="snd_group_event_user_left">ayrıldınız</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Bir bağlantı veya QR kodu paylaşabilirsiniz - bu durumda herkes gruba katılabilir. Daha sonra silseniz bile grubun üyelerini kaybetmezsiniz.</string>
+    <string name="you_can_share_this_address_with_your_contacts">Bu adresi kişilerinizle paylaşarak onların %s ile bağlantı kurmasını sağlayabilirsiniz.</string>
+    <string name="chat_preferences_you_allow">İzin veriyorsunuz</string>
+    <string name="v5_0_large_files_support">1gb\'a kadar videolar ve dosyalar</string>
+    <string name="icon_descr_video_snd_complete">Video gönderildi</string>
+    <string name="video_will_be_received_when_contact_is_online">Kişiniz çevrimiçi olduğunda video alınacaktır, lütfen bekleyin veya daha sonra kontrol edin!</string>
+    <string name="voice_message">Sesli mesaj</string>
+    <string name="voice_message_with_duration">Sesli mesaj (%1$s)</string>
+    <string name="voice_message_send_text">Sesli mesaj…</string>
+    <string name="you_can_share_your_address">Adresinizi bir bağlantı veya QR kodu olarak paylaşabilirsiniz - herkes size bağlanabilir.</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">bağlantı değiştirdiniz</string>
+    <string name="you_can_enable_delivery_receipts_later">Daha sonra Ayarlardan etkinleştirebilirsin</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Sonrasında uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Bağlantının tamamlanması için kişinizin çevrimiçi olması gerekir.
+\nBu bağlantıyı iptal edebilir ve kişiyi kaldırabilirsiniz (ve daha sonra yeni bir bağlantıyla deneyebilirsiniz).</string>
+    <string name="contact_sent_large_file">Kişiniz desteklenen maksimum boyuttan (%1$s) daha büyük bir dosya gönderdi.</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">Kişiniz yüklemeyi tamamladığında video alınacaktır.</string>
+    <string name="you_can_also_connect_by_clicking_the_link">Ayrıca bağlantıya tıklayarak da bağlanabilirsiniz. Eğer bağlantı tarayıcda açılırsa, <b>mobil uygulamada aç</b> seçeneğine tıklayın.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Soru sormak ve güncellemeleri almak için &lt;font color=#0088ff&gt;SimpleX Chat geliştiricilerine bağlanabilirsiniz&lt;/font&gt;.</string>
+    <string name="you_can_hide_or_mute_user_profile">Bir kullanıcının profilini gizleyebilir veya sessize alabilirsiniz - menü için basılı tutun.</string>
+    <string name="you_invited_your_contact">Kişinizi davet ettiniz</string>
+    <string name="you_must_use_the_most_recent_version_of_database">Sohbet veritabanınızın en son sürümünü SADECE bir cihazda kullanmalısınız, aksi takdirde bazı kişilerden daha fazla mesaj alamayabilirsiniz.</string>
+    <string name="wrong_passphrase">Yanlış veritabanı parolası</string>
+    <string name="you_rejected_group_invitation">Grup davetini reddettiniz.</string>
+    <string name="you_are_invited_to_group">Gruba davet edildiniz</string>
+    <string name="you_joined_this_group">Bu gruba katıldınız</string>
+    <string name="voice_messages">Sesli mesajlar</string>
 </resources>
