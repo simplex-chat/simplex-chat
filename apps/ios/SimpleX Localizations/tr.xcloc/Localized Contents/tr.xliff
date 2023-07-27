@@ -2219,12 +2219,14 @@
         <source>Learn more</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave" xml:space="preserve">
+      <trans-unit id="Leave" xml:space="preserve" approved="no">
         <source>Leave</source>
+        <target state="translated">Ayrıl</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave group" xml:space="preserve">
+      <trans-unit id="Leave group" xml:space="preserve" approved="no">
         <source>Leave group</source>
+        <target state="translated">Gruptan ayrıl</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave group?" xml:space="preserve">
