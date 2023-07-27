@@ -67,7 +67,9 @@ fun SendMsgView(
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
-    PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange)
+    PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange) {
+      sendMessage(null)
+    }
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
       Box(
