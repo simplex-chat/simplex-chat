@@ -112,7 +112,7 @@ fun ChatItemView(
         Modifier
           .clip(RoundedCornerShape(18.dp))
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
-          .contextMenuOpenDetector { showMenu.value = true },
+          .onRightClick { showMenu.value = true },
       ) {
         @Composable
         fun framedItemView() {

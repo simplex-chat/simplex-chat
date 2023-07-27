@@ -165,7 +165,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
         interactionSource = remember { MutableInteractionSource() },
         indication = if (!u.activeUser) LocalIndication.current else null
       )
-      .contextMenuOpenDetector { onLongClick() }
+      .onRightClick { onLongClick() }
       .padding(padding),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically

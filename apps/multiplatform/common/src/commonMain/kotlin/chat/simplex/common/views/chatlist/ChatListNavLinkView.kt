@@ -13,7 +13,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.contextMenuOpenDetector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
@@ -25,7 +24,6 @@ import chat.simplex.common.views.chat.item.InvalidJSONView
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.ContactConnectionInfoView
-import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.res.MR
@@ -622,7 +620,7 @@ fun ChatListNavLinkLayout(
   var modifier = Modifier.fillMaxWidth()
   if (!stopped) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
-    .contextMenuOpenDetector { showMenu.value = true }
+    .onRightClick { showMenu.value = true }
   Box(modifier) {
     Row(
       modifier = Modifier

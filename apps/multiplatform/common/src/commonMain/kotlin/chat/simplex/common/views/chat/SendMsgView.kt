@@ -451,7 +451,7 @@ private fun SendMsgButton(
         interactionSource = interactionSource,
         indication = rememberRipple(bounded = false, radius = 24.dp)
       )
-      .contextMenuOpenDetector { onLongClick?.invoke() },
+      .onRightClick { onLongClick?.invoke() },
     contentAlignment = Alignment.Center
   ) {
     Icon(

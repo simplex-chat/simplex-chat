@@ -101,7 +101,7 @@ fun CIImageView(
           onLongClick = { showMenu.value = true },
           onClick = onClick
         )
-        .contextMenuOpenDetector { showMenu.value = true },
+        .onRightClick { showMenu.value = true },
       contentScale = ContentScale.FillWidth,
     )
   }
@@ -119,7 +119,7 @@ fun CIImageView(
           onLongClick = { showMenu.value = true },
           onClick = onClick
         )
-        .contextMenuOpenDetector { showMenu.value = true },
+        .onRightClick { showMenu.value = true },
       contentScale = ContentScale.FillWidth,
     )
   }

@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.contextMenuOpenDetector
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -224,7 +223,7 @@ private fun PlayPauseButton(
           onClick = { if (!audioPlaying) play() else pause() },
           onLongClick = longClick
         )
-        .contextMenuOpenDetector { longClick() },
+        .onRightClick { longClick() },
       contentAlignment = Alignment.Center
     ) {
       Icon(
