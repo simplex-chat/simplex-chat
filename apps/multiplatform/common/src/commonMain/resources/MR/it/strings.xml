@@ -1344,4 +1344,6 @@
     <string name="sync_connection_force_question">Rinegoziare la crittografia\?</string>
     <string name="choose_file_title">Scegli un file</string>
     <string name="no_selected_chat">Nessuna chat selezionata</string>
+    <string name="in_developing_title">Prossimamente!</string>
+    <string name="in_developing_desc">Questa funzione non è ancora supportata. Prova la prossima versione.</string>
 </resources>
