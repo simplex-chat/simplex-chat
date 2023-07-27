@@ -315,7 +315,7 @@ fun SendReceiptsOptionDisabled() {
       )
     }
   ) {
-    Text(generalGetString(MR.strings.send_receipts_disabled), Modifier.weight(1f), color = MaterialTheme.colors.secondary)
+    Text(generalGetString(MR.strings.send_receipts_disabled), color = MaterialTheme.colors.secondary)
   }
 }
 
