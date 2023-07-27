@@ -44,17 +44,19 @@ compose {
           appCategory = "Chat"
         }
         windows {
+          packageName = "SimpleX"
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.ico"))
           console = true
           perUserInstall = true
           dirChooser = true
         }
         macOS {
+          packageName = "SimpleX"
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
         }
-        packageName = "SimpleX"
+        packageName = "simplex"
         // Packaging requires to have version like MAJOR.MINOR.PATCH
         var adjustedVersion = rootProject.extra["desktop.version_name"] as String
         adjustedVersion = adjustedVersion.replace(Regex("[^0-9.]"), "")
