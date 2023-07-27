@@ -1,22 +1,88 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
 import java.io.File
 import java.net.URI
-import java.util.*
 import javax.imageio.ImageIO
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.io.path.toPath
 
-// LALAL MAKE REALLY ANNOTATED STRING FROM HTML
-actual fun escapedHtmlToAnnotatedString(text: String, density: Density): AnnotatedString {
-  return AnnotatedString(text)
+private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
+private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
+private fun fontStyle(color: String) =
+  SpanStyle(color = Color(color.replace("#", "ff").toLongOrNull(16) ?: Color.White.toArgb().toLong()))
+
+actual fun escapedHtmlToAnnotatedString(text: String, density: Density): AnnotatedString = try {
+  buildAnnotatedString {
+    fun String.substringSafe(start: Int, len: Int): String =
+      if (start < 0 || start >= this.length || start + len < 0 || start + len > this.length) ""
+      else substring(start, start + len)
+
+    var skipTil = 0
+    for (outerI in text.indices) {
+      if (skipTil > outerI) continue
+      if (text[outerI] == '<') {
+        for (innerI in outerI + 1 until text.length) {
+          when {
+            text.substringSafe(innerI, 2) == "b>" -> {
+              val textStart = innerI + 2
+              for (insideTagI in textStart until text.length) {
+                if (text[insideTagI] == '<') {
+                  withStyle(bStyle) { append(text.substring(textStart, insideTagI)) }
+                  skipTil = insideTagI + 4
+                  break
+                }
+              }
+              break
+            }
+            text.substringSafe(innerI, 2) == "i>" -> {
+              val textStart = innerI + 2
+              for (insideTagI in textStart until text.length) {
+                if (text[insideTagI] == '<') {
+                  withStyle(iStyle) { append(text.substring(textStart, insideTagI)) }
+                  skipTil = insideTagI + 4
+                  break
+                }
+              }
+              break
+            }
+            text.substringSafe(innerI, 4) == "font" -> {
+              var textStart = innerI + 5
+              var color = "#000000"
+              for (i in textStart until text.length) {
+                if (text[i] == '#') {
+                  color = text.substring(i, i + 7)
+                  textStart = i + 9
+                  break
+                }
+              }
+              for (insideTagI in textStart until text.length) {
+                if (text[insideTagI] == '<') {
+                  withStyle(fontStyle(color)) { append(text.substring(textStart, insideTagI)) }
+                  skipTil = insideTagI + 7
+                  break
+                }
+              }
+              break
+            }
+          }
+          if (skipTil > innerI) continue
+        }
+      } else {
+        append(text[outerI])
+      }
+    }
+  }
+} catch (e: Exception) {
+  AnnotatedString(text)
 }
 
 actual fun getAppFileUri(fileName: String): URI =
