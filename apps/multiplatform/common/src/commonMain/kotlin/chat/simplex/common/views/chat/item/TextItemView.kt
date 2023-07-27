@@ -148,7 +148,7 @@ fun MarkdownText (
               } else {
                 ft.format.style
               }
-              withAnnotation(tag = if (ft.format is Format.SimplexLink) "SIMPLEX_URL" else "URL", annotation = link) {
+              withAnnotation(tag = if (ft.format is Format.SimplexLink && linkMode != SimplexLinkMode.BROWSER) "SIMPLEX_URL" else "URL", annotation = link) {
                 withStyle(ftStyle) { append(ft.viewText(linkMode)) }
               }
             } else {
