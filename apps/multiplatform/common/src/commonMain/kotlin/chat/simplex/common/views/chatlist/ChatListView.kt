@@ -130,7 +130,7 @@ private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
     val uriHandler = LocalUriHandler.current
     ConnectButton(generalGetString(MR.strings.chat_with_developers)) {
-      uriHandler.openUriCatching(simplexTeamUri)
+      uriHandler.openVerifiedSimplexUri(simplexTeamUri)
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
     ConnectButton(generalGetString(MR.strings.tap_to_start_new_chat), openNewChatSheet)
