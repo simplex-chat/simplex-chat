@@ -55,7 +55,7 @@ compose {
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
         }
-        packageName = "simplex"
+        packageName = "SimpleX"
         // Packaging requires to have version like MAJOR.MINOR.PATCH
         var adjustedVersion = rootProject.extra["desktop.version_name"] as String
         adjustedVersion = adjustedVersion.replace(Regex("[^0-9.]"), "")
