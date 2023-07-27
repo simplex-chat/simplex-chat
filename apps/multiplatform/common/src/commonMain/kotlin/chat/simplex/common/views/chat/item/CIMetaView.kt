@@ -138,7 +138,7 @@ fun PreviewCIMetaViewSendNoAuth() {
 fun PreviewCIMetaViewSendSent() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent()
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null
   )
@@ -176,7 +176,7 @@ fun PreviewCIMetaViewEditedSent() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       itemEdited = true,
-      status= CIStatus.SndSent()
+      status= CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null
   )
