@@ -44,15 +44,15 @@ compose {
           appCategory = "Messenger"
         }
         windows {
-          // LALAL
+          packageName = "SimpleX"
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.ico"))
           console = true
           perUserInstall = true
           dirChooser = true
         }
         macOS {
-          // LALAL
-          //iconFile.set(project.file("../desktop/src/jvmMain/resources/distribute/simplex.icns"))
+          packageName = "SimpleX"
+          iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
         }
