@@ -555,7 +555,7 @@ private fun ContactPreferencesButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
+fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
   val values = remember {
     mutableListOf(SendReceipts.Yes, SendReceipts.No, SendReceipts.UserDefault(currentUser.sendRcptsContacts)).map { it to it.text }
   }

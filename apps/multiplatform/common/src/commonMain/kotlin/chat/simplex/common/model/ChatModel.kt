@@ -1625,17 +1625,7 @@ data class CIMeta (
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew
 
   fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<ImageResource, Color>? =
-    when (itemStatus) {
-      is CIStatus.SndSent -> MR.images.ic_check_filled to metaColor
-      is CIStatus.SndRcvd -> when(itemStatus.msgRcptStatus) {
-        MsgReceiptStatus.Ok -> MR.images.ic_double_check to metaColor
-        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
-      }
-      is CIStatus.SndErrorAuth -> MR.images.ic_close to Color.Red
-      is CIStatus.SndError -> MR.images.ic_warning_filled to WarningYellow
-      is CIStatus.RcvNew -> MR.images.ic_circle_filled to primaryColor
-      else -> null
-    }
+    itemStatus.statusIcon(primaryColor, metaColor)
 
   companion object {
     fun getSample(
@@ -1720,6 +1710,40 @@ sealed class CIStatus {
   @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
+
+  fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<ImageResource, Color>? =
+    when (this) {
+      is SndNew -> null
+      is SndSent -> MR.images.ic_check_filled to metaColor
+      is SndRcvd -> when(this.msgRcptStatus) {
+        MsgReceiptStatus.Ok -> MR.images.ic_double_check to metaColor
+        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
+      }
+      is SndErrorAuth -> MR.images.ic_close to Color.Red
+      is SndError -> MR.images.ic_warning_filled to WarningYellow
+      is RcvNew -> MR.images.ic_circle_filled to primaryColor
+      is RcvRead -> null
+    }
+
+  val statusText: String get() = when (this) {
+    is SndNew -> generalGetString(MR.strings.item_status_snd_new_text)
+    is SndSent -> generalGetString(MR.strings.item_status_snd_sent_text)
+    is SndRcvd -> generalGetString(MR.strings.item_status_snd_rcvd_text)
+    is SndErrorAuth -> generalGetString(MR.strings.item_status_snd_error_text)
+    is SndError -> generalGetString(MR.strings.item_status_snd_error_text)
+    is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_text)
+    is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_text)
+  }
+
+  val statusDescription: String get() = when (this) {
+    is SndNew -> generalGetString(MR.strings.item_status_snd_new_desc)
+    is SndSent -> generalGetString(MR.strings.item_status_snd_sent_desc)
+    is SndRcvd -> generalGetString(MR.strings.item_status_snd_rcvd_desc)
+    is SndErrorAuth -> generalGetString(MR.strings.item_status_snd_error_auth_desc)
+    is SndError -> String.format(generalGetString(MR.strings.item_status_snd_error_unexpected_desc), this.agentError)
+    is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_desc)
+    is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_desc)
+  }
 }
 
 @Serializable
@@ -2494,6 +2518,7 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
 @Serializable
 class ChatItemInfo(
   val itemVersions: List<ChatItemVersion>,
+  val memberDeliveryStatuses: List<MemberDeliveryStatus>?
 )
 
 @Serializable
@@ -2503,6 +2528,12 @@ data class ChatItemVersion(
   val formattedText: List<FormattedText>?,
   val itemVersionTs: Instant,
   val createdAt: Instant,
+)
+
+@Serializable
+data class MemberDeliveryStatus(
+  val groupMemberId: Long,
+  val memberDeliveryStatus: CIStatus
 )
 
 enum class NotificationPreviewMode {

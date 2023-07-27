@@ -26,26 +26,37 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chatlist.cantInviteIncognitoAlert
-import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.ClearChatButton
-import chat.simplex.common.views.chat.clearChatDialog
+import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
+
+const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
 fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val currentUser = chatModel.currentUser.value
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
-  if (chat != null && chat.chatInfo is ChatInfo.Group) {
+  if (chat != null && chat.chatInfo is ChatInfo.Group && currentUser != null) {
     val groupInfo = chat.chatInfo.groupInfo
+    val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, currentUser.sendRcptsSmallGroups)) }
     GroupChatInfoLayout(
       chat,
       groupInfo,
+      currentUser,
+      sendReceipts = sendReceipts,
+      setSendReceipts = { sendRcpts ->
+        withApi {
+          val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
+          updateChatSettings(chat, chatSettings, chatModel)
+          sendReceipts.value = sendRcpts
+        }
+      },
       members = chatModel.groupMembers
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
         .sortedBy { it.displayName.lowercase() },
@@ -150,6 +161,9 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> U
 fun GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
+  currentUser: User,
+  sendReceipts: State<SendReceipts>,
+  setSendReceipts: (SendReceipts) -> Unit,
   members: List<GroupMember>,
   developerTools: Boolean,
   groupLink: String?,
@@ -184,6 +198,11 @@ fun GroupChatInfoLayout(
         AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
       }
       GroupPreferencesButton(openPreferences)
+      if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
+        SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
+      } else {
+        SendReceiptsOptionDisabled()
+      }
     }
     SectionTextFooter(stringResource(MR.strings.only_group_owners_can_change_prefs))
     SectionDividerSpaced(maxTopPadding = true)
@@ -267,6 +286,22 @@ private fun GroupPreferencesButton(onClick: () -> Unit) {
     stringResource(MR.strings.group_preferences),
     click = onClick
   )
+}
+
+@Composable
+fun SendReceiptsOptionDisabled() {
+  SettingsActionItemWithContent(
+    icon = painterResource(MR.images.ic_double_check),
+    text = generalGetString(MR.strings.send_receipts),
+    click = {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.send_receipts_disabled_alert_title),
+        text = String.format(generalGetString(MR.strings.send_receipts_disabled_alert_msg), SMALL_GROUPS_RCPS_MEM_LIMIT)
+      )
+    }
+  ) {
+    Text(generalGetString(MR.strings.send_receipts_disabled), Modifier.weight(1f), color = MaterialTheme.colors.secondary)
+  }
 }
 
 @Composable
@@ -429,6 +464,9 @@ fun PreviewGroupChatInfoLayout() {
         chatItems = arrayListOf()
       ),
       groupInfo = GroupInfo.sampleData,
+      User.sampleData,
+      sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
+      setSendReceipts = {},
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       groupLink = null,
