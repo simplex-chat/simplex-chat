@@ -2382,7 +2382,7 @@ public enum CIStatus: Decodable {
 
     public var statusDescription: String {
         switch self {
-        case .sndNew: return NSLocalizedString("Sending message to the recipient's relay.", comment: "item status description")
+        case .sndNew: return NSLocalizedString("Sending message is in progress or pending.", comment: "item status description")
         case .sndSent: return NSLocalizedString("Message has been sent to the recipient's relay.", comment: "item status description")
         case .sndRcvd: return NSLocalizedString("Message has been received by the recipient.", comment: "item status description")
         case .sndErrorAuth: return NSLocalizedString("Message delivery error. Most likely this recipient has deleted the connection with you.", comment: "item status description")

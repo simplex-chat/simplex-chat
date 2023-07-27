@@ -25,12 +25,10 @@ struct ChatItemInfoView: View {
 
     enum CIInfoViewAlert: Identifiable {
         case deliveryStatusAlert(status: CIStatus)
-        case deliveryPendingAlert
 
         var id: String {
             switch self {
             case .deliveryStatusAlert: return "deliveryStatusAlert"
-            case .deliveryPendingAlert: return "deliveryPendingAlert"
             }
         }
     }
@@ -48,7 +46,6 @@ struct ChatItemInfoView: View {
                 .alert(item: $alert) { alertItem in
                     switch(alertItem) {
                     case let .deliveryStatusAlert(status): return deliveryStatusAlert(status)
-                    case .deliveryPendingAlert: return deliveryPendingAlert()
                     }
                 }
         }
@@ -309,18 +306,18 @@ struct ChatItemInfoView: View {
             Text(member.chatViewName)
                 .lineLimit(1)
             Spacer()
-            if let (icon, statusColor) = status.statusIcon(Color.secondary) {
-                Image(systemName: icon)
-                    .foregroundColor(statusColor)
-                    .onTapGesture {
-                        alert = .deliveryStatusAlert(status: status)
-                    }
-            } else {
-                Image(systemName: "ellipsis")
-                    .foregroundColor(Color.secondary)
-                    .onTapGesture {
-                        alert = .deliveryPendingAlert
-                    }
+            Group {
+                if let (icon, statusColor) = status.statusIcon(Color.secondary) {
+                    Image(systemName: icon)
+                        .foregroundColor(statusColor)
+
+                } else {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(Color.secondary)
+                }
+            }
+            .onTapGesture {
+                alert = .deliveryStatusAlert(status: status)
             }
         }
     }
@@ -329,13 +326,6 @@ struct ChatItemInfoView: View {
         Alert(
             title: Text(status.statusText),
             message: Text(status.statusDescription)
-         )
-    }
-
-    func deliveryPendingAlert() -> Alert {
-        Alert(
-            title: Text("Pending delivery"),
-            message: Text("Delivery to recipient is pending. Message will be sent once recipient is connected.")
          )
     }
 
@@ -391,9 +381,9 @@ struct ChatItemInfoView: View {
                 shareText += [""]
                 for (member, status) in mss {
                     shareText += [String.localizedStringWithFormat(
-                        NSLocalizedString("%@: %@", comment: "copied message info, <recipient>: <message delivery status>"),
+                        NSLocalizedString("%@: %@", comment: "copied message info, <recipient>: <message delivery status description>"),
                         member.chatViewName,
-                        status.statusText
+                        status.statusDescription
                     )]
                 }
             }
