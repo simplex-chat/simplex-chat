@@ -44,7 +44,6 @@ compose {
           appCategory = "Chat"
         }
         windows {
-          // LALAL
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.ico"))
           console = true
           perUserInstall = true
