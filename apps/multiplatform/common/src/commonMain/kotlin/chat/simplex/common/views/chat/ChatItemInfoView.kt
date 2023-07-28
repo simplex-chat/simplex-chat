@@ -358,7 +358,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
         ) {
           availableTabs.forEach { ciInfoTab ->
             Tab(
-              selected = selection.value == ciInfoTab,
+              selected = selection.value::class == ciInfoTab::class,
               onClick = {
                 selection.value = ciInfoTab
               },
