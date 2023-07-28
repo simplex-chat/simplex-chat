@@ -9,6 +9,8 @@
 import SwiftUI
 import SimpleXChat
 
+let SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
+
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -21,6 +23,8 @@ struct GroupChatInfoView: View {
     @State private var showAddMembersSheet: Bool = false
     @State private var connectionStats: ConnectionStats?
     @State private var connectionCode: String?
+    @State private var sendReceipts = SendReceipts.userDefault(true)
+    @State private var sendReceiptsUserDefault = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
@@ -30,6 +34,7 @@ struct GroupChatInfoView: View {
         case clearChatAlert
         case leaveGroupAlert
         case cantInviteIncognitoAlert
+        case largeGroupReceiptsDisabled
 
         var id: GroupChatInfoViewAlert { get { self } }
     }
@@ -52,6 +57,11 @@ struct GroupChatInfoView: View {
                         addOrEditWelcomeMessage()
                     }
                     groupPreferencesButton($groupInfo)
+                    if members.filter { $0.memberCurrent }.count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                        sendReceiptsOption()
+                    } else {
+                        sendReceiptsOptionDisabled()
+                    }
                 } header: {
                     Text("")
                 } footer: {
@@ -115,9 +125,14 @@ struct GroupChatInfoView: View {
             case .clearChatAlert: return clearChatAlert()
             case .leaveGroupAlert: return leaveGroupAlert()
             case .cantInviteIncognitoAlert: return cantInviteIncognitoAlert()
+            case .largeGroupReceiptsDisabled: return largeGroupReceiptsDisabledAlert()
             }
         }
         .onAppear {
+            if let currentUser = chatModel.currentUser {
+                sendReceiptsUserDefault = currentUser.sendRcptsSmallGroups
+            }
+            sendReceipts = SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
             do {
                 if let link = try apiGetGroupLink(groupInfo.groupId) {
                     (groupLink, groupLinkMemberRole) = link
@@ -328,6 +343,38 @@ struct GroupChatInfoView: View {
             secondaryButton: .cancel()
         )
     }
+
+    private func sendReceiptsOption() -> some View {
+        Picker(selection: $sendReceipts) {
+            ForEach([.yes, .no, .userDefault(sendReceiptsUserDefault)]) { (opt: SendReceipts) in
+                Text(opt.text)
+            }
+        } label: {
+            Label("Send receipts", systemImage: "checkmark.message")
+        }
+        .frame(height: 36)
+        .onChange(of: sendReceipts) { _ in
+            setSendReceipts()
+        }
+    }
+
+    private func setSendReceipts() {
+        var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
+        chatSettings.sendRcpts = sendReceipts.bool()
+        updateChatSettings(chat, chatSettings: chatSettings)
+    }
+
+    private func sendReceiptsOptionDisabled() -> some View {
+        HStack {
+            Label("Send receipts", systemImage: "checkmark.message")
+            Spacer()
+            Text("disabled")
+                .foregroundStyle(.secondary)
+        }
+        .onTapGesture {
+            alert = .largeGroupReceiptsDisabled
+        }
+    }
 }
 
 func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bool = false) -> some View {
@@ -353,6 +400,13 @@ func cantInviteIncognitoAlert() -> Alert {
     Alert(
         title: Text("Can't invite contacts!"),
         message: Text("You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed")
+    )
+}
+
+func largeGroupReceiptsDisabledAlert() -> Alert {
+    Alert(
+        title: Text("Receipts are disabled"),
+        message: Text("This group has over \(SMALL_GROUPS_RCPS_MEM_LIMIT) members, delivery receipts are not sent.")
     )
 }
 
