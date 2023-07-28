@@ -37,15 +37,19 @@ actual class FileChooserLauncher actual constructor() {
   }
 
   actual suspend fun launch(input: String) {
-    val res = if (getContent) {
+    var res: File?
+    if (getContent) {
       val params = DialogParams(
         allowMultiple = false,
         fileFilter = fileFilter(input),
         fileFilterDescription = fileFilterDescription(input),
       )
-      simplexWindowState.openDialog.awaitResult(params)
+      res = simplexWindowState.openDialog.awaitResult(params)
     } else {
-      simplexWindowState.saveDialog.awaitResult()
+      res = simplexWindowState.saveDialog.awaitResult(DialogParams(filename = input))
+      if (res != null && res.isDirectory) {
+        res = File(res, input)
+      }
     }
     onResult(res?.toURI())
   }
