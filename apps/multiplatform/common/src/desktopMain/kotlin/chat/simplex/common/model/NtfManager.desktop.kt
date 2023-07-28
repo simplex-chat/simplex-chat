@@ -47,23 +47,23 @@ object NtfManager {
     }
   }
 
-  fun hasNotificationsForChat(chatId: ChatId) = prevNtfs.any { it.first == chatId }
+  fun hasNotificationsForChat(chatId: ChatId) = false//prevNtfs.any { it.first == chatId }
 
   fun cancelNotificationsForChat(chatId: ChatId) {
     val ntf = prevNtfs.firstOrNull { it.first == chatId }
     if (ntf != null) {
       prevNtfs.remove(ntf)
-      try {
+      /*try {
         ntf.second.close()
       } catch (e: Exception) {
         // Can be java.lang.UnsupportedOperationException, for example. May do nothing
         println("Failed to close notification: ${e.stackTraceToString()}")
-      }
+      }*/
     }
   }
 
   fun cancelAllNotifications() {
-    prevNtfs.forEach { try { it.second.close() } catch (e: Exception) { println("Failed to close notification: ${e.stackTraceToString()}") } }
+//    prevNtfs.forEach { try { it.second.close() } catch (e: Exception) { println("Failed to close notification: ${e.stackTraceToString()}") } }
     prevNtfs.clear()
   }
 
