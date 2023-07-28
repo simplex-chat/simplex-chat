@@ -1624,8 +1624,12 @@ data class CIMeta (
 
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew
 
-  fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<ImageResource, Color>? =
-    itemStatus.statusIcon(primaryColor, metaColor)
+  fun statusIcon(
+    primaryColor: Color,
+    metaColor: Color = CurrentColors.value.colors.secondary,
+    paleMetaColor: Color = CurrentColors.value.colors.secondary.copy(alpha = 0.5F)
+  ): Pair<ImageResource, Color>? =
+    itemStatus.statusIcon(primaryColor, metaColor, paleMetaColor)
 
   companion object {
     fun getSample(
@@ -1711,12 +1715,22 @@ sealed class CIStatus {
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
 
-  fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<ImageResource, Color>? =
+  fun statusIcon(
+    primaryColor: Color,
+    metaColor: Color = CurrentColors.value.colors.secondary,
+    paleMetaColor: Color = CurrentColors.value.colors.secondary.copy(alpha = 0.5F)
+  ): Pair<ImageResource, Color>? =
     when (this) {
       is SndNew -> null
-      is SndSent -> MR.images.ic_check_filled to metaColor
+      is SndSent -> when (this.sndProgress) {
+        SndCIStatusProgress.Complete -> MR.images.ic_check_filled to metaColor
+        SndCIStatusProgress.Partial -> MR.images.ic_check_filled to paleMetaColor
+      }
       is SndRcvd -> when(this.msgRcptStatus) {
-        MsgReceiptStatus.Ok -> MR.images.ic_double_check to metaColor
+        MsgReceiptStatus.Ok -> when (this.sndProgress) {
+          SndCIStatusProgress.Complete -> MR.images.ic_double_check to metaColor
+          SndCIStatusProgress.Partial -> MR.images.ic_double_check to paleMetaColor
+        }
         MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
       }
       is SndErrorAuth -> MR.images.ic_close to Color.Red
