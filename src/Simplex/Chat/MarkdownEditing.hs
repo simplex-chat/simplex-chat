@@ -21,7 +21,7 @@ import Data.Diff.Myers
 import Simplex.Chat.Markdown ( FormattedText(..), Format )
 
 
-data EditingOperation = EOAdd | EODelete | EOSubstitute
+data EditingOperation = Add | Delete | Substitute
   deriving (Show, Eq)
 
 
