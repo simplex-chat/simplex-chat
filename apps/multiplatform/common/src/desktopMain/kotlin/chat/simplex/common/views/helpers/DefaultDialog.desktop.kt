@@ -114,6 +114,9 @@ private fun FrameWindowScope.FileDialogAwt(
   onResult: (result: List<File>) -> Unit
 ) = AwtWindow(
   create = {
+    if (!isLoad) {
+      System.setProperty("apple.awt.fileDialogForDirectories", "true")
+    }
     object: FileDialog(window, generalGetString(MR.strings.choose_file_title), if (isLoad) LOAD else SAVE) {
       override fun setVisible(value: Boolean) {
         super.setVisible(value)
@@ -135,7 +138,10 @@ private fun FrameWindowScope.FileDialogAwt(
       }
     }
   },
-  dispose = FileDialog::dispose
+  dispose = {
+    it.dispose()
+    System.setProperty("apple.awt.fileDialogForDirectories", "false")
+  }
 )
 
 fun isLinux(): Boolean = System.getProperty("os.name", "generic").lowercase(Locale.ENGLISH) == "linux"
