@@ -1,19 +1,9 @@
 #include <jni.h>
 #include <string.h>
+#include <stdlib.h>
 
 // from the RTS
 void hs_init(int * argc, char **argv[]);
-
-//extern void __svfscanf(void){};
-//extern void __vfwscanf(void){};
-//extern void __memset_chk_fail(void){};
-//extern void __strcpy_chk_generic(void){};
-//extern void __strcat_chk_generic(void){};
-//extern void __libc_globals(void){};
-//extern void __rel_iplt_start(void){};
-
-// Android 9 only, not 13
-//extern void reallocarray(void){};
 
 JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
@@ -52,13 +42,32 @@ jstring correct_string_utf8(JNIEnv *env, char *string) {
     return res;
 }
 
+char * correct_chars_utf8(JNIEnv *env, jstring string) {
+    if (!string) return "";
+
+    const jclass cls_string = (*env)->FindClass(env, "java/lang/String");
+    const jmethodID mid_getBytes = (*env)->GetMethodID(env, cls_string, "getBytes", "(Ljava/lang/String;)[B");
+    const jbyteArray jbyte_array = (jbyteArray) (*env)->CallObjectMethod(env, string, mid_getBytes, (*env)->NewStringUTF(env, "UTF-8"));
+    jint length = (jint) (*env)->GetArrayLength(env, jbyte_array);
+    jbyte *jbytes = malloc(length + 1);
+    (*env)->GetByteArrayRegion(env, jbyte_array, 0, length, jbytes);
+    // char * should be null terminated but jbyte * isn't. Terminate it with \0. Otherwise, Haskell will not see the end of string
+    jbytes[length] = '\0';
+
+    //for (int i = 0; i < length; ++i)
+    //    fprintf(stderr, "%d: %02x\n", i, jbytes[i]);
+
+    (*env)->DeleteLocalRef(env, jbyte_array);
+    (*env)->DeleteLocalRef(env, cls_string);
+    return (char *) jbytes;
+}
 
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, jclass clazz, jstring dbPath, jstring dbKey, jstring confirm) {
-    const char *_dbPath = (*env)->GetStringUTFChars(env, dbPath, JNI_FALSE);
-    const char *_dbKey = (*env)->GetStringUTFChars(env, dbKey, JNI_FALSE);
-    const char *_confirm = (*env)->GetStringUTFChars(env, confirm, JNI_FALSE);
-    jlong _ctrl = (jlong) 0;
+    const char *_dbPath = correct_chars_utf8(env, dbPath);
+    const char *_dbKey = correct_chars_utf8(env, dbKey);
+    const char *_confirm = correct_chars_utf8(env, confirm);
+    long int *_ctrl = (long) 0;
     jstring res = correct_string_utf8(env, chat_migrate_init(_dbPath, _dbKey, _confirm, &_ctrl));
     (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
     (*env)->ReleaseStringUTFChars(env, dbKey, _dbKey);
@@ -78,7 +87,7 @@ Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, jclass cla
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatSendCmd(JNIEnv *env, jclass clazz, jlong controller, jstring msg) {
-    const char *_msg = (*env)->GetStringUTFChars(env, msg, JNI_FALSE);
+    const char *_msg = correct_chars_utf8(env, msg);
     jstring res = correct_string_utf8(env, chat_send_cmd((void*)controller, _msg));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
     return res;
@@ -96,7 +105,7 @@ Java_chat_simplex_common_platform_CoreKt_chatRecvMsgWait(JNIEnv *env, jclass cla
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatParseMarkdown(JNIEnv *env, jclass clazz, jstring str) {
-    const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
+    const char *_str = correct_chars_utf8(env, str);
     jstring res = correct_string_utf8(env, chat_parse_markdown(_str));
     (*env)->ReleaseStringUTFChars(env, str, _str);
     return res;
@@ -104,7 +113,7 @@ Java_chat_simplex_common_platform_CoreKt_chatParseMarkdown(JNIEnv *env, jclass c
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatParseServer(JNIEnv *env, jclass clazz, jstring str) {
-    const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
+    const char *_str = correct_chars_utf8(env, str);
     jstring res = correct_string_utf8(env, chat_parse_server(_str));
     (*env)->ReleaseStringUTFChars(env, str, _str);
     return res;
@@ -112,8 +121,8 @@ Java_chat_simplex_common_platform_CoreKt_chatParseServer(JNIEnv *env, jclass cla
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatPasswordHash(JNIEnv *env, jclass clazz, jstring pwd, jstring salt) {
-    const char *_pwd = (*env)->GetStringUTFChars(env, pwd, JNI_FALSE);
-    const char *_salt = (*env)->GetStringUTFChars(env, salt, JNI_FALSE);
+    const char *_pwd = correct_chars_utf8(env, pwd);
+    const char *_salt = correct_chars_utf8(env, salt);
     jstring res = correct_string_utf8(env, chat_password_hash(_pwd, _salt));
     (*env)->ReleaseStringUTFChars(env, pwd, _pwd);
     (*env)->ReleaseStringUTFChars(env, salt, _salt);
