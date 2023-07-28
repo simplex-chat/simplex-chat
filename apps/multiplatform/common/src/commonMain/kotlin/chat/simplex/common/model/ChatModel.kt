@@ -56,7 +56,7 @@ object ChatModel {
   val chatItems = mutableStateListOf<ChatItem>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
-  val terminalItems = mutableStateListOf<TerminalItem>()
+  val terminalItems = mutableStateOf(emptyList<TerminalItem>())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
   // Allows to temporary save servers that are being edited on multiple screens
   val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
@@ -130,10 +130,11 @@ object ChatModel {
     }
   }
 
-  fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
-  fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
-  fun getContactChat(contactId: Long): Chat? = chats.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
-  private fun getChatIndex(id: String): Int = chats.indexOfFirst { it.id == id }
+  // toList() here is to prevent ConcurrentModificationException that is rarely happens but happens
+  fun hasChat(id: String): Boolean = chats.toList().firstOrNull { it.id == id } != null
+  fun getChat(id: String): Chat? = chats.toList().firstOrNull { it.id == id }
+  fun getContactChat(contactId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
+  private fun getChatIndex(id: String): Int = chats.toList().indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
   fun updateChatInfo(cInfo: ChatInfo) {
@@ -483,10 +484,11 @@ object ChatModel {
     networkStatuses[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
 
   fun addTerminalItem(item: TerminalItem) {
-    if (terminalItems.size >= 500) {
-      terminalItems.removeAt(0)
+    if (terminalItems.value.size >= 500) {
+      terminalItems.value = terminalItems.value.takeLast(499) + item
+    } else {
+      terminalItems.value += item
     }
-    terminalItems.add(item)
   }
 }
 

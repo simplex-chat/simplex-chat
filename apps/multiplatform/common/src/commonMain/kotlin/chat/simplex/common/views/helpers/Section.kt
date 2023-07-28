@@ -1,5 +1,4 @@
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
@@ -15,8 +14,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.screenWidth
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.helpers.ValueTitleDesc
-import chat.simplex.common.views.helpers.ValueTitle
+import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 
@@ -132,7 +130,9 @@ fun SectionItemViewSpaceBetween(
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
-    if (click == null || disabled) modifier.padding(padding) else modifier.combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding),
+    if (click == null || disabled) modifier.padding(padding) else modifier
+      .combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding)
+      .onRightClick { onLongClick?.invoke() },
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {

@@ -222,7 +222,8 @@ private fun PlayPauseButton(
         .combinedClickable(
           onClick = { if (!audioPlaying) play() else pause() },
           onLongClick = longClick
-        ),
+        )
+        .onRightClick { longClick() },
       contentAlignment = Alignment.Center
     ) {
       Icon(

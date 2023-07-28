@@ -14,10 +14,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.chat.*
@@ -33,7 +36,8 @@ actual fun PlatformTextField(
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
-  onMessageChange: (String) -> Unit
+  onMessageChange: (String) -> Unit,
+  onDone: () -> Unit,
 ) {
   val cs = composeState.value
   val focusRequester = remember { FocusRequester() }
@@ -47,11 +51,14 @@ actual fun PlatformTextField(
     keyboard?.show()
   }
   val isRtl = remember(cs.message) { isRtl(cs.message.subSequence(0, min(50, cs.message.length))) }
+  var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message)) }
+  val textFieldValue = textFieldValueState.copy(text = cs.message)
   BasicTextField(
-    value = cs.message,
+    value = textFieldValue,
     onValueChange = {
-      if (!composeState.value.inProgress && !(composeState.value.preview is ComposePreview.VoicePreview && it != "")) {
-        onMessageChange(it)
+      if (!composeState.value.inProgress && !(composeState.value.preview is ComposePreview.VoicePreview && it.text != "")) {
+        textFieldValueState = it
+        onMessageChange(it.text)
       }
     },
     textStyle = textStyle.value,
@@ -60,7 +67,24 @@ actual fun PlatformTextField(
       capitalization = KeyboardCapitalization.Sentences,
       autoCorrect = true
     ),
-    modifier = Modifier.padding(vertical = 4.dp).focusRequester(focusRequester),
+    modifier = Modifier
+      .padding(vertical = 4.dp)
+      .focusRequester(focusRequester)
+      .onPreviewKeyEvent {
+        if (it.key == Key.Enter && it.type == KeyEventType.KeyDown) {
+          if (it.isShiftPressed) {
+            val newText = textFieldValue.text + "\n"
+            textFieldValueState = textFieldValue.copy(
+              text = newText,
+              selection = TextRange(newText.length, newText.length)
+            )
+            onMessageChange(newText)
+          } else if (cs.message.isNotEmpty()) {
+            onDone()
+          }
+          true
+        } else false
+      },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->
       Surface(

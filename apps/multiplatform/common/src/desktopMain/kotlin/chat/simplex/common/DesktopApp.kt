@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.helpers.FileDialogChooser
 import kotlinx.coroutines.*
@@ -24,7 +25,10 @@ import java.io.File
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() = application {
-  val windowState = rememberWindowState(placement = WindowPlacement.Floating, width = 1366.dp, height = 768.dp)
+  // For some reason on Linux actual width will be 10.dp less after specifying it here. If we specify 1366,
+  // it will show 1356. But after that we can still update it to 1366 by changing window state. Just making it +10 now here
+  val width = if (desktopPlatform.isLinux()) 1376.dp else 1366.dp
+  val windowState = rememberWindowState(placement = WindowPlacement.Floating, width = width, height = 768.dp)
   simplexWindowState.windowState = windowState
   Window(state = windowState, onCloseRequest = ::exitApplication, onKeyEvent = {
     if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
@@ -146,6 +150,3 @@ fun AppPreview() {
     AppScreen()
   }
 }
-
-/** Needed for [chat.simplex.common.platform.Files] to get path to jar file */
-class DesktopApp()

@@ -64,7 +64,7 @@ rm deps/`basename $LIB`
 cd -
 
 rm -rf apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-rm -rf apps/multiplatform/common/src/commonMain/resources/libs/$OS-$ARCH/
+rm -rf apps/multiplatform/desktop/src/jvmMain/resources/libs/$OS-$ARCH/
 rm -rf apps/multiplatform/desktop/build/cmake
 
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/

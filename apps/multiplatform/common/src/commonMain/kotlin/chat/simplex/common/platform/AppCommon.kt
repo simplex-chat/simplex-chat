@@ -22,8 +22,6 @@ val appVersionInfo: Pair<String, Int?> = if (appPlatform == AppPlatform.ANDROID)
 else
   BuildConfigCommon.DESKTOP_VERSION_NAME to null
 
-expect fun initHaskell()
-
 class FifoQueue<E>(private var capacity: Int) : LinkedList<E>() {
   override fun add(element: E): Boolean {
     if(size > capacity) removeFirst()

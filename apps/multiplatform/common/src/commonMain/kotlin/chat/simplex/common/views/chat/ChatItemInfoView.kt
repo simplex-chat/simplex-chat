@@ -70,6 +70,7 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
       Box(
         Modifier.clip(RoundedCornerShape(18.dp)).background(itemColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
+          .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
           TextBubble(text, ciVersion.formattedText, sender = null, showMenu)
@@ -116,6 +117,7 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
       Box(
         Modifier.clip(RoundedCornerShape(18.dp)).background(quoteColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
+          .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
           TextBubble(text, qi.formattedText, sender = qi.sender(null), showMenu)

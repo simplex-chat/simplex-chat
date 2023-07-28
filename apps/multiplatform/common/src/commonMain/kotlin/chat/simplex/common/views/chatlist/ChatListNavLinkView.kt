@@ -24,7 +24,6 @@ import chat.simplex.common.views.chat.item.InvalidJSONView
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.ContactConnectionInfoView
-import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.res.MR
@@ -619,7 +618,9 @@ fun ChatListNavLinkLayout(
   stopped: Boolean
 ) {
   var modifier = Modifier.fillMaxWidth()
-  if (!stopped) modifier = modifier.combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
+  if (!stopped) modifier = modifier
+    .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
+    .onRightClick { showMenu.value = true }
   Box(modifier) {
     Row(
       modifier = Modifier
