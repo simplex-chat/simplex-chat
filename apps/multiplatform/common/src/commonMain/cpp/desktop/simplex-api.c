@@ -23,7 +23,7 @@ extern char *chat_password_hash(const char *pwd, const char *salt);
 
 
 // As a reference: https://stackoverflow.com/a/60002045
-jstring correct_string_utf8(JNIEnv *env, char *string) {
+jstring decode_to_utf8_string(JNIEnv *env, char *string) {
     jobject bb = (*env)->NewDirectByteBuffer(env, (void *)string, strlen(string));
     jclass cls_charset = (*env)->FindClass(env, "java/nio/charset/Charset");
     jmethodID mid_charset_forName = (*env)->GetStaticMethodID(env, cls_charset, "forName", "(Ljava/lang/String;)Ljava/nio/charset/Charset;");
@@ -42,7 +42,7 @@ jstring correct_string_utf8(JNIEnv *env, char *string) {
     return res;
 }
 
-char * correct_chars_utf8(JNIEnv *env, jstring string) {
+char * encode_to_utf8_chars(JNIEnv *env, jstring string) {
     if (!string) return "";
 
     const jclass cls_string = (*env)->FindClass(env, "java/lang/String");
@@ -64,11 +64,11 @@ char * correct_chars_utf8(JNIEnv *env, jstring string) {
 
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, jclass clazz, jstring dbPath, jstring dbKey, jstring confirm) {
-    const char *_dbPath = correct_chars_utf8(env, dbPath);
-    const char *_dbKey = correct_chars_utf8(env, dbKey);
-    const char *_confirm = correct_chars_utf8(env, confirm);
+    const char *_dbPath = encode_to_utf8_chars(env, dbPath);
+    const char *_dbKey = encode_to_utf8_chars(env, dbKey);
+    const char *_confirm = encode_to_utf8_chars(env, confirm);
     long int *_ctrl = (long) 0;
-    jstring res = correct_string_utf8(env, chat_migrate_init(_dbPath, _dbKey, _confirm, &_ctrl));
+    jstring res = decode_to_utf8_string(env, chat_migrate_init(_dbPath, _dbKey, _confirm, &_ctrl));
     (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
     (*env)->ReleaseStringUTFChars(env, dbKey, _dbKey);
     (*env)->ReleaseStringUTFChars(env, dbKey, _confirm);
@@ -87,43 +87,43 @@ Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, jclass cla
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatSendCmd(JNIEnv *env, jclass clazz, jlong controller, jstring msg) {
-    const char *_msg = correct_chars_utf8(env, msg);
-    jstring res = correct_string_utf8(env, chat_send_cmd((void*)controller, _msg));
+    const char *_msg = encode_to_utf8_chars(env, msg);
+    jstring res = decode_to_utf8_string(env, chat_send_cmd((void*)controller, _msg));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
     return res;
 }
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatRecvMsg(JNIEnv *env, jclass clazz, jlong controller) {
-    return correct_string_utf8(env, chat_recv_msg((void*)controller));
+    return decode_to_utf8_string(env, chat_recv_msg((void*)controller));
 }
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatRecvMsgWait(JNIEnv *env, jclass clazz, jlong controller, jint wait) {
-    return correct_string_utf8(env, chat_recv_msg_wait((void*)controller, wait));
+    return decode_to_utf8_string(env, chat_recv_msg_wait((void*)controller, wait));
 }
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatParseMarkdown(JNIEnv *env, jclass clazz, jstring str) {
-    const char *_str = correct_chars_utf8(env, str);
-    jstring res = correct_string_utf8(env, chat_parse_markdown(_str));
+    const char *_str = encode_to_utf8_chars(env, str);
+    jstring res = decode_to_utf8_string(env, chat_parse_markdown(_str));
     (*env)->ReleaseStringUTFChars(env, str, _str);
     return res;
 }
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatParseServer(JNIEnv *env, jclass clazz, jstring str) {
-    const char *_str = correct_chars_utf8(env, str);
-    jstring res = correct_string_utf8(env, chat_parse_server(_str));
+    const char *_str = encode_to_utf8_chars(env, str);
+    jstring res = decode_to_utf8_string(env, chat_parse_server(_str));
     (*env)->ReleaseStringUTFChars(env, str, _str);
     return res;
 }
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatPasswordHash(JNIEnv *env, jclass clazz, jstring pwd, jstring salt) {
-    const char *_pwd = correct_chars_utf8(env, pwd);
-    const char *_salt = correct_chars_utf8(env, salt);
-    jstring res = correct_string_utf8(env, chat_password_hash(_pwd, _salt));
+    const char *_pwd = encode_to_utf8_chars(env, pwd);
+    const char *_salt = encode_to_utf8_chars(env, salt);
+    jstring res = decode_to_utf8_string(env, chat_password_hash(_pwd, _salt));
     (*env)->ReleaseStringUTFChars(env, pwd, _pwd);
     (*env)->ReleaseStringUTFChars(env, salt, _salt);
     return res;
