@@ -50,4 +50,7 @@ actual fun screenWidth(): Dp = LocalConfiguration.current.screenWidthDp.dp
 
 actual fun desktopExpandWindowToWidth(width: Dp) {}
 
+@Composable
+actual fun allowToShowBackButtonInCenter(): Boolean = true
+
 actual fun isRtl(text: CharSequence): Boolean = BidiFormatter.getInstance().isRtl(text)

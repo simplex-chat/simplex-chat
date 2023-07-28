@@ -16,6 +16,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.deleteGroupDialog
@@ -24,8 +25,6 @@ import chat.simplex.common.views.chat.item.InvalidJSONView
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.ContactConnectionInfoView
-import chat.simplex.common.platform.appPlatform
-import chat.simplex.common.platform.ntfManager
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -42,6 +41,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     showMenu.value = false
     delay(500L)
   }
+  val showClose = allowToShowBackButtonInCenter()
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
@@ -75,7 +75,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         click = {
           ModalManager.center.closeModals()
           ModalManager.end.closeModals()
-          ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
+          ModalManager.center.showModalCloseable(true, showClose = showClose) { close ->
             ContactConnectionInfoView(chatModel, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, false, close)
           }
         },
@@ -341,13 +341,14 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
 
 @Composable
 fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  val showClose = allowToShowBackButtonInCenter()
   ItemAction(
     stringResource(MR.strings.set_contact_name),
     painterResource(MR.images.ic_edit),
     onClick = {
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
-      ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
+      ModalManager.center.showModalCloseable(true, showClose = showClose) { close ->
         ContactConnectionInfoView(chatModel, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
       }
       showMenu.value = false

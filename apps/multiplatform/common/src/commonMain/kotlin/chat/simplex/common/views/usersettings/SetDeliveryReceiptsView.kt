@@ -73,7 +73,7 @@ private fun SetDeliveryReceiptsLayout(
   skip: () -> Unit,
   userCount: Int,
 ) {
-  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
+  val endPadding = if (appPlatform.isDesktop && !allowToShowBackButtonInCenter()) 56.dp else 0.dp
   Column(
     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = DEFAULT_PADDING, end = endPadding),
     horizontalAlignment = Alignment.CenterHorizontally,

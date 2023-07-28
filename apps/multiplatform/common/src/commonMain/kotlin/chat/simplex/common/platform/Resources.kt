@@ -5,6 +5,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import chat.simplex.common.ui.theme.DEFAULT_MIN_CENTER_MODAL_WIDTH
 import com.russhwolf.settings.Settings
 import dev.icerock.moko.resources.StringResource
 
@@ -29,5 +30,8 @@ expect fun screenOrientation(): ScreenOrientation
 expect fun screenWidth(): Dp
 
 expect fun desktopExpandWindowToWidth(width: Dp)
+
+@Composable
+expect fun allowToShowBackButtonInCenter(): Boolean
 
 expect fun isRtl(text: CharSequence): Boolean

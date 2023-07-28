@@ -96,7 +96,7 @@ private fun NewChatSheetLayout(
       }
     }
   }
-  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
+  val endPadding = if (appPlatform.isDesktop && !allowToShowBackButtonInCenter()) 56.dp else 0.dp
   val maxWidth = with(LocalDensity.current) { screenWidth() * density }
   Column(
     Modifier

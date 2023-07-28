@@ -6,6 +6,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.simplexWindowState
+import chat.simplex.common.ui.theme.DEFAULT_MIN_CENTER_MODAL_WIDTH
+import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import com.russhwolf.settings.*
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.desc
@@ -53,6 +55,9 @@ actual fun desktopExpandWindowToWidth(width: Dp) {
   if (simplexWindowState.windowState.size.width >= width) return
   simplexWindowState.windowState.size = simplexWindowState.windowState.size.copy(width = width)
 }
+
+@Composable
+actual fun allowToShowBackButtonInCenter(): Boolean = simplexWindowState.windowState.size.width < DEFAULT_START_MODAL_WIDTH + DEFAULT_MIN_CENTER_MODAL_WIDTH
 
 actual fun isRtl(text: CharSequence): Boolean {
   if (text.isEmpty()) return false

@@ -474,7 +474,7 @@ fun ChatInfoToolbar(
       showSearch = false
     }
   }
-  if (appPlatform.isAndroid) {
+  if (allowToShowBackButtonInCenter()) {
     BackHandler(onBack = onBackClicked)
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
@@ -534,7 +534,7 @@ fun ChatInfoToolbar(
   }
 
   DefaultTopAppBar(
-    navigationButton = { if (appPlatform.isAndroid || showSearch) { NavigationButtonBack(onBackClicked) }  },
+    navigationButton = { if (allowToShowBackButtonInCenter() || showSearch) { Box(Modifier.offset(y = 4.dp)) { NavigationButtonBack(onBackClicked) } }  },
     title = { ChatInfoToolbarTitle(chat.chatInfo) },
     onTitleClick = info,
     showSearch = showSearch,

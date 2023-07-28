@@ -58,7 +58,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       connectIfOpenedViaUri(url, chatModel)
     }
   }
-  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
+  val endPadding = if (appPlatform.isDesktop && !allowToShowBackButtonInCenter()) 56.dp else 0.dp
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scope = rememberCoroutineScope()
   val (userPickerState, scaffoldState, switchingUsers ) = settingsState

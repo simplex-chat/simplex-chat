@@ -274,26 +274,44 @@ fun EndPartOfScreen() {
 
 @Composable
 fun DesktopScreen(settingsState: SettingsViewState) {
-  Box {
-    // 56.dp is a size of unused space of settings drawer
-    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH + 56.dp)) {
-      StartPartOfScreen(settingsState)
-    }
-    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH)) {
-      ModalManager.start.showInView()
-    }
-    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH).clipToBounds()) {
-      Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
-        CenterPartOfScreen()
+  BoxWithConstraints {
+    Box {
+      val maxWidth = this@BoxWithConstraints.maxWidth
+      // 56.dp is a size of unused space of settings drawer
+      val startMaxWidth = when {
+        maxWidth >= DEFAULT_START_MODAL_WIDTH + DEFAULT_MIN_CENTER_MODAL_WIDTH -> DEFAULT_START_MODAL_WIDTH + 56.dp
+        ChatModel.chatId.value == null && !ModalManager.center.hasModalsOpen() -> maxWidth
+        else -> DEFAULT_START_MODAL_WIDTH
       }
-      if (ModalManager.end.hasModalsOpen()) {
-        VerticalDivider()
+      val startModalMaxWidth = when {
+        maxWidth >= DEFAULT_START_MODAL_WIDTH + DEFAULT_MIN_CENTER_MODAL_WIDTH -> DEFAULT_START_MODAL_WIDTH
+        ChatModel.chatId.value == null && !ModalManager.center.hasModalsOpen() -> maxWidth
+        else -> DEFAULT_START_MODAL_WIDTH
       }
-      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH).clipToBounds()) {
-        EndPartOfScreen()
+      Box(Modifier.widthIn(max = startMaxWidth)) {
+        StartPartOfScreen(settingsState)
+        Box(Modifier.widthIn(max = startModalMaxWidth)) {
+          ModalManager.start.showInView()
+        }
+      }
+      val centerMaxWidth = when {
+        maxWidth >= DEFAULT_START_MODAL_WIDTH + DEFAULT_MIN_CENTER_MODAL_WIDTH -> maxWidth - DEFAULT_START_MODAL_WIDTH
+        ChatModel.chatId.value != null || ModalManager.center.hasModalsOpen() -> maxOf(DEFAULT_START_MODAL_WIDTH, maxWidth) - 1.dp
+        else -> 0.dp
+      }
+      Row(Modifier.padding(start = maxOf(maxWidth - centerMaxWidth, 0.dp))) {
+        Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
+          CenterPartOfScreen()
+        }
+        if (ModalManager.end.hasModalsOpen() && maxWidth >= DEFAULT_START_MODAL_WIDTH + DEFAULT_MIN_CENTER_MODAL_WIDTH + DEFAULT_END_MODAL_WIDTH) {
+          VerticalDivider()
+        }
+        Box(Modifier.widthIn(max = if (centerMaxWidth < DEFAULT_MIN_CENTER_MODAL_WIDTH + DEFAULT_END_MODAL_WIDTH) centerMaxWidth else DEFAULT_END_MODAL_WIDTH).clipToBounds()) {
+          EndPartOfScreen()
+        }
       }
     }
-    val (userPickerState, scaffoldState, switchingUsers ) = settingsState
+    val (userPickerState, scaffoldState, switchingUsers) = settingsState
     val scope = rememberCoroutineScope()
     if (scaffoldState.drawerState.isOpen) {
       Box(
@@ -306,7 +324,9 @@ fun DesktopScreen(settingsState: SettingsViewState) {
           })
       )
     }
-    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH))
+    if (maxWidth >= DEFAULT_START_MODAL_WIDTH + DEFAULT_MIN_CENTER_MODAL_WIDTH) {
+      VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH))
+    }
     UserPicker(chatModel, userPickerState, switchingUsers) {
       scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
     }
