@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat
 import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionItemView
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -19,28 +20,30 @@ import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.ui.theme.CurrentColors
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.shareText
+import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
-enum class CIInfoTab {
-  History, Quote
+sealed class CIInfoTab {
+  class Delivery(val memberDeliveryStatuses: List<MemberDeliveryStatus>): CIInfoTab()
+  object History: CIInfoTab()
+  class Quote(val quotedItem: CIQuote): CIInfoTab()
 }
 
 @Composable
-fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
+fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   val sent = ci.chatDir.sent
   val appColors = CurrentColors.collectAsState().value.appColors
   val uriHandler = LocalUriHandler.current
-  val selection = remember { mutableStateOf(CIInfoTab.History) }
+  val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
   @Composable
   fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>) {
@@ -70,6 +73,7 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
       Box(
         Modifier.clip(RoundedCornerShape(18.dp)).background(itemColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
+          .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
           TextBubble(text, ciVersion.formattedText, sender = null, showMenu)
@@ -116,6 +120,7 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
       Box(
         Modifier.clip(RoundedCornerShape(18.dp)).background(quoteColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
+          .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
           TextBubble(text, qi.formattedText, sender = qi.sender(null), showMenu)
@@ -158,10 +163,12 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
           if (itemDeleted.deletedTs != null) {
             InfoRow(stringResource(MR.strings.info_row_deleted_at), localTimestamp(itemDeleted.deletedTs))
           }
+
         is CIDeleted.Moderated ->
           if (itemDeleted.deletedTs != null) {
             InfoRow(stringResource(MR.strings.info_row_moderated_at), localTimestamp(itemDeleted.deletedTs))
           }
+
         else -> {}
       }
       val deleteAt = ci.meta.itemTimed?.deleteAt
@@ -213,54 +220,153 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   }
 
   @Composable
+  fun MemberDeliveryStatusView(member: GroupMember, status: CIStatus) {
+    SectionItemView(
+      padding = PaddingValues(horizontal = 0.dp)
+    ) {
+      ProfileImage(size = 36.dp, member.image)
+      Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+      Text(
+        member.chatViewName,
+        modifier = Modifier.weight(10f, fill = true),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+      )
+      Spacer(Modifier.fillMaxWidth().weight(1f))
+      val statusIcon = status.statusIcon(MaterialTheme.colors.primary, CurrentColors.value.colors.secondary)
+      Box(
+        Modifier
+          .size(36.dp)
+          .clip(RoundedCornerShape(20.dp))
+          .clickable {
+            AlertManager.shared.showAlertMsg(
+              title = status.statusText,
+              text = status.statusDescription
+            )
+          },
+        contentAlignment = Alignment.Center
+      ) {
+        if (statusIcon != null) {
+          val (icon, statusColor) = statusIcon
+          Icon(
+            painterResource(icon),
+            contentDescription = null,
+            tint = statusColor
+          )
+        } else {
+          Icon(
+            painterResource(MR.images.ic_more_horiz),
+            contentDescription = null,
+            tint = CurrentColors.value.colors.secondary
+          )
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+      Details()
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+      val mss = membersStatuses(chatModel, memberDeliveryStatuses)
+      if (mss.isNotEmpty()) {
+        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+          Text(stringResource(MR.strings.delivery), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
+          mss.forEach { (member, status) ->
+            MemberDeliveryStatusView(member, status)
+          }
+        }
+      } else {
+        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+          Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(stringResource(MR.strings.no_info_on_delivery), color = MaterialTheme.colors.secondary)
+          }
+        }
+      }
+      SectionBottomSpacer()
+    }
+  }
+
+  @Composable
   fun tabTitle(tab: CIInfoTab): String {
     return when (tab) {
-      CIInfoTab.History -> stringResource(MR.strings.edit_history)
-      CIInfoTab.Quote -> stringResource(MR.strings.in_reply_to)
+      is CIInfoTab.Delivery -> stringResource(MR.strings.delivery)
+      is CIInfoTab.History -> stringResource(MR.strings.edit_history)
+      is CIInfoTab.Quote -> stringResource(MR.strings.in_reply_to)
     }
   }
 
   fun tabIcon(tab: CIInfoTab): ImageResource {
     return when (tab) {
-      CIInfoTab.History -> MR.images.ic_history
-      CIInfoTab.Quote -> MR.images.ic_reply
+      is CIInfoTab.Delivery -> MR.images.ic_double_check
+      is CIInfoTab.History -> MR.images.ic_history
+      is CIInfoTab.Quote -> MR.images.ic_reply
     }
   }
 
-  Column {
+  fun numTabs(): Int {
+    var numTabs = 1
+    if (ciInfo.memberDeliveryStatuses != null) {
+      numTabs += 1
+    }
     if (ci.quotedItem != null) {
+      numTabs += 1
+    }
+    return numTabs
+  }
+
+  Column {
+    if (numTabs() > 1) {
       Column(
         Modifier
           .fillMaxHeight(),
         verticalArrangement = Arrangement.SpaceBetween
       ) {
+        LaunchedEffect(Unit) {
+          if (ciInfo.memberDeliveryStatuses != null) {
+            selection.value = CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses)
+          }
+        }
         Column(Modifier.weight(1f)) {
-          when (selection.value) {
-            CIInfoTab.History -> {
+          when (val sel = selection.value) {
+            is CIInfoTab.Delivery -> {
+              DeliveryTab(sel.memberDeliveryStatuses)
+            }
+
+            is CIInfoTab.History -> {
               HistoryTab()
             }
 
-            CIInfoTab.Quote -> {
-              QuoteTab(ci.quotedItem)
+            is CIInfoTab.Quote -> {
+              QuoteTab(sel.quotedItem)
             }
           }
         }
+        val availableTabs = mutableListOf<CIInfoTab>()
+        if (ciInfo.memberDeliveryStatuses != null) {
+          availableTabs.add(CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses))
+        }
+        availableTabs.add(CIInfoTab.History)
+        if (ci.quotedItem != null) {
+          availableTabs.add(CIInfoTab.Quote(ci.quotedItem))
+        }
         TabRow(
-          selectedTabIndex = selection.value.ordinal,
+          selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
           backgroundColor = Color.Transparent,
           contentColor = MaterialTheme.colors.primary,
         ) {
-          CIInfoTab.values().forEachIndexed { index, it ->
+          availableTabs.forEach { ciInfoTab ->
             Tab(
-              selected = selection.value.ordinal == index,
+              selected = selection.value::class == ciInfoTab::class,
               onClick = {
-                selection.value = CIInfoTab.values()[index]
+                selection.value = ciInfoTab
               },
-              text = { Text(tabTitle(it), fontSize = 13.sp) },
+              text = { Text(tabTitle(ciInfoTab), fontSize = 13.sp) },
               icon = {
                 Icon(
-                  painterResource(tabIcon(it)),
-                  tabTitle(it)
+                  painterResource(tabIcon(ciInfoTab)),
+                  tabTitle(ciInfoTab)
                 )
               },
               selectedContentColor = MaterialTheme.colors.primary,
@@ -275,10 +381,18 @@ fun ChatItemInfoView(ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   }
 }
 
-fun itemInfoShareText(ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolean): String {
+private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Pair<GroupMember, CIStatus>> {
+  return memberDeliveryStatuses.mapNotNull { mds ->
+    chatModel.groupMembers.firstOrNull { it.groupMemberId == mds.groupMemberId }?.let { mem ->
+      mem to mds.memberDeliveryStatus
+    }
+  }
+}
+
+fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolean): String {
   val meta = ci.meta
   val sent = ci.chatDir.sent
-  val shareText = mutableListOf<String>(generalGetString(if (sent) MR.strings.sent_message else MR.strings.received_message), "")
+  val shareText = mutableListOf<String>("# " + generalGetString(if (sent) MR.strings.sent_message else MR.strings.received_message), "")
 
   shareText.add(String.format(generalGetString(MR.strings.share_text_sent_at), localTimestamp(meta.itemTs)))
   if (!ci.chatDir.sent) {
@@ -289,10 +403,12 @@ fun itemInfoShareText(ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolea
       if (itemDeleted.deletedTs != null) {
         shareText.add(String.format(generalGetString(MR.strings.share_text_deleted_at), localTimestamp(itemDeleted.deletedTs)))
       }
+
     is CIDeleted.Moderated ->
       if (itemDeleted.deletedTs != null) {
         shareText.add(String.format(generalGetString(MR.strings.share_text_moderated_at), localTimestamp(itemDeleted.deletedTs)))
       }
+
     else -> {}
   }
   val deleteAt = ci.meta.itemTimed?.deleteAt
@@ -306,7 +422,7 @@ fun itemInfoShareText(ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolea
   val qi = ci.quotedItem
   if (qi != null) {
     shareText.add("")
-    shareText.add(generalGetString(MR.strings.in_reply_to))
+    shareText.add("## " + generalGetString(MR.strings.in_reply_to))
     shareText.add("")
     val ts = localTimestamp(qi.sentAt)
     val sender = qi.sender(null)
@@ -318,10 +434,26 @@ fun itemInfoShareText(ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolea
     val t = qi.text
     shareText.add(if (t != "") t else generalGetString(MR.strings.item_info_no_text))
   }
+  val mdss = chatItemInfo.memberDeliveryStatuses
+  if (mdss != null) {
+    val mss = membersStatuses(chatModel, mdss)
+    if (mss.isNotEmpty()) {
+      shareText.add("")
+      shareText.add("## " + generalGetString(MR.strings.delivery))
+      shareText.add("")
+      mss.forEach { (member, status) ->
+        shareText.add(String.format(
+          generalGetString(MR.strings.recipient_colon_delivery_status),
+          member.chatViewName,
+          status.statusDescription
+        ))
+      }
+    }
+  }
   val versions = chatItemInfo.itemVersions
   if (versions.isNotEmpty()) {
     shareText.add("")
-    shareText.add(generalGetString(MR.strings.edit_history))
+    shareText.add("## " + generalGetString(MR.strings.edit_history))
     versions.forEachIndexed { index, itemVersion ->
       val ts = localTimestamp(itemVersion.itemVersionTs)
       shareText.add("")
