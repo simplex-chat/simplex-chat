@@ -321,11 +321,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         withApi {
           val ciInfo = chatModel.controller.apiGetChatItemInfo(cInfo.chatType, cInfo.apiId, cItem.id)
           if (ciInfo != null) {
+            if (chat.chatInfo is ChatInfo.Group) {
+              setGroupMembers(chat.chatInfo.groupInfo, chatModel)
+            }
             ModalManager.end.closeModals()
             ModalManager.end.showModal(endButtons = { ShareButton {
-              clipboard.shareText(itemInfoShareText(cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
+              clipboard.shareText(itemInfoShareText(chatModel, cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
             } }) {
-              ChatItemInfoView(cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+              ChatItemInfoView(chatModel, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
             }
           }
         }

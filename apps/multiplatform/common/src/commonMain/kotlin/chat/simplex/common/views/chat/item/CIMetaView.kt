@@ -24,9 +24,15 @@ fun CIMetaView(
   timedMessagesTTL: Int?,
   metaColor: Color = MaterialTheme.colors.secondary,
   paleMetaColor: Color = if (isInDarkTheme()) {
-    metaColor.copy(red = metaColor.red * 0.67F, green = metaColor.green * 0.67F, blue = metaColor.red * 0.67F)
+    metaColor.copy(
+      red = metaColor.red * 0.67F,
+      green = metaColor.green * 0.67F,
+      blue = metaColor.red * 0.67F)
   } else {
-    metaColor.copy(red = metaColor.red * 1.33F, green = metaColor.green * 1.33F, blue = metaColor.red * 1.33F)
+    metaColor.copy(
+      red = minOf(metaColor.red * 1.33F, 1F),
+      green = minOf(metaColor.green * 1.33F, 1F),
+      blue = minOf(metaColor.red * 1.33F, 1F))
   }
 ) {
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {

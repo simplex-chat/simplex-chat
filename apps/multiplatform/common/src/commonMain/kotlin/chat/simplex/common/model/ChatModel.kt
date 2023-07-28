@@ -1627,7 +1627,7 @@ data class CIMeta (
   fun statusIcon(
     primaryColor: Color,
     metaColor: Color = CurrentColors.value.colors.secondary,
-    paleMetaColor: Color = CurrentColors.value.colors.secondary.copy(alpha = 0.5F)
+    paleMetaColor: Color = CurrentColors.value.colors.secondary
   ): Pair<ImageResource, Color>? =
     itemStatus.statusIcon(primaryColor, metaColor, paleMetaColor)
 
@@ -1718,7 +1718,7 @@ sealed class CIStatus {
   fun statusIcon(
     primaryColor: Color,
     metaColor: Color = CurrentColors.value.colors.secondary,
-    paleMetaColor: Color = CurrentColors.value.colors.secondary.copy(alpha = 0.5F)
+    paleMetaColor: Color = CurrentColors.value.colors.secondary
   ): Pair<ImageResource, Color>? =
     when (this) {
       is SndNew -> null
