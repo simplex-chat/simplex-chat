@@ -122,6 +122,7 @@ class SimplexWindowState {
 }
 
 data class DialogParams(
+  val filename: String? = null,
   val allowMultiple: Boolean = false,
   val fileFilter: ((File?) -> Boolean)? = null,
   val fileFilterDescription: String = "",
