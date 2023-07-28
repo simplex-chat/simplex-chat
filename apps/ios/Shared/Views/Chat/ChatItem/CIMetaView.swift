@@ -13,6 +13,7 @@ struct CIMetaView: View {
     @EnvironmentObject var chat: Chat
     var chatItem: ChatItem
     var metaColor = Color.secondary
+    var paleMetaColor = Color(UIColor.tertiaryLabel)
 
     var body: some View {
         if chatItem.isDeletedContent {
@@ -21,12 +22,23 @@ struct CIMetaView: View {
             let meta = chatItem.meta
             let ttl = chat.chatInfo.timedMessagesTTL
             switch meta.itemStatus {
-            case .sndSent:
-                ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .sent)
-            case .sndRcvd:
-                ZStack {
-                    ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd1)
-                    ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd2)
+            case let .sndSent(sndProgress):
+                switch sndProgress {
+                case .complete: ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .sent)
+                case .partial: ciMetaText(meta, chatTTL: ttl, color: paleMetaColor, sent: .sent)
+                }
+            case let .sndRcvd(_, sndProgress):
+                switch sndProgress {
+                case .complete:
+                    ZStack {
+                        ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd1)
+                        ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd2)
+                    }
+                case .partial:
+                    ZStack {
+                        ciMetaText(meta, chatTTL: ttl, color: paleMetaColor, sent: .rcvd1)
+                        ciMetaText(meta, chatTTL: ttl, color: paleMetaColor, sent: .rcvd2)
+                    }
                 }
             default:
                 ciMetaText(meta, chatTTL: ttl, color: metaColor)
@@ -61,7 +73,7 @@ func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparen
         switch sent {
         case nil: r = r + t1
         case .sent: r = r + t1 + gap
-        case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : color.opacity(0.67)) + gap
+        case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67)) + gap
         case .rcvd2: r = r + gap + t1
         }
         r = r + Text(" ")
@@ -78,8 +90,12 @@ private func statusIconText(_ icon: String, _ color: Color) -> Text {
 struct CIMetaView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent))
-            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, itemEdited: true))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent(sndProgress: .complete)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent(sndProgress: .partial)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndRcvd(msgRcptStatus: .ok, sndProgress: .complete)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndRcvd(msgRcptStatus: .ok, sndProgress: .partial)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndRcvd(msgRcptStatus: .badMsgHash, sndProgress: .complete)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent(sndProgress: .complete), itemEdited: true))
             CIMetaView(chatItem: ChatItem.getDeletedContentSample())
         }
         .previewLayout(.fixed(width: 360, height: 100))
