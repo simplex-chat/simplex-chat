@@ -9,11 +9,11 @@ Cette page répertorie toutes les fonctionnalités et options qui affectent la c
 
 ## Paramètres de confidentialité et de sécurité
 
-Ces paramètres sont disponibles dans les [Paramètres de confidentialité et de sécurité] (./app-settings.md#privacy-and-security).
+Ces paramètres sont disponibles dans les [Paramètres de confidentialité et de sécurité](./Guide_app-settings.md#confidentialité-et-sécurité).
 
 ## Vérification par code de sécurité
 
-<img src="../../blog/images/20230103-verification.png" width="288">
+<img src="../../../blog/images/20230103-verification.png" width="288">
 
 Bien que SimpleX Chat établisse toujours une connexion via un lien transmis par un canal indépendant, et qu'il soit donc déjà plus protégé que d'autres applications, il existe des scénarios dans lesquels les liens d'invitation peuvent être remplacés en cours de route (attaque MITM). Pour vous protéger contre de telles attaques, vous devez vérifier le code de sécurité avec vos contacts :
 
@@ -29,32 +29,32 @@ Ce code peut être validé de l'une des manières suivantes :
 - appuyez simplement sur marquer vérifié si vous faites confiance à la confirmation de votre contact que le code est vérifié.
 - Vous pouvez également le lire lors d'un appel vocal.
 
-En savoir plus dans [cet article](../../blog/20230103-simplex-chat-v4.4-messages-disparus.md#connexion-sécurité-vérification)
+En savoir plus dans [cet article](../../../blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification)
 
 ## Phrase secrète de la base de données
 
-Une fois installée, l'application génère une phrase secrète aléatoire pour la base de données du chat et la stocke de manière sécurisée dans KeyChain (iOS) ou en utilisant KeyStore (Android, le module TPM est utilisé lorsqu'il est disponible). Vous pouvez définir votre propre phrase secrète et la supprimer de l'appareil, auquel cas vous devrez la saisir à chaque démarrage de l'application, et les notifications peuvent être limitées, dans les paramètres [phrase secrète et exportation de la base de données](./managing-data.md#database-passphrase).
+Une fois installée, l'application génère une phrase secrète aléatoire pour la base de données du chat et la stocke de manière sécurisée dans KeyChain (iOS) ou en utilisant KeyStore (Android, le module TPM est utilisé lorsqu'il est disponible). Vous pouvez définir votre propre phrase secrète et la supprimer de l'appareil, auquel cas vous devrez la saisir à chaque démarrage de l'application, et les notifications peuvent être limitées, dans les paramètres [phrase secrète et exportation de la base de données](./Guide_managing-data.md#phrase-secrète-de-la-base-de-données).
 
 ## Mode Incognito
 
-Cette fonction génère un nom de profil aléatoire pour chaque nouveau contact. En savoir plus dans [mode Incognito](./app-settings.md#incognito).
+Cette fonction génère un nom de profil aléatoire pour chaque nouveau contact. En savoir plus dans [mode Incognito](./Guide_app-settings.md#incognito).
 
 ## Profils cachés
 
-Cette fonction permet de cacher certains profils de chat avec un mot de passe. Pour en savoir plus, lisez [Cacher et désactiver des profils de chat](./chat-profiles.md#hiding-and-muting-chat-profiles).
+Cette fonction permet de cacher certains profils de chat avec un mot de passe. Pour en savoir plus, lisez [cacher et désactiver des profils de chat](./Guide_chat-profiles.md#masquer-et-mettre-en-sourdine-les-profils-de-chat).
 
 ## Paramètres réseau
 
-[Isolement du transport (BETA)](./app-settings.md#transport-isolation-beta) permet d'isoler votre trafic avec chaque contact dans une connexion TCP différente (et un circuit Tor).
+[Isolement du transport (BETA)](./Guide_app-settings.md#isolement-du-transport-beta) permet d'isoler votre trafic avec chaque contact dans une connexion TCP différente (et un circuit Tor).
 
 ## Utilisation de Tor
 
-<img src="../../blog/images/20220808-tor1.png" width="330"> &nbsp ; <img src="../../blog/images/20220808-tor2.png" width="330">
+<img src="../../../blog/images/20220808-tor1.png" width="330"> &nbsp; <img src="../../../blog/images/20220808-tor2.png" width="330">
 
 Pour se connecter aux relais SMP (serveurs de messagerie) via Tor, vous devez installer l'application Orbot.
 
-Android : utilisez l'application Orbot comme proxy SOCKS sur le port 9050 (par défaut) et activez [Use SOCKS proxy](./app-settings.md#use-socks-proxy-android-only).
+Android : utilisez l'application Orbot comme proxy SOCKS sur le port 9050 (par défaut) et activez [Use SOCKS proxy](./Guide_app-settings.md#utiliser-un-proxy-socks-android-uniquement).
 
 iOS : utiliser l'application Orbot comme fournisseur de VPN et activer le VPN.
 
-Vous pouvez également modifier les adresses de serveur utilisées avec l'option [Use .onion hosts](./app-settings.md#use-onion-hosts).
+Vous pouvez également modifier les adresses de serveur utilisées avec l'option [Use .onion hosts](./Guide_app-settings.md#utiliser-des-hôtes-onion).
