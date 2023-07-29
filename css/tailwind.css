@@ -658,6 +658,10 @@ video {
   float: right;
 }
 
+.m-1 {
+  margin: 0.25rem;
+}
+
 .m-auto {
   margin: auto;
 }
@@ -864,6 +868,10 @@ video {
   margin-top: 66px;
 }
 
+.mt-\[74px\] {
+  margin-top: 74px;
+}
+
 .mt-\[8px\] {
   margin-top: 8px;
 }
@@ -898,6 +906,10 @@ video {
 
 .hidden {
   display: none;
+}
+
+.h-1 {
+  height: 0.25rem;
 }
 
 .h-11 {
