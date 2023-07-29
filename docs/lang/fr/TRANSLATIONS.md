@@ -26,7 +26,7 @@ Ce document est créé pour accélérer ce processus, et partager quelques astuc
 
 2. Certaines des chaînes n'ont pas besoin d'être traduites, mais elles doivent quand même être copiées - il y a un bouton dans l'interface weblate pour cela :
 
-<img src="/images/weblate_1.png" alt="weblate: copy source to translation" width="100%">
+<img src="../../images/weblate_1.png" alt="weblate: copy source to translation" width="100%">
 
 3. Weblate propose également des suggestions automatiques qui peuvent accélérer le processus. Parfois, elles peuvent être utilisées telles quelles, parfois elles nécessitent quelques retouches - cliquez pour les utiliser dans les traductions.
 
@@ -34,7 +34,7 @@ Ce document est créé pour accélérer ce processus, et partager quelques astuc
 
 5. Quand vous traduisez [l'app iOS](https://hosted.weblate.org/projects/simplex-chat/ios/), la plupart des chaînes de caractères sont identiques, elles peuvent être copiées en un clic dans la section Glossaire. L'indice visuel que cela est possible est que la chaîne source entière est surlignée en jaune. De nombreuses autres chaînes sont très similaires, elles ne diffèrent que par la syntaxe d'interpolation ou la façon dont la police en gras est utilisée - elles ne nécessitent qu'une édition minimale. Certaines chaînes sont propres à la plate-forme iOS. Elles doivent être traduites séparément.
 
-<img src="/images/weblate_2.png" alt="weblate: automatic suggestions" width="100%">
+<img src="../../images/weblate_2.png" alt="weblate: automatic suggestions" width="100%">
 
 ## Une fois la traduction terminée
 
