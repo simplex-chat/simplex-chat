@@ -33,11 +33,11 @@ Cette fonction est unique à SimpleX Chat - elle est indépendante des profils d
 
 Lorsque la fonction "Incognito" est activée, le nom et l'image de votre profil actuel ne sont PAS partagés avec vos nouveaux contacts. Cela permet d'établir des connexions avec d'autres personnes sans partager de données - lorsque vous établissez de nouvelles connexions ou rejoignez des groupes via un lien, un nouveau nom de profil aléatoire est généré pour chaque contact ou groupe.
 
-Pour en savoir plus, consultez [cet article](../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode).
+Pour en savoir plus, consultez [cet article](../../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode).
 
 ### Votre adresse de contact SimpleX
 
-<img src="../../blog/images/20221108-address1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-address2.png" width="288">
+<img src="../../../blog/images/20221108-address1.png" width="288"> &nbsp;&nbsp; <img src="../../../blog/images/20221108-address2.png" width="288">
 
 Cette page vous permet de créer une adresse à long terme qui peut être utilisée par d'autres personnes pour se connecter avec vous. Contrairement aux liens d'invitation uniques, ces adresses peuvent être utilisées plusieurs fois, ce qui les rend utiles à partager en ligne, par exemple sur d'autres réseaux sociaux.
 
@@ -45,7 +45,7 @@ Lorsque des personnes se connectent à vous via cette adresse, vous recevez une 
 
 Si vous commencez à recevoir trop de demandes via cette adresse, il est toujours prudent de la supprimer - toutes les connexions que vous avez créées via cette adresse resteront actives, car cette adresse n'est pas utilisée pour délivrer les messages.
 
-Pour en savoir plus, consultez [cet article](../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#auto-accept-contact-requests).
+Pour en savoir plus, consultez [cet article](../../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#auto-accept-contact-requests).
 
 ### Préférences de chat
 
@@ -65,7 +65,7 @@ Cette section est intitulée **"Paramètres"** dans les paramètres de l'app.
 
 ### Notifications
 
-Cette page permet de configurer le mode de notification : instantanée, périodique ou uniquement lorsque l'application est en cours d'exécution. Il y a quelques différences dans le fonctionnement de ces options sur iOS et Android. Pour en savoir plus sur le fonctionnement des notifications, consultez [cet article](../../blog/20220404-simplex-chat-instant-notifications.md).
+Cette page permet de configurer le mode de notification : instantanée, périodique ou uniquement lorsque l'application est en cours d'exécution. Il y a quelques différences dans le fonctionnement de ces options sur iOS et Android. Pour en savoir plus sur le fonctionnement des notifications, consultez [cet article](../../../blog/20220404-simplex-chat-instant-notifications.md).
 
 Vous pouvez également configurer l'affichage de l'aperçu du message lors de son arrivée.
 
@@ -77,17 +77,17 @@ De plus, les notifications instantanées ont actuellement la consommation de bat
 
 Cette page permet de configurer vos propres relais SMP et de modifier d'autres paramètres du réseau.
 
-<img src="../../blog/images/20230204-transport.png" width="288">
+<img src="../../../blog/images/20230204-transport.png" width="288">
 
 #### Serveurs SMP
 
-<img src="../../blog/images/20221206-server1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-server2.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-server3.png" width="288">
+<img src="../../../blog/images/20221206-server1.png" width="288"> &nbsp;&nbsp; <img src="../../../blog/images/20221206-server2.png" width="288"> &nbsp;&nbsp; <img src="../../../blog/images/20221206-server3.png" width="288">
 
 Par défaut, l'application dispose de relais prédéfinis - vous pouvez les remplacer par les vôtres.
 
 Cette page permet également de tester la connexion avec les serveurs.
 
-Pour en savoir plus, consultez [cet article](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#smp-servers-configuration-and-password).
+Pour en savoir plus, consultez [cet article](../../../blog/20221206-simplex-chat-v4.3-voice-messages.md#smp-servers-configuration-and-password).
 
 #### Utiliser un proxy SOCKS (Android uniquement)
 
@@ -107,7 +107,7 @@ L'option **Utiliser les hôtes .onion** n'est disponible que lorsque l'option **
 
 ##### iOS
 
-<img src="../../blog/images/20220901-onion1.png" width="330"> &nbsp; <img src="../../blog/images/20220901-onion2.png" width="330">
+<img src="../../../blog/images/20220901-onion1.png" width="330"> &nbsp; <img src="../../../blog/images/20220901-onion2.png" width="330">
 
 Bien qu'iOS ne prenne pas en charge les proxies SOCKS, vous pouvez installer l'application Orbot qui fonctionne comme un fournisseur de VPN. Vous pouvez choisir :
 
@@ -121,11 +121,11 @@ Bien qu'iOS ne prenne pas en charge les proxies SOCKS, vous pouvez installer l'a
 
 Cette option n'est disponible que si vous avez activé les outils de développement.
 
-Veuillez lire les détails dans [cet article](../../blog/20230204-simplex-chat-v4-5-user-chat-profiles.md#transport-isolation).
+Veuillez lire les détails dans [cet article](../../../blog/20230204-simplex-chat-v4-5-user-chat-profiles.md#transport-isolation).
 
 #### Paramètres réseau avancés
 
-<img src="../../blog/images/20220808-network.png" width="330">
+<img src="../../../blog/images/20220808-network.png" width="330">
 
 Si votre réseau est lent et que les connexions aux serveurs échouent sans cesse (vous verriez un indicateur sur vos contacts), augmentez les délais d'attente pour le TCP et le protocole dans cette page.
 
@@ -148,7 +148,7 @@ C'est fait ! Désormais, vous devrez vous authentifier lorsque vous démarrerez 
 
 #### Protéger l'écran de l'application
 
-<img src="../../blog/images/20221206-protect.png" width="330">
+<img src="../../../blog/images/20221206-protect.png" width="330">
 
 Cette option permet de masquer l'écran de l'application dans les applications récentes ; elle est activée par défaut. Sur Android, elle empêche également les captures d'écran.
 
@@ -176,7 +176,7 @@ Cette option affecte la manière dont les liens permettant de se connecter à d'
 - Lien complet : le lien complet est affiché. Le lien ne sera toujours pas ouvert dans le navigateur.
 - _via navigateur_ : le lien complet est affiché, et il sera ouvert dans le navigateur. Dans ce cas, si le domaine du lien est différent de simplex.chat, le lien sera affiché en rouge, car il pourrait être malveillant.
 
-En savoir plus sur [Sécurité des liens SimpleX](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#privacy-and-security-of-simplex-invitation-links).
+En savoir plus sur [Sécurité des liens SimpleX](../../../blog/20221206-simplex-chat-v4.3-voice-messages.md#privacy-and-security-of-simplex-invitation-links).
 
 ### Apparence
 
@@ -222,4 +222,4 @@ Cette option est désactivée par défaut - la base de données de l'application
 
 ### Afficher les options du développeur
 
-Cette option active actuellement l'option [Mode isolement du transport](#transport-isolation-beta) et permet également d'afficher les identifiants de la base de données dans les contacts, les groupes et les membres des groupes afin de simplifier le débogage via les commandes de la console.
+Cette option active actuellement l'option [mode d'isolement du transport](Guide_app-settings.md#transport-isolation-beta)) et permet également d'afficher les identifiants de la base de données dans les contacts, les groupes et les membres des groupes afin de simplifier le débogage via les commandes de la console.
