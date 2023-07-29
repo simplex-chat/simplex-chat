@@ -2,6 +2,7 @@
 
 set -e
 
+cp website/node_modules/lottie-web/build/player/lottie.min.js website/src/js
 cp -R docs website/src
 rm -rf website/src/docs/rfcs
 rm website/src/docs/lang/*/README.md
