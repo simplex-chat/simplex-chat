@@ -79,7 +79,7 @@
       </trans-unit>
       <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
         <source>%@ is not verified</source>
-        <target state="translated">%@ ไม่ได้รับการตรวจสอบ</target>
+        <target state="translated">%@ ไม่ได้รับการยืนยัน</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
@@ -2675,7 +2675,7 @@
       </trans-unit>
       <trans-unit id="Mark verified" xml:space="preserve" approved="no">
         <source>Mark verified</source>
-        <target state="translated">ทําเครื่องหมายว่าตรวจสอบแล้ว</target>
+        <target state="translated">ทําเครื่องหมายว่ายืนยันแล้ว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve" approved="no">
@@ -2695,12 +2695,12 @@
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target state="translated">บทบาทของสมาชิกจะเปลี่ยนเป็น "%@" สมาชิกกลุ่มทั้งหมดจะได้รับแจ้ง</target>
+        <target state="translated">บทบาทของสมาชิกจะถูกเปลี่ยนเป็น "%@" สมาชิกกลุ่มทั้งหมดจะได้รับแจ้ง</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target state="translated">บทบาทของสมาชิกจะเปลี่ยนเป็น "%@" สมาชิกจะได้รับคำเชิญใหม่</target>
+        <target state="translated">บทบาทของสมาชิกจะถูกเปลี่ยนเป็น "%@" สมาชิกจะได้รับคำเชิญใหม่</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
@@ -3849,7 +3849,7 @@
       </trans-unit>
       <trans-unit id="Set it instead of system authentication." xml:space="preserve" approved="no">
         <source>Set it instead of system authentication.</source>
-        <target state="translated">ตั้งค่าแทนการรับรองความถูกต้องของระบบ</target>
+        <target state="translated">ตั้งแทนการรับรองความถูกต้องของระบบ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passcode" xml:space="preserve" approved="no">
@@ -3859,12 +3859,12 @@
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve" approved="no">
         <source>Set passphrase to export</source>
-        <target state="translated">ตั้งค่ารหัสผ่านเพื่อส่งออก</target>
+        <target state="translated">ตั้งรหัสผ่านเพื่อส่งออก</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve" approved="no">
         <source>Set the message shown to new members!</source>
-        <target state="translated">ตั้งค่าข้อความที่แสดงต่อสมาชิกใหม่!</target>
+        <target state="translated">ตั้งข้อความที่แสดงต่อสมาชิกใหม่!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve" approved="no">
@@ -4079,7 +4079,7 @@
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve" approved="no">
         <source>Support SimpleX Chat</source>
-        <target state="translated">สนับสนุนแชท SimpleX</target>
+        <target state="translated">สนับสนุน SimpleX แชท</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve" approved="no">
@@ -4353,7 +4353,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve" approved="no">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
-        <target state="translated">หากต้องการเปิดเผยโปรไฟล์ที่ซ่อนอยู่ ให้ป้อนรหัสผ่านแบบเต็มในช่องค้นหาในหน้า **โปรไฟล์แชทของคุณ**</target>
+        <target state="translated">หากต้องการเปิดเผยโปรไฟล์ที่ซ่อนอยู่ของคุณ ให้ป้อนรหัสผ่านแบบเต็มในช่องค้นหาในหน้า **โปรไฟล์แชทของคุณ**</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve" approved="no">
@@ -4690,7 +4690,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="With optional welcome message." xml:space="preserve" approved="no">
         <source>With optional welcome message.</source>
-        <target state="translated">พร้อมข้อความต้อนรับเพิ่มเติม</target>
+        <target state="translated">พร้อมข้อความต้อนรับที่ไม่บังคับ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve" approved="no">
@@ -5586,7 +5586,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve" approved="no">
         <source>starting…</source>
-        <target state="translated">เริ่มต้น…</target>
+        <target state="translated">กำลังเริ่มต้น…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve" approved="no">
@@ -5676,7 +5676,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve" approved="no">
         <source>you changed address</source>
-        <target state="translated">คุณเปลี่ยนที่อยู่</target>
+        <target state="translated">คุณเปลี่ยนที่อยู่แล้ว</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="you changed address for %@" xml:space="preserve" approved="no">
@@ -5706,12 +5706,12 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve" approved="no">
         <source>you shared one-time link</source>
-        <target state="translated">คุณแชร์ลิงก์แบบใช้ครั้งเดียว</target>
+        <target state="translated">คุณแชร์ลิงก์แบบใช้ครั้งเดียวแล้ว</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you shared one-time link incognito" xml:space="preserve" approved="no">
         <source>you shared one-time link incognito</source>
-        <target state="translated">คุณแชร์ลิงก์แบบใช้ครั้งเดียวโดยไม่ระบุตัวตน</target>
+        <target state="translated">คุณแชร์ลิงก์แบบใช้ครั้งเดียวโดยไม่ระบุตัวตนแล้ว</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you: " xml:space="preserve" approved="no">
@@ -5806,12 +5806,336 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve" approved="no">
         <source>Receiving address will be changed to a different server. Address change will complete after sender comes online.</source>
-        <target state="translated">คุณลักษณะนี้เป็นการทดลอง! จะใช้งานได้ก็ต่อเมื่อลูกค้าอื่นติดตั้งเวอร์ชัน 4.2 คุณควรเห็นข้อความในการสนทนาเมื่อการเปลี่ยนแปลงที่อยู่เสร็จสิ้น – โปรดตรวจสอบว่าคุณยังคงสามารถรับข้อความจากผู้ติดต่อนี้ (หรือสมาชิกในกลุ่ม)</target>
+        <target state="translated">ที่อยู่ผู้รับจะถูกเปลี่ยนเป็นเซิร์ฟเวอร์อื่น การเปลี่ยนแปลงที่อยู่จะเสร็จสมบูรณ์หลังจากที่ผู้ส่งออนไลน์</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unfav." xml:space="preserve" approved="no">
         <source>Unfav.</source>
         <target state="translated">เลิกชอบ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Make one message disappear" xml:space="preserve" approved="no">
+        <source>Make one message disappear</source>
+        <target state="translated">ทำให้ข้อความหายไปหนึ่งข้อความ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="React…" xml:space="preserve" approved="no">
+        <source>React…</source>
+        <target state="translated">ตอบสนอง…</target>
+        <note>chat item menu</note>
+      </trans-unit>
+      <trans-unit id="Reconnect all connected servers to force message delivery. It uses additional traffic." xml:space="preserve" approved="no">
+        <source>Reconnect all connected servers to force message delivery. It uses additional traffic.</source>
+        <target state="translated">เชื่อมต่อเซิร์ฟเวอร์ที่เชื่อมต่อทั้งหมดอีกครั้งเพื่อบังคับให้ส่งข้อความ มันใช้การจราจรเพิ่มเติม</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send delivery receipts to" xml:space="preserve" approved="no">
+        <source>Send delivery receipts to</source>
+        <target state="translated">ส่งใบเสร็จรับการจัดส่งข้อความไปที่</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send receipts" xml:space="preserve" approved="no">
+        <source>Send receipts</source>
+        <target state="translated">ส่งใบเสร็จ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve" approved="no">
+        <source>Sending receipts is enabled for %lld contacts</source>
+        <target state="translated">การส่งใบเสร็จถูกเปิดใช้งานสำหรับผู้ติดต่อ %lld</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The encryption is working and the new encryption agreement is not required. It may result in connection errors!" xml:space="preserve" approved="no">
+        <source>The encryption is working and the new encryption agreement is not required. It may result in connection errors!</source>
+        <target state="translated">encryption กำลังทำงานและไม่จำเป็นต้องใช้ข้อตกลง encryption ใหม่ อาจทำให้การเชื่อมต่อผิดพลาดได้!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The second tick we missed! ✅" xml:space="preserve" approved="no">
+        <source>The second tick we missed! ✅</source>
+        <target state="translated">ขีดที่สองที่เราพลาด! ✅</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="A few more things" xml:space="preserve" approved="no">
+        <source>A few more things</source>
+        <target state="translated">อีกสองสามอย่าง</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contacts" xml:space="preserve" approved="no">
+        <source>Contacts</source>
+        <target state="translated">ติดต่อ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disable for all" xml:space="preserve" approved="no">
+        <source>Disable for all</source>
+        <target state="translated">ปิดการใช้งานสำหรับทุกคน</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error enabling delivery receipts!" xml:space="preserve" approved="no">
+        <source>Error enabling delivery receipts!</source>
+        <target state="translated">เกิดข้อผิดพลาดในการเปิดใช้ใบเสร็จการจัดส่ง!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Find chats faster" xml:space="preserve" approved="no">
+        <source>Find chats faster</source>
+        <target state="translated">ค้นหาแชทได้เร็วขึ้น</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Filter unread and favorite chats." xml:space="preserve" approved="no">
+        <source>Filter unread and favorite chats.</source>
+        <target state="translated">กรองแชทที่ยังไม่อ่านและแชทโปรด</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fix" xml:space="preserve" approved="no">
+        <source>Fix</source>
+        <target state="translated">แก้ไข</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can enable later via Settings" xml:space="preserve" approved="no">
+        <source>You can enable later via Settings</source>
+        <target state="translated">คุณสามารถเปิดใช้งานในภายหลังผ่านการตั้งค่า</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve" approved="no">
+        <source>You can enable them later via app Privacy &amp; Security settings.</source>
+        <target state="translated">คุณสามารถเปิดใช้งานได้ในภายหลังผ่านการตั้งค่าความเป็นส่วนตัวและความปลอดภัยของแอป</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="changing address for %@…" xml:space="preserve" approved="no">
+        <source>changing address for %@…</source>
+        <target state="translated">เปลี่ยนที่อยู่สำหรับ %@…</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="changing address…" xml:space="preserve" approved="no">
+        <source>changing address…</source>
+        <target state="translated">กำลังเปลี่ยนที่อยู่…</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="encryption ok" xml:space="preserve" approved="no">
+        <source>encryption ok</source>
+        <target state="translated">encryptionใช้ได้</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="encryption re-negotiation required" xml:space="preserve" approved="no">
+        <source>encryption re-negotiation required</source>
+        <target state="translated">จำเป็นต้องมีการเจรจา encryption อีกครั้ง</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve" approved="no">
+        <source>encryption re-negotiation required for %@</source>
+        <target state="translated">จำเป็นต้องมีการเจรจา encryption อีกครั้งสําหรับ %@</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="security code changed" xml:space="preserve" approved="no">
+        <source>security code changed</source>
+        <target state="translated">เปลี่ยนรหัสความปลอดภัยแล้ว</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="Disable (keep overrides)" xml:space="preserve" approved="no">
+        <source>Disable (keep overrides)</source>
+        <target state="translated">ปิดใช้งาน (เก็บการแทนที่)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fix connection" xml:space="preserve" approved="no">
+        <source>Fix connection</source>
+        <target state="translated">แก้ไขการเชื่อมต่อ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve" approved="no">
+        <source>- more stable message delivery.
+- a bit better groups.
+- and more!</source>
+        <target state="translated">- การส่งข้อความมีเสถียรภาพมากขึ้น
+- กลุ่มที่ดีขึ้นเล็กน้อย
+- และอื่น ๆ!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Don't enable" xml:space="preserve" approved="no">
+        <source>Don't enable</source>
+        <target state="translated">อย่าเปิดใช้งาน</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Even when disabled in the conversation." xml:space="preserve" approved="no">
+        <source>Even when disabled in the conversation.</source>
+        <target state="translated">แม้ในขณะที่ปิดใช้งานในการสนทนา</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable (keep overrides)" xml:space="preserve" approved="no">
+        <source>Enable (keep overrides)</source>
+        <target state="translated">เปิดใช้งาน (เก็บการแทนที่)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable for all" xml:space="preserve" approved="no">
+        <source>Enable for all</source>
+        <target state="translated">เปิดใช้งานสําหรับทุกคน</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error setting delivery receipts!" xml:space="preserve" approved="no">
+        <source>Error setting delivery receipts!</source>
+        <target state="translated">เกิดข้อผิดพลาดในการตั้งค่าใบตอบรับการจัดส่ง!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fix encryption after restoring backups." xml:space="preserve" approved="no">
+        <source>Fix encryption after restoring backups.</source>
+        <target state="translated">แก้ไข encryption หลังจากกู้คืนข้อมูลสำรอง</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve" approved="no">
+        <source>encryption re-negotiation allowed for %@</source>
+        <target state="translated">อนุญาตให้มีการเจรจา encryption อีกครั้งสําหรับ %@</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="Exporting database archive…" xml:space="preserve" approved="no">
+        <source>Exporting database archive…</source>
+        <target state="translated">กำลังส่งออกที่เก็บถาวรฐานข้อมูล…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fix connection?" xml:space="preserve" approved="no">
+        <source>Fix connection?</source>
+        <target state="translated">แก้ไขการเชื่อมต่อ?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fix not supported by contact" xml:space="preserve" approved="no">
+        <source>Fix not supported by contact</source>
+        <target state="translated">การแก้ไขไม่รองรับโดยผู้ติดต่อ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fix not supported by group member" xml:space="preserve" approved="no">
+        <source>Fix not supported by group member</source>
+        <target state="translated">การแก้ไขไม่สนับสนุนโดยสมาชิกกลุ่ม</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="In reply to" xml:space="preserve" approved="no">
+        <source>In reply to</source>
+        <target state="translated">ในการตอบกลับถึง</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="Keep your connections" xml:space="preserve" approved="no">
+        <source>Keep your connections</source>
+        <target state="translated">รักษาการเชื่อมต่อของคุณ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message delivery receipts!" xml:space="preserve" approved="no">
+        <source>Message delivery receipts!</source>
+        <target state="translated">ใบเสร็จการส่งข้อความ!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renegotiate" xml:space="preserve" approved="no">
+        <source>Renegotiate</source>
+        <target state="translated">เจรจาใหม่</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Migrating database archive…" xml:space="preserve" approved="no">
+        <source>Migrating database archive…</source>
+        <target state="translated">กำลังย้ายข้อมูลที่เก็บถาวรของฐานข้อมูล…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No history" xml:space="preserve" approved="no">
+        <source>No history</source>
+        <target state="translated">ไม่มีประวัติ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Protocol timeout per KB" xml:space="preserve" approved="no">
+        <source>Protocol timeout per KB</source>
+        <target state="translated">การหมดเวลาของโปรโตคอลต่อ KB</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="agreeing encryption for %@…" xml:space="preserve" approved="no">
+        <source>agreeing encryption for %@…</source>
+        <target state="translated">ยอมรับ encryption สำหรับ %@…</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="agreeing encryption…" xml:space="preserve" approved="no">
+        <source>agreeing encryption…</source>
+        <target state="translated">เห็นด้วยกับการ encryption…</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="Reconnect servers?" xml:space="preserve" approved="no">
+        <source>Reconnect servers?</source>
+        <target state="translated">เชื่อมต่อเซิร์ฟเวอร์อีกครั้งหรือไม่?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renegotiate encryption" xml:space="preserve" approved="no">
+        <source>Renegotiate encryption</source>
+        <target state="translated">เจรจา encryption อีกครั้ง</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renegotiate encryption?" xml:space="preserve" approved="no">
+        <source>Renegotiate encryption?</source>
+        <target state="translated">เจรจา enryption ใหม่หรือไม่?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve" approved="no">
+        <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
+        <target state="translated">การส่งใบเสร็จรับการจัดส่งข้อความจะถูกเปิดในโปรไฟล์แชทที่มองเห็นได้ทั้งหมด</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="default (yes)" xml:space="preserve" approved="no">
+        <source>default (yes)</source>
+        <target state="translated">ค่าเริ่มต้น (ใช่)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="encryption agreed for %@" xml:space="preserve" approved="no">
+        <source>encryption agreed for %@</source>
+        <target state="translated">ตกลง encryption สําหรับ % @</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="encryption re-negotiation allowed" xml:space="preserve" approved="no">
+        <source>encryption re-negotiation allowed</source>
+        <target state="translated">อนุญาตให้มีการเจรจา encryption อีกครั้ง</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve" approved="no">
+        <source>Sending delivery receipts will be enabled for all contacts.</source>
+        <target state="translated">การส่งใบเสร็จรับการจัดส่งข้อความจะถูกเปิด</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve" approved="no">
+        <source>Sending receipts is disabled for %lld contacts</source>
+        <target state="translated">การส่งใบเสร็จถูกปิดใช้งานสำหรับผู้ติดต่อ %lld</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="These settings are for your current profile **%@**." xml:space="preserve" approved="no">
+        <source>These settings are for your current profile **%@**.</source>
+        <target state="translated">การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ **%@**</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="default (no)" xml:space="preserve" approved="no">
+        <source>default (no)</source>
+        <target state="translated">ค่าเริ่มต้น (ไม่)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="They can be overridden in contact settings" xml:space="preserve" approved="no">
+        <source>They can be overridden in contact settings</source>
+        <target state="translated">สามารถลบล้างได้ในการตั้งค่าผู้ติดต่อ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="encryption agreed" xml:space="preserve" approved="no">
+        <source>encryption agreed</source>
+        <target state="translated">ตกลง encryption</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="encryption ok for %@" xml:space="preserve" approved="no">
+        <source>encryption ok for %@</source>
+        <target state="translated">encryptionใช้ได้สําหรับ %@</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
+        <source>%1$@ at %2$@:</source>
+        <target state="translated">%1$@ ที่ %2$@:</target>
+        <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
+      </trans-unit>
+      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve" approved="no">
+        <source>Delivery receipts are disabled!</source>
+        <target state="translated">ใบตอบรับการจัดส่งถูกปิดใช้งาน!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
+        <source>Delivery receipts!</source>
+        <target state="translated">ใบตอบรับการจัดส่ง!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error synchronizing connection" xml:space="preserve" approved="no">
+        <source>Error synchronizing connection</source>
+        <target state="translated">เกิดข้อผิดพลาดในการซิงโครไนซ์การเชื่อมต่อ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
