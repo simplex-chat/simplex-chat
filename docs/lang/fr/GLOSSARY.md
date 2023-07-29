@@ -10,7 +10,7 @@ Bien que ce glossaire se veuille factuel et objectif, il n'est pas totalement im
 
 #### _Address portability_ 🇬🇧
 
-À la manière de la [portabilité du numéro de téléphone](https://fr.wikipedia.org/wiki/Transf%C3%A9rabilit%C3%A9_du_num%C3%A9ro_de_t%C3%A9l%C3%A9phone) (la possibilité pour le client de transférer le service à un autre fournisseur sans changer de numéro), la portabilité de l'adresse signifie la possibilité pour le client d'un service de communication de changer de fournisseur de services sans changer d'adresse de service. De nombreux [réseaux fédérés](#federated-network) prennent en charge les enregistrements SRV pour assurer la portabilité des adresses, mais le fait de permettre aux utilisateurs de services de configurer leurs propres domaines pour les adresses n'est pas aussi couramment pris en charge par les logiciels serveur et client disponibles que pour le courrier électronique.
+À la manière de la [portabilité du numéro de téléphone](https://fr.wikipedia.org/wiki/Transf%C3%A9rabilit%C3%A9_du_num%C3%A9ro_de_t%C3%A9l%C3%A9phone) (la possibilité pour le client de transférer le service à un autre fournisseur sans changer de numéro), la portabilité de l'adresse signifie la possibilité pour le client d'un service de communication de changer de fournisseur de services sans changer d'adresse de service. De nombreux [réseaux fédérés](#réseau-fédéré) prennent en charge les enregistrements SRV pour assurer la portabilité des adresses, mais le fait de permettre aux utilisateurs de services de configurer leurs propres domaines pour les adresses n'est pas aussi couramment pris en charge par les logiciels serveur et client disponibles que pour le courrier électronique.
 
 ## Justificatifs d'identité anonymes
 
@@ -46,7 +46,7 @@ Les réseaux centralisés sont fournis ou contrôlés par une seule entité. Les
 
 #### _Content padding_ 🇬🇧
 
-[Rembourrage des messages](#message-padding).
+[Rembourrage des messages](#rembourrage-des-messages).
 
 ## Réseau décentralisé
 
@@ -65,13 +65,13 @@ Les exemples de réseaux décentralisés sont le courrier électronique, le web,
 Dans le domaine de la sécurité informatique, la défense en profondeur représente l'utilisation de plusieurs techniques de sécurité informatique afin d'atténuer le risque qu'un élément de la défense soit compromis ou contourné. Par exemple, un logiciel antivirus peut être installé sur des postes de travail individuels alors qu'il existe déjà une protection antivirus sur les pare-feu et les serveurs dans le même environnement.
 
 Le réseau SimpleX applique une approche de défense en profondeur de la sécurité en ayant plusieurs couches pour la sécurité et la confidentialité des communications :
-- algorithme à double ratchet pour un [chiffrement de bout en bout](#end-to-end-encryption) avec une [confidentialité persistante](#forward-secrecy) et une [sécurité post-compromission](#post-compromise-security),
+- algorithme à double ratchet pour un [chiffrement de bout en bout](#chiffrement-de-bout-en-bout) avec une [confidentialité persistante](#confidentialité-persistante) et une [sécurité post-compromission](#sécurité-post-compromission),
 - une couche supplémentaire de chiffrement de bout en bout pour chaque file d'attente de messagerie et une autre couche de chiffrement du serveur au destinataire à l'intérieur de TLS pour empêcher la corrélation par le texte chiffré,
 - TLS avec uniquement des algorithmes de chiffrement forts,
-- limitation de l'attaque [l'homme du milieu](#man-in-the-middle-attack) sur la connexion client-serveur via la vérification indépendante du certificat du serveur,
+- limitation de l'attaque [l'homme du milieu](#attaque-de-lhomme-du-milieu) sur la connexion client-serveur via la vérification indépendante du certificat du serveur,
 - limitation des attaques par rejeu grâce à la signature sur le canal de transport,
-- plusieurs couches de [rembourrage de messages](#message-padding) pour réduire l'efficacité de l'analyse du trafic,
-- limitation de l'attaque de [l'homme du milieu](#man-in-the-middle-attack) sur le réseau hors bande client-client lors de l'envoi de l'invitation,
+- plusieurs couches de [rembourrage de messages](#rembourrage-des-messages) pour réduire l'efficacité de l'analyse du trafic,
+- limitation de l'attaque de [l'homme du milieu](#attaque-de-lhomme-du-milieu) sur le réseau hors bande client-client lors de l'envoi de l'invitation,
 - rotation des files d'attente de livraison pour réduire l'efficacité de l'analyse du trafic,
 - etc.
 
@@ -81,9 +81,9 @@ Le réseau SimpleX applique une approche de défense en profondeur de la sécuri
 
 #### _Double ratchet algorithm_ 🇬🇧
 
-Il est utilisé par deux entités pour échanger des messages [chiffrés de bout en bout](#chiffrement-de-bout-en-bout). Les entités utiliseront un [protocole d'accord de clé](#key-agreement-protocol) pour se mettre d'accord sur la clé secrète initiale partagée.
+Il est utilisé par deux entités pour échanger des messages [chiffrés de bout en bout](#chiffrement-de-bout-en-bout). Les entités utiliseront un [protocole d'accord de clé](#protocole-daccord-de-clé) pour se mettre d'accord sur la clé secrète initiale partagée.
 
-L'algorithme Double Ratchet fournit une [confidentialité persistante](#forward-secrecy) et une [sécurité post-compromission](#post-compromise-security). Il est [conçu par Signal](https://signal.org/docs/specifications/doubleratchet), et utilisé dans SimpleX Chat et de nombreux autres messagers sécurisés. La plupart des experts considèrent qu'il s'agit du protocole de chiffrement le plus avancé en matière de chiffrement des messages.
+L'algorithme Double Ratchet fournit une [confidentialité persistante](#confidentialité-persistante) et une [sécurité post-compromission](#sécurité-post-compromission). Il est [conçu par Signal](https://signal.org/docs/specifications/doubleratchet), et utilisé dans SimpleX Chat et de nombreux autres messagers sécurisés. La plupart des experts considèrent qu'il s'agit du protocole de chiffrement le plus avancé en matière de chiffrement des messages.
 
 ## Chiffrement de bout en bout
 
@@ -91,7 +91,7 @@ L'algorithme Double Ratchet fournit une [confidentialité persistante](#forward-
 
 Un système de communication dans lequel seules les parties communicantes peuvent lire les messages. Il est conçu pour protéger le contenu des messages de toute écoute potentielle - fournisseurs de télécommunications et d'Internet, acteurs malveillants, ainsi que le fournisseur du service de communication.
 
-Le chiffrement de bout en bout nécessite un accord sur les clés cryptographiques entre l'expéditeur et le destinataire de manière à ce qu'aucune écoute ne puisse accéder aux clés convenues. Voir [protocole d'accord de clé](#key-agreement-protocol). Cet échange de clés peut être compromis par une attaque de [l'homme du milieu](#man-in-the-middle-attack), en particulier si l'échange de clés se fait par l'intermédiaire du même fournisseur de communication et qu'aucun canal hors bande n'est utilisé pour vérifier l'échange de clés.
+Le chiffrement de bout en bout nécessite un accord sur les clés cryptographiques entre l'expéditeur et le destinataire de manière à ce qu'aucune écoute ne puisse accéder aux clés convenues. Voir [protocole d'accord de clé](#protocole-daccord-de-clé). Cet échange de clés peut être compromis par une attaque de [l'homme du milieu](#attaque-de-lhomme-du-milieu), en particulier si l'échange de clés se fait par l'intermédiaire du même fournisseur de communication et qu'aucun canal hors bande n'est utilisé pour vérifier l'échange de clés.
 
 [Wikipédia](https://fr.wikipedia.org/wiki/Chiffrement_de_bout_en_bout)
 
@@ -101,7 +101,7 @@ Le chiffrement de bout en bout nécessite un accord sur les clés cryptographiqu
 
 Le réseau fédéré est fourni par plusieurs entités qui s'accordent sur les normes et exploitent le réseau collectivement. Cela permet aux utilisateurs de choisir leur fournisseur, qui conservera leur compte, leur historique de messagerie et leurs contacts, et communiquera avec les serveurs d'autres fournisseurs au nom de l'utilisateur. Les exemples sont le courrier électronique, XMPP, Matrix et Mastodon.
 
-L'avantage de cette approche est qu'il n'y a pas d'organisation unique dont tous les utilisateurs dépendent, et qu'il est plus difficile de modifier les normes, sauf si cela profite à tous les utilisateurs. Il y a plusieurs inconvénients : 1) l'innovation est plus lente, 2) chaque compte d'utilisateur dépend toujours d'une seule organisation et, dans la plupart des cas, ne peut pas passer à un autre fournisseur sans changer son adresse réseau - il n'y a pas de [portabilité d'adresse](#address-portability), 3) la sécurité et la confidentialité sont inévitablement moins bonnes qu'avec les réseaux centralisés.
+L'avantage de cette approche est qu'il n'y a pas d'organisation unique dont tous les utilisateurs dépendent, et qu'il est plus difficile de modifier les normes, sauf si cela profite à tous les utilisateurs. Il y a plusieurs inconvénients : 1) l'innovation est plus lente, 2) chaque compte d'utilisateur dépend toujours d'une seule organisation et, dans la plupart des cas, ne peut pas passer à un autre fournisseur sans changer son adresse réseau - il n'y a pas de [portabilité d'adresse](#portabilité-de-ladresse), 3) la sécurité et la confidentialité sont inévitablement moins bonnes qu'avec les réseaux centralisés.
 
 [Fédération sur Wikipédia](https://fr.wikipedia.org/wiki/F%C3%A9d%C3%A9ration_(informatique))
 
@@ -109,7 +109,7 @@ L'avantage de cette approche est qu'il n'y a pas d'organisation unique dont tous
 
 #### _Forward secrecy_ 🇬🇧
 
-Également connu sous le nom de "perfect forward secrecy" ou confidentialité persistante parfaite, il s'agit d'une caractéristique d'un [protocole d'accord de clé](#key-agreement-protocol) qui garantit que les clés de session ne seront pas compromises même si les secrets à long terme utilisés dans l'échange de clés de session sont compromis. Le secret de transmission protège les sessions passées contre les compromissions futures des clés de session ou des clés à long terme.
+Également connu sous le nom de "perfect forward secrecy" ou confidentialité persistante parfaite, il s'agit d'une caractéristique d'un [protocole d'accord de clé](#protocole-daccord-de-clé) qui garantit que les clés de session ne seront pas compromises même si les secrets à long terme utilisés dans l'échange de clés de session sont compromis. Le secret de transmission protège les sessions passées contre les compromissions futures des clés de session ou des clés à long terme.
 
 [Wikipédia](https://fr.wikipedia.org/wiki/Confidentialit%C3%A9_persistante)
 
@@ -117,7 +117,7 @@ L'avantage de cette approche est qu'il n'y a pas d'organisation unique dont tous
 
 #### _Key agreement protocol_ 🇬🇧
 
-Également connu sous le nom d'échange de clés, il s'agit d'un processus qui consiste à établir des clés cryptographiques entre l'expéditeur et le(s) destinataire(s) du message. Il est nécessaire pour que le [chiffrement de bout en bout](#end-to-end-encryption) fonctionne.
+Également connu sous le nom d'échange de clés, il s'agit d'un processus qui consiste à établir des clés cryptographiques entre l'expéditeur et le(s) destinataire(s) du message. Il est nécessaire pour que le [chiffrement de bout en bout](#chiffrement-de-bout-en-bout) fonctionne.
 
 [Wikipédia](https://en.wikipedia.org/wiki/Key-agreement_protocol)
 
@@ -125,7 +125,7 @@ L'avantage de cette approche est qu'il n'y a pas d'organisation unique dont tous
 
 #### _Key exchange_ 🇬🇧
 
-[Protocole d'accord de clé](#key-agreement-protocol).
+[Protocole d'accord de clé](#protocole-daccord-de-clé).
 
 ## Attaque de l'homme du milieu
 
@@ -133,7 +133,7 @@ L'avantage de cette approche est qu'il n'y a pas d'organisation unique dont tous
 
 Il s'agit d'une attaque au cours de laquelle l'attaquant relaie secrètement et éventuellement modifie les communications entre deux entités qui croient communiquer directement l'une avec l'autre.
 
-Cette attaque peut être utilisée pour compromettre le [chiffrement de bout en bout](#end-to-end-encryption) en interceptant les clés publiques pendant [l'échange de clés](#key-agreement-protocol), en les remplaçant par les clés de l'attaquant, puis en interceptant et en chiffrant à nouveau tous les messages, sans en modifier le contenu. Avec cette attaque, l'attaquant ne modifie pas le contenu des messages, mais il peut les lire, alors que les parties communicantes croient que les messages sont chiffrés de bout en bout.
+Cette attaque peut être utilisée pour compromettre le [chiffrement de bout en bout](#chiffrement-de-bout-en-bout) en interceptant les clés publiques pendant [l'échange de clés](#protocole-daccord-de-clé), en les remplaçant par les clés de l'attaquant, puis en interceptant et en chiffrant à nouveau tous les messages, sans en modifier le contenu. Avec cette attaque, l'attaquant ne modifie pas le contenu des messages, mais il peut les lire, alors que les parties communicantes croient que les messages sont chiffrés de bout en bout.
 
 Cette attaque est possible avec tout système qui utilise le même canal pour l'échange de clés que pour l'envoi des messages - cela inclut presque tous les systèmes de communication à l'exception de SimpleX, où la clé publique initiale est toujours transmise hors bande. Même avec SimpleX, l'attaquant peut intercepter et substituer la clé envoyée par un autre canal, ce qui lui permet d'accéder à la communication. Ce risque est nettement plus faible, car l'attaquant ne sait pas à l'avance quel canal sera utilisé pour transmettre la clé.
 
@@ -147,7 +147,7 @@ Pour limiter ce type d'attaque, les entités qui communiquent doivent vérifier 
 
 Également connu sous le nom de "Merkle DAG", il s'agit d'une structure de données basée sur une structure graphique générale dans laquelle le nœud contient les hachages cryptographiques des nœuds précédents qui pointent vers lui. Les arbres de Merkle sont un sous-ensemble des DAG de Merkle - dans ce cas, chaque feuille contient un hachage cryptographique du parent.
 
-Cette structure permet de vérifier l'intégrité de l'ensemble de la structure en calculant ses hachages et en les comparant aux hachages inclus dans les nœuds, de la même manière qu'avec une [blockchain](#blockchain).
+Cette structure permet de vérifier l'intégrité de l'ensemble de la structure en calculant ses hachages et en les comparant aux hachages inclus dans les nœuds, de la même manière qu'avec une [blockchain](#chaîne-de-blocs).
 
 La motivation pour utiliser le DAG dans des environnements distribués au lieu d'une blockchain linéaire plus simple est de permettre des ajouts simultanés, lorsqu'il n'y a pas d'exigence pour un ordre unique des éléments ajoutés. Le DAG Merkle est utilisé, par exemple, dans [IPFS](https://fr.wikipedia.org/wiki/InterPlanetary_File_System) et sera utilisé dans les groupes décentralisés SimpleX.
 
@@ -197,7 +197,7 @@ Dans le contexte du réseau SimpleX, il s'agit des identifiants générés par l
 
 Le pair-à-pair (P2P) est une architecture de réseau dans laquelle les participants ont des droits égaux et communiquent directement par l'intermédiaire d'un réseau de transport ou d'un réseau superposé à usage général. Contrairement à l'architecture client-serveur, tous les pairs d'un réseau P2P fournissent et consomment les ressources. Dans le contexte de la messagerie, l'architecture P2P signifie généralement que les messages sont envoyés entre pairs, sans que les comptes d'utilisateur ou les messages soient stockés sur des serveurs. Tox, Briar, Cwtch et bien d'autres en sont des exemples.
 
-L'avantage est que les participants ne dépendent d'aucun serveur. Cette architecture présente de [nombreux inconvénients](./SIMPLEX.md#comparison-with-p2p9-messaging-protocols), tels que l'absence de transmission asynchrone des messages, la nécessité de disposer d'adresses de pairs à l'échelle du réseau, la possibilité d'attaques à l'échelle du réseau, qui ne sont généralement atténués que par l'utilisation d'une autorité centralisée. Ces inconvénients sont évités avec l'architecture [P2P par proxy](#proxied-peer-to-peer).
+L'avantage est que les participants ne dépendent d'aucun serveur. Cette architecture présente de [nombreux inconvénients](./SIMPLEX.md#comparison-with-p2p9-messaging-protocols), tels que l'absence de transmission asynchrone des messages, la nécessité de disposer d'adresses de pairs à l'échelle du réseau, la possibilité d'attaques à l'échelle du réseau, qui ne sont généralement atténués que par l'utilisation d'une autorité centralisée. Ces inconvénients sont évités avec l'architecture [P2P par proxy](#pair-à-pair-par-proxy).
 
 [Wikipédia](https://fr.wikipedia.org/wiki/Pair-%C3%A0-pair).
 
@@ -205,13 +205,13 @@ L'avantage est que les participants ne dépendent d'aucun serveur. Cette archite
 
 #### _Perfect forward secrecy_ 🇬🇧
 
-[Confidentialité persistante](#forward-secrecy).
+[Confidentialité persistante](#confidentialité-persistante).
 
 ## Sécurité post-compromission
 
 #### _Post-compromise security_ 🇬🇧
 
-Également connu sous le nom de récupération après effraction, il s'agit de la capacité du système de chiffrement de bout en bout à rétablir la sécurité contre un attaquant passif qui observe les messages chiffrés après avoir compromis l'une des entités (ou les deux). Également connu sous le nom de récupération après compromission ou récupération après intrusion. [L'algorithme à double ratchet](#double-ratchet-algorithme) possède cette qualité.
+Également connu sous le nom de récupération après effraction, il s'agit de la capacité du système de chiffrement de bout en bout à rétablir la sécurité contre un attaquant passif qui observe les messages chiffrés après avoir compromis l'une des entités (ou les deux). Également connu sous le nom de récupération après compromission ou récupération après intrusion. [L'algorithme à double ratchet](#algorithme-à-double-ratchet) possède cette qualité.
 
 ## Cryptographie post-quantique
 
@@ -225,7 +225,7 @@ Tout système ou algorithme cryptographique proposé qui est considéré comme s
 
 #### _Privacy_ 🇬🇧
 
-Le droit de quelqu'un de garder (ou l'état lorsqu'il garde) ses affaires personnelles et ses relations secrètes (par exemple, [dictionnaire de Cambridge](https://dictionary.cambridge.org/dictionary/english/privacy)). La confidentialité des systèmes de communication devrait inclure la confidentialité des connexions et des métadonnées, et pas seulement la confidentialité du contenu des messages. Le [chiffrement de bout en bout](#end-to-end-encryption) n'assure pas à lui seul la protection de la vie privée, car il ne protège que le contenu des messages et non les connexions ou les métadonnées.
+Le droit de quelqu'un de garder (ou l'état lorsqu'il garde) ses affaires personnelles et ses relations secrètes (par exemple, [dictionnaire de Cambridge](https://dictionary.cambridge.org/dictionary/english/privacy)). La confidentialité des systèmes de communication devrait inclure la confidentialité des connexions et des métadonnées, et pas seulement la confidentialité du contenu des messages. Le [chiffrement de bout en bout](#chiffrement-de-bout-en-bout) n'assure pas à lui seul la protection de la vie privée, car il ne protège que le contenu des messages et non les connexions ou les métadonnées.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Privacy)
 
@@ -239,7 +239,7 @@ Topologie de réseau du système de communication lorsque les pairs communiquent
 
 #### _Recovery from compromise_ 🇬🇧
 
-[Sécurité post-compromission](#post-compromise-security).
+[Sécurité post-compromission](#sécurité-post-compromission).
 
 ## Identité de l'utilisateur
 
