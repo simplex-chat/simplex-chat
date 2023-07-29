@@ -7,11 +7,11 @@ title: Profils de chat
 
 SimpleX Chat vous permet de créer autant de profils de chat que vous le souhaitez. Comme votre premier profil, ils ne sont stockés que localement sur votre appareil.
 
-<img src="../../blog/images/20230204-profiles2.png" width="288">
+<img src="../../../blog/images/20230204-profiles2.png" width="288">
 
 Pour créer un profil SimpleX Chat supplémentaire :
 
-- [Ouvrir les paramètres de l'application](./app-settings.md#opening-the-app-settings).
+- [Ouvrir les paramètres de l'application](./Guide_app-settings.md##ouvrir-les-paramètres-de-lapplication).
 - Sélectionnez "Vos profils de chat".
 - Déverrouillez l'option via l'empreinte digitale ou le code PIN.
 - Tapez sur "+ Ajouter un profil".
@@ -22,7 +22,7 @@ Pour créer un profil SimpleX Chat supplémentaire :
 
 La v4.6 a ajouté la possibilité de mettre en sourdine et de masquer les profils de chat.
 
-<img src="../../blog/images/20230328-profils-cachés1.png" width="288"> &nbsp;&nbsp ; <img src="../../blog/images/20230328-profils-cachés2. png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230328-profils-cachés3.png" width="288">
+<img src="../../../blog/images/20230328-hidden-profiles1.png" width="288"> &nbsp;&nbsp; <img src="../../../blog/images/20230328-hidden-profiles2.png" width="288"> &nbsp;&nbsp; <img src="../../../blog/images/20230328-hidden-profiles3.png" width="288">
 
 Ces actions sont disponibles via une longue pression (Android) ou un swipe (iOS) sur le profil dans la liste.
 
@@ -30,7 +30,7 @@ Pour masquer les profils cachés, saisissez le mot de passe complet dans la barr
 
 ## Passer d'un profil à l'autre
 
-<img src="../../blog/images/20230204-profiles1.png" width="288">
+<img src="../../../blog/images/20230204-profiles1.png" width="288">
 
 - Tapez sur l'image de votre profil d'utilisateur en haut à droite de l'écran.
 - Sélectionnez le profil que vous souhaitez utiliser.
@@ -39,7 +39,7 @@ Vous pouvez également changer de profil via Vos profils de chat dans les param�
 
 ## Mode Incognito
 
-<img src="../../blog/images/20220901-incognito1.png" width="330"> <img src="../../blog/images/20220901-incognito2.png" width="330"> <img src="../../blog/images/20220901-incognito3.png" width="330"> <img src="../../blog/images/20220901-incognito3.png" width="330">
+<img src="../../../blog/images/20220901-incognito1.png" width="330"> <img src="../../../blog/images/20220901-incognito2.png" width="330"> <img src="../../../blog/images/20220901-incognito3.png" width="330"> <img src="../../../blog/images/20220901-incognito3.png" width="330">
 
 Cette fonction est unique à SimpleX Chat - elle est indépendante des profils de chat.
 
@@ -47,16 +47,16 @@ Lorsque le "Mode Incognito" est activé, le nom et l'image de votre profil sont 
 
 Pour activer/désactiver le mode incognito :
 
-- Ouvrez les paramètres de l'application](./app-settings.md#opening-the-app-settings).
+- Ouvrez les [paramètres de l'application](./Guide_app-settings.md#ouvrir-les-paramètres-de-lapplication).
 - Activez/désactivez le mode incognito en appuyant sur le bouton "Incognito".
 
-Pour en savoir plus, consultez [cet article](../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode).
+Pour en savoir plus, consultez [cet article](../../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode).
 
 ## Modifier votre profil
 
 Pour modifier votre profil :
 
-- [Ouvrir les paramètres de l'application](./app-settings.md#opening-the-app-settings).
+- [Ouvrir les paramètres de l'application](./Guide_app-settings.md#ouvrir-les-paramètres-de-lapplication).
 - Sélectionnez votre profil.
 - Tapez sur "Modifier".
 - Saisissez le nom de votre profil et/ou mettez à jour votre nom complet.
@@ -69,11 +69,11 @@ SimpleX Chat stocke toutes les données des utilisateurs uniquement sur les appa
 
 Pour exporter vos données SimpleX Chat :
 
-- [Ouvrez les paramètres de l'application](./app-settings.md#opening-the-app-settings).
+- [Ouvrez les paramètres de l'application](./Guide_app-settings.md#ouvrir-les-paramètres-de-lapplication).
 - Sélectionnez " Phrase secrète et exportation de la base de données ".
 - Arrêtez le chat en désactivant la fonction "Chat en cours" (appuyez sur "Stop" dans la boîte de dialogue de confirmation).
-- Confirmez avec l'empreinte digitale ou le code PIN, si vous avez activé le [SimpleX Lock](./app-settings.md#simplex-lock).
-- Si vous ne l'avez pas défini auparavant, [définissez une phrase secrète](./managing-data.md#database-passphrase) dans " Phrase secrète de la base de données ". Initialement, la base de données est chiffrée avec une phrase secrète aléatoire qui est stockée dans KeyChain (iOS) ou avec KeyStore (Android).
+- Confirmez avec l'empreinte digitale ou le code PIN, si vous avez activé le [SimpleX Lock](./Guide_app-settings.md#simplex-lock).
+- Si vous ne l'avez pas défini auparavant, [définissez une phrase secrète](./Guide_managing-data.md#phrase-secrète-de-la-base-de-données) dans " Phrase secrète de la base de données ". Initialement, la base de données est chiffrée avec une phrase secrète aléatoire qui est stockée dans KeyChain (iOS) ou avec KeyStore (Android).
 - Tapez sur "Exporter la base de données" - l'exportation ne sera pas autorisée si vous n'avez pas défini de phrase secrète.
 - Enregistrez le fichier sur votre appareil ou partagez-le via l'une des options disponibles.
 
@@ -81,7 +81,7 @@ Pour importer vos données SimpleX Chat dans l'application sur un autre appareil
 
 - Transférez le fichier de la base de données vers le nouvel appareil.
 - Installez l'application SimpleX Chat.
-- Créez un profil de chat avec n'importe quel nom en suivant les étapes de [Créer votre premier profil de chat] (#create-yout-first-chat-profile) - vous le remplacerez bientôt.
+- Créez un profil de chat avec n'importe quel nom en suivant les étapes de [créer votre premier profil de chat](#create-yout-first-chat-profile) - vous le remplacerez bientôt.
 - Ouvrez les paramètres de l'application
 - Sélectionnez " Phrase secrète et exportation de la base de données ".
 - Arrêtez le chat en appuyant sur l'interrupteur "Chat en cours".
