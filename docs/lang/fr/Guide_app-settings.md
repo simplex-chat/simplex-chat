@@ -222,4 +222,4 @@ Cette option est désactivée par défaut - la base de données de l'application
 
 ### Afficher les options du développeur
 
-Cette option active actuellement l'option [mode d'isolement du transport](Guide_app-settings.md#transport-isolation-beta)) et permet également d'afficher les identifiants de la base de données dans les contacts, les groupes et les membres des groupes afin de simplifier le débogage via les commandes de la console.
+Cette option active actuellement l'option [mode d'isolement du transport](./Guide_app-settings.md#isolement-du-transport-beta) et permet également d'afficher les identifiants de la base de données dans les contacts, les groupes et les membres des groupes afin de simplifier le débogage via les commandes de la console.
