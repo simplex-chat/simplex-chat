@@ -1,3 +1,6 @@
+| 29.07.2023 | FR, [EN](/docs/THEMES.md) |
+#### Le tutoriel est disponible en français ci-dessous. Les nouveaux thèmes ajoutés par la communauté sont seulement disponible sur [la version original de ce document](/docs/THEMES.md) (en Anglais). 
+
 # Thèmes de couleurs de l'application
 
 Les applications mobiles permettent de configurer, d'exporter et d'importer des thèmes de couleurs. Actuellement, cette fonctionnalité n'est prise en charge que dans l'application Android.
@@ -20,6 +23,6 @@ Vous pouvez contribuer au dépôt avec vos thèmes en créant une pull request.
 
 ### SimpleX - thème bleu foncé inclus
 
-Télécharger [Thème SimpleX](./themes/example.theme)
+Télécharger le [thème SimpleX](./themes/example.theme)
 
-<img src="./themes/example-chats.png" width="240"> &nbsp;&nbsp; <img src="./themes/example-conversation.png" width="240"> &nbsp;&nbsp; <img src="./themes/example-settings.png" width="240"> &nbsp;&nbsp;
+<img src="../../themes/example-chats.png" width="240"> &nbsp;&nbsp; <img src="../../themes/example-conversation.png" width="240"> &nbsp;&nbsp; <img src="../../themes/example-settings.png" width="240"> &nbsp;&nbsp;
