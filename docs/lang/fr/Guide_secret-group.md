@@ -7,7 +7,7 @@ Les groupes secrets sont anonymes et privés. Ils sont conçus pour être diffic
 
 ## Création d'un groupe
 
-<img src="../../blog/images/20220808-group1.png" width="330"> <img src="../../blog/images/20220808-group2.png" width="330"> <img src="../../blog/images/20220808-group3.png" width="330">
+<img src="../../../blog/images/20220808-group1.png" width="330"> <img src="../../../blog/images/20220808-group2.png" width="330"> <img src="../../../blog/images/20220808-group3.png" width="330">
 
 - Tapez sur un bouton en bas à droite de l'écran.
 - Tapez sur "Créer un groupe secret".
@@ -27,13 +27,13 @@ Vous pouvez choisir d'autoriser ou non les messages éphèmères, les messages d
 
 ## Rejoindre un groupe
 
-<img src="../../blog/images/20220723-group-invite.png" width="330">
+<img src="../../../blog/images/20220723-group-invite.png" width="330">
 
 Lorsque vous recevez une invitation pour rejoindre un groupe, vous pouvez l'accepter à la fois dans la conversation avec votre contact et dans la liste des conversations.
 
 ## Quitter un groupe
 
-<img src="../../blog/images/20220723-group-leave.png" width="330">
+<img src="../../../blog/images/20220723-group-leave.png" width="330">
 
 Touchez longuement (Android) ou faites glisser (iOS) le groupe dans la liste des conversations pour le quitter.
 
@@ -54,7 +54,7 @@ Ouvrez un groupe et appuyez sur le nom du groupe pour afficher la liste des memb
 
 ## Lien pour rejoindre un groupe
 
-<img src="../../blog/images/20221108-group1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-group2.png" width="288">
+<img src="../../../blog/images/20221108-group1.png" width="288"> &nbsp;&nbsp; <img src="../../../blog/images/20221108-group2.png" width="288">
 
 Si vous êtes propriétaire ou administrateur d'un groupe, vous pouvez créer un lien qui peut être utilisé par n'importe qui pour rejoindre le groupe, ce qui rend le groupe plus public.
 
