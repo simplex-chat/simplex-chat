@@ -55,7 +55,7 @@ Par défaut, SimpleX Chat utilise l'interface d'appel native d'iOS, lorsqu'elle 
 
 **Remarque : l'interface d'appel d'iOS permet d'accepter les appels sans déverrouiller l'appareil et l'application. Si cela n'est pas souhaitable, désactivez-la - dans ce cas, les appels s'afficheront sous forme de notifications.
 
-Pour en savoir plus, consultez [cet article](../../blog/20230328-simplex-chat-v4-6-profils-cachés.md#improved-audiovideo-calls).
+Pour en savoir plus, consultez [cet article](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#improved-audiovideo-calls).
 
 ## Paramètres d'appel avancés
 
