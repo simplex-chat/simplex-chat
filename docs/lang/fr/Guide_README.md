@@ -8,14 +8,14 @@ La première plateforme de messagerie sans aucun identifiant d'utilisateur - 100
 ## Sommaire
 
 - [Prise en main rapide](#prise-en-main-rapide) - scrollez vers le bas de cette page
-- [Établir des connexions](./making-connections.md)
-- [Envoyer des messages](./send-messages.md)
-- [Groupes secrets](./secret-groups.md)
-- [Profils de chat](./chat-profiles.md)
-- [Gestion de vos données](./managing-data.md)
-- [Appels audio & vidéo](./audio-video-calls.md)
-- [Vie privée et sécurité](./privacy-security.md)
-- [Paramètres de l'application](./app-settings.md)
+- [Établir des connexions](./Guide_making-connections.md)
+- [Envoyer des messages](./Guide_send-messages.md)
+- [Groupes secrets](./Guide_secret-groups.md)
+- [Profils de chat](./Guide_chat-profiles.md)
+- [Gestion de vos données](./Guide_managing-data.md)
+- [Appels audio & vidéo](./Guide_audio-video-calls.md)
+- [Vie privée et sécurité](./Guide_privacy-security.md)
+- [Paramètres de l'application](./Guide_app-settings.md)
 
 ## Prise en main rapide
 
@@ -45,7 +45,7 @@ Lorsque vous commencez à utiliser l'application, vous pouvez appuyer sur "Se co
 
 Ce bouton disparaîtra une fois que vous aurez établi la première connexion. Pour vous connecter ultérieurement aux développeurs :
 
-- [Ouvrir les paramètres de l'application](#accessing-app-settings).
+- [Ouvrir les paramètres de l'application](#explorer-les-paramètres-de-l'application).
 - Appuyez sur "Envoyer des questions et des idées".
 
 ### Rejoindre des groupes d'utilisateurs
@@ -72,12 +72,12 @@ Pour rejoindre un groupe via un lien :
 
 Regardez la vidéo sur [le site web](https://simplex.chat) qui montre comment cela fonctionne.
 
-Vous pouvez également créer une [adresse de contact à long terme](./app-settings.md#your-simplex-contact-address).
+Vous pouvez également créer une [adresse de contact à long terme](./Guide_app-settings.md#your-simplex-contact-address).
 
 ### Explorer les paramètres de l'application
 
 La plupart des paramètres de l'application sont communs à tous les profils, mais certains paramètres sont spécifiques au profil de chat.
 
-Pour en savoir plus, consultez la page [App settings](./app-settings.md).
+Pour en savoir plus, consultez la page [paramètres de l'app](./Guide_app-settings.md).
 
 De nombreuses actions de conversation sont disponibles via une pression longue ou un glissement - essayez-les !
