@@ -72,7 +72,7 @@ class AppPreferences {
     set = fun(action: CallOnLockScreen) { _callOnLockScreen.set(action.name) }
   )
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
-  val laMode = mkEnumPreference(SHARED_PREFS_LA_MODE, LAMode.SYSTEM) { LAMode.values().firstOrNull { it.name == this } }
+  val laMode = mkEnumPreference(SHARED_PREFS_LA_MODE, LAMode.default) { LAMode.values().firstOrNull { it.name == this } }
   val laLockDelay = mkIntPreference(SHARED_PREFS_LA_LOCK_DELAY, 30)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
@@ -471,13 +471,19 @@ object ChatController {
   suspend fun apiSetAllContactReceipts(enable: Boolean) {
     val r = sendCmd(CC.SetAllContactReceipts(enable))
     if (r is CR.CmdOk) return
-    throw Exception("failed to enable receipts for all users ${r.responseType} ${r.details}")
+    throw Exception("failed to set receipts for all users ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetUserContactReceipts(userId: Long, userMsgReceiptSettings: UserMsgReceiptSettings) {
     val r = sendCmd(CC.ApiSetUserContactReceipts(userId, userMsgReceiptSettings))
     if (r is CR.CmdOk) return
-    throw Exception("failed to enable receipts for user contacts ${r.responseType} ${r.details}")
+    throw Exception("failed to set receipts for user contacts ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetUserGroupReceipts(userId: Long, userMsgReceiptSettings: UserMsgReceiptSettings) {
+    val r = sendCmd(CC.ApiSetUserGroupReceipts(userId, userMsgReceiptSettings))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to set receipts for user groups ${r.responseType} ${r.details}")
   }
 
   suspend fun apiHideUser(userId: Long, viewPwd: String): User =
@@ -1785,6 +1791,7 @@ sealed class CC {
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
   class SetAllContactReceipts(val enable: Boolean): CC()
   class ApiSetUserContactReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
+  class ApiSetUserGroupReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
   class ApiUnhideUser(val userId: Long, val viewPwd: String): CC()
   class ApiMuteUser(val userId: Long): CC()
@@ -1882,7 +1889,11 @@ sealed class CC {
     is SetAllContactReceipts -> "/set receipts all ${onOff(enable)}"
     is ApiSetUserContactReceipts -> {
       val mrs = userMsgReceiptSettings
-      "/_set receipts $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
+      "/_set receipts contacts $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
+    }
+    is ApiSetUserGroupReceipts -> {
+      val mrs = userMsgReceiptSettings
+      "/_set receipts groups $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
     }
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
     is ApiUnhideUser -> "/_unhide user $userId ${json.encodeToString(viewPwd)}"
@@ -1981,6 +1992,7 @@ sealed class CC {
     is ApiSetActiveUser -> "apiSetActiveUser"
     is SetAllContactReceipts -> "setAllContactReceipts"
     is ApiSetUserContactReceipts -> "apiSetUserContactReceipts"
+    is ApiSetUserGroupReceipts -> "apiSetUserGroupReceipts"
     is ApiHideUser -> "apiHideUser"
     is ApiUnhideUser -> "apiUnhideUser"
     is ApiMuteUser -> "apiMuteUser"

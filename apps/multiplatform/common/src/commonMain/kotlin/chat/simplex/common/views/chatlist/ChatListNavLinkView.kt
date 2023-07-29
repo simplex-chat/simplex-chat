@@ -24,7 +24,7 @@ import chat.simplex.common.views.chat.item.InvalidJSONView
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.ContactConnectionInfoView
-import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.ntfManager
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
@@ -73,7 +73,9 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactConnectionView(chat.chatInfo.contactConnection) },
         click = {
-          ModalManager.shared.showModalCloseable(true) { close ->
+          ModalManager.center.closeModals()
+          ModalManager.end.closeModals()
+          ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
             ContactConnectionInfoView(chatModel, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, false, close)
           }
         },
@@ -87,7 +89,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           InvalidDataView()
         },
         click = {
-          ModalManager.shared.showModal(true) { InvalidJSONView(chat.chatInfo.json) }
+          ModalManager.end.closeModals()
+          ModalManager.center.showModal(true) { InvalidJSONView(chat.chatInfo.json) }
         },
         dropdownMenuItems = null,
         showMenu,
@@ -342,7 +345,9 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     stringResource(MR.strings.set_contact_name),
     painterResource(MR.images.ic_edit),
     onClick = {
-      ModalManager.shared.showModalCloseable(true) { close ->
+      ModalManager.center.closeModals()
+      ModalManager.end.closeModals()
+      ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
         ContactConnectionInfoView(chatModel, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
       }
       showMenu.value = false
@@ -613,7 +618,9 @@ fun ChatListNavLinkLayout(
   stopped: Boolean
 ) {
   var modifier = Modifier.fillMaxWidth()
-  if (!stopped) modifier = modifier.combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
+  if (!stopped) modifier = modifier
+    .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
+    .onRightClick { showMenu.value = true }
   Box(modifier) {
     Row(
       modifier = Modifier

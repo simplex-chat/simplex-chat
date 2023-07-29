@@ -26,7 +26,7 @@ fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   SimpleXInfoLayout(
     user = chatModel.currentUser.value,
     onboardingStage = if (onboarding) chatModel.onboardingStage else null,
-    showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
+    showModal = { modalView -> { if (onboarding) ModalManager.fullscreen.showModal { modalView(chatModel) } else ModalManager.start.showModal { modalView(chatModel) } } },
   )
 }
 
@@ -41,6 +41,7 @@ fun SimpleXInfoLayout(
       .fillMaxSize()
       .verticalScroll(rememberScrollState())
       .padding(start = DEFAULT_PADDING , end = DEFAULT_PADDING, top = DEFAULT_PADDING),
+    horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Box(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
@@ -48,9 +49,11 @@ fun SimpleXInfoLayout(
 
     Text(stringResource(MR.strings.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 48.dp).padding(horizontal = 36.dp), textAlign = TextAlign.Center)
 
-    InfoRow(painterResource(MR.images.privacy), MR.strings.privacy_redefined, MR.strings.first_platform_without_user_ids, width = 80.dp)
-    InfoRow(painterResource(MR.images.shield), MR.strings.immune_to_spam_and_abuse, MR.strings.people_can_connect_only_via_links_you_share)
-    InfoRow(painterResource(if (isInDarkTheme()) MR.images.decentralized_light else MR.images.decentralized), MR.strings.decentralized, MR.strings.opensource_protocol_and_code_anybody_can_run_servers)
+    Column {
+      InfoRow(painterResource(MR.images.privacy), MR.strings.privacy_redefined, MR.strings.first_platform_without_user_ids, width = 80.dp)
+      InfoRow(painterResource(MR.images.shield), MR.strings.immune_to_spam_and_abuse, MR.strings.people_can_connect_only_via_links_you_share)
+      InfoRow(painterResource(if (isInDarkTheme()) MR.images.decentralized_light else MR.images.decentralized), MR.strings.decentralized, MR.strings.opensource_protocol_and_code_anybody_can_run_servers)
+    }
 
     Spacer(Modifier.fillMaxHeight().weight(1f))
 

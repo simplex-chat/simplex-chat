@@ -6,8 +6,7 @@ import androidx.compose.material.Surface
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.Log
-import chat.simplex.common.platform.TAG
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.usersettings.*
@@ -41,17 +40,25 @@ object AppLock {
         text = generalGetString(MR.strings.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
         confirmText = generalGetString(MR.strings.la_notice_turn_on),
         onConfirm = {
+          laNoticeShown.set(true)
           withBGApi { // to remove this call, change ordering of onConfirm call in AlertManager
-            showChooseLAMode(laNoticeShown)
+            if (appPlatform.isAndroid) {
+              showChooseLAMode()
+            } else {
+              AlertManager.shared.hideAlert()
+              setPasscode()
+            }
           }
+        },
+        onDismiss = {
+          AlertManager.shared.hideAlert()
         }
       )
     }
   }
 
-  private fun showChooseLAMode(laNoticeShown: SharedPreference<Boolean>) {
+  private fun showChooseLAMode() {
     Log.d(TAG, "showLANotice")
-    laNoticeShown.set(true)
     AlertManager.shared.showAlertDialogStacked(
       title = generalGetString(MR.strings.la_lock_mode),
       text = null,
@@ -71,7 +78,7 @@ object AppLock {
   private fun initialEnableLA() {
     val m = ChatModel
     val appPrefs = ChatController.appPrefs
-    appPrefs.laMode.set(LAMode.SYSTEM)
+    appPrefs.laMode.set(LAMode.default)
     authenticate(
       generalGetString(MR.strings.auth_enable_simplex_lock),
       generalGetString(MR.strings.auth_confirm_credential),
@@ -100,7 +107,7 @@ object AppLock {
 
   private fun setPasscode() {
     val appPrefs = ChatController.appPrefs
-    ModalManager.shared.showCustomModal { close ->
+    ModalManager.fullscreen.showCustomModal { close ->
       Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
         SetAppPasscodeView(
           submit = {

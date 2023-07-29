@@ -24,11 +24,17 @@ import chat.simplex.common.platform.*
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
+  val close = {
+    close()
+    if (appPlatform.isDesktop) {
+      ModalManager.center.closeModals()
+    }
+  }
   BackHandler(onBack = {
     close()
   })
   TerminalLayout(
-    remember { chatModel.terminalItems },
+    chatModel.terminalItems,
     composeState,
     sendCommand = { sendCommand(chatModel, composeState) },
     close
@@ -56,7 +62,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
 
 @Composable
 fun TerminalLayout(
-  terminalItems: List<TerminalItem>,
+  terminalItems: MutableState<List<TerminalItem>>,
   composeState: MutableState<ComposeState>,
   sendCommand: () -> Unit,
   close: () -> Unit
@@ -109,12 +115,12 @@ fun TerminalLayout(
 private var lazyListState = 0 to 0
 
 @Composable
-fun TerminalLog(terminalItems: List<TerminalItem>) {
+fun TerminalLog(terminalItems: MutableState<List<TerminalItem>>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed().toList() } }
+  val reversedTerminalItems by remember { derivedStateOf { terminalItems.value.reversed().toList() } }
   val clipboard = LocalClipboardManager.current
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
@@ -126,7 +132,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
         modifier = Modifier
           .fillMaxWidth()
           .clickable {
-            ModalManager.shared.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
+            ModalManager.start.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
               }
@@ -146,7 +152,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
 fun PreviewTerminalLayout() {
   SimpleXTheme {
     TerminalLayout(
-      terminalItems = TerminalItem.sampleData,
+      terminalItems = remember { mutableStateOf(TerminalItem.sampleData) },
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) },
       sendCommand = {},
       close = {}

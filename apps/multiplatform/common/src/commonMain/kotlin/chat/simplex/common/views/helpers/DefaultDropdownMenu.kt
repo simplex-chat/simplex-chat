@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
+expect fun Modifier.onRightClick(action: () -> Unit): Modifier
+
 expect interface DefaultExposedDropdownMenuBoxScope {
   @Composable
   open fun DefaultExposedDropdownMenu(

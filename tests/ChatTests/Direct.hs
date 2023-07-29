@@ -2213,13 +2213,13 @@ testConfigureDeliveryReceipts tmp =
         noReceipt cath alice "4"
 
         -- configure receipts for user contacts
-        alice ##> "/_set receipts 1 on"
+        alice ##> "/_set receipts contacts 1 on"
         alice <## "ok"
         receipt bob alice "5"
         receipt cath alice "6"
 
         -- configure receipts for user contacts (terminal api)
-        alice ##> "/set receipts off"
+        alice ##> "/set receipts contacts off"
         alice <## "ok"
         noReceipt bob alice "7"
         noReceipt cath alice "8"
@@ -2231,18 +2231,18 @@ testConfigureDeliveryReceipts tmp =
         noReceipt cath alice "10"
 
         -- configure receipts for user contacts (don't clear overrides)
-        alice ##> "/_set receipts 1 off"
+        alice ##> "/_set receipts contacts 1 off"
         alice <## "ok"
         receipt bob alice "11"
         noReceipt cath alice "12"
 
-        alice ##> "/_set receipts 1 off clear_overrides=off"
+        alice ##> "/_set receipts contacts 1 off clear_overrides=off"
         alice <## "ok"
         receipt bob alice "13"
         noReceipt cath alice "14"
 
         -- configure receipts for user contacts (clear overrides)
-        alice ##> "/set receipts off clear_overrides=on"
+        alice ##> "/set receipts contacts off clear_overrides=on"
         alice <## "ok"
         noReceipt bob alice "15"
         noReceipt cath alice "16"

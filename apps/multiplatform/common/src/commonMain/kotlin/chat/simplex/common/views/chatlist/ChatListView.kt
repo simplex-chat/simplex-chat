@@ -8,16 +8,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.*
+import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -28,15 +28,13 @@ import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
+fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val newChatSheetState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
-  val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
   val showNewChatSheet = {
     newChatSheetState.value = AnimatedViewState.VISIBLE
   }
@@ -47,7 +45,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
       delay(1000L)
-      ModalManager.shared.showCustomModal { close -> WhatsNewView(close = close) }
+      ModalManager.center.showCustomModal { close -> WhatsNewView(close = close) }
     }
   }
   LaunchedEffect(chatModel.clearOverlays.value) {
@@ -60,13 +58,13 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       connectIfOpenedViaUri(url, chatModel)
     }
   }
+  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   var searchInList by rememberSaveable { mutableStateOf("") }
-  val scaffoldState = rememberScaffoldState()
   val scope = rememberCoroutineScope()
-  val switchingUsers = rememberSaveable { mutableStateOf(false) }
-  Scaffold(topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } },
+  val (userPickerState, scaffoldState, switchingUsers ) = settingsState
+  Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } } },
     scaffoldState = scaffoldState,
-    drawerContent = { SettingsView(chatModel, setPerformLA) },
+    drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     floatingActionButton = {
       if (searchInList.isEmpty()) {
@@ -76,7 +74,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
               if (newChatSheetState.value.isVisible()) hideNewChatSheet(true) else showNewChatSheet()
             }
           },
-          Modifier.padding(end = DEFAULT_PADDING - 16.dp, bottom = DEFAULT_PADDING - 16.dp),
+          Modifier.padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp),
           elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 0.dp,
             pressedElevation = 0.dp,
@@ -91,7 +89,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       }
     }
   ) {
-    Box(Modifier.padding(it)) {
+    Box(Modifier.padding(it).padding(end = endPadding)) {
       Column(
         modifier = Modifier
           .fillMaxSize()
@@ -112,8 +110,10 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   if (searchInList.isEmpty()) {
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
-  UserPicker(chatModel, userPickerState, switchingUsers) {
-    scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+  if (appPlatform.isAndroid) {
+    UserPicker(chatModel, userPickerState, switchingUsers) {
+      scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+    }
   }
   if (switchingUsers.value) {
     Box(
@@ -130,7 +130,7 @@ private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
     val uriHandler = LocalUriHandler.current
     ConnectButton(generalGetString(MR.strings.chat_with_developers)) {
-      uriHandler.openUriCatching(simplexTeamUri)
+      uriHandler.openVerifiedSimplexUri(simplexTeamUri)
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
     ConnectButton(generalGetString(MR.strings.tap_to_start_new_chat), openNewChatSheet)
@@ -344,7 +344,11 @@ private fun ChatList(chatModel: ChatModel, search: String) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-  val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search) } }
+  val allChats = remember { chatModel.chats }
+  // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
+  // which is related to [derivedStateOf]. Using safe alternative instead
+  // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
+  val chats = filteredChats(showUnreadAndFavorites, search, allChats.toList())
   LazyColumn(
     modifier = Modifier.fillMaxWidth(),
     listState
@@ -360,13 +364,12 @@ private fun ChatList(chatModel: ChatModel, search: String) {
   }
 }
 
-private fun filteredChats(showUnreadAndFavorites: Boolean, searchText: String): List<Chat> {
-  val chatModel = ChatModel
+private fun filteredChats(showUnreadAndFavorites: Boolean, searchText: String, chats: List<Chat>): List<Chat> {
   val s = searchText.trim().lowercase()
   return if (s.isEmpty() && !showUnreadAndFavorites)
-    chatModel.chats
+    chats
   else {
-    chatModel.chats.filter { chat ->
+    chats.filter { chat ->
       when (val cInfo = chat.chatInfo) {
         is ChatInfo.Direct -> if (s.isEmpty()) {
           filtered(chat)

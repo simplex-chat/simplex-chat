@@ -23,16 +23,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.appVersionInfo
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
+fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerState: DrawerState) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
 
@@ -48,10 +49,10 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       chatModel.controller.appPrefs.incognito,
       user.displayName,
       setPerformLA = setPerformLA,
-      showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
-      showSettingsModal = { modalView -> { ModalManager.shared.showModal(true) { modalView(chatModel) } } },
+      showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
+      showSettingsModal = { modalView -> { ModalManager.start.showModal(true) { modalView(chatModel) } } },
       showSettingsModalWithSearch = { modalView ->
-        ModalManager.shared.showCustomModal { close ->
+        ModalManager.start.showCustomModal { close ->
           val search = rememberSaveable { mutableStateOf("") }
           ModalView(
             { close() },
@@ -61,12 +62,12 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
             content = { modalView(chatModel, search) })
         }
       },
-      showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
+      showCustomModal = { modalView -> { ModalManager.start.showCustomModal { close -> modalView(chatModel, close) } } },
       showVersion = {
         withApi {
           val info = chatModel.controller.apiGetVersion()
           if (info != null) {
-            ModalManager.shared.showModal { VersionInfoView(info) }
+            ModalManager.start.showModal { VersionInfoView(info) }
           }
         }
       },
@@ -75,7 +76,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
           block()
         } else {
           var autoShow = true
-          ModalManager.shared.showModalCloseable { close ->
+          ModalManager.fullscreen.showModalCloseable { close ->
             val onFinishAuth = { success: Boolean ->
               if (success) {
                 close()
@@ -104,6 +105,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
           }
         }
       },
+      drawerState = drawerState,
     )
   }
 }
@@ -125,15 +127,25 @@ fun SettingsLayout(
   showSettingsModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
-  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
+  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
+  drawerState: DrawerState,
 ) {
+  val scope = rememberCoroutineScope()
+  val closeSettings: () -> Unit = { scope.launch { drawerState.close() } }
+  if (drawerState.isOpen) {
+    BackHandler {
+      closeSettings()
+    }
+  }
   val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
-  Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).themedBackground(theme.value.base)) {
+  Box(Modifier.fillMaxSize()) {
     Column(
       Modifier
         .fillMaxSize()
-        .padding(top = DEFAULT_PADDING)
+        .verticalScroll(rememberScrollState())
+        .themedBackground(theme.value.base)
+        .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 3)
     ) {
       AppBarTitle(stringResource(MR.strings.your_settings))
 
@@ -163,7 +175,7 @@ fun SettingsLayout(
         SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) }, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openUriCatching(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary, extraPadding = true)
       }
       SectionDividerSpaced()
@@ -177,6 +189,17 @@ fun SettingsLayout(
 
       SettingsSectionApp(showSettingsModal, showCustomModal, showVersion, withAuth)
       SectionBottomSpacer()
+    }
+    if (appPlatform.isDesktop) {
+      Box(
+        Modifier
+        .fillMaxWidth()
+        .background(MaterialTheme.colors.background)
+        .background(if (isInDarkTheme()) ToolbarDark else ToolbarLight)
+        .padding(start = 4.dp, top = 8.dp)
+      ) {
+        NavigationButtonBack(closeSettings)
+      }
     }
   }
 }
@@ -510,6 +533,7 @@ fun PreviewSettingsLayout() {
       showCustomModal = { {} },
       showVersion = {},
       withAuth = { _, _, _ -> },
+      drawerState = DrawerState(DrawerValue.Closed),
     )
   }
 }

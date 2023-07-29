@@ -14,11 +14,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 @Composable
-fun CIMetaView(chatItem: ChatItem, timedMessagesTTL: Int?, metaColor: Color = MaterialTheme.colors.secondary) {
+fun CIMetaView(
+  chatItem: ChatItem,
+  timedMessagesTTL: Int?,
+  metaColor: Color = MaterialTheme.colors.secondary,
+  paleMetaColor: Color = if (isInDarkTheme()) {
+    metaColor.copy(
+      red = metaColor.red * 0.67F,
+      green = metaColor.green * 0.67F,
+      blue = metaColor.red * 0.67F)
+  } else {
+    metaColor.copy(
+      red = minOf(metaColor.red * 1.33F, 1F),
+      green = minOf(metaColor.green * 1.33F, 1F),
+      blue = minOf(metaColor.red * 1.33F, 1F))
+  }
+) {
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
       Text(
@@ -28,14 +44,14 @@ fun CIMetaView(chatItem: ChatItem, timedMessagesTTL: Int?, metaColor: Color = Ma
         modifier = Modifier.padding(start = 3.dp)
       )
     } else {
-      CIMetaText(chatItem.meta, timedMessagesTTL, metaColor)
+      CIMetaText(chatItem.meta, timedMessagesTTL, metaColor, paleMetaColor)
     }
   }
 }
 
 @Composable
 // changing this function requires updating reserveSpaceForMeta
-private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
+private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color, paleColor: Color) {
   if (meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
     Spacer(Modifier.width(3.dp))
@@ -48,7 +64,7 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
     }
     Spacer(Modifier.width(4.dp))
   }
-  val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color)
+  val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
   if (statusIcon != null) {
     val (icon, statusColor) = statusIcon
     if (meta.itemStatus is CIStatus.SndSent || meta.itemStatus is CIStatus.SndRcvd) {
@@ -138,7 +154,7 @@ fun PreviewCIMetaViewSendNoAuth() {
 fun PreviewCIMetaViewSendSent() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent()
+      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null
   )
@@ -176,7 +192,7 @@ fun PreviewCIMetaViewEditedSent() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       itemEdited = true,
-      status= CIStatus.SndSent()
+      status= CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null
   )

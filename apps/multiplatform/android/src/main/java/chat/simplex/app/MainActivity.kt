@@ -107,39 +107,18 @@ fun processNotificationIntent(intent: Intent?) {
       val chatId = intent.getStringExtra("chatId")
       Log.d(TAG, "processNotificationIntent: OpenChatAction $chatId")
       if (chatId != null) {
-        withBGApi {
-          awaitChatStartedIfNeeded(chatModel)
-          if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
-            chatModel.controller.changeActiveUser(userId, null)
-          }
-          val cInfo = chatModel.getChat(chatId)?.chatInfo
-          chatModel.clearOverlays.value = true
-          if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(cInfo, chatModel)
-        }
+        ntfManager.openChatAction(userId, chatId)
       }
     }
     NtfManager.ShowChatsAction -> {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
-      withBGApi {
-        awaitChatStartedIfNeeded(chatModel)
-        if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
-          chatModel.controller.changeActiveUser(userId, null)
-        }
-        chatModel.chatId.value = null
-        chatModel.clearOverlays.value = true
-      }
+      ntfManager.showChatsAction(userId)
     }
     NtfManager.AcceptCallAction -> {
       val chatId = intent.getStringExtra("chatId")
       if (chatId == null || chatId == "") return
       Log.d(TAG, "processNotificationIntent: AcceptCallAction $chatId")
-      chatModel.clearOverlays.value = true
-      val invitation = chatModel.callInvitations[chatId]
-      if (invitation == null) {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_already_ended))
-      } else {
-        chatModel.callManager.acceptIncomingCall(invitation = invitation)
-      }
+      ntfManager.acceptCallAction(chatId)
     }
   }
 }
@@ -200,19 +179,6 @@ fun processExternalIntent(intent: Intent?) {
 
 fun isMediaIntent(intent: Intent): Boolean =
   intent.type?.startsWith("image/") == true || intent.type?.startsWith("video/") == true
-
-suspend fun awaitChatStartedIfNeeded(chatModel: ChatModel, timeout: Long = 30_000) {
-  // Still decrypting database
-  if (chatModel.chatRunning.value == null) {
-    val step = 50L
-    for (i in 0..(timeout / step)) {
-      if (chatModel.chatRunning.value == true || chatModel.onboardingStage.value == OnboardingStage.Step1_SimpleXInfo) {
-        break
-      }
-      delay(step)
-    }
-  }
-}
 
 //fun testJson() {
 //  val str: String = """

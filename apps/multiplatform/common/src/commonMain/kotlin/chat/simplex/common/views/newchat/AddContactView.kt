@@ -30,7 +30,7 @@ fun AddContactView(connReqInvitation: String, connIncognito: Boolean) {
     connIncognito = connIncognito,
     share = { clipboard.shareText(connReqInvitation) },
     learnMore = {
-      ModalManager.shared.showModal {
+      ModalManager.center.showModal {
         Column(
           Modifier
             .fillMaxHeight()

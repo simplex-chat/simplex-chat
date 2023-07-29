@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -40,4 +41,11 @@ fun DeveloperView(
     )
     SectionBottomSpacer()
   }
+}
+
+fun showInDevelopingAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.in_developing_title),
+    text = generalGetString(MR.strings.in_developing_desc)
+  )
 }

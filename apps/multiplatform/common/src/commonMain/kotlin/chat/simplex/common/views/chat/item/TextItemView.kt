@@ -19,8 +19,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.ui.theme.CurrentColors
-import chat.simplex.common.views.helpers.DisposableEffectOnGone
-import chat.simplex.common.views.helpers.detectGesture
+import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
@@ -149,7 +148,7 @@ fun MarkdownText (
               } else {
                 ft.format.style
               }
-              withAnnotation(tag = "URL", annotation = link) {
+              withAnnotation(tag = if (ft.format is Format.SimplexLink && linkMode != SimplexLinkMode.BROWSER) "SIMPLEX_URL" else "URL", annotation = link) {
                 withStyle(ftStyle) { append(ft.viewText(linkMode)) }
               }
             } else {
@@ -170,6 +169,8 @@ fun MarkdownText (
           onLongClick = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
               .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
+            annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
+              .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
           },
           onClick = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
@@ -182,9 +183,14 @@ fun MarkdownText (
                   Log.e(TAG, "Open url: ${e.stackTraceToString()}")
                 }
               }
+            annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
+              .firstOrNull()?.let { annotation ->
+                uriHandler.openVerifiedSimplexUri(annotation.item)
+              }
           },
           shouldConsumeEvent = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
+            annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset).any()
           }
         )
       } else {

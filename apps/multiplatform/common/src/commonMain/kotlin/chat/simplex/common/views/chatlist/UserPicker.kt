@@ -41,6 +41,11 @@ fun UserPicker(
 ) {
   val scope = rememberCoroutineScope()
   var newChat by remember { mutableStateOf(userPickerState.value) }
+  if (newChat.isVisible()) {
+    BackHandler {
+      userPickerState.value = AnimatedViewState.HIDING
+    }
+  }
   val users by remember {
     derivedStateOf {
       chatModel.users
@@ -121,6 +126,7 @@ fun UserPicker(
                   delay(500)
                   switchingUsers.value = true
                 }
+                ModalManager.closeAllModalsEverywhere()
                 chatModel.controller.changeActiveUser(u.user.userId, null)
                 job.cancel()
                 switchingUsers.value = false
@@ -159,6 +165,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
         interactionSource = remember { MutableInteractionSource() },
         indication = if (!u.activeUser) LocalIndication.current else null
       )
+      .onRightClick { onLongClick() }
       .padding(padding),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically

@@ -26,26 +26,37 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chatlist.cantInviteIncognitoAlert
-import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.ClearChatButton
-import chat.simplex.common.views.chat.clearChatDialog
+import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
+
+const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
 fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val currentUser = chatModel.currentUser.value
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
-  if (chat != null && chat.chatInfo is ChatInfo.Group) {
+  if (chat != null && chat.chatInfo is ChatInfo.Group && currentUser != null) {
     val groupInfo = chat.chatInfo.groupInfo
+    val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, currentUser.sendRcptsSmallGroups)) }
     GroupChatInfoLayout(
       chat,
       groupInfo,
+      currentUser,
+      sendReceipts = sendReceipts,
+      setSendReceipts = { sendRcpts ->
+        withApi {
+          val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
+          updateChatSettings(chat, chatSettings, chatModel)
+          sendReceipts.value = sendRcpts
+        }
+      },
       members = chatModel.groupMembers
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
         .sortedBy { it.displayName.lowercase() },
@@ -54,7 +65,7 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(true) { close ->
+          ModalManager.end.showModalCloseable(true) { close ->
             AddGroupMembersView(groupInfo, false, chatModel, close)
           }
         }
@@ -73,7 +84,7 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
           } else {
             member to null
           }
-          ModalManager.shared.showModalCloseable(true) { closeCurrent ->
+          ModalManager.end.showModalCloseable(true) { closeCurrent ->
             remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
               GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, closeCurrent) {
                 closeCurrent()
@@ -84,13 +95,13 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
         }
       },
       editGroupProfile = {
-        ModalManager.shared.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
+        ModalManager.end.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
       },
       addOrEditWelcomeMessage = {
-        ModalManager.shared.showCustomModal { close -> GroupWelcomeView(chatModel, groupInfo, close) }
+        ModalManager.end.showCustomModal { close -> GroupWelcomeView(chatModel, groupInfo, close) }
       },
       openPreferences = {
-        ModalManager.shared.showCustomModal { close ->
+        ModalManager.end.showCustomModal { close ->
           GroupPreferencesView(
             chatModel,
             chat.id,
@@ -102,7 +113,7 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
       manageGroupLink = {
-          ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
+          ModalManager.end.showModal { GroupLinkView(chatModel, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
       }
     )
   }
@@ -150,6 +161,9 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> U
 fun GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
+  currentUser: User,
+  sendReceipts: State<SendReceipts>,
+  setSendReceipts: (SendReceipts) -> Unit,
   members: List<GroupMember>,
   developerTools: Boolean,
   groupLink: String?,
@@ -184,6 +198,11 @@ fun GroupChatInfoLayout(
         AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
       }
       GroupPreferencesButton(openPreferences)
+      if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
+        SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
+      } else {
+        SendReceiptsOptionDisabled()
+      }
     }
     SectionTextFooter(stringResource(MR.strings.only_group_owners_can_change_prefs))
     SectionDividerSpaced(maxTopPadding = true)
@@ -267,6 +286,37 @@ private fun GroupPreferencesButton(onClick: () -> Unit) {
     stringResource(MR.strings.group_preferences),
     click = onClick
   )
+}
+
+@Composable
+private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
+  val values = remember {
+    mutableListOf(SendReceipts.Yes, SendReceipts.No, SendReceipts.UserDefault(currentUser.sendRcptsSmallGroups)).map { it to it.text }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(MR.strings.send_receipts),
+    values,
+    state,
+    icon = painterResource(MR.images.ic_double_check),
+    enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
+  )
+}
+
+@Composable
+fun SendReceiptsOptionDisabled() {
+  SettingsActionItemWithContent(
+    icon = painterResource(MR.images.ic_double_check),
+    text = generalGetString(MR.strings.send_receipts),
+    click = {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.send_receipts_disabled_alert_title),
+        text = String.format(generalGetString(MR.strings.send_receipts_disabled_alert_msg), SMALL_GROUPS_RCPS_MEM_LIMIT)
+      )
+    }
+  ) {
+    Text(generalGetString(MR.strings.send_receipts_disabled), color = MaterialTheme.colors.secondary)
+  }
 }
 
 @Composable
@@ -429,6 +479,9 @@ fun PreviewGroupChatInfoLayout() {
         chatItems = arrayListOf()
       ),
       groupInfo = GroupInfo.sampleData,
+      User.sampleData,
+      sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
+      setSendReceipts = {},
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       groupLink = null,

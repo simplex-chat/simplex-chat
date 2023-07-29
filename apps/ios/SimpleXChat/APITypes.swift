@@ -19,6 +19,7 @@ public enum ChatCommand {
     case apiSetActiveUser(userId: Int64, viewPwd: String?)
     case setAllContactReceipts(enable: Bool)
     case apiSetUserContactReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
+    case apiSetUserGroupReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
     case apiHideUser(userId: Int64, viewPwd: String)
     case apiUnhideUser(userId: Int64, viewPwd: String)
     case apiMuteUser(userId: Int64)
@@ -127,7 +128,10 @@ public enum ChatCommand {
             case let .setAllContactReceipts(enable): return "/set receipts all \(onOff(enable))"
             case let .apiSetUserContactReceipts(userId, userMsgReceiptSettings):
                 let umrs = userMsgReceiptSettings
-                return "/_set receipts \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
+                return "/_set receipts contacts \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
+            case let .apiSetUserGroupReceipts(userId, userMsgReceiptSettings):
+                let umrs = userMsgReceiptSettings
+                return "/_set receipts groups \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
@@ -257,6 +261,7 @@ public enum ChatCommand {
             case .apiSetActiveUser: return "apiSetActiveUser"
             case .setAllContactReceipts: return "setAllContactReceipts"
             case .apiSetUserContactReceipts: return "apiSetUserContactReceipts"
+            case .apiSetUserGroupReceipts: return "apiSetUserGroupReceipts"
             case .apiHideUser: return "apiHideUser"
             case .apiUnhideUser: return "apiUnhideUser"
             case .apiMuteUser: return "apiMuteUser"

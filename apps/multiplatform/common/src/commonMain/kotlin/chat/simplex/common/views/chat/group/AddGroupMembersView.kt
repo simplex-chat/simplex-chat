@@ -50,7 +50,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
     allowModifyMembers = allowModifyMembers,
     searchText,
     openPreferences = {
-      ModalManager.shared.showCustomModal { close ->
+      ModalManager.end.showCustomModal { close ->
         GroupPreferencesView(chatModel, groupInfo.id, close)
       }
     },
