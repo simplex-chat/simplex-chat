@@ -19,13 +19,13 @@ Cette section est intitulée **"Vous "** dans les paramètres de l'application.
 
 Tapez sur votre avatar/nom pour mettre à jour vos noms de profil et avatar actuels.
 
-Le nom d'affichage ne peut pas contenir d'espaces et il est recommandé d'utiliser des caractères latins et des chiffres pour faciliter la saisie de ces noms pour les utilisateurs qui utilisent[SimpleX Chat pour terminal](../CLI.md) (CLI).
+Le nom d'affichage ne peut pas contenir d'espaces et il est recommandé d'utiliser des caractères latins et des chiffres pour faciliter la saisie de ces noms pour les utilisateurs qui utilisent [SimpleX Chat pour terminal](./CLI.md) (CLI).
 
 **Veuillez noter** : Lorsque vous enregistrez votre profil, la mise à jour est envoyée à tous vos contacts (à l'exception des contacts avec lesquels vos profils incognito ont été partagés). Si vous avez un grand nombre de contacts, cela peut prendre plusieurs secondes.
 
 ### Vos profils de chat
 
-Cette page permet d'ajouter et de configurer vos profils de chat. Veuillez consulter [Vos profils de chat](./chat-profiles.md) pour plus de détails.
+Cette page permet d'ajouter et de configurer vos profils de chat. Veuillez consulter [Vos profils de chat](./Guide_chat-profiles.md) pour plus de détails.
 
 ### Incognito
 
@@ -81,7 +81,7 @@ Cette page permet de configurer vos propres relais SMP et de modifier d'autres p
 
 #### Serveurs SMP
 
-<img src="../../blog/images/20221206-server1.png" width="288"> &nbsp;&nbsp ; <img src="../../blog/images/20221206-server2.png" width="288"> &nbsp;&nbsp ; <img src="../../blog/images/20221206-server3.png" width="288">
+<img src="../../blog/images/20221206-server1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-server2.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-server3.png" width="288">
 
 Par défaut, l'application dispose de relais prédéfinis - vous pouvez les remplacer par les vôtres.
 
@@ -107,7 +107,7 @@ L'option **Utiliser les hôtes .onion** n'est disponible que lorsque l'option **
 
 ##### iOS
 
-<img src="../../blog/images/20220901-onion1.png" width="330"> &nbsp ; <img src="../../blog/images/20220901-onion2.png" width="330">
+<img src="../../blog/images/20220901-onion1.png" width="330"> &nbsp; <img src="../../blog/images/20220901-onion2.png" width="330">
 
 Bien qu'iOS ne prenne pas en charge les proxies SOCKS, vous pouvez installer l'application Orbot qui fonctionne comme un fournisseur de VPN. Vous pouvez choisir :
 
@@ -190,7 +190,7 @@ Cette page permet de configurer :
 
 Cette page permet de modifier la phrase d'authentification de la base de données, d'exporter et d'importer la base de données et de configurer la période de conservation des messages.
 
-Pour en savoir plus, consultez la page [Gérer vos données](./managing-data.md).
+Pour en savoir plus, consultez la page [Gérer vos données](./Guide_managing-data.md).
 
 ## Aide et commentaires
 
