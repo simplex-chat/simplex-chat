@@ -13,12 +13,12 @@ Vous pouvez ici choisir de supprimer les messages de votre base de données de c
 
 Pour ouvrir les paramètres de votre base de données de chat :
 
-- Ouvrez les paramètres de l'application](./app-settings.md#opening-the-app-settings).
-- Tapez sur le bouton " Phrase secrète et exportation de la base de données ".
+- Ouvrez [les paramètres de l'application](./Guide_app-settings.md#ouvrir-les-paramètres-de-lapplication).
+- Tapez sur le bouton "Phrase secrète et exportation de la base de données".
 
 ### Phrase secrète de la base de données
 
-<img src="../../blog/images/20220928-passphrase.png" width="330">
+<img src="../../../blog/images/20220928-passphrase.png" width="330">
 
 Par défaut, la phrase secrète de la base de données est aléatoire, vous devez la définir manuellement pour pouvoir l'exporter.
 
@@ -40,6 +40,6 @@ Vous pouvez supprimer votre base de données de chat. AVERTISSEMENT : Cela entra
 
 ## Supprimer les fichiers et les médias
 
-<img src="../../blog/images/20220928-files-media.png" width="330">
+<img src="../../../blog/images/20220928-files-media.png" width="330">
 
 Cette option vous permet de supprimer tous les fichiers et médias envoyés et reçus qui sont stockés dans l'application, sans supprimer les messages.
