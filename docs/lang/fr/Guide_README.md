@@ -33,11 +33,11 @@ Ce profil est local à l'appareil, il n'est stocké nulle part ailleurs.
 
 Après avoir créé un profil de chat, l'application vous demandera de choisir un mode de notification.
 
-<img src="../../blog/images/20220711-notifications.png" width="330">
+<img src="../../../blog/images/20220711-notifications.png" width="330">
 
 Veuillez lire leur description, car sur iOS, il s'agit d'un compromis entre confort et confidentialité, les notifications instantanées partageant davantage de métadonnées avec les serveurs, et sur Android, il s'agit d'un compromis entre les retards de notification et la charge de la batterie.
 
-Vous pouvez en savoir plus sur [les différences entre le fonctionnement des notifications sur Android et sur iOS](../../blog/20220404-simplex-chat-instant-notifications.md).
+Vous pouvez en savoir plus sur [les différences entre le fonctionnement des notifications sur Android et sur iOS](../../../blog/20220404-simplex-chat-instant-notifications.md).
 
 ### Connexion avec les développeurs
 
@@ -50,7 +50,7 @@ Ce bouton disparaîtra une fois que vous aurez établi la première connexion. P
 
 ### Rejoindre des groupes d'utilisateurs
 
-Il y a des liens pour rejoindre plusieurs [groupes d'utilisateurs](.../../README.md#join-user-groups) sur notre page GitHub - rejoignez-les pour poser des questions et échanger des idées.
+Il y a des liens pour rejoindre plusieurs [groupes d'utilisateurs](./README.md#rejoindre-des-groupes-dutilisateurs) sur notre page GitHub - rejoignez-les pour poser des questions et échanger des idées.
 
 Vous pouvez également trouver d'autres groupes gérés par les utilisateurs en effectuant une recherche en ligne.
 
@@ -72,7 +72,7 @@ Pour rejoindre un groupe via un lien :
 
 Regardez la vidéo sur [le site web](https://simplex.chat) qui montre comment cela fonctionne.
 
-Vous pouvez également créer une [adresse de contact à long terme](./Guide_app-settings.md#your-simplex-contact-address).
+Vous pouvez également créer une [adresse de contact à long terme](./Guide_app-settings.md#votre-adresse-de-contact-simplex).
 
 ### Explorer les paramètres de l'application
 
