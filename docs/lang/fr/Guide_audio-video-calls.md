@@ -45,7 +45,7 @@ SimpleX Chat affiche par défaut un appel entrant sur l'écran de verrouillage d
 
 ### Appels sur l'écran de verrouillage sur iOS
 
-<img src="../../blog/images/20230328-call1.png" width="288">
+<img src="../../../blog/images/20230328-call1.png" width="288">
 
 Par défaut, SimpleX Chat utilise l'interface d'appel native d'iOS, lorsqu'elle est autorisée, pour afficher les appels entrants sur l'écran de verrouillage. Vous pouvez la désactiver :
 
@@ -55,13 +55,13 @@ Par défaut, SimpleX Chat utilise l'interface d'appel native d'iOS, lorsqu'elle 
 
 **Remarque : l'interface d'appel d'iOS permet d'accepter les appels sans déverrouiller l'appareil et l'application. Si cela n'est pas souhaitable, désactivez-la - dans ce cas, les appels s'afficheront sous forme de notifications.
 
-Pour en savoir plus, consultez [cet article](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#improved-audiovideo-calls).
+Pour en savoir plus, consultez [cet article](../../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#improved-audiovideo-calls).
 
 ## Paramètres d'appel avancés
 
 ### Serveurs WebRTC ICE
 
-<img src="../../blog/images/20220928-ice-servers.png" width="330">
+<img src="../../../blog/images/20220928-ice-servers.png" width="330">
 
 SimpleX Chat utilise un serveur relais prédéfini pour cacher votre adresse IP à vos contacts par défaut, mais il peut également observer la durée de vos appels. Si vous ne souhaitez pas cela, vous pouvez configurer et utiliser vos propres serveurs de relais WebRTC à la place pour un meilleur contrôle de vos appels.
 
