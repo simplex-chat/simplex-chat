@@ -770,6 +770,12 @@ struct ChatView: View {
                         await MainActor.run {
                             chatItemInfo = ciInfo
                         }
+                        if case let .group(gInfo) = chat.chatInfo {
+                            let groupMembers = await apiListMembers(gInfo.groupId)
+                            await MainActor.run {
+                                ChatModel.shared.groupMembers = groupMembers
+                            }
+                        }
                     } catch let error {
                         logger.error("apiGetChatItemInfo error: \(responseError(error))")
                     }

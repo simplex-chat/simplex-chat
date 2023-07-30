@@ -10,6 +10,7 @@ fun main() {
   initHaskell()
   initApp()
   tmpDir.deleteRecursively()
+  tmpDir.mkdir()
   return showApp()
 }
 

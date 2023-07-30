@@ -222,6 +222,8 @@
   <string name="edit_history">History</string>
   <string name="no_history">No history</string>
   <string name="in_reply_to">In reply to</string>
+  <string name="delivery">Delivery</string>
+  <string name="no_info_on_delivery">No info on delivery</string>
   <string name="delete_verb">Delete</string>
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
@@ -869,7 +871,7 @@
   <string name="if_you_enter_passcode_data_removed">If you enter this passcode when opening the app, all app data will be irreversibly removed!</string>
   <string name="set_passcode">Set passcode</string>
   <string name="receipts_section_description">These settings are for your current profile</string>
-  <string name="receipts_section_description_1">They can be overridden in contact settings</string>
+  <string name="receipts_section_description_1">They can be overridden in contact and group settings.</string>
   <string name="receipts_section_contacts">Contacts</string>
   <string name="receipts_contacts_title_enable">Enable receipts?</string>
   <string name="receipts_contacts_title_disable">Disable receipts?</string>
@@ -879,6 +881,15 @@
   <string name="receipts_contacts_disable_keep_overrides">Disable (keep overrides)</string>
   <string name="receipts_contacts_enable_for_all">Enable for all</string>
   <string name="receipts_contacts_disable_for_all">Disable for all</string>
+  <string name="receipts_section_groups">Small groups (max 20)</string>
+  <string name="receipts_groups_title_enable">Enable receipts for groups?</string>
+  <string name="receipts_groups_title_disable">Disable receipts for groups?</string>
+  <string name="receipts_groups_override_enabled">Sending receipts is enabled for %d groups</string>
+  <string name="receipts_groups_override_disabled">Sending receipts is disabled for %d groups</string>
+  <string name="receipts_groups_enable_keep_overrides">Enable (keep group overrides)</string>
+  <string name="receipts_groups_disable_keep_overrides">Disable (keep group overrides)</string>
+  <string name="receipts_groups_enable_for_all">Enable for all groups</string>
+  <string name="receipts_groups_disable_for_all">Disable for all groups</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
@@ -1161,6 +1172,9 @@
   <string name="share_address">Share address</string>
   <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
   <string name="send_receipts">Send receipts</string>
+  <string name="send_receipts_disabled">disabled</string>
+  <string name="send_receipts_disabled_alert_title">Receipts are disabled</string>
+  <string name="send_receipts_disabled_alert_msg">This group has over %1$d members, delivery receipts are not sent.</string>
 
   <!-- Chat / Chat item info -->
   <string name="section_title_for_console">FOR CONSOLE</string>
@@ -1183,6 +1197,7 @@
   <string name="sender_at_ts">%s at %s</string>
   <string name="current_version_timestamp">%s (current)</string>
   <string name="item_info_no_text">no text</string>
+  <string name="recipient_colon_delivery_status">%s: %s</string>
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member">Remove member</string>
@@ -1526,4 +1541,24 @@
   <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
   <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
   <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
+
+  <!-- CIStatus texts -->
+  <string name="item_status_snd_new_text">Sending message</string>
+  <string name="item_status_snd_sent_text">Message sent</string>
+  <string name="item_status_snd_rcvd_text">Sent message received</string>
+  <string name="item_status_snd_error_text">Error sending message</string>
+  <string name="item_status_rcv_new_text">Message received</string>
+  <string name="item_status_rcv_read_text">Message read</string>
+
+  <string name="item_status_snd_new_desc">Sending message is in progress or pending.</string>
+  <string name="item_status_snd_sent_desc">Message has been sent to the recipient\'s relay.</string>
+  <string name="item_status_snd_rcvd_desc">Message has been received by the recipient.</string>
+  <string name="item_status_snd_error_auth_desc">Message delivery error. Most likely this recipient has deleted the connection with you.</string>
+  <string name="item_status_snd_error_unexpected_desc">Unexpected message delivery error: %1$s</string>
+  <string name="item_status_rcv_new_desc">New message from this sender.</string>
+  <string name="item_status_rcv_read_desc">You\'ve read this received message.</string>
+
+  <!-- Under development -->
+  <string name="in_developing_title">Coming soon!</string>
+  <string name="in_developing_desc">This feature is not yet supported. Try the next release.</string>
 </resources>

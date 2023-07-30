@@ -2,6 +2,12 @@ package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
+import chat.simplex.common.views.chatlist.acceptContactRequest
+import chat.simplex.common.views.chatlist.openChat
+import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
+import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 
 enum class NotificationAction {
   ACCEPT_CONTACT_REQUEST
@@ -10,14 +16,104 @@ enum class NotificationAction {
 lateinit var ntfManager: NtfManager
 
 abstract class NtfManager {
-  abstract fun notifyContactConnected(user: User, contact: Contact)
-  abstract fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest)
-  abstract fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem)
+  fun notifyContactConnected(user: User, contact: Contact) = displayNotification(
+    user = user,
+    chatId = contact.id,
+    displayName = contact.displayName,
+    msgText = generalGetString(MR.strings.notification_contact_connected)
+  )
+
+  fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) = displayNotification(
+    user = user,
+    chatId = cInfo.id,
+    displayName = cInfo.displayName,
+    msgText = generalGetString(MR.strings.notification_new_contact_request),
+    image = cInfo.image,
+    listOf(NotificationAction.ACCEPT_CONTACT_REQUEST to { acceptContactRequestAction(user.userId, cInfo.id) })
+  )
+
+  fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) {
+    if (!cInfo.ntfsEnabled) return
+    displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
+  }
+
+  fun acceptContactRequestAction(userId: Long?, chatId: ChatId) {
+    val isCurrentUser = ChatModel.currentUser.value?.userId == userId
+    val cInfo: ChatInfo.ContactRequest? = if (isCurrentUser) {
+      (ChatModel.getChat(chatId)?.chatInfo as? ChatInfo.ContactRequest) ?: return
+    } else {
+      null
+    }
+    val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
+    acceptContactRequest(apiId, cInfo, isCurrentUser, ChatModel)
+    cancelNotificationsForChat(chatId)
+  }
+
+  fun openChatAction(userId: Long?, chatId: ChatId) {
+    withBGApi {
+      awaitChatStartedIfNeeded(chatModel)
+      if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
+        chatModel.controller.changeActiveUser(userId, null)
+      }
+      val cInfo = chatModel.getChat(chatId)?.chatInfo
+      chatModel.clearOverlays.value = true
+      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(cInfo, chatModel)
+    }
+  }
+
+  fun showChatsAction(userId: Long?) {
+    withBGApi {
+      awaitChatStartedIfNeeded(chatModel)
+      if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
+        chatModel.controller.changeActiveUser(userId, null)
+      }
+      chatModel.chatId.value = null
+      chatModel.clearOverlays.value = true
+    }
+  }
+
+  fun acceptCallAction(chatId: ChatId) {
+    chatModel.clearOverlays.value = true
+    val invitation = chatModel.callInvitations[chatId]
+    if (invitation == null) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_already_ended))
+    } else {
+      chatModel.callManager.acceptIncomingCall(invitation = invitation)
+    }
+  }
+
   abstract fun notifyCallInvitation(invitation: RcvCallInvitation)
   abstract fun hasNotificationsForChat(chatId: String): Boolean
   abstract fun cancelNotificationsForChat(chatId: String)
-  abstract fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList())
-  abstract fun createNtfChannelsMaybeShowAlert()
+  abstract fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())
   abstract fun cancelCallNotification()
   abstract fun cancelAllNotifications()
+  // Android only
+  abstract fun androidCreateNtfChannelsMaybeShowAlert()
+
+  private suspend fun awaitChatStartedIfNeeded(chatModel: ChatModel, timeout: Long = 30_000) {
+    // Still decrypting database
+    if (chatModel.chatRunning.value == null) {
+      val step = 50L
+      for (i in 0..(timeout / step)) {
+        if (chatModel.chatRunning.value == true || chatModel.onboardingStage.value == OnboardingStage.Step1_SimpleXInfo) {
+          break
+        }
+        delay(step)
+      }
+    }
+  }
+
+  private fun hideSecrets(cItem: ChatItem): String {
+    val md = cItem.formattedText
+    return if (md != null) {
+      var res = ""
+      for (ft in md) {
+        res += if (ft.format is Format.Secret) "..." else ft.text
+      }
+      res
+    } else {
+      cItem.text
+    }
+  }
 }

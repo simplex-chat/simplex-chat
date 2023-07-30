@@ -57,8 +57,13 @@ fun CreateSimpleXAddress(m: ChatModel) {
       }
     },
     nextStep = {
-      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
-      m.onboardingStage.value = OnboardingStage.Step4_SetNotificationsMode
+      val next = if (appPlatform.isAndroid) {
+        OnboardingStage.Step4_SetNotificationsMode
+      } else {
+        OnboardingStage.OnboardingComplete
+      }
+      m.controller.appPrefs.onboardingStage.set(next)
+      m.onboardingStage.value = next
     },
   )
 

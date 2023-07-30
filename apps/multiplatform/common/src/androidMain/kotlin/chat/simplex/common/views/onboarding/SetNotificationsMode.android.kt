@@ -13,14 +13,14 @@ actual fun SetNotificationsModeAdditions() {
     val notificationsPermissionState = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
     LaunchedEffect(notificationsPermissionState.hasPermission) {
       if (notificationsPermissionState.hasPermission) {
-        ntfManager.createNtfChannelsMaybeShowAlert()
+        ntfManager.androidCreateNtfChannelsMaybeShowAlert()
       } else {
         notificationsPermissionState.launchPermissionRequest()
       }
     }
   } else {
     LaunchedEffect(Unit) {
-      ntfManager.createNtfChannelsMaybeShowAlert()
+      ntfManager.androidCreateNtfChannelsMaybeShowAlert()
     }
   }
 }

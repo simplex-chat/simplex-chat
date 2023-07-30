@@ -55,7 +55,7 @@ fun ReadableText(stringResId: StringResource, textAlign: TextAlign = TextAlign.S
 }
 
 @Composable
-fun ReadableTextWithLink(stringResId: StringResource, link: String, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp)) {
+fun ReadableTextWithLink(stringResId: StringResource, link: String, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp), simplexLink: Boolean = false) {
   val annotated = annotatedStringResource(stringResId)
   val primary = MaterialTheme.colors.primary
   // This replaces links in text highlighted with specific color, e.g. SimplexBlue
@@ -71,7 +71,7 @@ fun ReadableTextWithLink(stringResId: StringResource, link: String, textAlign: T
     newStyles
   }
   val uriHandler = LocalUriHandler.current
-  Text(AnnotatedString(annotated.text, newStyles), modifier = Modifier.padding(padding).clickable { uriHandler.openUriCatching(link) }, textAlign = textAlign, lineHeight = 22.sp)
+  Text(AnnotatedString(annotated.text, newStyles), modifier = Modifier.padding(padding).clickable { if (simplexLink) uriHandler.openVerifiedSimplexUri(link) else uriHandler.openUriCatching(link) }, textAlign = textAlign, lineHeight = 22.sp)
 }
 
 @Composable

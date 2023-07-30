@@ -36,6 +36,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     initHaskell()
     initMultiplatform()
     tmpDir.deleteRecursively()
+    tmpDir.mkdir()
 
     withBGApi {
       initChatController()
@@ -139,14 +140,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
     androidAppContext = this
     APPLICATION_ID = BuildConfig.APPLICATION_ID
     ntfManager = object : chat.simplex.common.platform.NtfManager() {
-      override fun notifyContactConnected(user: User, contact: Contact) = NtfManager.notifyContactConnected(user, contact)
-      override fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) = NtfManager.notifyContactRequestReceived(user, cInfo)
-      override fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) = NtfManager.notifyMessageReceived(user, cInfo, cItem)
       override fun notifyCallInvitation(invitation: RcvCallInvitation) = NtfManager.notifyCallInvitation(invitation)
       override fun hasNotificationsForChat(chatId: String): Boolean = NtfManager.hasNotificationsForChat(chatId)
       override fun cancelNotificationsForChat(chatId: String) = NtfManager.cancelNotificationsForChat(chatId)
-      override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<NotificationAction>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
-      override fun createNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
+      override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions.map { it.first })
+      override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
       override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
     }

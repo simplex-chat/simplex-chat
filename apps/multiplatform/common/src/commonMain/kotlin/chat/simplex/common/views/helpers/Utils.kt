@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeOverrides
+import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
 import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
@@ -280,6 +281,13 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
   save = { json.encodeToString(it) },
   restore = { json.decodeFromString(it) }
 )
+
+fun UriHandler.openVerifiedSimplexUri(uri: String) {
+  val URI = try { URI.create(uri) } catch (e: Exception) { null }
+  if (URI != null) {
+    connectIfOpenedViaUri(URI, ChatModel)
+  }
+}
 
 fun UriHandler.openUriCatching(uri: String) {
   try {

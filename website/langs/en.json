@@ -90,7 +90,7 @@
     "simplex-unique-4-title": "You own SimpleX network",
     "simplex-unique-4-overlay-1-title": "Fully decentralised &mdash; users own the SimpleX network",
     "hero-overlay-card-1-p-1": "Many users asked: <em>if SimpleX has no user identifiers, how can it know where to deliver messages?</em>",
-    "hero-overlay-card-1-p-2": "To deliver mesages, instead of user IDs used by all other platforms, SimpleX uses temporary anonymous pairwise identifiers of message queues, separate for each of your connections &mdash; there are no long term identifiers.",
+    "hero-overlay-card-1-p-2": "To deliver messages, instead of user IDs used by all other platforms, SimpleX uses temporary anonymous pairwise identifiers of message queues, separate for each of your connections &mdash; there are no long term identifiers.",
     "hero-overlay-card-1-p-3": "You define which server(s) to use to receive the messages, your contacts &mdash; the servers you use to send the messages to them. Every conversation is likely to use two different servers.",
     "hero-overlay-card-1-p-4": "This design prevents leaking any users&apos; metadata on the application level. To further improve privacy and protect your IP address you can connect to messaging servers via Tor.",
     "hero-overlay-card-1-p-5": "Only client devices store user profiles, contacts and groups; the messages are sent with 2-layer end-to-end encryption.",

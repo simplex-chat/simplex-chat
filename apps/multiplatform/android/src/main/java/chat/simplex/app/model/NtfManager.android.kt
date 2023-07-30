@@ -15,7 +15,6 @@ import chat.simplex.app.*
 import chat.simplex.app.TAG
 import chat.simplex.app.views.call.IncomingCallActivity
 import chat.simplex.app.views.call.getKeyguardManager
-import chat.simplex.common.views.chatlist.acceptContactRequest
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -80,31 +79,6 @@ object NtfManager {
       // Have a group notification with no children so cancel it
       manager.cancel(0)
     }
-  }
-
-  fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) {
-    displayNotification(
-      user = user,
-      chatId = cInfo.id,
-      displayName = cInfo.displayName,
-      msgText = generalGetString(MR.strings.notification_new_contact_request),
-      image = cInfo.image,
-      listOf(NotificationAction.ACCEPT_CONTACT_REQUEST)
-    )
-  }
-
-  fun notifyContactConnected(user: User, contact: Contact) {
-    displayNotification(
-      user = user,
-      chatId = contact.id,
-      displayName = contact.displayName,
-      msgText = generalGetString(MR.strings.notification_contact_connected)
-    )
-  }
-
-  fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) {
-    if (!cInfo.ntfsEnabled) return
-    displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
   }
 
   fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList()) {
@@ -243,19 +217,6 @@ object NtfManager {
 
   fun hasNotificationsForChat(chatId: String): Boolean = manager.activeNotifications.any { it.id == chatId.hashCode() }
 
-  private fun hideSecrets(cItem: ChatItem): String {
-    val md = cItem.formattedText
-    return if (md != null) {
-      var res = ""
-      for (ft in md) {
-        res += if (ft.format is Format.Secret) "..." else ft.text
-      }
-      res
-    } else {
-      cItem.text
-    }
-  }
-
   private fun chatPendingIntent(intentAction: String, userId: Long?, chatId: String? = null, broadcast: Boolean = false): PendingIntent {
     Log.d(TAG, "chatPendingIntent for $intentAction")
     val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
@@ -299,18 +260,7 @@ object NtfManager {
       val chatId = intent?.getStringExtra(ChatIdKey) ?: return
       val m = SimplexApp.context.chatModel
       when (intent.action) {
-        NotificationAction.ACCEPT_CONTACT_REQUEST.name -> {
-          val isCurrentUser = m.currentUser.value?.userId == userId
-          val cInfo: ChatInfo.ContactRequest? = if (isCurrentUser) {
-            (m.getChat(chatId)?.chatInfo as? ChatInfo.ContactRequest) ?: return
-          } else {
-            null
-          }
-          val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
-          acceptContactRequest(apiId, cInfo, isCurrentUser, m)
-          cancelNotificationsForChat(chatId)
-        }
-
+        NotificationAction.ACCEPT_CONTACT_REQUEST.name -> ntfManager.acceptContactRequestAction(userId, chatId)
         RejectCallAction -> {
           val invitation = m.callInvitations[chatId]
           if (invitation != null) {

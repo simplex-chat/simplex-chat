@@ -41,9 +41,9 @@ fun FrameWindowScope.FileDialogChooser(
   onResult: (result: List<File>) -> Unit
 ) {
   if (isLinux()) {
-    FileDialogChooserMultiple(title, isLoad, params.allowMultiple, params.fileFilter, params.fileFilterDescription, onResult)
+    FileDialogChooserMultiple(title, isLoad, params.filename, params.allowMultiple, params.fileFilter, params.fileFilterDescription, onResult)
   } else {
-    FileDialogAwt(title, isLoad, params.allowMultiple, params.fileFilter, onResult)
+    FileDialogAwt(title, isLoad, params.filename, params.allowMultiple, params.fileFilter, onResult)
   }
 }
 
@@ -51,6 +51,7 @@ fun FrameWindowScope.FileDialogChooser(
 fun FrameWindowScope.FileDialogChooserMultiple(
   title: String,
   isLoad: Boolean,
+  filename: String?,
   allowMultiple: Boolean,
   fileFilter: ((File?) -> Boolean)? = null,
   fileFilterDescription: String? = null,
@@ -73,7 +74,11 @@ fun FrameWindowScope.FileDialogChooserMultiple(
       val returned = if (isLoad) {
         fileChooser.showOpenDialog(window)
       } else {
-        fileChooser.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+        if (filename != null) {
+          fileChooser.selectedFile = File(filename)
+        } else {
+          fileChooser.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+        }
         fileChooser.showSaveDialog(window)
       }
       val result = when (returned) {
@@ -109,6 +114,7 @@ fun FrameWindowScope.FileDialogChooserMultiple(
 private fun FrameWindowScope.FileDialogAwt(
   title: String,
   isLoad: Boolean,
+  filename: String?,
   allowMultiple: Boolean,
   fileFilter: ((File?) -> Boolean)? = null,
   onResult: (result: List<File>) -> Unit
@@ -128,6 +134,9 @@ private fun FrameWindowScope.FileDialogAwt(
     }.apply {
       this.title = title
       this.isMultipleMode = allowMultiple && isLoad
+      if (!isLoad && filename != null) {
+        this.file = filename
+      }
       if (fileFilter != null) {
         this.setFilenameFilter { dir, file ->
           fileFilter(File(dir.absolutePath + File.separator + file))

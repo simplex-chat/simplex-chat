@@ -1,4 +1,7 @@
 #include <jni.h>
+//#include <string.h>
+//#include <stdlib.h>
+//#include <android/log.h>
 
 // from the RTS
 void hs_init(int * argc, char **argv[]);
@@ -69,6 +72,9 @@ Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused j
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatSendCmd(JNIEnv *env, __unused jclass clazz, jlong controller, jstring msg) {
     const char *_msg = (*env)->GetStringUTFChars(env, msg, JNI_FALSE);
+    //jint length = (jint) (*env)->GetStringUTFLength(env, msg);
+    //for (int i = 0; i < length; ++i)
+    //    __android_log_print(ANDROID_LOG_ERROR, "simplex", "%d: %02x\n", i, _msg[i]);
     jstring res = (*env)->NewStringUTF(env, chat_send_cmd((void*)controller, _msg));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
     return res;

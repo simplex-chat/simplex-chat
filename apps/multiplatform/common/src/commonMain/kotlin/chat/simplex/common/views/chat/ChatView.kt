@@ -34,6 +34,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.AudioPlayer
+import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -236,7 +237,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       joinGroup = { groupId ->
         withApi { chatModel.controller.apiJoinGroup(groupId) }
       },
-      startCall = { media ->
+      startCall = out@ { media ->
+        if (appPlatform.isDesktop) {
+          return@out showInDevelopingAlert()
+        }
         val cInfo = chat.chatInfo
         if (cInfo is ChatInfo.Direct) {
           chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
@@ -317,11 +321,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         withApi {
           val ciInfo = chatModel.controller.apiGetChatItemInfo(cInfo.chatType, cInfo.apiId, cItem.id)
           if (ciInfo != null) {
+            if (chat.chatInfo is ChatInfo.Group) {
+              setGroupMembers(chat.chatInfo.groupInfo, chatModel)
+            }
             ModalManager.end.closeModals()
             ModalManager.end.showModal(endButtons = { ShareButton {
-              clipboard.shareText(itemInfoShareText(cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
+              clipboard.shareText(itemInfoShareText(chatModel, cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
             } }) {
-              ChatItemInfoView(cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+              ChatItemInfoView(chatModel, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
             }
           }
         }
