@@ -10,6 +10,7 @@ copyright: 2020-22 simplex.chat
 category: Web, System, Services, Cryptography
 extra-source-files:
   - README.md
+  - cabal.project
 
 dependencies:
   - aeson == 2.0.*
@@ -108,7 +109,14 @@ executables:
 
 tests:
   simplex-chat-test:
-    source-dirs: tests
+    source-dirs:
+      - tests
+      - apps/simplex-broadcast-bot
+      - apps/simplex-directory-service
+    when:
+      condition: false
+      exposed-modules:
+        - Main
     main: Test.hs
     dependencies:
       - simplex-chat

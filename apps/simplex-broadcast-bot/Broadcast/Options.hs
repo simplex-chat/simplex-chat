@@ -4,20 +4,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Options where
+module Broadcast.Options where
 
-import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts, coreChatOptsP)
-import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Util (safeDecodeUtf8)
 
 data BroadcastBotOpts = BroadcastBotOpts
   { coreOptions :: CoreChatOpts,
