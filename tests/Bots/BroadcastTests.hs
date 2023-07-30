@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.BroadcastTest where
+module Bots.BroadcastTests where
 
 import Broadcast.Bot
 import Broadcast.Options
@@ -23,7 +23,7 @@ broadcastBotTests = do
 
 withBroadcastBot :: BroadcastBotOpts -> IO () -> IO ()
 withBroadcastBot opts test =
-  bracket (forkIO bot) killThread (\_ -> threadDelay 1000000 >> test)
+  bracket (forkIO bot) killThread (\_ -> threadDelay 500000 >> test)
   where
     bot = simplexChatCore testCfg (mkChatOpts opts) Nothing $ broadcastBot opts
 
@@ -31,17 +31,21 @@ broadcastBotProfile :: Profile
 broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", image = Nothing, contactLink = Nothing, preferences = Nothing}
 
 mkBotOpts :: FilePath -> [KnownContact] -> BroadcastBotOpts
-mkBotOpts tmp publishers = BroadcastBotOpts
-  { coreOptions = (coreOptions (testOpts :: ChatOpts)) {dbFilePrefix = tmp </> "broadcast_bot"},
-    publishers,
-    welcomeMessage = defaultWelcomeMessage publishers,
-    prohibitedMessage = defaultWelcomeMessage publishers
-  }
+mkBotOpts tmp publishers =
+  BroadcastBotOpts
+    { coreOptions = (coreOptions (testOpts :: ChatOpts)) {dbFilePrefix = tmp </> botDbPrefix},
+      publishers,
+      welcomeMessage = defaultWelcomeMessage publishers,
+      prohibitedMessage = defaultWelcomeMessage publishers
+    }
+
+botDbPrefix :: FilePath
+botDbPrefix = "broadcast_bot"
 
 testBroadcastMessages :: HasCallStack => FilePath -> IO ()
 testBroadcastMessages tmp = do
   botLink <-
-    withNewTestChat tmp "broadcast_bot" broadcastBotProfile $ \bc_bot ->
+    withNewTestChat tmp botDbPrefix broadcastBotProfile $ \bc_bot ->
       withNewTestChat tmp "alice" aliceProfile $ \alice -> do
         connectUsers bc_bot alice
         bc_bot ##> "/ad"

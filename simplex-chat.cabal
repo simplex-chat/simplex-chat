@@ -276,13 +276,13 @@ executable simplex-bot-advanced
     cpp-options: -DswiftJSON
 
 executable simplex-broadcast-bot
-  main-is: Main.hs
+  main-is: ../Main.hs
   other-modules:
       Broadcast.Bot
       Broadcast.Options
       Paths_simplex_chat
   hs-source-dirs:
-      apps/simplex-broadcast-bot
+      apps/simplex-broadcast-bot/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.0.*
@@ -378,7 +378,7 @@ executable simplex-chat
     cpp-options: -DswiftJSON
 
 executable simplex-directory-service
-  main-is: Main.hs
+  main-is: ../Main.hs
   other-modules:
       Directory.Events
       Directory.Options
@@ -386,7 +386,7 @@ executable simplex-directory-service
       Directory.Store
       Paths_simplex_chat
   hs-source-dirs:
-      apps/simplex-directory-service
+      apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.0.*
@@ -434,7 +434,8 @@ test-suite simplex-chat-test
   type: exitcode-stdio-1.0
   main-is: Test.hs
   other-modules:
-      Bots.BroadcastTest
+      Bots.BroadcastTests
+      Bots.DirectoryTests
       ChatClient
       ChatTests
       ChatTests.Direct
@@ -450,17 +451,15 @@ test-suite simplex-chat-test
       WebRTCTests
       Broadcast.Bot
       Broadcast.Options
-      Main
       Directory.Events
       Directory.Options
       Directory.Service
       Directory.Store
-      Main
       Paths_simplex_chat
   hs-source-dirs:
       tests
-      apps/simplex-broadcast-bot
-      apps/simplex-directory-service
+      apps/simplex-broadcast-bot/src
+      apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.0.*

@@ -92,31 +92,27 @@ executables:
       - -threaded
 
   simplex-broadcast-bot:
-    source-dirs: apps/simplex-broadcast-bot
-    main: Main.hs
+    source-dirs: apps/simplex-broadcast-bot/src
+    main: ../Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
       - -threaded
 
   simplex-directory-service:
-     source-dirs: apps/simplex-directory-service
-     main: Main.hs
-     dependencies:
-       - simplex-chat
-     ghc-options:
-       - -threaded
+    source-dirs: apps/simplex-directory-service/src
+    main: ../Main.hs
+    dependencies:
+      - simplex-chat
+    ghc-options:
+      - -threaded
 
 tests:
   simplex-chat-test:
     source-dirs:
       - tests
-      - apps/simplex-broadcast-bot
-      - apps/simplex-directory-service
-    when:
-      condition: false
-      exposed-modules:
-        - Main
+      - apps/simplex-broadcast-bot/src
+      - apps/simplex-directory-service/src
     main: Test.hs
     dependencies:
       - simplex-chat
