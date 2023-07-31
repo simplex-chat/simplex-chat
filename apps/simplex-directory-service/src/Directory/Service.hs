@@ -55,11 +55,11 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
       DEServiceJoinedGroup ctId g -> deServiceJoinedGroup ctId g
       DEGroupUpdated {contactId, fromGroup, toGroup} -> deGroupUpdated contactId fromGroup toGroup
-      DEContactRoleChanged _ctId _g _role -> pure ()
-      DEServiceRoleChanged _g _role -> pure ()
-      DEContactRemovedFromGroup _ctId _g -> pure ()
-      DEContactLeftGroup _ctId _g -> pure ()
-      DEServiceRemovedFromGroup _g -> pure ()
+      DEContactRoleChanged ctId g role -> deContactRoleChanged ctId g role
+      DEServiceRoleChanged g role -> deServiceRoleChanged g role
+      DEContactRemovedFromGroup ctId g -> deContactRemovedFromGroup ctId g
+      DEContactLeftGroup ctId g -> deContactLeftGroup ctId g
+      DEServiceRemovedFromGroup g -> deServiceRemovedFromGroup g
       DEGroupDeleted _g -> pure ()
       DEUnsupportedMessage _ct _ciId -> pure ()
       DEItemEditIgnored _ct -> pure ()
@@ -85,6 +85,8 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
     --     Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", can't find group registration ID " <> tshow groupId
     groupInfoText GroupProfile {displayName = n, fullName = fn, description = d} =
       n <> (if n == fn || T.null fn then "" else " (" <> fn <> ")") <> maybe "" ("\nWelcome message:\n" <>) d
+    groupReference GroupInfo {groupId, groupProfile = p'@GroupProfile {displayName}} =
+      "ID " <> show groupId <> " (" <> T.unpack displayName <> ")"
 
     deContactConnected :: Contact -> IO ()
     deContactConnected ct = do
@@ -154,11 +156,12 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
             GRSPendingApproval n -> processProfileChange gr $ n + 1
             GRSActive -> processProfileChange gr 1
             GRSSuspended -> processProfileChange gr 1
+            GRSRemoved -> pure ()
       where
         isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
         GroupInfo {groupId, groupProfile = p} = fromGroup
-        GroupInfo {localDisplayName, groupProfile = p'@GroupProfile {displayName, image = image'}} = toGroup
-        groupRef = "ID " <> show groupId <> " (" <> T.unpack displayName <> ")"
+        GroupInfo {localDisplayName, groupProfile = p'@GroupProfile {image = image'}} = toGroup
+        groupRef = groupReference toGroup
         sameProfile
           GroupProfile {displayName = n, fullName = fn, image = i, description = d}
           GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
@@ -200,6 +203,36 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
             sendComposedMessage' cc ctId Nothing msg
             sendMessage' cc ctId $ "/approve " <> show dbGroupId <> ":" <> T.unpack localDisplayName <> " " <> show gaId
         sendLinkRemoved = sendMessage' cc contactId $ "The link for group " <> groupRef <> " is removed from the welcome message, please add it."
+
+    deContactRoleChanged :: ContactId -> GroupInfo -> GroupMemberRole -> IO ()
+    deContactRoleChanged ctId g role = undefined
+
+    deServiceRoleChanged :: GroupInfo -> GroupMemberRole -> IO ()
+    deServiceRoleChanged g role = undefined
+
+    deContactRemovedFromGroup :: ContactId -> GroupInfo -> IO ()
+    deContactRemovedFromGroup ctId g =
+      withGroupReg g "contact removed" $ \gr -> do
+        atomically $ writeTVar (groupRegStatus gr) GRSRemoved
+        let groupRef = groupReference g
+        sendMessage' cc ctId $ "You are removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
+        notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner is removed)."
+
+    deContactLeftGroup :: ContactId -> GroupInfo -> IO ()
+    deContactLeftGroup ctId g =
+      withGroupReg g "contact left" $ \gr -> do
+        atomically $ writeTVar (groupRegStatus gr) GRSRemoved
+        let groupRef = groupReference g
+        sendMessage' cc ctId $ "You left the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
+        notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner left)."
+
+    deServiceRemovedFromGroup :: GroupInfo -> IO ()
+    deServiceRemovedFromGroup g =
+      withGroupReg g "contact left" $ \gr@GroupReg {dbContactId} -> do
+        atomically $ writeTVar (groupRegStatus gr) GRSRemoved
+        let groupRef = groupReference g
+        sendMessage' cc dbContactId $ serviceName <> " is removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
+        notifySuperUsers $ "The group " <> groupRef <> " is de-listed (directory service is removed)."
 
     deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
     deUserCommand ct ciId = \case

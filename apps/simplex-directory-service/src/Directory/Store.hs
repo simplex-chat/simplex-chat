@@ -35,6 +35,7 @@ data GroupRegStatus
   | GRSPendingApproval GroupApprovalId
   | GRSActive
   | GRSSuspended
+  | GRSRemoved
 
 addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> STM ()
 addGroupReg st ct GroupInfo {groupId} = do
