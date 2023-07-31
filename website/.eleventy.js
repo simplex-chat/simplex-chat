@@ -238,6 +238,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/video")
   ty.addPassthroughCopy("src/css")
   ty.addPassthroughCopy("src/js")
+  ty.addPassthroughCopy("src/lottie_file")
   ty.addPassthroughCopy("src/contact/*.js")
   ty.addPassthroughCopy("src/call")
   ty.addPassthroughCopy("src/hero-phone")

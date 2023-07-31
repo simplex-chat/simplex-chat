@@ -87,7 +87,7 @@ fun showApp() = application {
         }
       }
     }
-    var windowFocused by remember { mutableStateOf(true) }
+    var windowFocused by remember { simplexWindowState.windowFocused }
     LaunchedEffect(windowFocused) {
       val delay = ChatController.appPrefs.laLockDelay.get()
       if (!windowFocused && ChatModel.performLA.value && delay > 0) {
@@ -119,9 +119,11 @@ class SimplexWindowState {
   val openMultipleDialog = DialogState<List<File>>()
   val saveDialog = DialogState<File?>()
   val toasts = mutableStateListOf<Pair<String, Long>>()
+  var windowFocused = mutableStateOf(true)
 }
 
 data class DialogParams(
+  val filename: String? = null,
   val allowMultiple: Boolean = false,
   val fileFilter: ((File?) -> Boolean)? = null,
   val fileFilterDescription: String = "",

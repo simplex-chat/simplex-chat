@@ -1200,6 +1200,13 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var groupInfo: GroupInfo? {
+        switch self {
+        case let .group(groupInfo): return groupInfo
+        default: return nil
+        }
+    }
+
     // this works for features that are common for contacts and groups
     public func featureEnabled(_ feature: ChatFeature) -> Bool {
         switch self {
@@ -2263,18 +2270,7 @@ public struct CIMeta: Decodable {
     }
 
     public func statusIcon(_ metaColor: Color = .secondary) -> (String, Color)? {
-        switch itemStatus {
-        case .sndSent: return ("checkmark", metaColor)
-        case let .sndRcvd(msgRcptStatus):
-            switch msgRcptStatus {
-            case .ok: return ("checkmark", metaColor) // ("checkmark.circle", metaColor)
-            case .badMsgHash: return ("checkmark", .red) // ("checkmark.circle", .red)
-            }
-        case .sndErrorAuth: return ("multiply", .red)
-        case .sndError: return ("exclamationmark.triangle.fill", .yellow)
-        case .rcvNew: return ("circlebadge.fill", Color.accentColor)
-        default: return nil
-        }
+        itemStatus.statusIcon(metaColor)
     }
 
     public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, editable: Bool = true) -> CIMeta {
@@ -2337,12 +2333,13 @@ private func recent(_ date: Date) -> Bool {
 
 public enum CIStatus: Decodable {
     case sndNew
-    case sndSent
-    case sndRcvd(msgRcptStatus: MsgReceiptStatus)
+    case sndSent(sndProgress: SndCIStatusProgress)
+    case sndRcvd(msgRcptStatus: MsgReceiptStatus, sndProgress: SndCIStatusProgress)
     case sndErrorAuth
     case sndError(agentError: String)
     case rcvNew
     case rcvRead
+    case invalid(text: String)
 
     var id: String {
         switch self {
@@ -2353,6 +2350,50 @@ public enum CIStatus: Decodable {
         case .sndError: return "sndError"
         case .rcvNew: return "rcvNew"
         case .rcvRead: return "rcvRead"
+        case .invalid: return "invalid"
+        }
+    }
+
+    public func statusIcon(_ metaColor: Color = .secondary) -> (String, Color)? {
+        switch self {
+        case .sndNew: return nil
+        case .sndSent: return ("checkmark", metaColor)
+        case let .sndRcvd(msgRcptStatus, _):
+            switch msgRcptStatus {
+            case .ok: return ("checkmark", metaColor)
+            case .badMsgHash: return ("checkmark", .red)
+            }
+        case .sndErrorAuth: return ("multiply", .red)
+        case .sndError: return ("exclamationmark.triangle.fill", .yellow)
+        case .rcvNew: return ("circlebadge.fill", Color.accentColor)
+        case .rcvRead: return nil
+        case .invalid: return ("questionmark", metaColor)
+        }
+    }
+
+    public var statusText: String {
+        switch self {
+        case .sndNew: return NSLocalizedString("Sending message", comment: "item status text")
+        case .sndSent: return NSLocalizedString("Message sent", comment: "item status text")
+        case .sndRcvd: return NSLocalizedString("Sent message received", comment: "item status text")
+        case .sndErrorAuth: return NSLocalizedString("Error sending message", comment: "item status text")
+        case .sndError: return NSLocalizedString("Error sending message", comment: "item status text")
+        case .rcvNew: return NSLocalizedString("Message received", comment: "item status text")
+        case .rcvRead: return NSLocalizedString("Message read", comment: "item status text")
+        case .invalid: return NSLocalizedString("Invalid status", comment: "item status text")
+        }
+    }
+
+    public var statusDescription: String {
+        switch self {
+        case .sndNew: return NSLocalizedString("Sending message is in progress or pending.", comment: "item status description")
+        case .sndSent: return NSLocalizedString("Message has been sent to the recipient's relay.", comment: "item status description")
+        case .sndRcvd: return NSLocalizedString("Message has been received by the recipient.", comment: "item status description")
+        case .sndErrorAuth: return NSLocalizedString("Message delivery error. Most likely this recipient has deleted the connection with you.", comment: "item status description")
+        case let .sndError(agentError): return String.localizedStringWithFormat(NSLocalizedString("Unexpected message delivery error: %@", comment: "item status description"), agentError)
+        case .rcvNew: return NSLocalizedString("New message from this sender.", comment: "item status description")
+        case .rcvRead: return NSLocalizedString("You've read this received message.", comment: "item status description")
+        case let .invalid(text): return text
         }
     }
 }
@@ -2360,6 +2401,11 @@ public enum CIStatus: Decodable {
 public enum MsgReceiptStatus: String, Decodable {
     case ok
     case badMsgHash
+}
+
+public enum SndCIStatusProgress: String, Decodable {
+    case partial
+    case complete
 }
 
 public enum CIDeleted: Decodable {
@@ -2615,6 +2661,7 @@ public struct CIFile: Decodable {
             case .rcvCancelled: return false
             case .rcvComplete: return true
             case .rcvError: return false
+            case .invalid: return false
             }
         }
     }
@@ -2638,6 +2685,7 @@ public struct CIFile: Decodable {
             case .rcvCancelled: return nil
             case .rcvComplete: return nil
             case .rcvError: return nil
+            case .invalid: return nil
             }
         }
     }
@@ -2698,6 +2746,7 @@ public enum CIFileStatus: Decodable, Equatable {
     case rcvComplete
     case rcvCancelled
     case rcvError
+    case invalid(text: String)
 
     var id: String {
         switch self {
@@ -2712,6 +2761,7 @@ public enum CIFileStatus: Decodable, Equatable {
         case .rcvComplete: return "rcvComplete"
         case .rcvCancelled: return "rcvCancelled"
         case .rcvError: return "rcvError"
+        case .invalid: return "invalid"
         }
     }
 }
@@ -3205,6 +3255,7 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
 
 public struct ChatItemInfo: Decodable {
     public var itemVersions: [ChatItemVersion]
+    public var memberDeliveryStatuses: [MemberDeliveryStatus]?
 }
 
 public struct ChatItemVersion: Decodable {
@@ -3213,4 +3264,9 @@ public struct ChatItemVersion: Decodable {
     public var formattedText: [FormattedText]?
     public var itemVersionTs: Date
     public var createdAt: Date
+}
+
+public struct MemberDeliveryStatus: Decodable {
+    public var groupMemberId: Int64
+    public var memberDeliveryStatus: CIStatus
 }

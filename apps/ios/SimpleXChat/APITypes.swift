@@ -19,6 +19,7 @@ public enum ChatCommand {
     case apiSetActiveUser(userId: Int64, viewPwd: String?)
     case setAllContactReceipts(enable: Bool)
     case apiSetUserContactReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
+    case apiSetUserGroupReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
     case apiHideUser(userId: Int64, viewPwd: String)
     case apiUnhideUser(userId: Int64, viewPwd: String)
     case apiMuteUser(userId: Int64)
@@ -128,6 +129,9 @@ public enum ChatCommand {
             case let .apiSetUserContactReceipts(userId, userMsgReceiptSettings):
                 let umrs = userMsgReceiptSettings
                 return "/_set receipts contacts \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
+            case let .apiSetUserGroupReceipts(userId, userMsgReceiptSettings):
+                let umrs = userMsgReceiptSettings
+                return "/_set receipts groups \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
@@ -257,6 +261,7 @@ public enum ChatCommand {
             case .apiSetActiveUser: return "apiSetActiveUser"
             case .setAllContactReceipts: return "setAllContactReceipts"
             case .apiSetUserContactReceipts: return "apiSetUserContactReceipts"
+            case .apiSetUserGroupReceipts: return "apiSetUserGroupReceipts"
             case .apiHideUser: return "apiHideUser"
             case .apiUnhideUser: return "apiUnhideUser"
             case .apiMuteUser: return "apiMuteUser"
@@ -1052,9 +1057,9 @@ public struct NetCfg: Codable, Equatable {
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
         sessionMode: TransportSessionMode.user,
-        tcpConnectTimeout: 10_000_000,
-        tcpTimeout: 7_000_000,
-        tcpTimeoutPerKb: 10_000,
+        tcpConnectTimeout: 15_000_000,
+        tcpTimeout: 10_000_000,
+        tcpTimeoutPerKb: 20_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1064,9 +1069,9 @@ public struct NetCfg: Codable, Equatable {
     public static let proxyDefaults: NetCfg = NetCfg(
         socksProxy: nil,
         sessionMode: TransportSessionMode.user,
-        tcpConnectTimeout: 20_000_000,
-        tcpTimeout: 15_000_000,
-        tcpTimeoutPerKb: 20_000,
+        tcpConnectTimeout: 30_000_000,
+        tcpTimeout: 20_000_000,
+        tcpTimeoutPerKb: 40_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,

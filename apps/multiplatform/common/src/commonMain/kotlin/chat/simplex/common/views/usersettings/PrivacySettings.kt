@@ -101,6 +101,29 @@ fun PrivacySettingsView(
         }
       }
 
+      fun setSendReceiptsGroups(enable: Boolean, clearOverrides: Boolean) {
+        withApi {
+          val mrs = UserMsgReceiptSettings(enable, clearOverrides)
+          chatModel.controller.apiSetUserGroupReceipts(currentUser.userId, mrs)
+          chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
+          chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
+          if (clearOverrides) {
+            // For loop here is to prevent ConcurrentModificationException that happens with forEach
+            for (i in 0 until chatModel.chats.size) {
+              val chat = chatModel.chats[i]
+              if (chat.chatInfo is ChatInfo.Group) {
+                var groupInfo = chat.chatInfo.groupInfo
+                val sendRcpts = groupInfo.chatSettings.sendRcpts
+                if (sendRcpts != null && sendRcpts != enable) {
+                  groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
+                  chatModel.updateGroup(groupInfo)
+                }
+              }
+            }
+          }
+        }
+      }
+
       DeliveryReceiptsSection(
         currentUser = currentUser,
         setOrAskSendReceiptsContacts = { enable ->
@@ -116,6 +139,21 @@ fun PrivacySettingsView(
             setSendReceiptsContacts(enable, clearOverrides = false)
           } else {
             showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
+          }
+        },
+        setOrAskSendReceiptsGroups = { enable ->
+          val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            if (chat.chatInfo is ChatInfo.Group) {
+              val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
+              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+            } else {
+              count
+            }
+          }
+          if (groupReceiptsOverrides == 0) {
+            setSendReceiptsGroups(enable, clearOverrides = false)
+          } else {
+            showUserGroupsReceiptsAlert(enable, groupReceiptsOverrides, ::setSendReceiptsGroups)
           }
         }
       )
@@ -155,6 +193,7 @@ expect fun PrivacyDeviceSection(
 private fun DeliveryReceiptsSection(
   currentUser: User,
   setOrAskSendReceiptsContacts: (Boolean) -> Unit,
+  setOrAskSendReceiptsGroups: (Boolean) -> Unit,
 ) {
   SectionView(stringResource(MR.strings.settings_section_title_delivery_receipts)) {
     SettingsActionItemWithContent(painterResource(MR.images.ic_person), stringResource(MR.strings.receipts_section_contacts)) {
@@ -162,6 +201,14 @@ private fun DeliveryReceiptsSection(
         checked = currentUser.sendRcptsContacts ?: false,
         onCheckedChange = { enable ->
           setOrAskSendReceiptsContacts(enable)
+        }
+      )
+    }
+    SettingsActionItemWithContent(painterResource(MR.images.ic_group), stringResource(MR.strings.receipts_section_groups)) {
+      DefaultSwitch(
+        checked = currentUser.sendRcptsSmallGroups ?: false,
+        onCheckedChange = { enable ->
+          setOrAskSendReceiptsGroups(enable)
         }
       )
     }
@@ -203,6 +250,41 @@ private fun showUserContactsReceiptsAlert(
         }
         ) {
           val t = stringResource(if (enable) MR.strings.receipts_contacts_enable_for_all else MR.strings.receipts_contacts_disable_for_all)
+          Text(t, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+        }
+      }
+    }
+  )
+}
+
+private fun showUserGroupsReceiptsAlert(
+  enable: Boolean,
+  groupReceiptsOverrides: Int,
+  setSendReceiptsGroups: (Boolean, Boolean) -> Unit
+) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(if (enable) MR.strings.receipts_groups_title_enable else MR.strings.receipts_groups_title_disable),
+    text = AnnotatedString(String.format(generalGetString(if (enable) MR.strings.receipts_groups_override_disabled else MR.strings.receipts_groups_override_enabled), groupReceiptsOverrides)),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          setSendReceiptsGroups(enable, false)
+        }) {
+          val t = stringResource(if (enable) MR.strings.receipts_groups_enable_keep_overrides else MR.strings.receipts_groups_disable_keep_overrides)
+          Text(t, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          setSendReceiptsGroups(enable, true)
+        }
+        ) {
+          val t = stringResource(if (enable) MR.strings.receipts_groups_enable_for_all else MR.strings.receipts_groups_disable_for_all)
           Text(t, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
         }
         SectionItemView({

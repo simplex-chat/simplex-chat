@@ -62,6 +62,7 @@ struct CIFileView: View {
             case .rcvComplete: return true
             case .rcvCancelled: return false
             case .rcvError: return false
+            case .invalid: return false
             }
         }
         return false
@@ -149,6 +150,7 @@ struct CIFileView: View {
             case .rcvComplete: fileIcon("doc.fill")
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
+            case .invalid: fileIcon("doc.fill", innerIcon: "questionmark", innerIconSize: 10)
             }
         } else {
             fileIcon("doc.fill")
@@ -195,7 +197,7 @@ struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
         let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, itemEdited: true),
+            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .file("")),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)

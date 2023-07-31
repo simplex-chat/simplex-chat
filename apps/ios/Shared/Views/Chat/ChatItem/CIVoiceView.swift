@@ -144,6 +144,7 @@ struct VoiceMessagePlayer: View {
                 case .rcvComplete: playbackButton()
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 case .rcvError: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+                case .invalid: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 }
             } else {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
@@ -268,7 +269,7 @@ struct CIVoiceView_Previews: PreviewProvider {
     static var previews: some View {
         let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, itemEdited: true),
+            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)

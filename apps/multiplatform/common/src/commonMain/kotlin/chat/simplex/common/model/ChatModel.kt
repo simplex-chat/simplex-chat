@@ -1625,18 +1625,12 @@ data class CIMeta (
 
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew
 
-  fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<ImageResource, Color>? =
-    when (itemStatus) {
-      is CIStatus.SndSent -> MR.images.ic_check_filled to metaColor
-      is CIStatus.SndRcvd -> when(itemStatus.msgRcptStatus) {
-        MsgReceiptStatus.Ok -> MR.images.ic_double_check to metaColor
-        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
-      }
-      is CIStatus.SndErrorAuth -> MR.images.ic_close to Color.Red
-      is CIStatus.SndError -> MR.images.ic_warning_filled to WarningYellow
-      is CIStatus.RcvNew -> MR.images.ic_circle_filled to primaryColor
-      else -> null
-    }
+  fun statusIcon(
+    primaryColor: Color,
+    metaColor: Color = CurrentColors.value.colors.secondary,
+    paleMetaColor: Color = CurrentColors.value.colors.secondary
+  ): Pair<ImageResource, Color>? =
+    itemStatus.statusIcon(primaryColor, metaColor, paleMetaColor)
 
   companion object {
     fun getSample(
@@ -1715,18 +1709,72 @@ fun localTimestamp(t: Instant): String {
 @Serializable
 sealed class CIStatus {
   @Serializable @SerialName("sndNew") class SndNew: CIStatus()
-  @Serializable @SerialName("sndSent") class SndSent: CIStatus()
-  @Serializable @SerialName("sndRcvd") class SndRcvd(val msgRcptStatus: MsgReceiptStatus): CIStatus()
+  @Serializable @SerialName("sndSent") class SndSent(val sndProgress: SndCIStatusProgress): CIStatus()
+  @Serializable @SerialName("sndRcvd") class SndRcvd(val msgRcptStatus: MsgReceiptStatus, val sndProgress: SndCIStatusProgress): CIStatus()
   @Serializable @SerialName("sndErrorAuth") class SndErrorAuth: CIStatus()
   @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): CIStatus()
+
+  fun statusIcon(
+    primaryColor: Color,
+    metaColor: Color = CurrentColors.value.colors.secondary,
+    paleMetaColor: Color = CurrentColors.value.colors.secondary
+  ): Pair<ImageResource, Color>? =
+    when (this) {
+      is SndNew -> null
+      is SndSent -> when (this.sndProgress) {
+        SndCIStatusProgress.Complete -> MR.images.ic_check_filled to metaColor
+        SndCIStatusProgress.Partial -> MR.images.ic_check_filled to paleMetaColor
+      }
+      is SndRcvd -> when(this.msgRcptStatus) {
+        MsgReceiptStatus.Ok -> when (this.sndProgress) {
+          SndCIStatusProgress.Complete -> MR.images.ic_double_check to metaColor
+          SndCIStatusProgress.Partial -> MR.images.ic_double_check to paleMetaColor
+        }
+        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
+      }
+      is SndErrorAuth -> MR.images.ic_close to Color.Red
+      is SndError -> MR.images.ic_warning_filled to WarningYellow
+      is RcvNew -> MR.images.ic_circle_filled to primaryColor
+      is RcvRead -> null
+      is CIStatus.Invalid -> MR.images.ic_question_mark to metaColor
+    }
+
+  val statusText: String get() = when (this) {
+    is SndNew -> generalGetString(MR.strings.item_status_snd_new_text)
+    is SndSent -> generalGetString(MR.strings.item_status_snd_sent_text)
+    is SndRcvd -> generalGetString(MR.strings.item_status_snd_rcvd_text)
+    is SndErrorAuth -> generalGetString(MR.strings.item_status_snd_error_text)
+    is SndError -> generalGetString(MR.strings.item_status_snd_error_text)
+    is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_text)
+    is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_text)
+    is Invalid -> "Invalid status"
+  }
+
+  val statusDescription: String get() = when (this) {
+    is SndNew -> generalGetString(MR.strings.item_status_snd_new_desc)
+    is SndSent -> generalGetString(MR.strings.item_status_snd_sent_desc)
+    is SndRcvd -> generalGetString(MR.strings.item_status_snd_rcvd_desc)
+    is SndErrorAuth -> generalGetString(MR.strings.item_status_snd_error_auth_desc)
+    is SndError -> String.format(generalGetString(MR.strings.item_status_snd_error_unexpected_desc), this.agentError)
+    is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_desc)
+    is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_desc)
+    is Invalid -> this.text
+  }
 }
 
 @Serializable
 enum class MsgReceiptStatus {
   @SerialName("ok") Ok,
   @SerialName("badMsgHash") BadMsgHash;
+}
+
+@Serializable
+enum class SndCIStatusProgress {
+  @SerialName("partial") Partial,
+  @SerialName("complete") Complete;
 }
 
 @Serializable
@@ -1958,6 +2006,7 @@ class CIFile(
     is CIFileStatus.RcvCancelled -> false
     is CIFileStatus.RcvComplete -> true
     is CIFileStatus.RcvError -> false
+    is CIFileStatus.Invalid -> false
   }
 
   @Transient
@@ -1978,6 +2027,7 @@ class CIFile(
     is CIFileStatus.RcvCancelled -> null
     is CIFileStatus.RcvComplete -> null
     is CIFileStatus.RcvError -> null
+    is CIFileStatus.Invalid -> null
   }
 
   companion object {
@@ -2047,6 +2097,7 @@ sealed class CIFileStatus {
   @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
   @Serializable @SerialName("rcvError") object RcvError: CIFileStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): CIFileStatus()
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
@@ -2489,6 +2540,7 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
 @Serializable
 class ChatItemInfo(
   val itemVersions: List<ChatItemVersion>,
+  val memberDeliveryStatuses: List<MemberDeliveryStatus>?
 )
 
 @Serializable
@@ -2498,6 +2550,12 @@ data class ChatItemVersion(
   val formattedText: List<FormattedText>?,
   val itemVersionTs: Instant,
   val createdAt: Instant,
+)
+
+@Serializable
+data class MemberDeliveryStatus(
+  val groupMemberId: Long,
+  val memberDeliveryStatus: CIStatus
 )
 
 enum class NotificationPreviewMode {
