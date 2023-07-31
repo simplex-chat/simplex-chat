@@ -131,6 +131,7 @@ jobs:
         run: cabal test --test-show-details=direct
 
       - name: Setup Java
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/setup-java@v3
         with:
           distribution: 'corretto'
@@ -139,7 +140,7 @@ jobs:
 
       - name: Linux build desktop
         id: linux_desktop_build
-        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
+        if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
         shell: bash
         run: |
           scripts/desktop/build-lib-linux.sh
@@ -149,7 +150,7 @@ jobs:
 
       - name: Mac build desktop
         id: mac_desktop_build
-        if: matrix.os == 'macos-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'macos-latest'
         shell: bash
         run: |
           scripts/desktop/build-lib-mac.sh
