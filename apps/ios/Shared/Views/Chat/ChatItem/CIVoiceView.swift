@@ -144,6 +144,7 @@ struct VoiceMessagePlayer: View {
                 case .rcvComplete: playbackButton()
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 case .rcvError: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+                case .invalid: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 }
             } else {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
