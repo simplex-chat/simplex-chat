@@ -2339,6 +2339,7 @@ public enum CIStatus: Decodable {
     case sndError(agentError: String)
     case rcvNew
     case rcvRead
+    case invalid(text: String)
 
     var id: String {
         switch self {
@@ -2349,6 +2350,7 @@ public enum CIStatus: Decodable {
         case .sndError: return "sndError"
         case .rcvNew: return "rcvNew"
         case .rcvRead: return "rcvRead"
+        case .invalid: return "invalid"
         }
     }
 
@@ -2365,6 +2367,7 @@ public enum CIStatus: Decodable {
         case .sndError: return ("exclamationmark.triangle.fill", .yellow)
         case .rcvNew: return ("circlebadge.fill", Color.accentColor)
         case .rcvRead: return nil
+        case .invalid: return ("questionmark", metaColor)
         }
     }
 
@@ -2377,6 +2380,7 @@ public enum CIStatus: Decodable {
         case .sndError: return NSLocalizedString("Error sending message", comment: "item status text")
         case .rcvNew: return NSLocalizedString("Message received", comment: "item status text")
         case .rcvRead: return NSLocalizedString("Message read", comment: "item status text")
+        case .invalid: return NSLocalizedString("Invalid status", comment: "item status text")
         }
     }
 
@@ -2389,6 +2393,7 @@ public enum CIStatus: Decodable {
         case let .sndError(agentError): return String.localizedStringWithFormat(NSLocalizedString("Unexpected message delivery error: %@", comment: "item status description"), agentError)
         case .rcvNew: return NSLocalizedString("New message from this sender.", comment: "item status description")
         case .rcvRead: return NSLocalizedString("You've read this received message.", comment: "item status description")
+        case let .invalid(text): return text
         }
     }
 }
@@ -2656,6 +2661,7 @@ public struct CIFile: Decodable {
             case .rcvCancelled: return false
             case .rcvComplete: return true
             case .rcvError: return false
+            case .invalid: return false
             }
         }
     }
@@ -2679,6 +2685,7 @@ public struct CIFile: Decodable {
             case .rcvCancelled: return nil
             case .rcvComplete: return nil
             case .rcvError: return nil
+            case .invalid: return nil
             }
         }
     }
@@ -2739,6 +2746,7 @@ public enum CIFileStatus: Decodable, Equatable {
     case rcvComplete
     case rcvCancelled
     case rcvError
+    case invalid(text: String)
 
     var id: String {
         switch self {
@@ -2753,6 +2761,7 @@ public enum CIFileStatus: Decodable, Equatable {
         case .rcvComplete: return "rcvComplete"
         case .rcvCancelled: return "rcvCancelled"
         case .rcvError: return "rcvError"
+        case .invalid: return "invalid"
         }
     }
 }
