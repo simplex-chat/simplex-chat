@@ -553,8 +553,7 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
 instance StrEncoding ACIFileStatus where
   strEncode (AFS _ s) = strEncode s
   strP =
-    statusP
-      <|> (AFS SMDSnd . CIFSInvalid . safeDecodeUtf8 <$> A.takeByteString)
+    statusP <|> (AFS SMDSnd . CIFSInvalid . safeDecodeUtf8 <$> A.takeByteString)
     where
       statusP =
         A.takeTill (== ' ') >>= \case
@@ -670,8 +669,7 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
 instance StrEncoding ACIStatus where
   strEncode (ACIStatus _ s) = strEncode s
   strP =
-    statusP
-      <|> (ACIStatus SMDSnd . CISInvalid . safeDecodeUtf8 <$> A.takeByteString)
+    statusP <|> (ACIStatus SMDSnd . CISInvalid . safeDecodeUtf8 <$> A.takeByteString)
     where
       statusP =
         A.takeTill (== ' ') >>= \case
