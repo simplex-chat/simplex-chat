@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 
 module Directory.Service where
 
@@ -44,7 +45,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
     (_, resp) <- atomically . readTBQueue $ outputQ cc
     forM_ (crDirectoryEvent resp) $ \case
       DEContactConnected ct -> do
-        contactConnected ct
+        putStrLn $ T.unpack (localDisplayName' ct) <> " connected"
         sendMessage cc ct $
           "Welcome to " <> serviceName <> " service!\n\
           \Send a search string to find groups or */help* to learn how to add groups to directory.\n\n\
@@ -77,56 +78,68 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
             CEGroupMemberNotActive -> sendMessage' cc ctId $ unexpectedError "service membership is not active"
             _ -> sendMessage' cc ctId $ unexpectedError "can't create group link"
           _ -> sendMessage' cc ctId $ unexpectedError "can't create group link"
-      DEGroupUpdated {contactId, fromGroup, toGroup} -> do
+      DEGroupUpdated {contactId, fromGroup, toGroup} ->
         unless (sameProfile p p') $ do
           atomically $ unlistGroup st groupId
-          withGroupReg toGroup "group updated" $ \gr@GroupReg {dbContactId, groupRegStatus} -> do
-            readTVarIO groupRegStatus >>= \case
+          withGroupReg toGroup "group updated" $ \gr@GroupReg {dbContactId} -> do
+            readTVarIO (groupRegStatus gr) >>= \case
               GRSPendingConfirmation -> pure ()
               GRSProposed -> pure ()
-              GRSPendingUpdate ->
-                when (contactId == dbContactId) $ -- we do not need to process updates made by other members in this case
-                  sendChatCmd cc (APIGetGroupLink groupId) >>= \case
-                    CRGroupLink {connReqContact} -> do
-                      let groupLink = safeDecodeUtf8 $ strEncode connReqContact
-                          hadLinkBefore = groupLink `isInfix` description p
-                          hasLinkNow = groupLink `isInfix` description p'
-                      case (hadLinkBefore, hasLinkNow) of
-                        (True, True) -> do
-                          sendMessage' cc contactId "The group profile is updated: the group registration is suspended and it will not appear in search results until re-approved"
-                          -- TODO suspend group listing, send for approval
-                        (True, False) -> do
-                          sendMessage' cc contactId "The group link is removed, the group registration is suspended and it will not appear in search results"
-                          -- TODO suspend group listing, remove approval code
-                          atomically $ writeTVar groupRegStatus GRSPendingUpdate
-                        (False, True) -> do
-                          sendMessage' cc contactId $ "Thank you! The group link for group ID " <> show groupId <> " (" <> T.unpack displayName <> ") added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
-                          let gaId = 1
-                          atomically $ writeTVar groupRegStatus $ GRSPendingApproval gaId
-                          sendForApproval gr gaId
-                        (False, False) -> pure ()
-                          -- check status, remove approval code, remove listing
-                    _ -> pure () -- TODO handle errors
-              GRSPendingApproval n -> do
-                let gaId = n + 1
-                atomically $ writeTVar groupRegStatus $ GRSPendingApproval gaId
-                notifySuperUsers $ T.unpack $ "The group registration updated for ID " <> tshow groupId <> ": " <> localDisplayName
-                sendForApproval gr gaId
-              GRSActive -> do
-                let gaId = 1
-                atomically $ writeTVar groupRegStatus $ GRSPendingApproval gaId
-                notifySuperUsers $ T.unpack $ "The group profile updated, group suspended for ID " <> tshow groupId <> ": " <> localDisplayName
-                sendForApproval gr gaId
-                sendMessage' cc dbContactId $ T.unpack $ "The group profile is updated, the group registration is suspended until re-approved for ID " <> tshow (userGroupRegId gr) <> ": " <> displayName
-              GRSSuspended -> pure ()
+              GRSPendingUpdate -> groupProfileUpdate >>= \case
+                GPNoServiceLink ->
+                  when (contactId == dbContactId) $ sendMessage' cc contactId $ "Profile updated for " <> groupRef <> ", but the group link is not added to the welcome message."
+                GPServiceLinkAdded
+                  | contactId == dbContactId -> do
+                    sendMessage' cc contactId $ "Thank you! The group link for group " <> groupRef <> " added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
+                    let gaId = 1
+                    atomically $ writeTVar (groupRegStatus gr) $ GRSPendingApproval gaId
+                    sendForApproval gr gaId
+                  | otherwise -> sendMessage' cc contactId "The group link is added by another group member, your registration will not be processed."
+                GPServiceLinkRemoved -> when (contactId == dbContactId) sendLinkRemoved
+                GPHasServiceLink -> pure ()
+                GPServiceLinkError -> do
+                  when (contactId == dbContactId) $ sendMessage' cc contactId $ "Error: " <> serviceName <> " has no link for group " <> groupRef <> ". Please report the error to the developers."
+                  putStrLn $ "Error: no link for group " <> groupRef
+              GRSPendingApproval n -> processProfileChange gr $ n + 1
+              GRSActive -> processProfileChange gr 1
+              GRSSuspended -> processProfileChange gr 1
         where
           isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
           GroupInfo {groupId, groupProfile = p} = fromGroup
           GroupInfo {localDisplayName, groupProfile = p'@GroupProfile {displayName, image = image'}} = toGroup
+          groupRef = "ID " <> show groupId <> " (" <> T.unpack displayName <> ")"
           sameProfile
             GroupProfile {displayName = n, fullName = fn, image = i, description = d}
             GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
               n == n' && fn == fn' && i == i' && d == d'
+          processProfileChange gr n' = groupProfileUpdate >>= \case
+            GPNoServiceLink -> noLink
+            GPServiceLinkRemoved -> noLink
+            GPServiceLinkAdded -> hasLink
+            GPHasServiceLink -> hasLink
+            GPServiceLinkError -> putStrLn $ "Error: no link for group " <> groupRef <> " pending approval."
+            where
+              noLink = do
+                atomically $ writeTVar (groupRegStatus gr) GRSPendingUpdate
+                sendLinkRemoved
+                notifySuperUsers $ "The link is removed from the group " <> groupRef <> "."
+              hasLink = do
+                atomically $ writeTVar (groupRegStatus gr) $ GRSPendingApproval n'
+                notifySuperUsers $ "The group " <> groupRef <> " is updated."
+                sendForApproval gr n'
+          groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)
+            where
+              profileUpdate = \case
+                CRGroupLink {connReqContact} ->
+                  let groupLink = safeDecodeUtf8 $ strEncode connReqContact
+                      hadLinkBefore = groupLink `isInfix` description p
+                      hasLinkNow = groupLink `isInfix` description p'
+                  in if
+                        | hadLinkBefore && hasLinkNow -> GPHasServiceLink
+                        | hadLinkBefore -> GPServiceLinkRemoved
+                        | hasLinkNow -> GPServiceLinkAdded
+                        | otherwise -> GPNoServiceLink
+                _ -> GPServiceLinkError
           sendForApproval GroupReg {dbGroupId, dbContactId} gaId = do
             ct_ <-  getContact cc dbContactId
             let text = maybe ("The group ID " <> tshow dbGroupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow dbGroupId <> ": ") ct_
@@ -135,6 +148,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
             withSuperUsers $ \ctId -> do
               sendComposedMessage' cc ctId Nothing msg
               sendMessage' cc ctId $ "/approve " <> show dbGroupId <> ":" <> T.unpack localDisplayName <> " " <> show gaId
+          sendLinkRemoved = sendMessage' cc contactId $ "The link for group " <> groupRef <> " is removed from the welcome message, please add it."
       DEContactRoleChanged _ctId _g _role -> pure ()
       DEServiceRoleChanged _g _role -> pure ()
       DEContactRemovedFromGroup _ctId _g -> pure ()
@@ -191,7 +205,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
                             | otherwise -> sendReply "Incorrect group name"
                           Nothing -> pure ()
                       | otherwise -> sendReply "Incorrect approval code"
-                    _ -> sendMessage cc ct $ "Error: the group ID " <> show groupId <> " (" <> T.unpack n <> ") is not pending approval."
+                    _ -> sendReply $ "Error: the group ID " <> show groupId <> " (" <> T.unpack n <> ") is not pending approval."
             DCRejectGroup _gaId _gName -> pure ()
             DCSuspendGroup _gId _gName -> pure ()
             DCResumeGroup _gId _gName -> pure ()
@@ -203,7 +217,6 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
         where
           sendReply = sendComposedMessage cc ct (Just ciId) . textMsgContent
   where
-    contactConnected ct = putStrLn $ T.unpack (localDisplayName' ct) <> " connected"
     -- withContactGroupReg ctId g err action = withContact ctId g err $ withGroupReg g err . action
     withSuperUsers action = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> action contactId
     notifySuperUsers s = withSuperUsers $ \contactId -> sendMessage' cc contactId s
@@ -215,12 +228,14 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       atomically (getGroupReg st groupId) >>= \case
         Just gr -> action gr
         Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find group registration ID " <> tshow groupId
-    withGroupReg' groupId err action = do
-      atomically (getGroupReg st groupId) >>= \case
-        Just gr -> action gr
-        Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", can't find group registration ID " <> tshow groupId
+    -- withGroupReg' groupId err action = do
+    --   atomically (getGroupReg st groupId) >>= \case
+    --     Just gr -> action gr
+    --     Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", can't find group registration ID " <> tshow groupId
     groupInfoText GroupProfile {displayName = n, fullName = fn, description = d} =
       n <> (if n == fn || T.null fn then "" else " (" <> fn <> ")") <> maybe "" ("\nWelcome message:\n" <>) d
+
+data GroupProfileUpdate = GPNoServiceLink | GPServiceLinkAdded | GPServiceLinkRemoved | GPHasServiceLink | GPServiceLinkError
 
 badInvitation :: GroupMemberRole -> GroupMemberRole -> Maybe String
 badInvitation contactRole serviceRole = case (contactRole, serviceRole) of

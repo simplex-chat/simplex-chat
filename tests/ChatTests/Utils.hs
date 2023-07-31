@@ -349,6 +349,11 @@ dropTime_ msg = case splitAt 6 msg of
     if all isDigit [m, m', s, s'] then Just text else Nothing
   _ -> Nothing
 
+dropStrPrefix :: HasCallStack => String -> String -> String
+dropStrPrefix pfx s = 
+  let (p, rest) = splitAt (length pfx) s
+   in if p == pfx then rest else error $ "no prefix " <> pfx <> " in string : " <> s
+
 dropReceipt :: HasCallStack => String -> String
 dropReceipt msg = fromMaybe err $ dropReceipt_ msg
   where
