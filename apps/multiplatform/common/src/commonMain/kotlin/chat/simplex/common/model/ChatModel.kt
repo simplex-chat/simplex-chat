@@ -1715,6 +1715,7 @@ sealed class CIStatus {
   @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): CIStatus()
 
   fun statusIcon(
     primaryColor: Color,
@@ -1738,6 +1739,7 @@ sealed class CIStatus {
       is SndError -> MR.images.ic_warning_filled to WarningYellow
       is RcvNew -> MR.images.ic_circle_filled to primaryColor
       is RcvRead -> null
+      is CIStatus.Invalid -> MR.images.ic_question_mark to metaColor
     }
 
   val statusText: String get() = when (this) {
@@ -1748,6 +1750,7 @@ sealed class CIStatus {
     is SndError -> generalGetString(MR.strings.item_status_snd_error_text)
     is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_text)
     is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_text)
+    is Invalid -> "Invalid status"
   }
 
   val statusDescription: String get() = when (this) {
@@ -1758,6 +1761,7 @@ sealed class CIStatus {
     is SndError -> String.format(generalGetString(MR.strings.item_status_snd_error_unexpected_desc), this.agentError)
     is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_desc)
     is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_desc)
+    is Invalid -> this.text
   }
 }
 
@@ -2002,6 +2006,7 @@ class CIFile(
     is CIFileStatus.RcvCancelled -> false
     is CIFileStatus.RcvComplete -> true
     is CIFileStatus.RcvError -> false
+    is CIFileStatus.Invalid -> false
   }
 
   @Transient
@@ -2022,6 +2027,7 @@ class CIFile(
     is CIFileStatus.RcvCancelled -> null
     is CIFileStatus.RcvComplete -> null
     is CIFileStatus.RcvError -> null
+    is CIFileStatus.Invalid -> null
   }
 
   companion object {
@@ -2091,6 +2097,7 @@ sealed class CIFileStatus {
   @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
   @Serializable @SerialName("rcvError") object RcvError: CIFileStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): CIFileStatus()
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
