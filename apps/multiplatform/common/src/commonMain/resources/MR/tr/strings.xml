@@ -963,4 +963,5 @@
     <string name="network_status">Ağ durumu</string>
     <string name="feature_off">kapalı</string>
     <string name="chat_preferences_on">açık</string>
+    <string name="change_lock_mode">Kilit modunu değiştir</string>
 </resources>
