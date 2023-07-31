@@ -501,7 +501,7 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
   CIFSRcvError :: CIFileStatus 'MDRcv
-  CIFSUnknown :: CIFileStatus 'MDSnd
+  CIFSInvalid :: {text :: Text} -> CIFileStatus 'MDSnd
 
 deriving instance Eq (CIFileStatus d)
 
@@ -520,7 +520,7 @@ ciFileEnded = \case
   CIFSRcvCancelled -> True
   CIFSRcvComplete -> True
   CIFSRcvError -> True
-  CIFSUnknown -> True
+  CIFSInvalid {} -> True
 
 instance ToJSON (CIFileStatus d) where
   toJSON = J.toJSON . jsonCIFileStatus
@@ -547,7 +547,7 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
     CIFSRcvError -> "rcv_error"
-    CIFSUnknown -> "unknown"
+    CIFSInvalid {} -> "invalid"
   strP = (\(AFS _ st) -> checkDirection st) <$?> strP
 
 instance StrEncoding ACIFileStatus where
@@ -565,7 +565,7 @@ instance StrEncoding ACIFileStatus where
       "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
       "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
       "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
-      _ -> pure $ AFS SMDSnd CIFSUnknown
+      text -> pure $ AFS SMDSnd (CIFSInvalid $ safeDecodeUtf8 text)
     where
       progress :: (Int64 -> Int64 -> a) -> A.Parser a
       progress f = f <$> num <*> num <|> pure (f 0 1)
@@ -583,7 +583,7 @@ data JSONCIFileStatus
   | JCIFSRcvComplete
   | JCIFSRcvCancelled
   | JCIFSRcvError
-  | JCIFSUnknown
+  | JCIFSInvalid {text :: Text}
   deriving (Generic)
 
 instance ToJSON JSONCIFileStatus where
@@ -603,7 +603,7 @@ jsonCIFileStatus = \case
   CIFSRcvComplete -> JCIFSRcvComplete
   CIFSRcvCancelled -> JCIFSRcvCancelled
   CIFSRcvError -> JCIFSRcvError
-  CIFSUnknown -> JCIFSUnknown
+  CIFSInvalid text -> JCIFSInvalid text
 
 aciFileStatusJSON :: JSONCIFileStatus -> ACIFileStatus
 aciFileStatusJSON = \case
@@ -618,7 +618,7 @@ aciFileStatusJSON = \case
   JCIFSRcvComplete -> AFS SMDRcv CIFSRcvComplete
   JCIFSRcvCancelled -> AFS SMDRcv CIFSRcvCancelled
   JCIFSRcvError -> AFS SMDRcv CIFSRcvError
-  JCIFSUnknown -> AFS SMDSnd CIFSUnknown
+  JCIFSInvalid text -> AFS SMDSnd $ CIFSInvalid text
 
 -- to conveniently read file data from db
 data CIFileInfo = CIFileInfo
@@ -636,7 +636,7 @@ data CIStatus (d :: MsgDirection) where
   CISSndError :: String -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
   CISRcvRead :: CIStatus 'MDRcv
-  CISUnknown :: CIStatus 'MDSnd
+  CISInvalid :: Text -> CIStatus 'MDSnd
 
 deriving instance Show (CIStatus d)
 
@@ -661,7 +661,7 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
     CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
     CISRcvNew -> "rcv_new"
     CISRcvRead -> "rcv_read"
-    CISUnknown -> "unknown"
+    CISInvalid {} -> "invalid"
   strP = (\(ACIStatus _ st) -> checkDirection st) <$?> strP
 
 instance StrEncoding ACIStatus where
@@ -675,7 +675,7 @@ instance StrEncoding ACIStatus where
       "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
       "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
-      _ -> pure $ ACIStatus SMDSnd CISUnknown
+      text -> pure $ ACIStatus SMDSnd (CISInvalid $ safeDecodeUtf8 text)
 
 data JSONCIStatus
   = JCISSndNew
@@ -685,7 +685,7 @@ data JSONCIStatus
   | JCISSndError {agentError :: String}
   | JCISRcvNew
   | JCISRcvRead
-  | JCISUnknown
+  | JCISInvalid {text :: Text}
   deriving (Show, Generic)
 
 instance ToJSON JSONCIStatus where
@@ -701,7 +701,7 @@ jsonCIStatus = \case
   CISSndError e -> JCISSndError e
   CISRcvNew -> JCISRcvNew
   CISRcvRead -> JCISRcvRead
-  CISUnknown -> JCISUnknown
+  CISInvalid text -> JCISInvalid text
 
 ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
 ciStatusNew = case msgDirection @d of
