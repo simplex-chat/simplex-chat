@@ -553,7 +553,7 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
 instance StrEncoding ACIFileStatus where
   strEncode (AFS _ s) = strEncode s
   strP =
-    (statusP <* A.endOfLine) -- endOfLine to make it fail on partial correct parse
+    (statusP <* A.endOfInput) -- endOfInput to make it fail on partial correct parse
       <|> (AFS SMDSnd . CIFSInvalid . safeDecodeUtf8 <$> A.takeByteString)
     where
       statusP =
@@ -670,7 +670,7 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
 instance StrEncoding ACIStatus where
   strEncode (ACIStatus _ s) = strEncode s
   strP =
-    (statusP <* A.endOfLine) -- endOfLine to make it fail on partial correct parse, e.g. "snd_rcvd ok complete"
+    (statusP <* A.endOfInput) -- endOfInput to make it fail on partial correct parse, e.g. "snd_rcvd ok complete"
       <|> (ACIStatus SMDSnd . CISInvalid . safeDecodeUtf8 <$> A.takeByteString)
     where
       statusP =
