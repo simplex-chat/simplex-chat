@@ -1626,6 +1626,7 @@ data class CIMeta (
       is CIStatus.SndErrorAuth -> MR.images.ic_close to Color.Red
       is CIStatus.SndError -> MR.images.ic_warning_filled to WarningYellow
       is CIStatus.RcvNew -> MR.images.ic_circle_filled to primaryColor
+      is CIStatus.Invalid -> MR.images.ic_question_mark to metaColor
       else -> null
     }
 
@@ -1712,6 +1713,7 @@ sealed class CIStatus {
   @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): CIStatus()
 }
 
 @Serializable
@@ -1949,6 +1951,7 @@ class CIFile(
     is CIFileStatus.RcvCancelled -> false
     is CIFileStatus.RcvComplete -> true
     is CIFileStatus.RcvError -> false
+    is CIFileStatus.Invalid -> false
   }
 
   @Transient
@@ -1969,6 +1972,7 @@ class CIFile(
     is CIFileStatus.RcvCancelled -> null
     is CIFileStatus.RcvComplete -> null
     is CIFileStatus.RcvError -> null
+    is CIFileStatus.Invalid -> null
   }
 
   companion object {
@@ -2038,6 +2042,7 @@ sealed class CIFileStatus {
   @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
   @Serializable @SerialName("rcvError") object RcvError: CIFileStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): CIFileStatus()
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")

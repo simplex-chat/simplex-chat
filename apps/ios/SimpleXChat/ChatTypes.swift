@@ -2273,6 +2273,7 @@ public struct CIMeta: Decodable {
         case .sndErrorAuth: return ("multiply", .red)
         case .sndError: return ("exclamationmark.triangle.fill", .yellow)
         case .rcvNew: return ("circlebadge.fill", Color.accentColor)
+        case .invalid: return ("questionmark", metaColor)
         default: return nil
         }
     }
@@ -2343,6 +2344,7 @@ public enum CIStatus: Decodable {
     case sndError(agentError: String)
     case rcvNew
     case rcvRead
+    case invalid(text: String)
 
     var id: String {
         switch self {
@@ -2353,6 +2355,7 @@ public enum CIStatus: Decodable {
         case .sndError: return "sndError"
         case .rcvNew: return "rcvNew"
         case .rcvRead: return "rcvRead"
+        case .invalid: return "invalid"
         }
     }
 }
@@ -2615,6 +2618,7 @@ public struct CIFile: Decodable {
             case .rcvCancelled: return false
             case .rcvComplete: return true
             case .rcvError: return false
+            case .invalid: return false
             }
         }
     }
@@ -2638,6 +2642,7 @@ public struct CIFile: Decodable {
             case .rcvCancelled: return nil
             case .rcvComplete: return nil
             case .rcvError: return nil
+            case .invalid: return nil
             }
         }
     }
@@ -2698,6 +2703,7 @@ public enum CIFileStatus: Decodable, Equatable {
     case rcvComplete
     case rcvCancelled
     case rcvError
+    case invalid(text: String)
 
     var id: String {
         switch self {
@@ -2712,6 +2718,7 @@ public enum CIFileStatus: Decodable, Equatable {
         case .rcvComplete: return "rcvComplete"
         case .rcvCancelled: return "rcvCancelled"
         case .rcvError: return "rcvError"
+        case .invalid: return "invalid"
         }
     }
 }
