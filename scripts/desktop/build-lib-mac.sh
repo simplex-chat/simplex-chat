@@ -61,6 +61,13 @@ function copy_deps() {
 copy_deps $LIB
 rm deps/`basename $LIB`
 
+if [ -e deps/libHSdrct-*.$LIB_EXT ]; then
+    LIBCRYPTO_PATH=$(otool -l deps/libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT deps/libHSdrct*.$LIB_EXT
+    cp $LIBCRYPTO_PATH deps/libcrypto.1.1.$LIB_EXT
+    chmod 755 deps/libcrypto.1.1.$LIB_EXT
+fi
+
 cd -
 
 rm -rf apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
