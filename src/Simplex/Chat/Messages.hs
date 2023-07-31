@@ -630,6 +630,7 @@ data CIStatus (d :: MsgDirection) where
   CISSndError :: String -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
   CISRcvRead :: CIStatus 'MDRcv
+  CISUnknown :: CIStatus 'MDSnd
 
 deriving instance Show (CIStatus d)
 
@@ -654,6 +655,7 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
     CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
     CISRcvNew -> "rcv_new"
     CISRcvRead -> "rcv_read"
+    CISUnknown -> "unknown"
   strP = (\(ACIStatus _ st) -> checkDirection st) <$?> strP
 
 instance StrEncoding ACIStatus where
@@ -667,7 +669,7 @@ instance StrEncoding ACIStatus where
       "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
       "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
-      _ -> fail "bad status"
+      _ -> pure $ ACIStatus SMDSnd CISUnknown
 
 data JSONCIStatus
   = JCISSndNew
@@ -677,6 +679,7 @@ data JSONCIStatus
   | JCISSndError {agentError :: String}
   | JCISRcvNew
   | JCISRcvRead
+  | JCISUnknown
   deriving (Show, Generic)
 
 instance ToJSON JSONCIStatus where
@@ -692,6 +695,7 @@ jsonCIStatus = \case
   CISSndError e -> JCISSndError e
   CISRcvNew -> JCISRcvNew
   CISRcvRead -> JCISRcvRead
+  CISUnknown -> JCISUnknown
 
 ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
 ciStatusNew = case msgDirection @d of
