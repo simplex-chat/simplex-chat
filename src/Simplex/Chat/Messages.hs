@@ -553,20 +553,22 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
 instance StrEncoding ACIFileStatus where
   strEncode (AFS _ s) = strEncode s
   strP =
-    A.takeTill (== ' ') >>= \case
-      "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
-      "snd_transfer" -> AFS SMDSnd <$> progress CIFSSndTransfer
-      "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
-      "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
-      "snd_error" -> pure $ AFS SMDSnd CIFSSndError
-      "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
-      "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
-      "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
-      "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
-      "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
-      "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
-      text -> pure $ AFS SMDSnd (CIFSInvalid $ safeDecodeUtf8 text)
+    statusP <|> (AFS SMDSnd . CIFSInvalid . safeDecodeUtf8 <$> A.takeByteString)
     where
+      statusP =
+        A.takeTill (== ' ') >>= \case
+          "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
+          "snd_transfer" -> AFS SMDSnd <$> progress CIFSSndTransfer
+          "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
+          "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
+          "snd_error" -> pure $ AFS SMDSnd CIFSSndError
+          "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
+          "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
+          "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
+          "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
+          "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
+          "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
+          _ -> fail "bad file status"
       progress :: (Int64 -> Int64 -> a) -> A.Parser a
       progress f = f <$> num <*> num <|> pure (f 0 1)
       num = A.space *> A.decimal
@@ -671,15 +673,18 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
 instance StrEncoding ACIStatus where
   strEncode (ACIStatus _ s) = strEncode s
   strP =
-    A.takeTill (== ' ') >>= \case
-      "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
-      "snd_sent" -> ACIStatus SMDSnd . CISSndSent <$> ((A.space *> strP) <|> pure SSPComplete)
-      "snd_rcvd" -> ACIStatus SMDSnd <$> (CISSndRcvd <$> (A.space *> strP) <*> ((A.space *> strP) <|> pure SSPComplete))
-      "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-      "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
-      "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
-      "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
-      text -> pure $ ACIStatus SMDSnd (CISInvalid $ safeDecodeUtf8 text)
+    statusP <|> (ACIStatus SMDSnd . CISInvalid . safeDecodeUtf8 <$> A.takeByteString)
+    where
+      statusP =
+        A.takeTill (== ' ') >>= \case
+          "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
+          "snd_sent" -> ACIStatus SMDSnd . CISSndSent <$> ((A.space *> strP) <|> pure SSPComplete)
+          "snd_rcvd" -> ACIStatus SMDSnd <$> (CISSndRcvd <$> (A.space *> strP) <*> ((A.space *> strP) <|> pure SSPComplete))
+          "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
+          "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+          "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
+          "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
+          _ -> fail "bad status"
 
 data JSONCIStatus
   = JCISSndNew
