@@ -1678,9 +1678,11 @@ object ChatController {
   }
 
   private fun updateContactsStatus(contactRefs: List<ContactRef>, status: NetworkStatus) {
+    val statuses = chatModel.networkStatuses.value.toMutableMap()
     for (c in contactRefs) {
-      chatModel.networkStatuses[c.agentConnId] = status
+      statuses[c.agentConnId] = status
     }
+    chatModel.networkStatuses.value = statuses
   }
 
   private fun processContactSubError(contact: Contact, chatError: ChatError) {
