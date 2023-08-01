@@ -294,7 +294,8 @@ fun ContactCheckRow(
   checked: Boolean,
   enabled: Boolean,
 ) {
-  val prohibitedToInviteIncognito = !groupInfo.membership.memberIncognito && contact.contactConnIncognito
+//  val prohibitedToInviteIncognito = !groupInfo.membership.memberIncognito && contact.contactConnIncognito
+  val prohibitedToInviteIncognito = false
   val icon: Painter
   val iconColor: Color
   if (prohibitedToInviteIncognito) {
