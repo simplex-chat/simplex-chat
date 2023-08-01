@@ -68,7 +68,6 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
         ADC SDRUser cmd -> deUserCommand ct ciId cmd
         ADC SDRSuperUser cmd -> deSuperUserCommand ct ciId cmd
   where
-    -- withContactGroupReg ctId g err action = withContact ctId g err $ withGroupReg g err . action
     withSuperUsers action = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> action contactId
     notifySuperUsers s = withSuperUsers $ \contactId -> sendMessage' cc contactId s
     -- withContact ctId GroupInfo {localDisplayName} err action = do
@@ -212,23 +211,25 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
 
     deContactRemovedFromGroup :: ContactId -> GroupInfo -> IO ()
     deContactRemovedFromGroup ctId g =
-      withGroupReg g "contact removed" $ \gr -> do
-        atomically $ writeTVar (groupRegStatus gr) GRSRemoved
-        let groupRef = groupReference g
-        sendMessage' cc ctId $ "You are removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
-        notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner is removed)."
+      withGroupReg g "contact removed" $ \gr@GroupReg {dbContactId} -> do
+        when (ctId == dbContactId) $ do
+          atomically $ writeTVar (groupRegStatus gr) GRSRemoved
+          let groupRef = groupReference g
+          sendMessage' cc ctId $ "You are removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
+          notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner is removed)."
 
     deContactLeftGroup :: ContactId -> GroupInfo -> IO ()
     deContactLeftGroup ctId g =
-      withGroupReg g "contact left" $ \gr -> do
-        atomically $ writeTVar (groupRegStatus gr) GRSRemoved
-        let groupRef = groupReference g
-        sendMessage' cc ctId $ "You left the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
-        notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner left)."
+      withGroupReg g "contact left" $ \gr@GroupReg {dbContactId} -> do
+        when (ctId == dbContactId) $ do
+          atomically $ writeTVar (groupRegStatus gr) GRSRemoved
+          let groupRef = groupReference g
+          sendMessage' cc ctId $ "You left the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
+          notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner left)."
 
     deServiceRemovedFromGroup :: GroupInfo -> IO ()
     deServiceRemovedFromGroup g =
-      withGroupReg g "contact left" $ \gr@GroupReg {dbContactId} -> do
+      withGroupReg g "service removed" $ \gr@GroupReg {dbContactId} -> do
         atomically $ writeTVar (groupRegStatus gr) GRSRemoved
         let groupRef = groupReference g
         sendMessage' cc dbContactId $ serviceName <> " is removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."

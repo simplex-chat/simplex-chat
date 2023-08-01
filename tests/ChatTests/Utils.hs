@@ -480,14 +480,18 @@ createGroup3 gName cc1 cc2 cc3 = do
     ]
 
 addMember :: HasCallStack => String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
-addMember gName inviting invitee role = do
+addMember gName = fullAddMember gName ""
+
+fullAddMember :: HasCallStack => String -> String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
+fullAddMember gName fullName inviting invitee role = do
   name1 <- userName inviting
   memName <- userName invitee
   inviting ##> ("/a " <> gName <> " " <> memName <> " " <> B.unpack (strEncode role))
+  let fullName' = if null fullName || fullName == gName then "" else " (" <> fullName <> ")"
   concurrentlyN_
     [ inviting <## ("invitation to join the group #" <> gName <> " sent to " <> memName),
       do
-        invitee <## ("#" <> gName <> ": " <> name1 <> " invites you to join the group as " <> B.unpack (strEncode role))
+        invitee <## ("#" <> gName <> fullName' <> ": " <> name1 <> " invites you to join the group as " <> B.unpack (strEncode role))
         invitee <## ("use /j " <> gName <> " to accept")
     ]
 

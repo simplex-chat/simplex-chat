@@ -15,16 +15,18 @@ import Directory.Store
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Core
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Types (Profile (..))
+import Simplex.Chat.Types (Profile (..), GroupMemberRole (GROwner))
 import System.FilePath ((</>))
 import Test.Hspec
 
 directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
-  fit "should register group" testDirectoryService
-  fit "should de-list group if owner leaves the group" testDelistedOwnerLeaves
-  fit "should de-list group if owner is removed from the group" testDelistedOwnerRemoved
-  fit "should de-list group if service is removed from the group" testDelistedServiceRemoved
+  it "should register group" testDirectoryService
+  it "should de-list group if owner leaves the group" testDelistedOwnerLeaves
+  it "should de-list group if owner is removed from the group" testDelistedOwnerRemoved
+  it "should NOT de-list group if another member leaves the group" testNotDelistedMemberLeaves
+  it "should NOT de-list group if another member is removed from the group" testNotDelistedMemberRemoved
+  it "should de-list group if service is removed from the group" testDelistedServiceRemoved
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
@@ -130,13 +132,11 @@ testDirectoryService tmp =
 
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
-  withDirectoryService tmp $ \superUser dsLink -> do
+  withDirectoryService tmp $ \superUser dsLink ->
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroup superUser bob "privacy" "Privacy"
-      bob ##> "/l privacy"
-      bob <## "#privacy: you left the group"
-      bob <## "use /d #privacy to delete the group"
+      leaveGroup "privacy" bob
       bob <# "SimpleX-Directory> You left the group ID 1 (privacy)."
       bob <## ""
       bob <## "Group is no longer listed in the directory."
@@ -144,33 +144,53 @@ testDelistedOwnerLeaves tmp =
 
 testDelistedOwnerRemoved :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerRemoved tmp =
-  withDirectoryService tmp $ \superUser dsLink -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         connectUsers bob cath
-        bob ##> "/a privacy cath owner"
-        bob <## "invitation to join the group #privacy sent to cath"
-        cath <## "#privacy (Privacy): bob invites you to join the group as owner"
-        cath <## "use /j privacy to accept"
-        cath ##> "/j privacy"
-        cath <## "#privacy: you joined the group"
-        cath <#. "#privacy bob> Link to join the group privacy: "
+        fullAddMember "privacy" "Privacy" bob cath GROwner
+        joinGroup "privacy" cath bob
         cath <## "#privacy: member SimpleX-Directory is connected"
-        bob <## "#privacy: cath joined the group"
-        cath ##> "/rm privacy bob"
-        cath <## "#privacy: you removed bob from the group"
-        bob <## "#privacy: cath removed you from the group"
-        bob <## "use /d #privacy to delete the group"
+        removeMember "privacy" cath bob
         bob <# "SimpleX-Directory> You are removed from the group ID 1 (privacy)."
         bob <## ""
         bob <## "Group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (group owner is removed)."
 
+testNotDelistedMemberLeaves :: HasCallStack => FilePath -> IO ()
+testNotDelistedMemberLeaves tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        connectUsers bob cath
+        fullAddMember "privacy" "Privacy" bob cath GROwner
+        joinGroup "privacy" cath bob
+        cath <## "#privacy: member SimpleX-Directory is connected"
+        leaveGroup "privacy" cath
+        bob <## "#privacy: cath left the group"
+        (superUser </)
+
+testNotDelistedMemberRemoved :: HasCallStack => FilePath -> IO ()
+testNotDelistedMemberRemoved tmp = 
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        connectUsers bob cath
+        fullAddMember "privacy" "Privacy" bob cath GROwner
+        joinGroup "privacy" cath bob
+        cath <## "#privacy: member SimpleX-Directory is connected"
+        removeMember "privacy" bob cath
+        (superUser </)
+
 testDelistedServiceRemoved :: HasCallStack => FilePath -> IO ()
 testDelistedServiceRemoved tmp =
-  withDirectoryService tmp $ \superUser dsLink -> do
+  withDirectoryService tmp $ \superUser dsLink ->
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroup superUser bob "privacy" "Privacy"
@@ -246,3 +266,30 @@ u `connectVia` dsLink = do
   u <## "Send a search string to find groups or /help to learn how to add groups to directory."
   u <## ""
   u <## "For example, send privacy to find groups about privacy."
+
+joinGroup :: String -> TestCC -> TestCC -> IO ()
+joinGroup gName member host = do
+  let gn = "#" <> gName
+  memberName <- userName member
+  hostName <- userName host
+  member ##> ("/j " <> gName)
+  member <## (gn <> ": you joined the group")
+  member <#. (gn <> " " <> hostName <> "> Link to join the group " <> gName <> ": ")
+  host <## (gn <> ": " <> memberName <> " joined the group")
+
+leaveGroup :: String -> TestCC -> IO ()
+leaveGroup gName member = do
+  let gn = "#" <> gName
+  member ##> ("/l " <> gName)
+  member <## (gn <> ": you left the group")
+  member <## ("use /d " <> gn <> " to delete the group")
+
+removeMember :: String -> TestCC -> TestCC -> IO ()
+removeMember gName admin removed = do
+  let gn = "#" <> gName
+  adminName <- userName admin
+  removedName <- userName removed
+  admin ##> ("/rm " <> gName <> " " <> removedName)
+  admin <## (gn <> ": you removed " <> removedName <> " from the group")
+  removed <## (gn <> ": " <> adminName <> " removed you from the group")
+  removed <## ("use /d " <> gn <> " to delete the group")
