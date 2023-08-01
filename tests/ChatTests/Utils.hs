@@ -48,9 +48,15 @@ xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' d t = do
+xit'' = ifCI xit it
+
+xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
+xdescribe'' = ifCI xdescribe describe
+
+ifCI :: HasCallStack => (HasCallStack => String -> a -> SpecWith b) -> (HasCallStack => String -> a -> SpecWith b) -> String -> a -> SpecWith b
+ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
-  (if ci == Just "true" then xit else it) d t
+  (if ci == Just "true" then xrun else run) d t
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
@@ -349,6 +355,11 @@ dropTime_ msg = case splitAt 6 msg of
     if all isDigit [m, m', s, s'] then Just text else Nothing
   _ -> Nothing
 
+dropStrPrefix :: HasCallStack => String -> String -> String
+dropStrPrefix pfx s = 
+  let (p, rest) = splitAt (length pfx) s
+   in if p == pfx then rest else error $ "no prefix " <> pfx <> " in string : " <> s
+
 dropReceipt :: HasCallStack => String -> String
 dropReceipt msg = fromMaybe err $ dropReceipt_ msg
   where
@@ -475,14 +486,18 @@ createGroup3 gName cc1 cc2 cc3 = do
     ]
 
 addMember :: HasCallStack => String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
-addMember gName inviting invitee role = do
+addMember gName = fullAddMember gName ""
+
+fullAddMember :: HasCallStack => String -> String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
+fullAddMember gName fullName inviting invitee role = do
   name1 <- userName inviting
   memName <- userName invitee
   inviting ##> ("/a " <> gName <> " " <> memName <> " " <> B.unpack (strEncode role))
+  let fullName' = if null fullName || fullName == gName then "" else " (" <> fullName <> ")"
   concurrentlyN_
     [ inviting <## ("invitation to join the group #" <> gName <> " sent to " <> memName),
       do
-        invitee <## ("#" <> gName <> ": " <> name1 <> " invites you to join the group as " <> B.unpack (strEncode role))
+        invitee <## ("#" <> gName <> fullName' <> ": " <> name1 <> " invites you to join the group as " <> B.unpack (strEncode role))
         invitee <## ("use /j " <> gName <> " to accept")
     ]
 

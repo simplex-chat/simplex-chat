@@ -39,5 +39,8 @@ runSimplexChat ChatOpts {maintenance} u cc chat
     a2 <- async $ chat u cc
     waitEither_ a1 a2
 
-sendChatCmd :: ChatController -> String -> IO ChatResponse
-sendChatCmd cc s = runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
+sendChatCmdStr :: ChatController -> String -> IO ChatResponse
+sendChatCmdStr cc s = runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
+
+sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
+sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
