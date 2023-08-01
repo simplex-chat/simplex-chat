@@ -2159,9 +2159,9 @@
         <target>Het bestand wordt van de servers verwijderd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>File will be received when your contact completes uploading it.</source>
-        <target>Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target state="translated">Het bestand wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -2499,9 +2499,9 @@
         <target>Negeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>Image will be received when your contact completes uploading it.</source>
-        <target>De afbeelding wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target state="translated">De afbeelding wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -4887,9 +4887,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>video oproep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>Video will be received when your contact completes uploading it.</source>
-        <target>De video wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target state="translated">De video wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
