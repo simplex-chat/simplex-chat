@@ -477,7 +477,9 @@ object ChatModel {
   }
 
   fun setContactNetworkStatus(contact: Contact, status: NetworkStatus) {
-    networkStatuses.value = networkStatuses.value.toMutableMap().apply { set(contact.activeConn.agentConnId, status) }
+    val statuses = networkStatuses.value.toMutableMap()
+    statuses[contact.activeConn.agentConnId] = status
+    networkStatuses.value = statuses
   }
 
   fun contactNetworkStatus(contact: Contact): NetworkStatus =
