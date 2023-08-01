@@ -74,6 +74,8 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
     --   getContact cc ctId >>= \case
     --     Just ct -> action ct
     --     Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find contact ID " <> tshow ctId
+    notifyOwner GroupReg {dbContactId} = sendMessage' cc dbContactId
+    ctId `isOwner` GroupReg {dbContactId} = ctId == dbContactId
     withGroupReg GroupInfo {groupId, localDisplayName} err action = do
       atomically (getGroupReg st groupId) >>= \case
         Just gr -> action gr
@@ -110,47 +112,48 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
 
     deServiceJoinedGroup :: ContactId -> GroupInfo -> IO ()
     deServiceJoinedGroup ctId g =
-      withGroupReg g "joined group" $ \GroupReg {groupRegStatus} -> do
-        let GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = g
-        sendMessage' cc ctId $ T.unpack $ "Joined the group #" <> displayName <> ", creating the link…"
-        sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
-          CRGroupLinkCreated {connReqContact} -> do
-            atomically $ writeTVar groupRegStatus GRSPendingUpdate
-            sendMessage' cc ctId
-              "Created the public link to join the group via this directory service that is always online.\n\n\
-              \Please add it to the group welcome message.\n\
-              \For example, add:"
-            sendMessage' cc ctId $ "Link to join the group " <> T.unpack displayName <> ": " <> B.unpack (strEncode connReqContact)
-          CRChatCmdError _ (ChatError e) -> case e of
-            CEGroupUserRole {} -> sendMessage' cc ctId "Failed creating group link, as service is no longer an admin."
-            CEGroupMemberUserRemoved -> sendMessage' cc ctId "Failed creating group link, as service is removed from the group."
-            CEGroupNotJoined _ -> sendMessage' cc ctId $ unexpectedError "group not joined"
-            CEGroupMemberNotActive -> sendMessage' cc ctId $ unexpectedError "service membership is not active"
-            _ -> sendMessage' cc ctId $ unexpectedError "can't create group link"
-          _ -> sendMessage' cc ctId $ unexpectedError "can't create group link"
+      withGroupReg g "joined group" $ \gr ->
+        when (ctId `isOwner` gr) $ do
+          let GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = g
+          notifyOwner gr $ T.unpack $ "Joined the group #" <> displayName <> ", creating the link…"
+          sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
+            CRGroupLinkCreated {connReqContact} -> do
+              atomically $ writeTVar (groupRegStatus gr) GRSPendingUpdate
+              notifyOwner gr
+                "Created the public link to join the group via this directory service that is always online.\n\n\
+                \Please add it to the group welcome message.\n\
+                \For example, add:"
+              notifyOwner gr $ "Link to join the group " <> T.unpack displayName <> ": " <> B.unpack (strEncode connReqContact)
+            CRChatCmdError _ (ChatError e) -> case e of
+              CEGroupUserRole {} -> notifyOwner gr "Failed creating group link, as service is no longer an admin."
+              CEGroupMemberUserRemoved -> notifyOwner gr "Failed creating group link, as service is removed from the group."
+              CEGroupNotJoined _ -> notifyOwner gr $ unexpectedError "group not joined"
+              CEGroupMemberNotActive -> notifyOwner gr $ unexpectedError "service membership is not active"
+              _ -> notifyOwner gr $ unexpectedError "can't create group link"
+            _ -> notifyOwner gr $ unexpectedError "can't create group link"
 
     deGroupUpdated :: ContactId -> GroupInfo -> GroupInfo -> IO ()
-    deGroupUpdated contactId fromGroup toGroup =
+    deGroupUpdated ctId fromGroup toGroup =
       unless (sameProfile p p') $ do
         atomically $ unlistGroup st groupId
-        withGroupReg toGroup "group updated" $ \gr@GroupReg {dbContactId} -> do
+        withGroupReg toGroup "group updated" $ \gr -> do
           readTVarIO (groupRegStatus gr) >>= \case
             GRSPendingConfirmation -> pure ()
             GRSProposed -> pure ()
             GRSPendingUpdate -> groupProfileUpdate >>= \case
               GPNoServiceLink ->
-                when (contactId == dbContactId) $ sendMessage' cc contactId $ "Profile updated for " <> groupRef <> ", but the group link is not added to the welcome message."
+                when (ctId `isOwner` gr) $ notifyOwner gr $ "Profile updated for " <> groupRef <> ", but the group link is not added to the welcome message."
               GPServiceLinkAdded
-                | contactId == dbContactId -> do
-                  sendMessage' cc contactId $ "Thank you! The group link for group " <> groupRef <> " added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
+                | ctId `isOwner` gr -> do
+                  notifyOwner gr $ "Thank you! The group link for group " <> groupRef <> " added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
                   let gaId = 1
                   atomically $ writeTVar (groupRegStatus gr) $ GRSPendingApproval gaId
                   sendForApproval gr gaId
-                | otherwise -> sendMessage' cc contactId "The group link is added by another group member, your registration will not be processed."
-              GPServiceLinkRemoved -> when (contactId == dbContactId) sendLinkRemoved
+                | otherwise -> sendMessage' cc ctId "The group link is added by another group member, your registration will not be processed."
+              GPServiceLinkRemoved -> when (ctId `isOwner` gr) sendLinkRemoved
               GPHasServiceLink -> pure ()
               GPServiceLinkError -> do
-                when (contactId == dbContactId) $ sendMessage' cc contactId $ "Error: " <> serviceName <> " has no link for group " <> groupRef <> ". Please report the error to the developers."
+                when (ctId `isOwner` gr) $ notifyOwner gr $ "Error: " <> serviceName <> " has no link for group " <> groupRef <> ". Please report the error to the developers."
                 putStrLn $ "Error: no link for group " <> groupRef
             GRSPendingApproval n -> processProfileChange gr $ n + 1
             GRSActive -> processProfileChange gr 1
@@ -198,10 +201,10 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
           let text = maybe ("The group ID " <> tshow dbGroupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow dbGroupId <> ": ") ct_
                       <> groupInfoText p' <> "\n\nTo approve send:"
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
-          withSuperUsers $ \ctId -> do
-            sendComposedMessage' cc ctId Nothing msg
-            sendMessage' cc ctId $ "/approve " <> show dbGroupId <> ":" <> T.unpack localDisplayName <> " " <> show gaId
-        sendLinkRemoved = sendMessage' cc contactId $ "The link for group " <> groupRef <> " is removed from the welcome message, please add it."
+          withSuperUsers $ \cId -> do
+            sendComposedMessage' cc cId Nothing msg
+            sendMessage' cc cId $ "/approve " <> show dbGroupId <> ":" <> T.unpack localDisplayName <> " " <> show gaId
+        sendLinkRemoved = sendMessage' cc ctId $ "The link for group " <> groupRef <> " is removed from the welcome message, please add it."
 
     deContactRoleChanged :: ContactId -> GroupInfo -> GroupMemberRole -> IO ()
     deContactRoleChanged ctId g role = undefined
@@ -211,28 +214,28 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
 
     deContactRemovedFromGroup :: ContactId -> GroupInfo -> IO ()
     deContactRemovedFromGroup ctId g =
-      withGroupReg g "contact removed" $ \gr@GroupReg {dbContactId} -> do
-        when (ctId == dbContactId) $ do
+      withGroupReg g "contact removed" $ \gr -> do
+        when (ctId `isOwner` gr) $ do
           atomically $ writeTVar (groupRegStatus gr) GRSRemoved
           let groupRef = groupReference g
-          sendMessage' cc ctId $ "You are removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
+          notifyOwner gr $ "You are removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
           notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner is removed)."
 
     deContactLeftGroup :: ContactId -> GroupInfo -> IO ()
     deContactLeftGroup ctId g =
-      withGroupReg g "contact left" $ \gr@GroupReg {dbContactId} -> do
-        when (ctId == dbContactId) $ do
+      withGroupReg g "contact left" $ \gr -> do
+        when (ctId `isOwner` gr) $ do
           atomically $ writeTVar (groupRegStatus gr) GRSRemoved
           let groupRef = groupReference g
-          sendMessage' cc ctId $ "You left the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
+          notifyOwner gr $ "You left the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
           notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner left)."
 
     deServiceRemovedFromGroup :: GroupInfo -> IO ()
     deServiceRemovedFromGroup g =
-      withGroupReg g "service removed" $ \gr@GroupReg {dbContactId} -> do
+      withGroupReg g "service removed" $ \gr -> do
         atomically $ writeTVar (groupRegStatus gr) GRSRemoved
         let groupRef = groupReference g
-        sendMessage' cc dbContactId $ serviceName <> " is removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
+        notifyOwner gr $ serviceName <> " is removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
         notifySuperUsers $ "The group " <> groupRef <> " is de-listed (directory service is removed)."
 
     deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
