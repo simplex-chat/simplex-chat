@@ -1212,6 +1212,8 @@
   <string name="change_member_role_question">Change group role?</string>
   <string name="member_role_will_be_changed_with_notification">The role will be changed to \"%s\". Everyone in the group will be notified.</string>
   <string name="member_role_will_be_changed_with_invitation">The role will be changed to \"%s\". The member will receive a new invitation.</string>
+  <string name="connect_via_member_address_alert_title">Connect via member address?</string>
+  <string name="connect_via_member_address_alert_desc">Direct connection request will be sent to this group member.</string>
   <string name="error_removing_member">Error removing member</string>
   <string name="error_changing_role">Error changing role</string>
   <string name="info_row_group">Group</string>
