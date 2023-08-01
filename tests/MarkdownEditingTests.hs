@@ -30,8 +30,15 @@ redEdited :: Text -> Bool -> EditedText
 redEdited t added = EditedText (Just $ colored Red) t (Just added)
 
 formattedEditedTextTests :: Spec
-formattedEditedTextTests = fdescribe "show edits using Myers Diff algorithm" do
+formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
   it "one character change" do
     formattedEditedText [plainText "Hrllo"] [plainText "Hello"]
-      `shouldBe` []
-    --   `shouldBe` [plainText "H", plainEdited "r" False, plainEdited "e" True, plainText "llo"]
+      `shouldBe` 
+        [ EditedChar Nothing 'H' Nothing
+        , EditedChar Nothing 'r' $ Just Delete
+        , EditedChar Nothing 'e' $ Just Add
+        , EditedChar Nothing 'l' Nothing
+        , EditedChar Nothing 'l' Nothing
+        , EditedChar Nothing 'o' Nothing                
+        ]
+      -- `shouldBe` [plainText "H", plainEdited "r" False, plainEdited "e" True, plainText "llo"]

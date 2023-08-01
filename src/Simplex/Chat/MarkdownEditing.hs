@@ -34,7 +34,11 @@ data EditedChar = EditedChar
 
 
 -- TODO unused?
-data EditedText =  EditedText {format :: Maybe Format, text :: Text, added :: Maybe Bool}
+data EditedText =  EditedText 
+  { format :: Maybe Format
+  , text :: Text
+  , added :: Maybe Bool
+  }
   deriving (Eq, Show, Generic)
 
 instance ToJSON EditedText where
@@ -74,4 +78,4 @@ toEditedChars = concatMap toChars
 
 
 myersDiff :: [EditedChar] -> [EditedChar] -> [EditedChar]
-myersDiff s1 s2 = undefined
+myersDiff s1 s2 = []
