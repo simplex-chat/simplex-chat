@@ -80,10 +80,6 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       atomically (getGroupReg st groupId) >>= \case
         Just gr -> action gr
         Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find group registration ID " <> tshow groupId
-    -- withGroupReg' groupId err action = do
-    --   atomically (getGroupReg st groupId) >>= \case
-    --     Just gr -> action gr
-    --     Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", can't find group registration ID " <> tshow groupId
     setGroupInactive GroupReg {groupRegStatus, dbGroupId} grStatus = atomically $ do
       writeTVar groupRegStatus grStatus
       unlistGroup st dbGroupId
