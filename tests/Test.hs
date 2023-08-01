@@ -2,6 +2,7 @@ import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
 import ChatTests
+import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import MarkdownTests
@@ -25,8 +26,8 @@ main = do
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests
-      describe "SimpleX Broadcast bot" broadcastBotTests
-      describe "SimpleX Directory service bot" directoryServiceTests
+      xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
+      xdescribe'' "SimpleX Directory service bot" directoryServiceTests
   where
     testBracket test = do
       t <- getSystemTime

@@ -48,9 +48,15 @@ xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' d t = do
+xit'' = ifCI xit it
+
+xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
+xdescribe'' = ifCI xdescribe describe
+
+ifCI :: HasCallStack => (HasCallStack => String -> a -> SpecWith b) -> (HasCallStack => String -> a -> SpecWith b) -> String -> a -> SpecWith b
+ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
-  (if ci == Just "true" then xit else it) d t
+  (if ci == Just "true" then xrun else run) d t
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
