@@ -1679,7 +1679,7 @@ object ChatController {
 
   private fun updateContactsStatus(contactRefs: List<ContactRef>, status: NetworkStatus) {
     for (c in contactRefs) {
-      chatModel.networkStatuses[c.agentConnId] = status
+      chatModel.networkStatuses.value = chatModel.networkStatuses.value.toMutableMap().apply { set(c.agentConnId, status) }
     }
   }
 

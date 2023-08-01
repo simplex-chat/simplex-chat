@@ -55,7 +55,7 @@ fun ChatInfoView(
   val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && currentUser != null) {
-    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap()) {
+    val contactNetworkStatus = remember(chatModel.networkStatuses) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
     }
     val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
