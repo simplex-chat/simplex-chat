@@ -1506,6 +1506,8 @@ processChatCommand = \case
     CRGroupProfile user <$> withStore (\db -> getGroupInfoByName db user gName)
   UpdateGroupDescription gName description ->
     updateGroupProfileByName gName $ \p -> p {description}
+  ShowGroupDescription gName -> withUser $ \user ->
+    CRGroupDescription user <$> withStore (\db -> getGroupInfoByName db user gName)
   APICreateGroupLink groupId mRole -> withUser $ \user -> withChatLock "createGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     assertUserGroupRole gInfo GRAdmin
@@ -5143,6 +5145,9 @@ chatCommandP =
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayName <* A.space <*> groupProfile),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayName),
       "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> optional (A.space *> msgTextP)),
+      "/set welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayName <* A.space <*> (Just <$> msgTextP)),
+      "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> pure Nothing),
+      "/show welcome " *> char_ '#' *> (ShowGroupDescription <$> displayName),
       "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),

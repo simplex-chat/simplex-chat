@@ -217,6 +217,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
+  CRGroupDescription u g -> ttyUser u $ viewGroupDescription g
   CRGroupLinkCreated u g cReq mRole -> ttyUser u $ groupLink_ "Group link is created!" g cReq mRole
   CRGroupLink u g cReq mRole -> ttyUser u $ groupLink_ "Group link:" g cReq mRole
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
@@ -1134,6 +1135,10 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, g
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)
       where
         pref = getGroupPreference f . mergeGroupPreferences
+
+viewGroupDescription :: GroupInfo -> [StyledString]
+viewGroupDescription GroupInfo {groupProfile = GroupProfile {description}} =
+  maybe ["No welcome message!"] ((bold' "Welcome message:" :) . map plain . T.lines) description
 
 bold' :: String -> StyledString
 bold' = styled Bold

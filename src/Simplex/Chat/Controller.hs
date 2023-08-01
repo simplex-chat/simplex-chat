@@ -367,6 +367,7 @@ data ChatCommand
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
+  | ShowGroupDescription GroupName
   | CreateGroupLink GroupName GroupMemberRole
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
@@ -534,6 +535,7 @@ data ChatResponse
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
+  | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
   | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}

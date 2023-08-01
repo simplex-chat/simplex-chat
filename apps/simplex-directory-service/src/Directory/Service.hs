@@ -84,6 +84,10 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
     --   atomically (getGroupReg st groupId) >>= \case
     --     Just gr -> action gr
     --     Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", can't find group registration ID " <> tshow groupId
+    setGroupInactive GroupReg {groupRegStatus, dbGroupId} grStatus = atomically $ do
+      writeTVar groupRegStatus grStatus
+      unlistGroup st dbGroupId
+
     groupInfoText GroupProfile {displayName = n, fullName = fn, description = d} =
       n <> (if n == fn || T.null fn then "" else " (" <> fn <> ")") <> maybe "" ("\nWelcome message:\n" <>) d
     groupReference GroupInfo {groupId, groupProfile = p'@GroupProfile {displayName}} =
@@ -118,7 +122,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
           notifyOwner gr $ T.unpack $ "Joined the group #" <> displayName <> ", creating the link…"
           sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
             CRGroupLinkCreated {connReqContact} -> do
-              atomically $ writeTVar (groupRegStatus gr) GRSPendingUpdate
+              setGroupInactive gr GRSPendingUpdate
               notifyOwner gr
                 "Created the public link to join the group via this directory service that is always online.\n\n\
                 \Please add it to the group welcome message.\n\
@@ -142,19 +146,15 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
             GRSProposed -> pure ()
             GRSPendingUpdate -> groupProfileUpdate >>= \case
               GPNoServiceLink ->
-                when (ctId `isOwner` gr) $ notifyOwner gr $ "Profile updated for " <> groupRef <> ", but the group link is not added to the welcome message."
+                when (ctId `isOwner` gr) $ notifyOwner gr $ "The profile updated for " <> groupRef <> ", but the group link is not added to the welcome message."
               GPServiceLinkAdded
-                | ctId `isOwner` gr -> do
-                  notifyOwner gr $ "Thank you! The group link for group " <> groupRef <> " added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
-                  let gaId = 1
-                  atomically $ writeTVar (groupRegStatus gr) $ GRSPendingApproval gaId
-                  sendForApproval gr gaId
-                | otherwise -> sendMessage' cc ctId "The group link is added by another group member, your registration will not be processed."
-              GPServiceLinkRemoved -> when (ctId `isOwner` gr) sendLinkRemoved
-              GPHasServiceLink -> pure ()
+                | ctId `isOwner` gr -> groupLinkAdded gr
+                | otherwise -> notifyOwner gr "The group link is added by another group member, your registration will not be processed.\n\nPlease update the group profile yourself."
+              GPServiceLinkRemoved -> when (ctId `isOwner` gr) $ notifyOwner gr $ "The group link of " <> groupRef <> " is removed from the welcome message, please add it."
+              GPHasServiceLink -> when (ctId `isOwner` gr) $ groupLinkAdded gr
               GPServiceLinkError -> do
-                when (ctId `isOwner` gr) $ notifyOwner gr $ "Error: " <> serviceName <> " has no link for group " <> groupRef <> ". Please report the error to the developers."
-                putStrLn $ "Error: no link for group " <> groupRef
+                when (ctId `isOwner` gr) $ notifyOwner gr $ "Error: " <> serviceName <> " has no group link for " <> groupRef <> ". Please report the error to the developers."
+                putStrLn $ "Error: no group link for " <> groupRef
             GRSPendingApproval n -> processProfileChange gr $ n + 1
             GRSActive -> processProfileChange gr 1
             GRSSuspended -> processProfileChange gr 1
@@ -168,21 +168,30 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
           GroupProfile {displayName = n, fullName = fn, image = i, description = d}
           GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
             n == n' && fn == fn' && i == i' && d == d'
+        groupLinkAdded gr = do
+          notifyOwner gr $ "Thank you! The group link for " <> groupRef <> " is added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
+          let gaId = 1
+          setGroupInactive gr $ GRSPendingApproval gaId
+          sendForApproval gr gaId
         processProfileChange gr n' = groupProfileUpdate >>= \case
-          GPNoServiceLink -> noLink
-          GPServiceLinkRemoved -> noLink
-          GPServiceLinkAdded -> hasLink
-          GPHasServiceLink -> hasLink
-          GPServiceLinkError -> putStrLn $ "Error: no link for group " <> groupRef <> " pending approval."
-          where
-            noLink = do
-              atomically $ writeTVar (groupRegStatus gr) GRSPendingUpdate
-              sendLinkRemoved
-              notifySuperUsers $ "The link is removed from the group " <> groupRef <> "."
-            hasLink = do
-              atomically $ writeTVar (groupRegStatus gr) $ GRSPendingApproval n'
-              notifySuperUsers $ "The group " <> groupRef <> " is updated."
-              sendForApproval gr n'
+          GPNoServiceLink -> do
+            setGroupInactive gr GRSPendingUpdate
+            notifyOwner gr $ "The group profile is updated " <> groupRef <> ", but no link is added to the welcome message.\n\nThe group will remain hidden from the directory until the group link is added and the group is re-approved."
+          GPServiceLinkRemoved -> do
+            setGroupInactive gr GRSPendingUpdate
+            notifyOwner gr $ "The group link for " <> groupRef <> " is removed from the welcome message.\n\nThe group is hidden from the directory until the group link is added and the group is re-approved."
+            notifySuperUsers $ "The group link is removed from " <> groupRef <> ", de-listed."
+          GPServiceLinkAdded -> do
+            setGroupInactive gr $ GRSPendingApproval n'
+            notifyOwner gr $ "The group link is added to " <> groupRef <> "!\nIt is hidden from the directory until approved."
+            notifySuperUsers $ "The group link is added to " <> groupRef <> "."
+            sendForApproval gr n'
+          GPHasServiceLink -> do
+            setGroupInactive gr $ GRSPendingApproval n'
+            notifyOwner gr $ "The group " <> groupRef <> " is updated!\nIt is hidden from the directory until approved."
+            notifySuperUsers $ "The group " <> groupRef <> " is updated."
+            sendForApproval gr n'
+          GPServiceLinkError -> putStrLn $ "Error: no group link for " <> groupRef <> " pending approval."
         groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)
           where
             profileUpdate = \case
@@ -204,7 +213,6 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
           withSuperUsers $ \cId -> do
             sendComposedMessage' cc cId Nothing msg
             sendMessage' cc cId $ "/approve " <> show dbGroupId <> ":" <> T.unpack localDisplayName <> " " <> show gaId
-        sendLinkRemoved = sendMessage' cc ctId $ "The link for group " <> groupRef <> " is removed from the welcome message, please add it."
 
     deContactRoleChanged :: ContactId -> GroupInfo -> GroupMemberRole -> IO ()
     deContactRoleChanged ctId g role = undefined
@@ -216,7 +224,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
     deContactRemovedFromGroup ctId g =
       withGroupReg g "contact removed" $ \gr -> do
         when (ctId `isOwner` gr) $ do
-          atomically $ writeTVar (groupRegStatus gr) GRSRemoved
+          setGroupInactive gr GRSRemoved
           let groupRef = groupReference g
           notifyOwner gr $ "You are removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
           notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner is removed)."
@@ -225,7 +233,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
     deContactLeftGroup ctId g =
       withGroupReg g "contact left" $ \gr -> do
         when (ctId `isOwner` gr) $ do
-          atomically $ writeTVar (groupRegStatus gr) GRSRemoved
+          setGroupInactive gr GRSRemoved
           let groupRef = groupReference g
           notifyOwner gr $ "You left the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
           notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner left)."
@@ -233,7 +241,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
     deServiceRemovedFromGroup :: GroupInfo -> IO ()
     deServiceRemovedFromGroup g =
       withGroupReg g "service removed" $ \gr -> do
-        atomically $ writeTVar (groupRegStatus gr) GRSRemoved
+        setGroupInactive gr GRSRemoved
         let groupRef = groupReference g
         notifyOwner gr $ serviceName <> " is removed from the group " <> groupRef <> ".\n\nGroup is no longer listed in the directory."
         notifySuperUsers $ "The group " <> groupRef <> " is de-listed (directory service is removed)."
