@@ -206,7 +206,7 @@ public func responseError(_ err: Error) -> String {
         switch r {
         case let .chatCmdError(_, chatError): return chatErrorString(chatError)
         case let .chatError(_, chatError): return chatErrorString(chatError)
-        default: return String(describing: r)
+        default: return "\(String(describing: r.responseType)), details: \(String(describing: r.details))"
         }
     } else {
         return String(describing: err)
