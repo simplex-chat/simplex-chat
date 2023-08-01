@@ -49,7 +49,7 @@ object ChatModel {
   val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
   val chats = mutableStateListOf<Chat>()
   // map of connections network statuses, key is agent connection id
-  val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
+  val networkStatuses = mutableStateOf<Map<String, NetworkStatus>>(mapOf())
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
@@ -477,11 +477,13 @@ object ChatModel {
   }
 
   fun setContactNetworkStatus(contact: Contact, status: NetworkStatus) {
-    networkStatuses[contact.activeConn.agentConnId] = status
+    val statuses = networkStatuses.value.toMutableMap()
+    statuses[contact.activeConn.agentConnId] = status
+    networkStatuses.value = statuses
   }
 
   fun contactNetworkStatus(contact: Contact): NetworkStatus =
-    networkStatuses[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
+    networkStatuses.value[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
 
   fun addTerminalItem(item: TerminalItem) {
     if (terminalItems.value.size >= 500) {
