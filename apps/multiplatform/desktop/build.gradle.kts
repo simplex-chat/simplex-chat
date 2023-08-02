@@ -30,8 +30,16 @@ kotlin {
 compose {
   desktop {
     application {
+      // For debugging via VisualVM
+      /*jvmArgs += listOf(
+        "-Dcom.sun.management.jmxremote.port=8080",
+        "-Dcom.sun.management.jmxremote.ssl=false",
+        "-Dcom.sun.management.jmxremote.authenticate=false"
+      )*/
       mainClass = "chat.simplex.desktop.MainKt"
       nativeDistributions {
+        // For debugging via VisualVM
+        //modules("jdk.zipfs", "jdk.management.agent")
         modules("jdk.zipfs")
         //includeAllModules = true
         outputBaseDir.set(project.file("../release"))
