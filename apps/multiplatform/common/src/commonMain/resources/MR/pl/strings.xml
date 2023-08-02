@@ -1374,4 +1374,6 @@
     <string name="item_status_snd_sent_desc">Wiadomość została wysłana do przekaźnika odbiorcy.</string>
     <string name="item_status_snd_new_text">Wysyłanie wiadomości</string>
     <string name="receipts_groups_override_disabled">Wysyłanie potwierdzeń jest wyłączone dla %d grup.</string>
+    <string name="connect_via_member_address_alert_desc">Prośba o połączenie zostanie wysłana do tego członka grupy.</string>
+    <string name="connect_via_member_address_alert_title">Połączyć bezpośrednio\?</string>
 </resources>
