@@ -221,8 +221,8 @@ struct GroupMemberInfoView: View {
 
     func connectViaMemberAddressAlert(_ contactLink: String) -> Alert {
         return Alert(
-            title: Text("Connect via member address?"),
-            message: Text("Direct connection request will be sent to this group member."),
+            title: Text("Connect directly?"),
+            message: Text("Сonnection request will be sent to this group member."),
             primaryButton: .default(Text("Connect")) {
                 connectViaAddress(contactLink)
             },
