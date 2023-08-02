@@ -247,10 +247,10 @@ struct CIVideoView: View {
         .padding([.trailing, .top], 11)
     }
 
-    private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64) async -> Void) {
+    private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool) async -> Void) {
         Task {
             if let user = ChatModel.shared.currentUser {
-                await receiveFile(user, file.fileId)
+                await receiveFile(user, file.fileId, false)
             }
         }
     }

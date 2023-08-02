@@ -76,13 +76,7 @@ fun GroupMemberInfoView(
         }
       },
       connectViaAddress = { connReqUri ->
-        val uri = URI(connReqUri)
-        withUriAction(uri) { linkType ->
-          withApi {
-            Log.d(TAG, "connectViaUri: connecting")
-            connectViaUri(chatModel, linkType, uri)
-          }
-        }
+        connectViaMemberAddressAlert(connReqUri)
       },
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) },
       onRoleSelected = {
@@ -447,6 +441,23 @@ private fun updateMemberRoleDialog(
     onDismiss = onDismiss,
     onConfirm = onConfirm,
     onDismissRequest = onDismiss
+  )
+}
+
+fun connectViaMemberAddressAlert(connReqUri: String) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.connect_via_member_address_alert_title),
+    text = generalGetString(MR.strings.connect_via_member_address_alert_desc),
+    confirmText = generalGetString(MR.strings.connect_via_link_verb),
+    onConfirm = {
+      val uri = URI(connReqUri)
+      withUriAction(uri) { linkType ->
+        withApi {
+          Log.d(TAG, "connectViaUri: connecting")
+          connectViaUri(chatModel, linkType, uri)
+        }
+      }
+    },
   )
 }
 

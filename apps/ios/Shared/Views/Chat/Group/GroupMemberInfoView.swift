@@ -28,6 +28,7 @@ struct GroupMemberInfoView: View {
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
+        case connectViaMemberAddressAlert(contactLink: String)
         case connRequestSentAlert(type: ConnReqType)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
         case other(alert: Alert)
@@ -38,8 +39,9 @@ struct GroupMemberInfoView: View {
             case let .changeMemberRoleAlert(_, role): return "changeMemberRoleAlert \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
-            case .connRequestSentAlert: return "connRequestSentAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
+            case .connectViaMemberAddressAlert: return "connectViaMemberAddressAlert"
+            case .connRequestSentAlert: return "connRequestSentAlert"
             case let .error(title, _): return "error \(title)"
             case let .other(alert): return "other \(alert)"
             }
@@ -201,6 +203,7 @@ struct GroupMemberInfoView: View {
             case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
+            case let .connectViaMemberAddressAlert(contactLink): return connectViaMemberAddressAlert(contactLink)
             case let .connRequestSentAlert(type): return connReqSentAlert(type)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             case let .other(alert): return alert
@@ -210,10 +213,21 @@ struct GroupMemberInfoView: View {
 
     func connectViaAddressButton(_ contactLink: String) -> some View {
         Button {
-            connectViaAddress(contactLink)
+            alert = .connectViaMemberAddressAlert(contactLink: contactLink)
         } label: {
             Label("Connect", systemImage: "link")
         }
+    }
+
+    func connectViaMemberAddressAlert(_ contactLink: String) -> Alert {
+        return Alert(
+            title: Text("Connect directly?"),
+            message: Text("Сonnection request will be sent to this group member."),
+            primaryButton: .default(Text("Connect")) {
+                connectViaAddress(contactLink)
+            },
+            secondaryButton: .cancel()
+        )
     }
 
     func connectViaAddress(_ contactLink: String) {
