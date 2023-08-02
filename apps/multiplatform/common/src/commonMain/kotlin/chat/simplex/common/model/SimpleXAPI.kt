@@ -1096,16 +1096,13 @@ object ChatController {
       }
 
       else -> {
-        Log.e(TAG, "apiReceiveFile error: ${r.responseType} ${r.details}")
-        if (!auto) {
-          if (!(networkErrorAlert(r))) {
-            if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
-              && r.chatError.errorType is ChatErrorType.FileAlreadyReceiving
-            ) {
-              Log.d(TAG, "apiReceiveFile ignoring FileAlreadyReceiving error")
-            } else {
-              apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
-            }
+        if (!(networkErrorAlert(r))) {
+          if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
+            && r.chatError.errorType is ChatErrorType.FileAlreadyReceiving
+          ) {
+            Log.d(TAG, "apiReceiveFile ignoring FileAlreadyReceiving error")
+          } else {
+            apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
           }
         }
         null
