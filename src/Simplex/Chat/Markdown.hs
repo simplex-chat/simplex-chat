@@ -4,6 +4,11 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveAnyClass #-}
+
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
@@ -25,7 +30,9 @@ import Data.Maybe (fromMaybe, isNothing)
 import Data.Semigroup (sconcat)
 import Data.String ( IsString(..) )
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text.Internal (Text(..))
+import qualified Data.Text as T 
+import qualified Data.Text.Array as A
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics ( Generic )
 import Simplex.Chat.Types ( decodeJSON, CReqClientData(CRDataGroup) )
@@ -37,6 +44,20 @@ import Simplex.Messaging.Util (safeDecodeUtf8)
 import Streamly.Data.Array (Unbox(..))
 import System.Console.ANSI.Types ( Color(..) )
 import qualified Text.Email.Validate as Email
+
+--------------
+--------------
+instance Unbox Format
+instance Unbox A.Array
+instance Unbox T.Text
+instance Unbox (NonEmpty T.Text)
+instance Unbox SimplexLinkType
+
+instance Generic A.Array
+deriving instance Generic T.Text
+-- instance Generic T.Text
+--------------
+--------------
 
 data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
@@ -53,8 +74,7 @@ data Format
   | Email
   | Phone
   deriving (Eq, Show, Generic)
-instance Unbox Format
-instance Unbox Text
+
 
 data SimplexLinkType = XLContact | XLInvitation | XLGroup
   deriving (Eq, Show, Generic)
@@ -104,6 +124,8 @@ instance ToJSON FormatColor where
     Magenta -> "magenta"
     Black -> "black"
     White -> "white"
+instance Unbox FormatColor
+
 
 data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
   deriving (Eq, Show, Generic)

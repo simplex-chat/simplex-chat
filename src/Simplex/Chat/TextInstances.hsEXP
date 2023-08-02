@@ -1,0 +1,15 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
+
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
+
+module Simplex.Chat.TextInstances where
+
+import Data.Text.Internal (Text(..))
+import GHC.Generics ( Generic )
+
+deriving instance Generic Text
