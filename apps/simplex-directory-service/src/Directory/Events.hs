@@ -89,7 +89,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCConfirmDuplicateGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
-  DCApproveGroup :: {groupId :: GroupId, localDisplayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRSuperUser
+  DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRSuperUser
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
@@ -109,7 +109,7 @@ directoryCmdP =
     tagP = A.takeTill (== ' ') >>= \case
       "help" -> u DCHelp_
       "h" -> u DCHelp_
-      "confim" -> u DCConfirmDuplicateGroup_
+      "confirm" -> u DCConfirmDuplicateGroup_
       "list" -> u DCListUserGroups_
       "delete" -> u DCDeleteGroup_
       "approve" -> su DCApproveGroup_
@@ -128,9 +128,9 @@ directoryCmdP =
       DCListUserGroups_ -> pure DCListUserGroups
       DCDeleteGroup_ -> gc DCDeleteGroup
       DCApproveGroup_ -> do
-        (groupId, localDisplayName) <- gc (,)
+        (groupId, displayName) <- gc (,)
         groupApprovalId <- A.space *> A.decimal
-        pure $ DCApproveGroup {groupId, localDisplayName, groupApprovalId}
+        pure $ DCApproveGroup {groupId, displayName, groupApprovalId}
       DCRejectGroup_ -> gc DCRejectGroup
       DCSuspendGroup_ -> gc DCSuspendGroup
       DCResumeGroup_ -> gc DCResumeGroup
