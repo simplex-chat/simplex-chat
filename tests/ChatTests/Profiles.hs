@@ -700,15 +700,15 @@ testConnectionIncognitoUnchangedErrors = testChat2 aliceProfile bobProfile $
     alice ##> "/connect"
     inv <- getInvitation alice
     alice ##> "/_set incognito :1 off"
-    alice <## "prohibited to change incognito mode for this connection"
+    alice <## "incognito mode change prohibited"
     alice ##> "/_set incognito :1 on"
     alice <## "connection 1 changed to incognito"
     alice ##> "/_set incognito :1 on"
-    alice <## "prohibited to change incognito mode for this connection"
+    alice <## "incognito mode change prohibited"
     alice ##> "/_set incognito :1 off"
     alice <## "connection 1 changed to non incognito"
     alice ##> "/_set incognito :1 off"
-    alice <## "prohibited to change incognito mode for this connection"
+    alice <## "incognito mode change prohibited"
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_

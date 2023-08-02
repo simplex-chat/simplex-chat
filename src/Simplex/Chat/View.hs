@@ -1547,7 +1547,7 @@ viewChatError logLevel = \case
     CECommandError e -> ["bad chat command: " <> plain e]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
-    CEConnectionIncognitoChangeProhibited -> ["prohibited to change incognito mode for this connection"]
+    CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
