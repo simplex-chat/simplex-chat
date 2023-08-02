@@ -452,6 +452,7 @@ public enum ChatResponse: Decodable, Error {
     case sentConfirmation(user: User)
     case sentInvitation(user: User)
     case contactAlreadyExists(user: User, contact: Contact)
+    case contactRequestAlreadyAccepted(user: User, contact: Contact)
     case contactDeleted(user: User, contact: Contact)
     case chatCleared(user: User, chatInfo: ChatInfo)
     case userProfileNoChange(user: User)
@@ -481,6 +482,7 @@ public enum ChatResponse: Decodable, Error {
     case newChatItem(user: User, chatItem: AChatItem)
     case chatItemStatusUpdated(user: User, chatItem: AChatItem)
     case chatItemUpdated(user: User, chatItem: AChatItem)
+    case chatItemNotChanged(user: User, chatItem: AChatItem)
     case chatItemReaction(user: User, added: Bool, reaction: ACIReaction)
     case chatItemDeleted(user: User, deletedChatItem: AChatItem, toChatItem: AChatItem?, byUser: Bool)
     case contactsList(user: User, contacts: [Contact])
@@ -583,6 +585,7 @@ public enum ChatResponse: Decodable, Error {
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
             case .contactAlreadyExists: return "contactAlreadyExists"
+            case .contactRequestAlreadyAccepted: return "contactRequestAlreadyAccepted"
             case .contactDeleted: return "contactDeleted"
             case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
@@ -612,6 +615,7 @@ public enum ChatResponse: Decodable, Error {
             case .newChatItem: return "newChatItem"
             case .chatItemStatusUpdated: return "chatItemStatusUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
+            case .chatItemNotChanged: return "chatItemNotChanged"
             case .chatItemReaction: return "chatItemReaction"
             case .chatItemDeleted: return "chatItemDeleted"
             case .contactsList: return "contactsList"
@@ -713,6 +717,7 @@ public enum ChatResponse: Decodable, Error {
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
+            case let .contactRequestAlreadyAccepted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
             case .userProfileNoChange: return noDetails
@@ -742,6 +747,7 @@ public enum ChatResponse: Decodable, Error {
             case let .newChatItem(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemStatusUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
             case let .chatItemDeleted(u, deletedChatItem, toChatItem, byUser): return withUser(u, "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))\nbyUser: \(byUser)")
             case let .contactsList(u, contacts): return withUser(u, String(describing: contacts))
@@ -1367,14 +1373,32 @@ public enum ChatError: Decodable {
 
 public enum ChatErrorType: Decodable {
     case noActiveUser
+    case noConnectionUser(agentConnId: String)
+    case noSndFileUser(agentSndFileId: String)
+    case noRcvFileUser(agentRcvFileId: String)
+    case userUnknown
     case activeUserExists
     case userExists
-    case differentActiveUser
+    case differentActiveUser(commandUserId: Int64, activeUserId: Int64)
+    case cantDeleteActiveUser(userId: Int64)
+    case cantDeleteLastUser(userId: Int64)
+    case cantHideLastUser(userId: Int64)
+    case hiddenUserAlwaysMuted(userId: Int64)
+    case emptyUserPassword(userId: Int64)
+    case userAlreadyHidden(userId: Int64)
+    case userNotHidden(userId: Int64)
     case chatNotStarted
+    case chatNotStopped
+    case chatStoreChanged
     case invalidConnReq
-    case invalidChatMessage(message: String)
+    case invalidChatMessage(connection: Connection, message: String)
     case contactNotReady(contact: Contact)
-    case groupUserRole
+    case contactDisabled(contact: Contact)
+    case connectionDisabled(connection: Connection)
+    case groupUserRole(groupInfo: GroupInfo, requiredRole: GroupMemberRole)
+    case groupMemberInitialRole(groupInfo: GroupInfo, initialRole: GroupMemberRole)
+    case contactIncognitoCantInvite
+    case groupIncognitoCantInvite
     case groupContactRole(contactName: ContactName)
     case groupDuplicateMember(contactName: ContactName)
     case groupDuplicateMemberId
@@ -1386,23 +1410,49 @@ public enum ChatErrorType: Decodable {
     case groupCantResendInvitation(groupInfo: GroupInfo, contactName: ContactName)
     case groupInternal(message: String)
     case fileNotFound(message: String)
+    case fileSize(filePath: String)
     case fileAlreadyReceiving(message: String)
+    case fileCancelled(message: String)
+    case fileCancel(fileId: Int64, message: String)
     case fileAlreadyExists(filePath: String)
     case fileRead(filePath: String, message: String)
     case fileWrite(filePath: String, message: String)
     case fileSend(fileId: Int64, agentError: String)
     case fileRcvChunk(message: String)
     case fileInternal(message: String)
+    case fileImageType(filePath: String)
+    case fileImageSize(filePath: String)
+    case fileNotReceived(fileId: Int64)
+    // case xFTPRcvFile
+    // case xFTPSndFile
+    case fallbackToSMPProhibited(fileId: Int64)
+    case inlineFileProhibited(fileId: Int64)
     case invalidQuote
     case invalidChatItemUpdate
     case invalidChatItemDelete
+    case hasCurrentCall
+    case noCurrentCall
+    case callContact(contactId: Int64)
+    case callState
+    case directMessagesProhibited(contact: Contact)
     case agentVersion
+    case agentNoSubResult(agentConnId: String)
     case commandError(message: String)
+    case serverProtocol
+    case agentCommandError(message: String)
+    case invalidFileDescription(message: String)
+    case internalError(message: String)
     case exception(message: String)
 }
 
 public enum StoreError: Decodable {
     case duplicateName
+    case userNotFound(userId: Int64)
+    case userNotFoundByName(contactName: ContactName)
+    case userNotFoundByContactId(contactId: Int64)
+    case userNotFoundByGroupId(groupId: Int64)
+    case userNotFoundByFileId(fileId: Int64)
+    case userNotFoundByContactRequestId(contactRequestId: Int64)
     case contactNotFound(contactId: Int64)
     case contactNotFoundByName(contactName: ContactName)
     case contactNotReady(contactName: ContactName)
@@ -1412,6 +1462,9 @@ public enum StoreError: Decodable {
     case contactRequestNotFoundByName(contactName: ContactName)
     case groupNotFound(groupId: Int64)
     case groupNotFoundByName(groupName: GroupName)
+    case groupMemberNameNotFound(groupId: Int64, groupMemberName: ContactName)
+    case groupMemberNotFound(groupMemberId: Int64)
+    case groupMemberNotFoundByMemberId(memberId: String)
     case groupWithoutUser
     case duplicateGroupMember
     case groupAlreadyJoined
@@ -1419,9 +1472,16 @@ public enum StoreError: Decodable {
     case sndFileNotFound(fileId: Int64)
     case sndFileInvalid(fileId: Int64)
     case rcvFileNotFound(fileId: Int64)
+    case rcvFileDescrNotFound(fileId: Int64)
     case fileNotFound(fileId: Int64)
     case rcvFileInvalid(fileId: Int64)
+    case rcvFileInvalidDescrPart
+    case sharedMsgIdNotFoundByFileId(fileId: Int64)
+    case fileIdNotFoundBySharedMsgId(sharedMsgId: String)
+    case sndFileNotFoundXFTP(agentSndFileId: String)
+    case rcvFileNotFoundXFTP(agentRcvFileId: String)
     case connectionNotFound(agentConnId: String)
+    case connectionNotFoundById(connId: Int64)
     case pendingConnectionNotFound(connId: Int64)
     case introNotFound
     case uniqueID
@@ -1429,11 +1489,16 @@ public enum StoreError: Decodable {
     case noMsgDelivery(connId: Int64, agentMsgId: String)
     case badChatItem(itemId: Int64)
     case chatItemNotFound(itemId: Int64)
-    case quotedChatItemNotFound
+    case chatItemNotFoundByText(text: String)
     case chatItemSharedMsgIdNotFound(sharedMsgId: String)
     case chatItemNotFoundByFileId(fileId: Int64)
+    case chatItemNotFoundByGroupId(groupId: Int64)
+    case profileNotFound(profileId: Int64)
     case duplicateGroupLink(groupInfo: GroupInfo)
     case groupLinkNotFound(groupInfo: GroupInfo)
+    case hostMemberIdNotFound(groupId: Int64)
+    case contactNotFoundByFileId(fileId: Int64)
+    case noGroupSndStatus(itemId: Int64, groupMemberId: Int64)
 }
 
 public enum DatabaseError: Decodable {
@@ -1453,11 +1518,12 @@ public enum AgentErrorType: Decodable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
     case SMP(smpErr: ProtocolErrorType)
-    case XFTP(xftpErr: XFTPErrorType)
     case NTF(ntfErr: ProtocolErrorType)
+    case XFTP(xftpErr: XFTPErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
+    case INACTIVE
 }
 
 public enum CommandErrorType: Decodable {
@@ -1477,9 +1543,10 @@ public enum ConnectionErrorType: Decodable {
 }
 
 public enum BrokerErrorType: Decodable {
-    case RESPONSE(smpErr: ProtocolErrorType)
+    case RESPONSE(smpErr: String)
     case UNEXPECTED
     case NETWORK
+    case HOST
     case TRANSPORT(transportErr: ProtocolTransportError)
     case TIMEOUT
 }
@@ -1513,6 +1580,7 @@ public enum XFTPErrorType: Decodable {
 public enum ProtocolCommandError: Decodable {
     case UNKNOWN
     case SYNTAX
+    case PROHIBITED
     case NO_AUTH
     case HAS_AUTH
     case NO_ENTITY
@@ -1535,7 +1603,9 @@ public enum SMPAgentError: Decodable {
     case A_MESSAGE
     case A_PROHIBITED
     case A_VERSION
-    case A_ENCRYPTION
+    case A_CRYPTO
+    case A_DUPLICATE
+    case A_QUEUE(queueErr: String)
 }
 
 public enum ArchiveError: Decodable {
