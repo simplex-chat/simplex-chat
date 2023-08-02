@@ -1374,4 +1374,6 @@
     <string name="item_status_snd_sent_text">Messaggio inviato</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="send_receipts_disabled_alert_msg">Questo gruppo ha più di %1$d membri, le ricevute di consegna non vengono inviate.</string>
+    <string name="connect_via_member_address_alert_title">Connettersi direttamente\?</string>
+    <string name="connect_via_member_address_alert_desc">La richiesta di connessione verrà inviata a questo membro del gruppo.</string>
 </resources>
