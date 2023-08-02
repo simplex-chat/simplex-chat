@@ -1372,4 +1372,6 @@
     <string name="receipts_groups_override_disabled">إرسال الإيصالات مُعطَّلة لـ%d مجموعات</string>
     <string name="receipts_section_groups">مجموعات صغيرة (الحد الأقصى 20)</string>
     <string name="item_status_rcv_read_desc">لقد قرأت هذه الرسالة المستلمة.</string>
+    <string name="connect_via_member_address_alert_title">الاتصال مباشرةً؟</string>
+    <string name="connect_via_member_address_alert_desc">سيتم إرسال طلب الاتصال لعضو المجموعة هذا.</string>
 </resources>
