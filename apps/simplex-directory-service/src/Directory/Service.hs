@@ -77,10 +77,6 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
   where
     withSuperUsers action = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> action contactId
     notifySuperUsers s = withSuperUsers $ \contactId -> sendMessage' cc contactId s
-    -- withContact ctId GroupInfo {localDisplayName} err action = do
-    --   getContact cc ctId >>= \case
-    --     Just ct -> action ct
-    --     Nothing -> putStrLn $ T.unpack $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find contact ID " <> tshow ctId
     notifyOwner GroupReg {dbContactId} = sendMessage' cc dbContactId
     ctId `isOwner` GroupReg {dbContactId} = ctId == dbContactId
     withGroupReg GroupInfo {groupId, localDisplayName} err action = do
@@ -95,6 +91,8 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       n <> (if n == fn || T.null fn then "" else " (" <> fn <> ")") <> maybe "" ("\nWelcome message:\n" <>) d
     groupReference GroupInfo {groupId, groupProfile = GroupProfile {displayName}} =
       "ID " <> show groupId <> " (" <> T.unpack displayName <> ")"
+    groupAlreadyListed GroupInfo {groupProfile = GroupProfile {displayName, fullName}} =
+      T.unpack $ "The group " <> displayName <> " (" <> fullName <> ") is already listed in the directory, please choose another name."
 
     getGroups :: Text -> IO (Maybe [GroupInfo])
     getGroups search =
@@ -141,7 +139,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
         Nothing -> getDuplicateGroup g >>= \case
           Just DGUnique -> processInvitation ct g
           Just DGRegistered -> askConfirmation
-          Just DGListed -> sendMessage cc ct $ T.unpack $ "The group " <> displayName <> " (" <> fullName <> ") is already listed in the directory, please choose another name."
+          Just DGListed -> sendMessage cc ct $ groupAlreadyListed g
           Nothing -> sendMessage cc ct $ "Unexpected error, please notify the developers."
       where
         badInvitation contactRole serviceRole = case (contactRole, serviceRole) of
@@ -202,17 +200,21 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       where
         isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
         GroupInfo {groupId, groupProfile = p} = fromGroup
-        GroupInfo {localDisplayName, groupProfile = p'@GroupProfile {displayName = displayName', image = image'}} = toGroup
+        GroupInfo {groupProfile = p'@GroupProfile {displayName = displayName', image = image'}} = toGroup
         groupRef = groupReference toGroup
         sameProfile
           GroupProfile {displayName = n, fullName = fn, image = i, description = d}
           GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
             n == n' && fn == fn' && i == i' && d == d'
         groupLinkAdded gr = do
-          notifyOwner gr $ "Thank you! The group link for " <> groupRef <> " is added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
-          let gaId = 1
-          setGroupInactive gr $ GRSPendingApproval gaId
-          sendForApproval gr gaId
+          getDuplicateGroup toGroup >>= \case
+            Nothing -> notifyOwner gr "Unexpected error, please notify the developers."
+            Just DGListed -> notifyOwner gr $ groupAlreadyListed toGroup
+            _ -> do
+              notifyOwner gr $ "Thank you! The group link for " <> groupRef <> " is added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
+              let gaId = 1
+              setGroupInactive gr $ GRSPendingApproval gaId
+              sendForApproval gr gaId
         processProfileChange gr n' = groupProfileUpdate >>= \case
           GPNoServiceLink -> do
             setGroupInactive gr GRSPendingUpdate
@@ -314,13 +316,13 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
           Just GroupReg {dbGroupId, groupRegStatus} -> do
             getGroup cc dbGroupId >>= \case
               Nothing -> sendReply $ "Group ID " <> show ugrId <> " not found"
-              Just g@GroupInfo {groupProfile = GroupProfile {displayName, fullName}}
+              Just g@GroupInfo {groupProfile = GroupProfile {displayName}}
                 | displayName == gName ->
                   readTVarIO groupRegStatus >>= \case
                     GRSPendingConfirmation -> do
                       getDuplicateGroup g >>= \case
                         Nothing -> sendMessage cc ct $ "Unexpected error, please notify the developers."
-                        Just DGListed -> sendMessage cc ct $ T.unpack $ "The group " <> displayName <> " (" <> fullName <> ") is already listed in the directory, please choose another name."
+                        Just DGListed -> sendMessage cc ct $ groupAlreadyListed g
                         _ -> processInvitation ct g
                     _ -> sendReply $ "Error: the group ID " <> show ugrId <> " (" <> T.unpack displayName <> ") is not pending confirmation."
                 | otherwise -> sendReply $ "Group ID " <> show ugrId <> " has the display name " <> T.unpack displayName

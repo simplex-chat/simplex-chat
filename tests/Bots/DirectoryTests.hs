@@ -38,7 +38,7 @@ directoryServiceTests = do
     it "should ask for confirmation if a duplicate group is submitted" testDuplicateAskConfirmation
     it "should prohibit registration if a duplicate group is listed" testDuplicateProhibitRegistration
     it "should prohibit confirmation if a duplicate group is listed" testDuplicateProhibitConfirmation
-    xit "should prohibit when profile is updated and not send for approval" testDuplicateProhibitWhenUpdated
+    it "should prohibit when profile is updated and not send for approval" testDuplicateProhibitWhenUpdated
     it "should prohibit approval if a duplicate group is listed" testDuplicateProhibitApproval
 
 directoryProfile :: Profile
@@ -400,18 +400,10 @@ testDuplicateProhibitWhenUpdated tmp =
         groupNotFound cath "privacy"
         completeRegistration superUser bob "privacy" "Privacy" welcomeWithLink 1
         groupFound cath "privacy"
-        updateProfileWithLink cath "privacy" welcomeWithLink' 2
-        -- fails at attempt to approve
-        superUser <# "SimpleX-Directory> cath submitted the group ID 2: privacy (Privacy)"
-        superUser <## "Welcome message:"
-        superUser <## welcomeWithLink'
-        superUser <## ""
-        superUser <## "To approve send:"
-        let approve = "/approve 2:privacy 1"
-        superUser <# ("SimpleX-Directory> " <> approve)
-        superUser #> ("@SimpleX-Directory " <> approve)
-        superUser <# ("SimpleX-Directory> > " <> approve)
-        superUser <## "      The group ID 2 (privacy) is already listed in the directory."
+        cath ##> ("/set welcome privacy " <> welcomeWithLink')
+        cath <## "description changed to:"
+        cath <## welcomeWithLink'
+        cath <# "SimpleX-Directory> The group privacy (Privacy) is already listed in the directory, please choose another name."
 
 testDuplicateProhibitApproval :: HasCallStack => FilePath -> IO ()
 testDuplicateProhibitApproval tmp =
