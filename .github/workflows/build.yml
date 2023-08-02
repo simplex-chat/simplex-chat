@@ -9,7 +9,6 @@ on:
     tags:
       - "v*"
   pull_request:
-  workflow_dispatch:
 
 jobs:
   prepare-release:
@@ -53,19 +52,19 @@ jobs:
           - os: ubuntu-20.04
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-20_04-x86-64
-            desktop_asset_name: simplex-desktop-ubuntu-20_04-x86-64.deb
+            desktop_asset_name: simplex-desktop-ubuntu-20_04-x86_64.deb
           - os: ubuntu-22.04
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-22_04-x86-64
-            desktop_asset_name: simplex-desktop-ubuntu-22_04-x86-64.deb
+            desktop_asset_name: simplex-desktop-ubuntu-22_04-x86_64.deb
           - os: macos-latest
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-macos-x86-64
-            desktop_asset_name: simplex-desktop-macos-x86-64.dmg
+            desktop_asset_name: simplex-desktop-macos-x86_64.dmg
           - os: windows-latest
             cache_path: C:/cabal
             asset_name: simplex-chat-windows-x86-64
-            desktop_asset_name: simplex-desktop-windows-x86-64.msi
+            desktop_asset_name: simplex-desktop-windows-x86_64.msi
     steps:
       - name: Configure pagefile (Windows)
         if: matrix.os == 'windows-latest'
@@ -104,6 +103,10 @@ jobs:
           echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"         >> cabal.project.local
           echo "    flags: +openssl"                                        >> cabal.project.local
 
+      - name: Install AppImage dependencies
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-22.04'
+        run: sudo apt install -y desktop-file-utils
+
       - name: Install pkg-config for Mac
         if: matrix.os == 'macos-latest'
         run: brew install pkg-config
@@ -124,11 +127,14 @@ jobs:
           cabal build --enable-tests
           echo "::set-output name=bin_path::$(cabal list-bin simplex-chat)"
 
-      - name: Unix test
-        if: matrix.os != 'windows-latest'
-        timeout-minutes: 30
-        shell: bash
-        run: cabal test --test-show-details=direct
+      - name: Unix upload CLI binary to release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.unix_cli_build.outputs.bin_path }}
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
 
       - name: Setup Java
         if: startsWith(github.ref, 'refs/tags/v')
@@ -147,6 +153,14 @@ jobs:
           cd apps/multiplatform
           ./gradlew packageDeb
           echo "::set-output name=package_path::$(echo $PWD/release/main/deb/simplex_*_amd64.deb)"
+      
+      - name: Linux make AppImage
+        id: linux_appimage_build
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          scripts/desktop/make-appimage-linux.sh
+          echo "::set-output name=appimage_path::$(echo $PWD/apps/multiplatform/release/main/*imple*.AppImage)"
 
       - name: Mac build desktop
         id: mac_desktop_build
@@ -158,15 +172,6 @@ jobs:
           ./gradlew packageDmg
           echo "::set-output name=package_path::$(echo $PWD/release/main/dmg/simplex-*.dmg)"
 
-      - name: Unix upload binary to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ steps.unix_cli_build.outputs.bin_path }}
-          asset_name: ${{ matrix.asset_name }}
-          tag: ${{ github.ref }}
-
       - name: Linux upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
         uses: svenstaro/upload-release-action@v2
@@ -174,6 +179,15 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.linux_desktop_build.outputs.package_path }}
           asset_name: ${{ matrix.desktop_asset_name }}
+          tag: ${{ github.ref }}
+
+      - name: Linux upload AppImage to release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-22.04'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.linux_appimage_build.outputs.appimage_path }}
+          asset_name: simplex-desktop-x86_64.AppImage
           tag: ${{ github.ref }}
 
       - name: Mac upload desktop package to release
@@ -184,6 +198,12 @@ jobs:
           file: ${{ steps.mac_desktop_build.outputs.package_path }}
           asset_name: ${{ matrix.desktop_asset_name }}
           tag: ${{ github.ref }}
+
+      - name: Unix test
+        if: matrix.os != 'windows-latest'
+        timeout-minutes: 30
+        shell: bash
+        run: cabal test --test-show-details=direct
 
       # Unix /
 
