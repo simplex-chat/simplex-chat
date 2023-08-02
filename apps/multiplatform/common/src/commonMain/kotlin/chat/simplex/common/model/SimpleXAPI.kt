@@ -1097,10 +1097,9 @@ object ChatController {
 
       else -> {
         if (!(networkErrorAlert(r))) {
-          if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
-            && r.chatError.errorType is ChatErrorType.FileAlreadyReceiving
-          ) {
-            Log.d(TAG, "apiReceiveFile ignoring FileAlreadyReceiving error")
+          val maybeChatError = chatError(r)
+          if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
+            Log.d(TAG, "apiReceiveFile ignoring FileCancelled or FileAlreadyReceiving error")
           } else {
             apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
           }
@@ -3605,6 +3604,14 @@ sealed class CR {
   fun noDetails(): String ="${responseType}: " + generalGetString(MR.strings.no_details)
 
   private fun withUser(u: User?, s: String): String = if (u != null) "userId: ${u.userId}\n$s" else s
+}
+
+fun chatError(r: CR): ChatErrorType? {
+  return (
+      if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat) r.chatError.errorType
+      else if (r is CR.ChatRespError && r.chatError is ChatError.ChatErrorChat) r.chatError.errorType
+      else null
+      )
 }
 
 abstract class TerminalItem {
