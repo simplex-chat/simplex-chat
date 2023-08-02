@@ -11,14 +11,18 @@
 
 module Simplex.Chat.MarkdownEditing where
 
-import Data.Aeson (ToJSON)
+import           Control.Monad.Primitive (PrimMonad)
+import           Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
-import Data.Text (Text)
+import           Data.Sequence (Seq)
+import           Data.Text (Text)
 import qualified Data.Text as T
-import GHC.Generics ( Generic )
-import Simplex.Messaging.Parsers ( sumTypeJSON ) 
-import Data.Diff.Myers
-import Simplex.Chat.Markdown ( FormattedText(..), Format )
+import           GHC.Generics ( Generic )
+import           Simplex.Messaging.Parsers ( sumTypeJSON ) 
+import qualified Data.Diff.Myers as DM
+import qualified Data.Vector.Unboxed as VU
+import           Simplex.Chat.Markdown ( FormattedText(..), Format )
+import           Streamly.Data.Array (Unbox(..))
 
 
 data EditingOperation = Add | Delete | Substitute
@@ -30,7 +34,9 @@ data EditedChar = EditedChar
   , char :: Char
   , operation :: Maybe EditingOperation
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Unbox EditedChar  
 
 
 -- TODO unused?
@@ -47,7 +53,7 @@ instance ToJSON EditedText where
 
 
 formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
-formattedEditedText s s' = myersDiff (toEditedChars s) (toEditedChars s')
+formattedEditedText s s' = diff (toEditedChars s) (toEditedChars s')
 
 
 toEditedChars :: [FormattedText] -> [EditedChar]
@@ -77,5 +83,12 @@ toEditedChars = concatMap toChars
 --     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
 
 
-myersDiff :: [EditedChar] -> [EditedChar] -> [EditedChar]
-myersDiff s1 s2 = []
+diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
+diff left right = runST $ do
+  let l = VU.fromList left 
+  let r = VU.fromList right 
+  myersDiff l r
+
+
+myersDiff :: PrimMonad m => VU.Vector EditedChar -> VU.Vector EditedChar -> m (Seq DM.Edit)
+myersDiff left right = DM.diff left right

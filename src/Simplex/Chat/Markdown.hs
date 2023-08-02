@@ -34,6 +34,7 @@ import Simplex.Messaging.Encoding.String( StrEncoding(strEncode, strDecode) )
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SrvLoc (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
+import Streamly.Data.Array (Unbox(..))
 import System.Console.ANSI.Types ( Color(..) )
 import qualified Text.Email.Validate as Email
 
@@ -52,6 +53,8 @@ data Format
   | Email
   | Phone
   deriving (Eq, Show, Generic)
+instance Unbox Format
+instance Unbox Text
 
 data SimplexLinkType = XLContact | XLInvitation | XLGroup
   deriving (Eq, Show, Generic)
