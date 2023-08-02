@@ -56,7 +56,7 @@ object ChatModel {
   val chatItems = mutableStateListOf<ChatItem>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
-  val terminalItems = mutableStateOf(emptyList<TerminalItem>())
+  val terminalItems = mutableStateListOf<TerminalItem>()
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
   // Allows to temporary save servers that are being edited on multiple screens
   val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
@@ -484,11 +484,10 @@ object ChatModel {
     networkStatuses[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
 
   fun addTerminalItem(item: TerminalItem) {
-    if (terminalItems.value.size >= 500) {
-      terminalItems.value = terminalItems.value.takeLast(499) + item
-    } else {
-      terminalItems.value += item
+    if (terminalItems.size >= 500) {
+      terminalItems.removeAt(0)
     }
+    terminalItems.add(item)
   }
 }
 
