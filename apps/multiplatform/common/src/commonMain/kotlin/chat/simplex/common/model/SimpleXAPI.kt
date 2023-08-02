@@ -1678,9 +1678,11 @@ object ChatController {
   }
 
   private fun updateContactsStatus(contactRefs: List<ContactRef>, status: NetworkStatus) {
+    val statuses = chatModel.networkStatuses.value.toMutableMap()
     for (c in contactRefs) {
-      chatModel.networkStatuses[c.agentConnId] = status
+      statuses[c.agentConnId] = status
     }
+    chatModel.networkStatuses.value = statuses
   }
 
   private fun processContactSubError(contact: Contact, chatError: ChatError) {
@@ -3250,6 +3252,7 @@ sealed class CR {
   @Serializable @SerialName("sentConfirmation") class SentConfirmation(val user: User): CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation(val user: User): CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: User, val contact: Contact): CR()
+  @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: User, val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: User, val contact: Contact): CR()
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: User, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
@@ -3279,6 +3282,7 @@ sealed class CR {
   @Serializable @SerialName("newChatItem") class NewChatItem(val user: User, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val user: User, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: User, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: User, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: User, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val user: User, val deletedChatItem: AChatItem, val toChatItem: AChatItem? = null, val byUser: Boolean): CR()
   @Serializable @SerialName("contactsList") class ContactsList(val user: User, val contacts: List<Contact>): CR()
@@ -3376,6 +3380,7 @@ sealed class CR {
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
     is ContactAlreadyExists -> "contactAlreadyExists"
+    is ContactRequestAlreadyAccepted -> "contactRequestAlreadyAccepted"
     is ContactDeleted -> "contactDeleted"
     is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
@@ -3405,6 +3410,7 @@ sealed class CR {
     is NewChatItem -> "newChatItem"
     is ChatItemStatusUpdated -> "chatItemStatusUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
+    is ChatItemNotChanged -> "chatItemNotChanged"
     is ChatItemReaction -> "chatItemReaction"
     is ChatItemDeleted -> "chatItemDeleted"
     is ContactsList -> "contactsList"
@@ -3499,6 +3505,7 @@ sealed class CR {
     is SentConfirmation -> withUser(user, noDetails())
     is SentInvitation -> withUser(user, noDetails())
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
+    is ContactRequestAlreadyAccepted -> withUser(user, json.encodeToString(contact))
     is ContactDeleted -> withUser(user, json.encodeToString(contact))
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
     is UserProfileNoChange -> withUser(user, noDetails())
@@ -3529,6 +3536,7 @@ sealed class CR {
     is NewChatItem -> withUser(user, json.encodeToString(chatItem))
     is ChatItemStatusUpdated -> withUser(user, json.encodeToString(chatItem))
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
+    is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
     is ChatItemDeleted -> withUser(user, "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}\nbyUser: $byUser")
     is ContactsList -> withUser(user, json.encodeToString(contacts))
@@ -3734,34 +3742,266 @@ sealed class ChatError {
 
 @Serializable
 sealed class ChatErrorType {
-  val string: String get() = when (this) {
-    is NoActiveUser -> "noActiveUser"
-    is DifferentActiveUser -> "differentActiveUser"
-    is UserExists -> "userExists"
-    is InvalidConnReq -> "invalidConnReq"
-    is FileAlreadyReceiving -> "fileAlreadyReceiving"
-    is СommandError -> "commandError $message"
-    is CEException -> "exception $message"
-  }
-  @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
-  @Serializable @SerialName("differentActiveUser") class DifferentActiveUser: ChatErrorType()
+  val string: String
+    get() = when (this) {
+      is NoActiveUser -> "noActiveUser"
+      is NoConnectionUser -> "noConnectionUser"
+      is NoSndFileUser -> "noSndFileUser"
+      is NoRcvFileUser -> "noRcvFileUser"
+      is UserUnknown -> "userUnknown"
+      is ActiveUserExists -> "activeUserExists"
+      is UserExists -> "userExists"
+      is DifferentActiveUser -> "differentActiveUser"
+      is CantDeleteActiveUser -> "cantDeleteActiveUser"
+      is CantDeleteLastUser -> "cantDeleteLastUser"
+      is CantHideLastUser -> "cantHideLastUser"
+      is HiddenUserAlwaysMuted -> "hiddenUserAlwaysMuted"
+      is EmptyUserPassword -> "emptyUserPassword"
+      is UserAlreadyHidden -> "userAlreadyHidden"
+      is UserNotHidden -> "userNotHidden"
+      is ChatNotStarted -> "chatNotStarted"
+      is ChatNotStopped -> "chatNotStopped"
+      is ChatStoreChanged -> "chatStoreChanged"
+      is InvalidConnReq -> "invalidConnReq"
+      is InvalidChatMessage -> "invalidChatMessage"
+      is ContactNotReady -> "contactNotReady"
+      is ContactDisabled -> "contactDisabled"
+      is ConnectionDisabled -> "connectionDisabled"
+      is GroupUserRole -> "groupUserRole"
+      is GroupMemberInitialRole -> "groupMemberInitialRole"
+      is ContactIncognitoCantInvite -> "contactIncognitoCantInvite"
+      is GroupIncognitoCantInvite -> "groupIncognitoCantInvite"
+      is GroupContactRole -> "groupContactRole"
+      is GroupDuplicateMember -> "groupDuplicateMember"
+      is GroupDuplicateMemberId -> "groupDuplicateMemberId"
+      is GroupNotJoined -> "groupNotJoined"
+      is GroupMemberNotActive -> "groupMemberNotActive"
+      is GroupMemberUserRemoved -> "groupMemberUserRemoved"
+      is GroupMemberNotFound -> "groupMemberNotFound"
+      is GroupMemberIntroNotFound -> "groupMemberIntroNotFound"
+      is GroupCantResendInvitation -> "groupCantResendInvitation"
+      is GroupInternal -> "groupInternal"
+      is FileNotFound -> "fileNotFound"
+      is FileSize -> "fileSize"
+      is FileAlreadyReceiving -> "fileAlreadyReceiving"
+      is FileCancelled -> "fileCancelled"
+      is FileCancel -> "fileCancel"
+      is FileAlreadyExists -> "fileAlreadyExists"
+      is FileRead -> "fileRead"
+      is FileWrite -> "fileWrite"
+      is FileSend -> "fileSend"
+      is FileRcvChunk -> "fileRcvChunk"
+      is FileInternal -> "fileInternal"
+      is FileImageType -> "fileImageType"
+      is FileImageSize -> "fileImageSize"
+      is FileNotReceived -> "fileNotReceived"
+      // is XFTPRcvFile -> "xftpRcvFile"
+      // is XFTPSndFile -> "xftpSndFile"
+      is FallbackToSMPProhibited -> "fallbackToSMPProhibited"
+      is InlineFileProhibited -> "inlineFileProhibited"
+      is InvalidQuote -> "invalidQuote"
+      is InvalidChatItemUpdate -> "invalidChatItemUpdate"
+      is InvalidChatItemDelete -> "invalidChatItemDelete"
+      is HasCurrentCall -> "hasCurrentCall"
+      is NoCurrentCall -> "noCurrentCall"
+      is CallContact -> "callContact"
+      is CallState -> "callState"
+      is DirectMessagesProhibited -> "directMessagesProhibited"
+      is AgentVersion -> "agentVersion"
+      is AgentNoSubResult -> "agentNoSubResult"
+      is CommandError -> "commandError $message"
+      is ServerProtocol -> "serverProtocol"
+      is AgentCommandError -> "agentCommandError"
+      is InvalidFileDescription -> "invalidFileDescription"
+      is InternalError -> "internalError"
+      is CEException -> "exception $message"
+    }
+
+  @Serializable @SerialName("noActiveUser") object NoActiveUser: ChatErrorType()
+  @Serializable @SerialName("noConnectionUser") class NoConnectionUser(val agentConnId: String): ChatErrorType()
+  @Serializable @SerialName("noSndFileUser") class NoSndFileUser(val agentSndFileId: String): ChatErrorType()
+  @Serializable @SerialName("noRcvFileUser") class NoRcvFileUser(val agentRcvFileId: String): ChatErrorType()
+  @Serializable @SerialName("userUnknown") object UserUnknown: ChatErrorType()
+  @Serializable @SerialName("activeUserExists") object ActiveUserExists: ChatErrorType()
   @Serializable @SerialName("userExists") class UserExists(val contactName: String): ChatErrorType()
-  @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
-  @Serializable @SerialName("fileAlreadyReceiving") class FileAlreadyReceiving: ChatErrorType()
-  @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()
+  @Serializable @SerialName("differentActiveUser") class DifferentActiveUser(val commandUserId: Long, val activeUserId: Long): ChatErrorType()
+  @Serializable @SerialName("cantDeleteActiveUser") class CantDeleteActiveUser(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("cantDeleteLastUser") class CantDeleteLastUser(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("cantHideLastUser") class CantHideLastUser(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("hiddenUserAlwaysMuted") class HiddenUserAlwaysMuted(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("emptyUserPassword") class EmptyUserPassword(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("userAlreadyHidden") class UserAlreadyHidden(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("userNotHidden") class UserNotHidden(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("chatNotStarted") object ChatNotStarted: ChatErrorType()
+  @Serializable @SerialName("chatNotStopped") object ChatNotStopped: ChatErrorType()
+  @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()
+  @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
+  @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
+  @Serializable @SerialName("contactNotReady") class ContactNotReady(val contact: Contact): ChatErrorType()
+  @Serializable @SerialName("contactDisabled") class ContactDisabled(val contact: Contact): ChatErrorType()
+  @Serializable @SerialName("connectionDisabled") class ConnectionDisabled(val connection: Connection): ChatErrorType()
+  @Serializable @SerialName("groupUserRole") class GroupUserRole(val groupInfo: GroupInfo, val requiredRole: GroupMemberRole): ChatErrorType()
+  @Serializable @SerialName("groupMemberInitialRole") class GroupMemberInitialRole(val groupInfo: GroupInfo, val initialRole: GroupMemberRole): ChatErrorType()
+  @Serializable @SerialName("contactIncognitoCantInvite") object ContactIncognitoCantInvite: ChatErrorType()
+  @Serializable @SerialName("groupIncognitoCantInvite") object GroupIncognitoCantInvite: ChatErrorType()
+  @Serializable @SerialName("groupContactRole") class GroupContactRole(val contactName: String): ChatErrorType()
+  @Serializable @SerialName("groupDuplicateMember") class GroupDuplicateMember(val contactName: String): ChatErrorType()
+  @Serializable @SerialName("groupDuplicateMemberId") object GroupDuplicateMemberId: ChatErrorType()
+  @Serializable @SerialName("groupNotJoined") class GroupNotJoined(val groupInfo: GroupInfo): ChatErrorType()
+  @Serializable @SerialName("groupMemberNotActive") object GroupMemberNotActive: ChatErrorType()
+  @Serializable @SerialName("groupMemberUserRemoved") object GroupMemberUserRemoved: ChatErrorType()
+  @Serializable @SerialName("groupMemberNotFound") object GroupMemberNotFound: ChatErrorType()
+  @Serializable @SerialName("groupMemberIntroNotFound") class GroupMemberIntroNotFound(val contactName: String): ChatErrorType()
+  @Serializable @SerialName("groupCantResendInvitation") class GroupCantResendInvitation(val groupInfo: GroupInfo, val contactName: String): ChatErrorType()
+  @Serializable @SerialName("groupInternal") class GroupInternal(val message: String): ChatErrorType()
+  @Serializable @SerialName("fileNotFound") class FileNotFound(val message: String): ChatErrorType()
+  @Serializable @SerialName("fileSize") class FileSize(val filePath: String): ChatErrorType()
+  @Serializable @SerialName("fileAlreadyReceiving") class FileAlreadyReceiving(val message: String): ChatErrorType()
+  @Serializable @SerialName("fileCancelled") class FileCancelled(val message: String): ChatErrorType()
+  @Serializable @SerialName("fileCancel") class FileCancel(val fileId: Long, val message: String): ChatErrorType()
+  @Serializable @SerialName("fileAlreadyExists") class FileAlreadyExists(val filePath: String): ChatErrorType()
+  @Serializable @SerialName("fileRead") class FileRead(val filePath: String, val message: String): ChatErrorType()
+  @Serializable @SerialName("fileWrite") class FileWrite(val filePath: String, val message: String): ChatErrorType()
+  @Serializable @SerialName("fileSend") class FileSend(val fileId: Long, val agentError: String): ChatErrorType()
+  @Serializable @SerialName("fileRcvChunk") class FileRcvChunk(val message: String): ChatErrorType()
+  @Serializable @SerialName("fileInternal") class FileInternal(val message: String): ChatErrorType()
+  @Serializable @SerialName("fileImageType") class FileImageType(val filePath: String): ChatErrorType()
+  @Serializable @SerialName("fileImageSize") class FileImageSize(val filePath: String): ChatErrorType()
+  @Serializable @SerialName("fileNotReceived") class FileNotReceived(val fileId: Long): ChatErrorType()
+  // @Serializable @SerialName("xFTPRcvFile") object XFTPRcvFile: ChatErrorType()
+  // @Serializable @SerialName("xFTPSndFile") object XFTPSndFile: ChatErrorType()
+  @Serializable @SerialName("fallbackToSMPProhibited") class FallbackToSMPProhibited(val fileId: Long): ChatErrorType()
+  @Serializable @SerialName("inlineFileProhibited") class InlineFileProhibited(val fileId: Long): ChatErrorType()
+  @Serializable @SerialName("invalidQuote") object InvalidQuote: ChatErrorType()
+  @Serializable @SerialName("invalidChatItemUpdate") object InvalidChatItemUpdate: ChatErrorType()
+  @Serializable @SerialName("invalidChatItemDelete") object InvalidChatItemDelete: ChatErrorType()
+  @Serializable @SerialName("hasCurrentCall") object HasCurrentCall: ChatErrorType()
+  @Serializable @SerialName("noCurrentCall") object NoCurrentCall: ChatErrorType()
+  @Serializable @SerialName("callContact") class CallContact(val contactId: Long): ChatErrorType()
+  @Serializable @SerialName("callState") object CallState: ChatErrorType()
+  @Serializable @SerialName("directMessagesProhibited") class DirectMessagesProhibited(val contact: Contact): ChatErrorType()
+  @Serializable @SerialName("agentVersion") object AgentVersion: ChatErrorType()
+  @Serializable @SerialName("agentNoSubResult") class AgentNoSubResult(val agentConnId: String): ChatErrorType()
+  @Serializable @SerialName("commandError") class CommandError(val message: String): ChatErrorType()
+  @Serializable @SerialName("serverProtocol") object ServerProtocol: ChatErrorType()
+  @Serializable @SerialName("agentCommandError") class AgentCommandError(val message: String): ChatErrorType()
+  @Serializable @SerialName("invalidFileDescription") class InvalidFileDescription(val message: String): ChatErrorType()
+  @Serializable @SerialName("internalError") class InternalError(val message: String): ChatErrorType()
   @Serializable @SerialName("exception") class CEException(val message: String): ChatErrorType()
 }
 
 @Serializable
 sealed class StoreError {
-  val string: String get() = when (this) {
-    is UserContactLinkNotFound -> "userContactLinkNotFound"
-    is GroupNotFound -> "groupNotFound"
-    is DuplicateName -> "duplicateName"
-  }
-  @Serializable @SerialName("userContactLinkNotFound") class UserContactLinkNotFound: StoreError()
-  @Serializable @SerialName("groupNotFound") class GroupNotFound: StoreError()
-  @Serializable @SerialName("duplicateName") class DuplicateName: StoreError()
+  val string: String
+    get() = when (this) {
+      is DuplicateName -> "duplicateName"
+      is UserNotFound -> "userNotFound"
+      is UserNotFoundByName -> "userNotFoundByName"
+      is UserNotFoundByContactId -> "userNotFoundByContactId"
+      is UserNotFoundByGroupId -> "userNotFoundByGroupId"
+      is UserNotFoundByFileId -> "userNotFoundByFileId"
+      is UserNotFoundByContactRequestId -> "userNotFoundByContactRequestId"
+      is ContactNotFound -> "contactNotFound"
+      is ContactNotFoundByName -> "contactNotFoundByName"
+      is ContactNotReady -> "contactNotReady"
+      is DuplicateContactLink -> "duplicateContactLink"
+      is UserContactLinkNotFound -> "userContactLinkNotFound"
+      is ContactRequestNotFound -> "contactRequestNotFound"
+      is ContactRequestNotFoundByName -> "contactRequestNotFoundByName"
+      is GroupNotFound -> "groupNotFound"
+      is GroupNotFoundByName -> "groupNotFoundByName"
+      is GroupMemberNameNotFound -> "groupMemberNameNotFound"
+      is GroupMemberNotFound -> "groupMemberNotFound"
+      is GroupMemberNotFoundByMemberId -> "groupMemberNotFoundByMemberId"
+      is GroupWithoutUser -> "groupWithoutUser"
+      is DuplicateGroupMember -> "duplicateGroupMember"
+      is GroupAlreadyJoined -> "groupAlreadyJoined"
+      is GroupInvitationNotFound -> "groupInvitationNotFound"
+      is SndFileNotFound -> "sndFileNotFound"
+      is SndFileInvalid -> "sndFileInvalid"
+      is RcvFileNotFound -> "rcvFileNotFound"
+      is RcvFileDescrNotFound -> "rcvFileDescrNotFound"
+      is FileNotFound -> "fileNotFound"
+      is RcvFileInvalid -> "rcvFileInvalid"
+      is RcvFileInvalidDescrPart -> "rcvFileInvalidDescrPart"
+      is SharedMsgIdNotFoundByFileId -> "sharedMsgIdNotFoundByFileId"
+      is FileIdNotFoundBySharedMsgId -> "fileIdNotFoundBySharedMsgId"
+      is SndFileNotFoundXFTP -> "sndFileNotFoundXFTP"
+      is RcvFileNotFoundXFTP -> "rcvFileNotFoundXFTP"
+      is ConnectionNotFound -> "connectionNotFound"
+      is ConnectionNotFoundById -> "connectionNotFoundById"
+      is PendingConnectionNotFound -> "pendingConnectionNotFound"
+      is IntroNotFound -> "introNotFound"
+      is UniqueID -> "uniqueID"
+      is InternalError -> "internalError"
+      is NoMsgDelivery -> "noMsgDelivery"
+      is BadChatItem -> "badChatItem"
+      is ChatItemNotFound -> "chatItemNotFound"
+      is ChatItemNotFoundByText -> "chatItemNotFoundByText"
+      is ChatItemSharedMsgIdNotFound -> "chatItemSharedMsgIdNotFound"
+      is ChatItemNotFoundByFileId -> "chatItemNotFoundByFileId"
+      is ChatItemNotFoundByGroupId -> "chatItemNotFoundByGroupId"
+      is ProfileNotFound -> "profileNotFound"
+      is DuplicateGroupLink -> "duplicateGroupLink"
+      is GroupLinkNotFound -> "groupLinkNotFound"
+      is HostMemberIdNotFound -> "hostMemberIdNotFound"
+      is ContactNotFoundByFileId -> "contactNotFoundByFileId"
+      is NoGroupSndStatus -> "noGroupSndStatus"
+    }
+
+  @Serializable @SerialName("duplicateName") object DuplicateName: StoreError()
+  @Serializable @SerialName("userNotFound") class UserNotFound(val userId: Long): StoreError()
+  @Serializable @SerialName("userNotFoundByName") class UserNotFoundByName(val contactName: String): StoreError()
+  @Serializable @SerialName("userNotFoundByContactId") class UserNotFoundByContactId(val contactId: Long): StoreError()
+  @Serializable @SerialName("userNotFoundByGroupId") class UserNotFoundByGroupId(val groupId: Long): StoreError()
+  @Serializable @SerialName("userNotFoundByFileId") class UserNotFoundByFileId(val fileId: Long): StoreError()
+  @Serializable @SerialName("userNotFoundByContactRequestId") class UserNotFoundByContactRequestId(val contactRequestId: Long): StoreError()
+  @Serializable @SerialName("contactNotFound") class ContactNotFound(val contactId: Long): StoreError()
+  @Serializable @SerialName("contactNotFoundByName") class ContactNotFoundByName(val contactName: String): StoreError()
+  @Serializable @SerialName("contactNotReady") class ContactNotReady(val contactName: String): StoreError()
+  @Serializable @SerialName("duplicateContactLink") object DuplicateContactLink: StoreError()
+  @Serializable @SerialName("userContactLinkNotFound") object UserContactLinkNotFound: StoreError()
+  @Serializable @SerialName("contactRequestNotFound") class ContactRequestNotFound(val contactRequestId: Long): StoreError()
+  @Serializable @SerialName("contactRequestNotFoundByName") class ContactRequestNotFoundByName(val contactName: String): StoreError()
+  @Serializable @SerialName("groupNotFound") class GroupNotFound(val groupId: Long): StoreError()
+  @Serializable @SerialName("groupNotFoundByName") class GroupNotFoundByName(val groupName: String): StoreError()
+  @Serializable @SerialName("groupMemberNameNotFound") class GroupMemberNameNotFound(val groupId: Long, val groupMemberName: String): StoreError()
+  @Serializable @SerialName("groupMemberNotFound") class GroupMemberNotFound(val groupMemberId: Long): StoreError()
+  @Serializable @SerialName("groupMemberNotFoundByMemberId") class GroupMemberNotFoundByMemberId(val memberId: String): StoreError()
+  @Serializable @SerialName("groupWithoutUser") object GroupWithoutUser: StoreError()
+  @Serializable @SerialName("duplicateGroupMember") object DuplicateGroupMember: StoreError()
+  @Serializable @SerialName("groupAlreadyJoined") object GroupAlreadyJoined: StoreError()
+  @Serializable @SerialName("groupInvitationNotFound") object GroupInvitationNotFound: StoreError()
+  @Serializable @SerialName("sndFileNotFound") class SndFileNotFound(val fileId: Long): StoreError()
+  @Serializable @SerialName("sndFileInvalid") class SndFileInvalid(val fileId: Long): StoreError()
+  @Serializable @SerialName("rcvFileNotFound") class RcvFileNotFound(val fileId: Long): StoreError()
+  @Serializable @SerialName("rcvFileDescrNotFound") class RcvFileDescrNotFound(val fileId: Long): StoreError()
+  @Serializable @SerialName("fileNotFound") class FileNotFound(val fileId: Long): StoreError()
+  @Serializable @SerialName("rcvFileInvalid") class RcvFileInvalid(val fileId: Long): StoreError()
+  @Serializable @SerialName("rcvFileInvalidDescrPart") object RcvFileInvalidDescrPart: StoreError()
+  @Serializable @SerialName("sharedMsgIdNotFoundByFileId") class SharedMsgIdNotFoundByFileId(val fileId: Long): StoreError()
+  @Serializable @SerialName("fileIdNotFoundBySharedMsgId") class FileIdNotFoundBySharedMsgId(val sharedMsgId: String): StoreError()
+  @Serializable @SerialName("sndFileNotFoundXFTP") class SndFileNotFoundXFTP(val agentSndFileId: String): StoreError()
+  @Serializable @SerialName("rcvFileNotFoundXFTP") class RcvFileNotFoundXFTP(val agentRcvFileId: String): StoreError()
+  @Serializable @SerialName("connectionNotFound") class ConnectionNotFound(val agentConnId: String): StoreError()
+  @Serializable @SerialName("connectionNotFoundById") class ConnectionNotFoundById(val connId: Long): StoreError()
+  @Serializable @SerialName("pendingConnectionNotFound") class PendingConnectionNotFound(val connId: Long): StoreError()
+  @Serializable @SerialName("introNotFound") object IntroNotFound: StoreError()
+  @Serializable @SerialName("uniqueID") object UniqueID: StoreError()
+  @Serializable @SerialName("internalError") class InternalError(val message: String): StoreError()
+  @Serializable @SerialName("noMsgDelivery") class NoMsgDelivery(val connId: Long, val agentMsgId: String): StoreError()
+  @Serializable @SerialName("badChatItem") class BadChatItem(val itemId: Long): StoreError()
+  @Serializable @SerialName("chatItemNotFound") class ChatItemNotFound(val itemId: Long): StoreError()
+  @Serializable @SerialName("chatItemNotFoundByText") class ChatItemNotFoundByText(val text: String): StoreError()
+  @Serializable @SerialName("chatItemSharedMsgIdNotFound") class ChatItemSharedMsgIdNotFound(val sharedMsgId: String): StoreError()
+  @Serializable @SerialName("chatItemNotFoundByFileId") class ChatItemNotFoundByFileId(val fileId: Long): StoreError()
+  @Serializable @SerialName("chatItemNotFoundByGroupId") class ChatItemNotFoundByGroupId(val groupId: Long): StoreError()
+  @Serializable @SerialName("profileNotFound") class ProfileNotFound(val profileId: Long): StoreError()
+  @Serializable @SerialName("duplicateGroupLink") class DuplicateGroupLink(val groupInfo: GroupInfo): StoreError()
+  @Serializable @SerialName("groupLinkNotFound") class GroupLinkNotFound(val groupInfo: GroupInfo): StoreError()
+  @Serializable @SerialName("hostMemberIdNotFound") class HostMemberIdNotFound(val groupId: Long): StoreError()
+  @Serializable @SerialName("contactNotFoundByFileId") class ContactNotFoundByFileId(val fileId: Long): StoreError()
+  @Serializable @SerialName("noGroupSndStatus") class NoGroupSndStatus(val itemId: Long, val groupMemberId: Long): StoreError()
 }
 
 @Serializable
@@ -3792,18 +4032,22 @@ sealed class AgentErrorType {
     is CMD -> "CMD ${cmdErr.string}"
     is CONN -> "CONN ${connErr.string}"
     is SMP -> "SMP ${smpErr.string}"
+    // is NTF -> "NTF ${ntfErr.string}"
     is XFTP -> "XFTP ${xftpErr.string}"
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
+    is INACTIVE -> "INACTIVE"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
   @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
+  // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
   @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
+  @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
 }
 
 @Serializable
@@ -3841,17 +4085,19 @@ sealed class ConnectionErrorType {
 @Serializable
 sealed class BrokerErrorType {
   val string: String get() = when (this) {
-    is RESPONSE -> "RESPONSE ${smpErr.string}"
+    is RESPONSE -> "RESPONSE ${smpErr}"
     is UNEXPECTED -> "UNEXPECTED"
     is NETWORK -> "NETWORK"
+    is HOST -> "HOST"
     is TRANSPORT -> "TRANSPORT ${transportErr.string}"
     is TIMEOUT -> "TIMEOUT"
   }
-  @Serializable @SerialName("RESPONSE") class RESPONSE(val smpErr: SMPErrorType): BrokerErrorType()
-  @Serializable @SerialName("UNEXPECTED") class UNEXPECTED: BrokerErrorType()
-  @Serializable @SerialName("NETWORK") class NETWORK: BrokerErrorType()
+  @Serializable @SerialName("RESPONSE") class RESPONSE(val smpErr: String): BrokerErrorType()
+  @Serializable @SerialName("UNEXPECTED") object UNEXPECTED: BrokerErrorType()
+  @Serializable @SerialName("NETWORK") object NETWORK: BrokerErrorType()
+  @Serializable @SerialName("HOST") object HOST: BrokerErrorType()
   @Serializable @SerialName("TRANSPORT") class TRANSPORT(val transportErr: SMPTransportError): BrokerErrorType()
-  @Serializable @SerialName("TIMEOUT") class TIMEOUT: BrokerErrorType()
+  @Serializable @SerialName("TIMEOUT") object TIMEOUT: BrokerErrorType()
 }
 
 @Serializable
@@ -3881,15 +4127,17 @@ sealed class ProtocolCommandError {
   val string: String get() = when (this) {
     is UNKNOWN -> "UNKNOWN"
     is SYNTAX -> "SYNTAX"
+    is PROHIBITED -> "PROHIBITED"
     is NO_AUTH -> "NO_AUTH"
     is HAS_AUTH -> "HAS_AUTH"
     is NO_QUEUE -> "NO_QUEUE"
   }
-  @Serializable @SerialName("UNKNOWN") class UNKNOWN: ProtocolCommandError()
-  @Serializable @SerialName("SYNTAX") class SYNTAX: ProtocolCommandError()
-  @Serializable @SerialName("NO_AUTH") class NO_AUTH: ProtocolCommandError()
-  @Serializable @SerialName("HAS_AUTH") class HAS_AUTH: ProtocolCommandError()
-  @Serializable @SerialName("NO_QUEUE") class NO_QUEUE: ProtocolCommandError()
+  @Serializable @SerialName("UNKNOWN") object UNKNOWN: ProtocolCommandError()
+  @Serializable @SerialName("SYNTAX") object SYNTAX: ProtocolCommandError()
+  @Serializable @SerialName("PROHIBITED") object PROHIBITED: ProtocolCommandError()
+  @Serializable @SerialName("NO_AUTH") object NO_AUTH: ProtocolCommandError()
+  @Serializable @SerialName("HAS_AUTH") object HAS_AUTH: ProtocolCommandError()
+  @Serializable @SerialName("NO_QUEUE") object NO_QUEUE: ProtocolCommandError()
 }
 
 @Serializable
@@ -3924,12 +4172,16 @@ sealed class SMPAgentError {
     is A_MESSAGE -> "A_MESSAGE"
     is A_PROHIBITED -> "A_PROHIBITED"
     is A_VERSION -> "A_VERSION"
-    is A_ENCRYPTION -> "A_ENCRYPTION"
+    is A_CRYPTO -> "A_CRYPTO"
+    is A_DUPLICATE -> "A_DUPLICATE"
+    is A_QUEUE -> "A_QUEUE"
   }
-  @Serializable @SerialName("A_MESSAGE") class A_MESSAGE: SMPAgentError()
-  @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED: SMPAgentError()
-  @Serializable @SerialName("A_VERSION") class A_VERSION: SMPAgentError()
-  @Serializable @SerialName("A_ENCRYPTION") class A_ENCRYPTION: SMPAgentError()
+  @Serializable @SerialName("A_MESSAGE") object A_MESSAGE: SMPAgentError()
+  @Serializable @SerialName("A_PROHIBITED") object A_PROHIBITED: SMPAgentError()
+  @Serializable @SerialName("A_VERSION") object A_VERSION: SMPAgentError()
+  @Serializable @SerialName("A_CRYPTO") object A_CRYPTO: SMPAgentError()
+  @Serializable @SerialName("A_DUPLICATE") object A_DUPLICATE: SMPAgentError()
+  @Serializable @SerialName("A_QUEUE") class A_QUEUE(val queueErr: String): SMPAgentError()
 }
 
 @Serializable

@@ -125,7 +125,7 @@ afterEvaluate {
       copy {
         from("${project(":desktop").buildDir}/cmake/main/linux-amd64", "$cppPath/desktop/libs/linux-x86_64", "$cppPath/desktop/libs/linux-x86_64/deps")
         into("src/jvmMain/resources/libs/linux-x86_64")
-        include("*.so")
+        include("*.so*")
         eachFile {
           path = name
         }
@@ -135,7 +135,7 @@ afterEvaluate {
       copy {
         from("${project(":desktop").buildDir}/cmake/main/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64/deps")
         into("src/jvmMain/resources/libs/linux-aarch64")
-        include("*.so")
+        include("*.so*")
         eachFile {
           path = name
         }
