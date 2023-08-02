@@ -176,7 +176,6 @@ data ChatController = ChatController
     currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
-    incognitoMode :: TVar Bool,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
@@ -187,7 +186,7 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings | HSDatabase
+data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -223,7 +222,7 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | APISetXFTPConfig (Maybe XFTPFileConfig)
-  | SetIncognito Bool
+  | HelpIncognito (Maybe Bool)
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
@@ -244,7 +243,7 @@ data ChatCommand
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef
   | APIClearChat ChatRef
-  | APIAcceptContact Int64
+  | APIAcceptContact Bool Int64
   | APIRejectContact Int64
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
@@ -322,11 +321,12 @@ data ChatCommand
   | EnableGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
-  | APIAddContact UserId
-  | AddContact
-  | APIConnect UserId (Maybe AConnectionRequestUri)
-  | Connect (Maybe AConnectionRequestUri)
-  | ConnectSimplex -- UserId (not used in UI)
+  | APIAddContact UserId Bool
+  | AddContact Bool
+  | APISetConnectionIncognito Int64 Bool
+  | APIConnect UserId Bool (Maybe AConnectionRequestUri)
+  | Connect Bool (Maybe AConnectionRequestUri)
+  | ConnectSimplex Bool -- UserId (not used in UI)
   | DeleteContact ContactName
   | ClearContact ContactName
   | APIListContacts UserId
@@ -341,7 +341,7 @@ data ChatCommand
   | SetProfileAddress Bool
   | APIAddressAutoAccept UserId (Maybe AutoAccept)
   | AddressAutoAccept (Maybe AutoAccept)
-  | AcceptContact ContactName
+  | AcceptContact Bool ContactName
   | RejectContact ContactName
   | SendMessage ChatName Text
   | SendLiveMessage ChatName Text
@@ -450,6 +450,7 @@ data ChatResponse
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk {user_ :: Maybe User}
   | CRChatHelp {helpSection :: HelpSection}
+  | CRIncognitoHelp {deprecatedToggle :: Maybe Bool}
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRGroupMembers {user :: User, group :: Group}
@@ -467,7 +468,8 @@ data ChatResponse
   | CRUserProfileNoChange {user :: User}
   | CRUserPrivacy {user :: User, updatedUser :: User}
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
-  | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation}
+  | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
+  | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
@@ -876,6 +878,7 @@ data ChatErrorType
   | CEServerProtocol {serverProtocol :: AProtocolType}
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
+  | CEConnectionIncognitoChangeProhibited
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception, Generic)
