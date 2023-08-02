@@ -49,14 +49,14 @@ object ChatModel {
   val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
   val chats = mutableStateListOf<Chat>()
   // map of connections network statuses, key is agent connection id
-  val networkStatuses = mutableStateOf<Map<String, NetworkStatus>>(mapOf())
+  val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
-  val terminalItems = mutableStateOf(emptyList<TerminalItem>())
+  val terminalItems = mutableStateListOf<TerminalItem>()
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
   // Allows to temporary save servers that are being edited on multiple screens
   val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
@@ -477,20 +477,17 @@ object ChatModel {
   }
 
   fun setContactNetworkStatus(contact: Contact, status: NetworkStatus) {
-    val statuses = networkStatuses.value.toMutableMap()
-    statuses[contact.activeConn.agentConnId] = status
-    networkStatuses.value = statuses
+    networkStatuses[contact.activeConn.agentConnId] = status
   }
 
   fun contactNetworkStatus(contact: Contact): NetworkStatus =
-    networkStatuses.value[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
+    networkStatuses[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
 
   fun addTerminalItem(item: TerminalItem) {
-    if (terminalItems.value.size >= 500) {
-      terminalItems.value = terminalItems.value.takeLast(499) + item
-    } else {
-      terminalItems.value += item
+    if (terminalItems.size >= 500) {
+      terminalItems.removeAt(0)
     }
+    terminalItems.add(item)
   }
 }
 
