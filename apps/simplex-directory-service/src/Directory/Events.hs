@@ -26,7 +26,7 @@ import Data.Either (fromRight)
 data DirectoryEvent
   = DEContactConnected Contact
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
-  | DEServiceJoinedGroup ContactId GroupInfo
+  | DEServiceJoinedGroup {contactId :: ContactId, groupInfo ::  GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {contactId :: ContactId, fromGroup :: GroupInfo, toGroup :: GroupInfo}
   | DEContactRoleChanged ContactId GroupInfo GroupMemberRole
   | DEServiceRoleChanged GroupInfo GroupMemberRole
@@ -43,7 +43,7 @@ crDirectoryEvent :: ChatResponse -> Maybe DirectoryEvent
 crDirectoryEvent = \case
   CRContactConnected {contact} -> Just $ DEContactConnected contact
   CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
-  CRUserJoinedGroup {groupInfo, hostMember} -> (`DEServiceJoinedGroup` groupInfo) <$> memberContactId hostMember
+  CRUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
   CRGroupUpdated {fromGroup, toGroup, member_} -> (\contactId -> DEGroupUpdated {contactId, fromGroup, toGroup}) <$> (memberContactId =<< member_)
   CRMemberRole {groupInfo, member, toRole} -> (\ctId -> DEContactRoleChanged ctId groupInfo toRole) <$> memberContactId member
   CRMemberRoleUser {groupInfo, toRole} -> Just $ DEServiceRoleChanged groupInfo toRole

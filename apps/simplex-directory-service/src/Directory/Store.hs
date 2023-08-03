@@ -19,6 +19,7 @@ data GroupReg = GroupReg
   { userGroupRegId :: UserGroupRegId,
     dbGroupId :: GroupId,
     dbContactId :: ContactId,
+    dbOwnerMemberId :: TVar (Maybe GroupMemberId),
     groupRegStatus :: TVar GroupRegStatus
   }
 
@@ -35,12 +36,14 @@ data GroupRegStatus
   | GRSPendingApproval GroupApprovalId
   | GRSActive
   | GRSSuspended
+  | GRSSuspendedBadRoles
   | GRSRemoved
 
 addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> GroupRegStatus -> STM ()
 addGroupReg st ct GroupInfo {groupId} grStatus = do
+  dbOwnerMemberId <- newTVar Nothing
   groupRegStatus <- newTVar grStatus
-  let gr = GroupReg {userGroupRegId = groupId, dbGroupId = groupId, dbContactId = contactId' ct, groupRegStatus}
+  let gr = GroupReg {userGroupRegId = groupId, dbGroupId = groupId, dbContactId = contactId' ct, dbOwnerMemberId, groupRegStatus}
   modifyTVar' (groupRegs st) (gr :)
 
 getGroupReg :: DirectoryStore -> GroupRegId -> STM (Maybe GroupReg)
