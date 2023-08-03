@@ -14,8 +14,7 @@ import dev.icerock.moko.resources.compose.stringResource
 actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserLauncher, showMenu: MutableState<Boolean>) {
   ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), onClick = {
     when (cItem.content.msgContent) {
-      is MsgContent.MCImage -> saveImage(getAppFileUri(cItem.file?.fileName ?: return@ItemAction))
-      is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
+      is MsgContent.MCImage, is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
       else -> {}
     }
     showMenu.value = false
