@@ -1,8 +1,9 @@
 {
   description = "nix flake for simplex-chat";
-  inputs.nixpkgs.url = "github:angerman/nixpkgs/release-22.11";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix/armv7a";
-  inputs.haskellNix.inputs.nixpkgs.follows = "nixpkgs";
+  # inputs.haskellNix.inputs.nixpkgs.follows = "nixpkgs";
+  # inputs.nixpkgs.url = "github:angerman/nixpkgs/release-22.11";
+  inputs.nixpkgs.follows = "haskellNix/nixpkgs";
   inputs.hackage = {
     url = "github:input-output-hk/hackage.nix";
     flake = false;
@@ -40,9 +41,12 @@
           src = ./.;
         };
         sha256map = import ./scripts/nix/sha256map.nix;
-        modules = [{
+        modules = [
+        ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
+          # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
+          # on pretty much all unix platforms, but then blows up on windows m(
           packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-        }
+        })
         ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
           packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
         })] ++ extra-modules;
@@ -121,6 +125,20 @@
               );in {
               "${pkgs.pkgsCross.musl64.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl64).simplex-chat.components.exes.simplex-chat;
               "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl32).simplex-chat.components.exes.simplex-chat;
+              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = (drv pkgs.pkgsCross.mingwW64).simplex-chat.components.exes.simplex-chat.override {
+                postInstall = ''
+                  set -x
+                  ${pkgs.tree}/bin/tree $out
+                  mkdir -p $out/_pkg
+                  cp $out/bin/* $out/_pkg
+                  ${pkgs.tree}/bin/tree $out/_pkg
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/${pkgs.pkgsCross.mingwW64.hostPlatform.system}-ximplex-chat.zip *)
+                  rm -fR $out/_pkg
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                      > $out/nix-support/hydra-build-products
+                '';
+              };
               # "${pkgs.pkgsCross.muslpi.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.muslpi).simplex-chat.components.exes.simplex-chat;
               "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
               "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override {
@@ -271,6 +289,24 @@
 
                   ${pkgs.tree}/bin/tree $out/_pkg
                   (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsimplex.zip *)
+                  rm -fR $out/_pkg
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                      > $out/nix-support/hydra-build-products
+                '';
+              };
+              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:lib:simplex-chat" = (drv pkgs.pkgsCross.mingwW64).simplex-chat.components.library
+              .override {
+                # enableShared = false;
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.dll" "-optl-lHSrts_thr" "-optl-lffi" "${./libsimplex.dll.def}" ];
+                postInstall = ''
+                  set -x
+                  ${pkgs.tree}/bin/tree $out
+                  mkdir -p $out/_pkg
+                  cp libsimplex.dll $out/_pkg
+                  cp libsimplex.dll.a $out/_pkg
+                  ${pkgs.tree}/bin/tree $out/_pkg
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-${pkgs.pkgsCross.mingwW64.hostPlatform.system}-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
