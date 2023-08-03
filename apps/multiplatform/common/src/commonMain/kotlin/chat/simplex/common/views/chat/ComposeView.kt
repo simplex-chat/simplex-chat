@@ -135,6 +135,20 @@ sealed class RecordingState {
     get() = (this as? Started)?.filePath
 }
 
+fun chatItemPreview(chatItem: ChatItem): ComposePreview {
+  val fileName = chatItem.file?.fileName ?: ""
+  return when (val mc = chatItem.content.msgContent) {
+    is MsgContent.MCText -> ComposePreview.NoPreview
+    is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
+    // TODO: include correct type
+    is MsgContent.MCImage -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
+    is MsgContent.MCVideo -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
+    is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
+    is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
+    is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
+  }
+}
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
     val fileSize = getFileSize(uri)
@@ -192,20 +206,6 @@ fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text: String?
   }
   if (imagesPreview.isNotEmpty()) {
     value = value.copy(message = text ?: value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
-  }
-}
-
-fun chatItemPreview(chatItem: ChatItem): ComposePreview {
-  val fileName = chatItem.file?.fileName ?: ""
-  return when (val mc = chatItem.content.msgContent) {
-    is MsgContent.MCText -> ComposePreview.NoPreview
-    is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
-    // TODO: include correct type
-    is MsgContent.MCImage -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
-    is MsgContent.MCVideo -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
-    is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
-    is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
-    is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
   }
 }
 
