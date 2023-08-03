@@ -126,6 +126,15 @@ data class ComposeState(
 
 private val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
 
+sealed class RecordingState {
+  object NotStarted: RecordingState()
+  class Started(val filePath: String, val progressMs: Int = 0): RecordingState()
+  class Finished(val filePath: String, val durationMs: Int): RecordingState()
+
+  val filePathNullable: String?
+    get() = (this as? Started)?.filePath
+}
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
     val fileSize = getFileSize(uri)
@@ -184,15 +193,6 @@ fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text: String?
   if (imagesPreview.isNotEmpty()) {
     value = value.copy(message = text ?: value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
   }
-}
-
-sealed class RecordingState {
-  object NotStarted: RecordingState()
-  class Started(val filePath: String, val progressMs: Int = 0): RecordingState()
-  class Finished(val filePath: String, val durationMs: Int): RecordingState()
-
-  val filePathNullable: String?
-    get() = (this as? Started)?.filePath
 }
 
 fun chatItemPreview(chatItem: ChatItem): ComposePreview {
