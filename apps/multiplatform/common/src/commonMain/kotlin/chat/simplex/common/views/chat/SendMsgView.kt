@@ -48,6 +48,7 @@ fun SendMsgView(
   sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
+  editPrevMessage: () -> Unit,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
@@ -67,7 +68,7 @@ fun SendMsgView(
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
-    PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange) {
+    PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage) {
       sendMessage(null)
     }
     // Disable clicks on text field
@@ -593,6 +594,7 @@ fun PreviewSendMsgView() {
       allowVoiceToContact = {},
       timedMessageAllowed = false,
       sendMessage = {},
+      editPrevMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
     )
@@ -623,6 +625,7 @@ fun PreviewSendMsgViewEditing() {
       allowVoiceToContact = {},
       timedMessageAllowed = false,
       sendMessage = {},
+      editPrevMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
     )
@@ -653,6 +656,7 @@ fun PreviewSendMsgViewInProgress() {
       allowVoiceToContact = {},
       timedMessageAllowed = false,
       sendMessage = {},
+      editPrevMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
     )

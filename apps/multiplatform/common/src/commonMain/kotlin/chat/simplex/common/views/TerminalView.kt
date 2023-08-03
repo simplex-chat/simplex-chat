@@ -93,6 +93,7 @@ fun TerminalLayout(
             sendMessage = { sendCommand() },
             sendLiveMessage = null,
             updateLiveMessage = null,
+            editPrevMessage = {},
             onMessageChange = ::onMessageChange,
             textStyle = textStyle
           )

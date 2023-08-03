@@ -37,6 +37,7 @@ actual fun PlatformTextField(
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
   onMessageChange: (String) -> Unit,
+  onUpArrow: () -> Unit,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value
@@ -83,7 +84,11 @@ actual fun PlatformTextField(
             onDone()
           }
           true
-        } else false
+        } else if (it.key == Key.DirectionUp && it.type == KeyEventType.KeyDown && cs.message.isEmpty()) {
+          onUpArrow()
+          true
+        }
+        else false
       },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->
