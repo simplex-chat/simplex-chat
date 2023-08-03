@@ -184,7 +184,9 @@ contactConn = activeConn
 contactConnId :: Contact -> ConnId
 contactConnId = aConnId . contactConn
 
-contactConnIncognito :: Contact -> Bool
+type IncognitoEnabled = Bool
+
+contactConnIncognito :: Contact -> IncognitoEnabled
 contactConnIncognito = connIncognito . contactConn
 
 contactDirect :: Contact -> Bool
@@ -595,7 +597,7 @@ memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId
 
-memberIncognito :: GroupMember -> Bool
+memberIncognito :: GroupMember -> IncognitoEnabled
 memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
 
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
