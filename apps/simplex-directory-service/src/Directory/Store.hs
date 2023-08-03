@@ -37,9 +37,9 @@ data GroupRegStatus
   | GRSSuspended
   | GRSRemoved
 
-addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> STM ()
-addGroupReg st ct GroupInfo {groupId} = do
-  groupRegStatus <- newTVar GRSProposed
+addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> GroupRegStatus -> STM ()
+addGroupReg st ct GroupInfo {groupId} grStatus = do
+  groupRegStatus <- newTVar grStatus
   let gr = GroupReg {userGroupRegId = groupId, dbGroupId = groupId, dbContactId = contactId' ct, groupRegStatus}
   modifyTVar' (groupRegs st) (gr :)
 
