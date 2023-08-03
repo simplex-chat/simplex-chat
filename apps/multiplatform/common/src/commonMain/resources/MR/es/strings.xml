@@ -1375,4 +1375,6 @@
     <string name="item_status_snd_sent_text">Mensaje enviado</string>
     <string name="send_receipts_disabled_alert_title">Confirmaciones desactivadas</string>
     <string name="send_receipts_disabled_alert_msg">Este grupo tiene más de %1$d miembros, no se enviarán confirmaciones de entrega.</string>
+    <string name="connect_via_member_address_alert_title">¿Conectar directamente\?</string>
+    <string name="connect_via_member_address_alert_desc">La solicitud se enviará a este miembro del grupo.</string>
 </resources>
