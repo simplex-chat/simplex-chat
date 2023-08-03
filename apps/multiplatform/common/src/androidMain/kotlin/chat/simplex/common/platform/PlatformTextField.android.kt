@@ -48,6 +48,7 @@ actual fun PlatformTextField(
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
   onMessageChange: (String) -> Unit,
+  onUpArrow: () -> Unit,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value

@@ -556,6 +556,14 @@ fun ComposeView(
     }
   }
 
+  fun editPrevMessage() {
+    if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
+    val lastEditable = chatModel.chatItems.findLast { it.meta.editable }
+    if (lastEditable != null) {
+      composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
+    }
+  }
+
   @Composable
   fun previewView() {
     when (val preview = composeState.value.preview) {
@@ -754,6 +762,7 @@ fun ComposeView(
           composeState.value = composeState.value.copy(liveMessage = null)
           chatModel.removeLiveDummy()
         },
+        editPrevMessage = ::editPrevMessage,
         onMessageChange = ::onMessageChange,
         textStyle = textStyle
       )
