@@ -822,21 +822,19 @@ func apiReceiveFile(fileId: Int64, inline: Bool? = nil, auto: Bool = false) asyn
         }
     } else if let networkErrorAlert = networkErrorAlert(r) {
         logger.error("apiReceiveFile network error: \(String(describing: r))")
-        if !auto {
-            am.showAlert(networkErrorAlert)
-        }
+        am.showAlert(networkErrorAlert)
     } else {
-        switch r {
-        case .chatCmdError(_, .error(.fileAlreadyReceiving)):
+        switch chatError(r) {
+        case .fileCancelled:
+            logger.debug("apiReceiveFile ignoring fileCancelled error")
+        case .fileAlreadyReceiving:
             logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
         default:
             logger.error("apiReceiveFile error: \(String(describing: r))")
-            if !auto {
-                am.showAlertMsg(
-                    title: "Error receiving file",
-                    message: "Error: \(String(describing: r))"
-                )
-            }
+            am.showAlertMsg(
+                title: "Error receiving file",
+                message: "Error: \(String(describing: r))"
+            )
         }
     }
     return nil

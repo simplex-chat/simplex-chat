@@ -16,8 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
@@ -29,6 +28,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
 import kotlin.math.min
+import kotlin.text.substring
 
 @Composable
 actual fun PlatformTextField(
@@ -37,6 +37,7 @@ actual fun PlatformTextField(
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
   onMessageChange: (String) -> Unit,
+  onUpArrow: () -> Unit,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value
@@ -73,17 +74,23 @@ actual fun PlatformTextField(
       .onPreviewKeyEvent {
         if (it.key == Key.Enter && it.type == KeyEventType.KeyDown) {
           if (it.isShiftPressed) {
-            val newText = textFieldValue.text + "\n"
+            val start = if (minOf(textFieldValue.selection.min) == 0) "" else textFieldValue.text.substring(0 until textFieldValue.selection.min)
+            val newText = start + "\n" +
+                  textFieldValue.text.substring(textFieldValue.selection.max, textFieldValue.text.length)
             textFieldValueState = textFieldValue.copy(
               text = newText,
-              selection = TextRange(newText.length, newText.length)
+              selection = TextRange(textFieldValue.selection.min + 1)
             )
             onMessageChange(newText)
           } else if (cs.message.isNotEmpty()) {
             onDone()
           }
           true
-        } else false
+        } else if (it.key == Key.DirectionUp && it.type == KeyEventType.KeyDown && cs.message.isEmpty()) {
+          onUpArrow()
+          true
+        }
+        else false
       },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->

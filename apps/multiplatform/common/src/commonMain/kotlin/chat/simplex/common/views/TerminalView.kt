@@ -34,7 +34,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
     close()
   })
   TerminalLayout(
-    chatModel.terminalItems,
+    remember { chatModel.terminalItems },
     composeState,
     sendCommand = { sendCommand(chatModel, composeState) },
     close
@@ -62,7 +62,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
 
 @Composable
 fun TerminalLayout(
-  terminalItems: MutableState<List<TerminalItem>>,
+  terminalItems: List<TerminalItem>,
   composeState: MutableState<ComposeState>,
   sendCommand: () -> Unit,
   close: () -> Unit
@@ -93,6 +93,7 @@ fun TerminalLayout(
             sendMessage = { sendCommand() },
             sendLiveMessage = null,
             updateLiveMessage = null,
+            editPrevMessage = {},
             onMessageChange = ::onMessageChange,
             textStyle = textStyle
           )
@@ -115,12 +116,12 @@ fun TerminalLayout(
 private var lazyListState = 0 to 0
 
 @Composable
-fun TerminalLog(terminalItems: MutableState<List<TerminalItem>>) {
+fun TerminalLog(terminalItems: List<TerminalItem>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val reversedTerminalItems by remember { derivedStateOf { terminalItems.value.reversed().toList() } }
+  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed().toList() } }
   val clipboard = LocalClipboardManager.current
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
@@ -152,7 +153,7 @@ fun TerminalLog(terminalItems: MutableState<List<TerminalItem>>) {
 fun PreviewTerminalLayout() {
   SimpleXTheme {
     TerminalLayout(
-      terminalItems = remember { mutableStateOf(TerminalItem.sampleData) },
+      terminalItems = TerminalItem.sampleData,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) },
       sendCommand = {},
       close = {}

@@ -12,5 +12,6 @@ expect fun PlatformTextField(
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
   onMessageChange: (String) -> Unit,
+  onUpArrow: () -> Unit,
   onDone: () -> Unit,
 )
