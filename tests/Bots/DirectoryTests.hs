@@ -22,6 +22,7 @@ import Test.Hspec
 directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
   it "should register group" testDirectoryService
+  it "should suspend and resume group" testSuspendResume
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
@@ -149,6 +150,24 @@ testDirectoryService tmp =
       su <## ""
       su <## "To approve send:"
       su <# ("SimpleX-Directory> /approve 1:PSA " <> show grId)
+
+testSuspendResume :: HasCallStack => FilePath -> IO ()
+testSuspendResume tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroup superUser bob "privacy" "Privacy"
+      groupFound bob "privacy"
+      superUser #> "@SimpleX-Directory /suspend 1:privacy"
+      superUser <# "SimpleX-Directory> > /suspend 1:privacy"
+      superUser <## "      Group suspended!"
+      bob <# "SimpleX-Directory> The group ID 1 (privacy) is suspended and hidden from directory. Please contact the administrators."
+      groupNotFound bob "privacy"
+      superUser #> "@SimpleX-Directory /resume 1:privacy"
+      superUser <# "SimpleX-Directory> > /resume 1:privacy"
+      superUser <## "      Group listing resumed!"
+      bob <# "SimpleX-Directory> The group ID 1 (privacy) is listed in the directory again!"
+      groupFound bob "privacy"
 
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
