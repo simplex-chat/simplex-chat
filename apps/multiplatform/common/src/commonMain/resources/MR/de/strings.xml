@@ -1455,4 +1455,6 @@
     <string name="send_receipts_disabled_alert_msg">Diese Gruppe hat über %1$d Mitglieder. Daher werden keine Empfangsbestätigungen gesendet.</string>
     <string name="item_status_snd_error_unexpected_desc">Unerwarteter Fehler bei der Nachrichtenzustellung: %1$s</string>
     <string name="item_status_rcv_read_desc">Sie haben diese empfangene Nachricht gelesen.</string>
+    <string name="connect_via_member_address_alert_desc">An dieses Gruppenmitglied wird eine Verbindungsanfrage gesendet.</string>
+    <string name="connect_via_member_address_alert_title">Direkt verbinden\?</string>
 </resources>
