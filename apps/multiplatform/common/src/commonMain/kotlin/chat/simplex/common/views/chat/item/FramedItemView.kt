@@ -233,7 +233,9 @@ fun FramedItemView(
                 }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview)
-                CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler, onLinkLongClick)
+                Box(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
+                  CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler, onLinkLongClick)
+                }
               }
               else -> CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler, onLinkLongClick)
             }
