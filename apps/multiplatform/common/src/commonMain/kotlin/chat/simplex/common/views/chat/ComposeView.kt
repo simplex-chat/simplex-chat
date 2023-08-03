@@ -149,6 +149,14 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
   }
 }
 
+@Composable
+expect fun AttachmentSelection(
+  composeState: MutableState<ComposeState>,
+  attachmentOption: MutableState<AttachmentOption?>,
+  processPickedFile: (URI?, String?) -> Unit,
+  processPickedMedia: (List<URI>, String?) -> Unit
+)
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
     val fileSize = getFileSize(uri)
@@ -208,14 +216,6 @@ fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text: String?
     value = value.copy(message = text ?: value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
   }
 }
-
-@Composable
-expect fun AttachmentSelection(
-  composeState: MutableState<ComposeState>,
-  attachmentOption: MutableState<AttachmentOption?>,
-  processPickedFile: (URI?, String?) -> Unit,
-  processPickedMedia: (List<URI>, String?) -> Unit
-)
 
 @Composable
 fun ComposeView(
