@@ -404,6 +404,14 @@ testDuplicateProhibitWhenUpdated tmp =
         cath <## "description changed to:"
         cath <## welcomeWithLink'
         cath <# "SimpleX-Directory> The group privacy (Privacy) is already listed in the directory, please choose another name."
+        cath ##> "/gp privacy security Security"
+        cath <## "changed to #security (Security)"
+        cath <# "SimpleX-Directory> Thank you! The group link for ID 2 (security) is added to the welcome message."
+        cath <## "You will be notified once the group is added to the directory - it may take up to 24 hours."
+        notifySuperUser superUser cath "security" "Security" welcomeWithLink' 2
+        approveRegistration superUser cath "security" 2
+        groupFound bob "security"
+        groupFound cath "security"
 
 testDuplicateProhibitApproval :: HasCallStack => FilePath -> IO ()
 testDuplicateProhibitApproval tmp =
@@ -498,8 +506,7 @@ groupAccepted u n = do
   u <## ""
   u <## "Please add it to the group welcome message."
   u <## "For example, add:"
-  welcomeWithLink <- dropStrPrefix "SimpleX-Directory> " . dropTime <$> getTermLine u
-  pure welcomeWithLink
+  dropStrPrefix "SimpleX-Directory> " . dropTime <$> getTermLine u -- welcome message with link
 
 completeRegistration :: TestCC -> TestCC -> String -> String -> String -> Int -> IO ()
 completeRegistration su u n fn welcomeWithLink gId = do
@@ -573,11 +580,11 @@ removeMember gName admin removed = do
   removed <## ("use /d " <> gn <> " to delete the group")
 
 groupFound :: TestCC -> String -> IO ()
-groupFound u s = do
-  u #> ("@SimpleX-Directory " <> s)
-  u <# ("SimpleX-Directory> > " <> s)
+groupFound u name = do
+  u #> ("@SimpleX-Directory " <> name)
+  u <# ("SimpleX-Directory> > " <> name)
   u <## "      Found 1 group(s)"
-  u <#. "SimpleX-Directory> privacy ("
+  u <#. ("SimpleX-Directory> " <> name <> " (")
   u <## "Welcome message:"
   u <##. "Link to join the group privacy: "
 
