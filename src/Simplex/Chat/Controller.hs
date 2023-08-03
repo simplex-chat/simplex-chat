@@ -242,7 +242,7 @@ data ChatCommand
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef
   | APIClearChat ChatRef
-  | APIAcceptContact Bool Int64
+  | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
@@ -320,12 +320,12 @@ data ChatCommand
   | EnableGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
-  | APIAddContact UserId Bool
-  | AddContact Bool
-  | APISetConnectionIncognito Int64 Bool
-  | APIConnect UserId Bool (Maybe AConnectionRequestUri)
-  | Connect Bool (Maybe AConnectionRequestUri)
-  | ConnectSimplex Bool -- UserId (not used in UI)
+  | APIAddContact UserId IncognitoEnabled
+  | AddContact IncognitoEnabled
+  | APISetConnectionIncognito Int64 IncognitoEnabled
+  | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
+  | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
+  | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName
   | ClearContact ContactName
   | APIListContacts UserId
@@ -340,7 +340,7 @@ data ChatCommand
   | SetProfileAddress Bool
   | APIAddressAutoAccept UserId (Maybe AutoAccept)
   | AddressAutoAccept (Maybe AutoAccept)
-  | AcceptContact Bool ContactName
+  | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName
   | SendMessage ChatName Text
   | SendLiveMessage ChatName Text

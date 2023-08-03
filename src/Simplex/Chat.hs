@@ -1762,7 +1762,7 @@ processChatCommand = \case
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText' db user cId msg
       CTGroup -> withStore $ \db -> getGroupChatItemIdByText' db user cId msg
       _ -> throwChatError $ CECommandError "not supported"
-    connectViaContact :: User -> Bool -> ConnectionRequestUri 'CMContact -> m ChatResponse
+    connectViaContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> m ChatResponse
     connectViaContact user@User {userId} incognito cReq@(CRContactUri ConnReqUriData {crClientData}) = withChatLock "connectViaContact" $ do
       let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       withStore' (\db -> getConnReqContactXContactId db user cReqHash) >>= \case
@@ -1771,10 +1771,6 @@ processChatCommand = \case
           let randomXContactId = XContactId <$> drgRandomBytes 16
           xContactId <- maybe randomXContactId pure xContactId_
           -- [incognito] generate profile to send
-          -- if user makes a contact request using main profile, then turns on incognito mode and repeats the request,
-          -- an incognito profile will be sent even though the address holder will have user's main profile received as well;
-          -- we ignore this edge case as we already allow profile updates on repeat contact requests;
-          -- alternatively we can re-send the main profile even if incognito mode is enabled
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = userProfileToSend user incognitoProfile Nothing
           connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq $ directMessage (XContact profileToSend $ Just xContactId)
@@ -3443,7 +3439,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         setActive $ ActiveG g
         showToast ("#" <> g) $ "member " <> c <> " is connected"
 
-    probeMatchingContacts :: Contact -> Bool -> m ()
+    probeMatchingContacts :: Contact -> IncognitoEnabled -> m ()
     probeMatchingContacts ct connectedIncognito = do
       gVar <- asks idsDrg
       (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId ct
