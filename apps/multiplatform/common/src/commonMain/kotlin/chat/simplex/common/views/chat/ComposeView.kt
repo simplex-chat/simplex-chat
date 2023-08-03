@@ -126,6 +126,37 @@ data class ComposeState(
 
 private val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
 
+sealed class RecordingState {
+  object NotStarted: RecordingState()
+  class Started(val filePath: String, val progressMs: Int = 0): RecordingState()
+  class Finished(val filePath: String, val durationMs: Int): RecordingState()
+
+  val filePathNullable: String?
+    get() = (this as? Started)?.filePath
+}
+
+fun chatItemPreview(chatItem: ChatItem): ComposePreview {
+  val fileName = chatItem.file?.fileName ?: ""
+  return when (val mc = chatItem.content.msgContent) {
+    is MsgContent.MCText -> ComposePreview.NoPreview
+    is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
+    // TODO: include correct type
+    is MsgContent.MCImage -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
+    is MsgContent.MCVideo -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
+    is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
+    is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
+    is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
+  }
+}
+
+@Composable
+expect fun AttachmentSelection(
+  composeState: MutableState<ComposeState>,
+  attachmentOption: MutableState<AttachmentOption?>,
+  processPickedFile: (URI?, String?) -> Unit,
+  processPickedMedia: (List<URI>, String?) -> Unit
+)
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
     val fileSize = getFileSize(uri)
@@ -185,37 +216,6 @@ fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text: String?
     value = value.copy(message = text ?: value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
   }
 }
-
-sealed class RecordingState {
-  object NotStarted: RecordingState()
-  class Started(val filePath: String, val progressMs: Int = 0): RecordingState()
-  class Finished(val filePath: String, val durationMs: Int): RecordingState()
-
-  val filePathNullable: String?
-    get() = (this as? Started)?.filePath
-}
-
-fun chatItemPreview(chatItem: ChatItem): ComposePreview {
-  val fileName = chatItem.file?.fileName ?: ""
-  return when (val mc = chatItem.content.msgContent) {
-    is MsgContent.MCText -> ComposePreview.NoPreview
-    is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
-    // TODO: include correct type
-    is MsgContent.MCImage -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
-    is MsgContent.MCVideo -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
-    is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
-    is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
-    is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
-  }
-}
-
-@Composable
-expect fun AttachmentSelection(
-  composeState: MutableState<ComposeState>,
-  attachmentOption: MutableState<AttachmentOption?>,
-  processPickedFile: (URI?, String?) -> Unit,
-  processPickedMedia: (List<URI>, String?) -> Unit
-)
 
 @Composable
 fun ComposeView(
