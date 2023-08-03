@@ -633,15 +633,16 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     (alice </)
     alice `hasContactProfiles` ["alice"]
     -- /_accept api
+    cath ##> ("/c " <> cLink)
     alice <#? cath
-    alice ##> "/_accept incognito=on cath"
+    alice ##> "/_accept incognito=on 1"
     alice <## "cath (Catherine): accepting contact request..."
     aliceIncognitoCath <- getTermLine alice
     concurrentlyN_
-      [ bob <## (aliceIncognitoCath <> ": contact is connected"),
+      [ cath <## (aliceIncognitoCath <> ": contact is connected"),
         do
           alice <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> aliceIncognitoCath)
-          alice <## "use /i bob to print out this incognito profile again"
+          alice <## "use /i cath to print out this incognito profile again"
       ]
     alice `hasContactProfiles` ["alice", "cath", T.pack aliceIncognitoCath]
     cath `hasContactProfiles` ["cath", T.pack aliceIncognitoCath]
@@ -672,7 +673,7 @@ testSetConnectionIncognito = testChat2 aliceProfile bobProfile $
 testResetConnectionIncognito :: HasCallStack => FilePath -> IO ()
 testResetConnectionIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
-    alice ##> "/_connect incognito=on"
+    alice ##> "/_connect 1 incognito=on"
     inv <- getInvitation alice
     alice ##> "/_set incognito :1 off"
     alice <## "connection 1 changed to non incognito"
@@ -734,7 +735,7 @@ testConnectionIncognitoUnchangedErrors = testChat2 aliceProfile bobProfile $
 testSetResetSetConnectionIncognito :: HasCallStack => FilePath -> IO ()
 testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
-    alice ##> "/_connect incognito=off"
+    alice ##> "/_connect 1 incognito=off"
     inv <- getInvitation alice
     alice ##> "/_set incognito :1 on"
     alice <## "connection 1 changed to incognito"
@@ -742,7 +743,7 @@ testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
     alice <## "connection 1 changed to non incognito"
     alice ##> "/_set incognito :1 on"
     alice <## "connection 1 changed to incognito"
-    bob ##> ("/_connect incognito=off " <> inv)
+    bob ##> ("/_connect 1 incognito=off " <> inv)
     bob <## "confirmation sent!"
     aliceIncognito <- getTermLine alice
     concurrentlyN_
