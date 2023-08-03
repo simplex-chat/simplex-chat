@@ -821,6 +821,14 @@ public enum ChatResponse: Decodable, Error {
     }
 }
 
+public func chatError(_ chatResponse: ChatResponse) -> ChatErrorType? {
+    switch chatResponse {
+    case let .chatCmdError(_, .error(error)): return error
+    case let .chatError(_, .error(error)): return error
+    default: return nil
+    }
+}
+
 struct NewUser: Encodable {
     var profile: Profile?
     var sameServers: Bool
