@@ -88,9 +88,9 @@ cmake {
     /*machines.customMachines.register("linux-aarch64") {
       toolchainFile.set(project.file("$cppPath/toolchains/aarch64-linux-gnu-gcc.cmake"))
     }*/
-    machines.customMachines.register("win-amd64") {
+    /*machines.customMachines.register("win-amd64") {
       toolchainFile.set(project.file("$cppPath/toolchains/x86_64-windows-mingw32-gcc.cmake"))
-    }
+    }*/
     if (machines.host.name == "mac-amd64") {
       machines.customMachines.register("mac-amd64") {
         toolchainFile.set(project.file("$cppPath/toolchains/x86_64-mac-apple-darwin-gcc.cmake"))
@@ -108,6 +108,9 @@ cmake {
     val main by creating {
       cmakeLists.set(file("$cppPath/desktop/CMakeLists.txt"))
       targetMachines.addAll(compileMachineTargets.toSet())
+      if (machines.host.name.contains("win")) {
+        cmakeArgs.add("-G MinGW Makefiles")
+      }
     }
   }
 }
