@@ -68,8 +68,11 @@ fun getLoadedFilePath(file: CIFile?): String? {
   }
 }
 
+/**
+* [rememberedValue] is used in `remember(rememberedValue)`. So when the value changes, file saver will update a callback function
+* */
 @Composable
-expect fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher
+expect fun rememberFileChooserLauncher(getContent: Boolean, rememberedValue: Any? = null, onResult: (URI?) -> Unit): FileChooserLauncher
 
 expect fun rememberFileChooserMultipleLauncher(onResult: (List<URI>) -> Unit): FileChooserMultipleLauncher
 

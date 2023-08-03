@@ -20,8 +20,8 @@ actual val agentDatabaseFileName: String = "simplex_v1_agent.db"
 actual val databaseExportDir: File = tmpDir
 
 @Composable
-actual fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher =
-  remember { FileChooserLauncher(getContent, onResult) }
+actual fun rememberFileChooserLauncher(getContent: Boolean, rememberedValue: Any?, onResult: (URI?) -> Unit): FileChooserLauncher =
+  remember(rememberedValue) { FileChooserLauncher(getContent, onResult) }
 
 @Composable
 actual fun rememberFileChooserMultipleLauncher(onResult: (List<URI>) -> Unit): FileChooserMultipleLauncher =

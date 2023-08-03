@@ -191,7 +191,7 @@ fun ChatItemView(
               clipboard.setText(AnnotatedString(cItem.content.text))
               showMenu.value = false
             })
-            if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice && getLoadedFilePath(cItem.file) != null) {
+            if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && getLoadedFilePath(cItem.file) != null) {
               SaveContentItemAction(cItem, saveFileLauncher, showMenu)
             }
             if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
