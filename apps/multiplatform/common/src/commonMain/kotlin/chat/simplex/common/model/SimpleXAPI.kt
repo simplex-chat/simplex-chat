@@ -1080,23 +1080,26 @@ object ChatController {
     return false
   }
 
-  suspend fun apiReceiveFile(fileId: Long, inline: Boolean? = null): AChatItem? {
+  suspend fun apiReceiveFile(fileId: Long, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
     val r = sendCmd(CC.ReceiveFile(fileId, inline))
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.cannot_receive_file),
-          generalGetString(MR.strings.sender_cancelled_file_transfer)
-        )
+        Log.d(TAG, "apiReceiveFile error: sender cancelled file transfer")
+        if (!auto) {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.cannot_receive_file),
+            generalGetString(MR.strings.sender_cancelled_file_transfer)
+          )
+        }
         null
       }
+
       else -> {
         if (!(networkErrorAlert(r))) {
-          if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
-            && r.chatError.errorType is ChatErrorType.FileAlreadyReceiving
-          ) {
-            Log.d(TAG, "apiReceiveFile ignoring FileAlreadyReceiving error")
+          val maybeChatError = chatError(r)
+          if (maybeChatError is ChatErrorType.FileCancelled || maybeChatError is ChatErrorType.FileAlreadyReceiving) {
+            Log.d(TAG, "apiReceiveFile ignoring FileCancelled or FileAlreadyReceiving error")
           } else {
             apiErrorAlert("apiReceiveFile", generalGetString(MR.strings.error_receiving_file), r)
           }
@@ -1418,7 +1421,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withApi { receiveFile(r.user, file.fileId) }
+          withApi { receiveFile(r.user, file.fileId, auto = true) }
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -1652,8 +1655,8 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(user: User, fileId: Long) {
-    val chatItem = apiReceiveFile(fileId)
+  suspend fun receiveFile(user: User, fileId: Long, auto: Boolean = false) {
+    val chatItem = apiReceiveFile(fileId, auto = auto)
     if (chatItem != null) {
       chatItemSimpleUpdate(user, chatItem)
     }
@@ -3599,6 +3602,14 @@ sealed class CR {
   fun noDetails(): String ="${responseType}: " + generalGetString(MR.strings.no_details)
 
   private fun withUser(u: User?, s: String): String = if (u != null) "userId: ${u.userId}\n$s" else s
+}
+
+fun chatError(r: CR): ChatErrorType? {
+  return (
+      if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat) r.chatError.errorType
+      else if (r is CR.ChatRespError && r.chatError is ChatError.ChatErrorChat) r.chatError.errorType
+      else null
+      )
 }
 
 abstract class TerminalItem {
