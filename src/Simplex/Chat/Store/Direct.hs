@@ -34,8 +34,8 @@ module Simplex.Chat.Store.Direct
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
-    updateContactConnectionIncognito,
-    deletePendingConnectionIncognitoProfile,
+    updatePCCIncognito,
+    deletePCCIncognitoProfile,
     updateContactUsed,
     updateContactUnreadChat,
     updateGroupUnreadChat,
@@ -317,8 +317,8 @@ updateContactConnectionAlias db userId conn localAlias = do
     (localAlias, updatedAt, userId, pccConnId conn)
   pure (conn :: PendingContactConnection) {localAlias, updatedAt}
 
-updateContactConnectionIncognito :: DB.Connection -> User -> PendingContactConnection -> Maybe ProfileId -> IO PendingContactConnection
-updateContactConnectionIncognito db User {userId} conn customUserProfileId = do
+updatePCCIncognito :: DB.Connection -> User -> PendingContactConnection -> Maybe ProfileId -> IO PendingContactConnection
+updatePCCIncognito db User {userId} conn customUserProfileId = do
   updatedAt <- getCurrentTime
   DB.execute
     db
@@ -330,8 +330,8 @@ updateContactConnectionIncognito db User {userId} conn customUserProfileId = do
     (customUserProfileId, updatedAt, userId, pccConnId conn)
   pure (conn :: PendingContactConnection) {customUserProfileId, updatedAt}
 
-deletePendingConnectionIncognitoProfile :: DB.Connection -> User -> ProfileId -> IO ()
-deletePendingConnectionIncognitoProfile db User {userId} profileId =
+deletePCCIncognitoProfile :: DB.Connection -> User -> ProfileId -> IO ()
+deletePCCIncognitoProfile db User {userId} profileId =
   DB.execute
     db
     [sql|

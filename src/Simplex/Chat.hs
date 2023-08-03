@@ -472,7 +472,6 @@ processChatCommand = \case
   APISetXFTPConfig cfg -> do
     asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
     ok_
-  HelpIncognito deprecatedToggle -> pure $ CRIncognitoHelp deprecatedToggle
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg >> ok_
   ExportArchive -> do
     ts <- liftIO getCurrentTime
@@ -1251,10 +1250,10 @@ processChatCommand = \case
         (ConnNew, Nothing, True) -> liftIO $ do
           incognitoProfile <- generateRandomProfile
           pId <- createIncognitoProfile db user incognitoProfile
-          Just <$> updateContactConnectionIncognito db user conn (Just pId)
+          Just <$> updatePCCIncognito db user conn (Just pId)
         (ConnNew, Just pId, False) -> liftIO $ do
-          deletePendingConnectionIncognitoProfile db user pId
-          Just <$> updateContactConnectionIncognito db user conn Nothing
+          deletePCCIncognitoProfile db user pId
+          Just <$> updatePCCIncognito db user conn Nothing
         _ -> pure Nothing
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
@@ -5041,7 +5040,7 @@ chatCommandP =
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
       "/_delete " *> (APIDeleteChat <$> chatRefP),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
-      "/_accept incognito=" *> (APIAcceptContact <$> onOffP <* A.space <*> A.decimal),
+      "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
       "/_reject " *> (APIRejectContact <$> A.decimal),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayName <*> pure defaultCallType),
@@ -5154,13 +5153,11 @@ chatCommandP =
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
-      "/_connect " *> (APIConnect <$> A.decimal <* " incognito=" <*> onOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
-      "/_connect " *> (APIAddContact <$> A.decimal <* " incognito=" <*> onOffP),
+      "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
+      "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
-      ("/connect incognito " <|> "/c i ") *> (Connect True <$> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
-      ("/connect incognito" <|> "/c i") $> AddContact True,
-      ("/connect " <|> "/c ") *> (Connect False <$> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
-      ("/connect" <|> "/c") $> AddContact False,
+      ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
+      ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
@@ -5186,8 +5183,7 @@ chatCommandP =
       "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
-      "/simplex incognito" $> ConnectSimplex True,
-      "/simplex" $> ConnectSimplex False,
+      "/simplex" *> (ConnectSimplex <$> incognitoP),
       "/_address " *> (APICreateMyAddress <$> A.decimal),
       ("/address" <|> "/ad") $> CreateMyAddress,
       "/_delete_address " *> (APIDeleteMyAddress <$> A.decimal),
@@ -5198,8 +5194,7 @@ chatCommandP =
       ("/profile_address " <|> "/pa ") *> (SetProfileAddress <$> onOffP),
       "/_auto_accept " *> (APIAddressAutoAccept <$> A.decimal <* A.space <*> autoAcceptP),
       "/auto_accept " *> (AddressAutoAccept <$> autoAcceptP),
-      ("/accept incognito " <|> "/ac i ") *> char_ '@' *> (AcceptContact True <$> displayName),
-      ("/accept " <|> "/ac ") *> char_ '@' *> (AcceptContact False <$> displayName),
+      ("/accept" <|> "/ac") *> (AcceptContact <$> incognitoP <* A.space <* char_ '@' <*> displayName),
       ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayName),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
       ("/welcome" <|> "/w") $> Welcome,
@@ -5221,7 +5216,7 @@ chatCommandP =
       "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOnOffP)),
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
-      "/incognito" *> (HelpIncognito <$> optional (A.space *> onOffP)),
+      ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
@@ -5230,6 +5225,8 @@ chatCommandP =
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
+    incognitoP = (A.space *> ("incognito" <|> "i")) $> True <|> pure False
+    incognitoOnOffP = (A.space *> "incognito=" *> onOffP) <|> pure False
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char ':' $> CTContactConnection

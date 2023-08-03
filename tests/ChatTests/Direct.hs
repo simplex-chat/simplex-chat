@@ -99,9 +99,9 @@ testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
   where
     runTestAddContact alice bob = do
-      alice ##> "/_connect 1 incognito=off"
+      alice ##> "/_connect 1"
       inv <- getInvitation alice
-      bob ##> ("/_connect 1 incognito=off " <> inv)
+      bob ##> ("/_connect 1 " <> inv)
       bob <## "confirmation sent!"
       concurrently_
         (bob <## "alice (Alice): contact is connected")

@@ -120,7 +120,6 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
     HSMarkdown -> markdownInfo
     HSSettings -> settingsInfo
     HSDatabase -> databaseHelpInfo
-  CRIncognitoHelp deprecatedToggle -> viewIncognitoHelp deprecatedToggle
   CRWelcome user -> chatWelcome user
   CRContactsList u cs -> ttyUser u $ viewContactsList cs
   CRUserContactLink u UserContactLink {connReqContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ autoAccept

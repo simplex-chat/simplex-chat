@@ -8,7 +8,6 @@ module Simplex.Chat.Help
     groupsHelpInfo,
     contactsHelpInfo,
     myAddressHelpInfo,
-    viewIncognitoHelp,
     incognitoHelpInfo,
     messagesHelpInfo,
     markdownInfo,
@@ -215,26 +214,13 @@ myAddressHelpInfo =
       "The commands may be abbreviated: " <> listHighlight ["/ad", "/da", "/sa", "/ac", "/rc"]
     ]
 
-viewIncognitoHelp :: Maybe Bool -> [StyledString]
-viewIncognitoHelp deprecatedToggle =
-  deprecated <> incognitoHelpInfo
-  where
-    deprecated = case deprecatedToggle of
-      Nothing -> []
-      Just True ->
-        [ styled (colored Red) ("/incognito on" :: String) <> " is deprecated, use commands below instead.",
-          ""
-        ]
-      Just False ->
-        [ styled (colored Red) ("/incognito off" :: String) <> " is deprecated, use regular connection commands instead.",
-          ""
-        ]
-
 incognitoHelpInfo :: [StyledString]
 incognitoHelpInfo =
   map
     styleMarkdown
-    [ "Incognito mode protects the privacy of your main profile — you can choose to create a new random profile for each new contact.",
+    [ markdown (colored Red) "/incognito" <> " command is deprecated, use commands below instead.",
+      "",
+      "Incognito mode protects the privacy of your main profile — you can choose to create a new random profile for each new contact.",
       "It allows having many anonymous connections without any shared data between them in a single chat profile.",
       "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.",
       "",

@@ -602,36 +602,49 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     bob `hasContactProfiles` ["bob"]
 
 testAcceptContactRequestIncognito :: HasCallStack => FilePath -> IO ()
-testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
-  \alice bob -> do
+testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
     bob ##> ("/c " <> cLink)
     alice <#? bob
     alice ##> "/accept incognito bob"
     alice <## "bob (Bob): accepting contact request..."
-    aliceIncognito <- getTermLine alice
+    aliceIncognitoBob <- getTermLine alice
     concurrentlyN_
-      [ bob <## (aliceIncognito <> ": contact is connected"),
+      [ bob <## (aliceIncognitoBob <> ": contact is connected"),
         do
-          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognitoBob)
           alice <## "use /i bob to print out this incognito profile again"
       ]
     -- conversation is incognito
     alice ?#> "@bob my profile is totally inconspicuous"
-    bob <# (aliceIncognito <> "> my profile is totally inconspicuous")
-    bob #> ("@" <> aliceIncognito <> " I know!")
+    bob <# (aliceIncognitoBob <> "> my profile is totally inconspicuous")
+    bob #> ("@" <> aliceIncognitoBob <> " I know!")
     alice ?<# "bob> I know!"
     -- list contacts
     alice ##> "/contacts"
     alice <## "i bob (Bob)"
-    alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognito]
+    alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognitoBob]
     -- delete contact, incognito profile is deleted
     alice ##> "/d bob"
     alice <## "bob: contact is deleted"
     alice ##> "/contacts"
     (alice </)
     alice `hasContactProfiles` ["alice"]
+    -- /_accept api
+    alice <#? cath
+    alice ##> "/_accept incognito=on cath"
+    alice <## "cath (Catherine): accepting contact request..."
+    aliceIncognitoCath <- getTermLine alice
+    concurrentlyN_
+      [ bob <## (aliceIncognitoCath <> ": contact is connected"),
+        do
+          alice <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> aliceIncognitoCath)
+          alice <## "use /i bob to print out this incognito profile again"
+      ]
+    alice `hasContactProfiles` ["alice", "cath", T.pack aliceIncognitoCath]
+    cath `hasContactProfiles` ["cath", T.pack aliceIncognitoCath]
 
 testSetConnectionIncognito :: HasCallStack => FilePath -> IO ()
 testSetConnectionIncognito = testChat2 aliceProfile bobProfile $
@@ -659,7 +672,7 @@ testSetConnectionIncognito = testChat2 aliceProfile bobProfile $
 testResetConnectionIncognito :: HasCallStack => FilePath -> IO ()
 testResetConnectionIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
-    alice ##> "/connect incognito"
+    alice ##> "/_connect incognito=on"
     inv <- getInvitation alice
     alice ##> "/_set incognito :1 off"
     alice <## "connection 1 changed to non incognito"
@@ -721,7 +734,7 @@ testConnectionIncognitoUnchangedErrors = testChat2 aliceProfile bobProfile $
 testSetResetSetConnectionIncognito :: HasCallStack => FilePath -> IO ()
 testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
-    alice ##> "/connect"
+    alice ##> "/_connect incognito=off"
     inv <- getInvitation alice
     alice ##> "/_set incognito :1 on"
     alice <## "connection 1 changed to incognito"
@@ -729,7 +742,7 @@ testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
     alice <## "connection 1 changed to non incognito"
     alice ##> "/_set incognito :1 on"
     alice <## "connection 1 changed to incognito"
-    bob ##> ("/connect " <> inv)
+    bob ##> ("/_connect incognito=off " <> inv)
     bob <## "confirmation sent!"
     aliceIncognito <- getTermLine alice
     concurrentlyN_
