@@ -1374,4 +1374,6 @@
     <string name="receipts_groups_title_enable">Activer les reçus pour les groupes \?</string>
     <string name="send_receipts_disabled_alert_msg">Ce groupe compte plus de %1$d membres, les accusés de réception ne sont pas envoyés.</string>
     <string name="recipient_colon_delivery_status">%s : %s</string>
+    <string name="connect_via_member_address_alert_title">Connexion directe \?</string>
+    <string name="connect_via_member_address_alert_desc">Une demande de connexion sera envoyée à ce membre du groupe.</string>
 </resources>
