@@ -68,43 +68,6 @@ struct ScanToConnectView: View {
     }
 }
 
-struct IncognitoToggle: View {
-    @Binding var incognitoEnabled: Bool
-    @State private var incognitoToggleSheet: IncognitoToggleSheet?
-
-    private enum IncognitoToggleSheet: Identifiable {
-        case incognitoInfo
-
-        var id: IncognitoToggleSheet { get { self } }
-    }
-
-    var body: some View {
-        ZStack(alignment: .leading) {
-            Image(systemName: incognitoEnabled ? "theatermasks.fill" : "theatermasks")
-                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
-                .foregroundColor(incognitoEnabled ? Color.indigo : .secondary)
-            Toggle(isOn: $incognitoEnabled) {
-                HStack(spacing: 6) {
-                    Text("Incognito")
-                    Image(systemName: "info.circle")
-                        .foregroundColor(.accentColor)
-                        .font(.system(size: 14))
-                }
-                .onTapGesture {
-                    incognitoToggleSheet = .incognitoInfo
-                }
-            }
-            .padding(.leading, 36)
-        }
-        .sheet(item: $incognitoToggleSheet) { sheet in
-            switch sheet {
-            case .incognitoInfo:
-                IncognitoHelp()
-            }
-        }
-    }
-}
-
 struct ConnectContactView_Previews: PreviewProvider {
     static var previews: some View {
         ScanToConnectView()

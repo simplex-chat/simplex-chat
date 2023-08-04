@@ -246,7 +246,7 @@ struct ChatPreviewView: View {
             Image(systemName: "theatermasks")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 19, height: 19)
+                .frame(width: 20, height: 20)
                 .foregroundColor(.secondary.opacity(0.65))
         } else {
             EmptyView()
