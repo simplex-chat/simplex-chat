@@ -99,6 +99,7 @@ fun ChatItemView(
                 fontSize = 11.5.sp,
                 fontWeight = if (r.userReacted) FontWeight.Bold else FontWeight.Normal,
                 color = if (r.userReacted) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+                modifier = if (appPlatform.isAndroid) Modifier else Modifier.padding(top = 4.dp)
               )
             }
           }
