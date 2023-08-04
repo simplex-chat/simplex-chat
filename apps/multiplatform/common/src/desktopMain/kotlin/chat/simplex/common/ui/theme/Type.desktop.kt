@@ -12,3 +12,12 @@ actual val Inter: FontFamily = FontFamily(
   Font(MR.fonts.Inter.medium.file, FontWeight.Medium),
   Font(MR.fonts.Inter.light.file, FontWeight.Light)
 )
+
+actual val EmojiFont: FontFamily = FontFamily(
+  Font(MR.fonts.NotoColorEmoji.regular.file),
+  Font(MR.fonts.NotoColorEmoji.regular.file, style = FontStyle.Italic),
+  Font(MR.fonts.NotoColorEmoji.regular.file, FontWeight.Bold),
+  Font(MR.fonts.NotoColorEmoji.regular.file, FontWeight.SemiBold),
+  Font(MR.fonts.NotoColorEmoji.regular.file, FontWeight.Medium),
+  Font(MR.fonts.NotoColorEmoji.regular.file, FontWeight.Light)
+)

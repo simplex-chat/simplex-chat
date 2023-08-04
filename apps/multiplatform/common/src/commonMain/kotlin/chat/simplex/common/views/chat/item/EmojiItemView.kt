@@ -10,9 +10,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
+import chat.simplex.common.ui.theme.EmojiFont
 
-val largeEmojiFont: TextStyle = TextStyle(fontSize = 48.sp)
-val mediumEmojiFont: TextStyle = TextStyle(fontSize = 36.sp)
+val largeEmojiFont: TextStyle = TextStyle(fontSize = 48.sp, fontFamily = EmojiFont)
+val mediumEmojiFont: TextStyle = TextStyle(fontSize = 36.sp, fontFamily = EmojiFont)
 
 @Composable
 fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?) {

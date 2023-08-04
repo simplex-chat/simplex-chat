@@ -93,7 +93,7 @@ fun ChatItemView(
             }
           }
           Row(modifier.padding(2.dp)) {
-            Text(r.reaction.text, fontSize = 12.sp)
+            Text(r.reaction.text, fontSize = 12.sp, fontFamily = EmojiFont)
             if (r.totalReacted > 1) {
               Spacer(Modifier.width(4.dp))
               Text("${r.totalReacted}",
@@ -154,7 +154,7 @@ fun ChatItemView(
                   },
                   contentAlignment = Alignment.Center
                 ) {
-                  Text(r.text)
+                  Text(r.text, fontFamily = EmojiFont)
                 }
               }
             }
