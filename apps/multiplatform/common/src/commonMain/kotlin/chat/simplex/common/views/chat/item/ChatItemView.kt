@@ -83,7 +83,7 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row {
+      Row(verticalAlignment = Alignment.CenterVertically) {
         cItem.reactions.forEach { r ->
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions) && (cItem.allowAddReaction || r.userReacted)) {

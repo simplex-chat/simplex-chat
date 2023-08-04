@@ -6,6 +6,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatItem
@@ -21,8 +22,8 @@ import dev.icerock.moko.resources.compose.stringResource
 @Composable
 actual fun ReactionIcon(text: String, fontSize: TextUnit) {
   if (desktopPlatform.isMac() && isHearEmoji(text)) {
-    val sp = with(LocalDensity.current) { (fontSize.value + 2).sp.toDp() }
-    Image(painterResource(MR.images.ic_heart), null, Modifier.size(sp))
+    val sp = with(LocalDensity.current) { (fontSize.value + 8).sp.toDp() }
+    Image(painterResource(MR.images.ic_heart), null, Modifier.size(sp).padding(top = 4.dp, bottom = 2.dp))
   } else {
     Text(text, fontSize = fontSize, fontFamily = EmojiFont)
   }
