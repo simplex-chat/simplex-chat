@@ -39,11 +39,6 @@ struct ContactConnectionInfo: View {
                         .padding(.bottom, 16)
 
                     Text(contactConnectionText(contactConnection))
-                        .padding(.bottom, 16)
-
-                    if contactConnection.connReqInv != nil {
-                        oneTimeLinkProfileText()
-                    }
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -71,6 +66,8 @@ struct ContactConnectionInfo: View {
                     } else {
                         oneTimeLinkLearnMoreButton()
                     }
+                } footer: {
+                    Text(contactConnection.incognito ? "A new randomly generated profile will be shared." : "Current profile will be shared.")
                 }
 
                 Section {

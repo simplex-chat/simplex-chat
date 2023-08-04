@@ -302,8 +302,8 @@ struct ContentView: View {
                         ActionSheet(
                             title: Text(title),
                             buttons: [
-                                .default(Text("Using main profile")) { connectViaLink(incognitoEnabled: false, connectionLink: link) },
-                                .default(Text("Using incognito profile")) { connectViaLink(incognitoEnabled: true, connectionLink: link) },
+                                .default(Text("Use current profile")) { connectViaLink(incognitoEnabled: false, connectionLink: link) },
+                                .default(Text("Use new incognito profile")) { connectViaLink(incognitoEnabled: true, connectionLink: link) },
                                 .cancel()
                             ]
                         )

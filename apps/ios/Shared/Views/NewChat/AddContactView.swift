@@ -19,7 +19,7 @@ struct AddContactView: View {
     var body: some View {
         VStack {
             List {
-                Section("1-time link") {
+                Section {
                     if connReqInvitation != "" {
                         QRCode(uri: connReqInvitation)
                     } else {
@@ -33,6 +33,10 @@ struct AddContactView: View {
                         .disabled(contactConnection == nil)
                     shareLinkButton(connReqInvitation)
                     oneTimeLinkLearnMoreButton()
+                } header: {
+                    Text("1-time link")
+                } footer: {
+                    Text(incognitoDefault ? "A new randomly generated profile will be shared." : "Current profile will be shared.")
                 }
             }
         }

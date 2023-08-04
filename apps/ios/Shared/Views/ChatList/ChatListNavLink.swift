@@ -267,8 +267,16 @@ struct ChatListNavLink: View {
         .frame(height: rowHeights[dynamicTypeSize])
         .sheet(isPresented: $showContactConnectionInfo) {
             if case let .contactConnection(contactConnection) = chat.chatInfo {
-                ContactConnectionInfo(contactConnection: contactConnection)
-                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+                Group {
+                    if !contactConnection.initiated,
+                       #available(iOS 16.0, *) {
+                        ContactConnectionInfo(contactConnection: contactConnection)
+                            .presentationDetents([.medium])
+                    } else {
+                        ContactConnectionInfo(contactConnection: contactConnection)
+                    }
+                }
+                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
         }
         .onTapGesture {

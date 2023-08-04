@@ -216,8 +216,8 @@ struct GroupMemberInfoView: View {
             Label("Connect", systemImage: "link")
         }
         .confirmationDialog("Connect directly", isPresented: $connectToMemberDialog, titleVisibility: .visible) {
-            Button("Using main profile") { connectViaAddress(incognitoEnabled: false, contactLink: contactLink) }
-            Button("Using incognito profile") { connectViaAddress(incognitoEnabled: true, contactLink: contactLink) }
+            Button("Use current profile") { connectViaAddress(incognitoEnabled: false, contactLink: contactLink) }
+            Button("Use new incognito profile") { connectViaAddress(incognitoEnabled: true, contactLink: contactLink) }
         }
     }
 

@@ -93,27 +93,6 @@ struct IncognitoToggle: View {
                 }
             }
         }
-
-
-//        VStack(alignment: .center) {
-//            Toggle(isOn: $incognitoEnabled) {
-//                Image(systemName: incognitoEnabled ? "theatermasks.fill" : "theatermasks")
-//                    .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
-//                    .foregroundColor(incognitoEnabled ? Color.indigo : .secondary)
-//            }
-//            Text(incognitoEnabled ? "New randomly generated profile will be shared." : "Main profile will be shared.")
-//            Image(systemName: "info.circle")
-//                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
-//                .foregroundColor(.accentColor)
-//                .onTapGesture {
-//                    incognitoToggleSheet = .incognitoInfo
-//                }
-//        }
-//        .sheet(item: $incognitoToggleSheet) { sheet in
-//            switch sheet {
-//            case .incognitoInfo: IncognitoHelp()
-//            }
-//        }
     }
 }
 
