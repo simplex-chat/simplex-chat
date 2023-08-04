@@ -12,13 +12,15 @@ import qualified Data.Set as S
 
 data DirectoryStore = DirectoryStore
   { groupRegs :: TVar [GroupReg],
-    listedGroups :: TVar (Set GroupId)
+    listedGroups :: TVar (Set GroupId),
+    reservedGroups :: TVar (Set GroupId)
   }
 
 data GroupReg = GroupReg
   { userGroupRegId :: UserGroupRegId,
     dbGroupId :: GroupId,
     dbContactId :: ContactId,
+    dbOwnerMemberId :: TVar (Maybe GroupMemberId),
     groupRegStatus :: TVar GroupRegStatus
   }
 
@@ -35,12 +37,14 @@ data GroupRegStatus
   | GRSPendingApproval GroupApprovalId
   | GRSActive
   | GRSSuspended
+  | GRSSuspendedBadRoles
   | GRSRemoved
 
 addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> GroupRegStatus -> STM ()
 addGroupReg st ct GroupInfo {groupId} grStatus = do
+  dbOwnerMemberId <- newTVar Nothing
   groupRegStatus <- newTVar grStatus
-  let gr = GroupReg {userGroupRegId = groupId, dbGroupId = groupId, dbContactId = contactId' ct, groupRegStatus}
+  let gr = GroupReg {userGroupRegId = groupId, dbGroupId = groupId, dbContactId = contactId' ct, dbOwnerMemberId, groupRegStatus}
   modifyTVar' (groupRegs st) (gr :)
 
 getGroupReg :: DirectoryStore -> GroupRegId -> STM (Maybe GroupReg)
@@ -58,10 +62,19 @@ filterListedGroups st gs = do
   pure $ filter (\GroupInfo {groupId} -> groupId `S.member` lgs) gs
 
 listGroup :: DirectoryStore -> GroupId -> STM ()
-listGroup st gId = modifyTVar' (listedGroups st) $ S.insert gId
+listGroup st gId = do
+  modifyTVar' (listedGroups st) $ S.insert gId
+  modifyTVar' (reservedGroups st) $ S.delete gId
+
+reserveGroup :: DirectoryStore -> GroupId -> STM ()
+reserveGroup st gId = do
+  modifyTVar' (listedGroups st) $ S.delete gId
+  modifyTVar' (reservedGroups st) $ S.insert gId
 
 unlistGroup :: DirectoryStore -> GroupId -> STM ()
-unlistGroup st gId = modifyTVar' (listedGroups st) $ S.delete gId
+unlistGroup st gId = do
+  modifyTVar' (listedGroups st) $ S.delete gId
+  modifyTVar' (reservedGroups st) $ S.delete gId
 
 data DirectoryLogRecord
   = CreateGroupReg GroupReg
@@ -81,7 +94,8 @@ newDirectoryStore :: STM DirectoryStore
 newDirectoryStore = do
   groupRegs <- newTVar []
   listedGroups <- newTVar mempty
-  pure DirectoryStore {groupRegs, listedGroups}
+  reservedGroups <- newTVar mempty
+  pure DirectoryStore {groupRegs, listedGroups, reservedGroups}
 
 readDirectoryState :: FilePath -> IO [GroupReg]
 readDirectoryState _ = pure []

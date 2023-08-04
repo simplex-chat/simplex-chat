@@ -22,12 +22,17 @@ import Test.Hspec
 directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
   it "should register group" testDirectoryService
+  it "should suspend and resume group" testSuspendResume
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
     it "should NOT de-list if another member leaves the group" testNotDelistedMemberLeaves
     it "should NOT de-list if another member is removed from the group" testNotDelistedMemberRemoved
     it "should de-list if service is removed from the group" testDelistedServiceRemoved
+    it "should de-list/re-list when service/owner roles change" testDelistedRoleChanges
+    it "should NOT de-list if another member role changes" testNotDelistedMemberRoleChanged
+    it "should NOT send to approval if roles are incorrect" testNotSentApprovalBadRoles
+    it "should NOT allow approving if roles are incorrect" testNotApprovedBadRoles
   describe "should require re-approval if profile is changed by" $ do
     it "the registration owner" testRegOwnerChangedProfile
     it "another owner" testAnotherOwnerChangedProfile
@@ -146,6 +151,24 @@ testDirectoryService tmp =
       su <## "To approve send:"
       su <# ("SimpleX-Directory> /approve 1:PSA " <> show grId)
 
+testSuspendResume :: HasCallStack => FilePath -> IO ()
+testSuspendResume tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroup superUser bob "privacy" "Privacy"
+      groupFound bob "privacy"
+      superUser #> "@SimpleX-Directory /suspend 1:privacy"
+      superUser <# "SimpleX-Directory> > /suspend 1:privacy"
+      superUser <## "      Group suspended!"
+      bob <# "SimpleX-Directory> The group ID 1 (privacy) is suspended and hidden from directory. Please contact the administrators."
+      groupNotFound bob "privacy"
+      superUser #> "@SimpleX-Directory /resume 1:privacy"
+      superUser <# "SimpleX-Directory> > /resume 1:privacy"
+      superUser <## "      Group listing resumed!"
+      bob <# "SimpleX-Directory> The group ID 1 (privacy) is listed in the directory again!"
+      groupFound bob "privacy"
+
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
   withDirectoryService tmp $ \superUser dsLink ->
@@ -158,7 +181,7 @@ testDelistedOwnerLeaves tmp =
         cath <## "#privacy: bob left the group"
         bob <# "SimpleX-Directory> You left the group ID 1 (privacy)."
         bob <## ""
-        bob <## "Group is no longer listed in the directory."
+        bob <## "The group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (group owner left)."
         groupNotFound cath "privacy"
 
@@ -173,7 +196,7 @@ testDelistedOwnerRemoved tmp =
         removeMember "privacy" cath bob
         bob <# "SimpleX-Directory> You are removed from the group ID 1 (privacy)."
         bob <## ""
-        bob <## "Group is no longer listed in the directory."
+        bob <## "The group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (group owner is removed)."
         groupNotFound cath "privacy"
 
@@ -215,9 +238,119 @@ testDelistedServiceRemoved tmp =
         cath <## "#privacy: bob removed SimpleX-Directory from the group"
         bob <# "SimpleX-Directory> SimpleX-Directory is removed from the group ID 1 (privacy)."
         bob <## ""
-        bob <## "Group is no longer listed in the directory."
+        bob <## "The group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (directory service is removed)."
         groupNotFound cath "privacy"
+
+testDelistedRoleChanges :: HasCallStack => FilePath -> IO ()
+testDelistedRoleChanges tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        addCathAsOwner bob cath
+        groupFound cath "privacy"
+        -- de-listed if service role changed
+        bob ##> "/mr privacy SimpleX-Directory member"
+        bob <## "#privacy: you changed the role of SimpleX-Directory from admin to member"
+        cath <## "#privacy: bob changed the role of SimpleX-Directory from admin to member"
+        bob <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (privacy) is changed to member."
+        bob <## ""
+        bob <## "The group is no longer listed in the directory."
+        superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (SimpleX-Directory role is changed to member)."
+        groupNotFound cath "privacy"
+        -- re-listed if service role changed back without profile changes
+        cath ##> "/mr privacy SimpleX-Directory admin"
+        cath <## "#privacy: you changed the role of SimpleX-Directory from member to admin"
+        bob <## "#privacy: cath changed the role of SimpleX-Directory from member to admin"
+        bob <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (privacy) is changed to admin."
+        bob <## ""
+        bob <## "The group is listed in the directory again."
+        superUser <# "SimpleX-Directory> The group ID 1 (privacy) is listed (SimpleX-Directory role is changed to admin)."
+        groupFound cath "privacy"
+        -- de-listed if owner role changed
+        cath ##> "/mr privacy bob admin"
+        cath <## "#privacy: you changed the role of bob from owner to admin"
+        bob <## "#privacy: cath changed your role from owner to admin"
+        bob <# "SimpleX-Directory> Your role in the group ID 1 (privacy) is changed to admin."
+        bob <## ""
+        bob <## "The group is no longer listed in the directory."
+        superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (user role is set to admin)."
+        groupNotFound cath "privacy"
+        -- re-listed if owner role changed back without profile changes
+        cath ##> "/mr privacy bob owner"
+        cath <## "#privacy: you changed the role of bob from admin to owner"
+        bob <## "#privacy: cath changed your role from admin to owner"
+        bob <# "SimpleX-Directory> Your role in the group ID 1 (privacy) is changed to owner."
+        bob <## ""
+        bob <## "The group is listed in the directory again."
+        superUser <# "SimpleX-Directory> The group ID 1 (privacy) is listed (user role is set to owner)."
+        groupFound cath "privacy"
+
+testNotDelistedMemberRoleChanged :: HasCallStack => FilePath -> IO ()
+testNotDelistedMemberRoleChanged tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        addCathAsOwner bob cath
+        groupFound cath "privacy"
+        bob ##> "/mr privacy cath member"
+        bob <## "#privacy: you changed the role of cath from owner to member"
+        cath <## "#privacy: bob changed your role from owner to member"
+        groupFound cath "privacy"
+
+testNotSentApprovalBadRoles :: HasCallStack => FilePath -> IO ()
+testNotSentApprovalBadRoles tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        cath `connectVia` dsLink
+        submitGroup bob "privacy" "Privacy"
+        welcomeWithLink <- groupAccepted bob "privacy"
+        bob ##> "/mr privacy SimpleX-Directory member"
+        bob <## "#privacy: you changed the role of SimpleX-Directory from admin to member"
+        updateProfileWithLink bob "privacy" welcomeWithLink 1
+        bob <# "SimpleX-Directory> You must grant directory service admin role to register the group"
+        bob ##> "/mr privacy SimpleX-Directory admin"
+        bob <## "#privacy: you changed the role of SimpleX-Directory from member to admin"
+        bob <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (privacy) is changed to admin."
+        bob <## ""
+        bob <## "The group is submitted for approval."
+        notifySuperUser superUser bob "privacy" "Privacy" welcomeWithLink 1
+        groupNotFound cath "privacy"
+        approveRegistration superUser bob "privacy" 1
+        groupFound cath "privacy"
+
+testNotApprovedBadRoles :: HasCallStack => FilePath -> IO ()
+testNotApprovedBadRoles tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        cath `connectVia` dsLink
+        submitGroup bob "privacy" "Privacy"
+        welcomeWithLink <- groupAccepted bob "privacy"
+        updateProfileWithLink bob "privacy" welcomeWithLink 1
+        notifySuperUser superUser bob "privacy" "Privacy" welcomeWithLink 1
+        bob ##> "/mr privacy SimpleX-Directory member"
+        bob <## "#privacy: you changed the role of SimpleX-Directory from admin to member"
+        let approve = "/approve 1:privacy 1"
+        superUser #> ("@SimpleX-Directory " <> approve)
+        superUser <# ("SimpleX-Directory> > " <> approve)
+        superUser <## "      Group is not approved: user is not an owner."
+        groupNotFound cath "privacy"
+        bob ##> "/mr privacy SimpleX-Directory admin"
+        bob <## "#privacy: you changed the role of SimpleX-Directory from member to admin"
+        bob <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (privacy) is changed to admin."
+        bob <## ""
+        bob <## "The group is submitted for approval."
+        notifySuperUser superUser bob "privacy" "Privacy" welcomeWithLink 1
+        approveRegistration superUser bob "privacy" 1
+        groupFound cath "privacy"
 
 testRegOwnerChangedProfile :: HasCallStack => FilePath -> IO ()
 testRegOwnerChangedProfile tmp =
