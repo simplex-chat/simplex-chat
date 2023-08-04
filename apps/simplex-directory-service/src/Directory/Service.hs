@@ -415,8 +415,22 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
                         _ -> processInvitation ct g
                     _ -> sendReply $ "Error: the group ID " <> show ugrId <> " (" <> T.unpack displayName <> ") is not pending confirmation."
                 | otherwise -> sendReply $ "Group ID " <> show ugrId <> " has the display name " <> T.unpack displayName
-      DCListUserGroups -> pure ()
-      DCDeleteGroup _ugrId _gName -> pure ()
+      DCListUserGroups ->
+        atomically (getContactGroupRegs st $ contactId' ct) >>= \grs -> do
+          sendReply $ show (length grs) <> "registered group(s)"
+          void . forkIO $ forM_ grs $ \gr@GroupReg {dbGroupId}  -> do
+            grStatus <- readTVarIO $ groupRegStatus gr
+            let statusStr = "Status: " <> groupRegStatusText grStatus
+            getGroupAndSummary cc dbGroupId >>= \case
+              Just (GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
+                let membersStr = "Current members: " <> tshow currentMembers
+                    text = T.unlines [tshow dbGroupId <> ". " <> groupInfoText p, membersStr, statusStr]
+                    msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
+                sendComposedMessage cc ct Nothing msg
+              Nothing -> do
+                let text = tshow dbGroupId <> ". Error: getGroup. Please notify the developers.\n" <> statusStr
+                sendComposedMessage cc ct Nothing $ MCText text
+      DCDeleteGroup ugrId gName -> pure ()
       DCUnknownCommand -> sendReply "Unknown command"
       DCCommandError tag -> sendReply $ "Command error: " <> show tag
       where
@@ -500,11 +514,18 @@ getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId)
       _ -> Nothing
 
 getGroup :: ChatController -> GroupId -> IO (Maybe GroupInfo)
-getGroup cc gId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTGroup gId) (CPLast 0) Nothing)
+getGroup cc gId = resp <$> sendChatCmd cc (APIGroupInfo gId)
   where
     resp :: ChatResponse -> Maybe GroupInfo
     resp = \case
-      CRApiChat _ (AChat SCTGroup Chat {chatInfo = GroupChat g}) -> Just g
+      CRGroupInfo {groupInfo} -> Just groupInfo
+      _ -> Nothing
+
+getGroupAndSummary :: ChatController -> GroupId -> IO (Maybe (GroupInfo, GroupSummary))
+getGroupAndSummary cc gId = resp <$> sendChatCmd cc (APIGroupInfo gId)
+  where
+    resp = \case
+      CRGroupInfo {groupInfo, groupSummary} -> Just (groupInfo, groupSummary)
       _ -> Nothing
 
 unexpectedError :: String -> String

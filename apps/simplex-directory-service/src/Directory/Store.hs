@@ -1,13 +1,16 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Directory.Store where
 
 import Control.Concurrent.STM
 import Data.Int (Int64)
 import Data.Set (Set)
+import Data.Text (Text)
 import Simplex.Chat.Types
-import Data.List (find)
+import Data.List (find, foldl')
 import qualified Data.Set as S
 
 data DirectoryStore = DirectoryStore
@@ -40,12 +43,30 @@ data GroupRegStatus
   | GRSSuspendedBadRoles
   | GRSRemoved
 
+groupRegStatusText :: GroupRegStatus -> Text
+groupRegStatusText = \case
+  GRSPendingConfirmation -> "pending confirmation (duplicate names)"
+  GRSProposed -> "proposed"
+  GRSPendingUpdate -> "pending profile update"
+  GRSPendingApproval _ -> "pending admin approval"
+  GRSActive -> "active"
+  GRSSuspended -> "suspended by admin"
+  GRSSuspendedBadRoles -> "suspended because roles changed"
+  GRSRemoved -> "removed"
+
 addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> GroupRegStatus -> STM ()
 addGroupReg st ct GroupInfo {groupId} grStatus = do
   dbOwnerMemberId <- newTVar Nothing
   groupRegStatus <- newTVar grStatus
-  let gr = GroupReg {userGroupRegId = groupId, dbGroupId = groupId, dbContactId = contactId' ct, dbOwnerMemberId, groupRegStatus}
-  modifyTVar' (groupRegs st) (gr :)
+  let gr = GroupReg {userGroupRegId = 1, dbGroupId = groupId, dbContactId = ctId, dbOwnerMemberId, groupRegStatus}
+  modifyTVar' (groupRegs st) $ \grs ->
+    let ugrId' = 1 + foldl' maxUgrId 0 grs
+     in gr {userGroupRegId = ugrId'}  : grs
+  where
+    ctId = contactId' ct
+    maxUgrId mx GroupReg {dbContactId, userGroupRegId}
+      | dbContactId == ctId && userGroupRegId > mx = userGroupRegId
+      | otherwise = mx
 
 getGroupReg :: DirectoryStore -> GroupRegId -> STM (Maybe GroupReg)
 getGroupReg st gId = find ((gId ==) . dbGroupId) <$> readTVar (groupRegs st)

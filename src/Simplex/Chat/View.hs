@@ -79,6 +79,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
+  CRGroupInfo u g s -> ttyUser u $ viewGroupInfo g s
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
   CRContactSwitchStarted {} -> ["switch started"]
   CRGroupMemberSwitchStarted {} -> ["switch started"]
@@ -934,6 +935,12 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
+
+viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
+viewGroupInfo GroupInfo {groupId} s =
+  [ "group ID: " <> sShow groupId,
+    "current members: " <> sShow (currentMembers s)
+  ]
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
 viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}} stats =
