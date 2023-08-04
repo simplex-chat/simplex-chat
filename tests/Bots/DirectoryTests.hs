@@ -46,7 +46,7 @@ directoryServiceTests = do
     it "should prohibit when profile is updated and not send for approval" testDuplicateProhibitWhenUpdated
     it "should prohibit approval if a duplicate group is listed" testDuplicateProhibitApproval
   describe "list groups" $ do
-    fit "should list user's groups" testListUserGroups
+    it "should list user's groups" testListUserGroups
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
@@ -629,8 +629,8 @@ testListUserGroups tmp =
         cath <## "Current members: 2"
         cath <## "Status: suspended because roles changed"
         -- superuser lists all groups
-        superUser #> "@SimpleX-Directory /all"
-        superUser <# "SimpleX-Directory> > /all"
+        superUser #> "@SimpleX-Directory /last"
+        superUser <# "SimpleX-Directory> > /last"
         superUser <## "      3 registered group(s)"
         superUser <# "SimpleX-Directory> 1. privacy (Privacy)"
         superUser <## "Welcome message:"
@@ -644,6 +644,16 @@ testListUserGroups tmp =
         superUser <## "Owner: bob"
         superUser <## "Current members: 2"
         superUser <## "Status: active"
+        superUser <# "SimpleX-Directory> 3. anonymity (Anonymity)"
+        superUser <## "Welcome message:"
+        superUser <##. "Link to join the group anonymity: "
+        superUser <## "Owner: cath"
+        superUser <## "Current members: 2"
+        superUser <## "Status: suspended because roles changed"
+        -- showing last 1 group
+        superUser #> "@SimpleX-Directory /last 1"
+        superUser <# "SimpleX-Directory> > /last 1"
+        superUser <## "      3 registered group(s), showing the last 1"
         superUser <# "SimpleX-Directory> 3. anonymity (Anonymity)"
         superUser <## "Welcome message:"
         superUser <##. "Link to join the group anonymity: "

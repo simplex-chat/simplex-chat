@@ -483,7 +483,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
                   notifyOwner gr $ "The group " <> userGroupReference' gr gName <> " is listed in the directory again!"
                   sendReply "Group listing resumed!"
                 _ -> sendReply $ "The group " <> groupRef <> " is not suspended, can't be resumed."
-        DCListAllGroups count ->
+        DCListLastGroups count ->
           readTVarIO (groupRegs st) >>= \grs -> do
             sendReply $ show (length grs) <> " registered group(s)" <> (if length grs > count then ", showing the last " <> show count else "")
             void . forkIO $ forM_ (reverse $ take count grs) $ \gr@GroupReg {dbGroupId, dbContactId} -> do

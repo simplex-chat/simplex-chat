@@ -81,7 +81,7 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCRejectGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCSuspendGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCResumeGroup_ :: DirectoryCmdTag 'DRSuperUser
-  DCListAllGroups_ :: DirectoryCmdTag 'DRSuperUser
+  DCListLastGroups_ :: DirectoryCmdTag 'DRSuperUser
 
 deriving instance Show (DirectoryCmdTag r)
 
@@ -97,7 +97,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
-  DCListAllGroups :: Int -> DirectoryCmd 'DRSuperUser
+  DCListLastGroups :: Int -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
 
@@ -124,7 +124,7 @@ directoryCmdP =
       "reject" -> su DCRejectGroup_
       "suspend" -> su DCSuspendGroup_
       "resume" -> su DCResumeGroup_
-      "all" -> su DCListAllGroups_
+      "last" -> su DCListLastGroups_
       _ -> fail "bad command tag"
       where
         u = pure . ADCT SDRUser
@@ -142,6 +142,6 @@ directoryCmdP =
       DCRejectGroup_ -> gc DCRejectGroup
       DCSuspendGroup_ -> gc DCSuspendGroup
       DCResumeGroup_ -> gc DCResumeGroup
-      DCListAllGroups_ -> DCListAllGroups <$> (A.space *> A.decimal <|> pure 10)
+      DCListLastGroups_ -> DCListLastGroups <$> (A.space *> A.decimal <|> pure 10)
       where
         gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> A.takeTill (== ' ')
