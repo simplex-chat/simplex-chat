@@ -41,7 +41,7 @@ struct ScanToConnectView: View {
                     + Text("\n\n")
                     + Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
                 }
-                .font(.caption)
+                .font(.footnote)
                 .foregroundColor(.secondary)
                 .padding(.horizontal)
             }
