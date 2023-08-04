@@ -295,7 +295,15 @@
                       > $out/nix-support/hydra-build-products
                 '';
               };
-              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:lib:simplex-chat" = (drv pkgs.pkgsCross.mingwW64).simplex-chat.components.library
+              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:lib:simplex-chat" = (drv' {
+                pkgs' = pkgs.pkgsCross.mingwW64;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.openssl = true;
+                  # packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
+                  #   (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
+                  # ];
+                }];
+              }).simplex-chat.components.library
               .override {
                 # enableShared = false;
                 setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.dll" "-optl-lHSrts_thr" "-optl-lffi" "${./libsimplex.dll.def}" ];
