@@ -17,8 +17,7 @@ import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -93,7 +92,7 @@ fun ChatItemView(
             }
           }
           Row(modifier.padding(2.dp)) {
-            Text(r.reaction.text, fontSize = 12.sp, fontFamily = EmojiFont)
+            ReactionIcon(r.reaction.text, fontSize = 12.sp)
             if (r.totalReacted > 1) {
               Spacer(Modifier.width(4.dp))
               Text("${r.totalReacted}",
@@ -154,7 +153,7 @@ fun ChatItemView(
                   },
                   contentAlignment = Alignment.Center
                 ) {
-                  Text(r.text, fontFamily = EmojiFont)
+                  ReactionIcon(r.text)
                 }
               }
             }
@@ -323,6 +322,9 @@ fun ChatItemView(
     }
   }
 }
+
+@Composable
+expect fun ReactionIcon(text: String, fontSize: TextUnit = TextUnit.Unspecified)
 
 @Composable
 expect fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserLauncher, showMenu: MutableState<Boolean>)

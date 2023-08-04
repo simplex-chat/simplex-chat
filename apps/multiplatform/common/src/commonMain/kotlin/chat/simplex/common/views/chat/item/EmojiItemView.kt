@@ -10,6 +10,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
+import chat.simplex.common.model.MREmojiChar
 import chat.simplex.common.ui.theme.EmojiFont
 
 val largeEmojiFont: TextStyle = TextStyle(fontSize = 48.sp, fontFamily = EmojiFont)
@@ -27,10 +28,7 @@ fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?) {
 }
 
 @Composable
-fun EmojiText(text: String) {
-  val s = text.trim()
-  Text(s, style = if (s.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont)
-}
+expect fun EmojiText(text: String)
 
 // https://stackoverflow.com/a/46279500
 private const val emojiStr = "^(" +
