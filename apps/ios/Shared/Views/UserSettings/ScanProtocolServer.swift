@@ -17,15 +17,12 @@ struct ScanProtocolServer: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Scan server QR code")
-                .font(.largeTitle)
-                .bold()
-                .padding(.vertical)
-            ZStack {
-                CodeScannerView(codeTypes: [.qr], completion: processQRCode)
-                    .aspectRatio(1, contentMode: .fit)
-                    .border(.gray)
-            }
+            CodeScannerView(codeTypes: [.qr], completion: processQRCode)
+                .aspectRatio(1, contentMode: .fit)
+                .cornerRadius(12)
+                .padding(.top)
+            Text("Scan server QR code.")
+                .padding(.top)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

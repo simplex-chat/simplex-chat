@@ -36,7 +36,7 @@ struct ContactConnectionInfo: View {
                     Text(contactConnection.initiated ? "You invited your contact" : "You accepted connection")
                         .font(.largeTitle)
                         .bold()
-                        .padding(.bottom, 16)
+                        .padding(.bottom)
 
                     Text(contactConnectionText(contactConnection))
                 }
@@ -93,18 +93,6 @@ struct ContactConnectionInfo: View {
         }
         .onAppear {
             localAlias = contactConnection.localAlias
-        }
-    }
-
-    private func oneTimeLinkProfileText() -> some View {
-        HStack {
-            if contactConnection.incognito {
-                Image(systemName: "theatermasks").foregroundColor(.indigo)
-                Text("A random profile will be sent to your contact")
-            } else {
-                Image(systemName: "info.circle").foregroundColor(.secondary)
-                Text("Your chat profile will be sent to your contact")
-            }
         }
     }
 

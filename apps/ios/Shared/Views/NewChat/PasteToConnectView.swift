@@ -13,60 +13,70 @@ struct PasteToConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @State private var connectionLink: String = ""
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
+    @State private var keyboardVisible = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading) {
-                Text("Connect via link")
-                    .font(.largeTitle)
-                    .bold()
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.vertical)
-                Text("Paste the link you received into the box below to connect with your contact.")
-                    .padding(.bottom, 4)
+        List {
+            Text("Connect via link")
+                .font(.largeTitle)
+                .bold()
+                .fixedSize(horizontal: false, vertical: true)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .onTapGesture { keyboardVisible = false }
+
+            Section {
+                linkEditor()
+
+                Button {
+                    if connectionLink == "" {
+                        connectionLink = UIPasteboard.general.string ?? ""
+                    } else {
+                        connectionLink = ""
+                    }
+                } label: {
+                    if connectionLink == "" {
+                        settingsRow("doc.plaintext") { Text("Paste") }
+                    } else {
+                        settingsRow("multiply") { Text("Clear") }
+                    }
+                }
+                
+                Button {
+                    connect()
+                } label: {
+                    settingsRow("link") { Text("Connect") }
+                }
+                .disabled(connectionLink == "" || connectionLink.trimmingCharacters(in: .whitespaces).firstIndex(of: " ") != nil)
+                
+                IncognitoToggle(incognitoEnabled: $incognitoDefault)
+            } footer: {
+                Text(incognitoDefault ? "A new randomly generated profile will be shared." : "Current profile will be shared.")
+                + Text("\n\n")
+                + Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
+            }
+        }
+    }
+
+    private func linkEditor() -> some View {
+        ZStack {
+            Group {
+                if connectionLink.isEmpty {
+                    TextEditor(text: Binding.constant(NSLocalizedString("Paste the link you received to connect with your contact…", comment: "placeholder")))
+                        .foregroundColor(.secondary)
+                        .disabled(true)
+                }
                 TextEditor(text: $connectionLink)
                     .onSubmit(connect)
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
-                    .allowsTightening(false)
-                    .frame(height: 180)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-                    )
-
-                HStack(spacing: 20) {
-                    if connectionLink == "" {
-                        Button {
-                            connectionLink = UIPasteboard.general.string ?? ""
-                        } label: {
-                            Label("Paste", systemImage: "doc.plaintext")
-                        }
-                    } else {
-                        Button {
-                            connectionLink = ""
-                        } label: {
-                            Label("Clear", systemImage: "multiply")
-                        }
-
-                    }
-                    Spacer()
-                    Button(action: connect, label: {
-                        Label("Connect", systemImage: "link")
-                    })
-                    .disabled(connectionLink == "" || connectionLink.trimmingCharacters(in: .whitespaces).firstIndex(of: " ") != nil)
-                }
-                .frame(height: 48)
-                .padding(.bottom)
-
-                IncognitoToggle(incognitoEnabled: $incognitoDefault)
-
-                Spacer()
-
-                Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
             }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .allowsTightening(false)
+            .padding(.horizontal, -5)
+            .padding(.top, -8)
+            .frame(height: 180, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

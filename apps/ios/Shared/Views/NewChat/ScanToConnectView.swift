@@ -20,21 +20,35 @@ struct ScanToConnectView: View {
                 Text("Scan QR code")
                     .font(.largeTitle)
                     .bold()
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical)
-                ZStack {
-                    CodeScannerView(codeTypes: [.qr], completion: processQRCode)
-                        .aspectRatio(1, contentMode: .fit)
-                        .border(.gray)
-                }
-                .padding(.bottom)
+
+                CodeScannerView(codeTypes: [.qr], completion: processQRCode)
+                    .aspectRatio(1, contentMode: .fit)
+                    .cornerRadius(12)
+
                 IncognitoToggle(incognitoEnabled: $incognitoDefault)
-                Spacer()
-                Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
-                    .padding(.bottom)
+                    .padding(.horizontal)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(uiColor: .systemBackground))
+                    )
+                    .padding(.top)
+
+                Group {
+                    Text(incognitoDefault ? "A new randomly generated profile will be shared." : "Current profile will be shared.")
+                    + Text("\n\n")
+                    + Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .background(Color(.systemGroupedBackground))
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {

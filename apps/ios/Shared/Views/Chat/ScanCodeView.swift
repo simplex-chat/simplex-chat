@@ -19,7 +19,7 @@ struct ScanCodeView: View {
         VStack(alignment: .leading) {
             CodeScannerView(codeTypes: [.qr], completion: processQRCode)
                 .aspectRatio(1, contentMode: .fit)
-                .border(.gray)
+                .cornerRadius(12)
             Text("Scan security code from your contact's app.")
                 .padding(.top)
         }
