@@ -474,7 +474,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
                   setGroupStatus gr GRSActive
                   notifyOwner gr $ "The group " <> groupRef <> " is listed in the directory again!"
                   sendReply "Group listing resumed!"
-                _ -> sendReply $ "he group " <> groupRef <> " is not suspended, can't be resumed."
+                _ -> sendReply $ "The group " <> groupRef <> " is not suspended, can't be resumed."
         DCListGroups -> pure ()
         DCCommandError tag -> sendReply $ "Command error: " <> show tag
       | otherwise = sendReply "You are not allowed to use this command"
