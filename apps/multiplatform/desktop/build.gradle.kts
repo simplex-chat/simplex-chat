@@ -67,7 +67,7 @@ compose {
           bundleID = "chat.simplex.app"
         }
         val os = System.getProperty("os.name", "generic").toLowerCaseAsciiOnly()
-        if (os.contains("mac")) {
+        if (os.contains("mac") || os.contains("win")) {
           packageName = "SimpleX"
         } else {
           packageName = "simplex"
