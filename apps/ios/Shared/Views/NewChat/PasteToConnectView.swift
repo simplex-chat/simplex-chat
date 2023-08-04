@@ -13,7 +13,7 @@ struct PasteToConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @State private var connectionLink: String = ""
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
-    @State private var keyboardVisible = false
+    @FocusState private var linkEditorFocused: Bool
 
     var body: some View {
         List {
@@ -24,7 +24,7 @@ struct PasteToConnectView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .onTapGesture { keyboardVisible = false }
+                .onTapGesture { linkEditorFocused = false }
 
             Section {
                 linkEditor()
@@ -71,6 +71,7 @@ struct PasteToConnectView: View {
                     .onSubmit(connect)
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
+                    .focused($linkEditorFocused)
             }
             .allowsTightening(false)
             .padding(.horizontal, -5)
