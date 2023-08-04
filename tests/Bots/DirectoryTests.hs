@@ -278,7 +278,6 @@ testNotDelistedMemberRoleChanged tmp =
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
         groupFound cath "privacy"
-        -- de-listed if service role changed
         bob ##> "/mr privacy cath member"
         bob <## "#privacy: you changed the role of cath from owner to member"
         cath <## "#privacy: bob changed your role from owner to member"
