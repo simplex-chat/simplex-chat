@@ -153,7 +153,7 @@ fun ChatItemView(
                   },
                   contentAlignment = Alignment.Center
                 ) {
-                  ReactionIcon(r.text)
+                  ReactionIcon(r.text, 12.sp)
                 }
               }
             }
