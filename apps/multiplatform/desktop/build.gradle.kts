@@ -1,4 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
+import java.util.*
 
 plugins {
   kotlin("multiplatform")
@@ -64,7 +66,12 @@ compose {
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
         }
-        packageName = "simplex"
+        val os = System.getProperty("os.name", "generic").toLowerCaseAsciiOnly()
+        if (os.contains("mac")) {
+          packageName = "SimpleX"
+        } else {
+          packageName = "simplex"
+        }
         // Packaging requires to have version like MAJOR.MINOR.PATCH
         var adjustedVersion = rootProject.extra["desktop.version_name"] as String
         adjustedVersion = adjustedVersion.replace(Regex("[^0-9.]"), "")
