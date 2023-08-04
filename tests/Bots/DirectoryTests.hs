@@ -15,7 +15,7 @@ import Directory.Store
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Core
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Types (Profile (..), GroupMemberRole (GROwner))
+import Simplex.Chat.Types (GroupMemberRole (..), Profile (..))
 import System.FilePath ((</>))
 import Test.Hspec
 
@@ -45,6 +45,8 @@ directoryServiceTests = do
     it "should prohibit confirmation if a duplicate group is listed" testDuplicateProhibitConfirmation
     it "should prohibit when profile is updated and not send for approval" testDuplicateProhibitWhenUpdated
     it "should prohibit approval if a duplicate group is listed" testDuplicateProhibitApproval
+  describe "list groups" $ do
+    it "should list user's groups" testListUserGroups
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
@@ -172,7 +174,7 @@ testSuspendResume tmp =
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -203,7 +205,7 @@ testDelistedOwnerRemoved tmp =
 testNotDelistedMemberLeaves :: HasCallStack => FilePath -> IO ()
 testNotDelistedMemberLeaves tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -216,7 +218,7 @@ testNotDelistedMemberLeaves tmp =
 testNotDelistedMemberRemoved :: HasCallStack => FilePath -> IO ()
 testNotDelistedMemberRemoved tmp = 
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -228,7 +230,7 @@ testNotDelistedMemberRemoved tmp =
 testDelistedServiceRemoved :: HasCallStack => FilePath -> IO ()
 testDelistedServiceRemoved tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -245,7 +247,7 @@ testDelistedServiceRemoved tmp =
 testDelistedRoleChanges :: HasCallStack => FilePath -> IO ()
 testDelistedRoleChanges tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -291,7 +293,7 @@ testDelistedRoleChanges tmp =
 testNotDelistedMemberRoleChanged :: HasCallStack => FilePath -> IO ()
 testNotDelistedMemberRoleChanged tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -305,7 +307,7 @@ testNotDelistedMemberRoleChanged tmp =
 testNotSentApprovalBadRoles :: HasCallStack => FilePath -> IO ()
 testNotSentApprovalBadRoles tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         cath `connectVia` dsLink
@@ -328,7 +330,7 @@ testNotSentApprovalBadRoles tmp =
 testNotApprovedBadRoles :: HasCallStack => FilePath -> IO ()
 testNotApprovedBadRoles tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         cath `connectVia` dsLink
@@ -355,7 +357,7 @@ testNotApprovedBadRoles tmp =
 testRegOwnerChangedProfile :: HasCallStack => FilePath -> IO ()
 testRegOwnerChangedProfile tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -374,7 +376,7 @@ testRegOwnerChangedProfile tmp =
 testAnotherOwnerChangedProfile :: HasCallStack => FilePath -> IO ()
 testAnotherOwnerChangedProfile tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -393,7 +395,7 @@ testAnotherOwnerChangedProfile tmp =
 testRegOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
 testRegOwnerRemovedLink tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -426,7 +428,7 @@ testRegOwnerRemovedLink tmp =
 testAnotherOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
 testAnotherOwnerRemovedLink tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -468,7 +470,7 @@ testAnotherOwnerRemovedLink tmp =
 testDuplicateAskConfirmation :: HasCallStack => FilePath -> IO ()
 testDuplicateAskConfirmation tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
@@ -477,8 +479,8 @@ testDuplicateAskConfirmation tmp =
         submitGroup cath "privacy" "Privacy"
         cath <# "SimpleX-Directory> The group privacy (Privacy) is already submitted to the directory."
         cath <## "To confirm the registration, please send:"
-        cath <# "SimpleX-Directory> /confirm 2:privacy"
-        cath #> "@SimpleX-Directory /confirm 2:privacy"
+        cath <# "SimpleX-Directory> /confirm 1:privacy"
+        cath #> "@SimpleX-Directory /confirm 1:privacy"
         welcomeWithLink <- groupAccepted cath "privacy"
         groupNotFound bob "privacy"
         completeRegistration superUser cath "privacy" "Privacy" welcomeWithLink 2
@@ -487,7 +489,7 @@ testDuplicateAskConfirmation tmp =
 testDuplicateProhibitRegistration :: HasCallStack => FilePath -> IO ()
 testDuplicateProhibitRegistration tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -499,7 +501,7 @@ testDuplicateProhibitRegistration tmp =
 testDuplicateProhibitConfirmation :: HasCallStack => FilePath -> IO ()
 testDuplicateProhibitConfirmation tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
@@ -508,17 +510,17 @@ testDuplicateProhibitConfirmation tmp =
         submitGroup cath "privacy" "Privacy"
         cath <# "SimpleX-Directory> The group privacy (Privacy) is already submitted to the directory."
         cath <## "To confirm the registration, please send:"
-        cath <# "SimpleX-Directory> /confirm 2:privacy"
+        cath <# "SimpleX-Directory> /confirm 1:privacy"
         groupNotFound cath "privacy"
         completeRegistration superUser bob "privacy" "Privacy" welcomeWithLink 1
         groupFound cath "privacy"
-        cath #> "@SimpleX-Directory /confirm 2:privacy"
+        cath #> "@SimpleX-Directory /confirm 1:privacy"
         cath <# "SimpleX-Directory> The group privacy (Privacy) is already listed in the directory, please choose another name."
 
 testDuplicateProhibitWhenUpdated :: HasCallStack => FilePath -> IO ()
 testDuplicateProhibitWhenUpdated tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
@@ -527,8 +529,8 @@ testDuplicateProhibitWhenUpdated tmp =
         submitGroup cath "privacy" "Privacy"
         cath <# "SimpleX-Directory> The group privacy (Privacy) is already submitted to the directory."
         cath <## "To confirm the registration, please send:"
-        cath <# "SimpleX-Directory> /confirm 2:privacy"
-        cath #> "@SimpleX-Directory /confirm 2:privacy"
+        cath <# "SimpleX-Directory> /confirm 1:privacy"
+        cath #> "@SimpleX-Directory /confirm 1:privacy"
         welcomeWithLink' <- groupAccepted cath "privacy"
         groupNotFound cath "privacy"
         completeRegistration superUser bob "privacy" "Privacy" welcomeWithLink 1
@@ -549,7 +551,7 @@ testDuplicateProhibitWhenUpdated tmp =
 testDuplicateProhibitApproval :: HasCallStack => FilePath -> IO ()
 testDuplicateProhibitApproval tmp =
   withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       withNewTestChat tmp "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         submitGroup bob "privacy" "Privacy"
@@ -558,8 +560,8 @@ testDuplicateProhibitApproval tmp =
         submitGroup cath "privacy" "Privacy"
         cath <# "SimpleX-Directory> The group privacy (Privacy) is already submitted to the directory."
         cath <## "To confirm the registration, please send:"
-        cath <# "SimpleX-Directory> /confirm 2:privacy"
-        cath #> "@SimpleX-Directory /confirm 2:privacy"
+        cath <# "SimpleX-Directory> /confirm 1:privacy"
+        cath #> "@SimpleX-Directory /confirm 1:privacy"
         welcomeWithLink' <- groupAccepted cath "privacy"
         updateProfileWithLink cath "privacy" welcomeWithLink' 2
         notifySuperUser superUser cath "privacy" "Privacy" welcomeWithLink' 2
@@ -571,6 +573,44 @@ testDuplicateProhibitApproval tmp =
         superUser #> ("@SimpleX-Directory " <> approve)
         superUser <# ("SimpleX-Directory> > " <> approve)
         superUser <## "      The group ID 2 (privacy) is already listed in the directory."
+
+testListUserGroups :: HasCallStack => FilePath -> IO ()
+testListUserGroups tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        cath `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        connectUsers bob cath
+        fullAddMember "privacy" "Privacy" bob cath GRMember
+        joinGroup "privacy" cath bob
+        cath <## "#privacy: member SimpleX-Directory_1 is connected"
+        cath <## "contact SimpleX-Directory_1 is merged into SimpleX-Directory"
+        cath <## "use @SimpleX-Directory <message> to send messages"
+        registerGroupId superUser bob "security" "Security" 2 2
+        registerGroupId superUser cath "anonimity" "Anonimity" 3 1
+        bob #> "@SimpleX-Directory /list"
+        bob <# "SimpleX-Directory> > /list"
+        bob <## "      2 registered group(s)"
+        bob <# "SimpleX-Directory> 1. privacy (Privacy)"
+        bob <## "Welcome message:"
+        bob <##. "Link to join the group privacy: "
+        bob <## "Current members: 3"
+        bob <## "Status: active"
+        bob <# "SimpleX-Directory> 2. security (Security)"
+        bob <## "Welcome message:"
+        bob <##. "Link to join the group security: "
+        bob <## "Current members: 2"
+        bob <## "Status: active"
+        cath #> "@SimpleX-Directory /list"
+        cath <# "SimpleX-Directory> > /list"
+        cath <## "      1 registered group(s)"
+        cath <# "SimpleX-Directory> 1. anonimity (Anonimity)"
+        cath <## "Welcome message:"
+        cath <##. "Link to join the group anonimity: "
+        cath <## "Current members: 2"
+        cath <## "Status: active"
 
 reapproveGroup :: HasCallStack => TestCC -> TestCC -> IO ()
 reapproveGroup superUser bob = do
@@ -617,10 +657,13 @@ withDirectoryService tmp test = do
         bot st = simplexChatCore testCfg (mkChatOpts opts) Nothing $ directoryService st opts
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
-registerGroup su u n fn = do
+registerGroup su u n fn = registerGroupId su u n fn 1 1
+
+registerGroupId :: TestCC -> TestCC -> String -> String -> Int -> Int -> IO ()
+registerGroupId su u n fn gId ugId = do
   submitGroup u n fn
   welcomeWithLink <- groupAccepted u n
-  completeRegistration su u n fn welcomeWithLink 1
+  completeRegistrationId su u n fn welcomeWithLink gId ugId
 
 submitGroup :: TestCC -> String -> String -> IO ()
 submitGroup u n fn = do
@@ -642,17 +685,21 @@ groupAccepted u n = do
   dropStrPrefix "SimpleX-Directory> " . dropTime <$> getTermLine u -- welcome message with link
 
 completeRegistration :: TestCC -> TestCC -> String -> String -> String -> Int -> IO ()
-completeRegistration su u n fn welcomeWithLink gId = do
-  updateProfileWithLink u n welcomeWithLink gId
+completeRegistration su u n fn welcomeWithLink gId =
+  completeRegistrationId su u n fn welcomeWithLink gId gId
+
+completeRegistrationId :: TestCC -> TestCC -> String -> String -> String -> Int -> Int -> IO ()
+completeRegistrationId su u n fn welcomeWithLink gId ugId = do
+  updateProfileWithLink u n welcomeWithLink ugId
   notifySuperUser su u n fn welcomeWithLink gId
-  approveRegistration su u n gId
+  approveRegistrationId su u n gId ugId
 
 updateProfileWithLink :: TestCC -> String -> String -> Int -> IO ()
-updateProfileWithLink u n welcomeWithLink gId = do
+updateProfileWithLink u n welcomeWithLink ugId = do
   u ##> ("/set welcome " <> n <> " " <> welcomeWithLink)
   u <## "description changed to:"
   u <## welcomeWithLink
-  u <# ("SimpleX-Directory> Thank you! The group link for ID " <> show gId <> " (" <> n <> ") is added to the welcome message.")
+  u <# ("SimpleX-Directory> Thank you! The group link for ID " <> show ugId <> " (" <> n <> ") is added to the welcome message.")
   u <## "You will be notified once the group is added to the directory - it may take up to 24 hours."
 
 notifySuperUser :: TestCC -> TestCC -> String -> String -> String -> Int -> IO ()
@@ -667,12 +714,16 @@ notifySuperUser su u n fn welcomeWithLink gId = do
   su <# ("SimpleX-Directory> " <> approve)
 
 approveRegistration :: TestCC -> TestCC -> String -> Int -> IO ()
-approveRegistration su u n gId = do
+approveRegistration su u n gId =
+  approveRegistrationId su u n gId gId
+
+approveRegistrationId :: TestCC -> TestCC -> String -> Int -> Int -> IO ()
+approveRegistrationId su u n gId ugId = do
   let approve = "/approve " <> show gId <> ":" <> n <> " 1"
   su #> ("@SimpleX-Directory " <> approve)
   su <# ("SimpleX-Directory> > " <> approve)
   su <## "      Group approved!"
-  u <# ("SimpleX-Directory> The group ID " <> show gId <> " (" <> n <> ") is approved and listed in directory!")
+  u <# ("SimpleX-Directory> The group ID " <> show ugId <> " (" <> n <> ") is approved and listed in directory!")
   u <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
 
 connectVia :: TestCC -> String -> IO ()

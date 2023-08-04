@@ -470,6 +470,7 @@ createGroup3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
 createGroup3 gName cc1 cc2 cc3 = do
   createGroup2 gName cc1 cc2
   connectUsers cc1 cc3
+  name1 <- userName cc1
   name3 <- userName cc3
   sName2 <- showName cc2
   sName3 <- showName cc3
@@ -481,7 +482,7 @@ createGroup3 gName cc1 cc2 cc3 = do
         cc3 <## ("#" <> gName <> ": you joined the group")
         cc3 <## ("#" <> gName <> ": member " <> sName2 <> " is connected"),
       do
-        cc2 <## ("#" <> gName <> ": alice added " <> sName3 <> " to the group (connecting...)")
+        cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName3 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
     ]
 

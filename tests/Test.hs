@@ -27,7 +27,7 @@ main = do
       describe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests
       xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
-      xdescribe'' "SimpleX Directory service bot" directoryServiceTests
+      fdescribe "SimpleX Directory service bot" directoryServiceTests
   where
     testBracket test = do
       t <- getSystemTime

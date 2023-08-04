@@ -54,14 +54,14 @@ groupRegStatusText = \case
   GRSSuspendedBadRoles -> "suspended because roles changed"
   GRSRemoved -> "removed"
 
-addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> GroupRegStatus -> STM ()
+addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> GroupRegStatus -> STM UserGroupRegId
 addGroupReg st ct GroupInfo {groupId} grStatus = do
   dbOwnerMemberId <- newTVar Nothing
   groupRegStatus <- newTVar grStatus
   let gr = GroupReg {userGroupRegId = 1, dbGroupId = groupId, dbContactId = ctId, dbOwnerMemberId, groupRegStatus}
-  modifyTVar' (groupRegs st) $ \grs ->
-    let ugrId' = 1 + foldl' maxUgrId 0 grs
-     in gr {userGroupRegId = ugrId'}  : grs
+  stateTVar (groupRegs st) $ \grs ->
+    let ugrId = 1 + foldl' maxUgrId 0 grs
+     in (ugrId, gr {userGroupRegId = ugrId} : grs)
   where
     ctId = contactId' ct
     maxUgrId mx GroupReg {dbContactId, userGroupRegId}
@@ -71,11 +71,11 @@ addGroupReg st ct GroupInfo {groupId} grStatus = do
 getGroupReg :: DirectoryStore -> GroupRegId -> STM (Maybe GroupReg)
 getGroupReg st gId = find ((gId ==) . dbGroupId) <$> readTVar (groupRegs st)
 
-getUserGroupRegId :: DirectoryStore -> ContactId -> UserGroupRegId -> STM (Maybe GroupReg)
-getUserGroupRegId st ctId ugrId = find (\r -> ctId == dbContactId r && ugrId == userGroupRegId r) <$> readTVar (groupRegs st)
+getUserGroupReg :: DirectoryStore -> ContactId -> UserGroupRegId -> STM (Maybe GroupReg)
+getUserGroupReg st ctId ugrId = find (\r -> ctId == dbContactId r && ugrId == userGroupRegId r) <$> readTVar (groupRegs st)
 
-getContactGroupRegs :: DirectoryStore -> ContactId -> STM [GroupReg]
-getContactGroupRegs st ctId = filter ((ctId ==) . dbContactId) <$> readTVar (groupRegs st)
+getUserGroupRegs :: DirectoryStore -> ContactId -> STM [GroupReg]
+getUserGroupRegs st ctId = filter ((ctId ==) . dbContactId) <$> readTVar (groupRegs st)
 
 filterListedGroups :: DirectoryStore -> [GroupInfo] -> STM [GroupInfo]
 filterListedGroups st gs = do

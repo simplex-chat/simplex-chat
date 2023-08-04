@@ -100,8 +100,10 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
 
     groupInfoText GroupProfile {displayName = n, fullName = fn, description = d} =
       n <> (if n == fn || T.null fn then "" else " (" <> fn <> ")") <> maybe "" ("\nWelcome message:\n" <>) d
-    groupReference GroupInfo {groupId, groupProfile = GroupProfile {displayName}} =
-      "ID " <> show groupId <> " (" <> T.unpack displayName <> ")"
+    userGroupReference gr GroupInfo {groupProfile = GroupProfile {displayName}} = userGroupReference' gr displayName
+    userGroupReference' GroupReg {userGroupRegId} displayName = groupReference' userGroupRegId displayName
+    groupReference GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = groupReference' groupId displayName
+    groupReference' groupId displayName = "ID " <> show groupId <> " (" <> T.unpack displayName <> ")"
     groupAlreadyListed GroupInfo {groupProfile = GroupProfile {displayName, fullName}} =
       T.unpack $ "The group " <> displayName <> " (" <> fullName <> ") is already listed in the directory, please choose another name."
 
@@ -129,7 +131,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
 
     processInvitation :: Contact -> GroupInfo -> IO ()
     processInvitation ct g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = do
-      atomically $ addGroupReg st ct g GRSProposed
+      void $ atomically $ addGroupReg st ct g GRSProposed
       r <- sendChatCmd cc $ APIJoinGroup groupId
       sendMessage cc ct $ T.unpack $ case r of
         CRUserAcceptedGroupSent {} -> "Joining the group " <> displayName <> "…"
@@ -144,7 +146,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
         \For example, send _privacy_ to find groups about privacy."
 
     deGroupInvitation :: Contact -> GroupInfo -> GroupMemberRole -> GroupMemberRole -> IO ()
-    deGroupInvitation ct g@GroupInfo {groupId, groupProfile = GroupProfile {displayName, fullName}} fromMemberRole memberRole = do
+    deGroupInvitation ct g@GroupInfo {groupProfile = GroupProfile {displayName, fullName}} fromMemberRole memberRole = do
       case badRolesMsg $ groupRolesStatus fromMemberRole memberRole of
         Just msg -> sendMessage cc ct msg
         Nothing -> getDuplicateGroup g >>= \case
@@ -154,9 +156,9 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
           Nothing -> sendMessage cc ct "Error: getDuplicateGroup. Please notify the developers."
       where
         askConfirmation = do
-          atomically $ addGroupReg st ct g GRSPendingConfirmation
+          ugrId <- atomically $ addGroupReg st ct g GRSPendingConfirmation
           sendMessage cc ct $ T.unpack $ "The group " <> displayName <> " (" <> fullName <> ") is already submitted to the directory.\nTo confirm the registration, please send:"
-          sendMessage cc ct $ "/confirm " <> show groupId <> ":" <> T.unpack displayName
+          sendMessage cc ct $ "/confirm " <> show ugrId <> ":" <> T.unpack displayName
 
     badRolesMsg :: GroupRolesStatus -> Maybe String
     badRolesMsg = \case
@@ -215,20 +217,21 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       unless (sameProfile p p') $ do
         atomically $ unlistGroup st groupId
         withGroupReg toGroup "group updated" $ \gr -> do
+          let userGroupRef = userGroupReference gr toGroup
           readTVarIO (groupRegStatus gr) >>= \case
             GRSPendingConfirmation -> pure ()
             GRSProposed -> pure ()
             GRSPendingUpdate -> groupProfileUpdate >>= \case
               GPNoServiceLink ->
-                when (ctId `isOwner` gr) $ notifyOwner gr $ "The profile updated for " <> groupRef <> ", but the group link is not added to the welcome message."
+                when (ctId `isOwner` gr) $ notifyOwner gr $ "The profile updated for " <> userGroupRef <> ", but the group link is not added to the welcome message."
               GPServiceLinkAdded
                 | ctId `isOwner` gr -> groupLinkAdded gr
                 | otherwise -> notifyOwner gr "The group link is added by another group member, your registration will not be processed.\n\nPlease update the group profile yourself."
-              GPServiceLinkRemoved -> when (ctId `isOwner` gr) $ notifyOwner gr $ "The group link of " <> groupRef <> " is removed from the welcome message, please add it."
+              GPServiceLinkRemoved -> when (ctId `isOwner` gr) $ notifyOwner gr $ "The group link of " <> userGroupRef <> " is removed from the welcome message, please add it."
               GPHasServiceLink -> when (ctId `isOwner` gr) $ groupLinkAdded gr
               GPServiceLinkError -> do
-                when (ctId `isOwner` gr) $ notifyOwner gr $ "Error: " <> serviceName <> " has no group link for " <> groupRef <> ". Please report the error to the developers."
-                putStrLn $ "Error: no group link for " <> groupRef
+                when (ctId `isOwner` gr) $ notifyOwner gr $ "Error: " <> serviceName <> " has no group link for " <> userGroupRef <> ". Please report the error to the developers."
+                putStrLn $ "Error: no group link for " <> userGroupRef
             GRSPendingApproval n -> processProfileChange gr $ n + 1
             GRSActive -> processProfileChange gr 1
             GRSSuspended -> processProfileChange gr 1
@@ -238,7 +241,6 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
         isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
         GroupInfo {groupId, groupProfile = p} = fromGroup
         GroupInfo {groupProfile = p'} = toGroup
-        groupRef = groupReference toGroup
         sameProfile
           GroupProfile {displayName = n, fullName = fn, image = i, description = d}
           GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
@@ -248,29 +250,32 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
             Nothing -> notifyOwner gr "Error: getDuplicateGroup. Please notify the developers."
             Just DGReserved -> notifyOwner gr $ groupAlreadyListed toGroup
             _ -> do
-              notifyOwner gr $ "Thank you! The group link for " <> groupRef <> " is added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
+              notifyOwner gr $ "Thank you! The group link for " <> userGroupReference gr toGroup <> " is added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 24 hours."
               let gaId = 1
               setGroupStatus gr $ GRSPendingApproval gaId
               checkRolesSendToApprove gr gaId
-        processProfileChange gr n' = groupProfileUpdate >>= \case
-          GPNoServiceLink -> do
-            setGroupStatus gr GRSPendingUpdate
-            notifyOwner gr $ "The group profile is updated " <> groupRef <> ", but no link is added to the welcome message.\n\nThe group will remain hidden from the directory until the group link is added and the group is re-approved."
-          GPServiceLinkRemoved -> do
-            setGroupStatus gr GRSPendingUpdate
-            notifyOwner gr $ "The group link for " <> groupRef <> " is removed from the welcome message.\n\nThe group is hidden from the directory until the group link is added and the group is re-approved."
-            notifySuperUsers $ "The group link is removed from " <> groupRef <> ", de-listed."
-          GPServiceLinkAdded -> do
-            setGroupStatus gr $ GRSPendingApproval n'
-            notifyOwner gr $ "The group link is added to " <> groupRef <> "!\nIt is hidden from the directory until approved."
-            notifySuperUsers $ "The group link is added to " <> groupRef <> "."
-            checkRolesSendToApprove gr n'
-          GPHasServiceLink -> do
-            setGroupStatus gr $ GRSPendingApproval n'
-            notifyOwner gr $ "The group " <> groupRef <> " is updated!\nIt is hidden from the directory until approved."
-            notifySuperUsers $ "The group " <> groupRef <> " is updated."
-            checkRolesSendToApprove gr n'
-          GPServiceLinkError -> putStrLn $ "Error: no group link for " <> groupRef <> " pending approval."
+        processProfileChange gr n' = do
+          let userGroupRef = userGroupReference gr toGroup
+              groupRef = groupReference toGroup
+          groupProfileUpdate >>= \case
+            GPNoServiceLink -> do
+              setGroupStatus gr GRSPendingUpdate
+              notifyOwner gr $ "The group profile is updated " <> userGroupRef <> ", but no link is added to the welcome message.\n\nThe group will remain hidden from the directory until the group link is added and the group is re-approved."
+            GPServiceLinkRemoved -> do
+              setGroupStatus gr GRSPendingUpdate
+              notifyOwner gr $ "The group link for " <> userGroupRef <> " is removed from the welcome message.\n\nThe group is hidden from the directory until the group link is added and the group is re-approved."
+              notifySuperUsers $ "The group link is removed from " <> groupRef <> ", de-listed."
+            GPServiceLinkAdded -> do
+              setGroupStatus gr $ GRSPendingApproval n'
+              notifyOwner gr $ "The group link is added to " <> userGroupRef <> "!\nIt is hidden from the directory until approved."
+              notifySuperUsers $ "The group link is added to " <> groupRef <> "."
+              checkRolesSendToApprove gr n'
+            GPHasServiceLink -> do
+              setGroupStatus gr $ GRSPendingApproval n'
+              notifyOwner gr $ "The group " <> userGroupRef <> " is updated!\nIt is hidden from the directory until approved."
+              notifySuperUsers $ "The group " <> groupRef <> " is updated."
+              checkRolesSendToApprove gr n'
+            GPServiceLinkError -> putStrLn $ "Error: no group link for " <> groupRef <> " pending approval."
         groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)
           where
             profileUpdate = \case
@@ -302,7 +307,9 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
 
     deContactRoleChanged :: GroupInfo -> ContactId -> GroupMemberRole -> IO ()
     deContactRoleChanged g@GroupInfo {membership = GroupMember {memberRole = serviceRole}} ctId contactRole =
-      withGroupReg g "contact role changed" $ \gr ->
+      withGroupReg g "contact role changed" $ \gr -> do
+        let userGroupRef = userGroupReference gr g
+            uCtRole = "Your role in the group " <> userGroupRef <> " is changed to " <> ctRole
         when (ctId `isOwner` gr) $ do
           readTVarIO (groupRegStatus gr) >>= \case
             GRSSuspendedBadRoles -> when (rStatus == GRSOk) $ do
@@ -321,12 +328,13 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
         rStatus = groupRolesStatus contactRole serviceRole
         groupRef = groupReference g
         ctRole = "*" <> B.unpack (strEncode contactRole) <> "*"
-        uCtRole = "Your role in the group " <> groupRef <> " is changed to " <> ctRole
         suCtRole = "(user role is set to " <> ctRole <> ")."
 
     deServiceRoleChanged :: GroupInfo -> GroupMemberRole -> IO ()
     deServiceRoleChanged g serviceRole = do
       withGroupReg g "service role changed" $ \gr -> do
+        let userGroupRef = userGroupReference gr g
+            uSrvRole = serviceName <> " role in the group " <> userGroupRef <> " is changed to " <> srvRole
         readTVarIO (groupRegStatus gr) >>= \case
           GRSSuspendedBadRoles -> when (serviceRole == GRAdmin) $
             whenContactIsOwner gr $ do
@@ -345,7 +353,6 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       where
         groupRef = groupReference g
         srvRole = "*" <> B.unpack (strEncode serviceRole) <> "*"
-        uSrvRole = serviceName <> " role in the group " <> groupRef <> " is changed to " <> srvRole
         suSrvRole = "(" <> serviceName <> " role is changed to " <> srvRole <> ")."
         whenContactIsOwner gr action = 
           getGroupMember gr >>=
@@ -356,26 +363,23 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       withGroupReg g "contact removed" $ \gr -> do
         when (ctId `isOwner` gr) $ do
           setGroupStatus gr GRSRemoved
-          let groupRef = groupReference g
-          notifyOwner gr $ "You are removed from the group " <> groupRef <> ".\n\nThe group is no longer listed in the directory."
-          notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner is removed)."
+          notifyOwner gr $ "You are removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
+          notifySuperUsers $ "The group " <> groupReference g <> " is de-listed (group owner is removed)."
 
     deContactLeftGroup :: ContactId -> GroupInfo -> IO ()
     deContactLeftGroup ctId g =
       withGroupReg g "contact left" $ \gr -> do
         when (ctId `isOwner` gr) $ do
           setGroupStatus gr GRSRemoved
-          let groupRef = groupReference g
-          notifyOwner gr $ "You left the group " <> groupRef <> ".\n\nThe group is no longer listed in the directory."
-          notifySuperUsers $ "The group " <> groupRef <> " is de-listed (group owner left)."
+          notifyOwner gr $ "You left the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
+          notifySuperUsers $ "The group " <> groupReference g <> " is de-listed (group owner left)."
 
     deServiceRemovedFromGroup :: GroupInfo -> IO ()
     deServiceRemovedFromGroup g =
       withGroupReg g "service removed" $ \gr -> do
         setGroupStatus gr GRSRemoved
-        let groupRef = groupReference g
-        notifyOwner gr $ serviceName <> " is removed from the group " <> groupRef <> ".\n\nThe group is no longer listed in the directory."
-        notifySuperUsers $ "The group " <> groupRef <> " is de-listed (directory service is removed)."
+        notifyOwner gr $ serviceName <> " is removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
+        notifySuperUsers $ "The group " <> groupReference g <> " is de-listed (directory service is removed)."
 
     deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
     deUserCommand ct ciId = \case
@@ -400,7 +404,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
                   sendComposedMessage cc ct Nothing msg
           Nothing -> sendReply "Error: getGroups. Please notify the developers."
       DCConfirmDuplicateGroup ugrId gName ->
-        atomically (getGroupReg st ugrId) >>= \case
+        atomically (getUserGroupReg st (contactId' ct) ugrId) >>= \case
           Nothing -> sendReply $ "Group ID " <> show ugrId <> " not found"
           Just GroupReg {dbGroupId, groupRegStatus} -> do
             getGroup cc dbGroupId >>= \case
@@ -416,19 +420,19 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
                     _ -> sendReply $ "Error: the group ID " <> show ugrId <> " (" <> T.unpack displayName <> ") is not pending confirmation."
                 | otherwise -> sendReply $ "Group ID " <> show ugrId <> " has the display name " <> T.unpack displayName
       DCListUserGroups ->
-        atomically (getContactGroupRegs st $ contactId' ct) >>= \grs -> do
-          sendReply $ show (length grs) <> "registered group(s)"
-          void . forkIO $ forM_ grs $ \gr@GroupReg {dbGroupId}  -> do
+        atomically (getUserGroupRegs st $ contactId' ct) >>= \grs -> do
+          sendReply $ show (length grs) <> " registered group(s)"
+          void . forkIO $ forM_ (reverse grs) $ \gr@GroupReg {userGroupRegId, dbGroupId}  -> do
             grStatus <- readTVarIO $ groupRegStatus gr
             let statusStr = "Status: " <> groupRegStatusText grStatus
             getGroupAndSummary cc dbGroupId >>= \case
               Just (GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
                 let membersStr = "Current members: " <> tshow currentMembers
-                    text = T.unlines [tshow dbGroupId <> ". " <> groupInfoText p, membersStr, statusStr]
+                    text = T.unlines [tshow userGroupRegId <> ". " <> groupInfoText p, membersStr, statusStr]
                     msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
                 sendComposedMessage cc ct Nothing msg
               Nothing -> do
-                let text = tshow dbGroupId <> ". Error: getGroup. Please notify the developers.\n" <> statusStr
+                let text = tshow userGroupRegId <> ". Error: getGroup. Please notify the developers.\n" <> statusStr
                 sendComposedMessage cc ct Nothing $ MCText text
       DCDeleteGroup ugrId gName -> pure ()
       DCUnknownCommand -> sendReply "Unknown command"
@@ -454,7 +458,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
                           Just GRSOk -> do
                             setGroupStatus gr GRSActive
                             sendReply "Group approved!"
-                            notifyOwner gr $ "The group " <> groupRef <> " is approved and listed in directory!\nPlease note: if you change the group profile it will be hidden from directory until it is re-approved."
+                            notifyOwner gr $ "The group " <> userGroupReference' gr n <> " is approved and listed in directory!\nPlease note: if you change the group profile it will be hidden from directory until it is re-approved."
                           Just GRSServiceNotAdmin -> replyNotApproved serviceNotAdmin
                           Just GRSContactNotOwner -> replyNotApproved "user is not an owner."
                           Just GRSBadRoles -> replyNotApproved $ "user is not an owner, " <> serviceNotAdmin
@@ -465,28 +469,28 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
                   | otherwise -> sendReply "Incorrect approval code"
                 _ -> sendReply $ "Error: the group " <> groupRef <> " is not pending approval."
           where
-            groupRef = "ID " <> show groupId <> " (" <> T.unpack n <> ")"
+            groupRef = groupReference' groupId n
         DCRejectGroup _gaId _gName -> pure ()
         DCSuspendGroup groupId gName -> do
-          let groupRef = "ID " <> show groupId <> " (" <> T.unpack gName <> ")"
+          let groupRef = groupReference' groupId gName
           getGroupAndReg groupId gName >>= \case
             Nothing -> sendReply $ "The group " <> groupRef <> " not found (getGroupAndReg)."
             Just (_, gr) ->
               readTVarIO (groupRegStatus gr) >>= \case
                 GRSActive -> do
                   setGroupStatus gr GRSSuspended
-                  notifyOwner gr $ "The group " <> groupRef <> " is suspended and hidden from directory. Please contact the administrators."
+                  notifyOwner gr $ "The group " <> userGroupReference' gr gName <> " is suspended and hidden from directory. Please contact the administrators."
                   sendReply "Group suspended!"
                 _ -> sendReply $ "The group " <> groupRef <> " is not active, can't be suspended."
         DCResumeGroup groupId gName -> do
-          let groupRef = "ID " <> show groupId <> " (" <> T.unpack gName <> ")"
+          let groupRef = groupReference' groupId gName
           getGroupAndReg groupId gName >>= \case
             Nothing -> sendReply $ "The group " <> groupRef <> " not found (getGroupAndReg)."
             Just (_, gr) ->
               readTVarIO (groupRegStatus gr) >>= \case
                 GRSSuspended -> do
                   setGroupStatus gr GRSActive
-                  notifyOwner gr $ "The group " <> groupRef <> " is listed in the directory again!"
+                  notifyOwner gr $ "The group " <> userGroupReference' gr gName <> " is listed in the directory again!"
                   sendReply "Group listing resumed!"
                 _ -> sendReply $ "The group " <> groupRef <> " is not suspended, can't be resumed."
         DCListGroups -> pure ()
