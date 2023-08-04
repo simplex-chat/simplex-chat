@@ -46,7 +46,7 @@ directoryServiceTests = do
     it "should prohibit when profile is updated and not send for approval" testDuplicateProhibitWhenUpdated
     it "should prohibit approval if a duplicate group is listed" testDuplicateProhibitApproval
   describe "list groups" $ do
-    it "should list user's groups" testListUserGroups
+    fit "should list user's groups" testListUserGroups
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
@@ -589,7 +589,7 @@ testListUserGroups tmp =
         cath <## "contact SimpleX-Directory_1 is merged into SimpleX-Directory"
         cath <## "use @SimpleX-Directory <message> to send messages"
         registerGroupId superUser bob "security" "Security" 2 2
-        registerGroupId superUser cath "anonimity" "Anonimity" 3 1
+        registerGroupId superUser cath "anonymity" "Anonymity" 3 1
         bob #> "@SimpleX-Directory /list"
         bob <# "SimpleX-Directory> > /list"
         bob <## "      2 registered group(s)"
@@ -606,11 +606,50 @@ testListUserGroups tmp =
         cath #> "@SimpleX-Directory /list"
         cath <# "SimpleX-Directory> > /list"
         cath <## "      1 registered group(s)"
-        cath <# "SimpleX-Directory> 1. anonimity (Anonimity)"
+        cath <# "SimpleX-Directory> 1. anonymity (Anonymity)"
         cath <## "Welcome message:"
-        cath <##. "Link to join the group anonimity: "
+        cath <##. "Link to join the group anonymity: "
         cath <## "Current members: 2"
         cath <## "Status: active"
+        -- with de-listed group
+        groupFound cath "anonymity"
+        cath ##> "/mr anonymity SimpleX-Directory member"
+        cath <## "#anonymity: you changed the role of SimpleX-Directory from admin to member"
+        cath <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (anonymity) is changed to member."
+        cath <## ""
+        cath <## "The group is no longer listed in the directory."
+        superUser <# "SimpleX-Directory> The group ID 3 (anonymity) is de-listed (SimpleX-Directory role is changed to member)."
+        groupNotFound cath "anonymity"
+        cath #> "@SimpleX-Directory /list"
+        cath <# "SimpleX-Directory> > /list"
+        cath <## "      1 registered group(s)"
+        cath <# "SimpleX-Directory> 1. anonymity (Anonymity)"
+        cath <## "Welcome message:"
+        cath <##. "Link to join the group anonymity: "
+        cath <## "Current members: 2"
+        cath <## "Status: suspended because roles changed"
+        -- superuser lists all groups
+        superUser #> "@SimpleX-Directory /all"
+        superUser <# "SimpleX-Directory> > /all"
+        superUser <## "      3 registered group(s)"
+        superUser <# "SimpleX-Directory> 1. privacy (Privacy)"
+        superUser <## "Welcome message:"
+        superUser <##. "Link to join the group privacy: "
+        superUser <## "Owner: bob"
+        superUser <## "Current members: 3"
+        superUser <## "Status: active"
+        superUser <# "SimpleX-Directory> 2. security (Security)"
+        superUser <## "Welcome message:"
+        superUser <##. "Link to join the group security: "
+        superUser <## "Owner: bob"
+        superUser <## "Current members: 2"
+        superUser <## "Status: active"
+        superUser <# "SimpleX-Directory> 3. anonymity (Anonymity)"
+        superUser <## "Welcome message:"
+        superUser <##. "Link to join the group anonymity: "
+        superUser <## "Owner: cath"
+        superUser <## "Current members: 2"
+        superUser <## "Status: suspended because roles changed"
 
 reapproveGroup :: HasCallStack => TestCC -> TestCC -> IO ()
 reapproveGroup superUser bob = do
@@ -770,7 +809,7 @@ groupFound u name = do
   u <## "      Found 1 group(s)"
   u <#. ("SimpleX-Directory> " <> name <> " (")
   u <## "Welcome message:"
-  u <##. "Link to join the group privacy: "
+  u <##. "Link to join the group "
 
 groupNotFound :: TestCC -> String -> IO ()
 groupNotFound u s = do

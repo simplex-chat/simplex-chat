@@ -17,7 +17,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -422,19 +422,9 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       DCListUserGroups ->
         atomically (getUserGroupRegs st $ contactId' ct) >>= \grs -> do
           sendReply $ show (length grs) <> " registered group(s)"
-          void . forkIO $ forM_ (reverse grs) $ \gr@GroupReg {userGroupRegId, dbGroupId}  -> do
-            grStatus <- readTVarIO $ groupRegStatus gr
-            let statusStr = "Status: " <> groupRegStatusText grStatus
-            getGroupAndSummary cc dbGroupId >>= \case
-              Just (GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
-                let membersStr = "Current members: " <> tshow currentMembers
-                    text = T.unlines [tshow userGroupRegId <> ". " <> groupInfoText p, membersStr, statusStr]
-                    msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
-                sendComposedMessage cc ct Nothing msg
-              Nothing -> do
-                let text = tshow userGroupRegId <> ". Error: getGroup. Please notify the developers.\n" <> statusStr
-                sendComposedMessage cc ct Nothing $ MCText text
-      DCDeleteGroup ugrId gName -> pure ()
+          void . forkIO $ forM_ (reverse grs) $ \gr@GroupReg {userGroupRegId} ->
+            sendGroupInfo ct gr userGroupRegId Nothing
+      DCDeleteGroup _ugrId _gName -> pure ()
       DCUnknownCommand -> sendReply "Unknown command"
       DCCommandError tag -> sendReply $ "Command error: " <> show tag
       where
@@ -493,7 +483,13 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
                   notifyOwner gr $ "The group " <> userGroupReference' gr gName <> " is listed in the directory again!"
                   sendReply "Group listing resumed!"
                 _ -> sendReply $ "The group " <> groupRef <> " is not suspended, can't be resumed."
-        DCListGroups -> pure ()
+        DCListAllGroups count ->
+          readTVarIO (groupRegs st) >>= \grs -> do
+            sendReply $ show (length grs) <> " registered group(s)" <> (if length grs > count then ", showing the last " <> show count else "")
+            void . forkIO $ forM_ (reverse $ take count grs) $ \gr@GroupReg {dbGroupId, dbContactId} -> do
+              ct_ <- getContact cc dbContactId
+              let ownerStr = "Owner: " <> maybe "getContact error" localDisplayName' ct_
+              sendGroupInfo ct gr dbGroupId $ Just ownerStr
         DCCommandError tag -> sendReply $ "Command error: " <> show tag
       | otherwise = sendReply "You are not allowed to use this command"
       where
@@ -508,6 +504,20 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
             then atomically (getGroupReg st gId)
                   $>>= \gr -> pure $ Just (g, gr)
             else pure Nothing
+
+    sendGroupInfo :: Contact -> GroupReg -> GroupId -> Maybe Text -> IO ()
+    sendGroupInfo ct gr@GroupReg {dbGroupId} useGroupId ownerStr_ = do
+      grStatus <- readTVarIO $ groupRegStatus gr
+      let statusStr = "Status: " <> groupRegStatusText grStatus
+      getGroupAndSummary cc dbGroupId >>= \case
+        Just (GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
+          let membersStr = "Current members: " <> tshow currentMembers
+              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] <> maybeToList ownerStr_ <> [membersStr, statusStr]
+              msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
+          sendComposedMessage cc ct Nothing msg
+        Nothing -> do
+          let text = T.unlines $ [tshow useGroupId <> ". Error: getGroup. Please notify the developers."] <> maybeToList ownerStr_ <> [statusStr]
+          sendComposedMessage cc ct Nothing $ MCText text
 
 getContact :: ChatController -> ContactId -> IO (Maybe Contact)
 getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId) (CPLast 0) Nothing)
