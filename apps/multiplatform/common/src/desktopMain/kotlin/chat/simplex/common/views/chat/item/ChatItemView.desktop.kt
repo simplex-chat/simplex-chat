@@ -21,7 +21,7 @@ import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 actual fun ReactionIcon(text: String, fontSize: TextUnit) {
-  if (desktopPlatform.isMac() && isHearEmoji(text)) {
+  if (desktopPlatform.isMac() && isHeartEmoji(text)) {
     val sp = with(LocalDensity.current) { (fontSize.value + 8).sp.toDp() }
     Image(painterResource(MR.images.ic_heart), null, Modifier.size(sp).padding(top = 4.dp, bottom = 2.dp))
   } else {
