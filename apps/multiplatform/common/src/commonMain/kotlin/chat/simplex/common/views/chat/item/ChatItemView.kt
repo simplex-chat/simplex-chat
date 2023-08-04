@@ -144,7 +144,7 @@ fun ChatItemView(
             }
           }
           if (rs.isNotEmpty()) {
-            Row(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).horizontalScroll(rememberScrollState())) {
+            Row(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
               rs.forEach() { r ->
                 Box(
                   Modifier.size(36.dp).clickable {
