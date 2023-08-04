@@ -41,8 +41,8 @@ struct ContactConnectionInfo: View {
                     Text(contactConnectionText(contactConnection))
                         .padding(.bottom, 16)
 
-                    if let connReqInv = contactConnection.connReqInv {
-                        OneTimeLinkProfileText(contactConnection: contactConnection, connReqInvitation: connReqInv)
+                    if contactConnection.connReqInv != nil {
+                        oneTimeLinkProfileText()
                     }
                 }
                 .listRowBackground(Color.clear)
@@ -65,7 +65,9 @@ struct ContactConnectionInfo: View {
 
                     if contactConnection.initiated,
                        let connReqInv = contactConnection.connReqInv {
-                        oneTimeLinkSection(contactConnection: contactConnection, connReqInvitation: connReqInv)
+                        QRCode(uri: connReqInv)
+                        shareLinkButton(connReqInv)
+                        oneTimeLinkLearnMoreButton()
                     } else {
                         oneTimeLinkLearnMoreButton()
                     }
@@ -94,6 +96,18 @@ struct ContactConnectionInfo: View {
         }
         .onAppear {
             localAlias = contactConnection.localAlias
+        }
+    }
+
+    private func oneTimeLinkProfileText() -> some View {
+        HStack {
+            if contactConnection.incognito {
+                Image(systemName: "theatermasks").foregroundColor(.indigo)
+                Text("A random profile will be sent to your contact")
+            } else {
+                Image(systemName: "info.circle").foregroundColor(.secondary)
+                Text("Your chat profile will be sent to your contact")
+            }
         }
     }
 

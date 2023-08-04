@@ -222,9 +222,13 @@ struct ChatListNavLink: View {
         ContactRequestView(contactRequest: contactRequest, chat: chat)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
-                Task { await acceptContactRequest(contactRequest) }
-            } label: { Label("Accept", systemImage: chatModel.incognito ? "theatermasks" : "checkmark") }
-                .tint(chatModel.incognito ? .indigo : .accentColor)
+                Task { await acceptContactRequest(incognitoEnabled: false, contactRequest: contactRequest) }
+            } label: { Label("Accept", systemImage: "checkmark") }
+                .tint(.accentColor)
+            Button {
+                Task { await acceptContactRequest(incognitoEnabled: true, contactRequest: contactRequest) }
+            } label: { Label("Incognito", systemImage: "theatermasks") }
+                .tint(.indigo)
             Button {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
             } label: {
@@ -235,7 +239,8 @@ struct ChatListNavLink: View {
         .frame(height: rowHeights[dynamicTypeSize])
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button(chatModel.incognito ? "Accept incognito" : "Accept contact") { Task { await acceptContactRequest(contactRequest) } }
+            Button("Accept contact") { Task { await acceptContactRequest(incognitoEnabled: false, contactRequest: contactRequest) } }
+            Button("Accept incognito") { Task { await acceptContactRequest(incognitoEnabled: true, contactRequest: contactRequest) } }
             Button("Reject contact (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
         }
     }

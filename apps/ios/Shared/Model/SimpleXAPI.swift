@@ -252,12 +252,6 @@ func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
     throw r
 }
 
-func apiSetIncognito(incognito: Bool) throws {
-    let r = chatSendCmdSync(.setIncognito(incognito: incognito))
-    if case .cmdOk = r { return }
-    throw r
-}
-
 func apiExportArchive(config: ArchiveConfig) async throws {
     try await sendCommandOkResp(.apiExportArchive(config: config))
 }
@@ -564,19 +558,25 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
     return nil
 }
 
-func apiAddContact() async -> String? {
+func apiAddContact(incognitoEnabled: Bool) async -> (String, PendingContactConnection)? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiAddContact: no current user")
         return nil
     }
-    let r = await chatSendCmd(.apiAddContact(userId: userId), bgTask: false)
-    if case let .invitation(_, connReqInvitation) = r { return connReqInvitation }
+    let r = await chatSendCmd(.apiAddContact(userId: userId, incognitoEnabled: incognitoEnabled), bgTask: false)
+    if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
     AlertManager.shared.showAlert(connectionErrorAlert(r))
     return nil
 }
 
-func apiConnect(connReq: String) async -> ConnReqType? {
-    let (connReqType, alert) = await apiConnect_(connReq: connReq)
+func apiSetConnectionIncognito(connId: Int64, incognitoEnabled: Bool) async throws -> PendingContactConnection? {
+    let r = await chatSendCmd(.apiSetConnectionIncognito(connId: connId, incognitoEnabled: incognitoEnabled))
+    if case let .connectionIncognitoUpdated(_, toConnection) = r { return toConnection }
+    throw r
+}
+
+func apiConnect(incognitoEnabled: Bool, connReq: String) async -> ConnReqType? {
+    let (connReqType, alert) = await apiConnect_(incognitoEnabled: incognitoEnabled, connReq: connReq)
     if let alert = alert {
         AlertManager.shared.showAlert(alert)
         return nil
@@ -585,12 +585,12 @@ func apiConnect(connReq: String) async -> ConnReqType? {
     }
 }
 
-func apiConnect_(connReq: String) async -> (ConnReqType?, Alert?) {
+func apiConnect_(incognitoEnabled: Bool, connReq: String) async -> (ConnReqType?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnect: no current user")
         return (nil, nil)
     }
-    let r = await chatSendCmd(.apiConnect(userId: userId, connReq: connReq))
+    let r = await chatSendCmd(.apiConnect(userId: userId, incognitoEnabled: incognitoEnabled, connReq: connReq))
     switch r {
     case .sentConfirmation: return (.invitation, nil)
     case .sentInvitation: return (.contact, nil)
@@ -766,8 +766,8 @@ func userAddressAutoAccept(_ autoAccept: AutoAccept?) async throws -> UserContac
     }
 }
 
-func apiAcceptContactRequest(contactReqId: Int64) async -> Contact? {
-    let r = await chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
+func apiAcceptContactRequest(incognitoEnabled: Bool, contactReqId: Int64) async -> Contact? {
+    let r = await chatSendCmd(.apiAcceptContact(incognitoEnabled: incognitoEnabled, contactReqId: contactReqId))
     let am = AlertManager.shared
 
     if case let .acceptingContactRequest(_, contact) = r { return contact }
@@ -875,8 +875,8 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
     }
 }
 
-func acceptContactRequest(_ contactRequest: UserContactRequest) async {
-    if let contact = await apiAcceptContactRequest(contactReqId: contactRequest.apiId) {
+func acceptContactRequest(incognitoEnabled: Bool, contactRequest: UserContactRequest) async {
+    if let contact = await apiAcceptContactRequest(incognitoEnabled: incognitoEnabled, contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
         DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
     }
@@ -1110,7 +1110,6 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try setXFTPConfig(getXFTPCfg())
-    try apiSetIncognito(incognito: incognitoGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {

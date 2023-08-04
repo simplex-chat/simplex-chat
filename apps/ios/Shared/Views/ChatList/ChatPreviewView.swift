@@ -198,10 +198,7 @@ struct ChatPreviewView: View {
     @ViewBuilder private func groupInvitationPreviewText(_ groupInfo: GroupInfo) -> some View {
         groupInfo.membership.memberIncognito
         ? chatPreviewInfoText("join as \(groupInfo.membership.memberProfile.displayName)")
-        : (chatModel.incognito
-           ? chatPreviewInfoText("join as \(chatModel.currentUser?.profile.displayName ?? "yourself")")
-           : chatPreviewInfoText("you are invited to group")
-        )
+        : chatPreviewInfoText("you are invited to group")
     }
 
     @ViewBuilder private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {

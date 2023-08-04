@@ -7,11 +7,12 @@
 //
 
 import SwiftUI
+import SimpleXChat
 import CodeScanner
 
 struct ScanToConnectView: View {
-    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
+    @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
     var body: some View {
         ScrollView {
@@ -20,27 +21,14 @@ struct ScanToConnectView: View {
                     .font(.largeTitle)
                     .bold()
                     .padding(.vertical)
-                if (chatModel.incognito) {
-                    HStack {
-                        Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("A random profile will be sent to your contact").font(.footnote)
-                    }
-                    .padding(.bottom)
-                } else {
-                    HStack {
-                        Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("Your chat profile will be sent to your contact").font(.footnote)
-                    }
-                    .padding(.bottom)
-                }
                 ZStack {
                     CodeScannerView(codeTypes: [.qr], completion: processQRCode)
                         .aspectRatio(1, contentMode: .fit)
                         .border(.gray)
                 }
                 .padding(.bottom)
+                IncognitoToggle(incognitoEnabled: $incognitoDefault)
+                Spacer()
                 Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
                     .padding(.bottom)
             }
@@ -55,14 +43,77 @@ struct ScanToConnectView: View {
             if let crData = parseLinkQueryData(r.string),
                checkCRDataGroup(crData) {
                 dismiss()
-                AlertManager.shared.showAlert(groupLinkAlert(r.string))
+                AlertManager.shared.showAlert(groupLinkAlert(incognitoEnabled: incognitoDefault, connectionLink: r.string))
             } else {
-                Task { connectViaLink(r.string, dismiss) }
+                Task { connectViaLink(incognitoEnabled: incognitoDefault, connectionLink: r.string, dismiss) }
             }
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()
         }
+    }
+}
+
+struct IncognitoToggle: View {
+    @Binding var incognitoEnabled: Bool
+    @State private var incognitoToggleSheet: IncognitoToggleSheet?
+
+    private enum IncognitoToggleSheet: Identifiable {
+        case incognitoInfo
+
+        var id: IncognitoToggleSheet { get { self } }
+    }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Image(systemName: incognitoEnabled ? "theatermasks.fill" : "theatermasks")
+                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+                .foregroundColor(incognitoEnabled ? Color.indigo : .secondary)
+            Toggle(isOn: $incognitoEnabled) {
+                HStack(spacing: 6) {
+                    Text("Incognito")
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.accentColor)
+                        .font(.system(size: 14))
+                }
+                .onTapGesture {
+                    incognitoToggleSheet = .incognitoInfo
+                }
+            }
+            .padding(.leading, 36)
+        }
+        .sheet(item: $incognitoToggleSheet) { sheet in
+            switch sheet {
+            case .incognitoInfo:
+                if #available(iOS 16.0, *) {
+                    IncognitoHelp()
+                        .presentationDetents([.medium])
+                } else {
+                    IncognitoHelp()
+                }
+            }
+        }
+
+
+//        VStack(alignment: .center) {
+//            Toggle(isOn: $incognitoEnabled) {
+//                Image(systemName: incognitoEnabled ? "theatermasks.fill" : "theatermasks")
+//                    .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+//                    .foregroundColor(incognitoEnabled ? Color.indigo : .secondary)
+//            }
+//            Text(incognitoEnabled ? "New randomly generated profile will be shared." : "Main profile will be shared.")
+//            Image(systemName: "info.circle")
+//                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+//                .foregroundColor(.accentColor)
+//                .onTapGesture {
+//                    incognitoToggleSheet = .incognitoInfo
+//                }
+//        }
+//        .sheet(item: $incognitoToggleSheet) { sheet in
+//            switch sheet {
+//            case .incognitoInfo: IncognitoHelp()
+//            }
+//        }
     }
 }
 

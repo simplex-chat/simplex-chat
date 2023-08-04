@@ -7,11 +7,12 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct PasteToConnectView: View {
-    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @State private var connectionLink: String = ""
+    @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
     var body: some View {
         ScrollView {
@@ -23,21 +24,6 @@ struct PasteToConnectView: View {
                     .padding(.vertical)
                 Text("Paste the link you received into the box below to connect with your contact.")
                     .padding(.bottom, 4)
-                if (chatModel.incognito) {
-                    HStack {
-                        Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("A random profile will be sent to the contact that you received this link from").font(.footnote)
-                    }
-                    .padding(.bottom)
-                } else {
-                    HStack {
-                        Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("Your profile will be sent to the contact that you received this link from").font(.footnote)
-                    }
-                    .padding(.bottom)
-                }
                 TextEditor(text: $connectionLink)
                     .onSubmit(connect)
                     .textInputAutocapitalization(.never)
@@ -73,6 +59,10 @@ struct PasteToConnectView: View {
                 .frame(height: 48)
                 .padding(.bottom)
 
+                IncognitoToggle(incognitoEnabled: $incognitoDefault)
+
+                Spacer()
+
                 Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
             }
             .padding()
@@ -85,9 +75,9 @@ struct PasteToConnectView: View {
         if let crData = parseLinkQueryData(link),
            checkCRDataGroup(crData) {
             dismiss()
-            AlertManager.shared.showAlert(groupLinkAlert(link))
+            AlertManager.shared.showAlert(groupLinkAlert(incognitoEnabled: incognitoDefault, connectionLink: link))
         } else {
-            connectViaLink(link, dismiss)
+            connectViaLink(incognitoEnabled: incognitoDefault, connectionLink: link, dismiss)
         }
     }
 }

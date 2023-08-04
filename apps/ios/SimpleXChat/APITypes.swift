@@ -32,7 +32,6 @@ public enum ChatCommand {
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
     case apiSetXFTPConfig(config: XFTPFileConfig?)
-    case setIncognito(incognito: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
@@ -83,8 +82,9 @@ public enum ChatCommand {
     case apiGetGroupMemberCode(groupId: Int64, groupMemberId: Int64)
     case apiVerifyContact(contactId: Int64, connectionCode: String?)
     case apiVerifyGroupMember(groupId: Int64, groupMemberId: Int64, connectionCode: String?)
-    case apiAddContact(userId: Int64)
-    case apiConnect(userId: Int64, connReq: String)
+    case apiAddContact(userId: Int64, incognitoEnabled: Bool)
+    case apiSetConnectionIncognito(connId: Int64, incognitoEnabled: Bool)
+    case apiConnect(userId: Int64, incognitoEnabled: Bool, connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
@@ -97,7 +97,7 @@ public enum ChatCommand {
     case apiShowMyAddress(userId: Int64)
     case apiSetProfileAddress(userId: Int64, on: Bool)
     case apiAddressAutoAccept(userId: Int64, autoAccept: AutoAccept?)
-    case apiAcceptContact(contactReqId: Int64)
+    case apiAcceptContact(incognitoEnabled: Bool, contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
     // WebRTC calls
     case apiSendCallInvitation(contact: Contact, callType: CallType)
@@ -148,7 +148,6 @@ public enum ChatCommand {
             } else {
                 return "/_xftp off"
             }
-            case let .setIncognito(incognito): return "/incognito \(onOff(incognito))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -213,8 +212,9 @@ public enum ChatCommand {
             case let .apiVerifyContact(contactId, .none): return "/_verify code @\(contactId)"
             case let .apiVerifyGroupMember(groupId, groupMemberId, .some(connectionCode)): return "/_verify code #\(groupId) \(groupMemberId) \(connectionCode)"
             case let .apiVerifyGroupMember(groupId, groupMemberId, .none): return "/_verify code #\(groupId) \(groupMemberId)"
-            case let .apiAddContact(userId): return "/_connect \(userId)"
-            case let .apiConnect(userId, connReq): return "/_connect \(userId) \(connReq)"
+            case let .apiAddContact(userId, incognitoEnabled): return "/_connect \(userId) incognito=\(onOff(incognitoEnabled))"
+            case let .apiSetConnectionIncognito(connId, incognitoEnabled): return "/_set incognito :\(connId) \(onOff(incognitoEnabled))"
+            case let .apiConnect(userId, incognitoEnabled, connReq): return "/_connect \(userId) incognito=\(onOff(incognitoEnabled)) \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
@@ -227,7 +227,7 @@ public enum ChatCommand {
             case let .apiShowMyAddress(userId): return "/_show_address \(userId)"
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiAddressAutoAccept(userId, autoAccept): return "/_auto_accept \(userId) \(AutoAccept.cmdString(autoAccept))"
-            case let .apiAcceptContact(contactReqId): return "/_accept \(contactReqId)"
+            case let .apiAcceptContact(incognitoEnabled, contactReqId): return "/_accept incognito=\(onOff(incognitoEnabled)) \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
             case let .apiSendCallInvitation(contact, callType): return "/_call invite @\(contact.apiId) \(encodeJSON(callType))"
             case let .apiRejectCall(contact): return "/_call reject @\(contact.apiId)"
@@ -274,7 +274,6 @@ public enum ChatCommand {
             case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
             case .apiSetXFTPConfig: return "apiSetXFTPConfig"
-            case .setIncognito: return "setIncognito"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
@@ -326,6 +325,7 @@ public enum ChatCommand {
             case .apiVerifyContact: return "apiVerifyContact"
             case .apiVerifyGroupMember: return "apiVerifyGroupMember"
             case .apiAddContact: return "apiAddContact"
+            case .apiSetConnectionIncognito: return "apiSetConnectionIncognito"
             case .apiConnect: return "apiConnect"
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"
@@ -448,7 +448,8 @@ public enum ChatResponse: Decodable, Error {
     case contactCode(user: User, contact: Contact, connectionCode: String)
     case groupMemberCode(user: User, groupInfo: GroupInfo, member: GroupMember, connectionCode: String)
     case connectionVerified(user: User, verified: Bool, expectedCode: String)
-    case invitation(user: User, connReqInvitation: String)
+    case invitation(user: User, connReqInvitation: String, connection: PendingContactConnection)
+    case connectionIncognitoUpdated(user: User, toConnection: PendingContactConnection)
     case sentConfirmation(user: User)
     case sentInvitation(user: User)
     case contactAlreadyExists(user: User, contact: Contact)
@@ -582,6 +583,7 @@ public enum ChatResponse: Decodable, Error {
             case .groupMemberCode: return "groupMemberCode"
             case .connectionVerified: return "connectionVerified"
             case .invitation: return "invitation"
+            case .connectionIncognitoUpdated: return "connectionIncognitoUpdated"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
             case .contactAlreadyExists: return "contactAlreadyExists"
@@ -713,7 +715,8 @@ public enum ChatResponse: Decodable, Error {
             case let .contactCode(u, contact, connectionCode): return withUser(u, "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)")
             case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
-            case let .invitation(u, connReqInvitation): return withUser(u, connReqInvitation)
+            case let .invitation(u, connReqInvitation, _): return withUser(u, connReqInvitation)
+            case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
@@ -1449,6 +1452,7 @@ public enum ChatErrorType: Decodable {
     case serverProtocol
     case agentCommandError(message: String)
     case invalidFileDescription(message: String)
+    case connectionIncognitoChangeProhibited
     case internalError(message: String)
     case exception(message: String)
 }
