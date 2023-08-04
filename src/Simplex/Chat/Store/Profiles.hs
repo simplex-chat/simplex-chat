@@ -397,14 +397,14 @@ data UserContactLink = UserContactLink
 instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
 
 data AutoAccept = AutoAccept
-  { acceptIncognito :: IncognitoEnabled,
+  { acceptIncognito :: Bool,
     autoReply :: Maybe MsgContent
   }
   deriving (Show, Generic)
 
 instance ToJSON AutoAccept where toEncoding = J.genericToEncoding J.defaultOptions
 
-toUserContactLink :: (ConnReqContact, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
+toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
 toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
   UserContactLink connReq $
     if autoAccept then Just AutoAccept {acceptIncognito, autoReply} else Nothing
@@ -451,6 +451,9 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
     ucl = case autoAccept of
       Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
       _ -> (False, False, Nothing)
+
+
+
 
 getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> IO [ServerCfg p]
 getProtocolServers db User {userId} =
