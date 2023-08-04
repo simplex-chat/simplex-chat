@@ -41,11 +41,9 @@ struct ChatPreviewView: View {
 
                 ZStack(alignment: .topTrailing) {
                     chatMessagePreview(cItem)
-                    if case .direct = chat.chatInfo {
-                        chatStatusImage()
-                            .padding(.top, 24)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
+                    chatStatusImage()
+                        .padding(.top, 24)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .padding(.trailing, 8)
                 
@@ -67,26 +65,16 @@ struct ChatPreviewView: View {
             case .memGroupDeleted:
                 groupInactiveIcon()
             default:
-                incognitoIcon_()
+                EmptyView()
             }
         default:
-            incognitoIcon_()
-        }
-    }
-
-    @ViewBuilder private func incognitoIcon_() -> some View {
-        if chat.chatInfo.incognito {
-            Image(systemName: "theatermasks.circle")
-                .foregroundColor(.indigo)
-                .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
-        } else {
             EmptyView()
         }
     }
 
     @ViewBuilder private func groupInactiveIcon() -> some View {
         Image(systemName: "multiply.circle.fill")
-            .foregroundColor(.secondary)
+            .foregroundColor(.secondary.opacity(0.65))
             .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
     }
 
@@ -238,7 +226,7 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             switch (chatModel.contactNetworkStatus(contact)) {
-            case .connected: EmptyView()
+            case .connected: incognitoIcon_()
             case .error:
                 Image(systemName: "exclamationmark.circle")
                     .resizable()
@@ -249,6 +237,18 @@ struct ChatPreviewView: View {
                 ProgressView()
             }
         default:
+            incognitoIcon_()
+        }
+    }
+
+    @ViewBuilder private func incognitoIcon_() -> some View {
+        if chat.chatInfo.incognito {
+            Image(systemName: "theatermasks")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 19, height: 19)
+                .foregroundColor(.secondary.opacity(0.65))
+        } else {
             EmptyView()
         }
     }
