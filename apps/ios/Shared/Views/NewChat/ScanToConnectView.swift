@@ -99,12 +99,7 @@ struct IncognitoToggle: View {
         .sheet(item: $incognitoToggleSheet) { sheet in
             switch sheet {
             case .incognitoInfo:
-                if #available(iOS 16.0, *) {
-                    IncognitoHelp()
-                        .presentationDetents([.medium])
-                } else {
-                    IncognitoHelp()
-                }
+                IncognitoHelp()
             }
         }
     }

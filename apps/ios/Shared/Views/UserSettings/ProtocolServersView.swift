@@ -93,12 +93,7 @@ struct ProtocolServersView: View {
                 .disabled(hasAllPresets())
         }
         .sheet(isPresented: $showScanProtoServer) {
-            if #available(iOS 16.0, *) {
-                ScanProtocolServer(servers: $servers)
-                    .presentationDetents([.fraction(0.7)])
-            } else {
-                ScanProtocolServer(servers: $servers)
-            }
+            ScanProtocolServer(servers: $servers)
         }
         .modifier(BackButton {
             if saveDisabled {
