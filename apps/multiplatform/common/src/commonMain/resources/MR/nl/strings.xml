@@ -1373,4 +1373,5 @@
     <string name="send_receipts_disabled_alert_title">Ontvangstbevestigingen zijn uitgeschakeld</string>
     <string name="item_status_snd_new_desc">Het bericht wordt verzonden of bezig.</string>
     <string name="item_status_rcv_read_desc">U heeft dit ontvangen bericht gelezen.</string>
+    <string name="connect_via_member_address_alert_title">Verbind direct\?</string>
 </resources>
