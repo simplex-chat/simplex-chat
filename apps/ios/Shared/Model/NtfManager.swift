@@ -42,7 +42,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
            userId != chatModel.currentUser?.userId {
             changeActiveUser(userId, viewPwd: nil)
         }
-        if content.categoryIdentifier == ntfCategoryContactRequest && [ntfActionAcceptContact, ntfActionAcceptContactIncognito].contains(action),
+        if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
            let chatId = content.userInfo["chatId"] as? String {
             let incognito = action == ntfActionAcceptContactIncognito
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {

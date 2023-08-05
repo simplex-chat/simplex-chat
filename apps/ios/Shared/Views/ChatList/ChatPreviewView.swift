@@ -57,14 +57,10 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
         if case let .group(groupInfo) = chat.chatInfo {
             switch (groupInfo.membership.memberStatus) {
-            case .memLeft:
-                groupInactiveIcon()
-            case .memRemoved:
-                groupInactiveIcon()
-            case .memGroupDeleted:
-                groupInactiveIcon()
-            default:
-                EmptyView()
+            case .memLeft: groupInactiveIcon()
+            case .memRemoved: groupInactiveIcon()
+            case .memGroupDeleted: groupInactiveIcon()
+            default: EmptyView()
             }
         } else {
             EmptyView()
