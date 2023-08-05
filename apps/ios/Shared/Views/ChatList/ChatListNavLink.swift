@@ -243,7 +243,6 @@ struct ChatListNavLink: View {
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button("Accept") { Task { await acceptContactRequest(incognitoEnabled: false, contactRequest: contactRequest) } }
             Button("Accept incognito") { Task { await acceptContactRequest(incognitoEnabled: true, contactRequest: contactRequest) } }
-                .tint(.indigo)
             Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
         }
     }
