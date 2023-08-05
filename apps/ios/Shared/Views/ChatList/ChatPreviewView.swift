@@ -226,7 +226,7 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             switch (chatModel.contactNetworkStatus(contact)) {
-            case .connected: incognitoIcon_()
+            case .connected: incognitoIcon(chat.chatInfo.incognito)
             case .error:
                 Image(systemName: "exclamationmark.circle")
                     .resizable()
@@ -237,20 +237,20 @@ struct ChatPreviewView: View {
                 ProgressView()
             }
         default:
-            incognitoIcon_()
+            incognitoIcon(chat.chatInfo.incognito)
         }
     }
+}
 
-    @ViewBuilder private func incognitoIcon_() -> some View {
-        if chat.chatInfo.incognito {
-            Image(systemName: "theatermasks")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 22, height: 22)
-                .foregroundColor(.secondary)
-        } else {
-            EmptyView()
-        }
+@ViewBuilder func incognitoIcon(_ incognito: Bool) -> some View {
+    if incognito {
+        Image(systemName: "theatermasks")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 22, height: 22)
+            .foregroundColor(.secondary)
+    } else {
+        EmptyView()
     }
 }
 
