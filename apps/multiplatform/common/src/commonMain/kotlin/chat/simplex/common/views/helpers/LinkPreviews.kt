@@ -122,7 +122,7 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 
 @Composable
 fun ChatItemLinkView(linkPreview: LinkPreview) {
-  Column {
+  Column(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
     Image(
       base64ToBitmap(linkPreview.image),
       stringResource(MR.strings.image_descr_link_preview),

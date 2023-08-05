@@ -24,7 +24,7 @@ actual val agentDatabaseFileName: String = "files_agent.db"
 actual val databaseExportDir: File = androidAppContext.cacheDir
 
 @Composable
-actual fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher {
+actual fun rememberFileChooserLauncher(getContent: Boolean, rememberedValue: Any?, onResult: (URI?) -> Unit): FileChooserLauncher {
   val launcher = rememberLauncherForActivityResult(
     contract = if (getContent) ActivityResultContracts.GetContent() else ActivityResultContracts.CreateDocument(),
     onResult = { onResult(it?.toURI()) }

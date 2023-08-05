@@ -17,7 +17,6 @@ module Simplex.Chat.Store.Direct
     getPendingContactConnection,
     deletePendingContactConnection,
     createDirectConnection,
-    createIncognitoProfile,
     createConnReqConnection,
     getProfileById,
     getConnReqContactXContactId,
@@ -34,8 +33,6 @@ module Simplex.Chat.Store.Direct
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
-    updatePCCIncognito,
-    deletePCCIncognitoProfile,
     updateContactUsed,
     updateContactUnreadChat,
     updateGroupUnreadChat,
@@ -174,11 +171,6 @@ createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, groupLinkId = Nothing, customUserProfileId, connReqInv = Just cReq, localAlias = "", createdAt, updatedAt = createdAt}
 
-createIncognitoProfile :: DB.Connection -> User -> Profile -> IO Int64
-createIncognitoProfile db User {userId} p = do
-  createdAt <- getCurrentTime
-  createIncognitoProfile_ db userId createdAt p
-
 createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Profile -> IO Int64
 createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, image} = do
   DB.execute
@@ -315,30 +307,7 @@ updateContactConnectionAlias db userId conn localAlias = do
       WHERE user_id = ? AND connection_id = ?
     |]
     (localAlias, updatedAt, userId, pccConnId conn)
-  pure (conn :: PendingContactConnection) {localAlias, updatedAt}
-
-updatePCCIncognito :: DB.Connection -> User -> PendingContactConnection -> Maybe ProfileId -> IO PendingContactConnection
-updatePCCIncognito db User {userId} conn customUserProfileId = do
-  updatedAt <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE connections
-      SET custom_user_profile_id = ?, updated_at = ?
-      WHERE user_id = ? AND connection_id = ?
-    |]
-    (customUserProfileId, updatedAt, userId, pccConnId conn)
-  pure (conn :: PendingContactConnection) {customUserProfileId, updatedAt}
-
-deletePCCIncognitoProfile :: DB.Connection -> User -> ProfileId -> IO ()
-deletePCCIncognitoProfile db User {userId} profileId =
-  DB.execute
-    db
-    [sql|
-      DELETE FROM contact_profiles
-      WHERE user_id = ? AND contact_profile_id = ? AND incognito = 1
-    |]
-    (userId, profileId)
+  pure (conn :: PendingContactConnection) {localAlias}
 
 updateContactUsed :: DB.Connection -> User -> Contact -> IO ()
 updateContactUsed db User {userId} Contact {contactId} = do

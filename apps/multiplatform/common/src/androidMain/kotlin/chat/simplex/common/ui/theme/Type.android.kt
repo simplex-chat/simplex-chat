@@ -11,3 +11,5 @@ actual val Inter: FontFamily = FontFamily(
   Font(MR.fonts.Inter.medium.fontResourceId, FontWeight.Medium),
   Font(MR.fonts.Inter.light.fontResourceId, FontWeight.Light)
 )
+
+actual val EmojiFont: FontFamily = FontFamily.Default
