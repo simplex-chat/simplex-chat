@@ -15,6 +15,7 @@ struct ContactConnectionInfo: View {
     @State var contactConnection: PendingContactConnection
     @State private var alert: CCInfoAlert?
     @State private var localAlias = ""
+    @State private var showIncognitoSheet = false
     @FocusState private var aliasTextFieldFocused: Bool
 
     enum CCInfoAlert: Identifiable {
@@ -33,7 +34,7 @@ struct ContactConnectionInfo: View {
         NavigationView {
             List {
                 Group {
-                    Text(contactConnection.initiated ? "You invited your contact" : "You accepted connection")
+                    Text(contactConnection.initiated ? "You invited a contact" : "You accepted connection")
                         .font(.largeTitle)
                         .bold()
                         .padding(.bottom)
@@ -61,13 +62,16 @@ struct ContactConnectionInfo: View {
                     if contactConnection.initiated,
                        let connReqInv = contactConnection.connReqInv {
                         QRCode(uri: connReqInv)
+                        if contactConnection.incognito {
+                            incognitoEnabled()
+                        }
                         shareLinkButton(connReqInv)
                         oneTimeLinkLearnMoreButton()
                     } else {
                         oneTimeLinkLearnMoreButton()
                     }
                 } footer: {
-                    Text(contactConnection.incognito ? "A new randomly generated profile will be shared." : "Current profile will be shared.")
+                    sharedProfileInfo(contactConnection.incognito)
                 }
 
                 Section {
@@ -79,6 +83,7 @@ struct ContactConnectionInfo: View {
                     }
                 }
             }
+            .navigationBarHidden(true)
         }
         .alert(item: $alert) { _alert in
             switch _alert {
@@ -126,6 +131,28 @@ struct ContactConnectionInfo: View {
            : "You will be connected when your connection request is accepted, please wait or check later!"
         )
         : "You will be connected when your contact's device is online, please wait or check later!"
+    }
+
+    private func incognitoEnabled() -> some View {
+        ZStack(alignment: .leading) {
+            Image(systemName: "theatermasks.fill")
+                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+                .foregroundColor(Color.indigo)
+                .font(.system(size: 14))
+            HStack(spacing: 6) {
+                Text("Incognito")
+                Image(systemName: "info.circle")
+                    .foregroundColor(.accentColor)
+                    .font(.system(size: 14))
+            }
+            .onTapGesture {
+                showIncognitoSheet = true
+            }
+            .padding(.leading, 36)
+        }
+        .sheet(isPresented: $showIncognitoSheet) {
+            IncognitoHelp()
+        }
     }
 }
 

@@ -36,7 +36,7 @@ struct AddContactView: View {
                 } header: {
                     Text("1-time link")
                 } footer: {
-                    Text(incognitoDefault ? "A new randomly generated profile will be shared." : "Current profile will be shared.")
+                    sharedProfileInfo(incognitoDefault)
                 }
             }
         }
@@ -61,13 +61,8 @@ struct AddContactView: View {
 
 struct IncognitoToggle: View {
     @Binding var incognitoEnabled: Bool
-    @State private var incognitoToggleSheet: IncognitoToggleSheet?
-
-    private enum IncognitoToggleSheet: Identifiable {
-        case incognitoInfo
-
-        var id: IncognitoToggleSheet { get { self } }
-    }
+    var disabled = false
+    @State private var showIncognitoSheet = false
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -83,18 +78,24 @@ struct IncognitoToggle: View {
                         .font(.system(size: 14))
                 }
                 .onTapGesture {
-                    incognitoToggleSheet = .incognitoInfo
+                    showIncognitoSheet = true
                 }
             }
             .padding(.leading, 36)
         }
-        .sheet(item: $incognitoToggleSheet) { sheet in
-            switch sheet {
-            case .incognitoInfo:
-                IncognitoHelp()
-            }
+        .sheet(isPresented: $showIncognitoSheet) {
+            IncognitoHelp()
         }
     }
+}
+
+func sharedProfileInfo(_ incognito: Bool) -> Text {
+    let name = ChatModel.shared.currentUser?.displayName ?? ""
+    return Text(
+        incognito
+        ? "A new random profile will be shared."
+        : "Your profile **\(name)** will be shared."
+    )
 }
 
 func shareLinkButton(_ connReqInvitation: String) -> some View {

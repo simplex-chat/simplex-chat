@@ -37,7 +37,7 @@ struct ScanToConnectView: View {
                     .padding(.top)
 
                 Group {
-                    Text(incognitoDefault ? "A new randomly generated profile will be shared." : "Current profile will be shared.")
+                    sharedProfileInfo(incognitoDefault)
                     + Text("\n\n")
                     + Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
                 }

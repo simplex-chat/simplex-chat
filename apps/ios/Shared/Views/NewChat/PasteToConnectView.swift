@@ -52,7 +52,7 @@ struct PasteToConnectView: View {
                 
                 IncognitoToggle(incognitoEnabled: $incognitoDefault)
             } footer: {
-                Text(incognitoDefault ? "A new randomly generated profile will be shared." : "Current profile will be shared.")
+                sharedProfileInfo(incognitoDefault)
                 + Text("\n\n")
                 + Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
             }
