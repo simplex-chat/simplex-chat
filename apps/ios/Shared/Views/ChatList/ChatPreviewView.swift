@@ -42,7 +42,7 @@ struct ChatPreviewView: View {
                 ZStack(alignment: .topTrailing) {
                     chatMessagePreview(cItem)
                     chatStatusImage()
-                        .padding(.top, 24)
+                        .padding(.top, 26)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .padding(.trailing, 8)
@@ -246,8 +246,8 @@ struct ChatPreviewView: View {
             Image(systemName: "theatermasks")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 20, height: 20)
-                .foregroundColor(.secondary.opacity(0.65))
+                .frame(width: 22, height: 22)
+                .foregroundColor(.secondary)
         } else {
             EmptyView()
         }
