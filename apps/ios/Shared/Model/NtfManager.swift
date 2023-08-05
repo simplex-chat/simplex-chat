@@ -44,11 +44,11 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && [ntfActionAcceptContact, ntfActionAcceptContactIncognito].contains(action),
            let chatId = content.userInfo["chatId"] as? String {
-            let incognitoEnabled = action == ntfActionAcceptContactIncognito
+            let incognito = action == ntfActionAcceptContactIncognito
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-                Task { await acceptContactRequest(incognitoEnabled: incognitoEnabled, contactRequest: contactRequest) }
+                Task { await acceptContactRequest(incognito: incognito, contactRequest: contactRequest) }
             } else {
-                chatModel.ntfContactRequest = NTFContactRequest(incognitoEnabled: incognitoEnabled, chatId: chatId)
+                chatModel.ntfContactRequest = NTFContactRequest(incognito: incognito, chatId: chatId)
             }
         } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
             if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {

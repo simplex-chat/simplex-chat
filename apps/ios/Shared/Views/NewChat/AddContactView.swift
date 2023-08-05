@@ -41,11 +41,11 @@ struct AddContactView: View {
             }
         }
         .onAppear { chatModel.connReqInv = connReqInvitation }
-        .onChange(of: incognitoDefault) { incognitoEnabled in
+        .onChange(of: incognitoDefault) { _ in
             Task {
                 do {
                     if let contactConn = contactConnection,
-                       let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognitoEnabled: incognitoEnabled) {
+                       let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognitoDefault) {
                         await MainActor.run {
                             contactConnection = conn
                             ChatModel.shared.updateContactConnection(conn)

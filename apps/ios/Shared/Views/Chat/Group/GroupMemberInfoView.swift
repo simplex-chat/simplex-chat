@@ -216,14 +216,14 @@ struct GroupMemberInfoView: View {
             Label("Connect", systemImage: "link")
         }
         .confirmationDialog("Connect directly", isPresented: $connectToMemberDialog, titleVisibility: .visible) {
-            Button("Use current profile") { connectViaAddress(incognitoEnabled: false, contactLink: contactLink) }
-            Button("Use new incognito profile") { connectViaAddress(incognitoEnabled: true, contactLink: contactLink) }
+            Button("Use current profile") { connectViaAddress(incognito: false, contactLink: contactLink) }
+            Button("Use new incognito profile") { connectViaAddress(incognito: true, contactLink: contactLink) }
         }
     }
 
-    func connectViaAddress(incognitoEnabled: Bool, contactLink: String) {
+    func connectViaAddress(incognito: Bool, contactLink: String) {
         Task {
-            let (connReqType, connectAlert) = await apiConnect_(incognitoEnabled: incognitoEnabled, connReq: contactLink)
+            let (connReqType, connectAlert) = await apiConnect_(incognito: incognito, connReq: contactLink)
             if let connReqType = connReqType {
                 alert = .connRequestSentAlert(type: connReqType)
             } else if let connectAlert = connectAlert {

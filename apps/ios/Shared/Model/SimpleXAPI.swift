@@ -558,25 +558,25 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
     return nil
 }
 
-func apiAddContact(incognitoEnabled: Bool) async -> (String, PendingContactConnection)? {
+func apiAddContact(incognito: Bool) async -> (String, PendingContactConnection)? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiAddContact: no current user")
         return nil
     }
-    let r = await chatSendCmd(.apiAddContact(userId: userId, incognitoEnabled: incognitoEnabled), bgTask: false)
+    let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
     if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
     AlertManager.shared.showAlert(connectionErrorAlert(r))
     return nil
 }
 
-func apiSetConnectionIncognito(connId: Int64, incognitoEnabled: Bool) async throws -> PendingContactConnection? {
-    let r = await chatSendCmd(.apiSetConnectionIncognito(connId: connId, incognitoEnabled: incognitoEnabled))
+func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> PendingContactConnection? {
+    let r = await chatSendCmd(.apiSetConnectionIncognito(connId: connId, incognito: incognito))
     if case let .connectionIncognitoUpdated(_, toConnection) = r { return toConnection }
     throw r
 }
 
-func apiConnect(incognitoEnabled: Bool, connReq: String) async -> ConnReqType? {
-    let (connReqType, alert) = await apiConnect_(incognitoEnabled: incognitoEnabled, connReq: connReq)
+func apiConnect(incognito: Bool, connReq: String) async -> ConnReqType? {
+    let (connReqType, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
     if let alert = alert {
         AlertManager.shared.showAlert(alert)
         return nil
@@ -585,12 +585,12 @@ func apiConnect(incognitoEnabled: Bool, connReq: String) async -> ConnReqType? {
     }
 }
 
-func apiConnect_(incognitoEnabled: Bool, connReq: String) async -> (ConnReqType?, Alert?) {
+func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnect: no current user")
         return (nil, nil)
     }
-    let r = await chatSendCmd(.apiConnect(userId: userId, incognitoEnabled: incognitoEnabled, connReq: connReq))
+    let r = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connReq: connReq))
     switch r {
     case .sentConfirmation: return (.invitation, nil)
     case .sentInvitation: return (.contact, nil)
@@ -766,8 +766,8 @@ func userAddressAutoAccept(_ autoAccept: AutoAccept?) async throws -> UserContac
     }
 }
 
-func apiAcceptContactRequest(incognitoEnabled: Bool, contactReqId: Int64) async -> Contact? {
-    let r = await chatSendCmd(.apiAcceptContact(incognitoEnabled: incognitoEnabled, contactReqId: contactReqId))
+func apiAcceptContactRequest(incognito: Bool, contactReqId: Int64) async -> Contact? {
+    let r = await chatSendCmd(.apiAcceptContact(incognito: incognito, contactReqId: contactReqId))
     let am = AlertManager.shared
 
     if case let .acceptingContactRequest(_, contact) = r { return contact }
@@ -875,8 +875,8 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
     }
 }
 
-func acceptContactRequest(incognitoEnabled: Bool, contactRequest: UserContactRequest) async {
-    if let contact = await apiAcceptContactRequest(incognitoEnabled: incognitoEnabled, contactReqId: contactRequest.apiId) {
+func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) async {
+    if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
         DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
     }

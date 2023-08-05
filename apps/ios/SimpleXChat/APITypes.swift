@@ -82,9 +82,9 @@ public enum ChatCommand {
     case apiGetGroupMemberCode(groupId: Int64, groupMemberId: Int64)
     case apiVerifyContact(contactId: Int64, connectionCode: String?)
     case apiVerifyGroupMember(groupId: Int64, groupMemberId: Int64, connectionCode: String?)
-    case apiAddContact(userId: Int64, incognitoEnabled: Bool)
-    case apiSetConnectionIncognito(connId: Int64, incognitoEnabled: Bool)
-    case apiConnect(userId: Int64, incognitoEnabled: Bool, connReq: String)
+    case apiAddContact(userId: Int64, incognito: Bool)
+    case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
+    case apiConnect(userId: Int64, incognito: Bool, connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
@@ -97,7 +97,7 @@ public enum ChatCommand {
     case apiShowMyAddress(userId: Int64)
     case apiSetProfileAddress(userId: Int64, on: Bool)
     case apiAddressAutoAccept(userId: Int64, autoAccept: AutoAccept?)
-    case apiAcceptContact(incognitoEnabled: Bool, contactReqId: Int64)
+    case apiAcceptContact(incognito: Bool, contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
     // WebRTC calls
     case apiSendCallInvitation(contact: Contact, callType: CallType)
@@ -212,9 +212,9 @@ public enum ChatCommand {
             case let .apiVerifyContact(contactId, .none): return "/_verify code @\(contactId)"
             case let .apiVerifyGroupMember(groupId, groupMemberId, .some(connectionCode)): return "/_verify code #\(groupId) \(groupMemberId) \(connectionCode)"
             case let .apiVerifyGroupMember(groupId, groupMemberId, .none): return "/_verify code #\(groupId) \(groupMemberId)"
-            case let .apiAddContact(userId, incognitoEnabled): return "/_connect \(userId) incognito=\(onOff(incognitoEnabled))"
-            case let .apiSetConnectionIncognito(connId, incognitoEnabled): return "/_set incognito :\(connId) \(onOff(incognitoEnabled))"
-            case let .apiConnect(userId, incognitoEnabled, connReq): return "/_connect \(userId) incognito=\(onOff(incognitoEnabled)) \(connReq)"
+            case let .apiAddContact(userId, incognito): return "/_connect \(userId) incognito=\(onOff(incognito))"
+            case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
+            case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
@@ -227,7 +227,7 @@ public enum ChatCommand {
             case let .apiShowMyAddress(userId): return "/_show_address \(userId)"
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiAddressAutoAccept(userId, autoAccept): return "/_auto_accept \(userId) \(AutoAccept.cmdString(autoAccept))"
-            case let .apiAcceptContact(incognitoEnabled, contactReqId): return "/_accept incognito=\(onOff(incognitoEnabled)) \(contactReqId)"
+            case let .apiAcceptContact(incognito, contactReqId): return "/_accept incognito=\(onOff(incognito)) \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
             case let .apiSendCallInvitation(contact, callType): return "/_call invite @\(contact.apiId) \(encodeJSON(callType))"
             case let .apiRejectCall(contact): return "/_call reject @\(contact.apiId)"

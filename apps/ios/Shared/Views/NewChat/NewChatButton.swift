@@ -51,7 +51,7 @@ struct NewChatButton: View {
 
     func addContactAction() {
         Task {
-            if let (connReq, pcc) = await apiAddContact(incognitoEnabled: incognitoGroupDefault.get()) {
+            if let (connReq, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
                 actionSheet = .createLink(link: connReq, connection: pcc)
             }
         }
@@ -63,9 +63,9 @@ enum ConnReqType: Equatable {
     case invitation
 }
 
-func connectViaLink(incognitoEnabled: Bool, connectionLink: String, _ dismiss: DismissAction? = nil) {
+func connectViaLink(incognito: Bool, connectionLink: String, _ dismiss: DismissAction? = nil) {
     Task {
-        if let connReqType = await apiConnect(incognitoEnabled: incognitoEnabled, connReq: connectionLink) {
+        if let connReqType = await apiConnect(incognito: incognito, connReq: connectionLink) {
             DispatchQueue.main.async {
                 dismiss?()
                 AlertManager.shared.showAlert(connReqSentAlert(connReqType))
@@ -100,12 +100,12 @@ func checkCRDataGroup(_ crData: CReqClientData) -> Bool {
     return crData.type == "group" && crData.groupLinkId != nil
 }
 
-func groupLinkAlert(incognitoEnabled: Bool, connectionLink: String) -> Alert {
+func groupLinkAlert(incognito: Bool, connectionLink: String) -> Alert {
     return Alert(
         title: Text("Connect via group link?"),
         message: Text("You will join a group this link refers to and connect to its group members."),
-        primaryButton: .default(Text(incognitoEnabled ? "Connect incognito" : "Connect")) {
-            connectViaLink(incognitoEnabled: incognitoEnabled, connectionLink: connectionLink)
+        primaryButton: .default(Text(incognito ? "Connect incognito" : "Connect")) {
+            connectViaLink(incognito: incognito, connectionLink: connectionLink)
         },
         secondaryButton: .cancel()
     )

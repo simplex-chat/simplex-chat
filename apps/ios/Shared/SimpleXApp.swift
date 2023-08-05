@@ -142,7 +142,7 @@ struct SimpleXApp: App {
             if let ncr = chatModel.ntfContactRequest {
                 chatModel.ntfContactRequest = nil
                 if case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
-                    Task { await acceptContactRequest(incognitoEnabled: ncr.incognitoEnabled, contactRequest: contactRequest) }
+                    Task { await acceptContactRequest(incognito: ncr.incognito, contactRequest: contactRequest) }
                 }
             }
         } catch let error {

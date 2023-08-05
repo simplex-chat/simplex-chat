@@ -589,7 +589,7 @@ final class ChatModel: ObservableObject {
 }
 
 struct NTFContactRequest {
-    var incognitoEnabled: Bool
+    var incognito: Bool
     var chatId: String
 }
 
