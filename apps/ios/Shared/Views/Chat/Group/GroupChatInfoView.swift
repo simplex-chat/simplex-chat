@@ -57,7 +57,7 @@ struct GroupChatInfoView: View {
                         addOrEditWelcomeMessage()
                     }
                     groupPreferencesButton($groupInfo)
-                    if members.filter { $0.memberCurrent }.count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                    if members.filter({ $0.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
                         sendReceiptsOption()
                     } else {
                         sendReceiptsOptionDisabled()

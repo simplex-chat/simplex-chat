@@ -32,7 +32,7 @@ struct ContactConnectionInfo: View {
 
     var body: some View {
         NavigationView {
-            List {
+            let v = List {
                 Group {
                     Text(contactConnection.initiated ? "You invited a contact" : "You accepted connection")
                         .font(.largeTitle)
@@ -62,12 +62,11 @@ struct ContactConnectionInfo: View {
                     if contactConnection.initiated,
                        let connReqInv = contactConnection.connReqInv {
                         QRCode(uri: connReqInv)
-                        if contactConnection.incognito {
-                            incognitoEnabled()
-                        }
+                        incognitoEnabled()
                         shareLinkButton(connReqInv)
                         oneTimeLinkLearnMoreButton()
                     } else {
+                        incognitoEnabled()
                         oneTimeLinkLearnMoreButton()
                     }
                 } footer: {
@@ -83,7 +82,14 @@ struct ContactConnectionInfo: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
+            if #available(iOS 16, *) {
+                v
+            } else {
+                // navigationBarHidden is added conditionally,
+                // because the view jumps in iOS 17 if this is added,
+                // and on iOS 16+ it is hidden without it.
+                v.navigationBarHidden(true)
+            }
         }
         .alert(item: $alert) { _alert in
             switch _alert {
@@ -133,25 +139,27 @@ struct ContactConnectionInfo: View {
         : "You will be connected when your contact's device is online, please wait or check later!"
     }
 
-    private func incognitoEnabled() -> some View {
-        ZStack(alignment: .leading) {
-            Image(systemName: "theatermasks.fill")
-                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
-                .foregroundColor(Color.indigo)
-                .font(.system(size: 14))
-            HStack(spacing: 6) {
-                Text("Incognito")
-                Image(systemName: "info.circle")
-                    .foregroundColor(.accentColor)
+    @ViewBuilder private func incognitoEnabled() -> some View {
+        if contactConnection.incognito {
+            ZStack(alignment: .leading) {
+                Image(systemName: "theatermasks.fill")
+                    .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+                    .foregroundColor(Color.indigo)
                     .font(.system(size: 14))
+                HStack(spacing: 6) {
+                    Text("Incognito")
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.accentColor)
+                        .font(.system(size: 14))
+                }
+                .onTapGesture {
+                    showIncognitoSheet = true
+                }
+                .padding(.leading, 36)
             }
-            .onTapGesture {
-                showIncognitoSheet = true
+            .sheet(isPresented: $showIncognitoSheet) {
+                IncognitoHelp()
             }
-            .padding(.leading, 36)
-        }
-        .sheet(isPresented: $showIncognitoSheet) {
-            IncognitoHelp()
         }
     }
 }

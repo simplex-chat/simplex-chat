@@ -227,8 +227,10 @@ struct ChatListNavLink: View {
                 .tint(.accentColor)
             Button {
                 Task { await acceptContactRequest(incognitoEnabled: true, contactRequest: contactRequest) }
-            } label: { Label("Incognito", systemImage: "theatermasks") }
-                .tint(.indigo)
+            } label: {
+                Label("Accept incognito", systemImage: "theatermasks")
+            }
+            .tint(.indigo)
             Button {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
             } label: {
@@ -238,10 +240,11 @@ struct ChatListNavLink: View {
         }
         .frame(height: rowHeights[dynamicTypeSize])
         .onTapGesture { showContactRequestDialog = true }
-        .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept contact") { Task { await acceptContactRequest(incognitoEnabled: false, contactRequest: contactRequest) } }
+        .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
+            Button("Accept") { Task { await acceptContactRequest(incognitoEnabled: false, contactRequest: contactRequest) } }
             Button("Accept incognito") { Task { await acceptContactRequest(incognitoEnabled: true, contactRequest: contactRequest) } }
-            Button("Reject contact (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
+                .tint(.indigo)
+            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
         }
     }
 

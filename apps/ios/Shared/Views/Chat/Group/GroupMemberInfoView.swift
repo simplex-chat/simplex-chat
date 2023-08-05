@@ -143,7 +143,7 @@ struct GroupMemberInfoView: View {
                             connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
                             || connStats.ratchetSyncSendProhibited
                         )
-                        if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
+                        if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
                             Button("Abort changing address") {
                                 alert = .abortSwitchAddressAlert
                             }
