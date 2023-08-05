@@ -27,7 +27,7 @@ data GroupReg = GroupReg
     groupRegStatus :: TVar GroupRegStatus
   }
 
-type GroupRegId = Int64
+type GroupId = Int64
 
 type UserGroupRegId = Int64
 
@@ -68,7 +68,7 @@ addGroupReg st ct GroupInfo {groupId} grStatus = do
       | dbContactId == ctId && userGroupRegId > mx = userGroupRegId
       | otherwise = mx
 
-getGroupReg :: DirectoryStore -> GroupRegId -> STM (Maybe GroupReg)
+getGroupReg :: DirectoryStore -> GroupId -> STM (Maybe GroupReg)
 getGroupReg st gId = find ((gId ==) . dbGroupId) <$> readTVar (groupRegs st)
 
 getUserGroupReg :: DirectoryStore -> ContactId -> UserGroupRegId -> STM (Maybe GroupReg)
@@ -99,7 +99,7 @@ unlistGroup st gId = do
 
 data DirectoryLogRecord
   = CreateGroupReg GroupReg
-  | UpdateGroupRegStatus GroupRegId GroupRegStatus
+  | UpdateGroupRegStatus GroupId GroupRegStatus
 
 getDirectoryStore :: FilePath -> IO DirectoryStore
 getDirectoryStore path = do
