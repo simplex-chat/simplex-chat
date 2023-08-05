@@ -48,6 +48,13 @@ struct AddGroupView: View {
             Text("The group is fully decentralized – it is visible only to the members.")
                 .padding(.bottom, 4)
 
+            HStack {
+                Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
+                Spacer().frame(width: 8)
+                Text("Your chat profile will be sent to group members").font(.footnote)
+            }
+            .padding(.bottom)
+
             ZStack(alignment: .center) {
                 ZStack(alignment: .topTrailing) {
                     profileImageView(profile.image)
