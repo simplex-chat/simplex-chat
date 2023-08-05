@@ -107,7 +107,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
     groupAlreadyListed GroupInfo {groupProfile = GroupProfile {displayName, fullName}} =
       T.unpack $ "The group " <> displayName <> " (" <> fullName <> ") is already listed in the directory, please choose another name."
 
-    getGroups :: Text -> IO (Maybe [GroupInfo])
+    getGroups :: Text -> IO (Maybe [(GroupInfo, GroupSummary)])
     getGroups search =
       sendChatCmd cc (APIListGroups userId Nothing $ Just $ T.unpack search) >>= \case
         CRGroupsList {groups} -> pure $ Just groups
@@ -117,7 +117,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
     getDuplicateGroup GroupInfo {groupId, groupProfile = GroupProfile {displayName, fullName}} =
       getGroups fullName >>= mapM duplicateGroup
       where
-        sameGroup GroupInfo {groupId = gId, groupProfile = GroupProfile {displayName = n, fullName = fn}} =
+        sameGroup (GroupInfo {groupId = gId, groupProfile = GroupProfile {displayName = n, fullName = fn}}, _) =
           gId /= groupId && n == displayName && fn == fullName
         duplicateGroup [] = pure DGUnique
         duplicateGroup groups = do
@@ -126,7 +126,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
             then pure DGUnique
             else do
               (lgs, rgs) <- atomically $ (,) <$> readTVar (listedGroups st) <*> readTVar (reservedGroups st)
-              let reserved = any (\GroupInfo {groupId = gId} -> gId `S.member` lgs || gId `S.member` rgs) gs
+              let reserved = any (\(GroupInfo {groupId = gId}, _) -> gId `S.member` lgs || gId `S.member` rgs) gs
               pure $ if reserved then DGReserved else DGRegistered
 
     processInvitation :: Contact -> GroupInfo -> IO ()
@@ -398,10 +398,12 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
               [] -> sendReply "No groups found"
               gs -> do
                 sendReply $ "Found " <> show (length gs) <> " group(s)"
-                void . forkIO $ forM_ gs $ \GroupInfo {groupProfile = p@GroupProfile {image = image_}} -> do
-                  let text = groupInfoText p
-                      msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
-                  sendComposedMessage cc ct Nothing msg
+                void . forkIO $ forM_ gs $
+                  \(GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
+                    let membersStr = tshow currentMembers <> " members"
+                        text = groupInfoText p <> "\n" <> membersStr
+                        msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
+                    sendComposedMessage cc ct Nothing msg
           Nothing -> sendReply "Error: getGroups. Please notify the developers."
       DCConfirmDuplicateGroup ugrId gName ->
         atomically (getUserGroupReg st (contactId' ct) ugrId) >>= \case
@@ -511,7 +513,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
       let statusStr = "Status: " <> groupRegStatusText grStatus
       getGroupAndSummary cc dbGroupId >>= \case
         Just (GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
-          let membersStr = "Current members: " <> tshow currentMembers
+          let membersStr = tshow currentMembers <> " members"
               text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] <> maybeToList ownerStr_ <> [membersStr, statusStr]
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
           sendComposedMessage cc ct Nothing msg

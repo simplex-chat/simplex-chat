@@ -141,6 +141,7 @@ testDirectoryService tmp =
       u <# "SimpleX-Directory> PSA (Privacy, Security & Anonymity)"
       u <## "Welcome message:"
       u <## welcome
+      u <## "2 members"
     updateGroupProfile u welcome = do
       u ##> ("/set welcome #PSA " <> welcome)
       u <## "description changed to:"
@@ -252,7 +253,7 @@ testDelistedRoleChanges tmp =
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
-        groupFound cath "privacy"
+        groupFoundN 3 cath "privacy"
         -- de-listed if service role changed
         bob ##> "/mr privacy SimpleX-Directory member"
         bob <## "#privacy: you changed the role of SimpleX-Directory from admin to member"
@@ -270,7 +271,7 @@ testDelistedRoleChanges tmp =
         bob <## ""
         bob <## "The group is listed in the directory again."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is listed (SimpleX-Directory role is changed to admin)."
-        groupFound cath "privacy"
+        groupFoundN 3 cath "privacy"
         -- de-listed if owner role changed
         cath ##> "/mr privacy bob admin"
         cath <## "#privacy: you changed the role of bob from owner to admin"
@@ -288,7 +289,7 @@ testDelistedRoleChanges tmp =
         bob <## ""
         bob <## "The group is listed in the directory again."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is listed (user role is set to owner)."
-        groupFound cath "privacy"
+        groupFoundN 3 cath "privacy"
 
 testNotDelistedMemberRoleChanged :: HasCallStack => FilePath -> IO ()
 testNotDelistedMemberRoleChanged tmp =
@@ -298,11 +299,11 @@ testNotDelistedMemberRoleChanged tmp =
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
-        groupFound cath "privacy"
+        groupFoundN 3 cath "privacy"
         bob ##> "/mr privacy cath member"
         bob <## "#privacy: you changed the role of cath from owner to member"
         cath <## "#privacy: bob changed your role from owner to member"
-        groupFound cath "privacy"
+        groupFoundN 3 cath "privacy"
 
 testNotSentApprovalBadRoles :: HasCallStack => FilePath -> IO ()
 testNotSentApprovalBadRoles tmp =
@@ -371,7 +372,7 @@ testRegOwnerChangedProfile tmp =
         groupNotFound cath "privacy"
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated."
         reapproveGroup superUser bob
-        groupFound cath "privacy"
+        groupFoundN 3 cath "privacy"
 
 testAnotherOwnerChangedProfile :: HasCallStack => FilePath -> IO ()
 testAnotherOwnerChangedProfile tmp =
@@ -390,7 +391,7 @@ testAnotherOwnerChangedProfile tmp =
         groupNotFound cath "privacy"
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated."
         reapproveGroup superUser bob
-        groupFound cath "privacy"
+        groupFoundN 3 cath "privacy"
 
 testRegOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
 testRegOwnerRemovedLink tmp =
@@ -423,7 +424,7 @@ testRegOwnerRemovedLink tmp =
         cath <## "description changed to:"
         cath <## welcomeWithLink
         reapproveGroup superUser bob
-        groupFound cath "privacy"
+        groupFoundN 3 cath "privacy"
 
 testAnotherOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
 testAnotherOwnerRemovedLink tmp =
@@ -465,7 +466,7 @@ testAnotherOwnerRemovedLink tmp =
         cath <## "description changed to:"
         cath <## (welcomeWithLink <> " - welcome!")
         reapproveGroup superUser bob
-        groupFound cath "privacy"
+        groupFoundN 3 cath "privacy"
 
 testDuplicateAskConfirmation :: HasCallStack => FilePath -> IO ()
 testDuplicateAskConfirmation tmp =
@@ -596,12 +597,12 @@ testListUserGroups tmp =
         bob <# "SimpleX-Directory> 1. privacy (Privacy)"
         bob <## "Welcome message:"
         bob <##. "Link to join the group privacy: "
-        bob <## "Current members: 3"
+        bob <## "3 members"
         bob <## "Status: active"
         bob <# "SimpleX-Directory> 2. security (Security)"
         bob <## "Welcome message:"
         bob <##. "Link to join the group security: "
-        bob <## "Current members: 2"
+        bob <## "2 members"
         bob <## "Status: active"
         cath #> "@SimpleX-Directory /list"
         cath <# "SimpleX-Directory> > /list"
@@ -609,7 +610,7 @@ testListUserGroups tmp =
         cath <# "SimpleX-Directory> 1. anonymity (Anonymity)"
         cath <## "Welcome message:"
         cath <##. "Link to join the group anonymity: "
-        cath <## "Current members: 2"
+        cath <## "2 members"
         cath <## "Status: active"
         -- with de-listed group
         groupFound cath "anonymity"
@@ -626,7 +627,7 @@ testListUserGroups tmp =
         cath <# "SimpleX-Directory> 1. anonymity (Anonymity)"
         cath <## "Welcome message:"
         cath <##. "Link to join the group anonymity: "
-        cath <## "Current members: 2"
+        cath <## "2 members"
         cath <## "Status: suspended because roles changed"
         -- superuser lists all groups
         superUser #> "@SimpleX-Directory /last"
@@ -636,19 +637,19 @@ testListUserGroups tmp =
         superUser <## "Welcome message:"
         superUser <##. "Link to join the group privacy: "
         superUser <## "Owner: bob"
-        superUser <## "Current members: 3"
+        superUser <## "3 members"
         superUser <## "Status: active"
         superUser <# "SimpleX-Directory> 2. security (Security)"
         superUser <## "Welcome message:"
         superUser <##. "Link to join the group security: "
         superUser <## "Owner: bob"
-        superUser <## "Current members: 2"
+        superUser <## "2 members"
         superUser <## "Status: active"
         superUser <# "SimpleX-Directory> 3. anonymity (Anonymity)"
         superUser <## "Welcome message:"
         superUser <##. "Link to join the group anonymity: "
         superUser <## "Owner: cath"
-        superUser <## "Current members: 2"
+        superUser <## "2 members"
         superUser <## "Status: suspended because roles changed"
         -- showing last 1 group
         superUser #> "@SimpleX-Directory /last 1"
@@ -658,7 +659,7 @@ testListUserGroups tmp =
         superUser <## "Welcome message:"
         superUser <##. "Link to join the group anonymity: "
         superUser <## "Owner: cath"
-        superUser <## "Current members: 2"
+        superUser <## "2 members"
         superUser <## "Status: suspended because roles changed"
 
 reapproveGroup :: HasCallStack => TestCC -> TestCC -> IO ()
@@ -813,13 +814,17 @@ removeMember gName admin removed = do
   removed <## ("use /d " <> gn <> " to delete the group")
 
 groupFound :: TestCC -> String -> IO ()
-groupFound u name = do
+groupFound = groupFoundN 2
+
+groupFoundN :: Int -> TestCC -> String -> IO ()
+groupFoundN count u name = do
   u #> ("@SimpleX-Directory " <> name)
   u <# ("SimpleX-Directory> > " <> name)
   u <## "      Found 1 group(s)"
   u <#. ("SimpleX-Directory> " <> name <> " (")
   u <## "Welcome message:"
   u <##. "Link to join the group "
+  u <## (show count <> " members")
 
 groupNotFound :: TestCC -> String -> IO ()
 groupNotFound u s = do

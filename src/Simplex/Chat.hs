@@ -1499,7 +1499,7 @@ processChatCommand = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
   APIListGroups userId contactId_ search_ -> withUserId userId $ \user ->
-    CRGroupsList user <$> withStore' (\db -> getUserGroupDetails db user contactId_ search_)
+    CRGroupsList user <$> withStore' (\db -> getUserGroupsWithSummary db user contactId_ search_)
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
     ct_ <- forM cName_ $ \cName -> withStore $ \db -> getContactByName db user cName
     processChatCommand $ APIListGroups userId (contactId' <$> ct_) search_

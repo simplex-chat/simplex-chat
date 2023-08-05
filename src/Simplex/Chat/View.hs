@@ -812,12 +812,12 @@ viewContactConnected ct@Contact {localDisplayName} userIncognitoProfile testView
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
 
-viewGroupsList :: [GroupInfo] -> [StyledString]
+viewGroupsList :: [(GroupInfo, GroupSummary)] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
 viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
-    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
-    groupSS g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings} =
+    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName) . fst
+    groupSS (g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> membershipIncognito g <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
@@ -827,9 +827,10 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
           GSMemLeft -> delete "you left"
           GSMemGroupDeleted -> delete "group deleted"
           _
-            | enableNtfs chatSettings -> ""
-            | otherwise -> " (muted, you can " <> highlight ("/unmute #" <> ldn) <> ")"
+            | enableNtfs chatSettings -> " (" <> memberCount <> ")"
+            | otherwise -> " (" <> memberCount <> ", muted, you can " <> highlight ("/unmute #" <> ldn) <> ")"
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> ldn) <> ")"
+        memberCount = sShow currentMembers <> " members"
 
 groupInvitation' :: GroupInfo -> StyledString
 groupInvitation' GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership = membership@GroupMember {memberProfile}} =

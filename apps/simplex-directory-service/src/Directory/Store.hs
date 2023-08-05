@@ -27,8 +27,6 @@ data GroupReg = GroupReg
     groupRegStatus :: TVar GroupRegStatus
   }
 
-type GroupId = Int64
-
 type UserGroupRegId = Int64
 
 type GroupApprovalId = Int64
@@ -77,10 +75,10 @@ getUserGroupReg st ctId ugrId = find (\r -> ctId == dbContactId r && ugrId == us
 getUserGroupRegs :: DirectoryStore -> ContactId -> STM [GroupReg]
 getUserGroupRegs st ctId = filter ((ctId ==) . dbContactId) <$> readTVar (groupRegs st)
 
-filterListedGroups :: DirectoryStore -> [GroupInfo] -> STM [GroupInfo]
+filterListedGroups :: DirectoryStore -> [(GroupInfo, GroupSummary)] -> STM [(GroupInfo, GroupSummary)]
 filterListedGroups st gs = do
   lgs <- readTVar $ listedGroups st
-  pure $ filter (\GroupInfo {groupId} -> groupId `S.member` lgs) gs
+  pure $ filter (\(GroupInfo {groupId}, _) -> groupId `S.member` lgs) gs
 
 listGroup :: DirectoryStore -> GroupId -> STM ()
 listGroup st gId = do
