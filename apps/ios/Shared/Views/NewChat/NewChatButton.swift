@@ -63,7 +63,7 @@ enum ConnReqType: Equatable {
     case invitation
 }
 
-func connectViaLink(incognito: Bool, connectionLink: String, _ dismiss: DismissAction? = nil) {
+func connectViaLink(_ connectionLink: String, dismiss: DismissAction? = nil, incognito: Bool) {
     Task {
         if let connReqType = await apiConnect(incognito: incognito, connReq: connectionLink) {
             DispatchQueue.main.async {
@@ -100,12 +100,12 @@ func checkCRDataGroup(_ crData: CReqClientData) -> Bool {
     return crData.type == "group" && crData.groupLinkId != nil
 }
 
-func groupLinkAlert(incognito: Bool, connectionLink: String) -> Alert {
+func groupLinkAlert(_ connectionLink: String, incognito: Bool) -> Alert {
     return Alert(
         title: Text("Connect via group link?"),
         message: Text("You will join a group this link refers to and connect to its group members."),
         primaryButton: .default(Text(incognito ? "Connect incognito" : "Connect")) {
-            connectViaLink(incognito: incognito, connectionLink: connectionLink)
+            connectViaLink(connectionLink, incognito: incognito)
         },
         secondaryButton: .cancel()
     )

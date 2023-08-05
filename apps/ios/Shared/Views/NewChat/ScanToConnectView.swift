@@ -57,9 +57,9 @@ struct ScanToConnectView: View {
             if let crData = parseLinkQueryData(r.string),
                checkCRDataGroup(crData) {
                 dismiss()
-                AlertManager.shared.showAlert(groupLinkAlert(incognito: incognitoDefault, connectionLink: r.string))
+                AlertManager.shared.showAlert(groupLinkAlert(r.string, incognito: incognitoDefault))
             } else {
-                Task { connectViaLink(incognito: incognitoDefault, connectionLink: r.string, dismiss) }
+                Task { connectViaLink(r.string, dismiss: dismiss, incognito: incognitoDefault) }
             }
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")

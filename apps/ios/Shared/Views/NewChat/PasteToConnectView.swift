@@ -86,9 +86,9 @@ struct PasteToConnectView: View {
         if let crData = parseLinkQueryData(link),
            checkCRDataGroup(crData) {
             dismiss()
-            AlertManager.shared.showAlert(groupLinkAlert(incognito: incognitoDefault, connectionLink: link))
+            AlertManager.shared.showAlert(groupLinkAlert(link, incognito: incognitoDefault))
         } else {
-            connectViaLink(incognito: incognitoDefault, connectionLink: link, dismiss)
+            connectViaLink(link, dismiss: dismiss, incognito: incognitoDefault)
         }
     }
 }
