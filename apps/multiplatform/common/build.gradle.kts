@@ -114,6 +114,15 @@ android {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
   }
+  val isAndroid = gradle.startParameter.taskNames.find {
+    val lower = it.toLowerCase()
+    lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")
+  } != null
+  if (isAndroid) {
+    // This is not needed on Android but can't be moved to desktopMain because MR lib don't support this.
+    // No other ways to exclude a file work but it's large and should be excluded
+    kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
+  }
 }
 
 multiplatformResources {

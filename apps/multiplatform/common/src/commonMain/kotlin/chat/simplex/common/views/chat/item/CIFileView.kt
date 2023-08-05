@@ -208,7 +208,7 @@ fun CIFileView(
 
 @Composable
 fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
-  rememberFileChooserLauncher(false) { to: URI? ->
+  rememberFileChooserLauncher(false, ciFile) { to: URI? ->
     val filePath = getLoadedFilePath(ciFile)
     if (filePath != null && to != null) {
       copyFileToFile(File(filePath), to) {}

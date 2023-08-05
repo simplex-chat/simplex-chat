@@ -11,8 +11,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
@@ -410,6 +409,31 @@ fun ChatLayout(
   Box(
     Modifier
       .fillMaxWidth()
+      .desktopOnExternalDrag(
+        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value,
+        onFiles = { paths ->
+          val uris = paths.map { URI.create(it) }
+          val groups =  uris.groupBy { isImage(it) }
+          val images = groups[true] ?: emptyList()
+          val files = groups[false] ?: emptyList()
+          if (images.isNotEmpty()) {
+            composeState.processPickedMedia(images, null)
+          } else if (files.isNotEmpty()) {
+            composeState.processPickedFile(uris.first(), null)
+          }
+        },
+        onImage = {
+          val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
+          tmpFile.deleteOnExit()
+          chatModel.filesToDelete.add(tmpFile)
+          val uri = tmpFile.toURI()
+          composeState.processPickedMedia(listOf(uri), null)
+        },
+        onText = {
+          // Need to parse HTML in order to correctly display the content
+          //composeState.value = composeState.value.copy(message = composeState.value.message + it)
+        },
+      )
   ) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       ModalBottomSheetLayout(

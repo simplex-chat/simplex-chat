@@ -17,8 +17,7 @@ import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -84,7 +83,7 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row {
+      Row(verticalAlignment = Alignment.CenterVertically) {
         cItem.reactions.forEach { r ->
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions) && (cItem.allowAddReaction || r.userReacted)) {
@@ -93,13 +92,14 @@ fun ChatItemView(
             }
           }
           Row(modifier.padding(2.dp)) {
-            Text(r.reaction.text, fontSize = 12.sp)
+            ReactionIcon(r.reaction.text, fontSize = 12.sp)
             if (r.totalReacted > 1) {
               Spacer(Modifier.width(4.dp))
               Text("${r.totalReacted}",
                 fontSize = 11.5.sp,
                 fontWeight = if (r.userReacted) FontWeight.Bold else FontWeight.Normal,
                 color = if (r.userReacted) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+                modifier = if (appPlatform.isAndroid) Modifier else Modifier.padding(top = 4.dp)
               )
             }
           }
@@ -145,7 +145,7 @@ fun ChatItemView(
             }
           }
           if (rs.isNotEmpty()) {
-            Row(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).horizontalScroll(rememberScrollState())) {
+            Row(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
               rs.forEach() { r ->
                 Box(
                   Modifier.size(36.dp).clickable {
@@ -154,7 +154,7 @@ fun ChatItemView(
                   },
                   contentAlignment = Alignment.Center
                 ) {
-                  Text(r.text)
+                  ReactionIcon(r.text, 12.sp)
                 }
               }
             }
@@ -191,7 +191,7 @@ fun ChatItemView(
               clipboard.setText(AnnotatedString(cItem.content.text))
               showMenu.value = false
             })
-            if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice && getLoadedFilePath(cItem.file) != null) {
+            if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && getLoadedFilePath(cItem.file) != null) {
               SaveContentItemAction(cItem, saveFileLauncher, showMenu)
             }
             if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
@@ -323,6 +323,9 @@ fun ChatItemView(
     }
   }
 }
+
+@Composable
+expect fun ReactionIcon(text: String, fontSize: TextUnit = TextUnit.Unspecified)
 
 @Composable
 expect fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserLauncher, showMenu: MutableState<Boolean>)
