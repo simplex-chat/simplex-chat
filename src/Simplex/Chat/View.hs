@@ -42,6 +42,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import qualified Simplex.FileTransfer.Protocol as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
@@ -1359,6 +1360,7 @@ viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId
     CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\fp -> ", path: " <> plain fp) filePath]
     CIFSRcvCancelled -> ["receiving " <> fstr <> " cancelled"]
     CIFSRcvError -> ["receiving " <> fstr <> " error"]
+    CIFSInvalid text -> [fstr <> " invalid status: " <> plain text]
   where
     fstr = fileTransferStr fileId fileName
 viewFileTransferStatusXFTP _ = ["no file status"]

@@ -86,6 +86,7 @@ fun CIImageView(
           is CIFileStatus.RcvTransfer -> progressIndicator()
           is CIFileStatus.RcvCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.RcvError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+          is CIFileStatus.Invalid -> fileIcon(painterResource(MR.images.ic_question_mark), MR.strings.icon_descr_file)
           else -> {}
         }
       }

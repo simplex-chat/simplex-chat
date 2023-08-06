@@ -14,9 +14,9 @@ struct NotificationsView: View {
     @State private var notificationMode: NotificationsMode = ChatModel.shared.notificationMode
     @State private var showAlert: NotificationAlert?
     @State private var legacyDatabase = dbContainerGroupDefault.get() == .documents
-    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @AppStorage(GROUP_DEFAULT_NTF_ENABLE_LOCAL, store: groupDefaults) private var ntfEnableLocal = false
-    @AppStorage(GROUP_DEFAULT_NTF_ENABLE_PERIODIC, store: groupDefaults) private var ntfEnablePeriodic = false
+//    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+//    @AppStorage(GROUP_DEFAULT_NTF_ENABLE_LOCAL, store: groupDefaults) private var ntfEnableLocal = false
+//    @AppStorage(GROUP_DEFAULT_NTF_ENABLE_PERIODIC, store: groupDefaults) private var ntfEnablePeriodic = false
 
     var body: some View {
         List {
@@ -89,12 +89,12 @@ struct NotificationsView: View {
                 }
             }
 
-            if developerTools {
-                Section(String("Experimental")) {
-                    Toggle(String("Always enable local"), isOn: $ntfEnableLocal)
-                    Toggle(String("Always enable periodic"), isOn: $ntfEnablePeriodic)
-                }
-            }
+//            if developerTools {
+//                Section(String("Experimental")) {
+//                    Toggle(String("Always enable local"), isOn: $ntfEnableLocal)
+//                    Toggle(String("Always enable periodic"), isOn: $ntfEnablePeriodic)
+//                }
+//            }
         }
         .disabled(legacyDatabase)
     }

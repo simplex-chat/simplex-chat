@@ -306,6 +306,9 @@
         <source>- more stable message delivery.
 - a bit better groups.
 - and more!</source>
+        <target>- stabielere berichtbezorging.
+- een beetje betere groepen.
+- en meer!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
@@ -386,6 +389,7 @@
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve">
         <source>A few more things</source>
+        <target>Nog een paar dingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -1602,6 +1606,7 @@
       </trans-unit>
       <trans-unit id="Disable (keep overrides)" xml:space="preserve">
         <source>Disable (keep overrides)</source>
+        <target>Uitschakelen (overschrijvingen behouden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -1611,6 +1616,7 @@
       </trans-unit>
       <trans-unit id="Disable for all" xml:space="preserve">
         <source>Disable for all</source>
+        <target>Uitschakelen voor iedereen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing message" xml:space="preserve">
@@ -1675,6 +1681,7 @@
       </trans-unit>
       <trans-unit id="Don't enable" xml:space="preserve">
         <source>Don't enable</source>
+        <target>Niet inschakelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
@@ -1719,6 +1726,7 @@
       </trans-unit>
       <trans-unit id="Enable (keep overrides)" xml:space="preserve">
         <source>Enable (keep overrides)</source>
+        <target>Inschakelen (overschrijvingen behouden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -1738,6 +1746,7 @@
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
         <source>Enable for all</source>
+        <target>Inschakelen voor iedereen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
@@ -1952,6 +1961,7 @@
       </trans-unit>
       <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
         <source>Error enabling delivery receipts!</source>
+        <target>Fout bij het inschakelen van ontvangstbevestiging!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
@@ -2036,6 +2046,7 @@
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
         <source>Error setting delivery receipts!</source>
+        <target>Fout bij het instellen van ontvangstbevestiging!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -2100,6 +2111,7 @@
       </trans-unit>
       <trans-unit id="Even when disabled in the conversation." xml:space="preserve">
         <source>Even when disabled in the conversation.</source>
+        <target>Zelfs wanneer uitgeschakeld in het gesprek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Exit without saving" xml:space="preserve">
@@ -2184,6 +2196,7 @@
       </trans-unit>
       <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
         <source>Filter unread and favorite chats.</source>
+        <target>Filter ongelezen en favoriete chats.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Finally, we have them! 🚀" xml:space="preserve">
@@ -2193,6 +2206,7 @@
       </trans-unit>
       <trans-unit id="Find chats faster" xml:space="preserve">
         <source>Find chats faster</source>
+        <target>Vind gesprekken sneller</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -2212,6 +2226,7 @@
       </trans-unit>
       <trans-unit id="Fix encryption after restoring backups." xml:space="preserve">
         <source>Fix encryption after restoring backups.</source>
+        <target>Repareer versleuteling na het herstellen van back-ups.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix not supported by contact" xml:space="preserve">
@@ -2719,6 +2734,7 @@
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
         <source>Keep your connections</source>
+        <target>Behoud uw verbindingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="KeyChain error" xml:space="preserve">
@@ -2813,6 +2829,7 @@
       </trans-unit>
       <trans-unit id="Make one message disappear" xml:space="preserve">
         <source>Make one message disappear</source>
+        <target>Eén bericht laten verdwijnen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make profile private!" xml:space="preserve">
@@ -2887,6 +2904,7 @@
       </trans-unit>
       <trans-unit id="Message delivery receipts!" xml:space="preserve">
         <source>Message delivery receipts!</source>
+        <target>Ontvangstbevestiging voor berichten!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
@@ -4020,10 +4038,12 @@
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
+        <target>Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
+        <target>Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contactpersonen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
@@ -4033,10 +4053,12 @@
       </trans-unit>
       <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve">
         <source>Sending receipts is disabled for %lld contacts</source>
+        <target>Het verzenden van ontvangstbevestiging is uitgeschakeld voor %lld-contactpersonen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve">
         <source>Sending receipts is enabled for %lld contacts</source>
+        <target>Het verzenden van ontvangstbevestiging is ingeschakeld voor %lld-contactpersonen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -4518,6 +4540,7 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       </trans-unit>
       <trans-unit id="The second tick we missed! ✅" xml:space="preserve">
         <source>The second tick we missed! ✅</source>
+        <target>De tweede vink die we gemist hebben! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -5036,6 +5059,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       </trans-unit>
       <trans-unit id="You can enable later via Settings" xml:space="preserve">
         <source>You can enable later via Settings</source>
+        <target>U kunt later inschakelen via Instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
@@ -5130,7 +5154,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
         <source>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</source>
-        <target>U mag de meest recente versie van uw chat database ALLEEN op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</target>
+        <target>U mag ALLEEN de meest recente versie van uw chat database op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve">
