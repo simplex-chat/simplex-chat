@@ -4,7 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Directory.Options where
+module Directory.Options
+ ( DirectoryOpts (..),
+   getDirectoryOpts,
+   mkChatOpts,
+ )
+where
 
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
@@ -14,7 +19,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts, coreChatOptsP)
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     superUsers :: [KnownContact],
-    directoryLog :: FilePath,
+    directoryLog :: Maybe FilePath,
     serviceName :: String
   }
 
@@ -30,11 +35,12 @@ directoryOpts appDir defaultDbFileName = do
           <> value []
       )
   directoryLog <-
-    strOption
-      ( long "directory-file"
-          <> metavar "DIRECTORY_FILE"
-          <> help "Append only log for directory state"
-      )
+    optional $
+      strOption
+        ( long "directory-file"
+            <> metavar "DIRECTORY_FILE"
+            <> help "Append only log for directory state"
+        )
   serviceName <-
     strOption
       ( long "service-name"

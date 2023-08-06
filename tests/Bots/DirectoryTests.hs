@@ -56,7 +56,7 @@ mkDirectoryOpts tmp superUsers =
   DirectoryOpts
     { coreOptions = (coreOptions (testOpts :: ChatOpts)) {dbFilePrefix = tmp </> serviceDbPrefix},
       superUsers,
-      directoryLog = tmp </> "directory_service.log",
+      directoryLog = Just $ tmp </> "directory_service.log",
       serviceName = "SimpleX-Directory"
     }
 
@@ -699,7 +699,7 @@ withDirectoryService tmp test = do
   where
     withDirectory :: DirectoryOpts -> IO () -> IO ()
     withDirectory opts@DirectoryOpts {directoryLog} action = do
-      st <- getDirectoryStore directoryLog
+      st <- restoreDirectoryStore directoryLog
       t <- forkIO $ bot st
       threadDelay 500000
       action `finally` killThread t

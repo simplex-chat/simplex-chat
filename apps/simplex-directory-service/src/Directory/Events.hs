@@ -7,7 +7,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
-module Directory.Events where
+module Directory.Events
+  ( DirectoryEvent (..),
+    DirectoryCmd (..),
+    ADirectoryCmd (..),
+    DirectoryRole (..),
+    SDirectoryRole (..),
+    crDirectoryEvent,
+  )
+where
 
 import Control.Applicative ((<|>))
 import Data.Attoparsec.Text (Parser)
