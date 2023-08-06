@@ -9,6 +9,7 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
+import Control.Monad (forM_)
 import Directory.Options
 import Directory.Service
 import Directory.Store
@@ -18,6 +19,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Types (GroupMemberRole (..), Profile (..))
 import System.FilePath ((</>))
 import Test.Hspec
+import GHC.IO.Handle (hClose)
 
 directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
@@ -47,6 +49,8 @@ directoryServiceTests = do
     it "should prohibit approval if a duplicate group is listed" testDuplicateProhibitApproval
   describe "list groups" $ do
     it "should list user's groups" testListUserGroups
+  describe "store log" $ do
+    fit "should restore directory service state" testRestoreDirectory
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
@@ -591,19 +595,6 @@ testListUserGroups tmp =
         cath <## "use @SimpleX-Directory <message> to send messages"
         registerGroupId superUser bob "security" "Security" 2 2
         registerGroupId superUser cath "anonymity" "Anonymity" 3 1
-        bob #> "@SimpleX-Directory /list"
-        bob <# "SimpleX-Directory> > /list"
-        bob <## "      2 registered group(s)"
-        bob <# "SimpleX-Directory> 1. privacy (Privacy)"
-        bob <## "Welcome message:"
-        bob <##. "Link to join the group privacy: "
-        bob <## "3 members"
-        bob <## "Status: active"
-        bob <# "SimpleX-Directory> 2. security (Security)"
-        bob <## "Welcome message:"
-        bob <##. "Link to join the group security: "
-        bob <## "2 members"
-        bob <## "Status: active"
         cath #> "@SimpleX-Directory /list"
         cath <# "SimpleX-Directory> > /list"
         cath <## "      1 registered group(s)"
@@ -621,46 +612,78 @@ testListUserGroups tmp =
         cath <## "The group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 3 (anonymity) is de-listed (SimpleX-Directory role is changed to member)."
         groupNotFound cath "anonymity"
-        cath #> "@SimpleX-Directory /list"
-        cath <# "SimpleX-Directory> > /list"
-        cath <## "      1 registered group(s)"
-        cath <# "SimpleX-Directory> 1. anonymity (Anonymity)"
-        cath <## "Welcome message:"
-        cath <##. "Link to join the group anonymity: "
-        cath <## "2 members"
-        cath <## "Status: suspended because roles changed"
-        -- superuser lists all groups
-        superUser #> "@SimpleX-Directory /last"
-        superUser <# "SimpleX-Directory> > /last"
-        superUser <## "      3 registered group(s)"
-        superUser <# "SimpleX-Directory> 1. privacy (Privacy)"
-        superUser <## "Welcome message:"
-        superUser <##. "Link to join the group privacy: "
-        superUser <## "Owner: bob"
-        superUser <## "3 members"
-        superUser <## "Status: active"
-        superUser <# "SimpleX-Directory> 2. security (Security)"
-        superUser <## "Welcome message:"
-        superUser <##. "Link to join the group security: "
-        superUser <## "Owner: bob"
-        superUser <## "2 members"
-        superUser <## "Status: active"
-        superUser <# "SimpleX-Directory> 3. anonymity (Anonymity)"
-        superUser <## "Welcome message:"
-        superUser <##. "Link to join the group anonymity: "
-        superUser <## "Owner: cath"
-        superUser <## "2 members"
-        superUser <## "Status: suspended because roles changed"
-        -- showing last 1 group
-        superUser #> "@SimpleX-Directory /last 1"
-        superUser <# "SimpleX-Directory> > /last 1"
-        superUser <## "      3 registered group(s), showing the last 1"
-        superUser <# "SimpleX-Directory> 3. anonymity (Anonymity)"
-        superUser <## "Welcome message:"
-        superUser <##. "Link to join the group anonymity: "
-        superUser <## "Owner: cath"
-        superUser <## "2 members"
-        superUser <## "Status: suspended because roles changed"
+        testListGroups superUser bob cath
+
+testRestoreDirectory :: HasCallStack => FilePath -> IO ()
+testRestoreDirectory tmp = do
+  testListUserGroups tmp
+  restoreDirectoryService tmp 3 3 $ \superUser _dsLink ->
+    withTestChat tmp "bob" $ \bob -> do
+      bob <## "2 contacts connected (use /cs for the list)"
+      bob <###
+        [ "#privacy (Privacy): connected to server(s)",
+          "#security (Security): connected to server(s)"
+        ] 
+      withTestChat tmp "cath" $ \cath -> do
+        cath <## "2 contacts connected (use /cs for the list)"
+        cath <## "#anonymity (Anonymity): connected to server(s)"
+        testListGroups superUser bob cath
+
+testListGroups :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
+testListGroups superUser bob cath = do
+  bob #> "@SimpleX-Directory /list"
+  bob <# "SimpleX-Directory> > /list"
+  bob <## "      2 registered group(s)"
+  bob <# "SimpleX-Directory> 1. privacy (Privacy)"
+  bob <## "Welcome message:"
+  bob <##. "Link to join the group privacy: "
+  bob <## "3 members"
+  bob <## "Status: active"
+  bob <# "SimpleX-Directory> 2. security (Security)"
+  bob <## "Welcome message:"
+  bob <##. "Link to join the group security: "
+  bob <## "2 members"
+  bob <## "Status: active"
+  cath #> "@SimpleX-Directory /list"
+  cath <# "SimpleX-Directory> > /list"
+  cath <## "      1 registered group(s)"
+  cath <# "SimpleX-Directory> 1. anonymity (Anonymity)"
+  cath <## "Welcome message:"
+  cath <##. "Link to join the group anonymity: "
+  cath <## "2 members"
+  cath <## "Status: suspended because roles changed"
+  -- superuser lists all groups
+  superUser #> "@SimpleX-Directory /last"
+  superUser <# "SimpleX-Directory> > /last"
+  superUser <## "      3 registered group(s)"
+  superUser <# "SimpleX-Directory> 1. privacy (Privacy)"
+  superUser <## "Welcome message:"
+  superUser <##. "Link to join the group privacy: "
+  superUser <## "Owner: bob"
+  superUser <## "3 members"
+  superUser <## "Status: active"
+  superUser <# "SimpleX-Directory> 2. security (Security)"
+  superUser <## "Welcome message:"
+  superUser <##. "Link to join the group security: "
+  superUser <## "Owner: bob"
+  superUser <## "2 members"
+  superUser <## "Status: active"
+  superUser <# "SimpleX-Directory> 3. anonymity (Anonymity)"
+  superUser <## "Welcome message:"
+  superUser <##. "Link to join the group anonymity: "
+  superUser <## "Owner: cath"
+  superUser <## "2 members"
+  superUser <## "Status: suspended because roles changed"
+  -- showing last 1 group
+  superUser #> "@SimpleX-Directory /last 1"
+  superUser <# "SimpleX-Directory> > /last 1"
+  superUser <## "      3 registered group(s), showing the last 1"
+  superUser <# "SimpleX-Directory> 3. anonymity (Anonymity)"
+  superUser <## "Welcome message:"
+  superUser <##. "Link to join the group anonymity: "
+  superUser <## "Owner: cath"
+  superUser <## "2 members"
+  superUser <## "Status: suspended because roles changed"
 
 reapproveGroup :: HasCallStack => TestCC -> TestCC -> IO ()
 reapproveGroup superUser bob = do
@@ -691,20 +714,38 @@ withDirectoryService tmp test = do
         connectUsers ds superUser
         ds ##> "/ad"
         getContactLink ds True
+  withDirectory tmp dsLink test
+
+restoreDirectoryService :: HasCallStack => FilePath -> Int -> Int -> (TestCC -> String -> IO ()) -> IO ()
+restoreDirectoryService tmp ctCount grCount test = do
+  dsLink <-
+    withTestChat tmp serviceDbPrefix $ \ds -> do
+      ds <## (show ctCount <> " contacts connected (use /cs for the list)")
+      ds <## "Your address is active! To show: /sa"
+      ds <## (show grCount <> " group links active")
+      forM_ [1..grCount] $ \_ -> ds <##. "#"
+      ds ##> "/sa"
+      dsLink <- getContactLink ds False
+      ds <## "auto_accept on"
+      pure dsLink
+  withDirectory tmp dsLink test
+
+withDirectory :: HasCallStack => FilePath -> String -> (TestCC -> String -> IO ()) -> IO ()
+withDirectory tmp dsLink test = do
   let opts = mkDirectoryOpts tmp [KnownContact 2 "alice"]
-  withDirectory opts $
+  runDirectory opts $
     withTestChat tmp "super_user" $ \superUser -> do
       superUser <## "1 contacts connected (use /cs for the list)"
       test superUser dsLink
+
+runDirectory :: DirectoryOpts -> IO () -> IO ()
+runDirectory opts@DirectoryOpts {directoryLog} action = do
+  st <- restoreDirectoryStore directoryLog
+  t <- forkIO $ bot st
+  threadDelay 500000
+  action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
   where
-    withDirectory :: DirectoryOpts -> IO () -> IO ()
-    withDirectory opts@DirectoryOpts {directoryLog} action = do
-      st <- restoreDirectoryStore directoryLog
-      t <- forkIO $ bot st
-      threadDelay 500000
-      action `finally` killThread t
-      where
-        bot st = simplexChatCore testCfg (mkChatOpts opts) Nothing $ directoryService st opts
+    bot st = simplexChatCore testCfg (mkChatOpts opts) Nothing $ directoryService st opts
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
