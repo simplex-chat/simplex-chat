@@ -79,6 +79,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
+  CRGroupInfo u g s -> ttyUser u $ viewGroupInfo g s
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
   CRContactSwitchStarted {} -> ["switch started"]
   CRGroupMemberSwitchStarted {} -> ["switch started"]
@@ -811,12 +812,12 @@ viewContactConnected ct@Contact {localDisplayName} userIncognitoProfile testView
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
 
-viewGroupsList :: [GroupInfo] -> [StyledString]
+viewGroupsList :: [(GroupInfo, GroupSummary)] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
 viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
-    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
-    groupSS g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings} =
+    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName) . fst
+    groupSS (g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> membershipIncognito g <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
@@ -826,9 +827,10 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
           GSMemLeft -> delete "you left"
           GSMemGroupDeleted -> delete "group deleted"
           _
-            | enableNtfs chatSettings -> ""
-            | otherwise -> " (muted, you can " <> highlight ("/unmute #" <> ldn) <> ")"
+            | enableNtfs chatSettings -> " (" <> memberCount <> ")"
+            | otherwise -> " (" <> memberCount <> ", muted, you can " <> highlight ("/unmute #" <> ldn) <> ")"
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> ldn) <> ")"
+        memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
 
 groupInvitation' :: GroupInfo -> StyledString
 groupInvitation' GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership = membership@GroupMember {memberProfile}} =
@@ -934,6 +936,12 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
+
+viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
+viewGroupInfo GroupInfo {groupId} s =
+  [ "group ID: " <> sShow groupId,
+    "current members: " <> sShow (currentMembers s)
+  ]
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
 viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}} stats =

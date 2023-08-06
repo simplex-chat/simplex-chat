@@ -318,6 +318,13 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
+data GroupSummary = GroupSummary
+  { currentMembers :: Int
+  }
+  deriving (Show, Generic)
+
+instance ToJSON GroupSummary where toEncoding = J.genericToEncoding J.defaultOptions
+
 data ContactOrGroup = CGContact Contact | CGGroup Group
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
@@ -784,6 +791,7 @@ memberActive m = case memberStatus m of
 memberCurrent :: GroupMember -> Bool
 memberCurrent = memberCurrent' . memberStatus
 
+-- update getGroupSummary if this is changed
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case
   GSMemRemoved -> False

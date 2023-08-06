@@ -770,7 +770,7 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
     dan <##> cath
     -- list groups
     cath ##> "/gs"
-    cath <## "i #secret_club"
+    cath <## "i #secret_club (4 members)"
     -- list group members
     alice ##> "/ms secret_club"
     alice

@@ -45,6 +45,8 @@ module Simplex.Chat.Store.Groups
     deleteGroup,
     getUserGroups,
     getUserGroupDetails,
+    getUserGroupsWithSummary,
+    getGroupSummary,
     getContactGroupPreferences,
     checkContactHasGroups,
     getGroupInvitation,
@@ -467,6 +469,30 @@ getUserGroupDetails db User {userId, userContactId} _contactId_ search_ =
       (userId, userContactId, search, search, search)
   where
     search = fromMaybe "" search_
+
+getUserGroupsWithSummary :: DB.Connection -> User -> Maybe ContactId -> Maybe String -> IO [(GroupInfo, GroupSummary)]
+getUserGroupsWithSummary db user _contactId_ search_ =
+  getUserGroupDetails db user _contactId_ search_
+    >>= mapM (\g@GroupInfo {groupId} -> (g,) <$> getGroupSummary db user groupId)
+
+-- the statuses on non-current members should match memberCurrent' function
+getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary
+getGroupSummary db User {userId} groupId = do
+  currentMembers_ <- maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT count (m.group_member_id)
+        FROM groups g
+        JOIN group_members m USING (group_id)
+        WHERE g.user_id = ?
+          AND g.group_id = ?
+          AND m.member_status != ?
+          AND m.member_status != ?
+          AND m.member_status != ?
+      |]
+      (userId, groupId, GSMemRemoved, GSMemLeft, GSMemInvited)
+  pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [FullGroupPreferences]
 getContactGroupPreferences db User {userId} Contact {contactId} = do

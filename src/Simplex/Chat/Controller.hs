@@ -291,6 +291,7 @@ data ChatCommand
   | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
+  | APIGroupInfo GroupId
   | APIGroupMemberInfo GroupId GroupMemberId
   | APISwitchContact ContactId
   | APISwitchGroupMember GroupId GroupMemberId
@@ -307,6 +308,7 @@ data ChatCommand
   | SetShowMessages ChatName Bool
   | SetSendReceipts ChatName (Maybe Bool)
   | ContactInfo ContactName
+  | ShowGroupInfo GroupName
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
@@ -424,6 +426,7 @@ data ChatResponse
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
+  | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
@@ -461,7 +464,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRGroupsList {user :: User, groups :: [GroupInfo]}
+  | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem

@@ -1144,6 +1144,9 @@ processChatCommand = \case
     incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
     connectionStats <- withAgent (`getConnectionServers` contactConnId ct)
     pure $ CRContactInfo user ct connectionStats (fmap fromLocalProfile incognitoProfile)
+  APIGroupInfo gId -> withUser $ \user -> do
+    (g, s) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> liftIO (getGroupSummary db user gId)
+    pure $ CRGroupInfo user g s
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
@@ -1230,6 +1233,9 @@ processChatCommand = \case
   SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
   SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   ContactInfo cName -> withContactName cName APIContactInfo
+  ShowGroupInfo gName -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APIGroupInfo groupId
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
@@ -1493,7 +1499,7 @@ processChatCommand = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
   APIListGroups userId contactId_ search_ -> withUserId userId $ \user ->
-    CRGroupsList user <$> withStore' (\db -> getUserGroupDetails db user contactId_ search_)
+    CRGroupsList user <$> withStore' (\db -> getUserGroupsWithSummary db user contactId_ search_)
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
     ct_ <- forM cName_ $ \cName -> withStore $ \db -> getContactByName db user cName
     processChatCommand $ APIListGroups userId (contactId' <$> ct_) search_
@@ -5092,8 +5098,10 @@ chatCommandP =
       "/reconnect" $> ReconnectAllServers,
       "/_settings " *> (APISetChatSettings <$> chatRefP <* A.space <*> jsonP),
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
+      "/_info #" *> (APIGroupInfo <$> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* char_ '@' <*> displayName),
+      ("/info #" <|> "/i #") *> (ShowGroupInfo <$> displayName),
       ("/info " <|> "/i ") *> char_ '@' *> (ContactInfo <$> displayName),
       "/_switch #" *> (APISwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_switch @" *> (APISwitchContact <$> A.decimal),
