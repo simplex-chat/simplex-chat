@@ -50,7 +50,7 @@ directoryServiceTests = do
   describe "list groups" $ do
     it "should list user's groups" testListUserGroups
   describe "store log" $ do
-    fit "should restore directory service state" testRestoreDirectory
+    it "should restore directory service state" testRestoreDirectory
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
@@ -61,7 +61,8 @@ mkDirectoryOpts tmp superUsers =
     { coreOptions = (coreOptions (testOpts :: ChatOpts)) {dbFilePrefix = tmp </> serviceDbPrefix},
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",
-      serviceName = "SimpleX-Directory"
+      serviceName = "SimpleX-Directory",
+      testing = True
     }
 
 serviceDbPrefix :: FilePath
@@ -612,25 +613,32 @@ testListUserGroups tmp =
         cath <## "The group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 3 (anonymity) is de-listed (SimpleX-Directory role is changed to member)."
         groupNotFound cath "anonymity"
-        testListGroups superUser bob cath
+        listGroups superUser bob cath
 
 testRestoreDirectory :: HasCallStack => FilePath -> IO ()
 testRestoreDirectory tmp = do
   testListUserGroups tmp
   restoreDirectoryService tmp 3 3 $ \superUser _dsLink ->
-    withTestChat tmp "bob" $ \bob -> do
-      bob <## "2 contacts connected (use /cs for the list)"
-      bob <###
-        [ "#privacy (Privacy): connected to server(s)",
-          "#security (Security): connected to server(s)"
-        ] 
+    withTestChat tmp "bob" $ \bob ->
       withTestChat tmp "cath" $ \cath -> do
+        bob <## "2 contacts connected (use /cs for the list)"
+        bob <###
+          [ "#privacy (Privacy): connected to server(s)",
+            "#security (Security): connected to server(s)"
+          ] 
         cath <## "2 contacts connected (use /cs for the list)"
-        cath <## "#anonymity (Anonymity): connected to server(s)"
-        testListGroups superUser bob cath
+        cath <###
+          [ "#privacy (Privacy): connected to server(s)",
+            "#anonymity (Anonymity): connected to server(s)"
+          ]
+        listGroups superUser bob cath
+        groupFoundN 3 bob "privacy"
+        groupFound bob "security"
+        groupFoundN 3 cath "privacy"
+        groupFound cath "security"
 
-testListGroups :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
-testListGroups superUser bob cath = do
+listGroups :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
+listGroups superUser bob cath = do
   bob #> "@SimpleX-Directory /list"
   bob <# "SimpleX-Directory> > /list"
   bob <## "      2 registered group(s)"

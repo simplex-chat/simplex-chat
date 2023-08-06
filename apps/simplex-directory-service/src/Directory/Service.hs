@@ -54,14 +54,15 @@ data GroupRolesStatus
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@DirectoryOpts {coreOptions = CoreChatOpts {dbFilePrefix}} <- getDirectoryOpts appDir "simplex_directory_service"
-  putStrLn $ "SimpleX Directory Service Bot v" ++ versionNumber
-  putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
+  opts@DirectoryOpts {coreOptions = CoreChatOpts {dbFilePrefix}, testing} <- getDirectoryOpts appDir "simplex_directory_service"
+  unless testing $ do  
+    putStrLn $ "SimpleX Directory Service Bot v" ++ versionNumber
+    putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
   pure opts
 
 directoryService :: DirectoryStore -> DirectoryOpts -> User -> ChatController -> IO ()
-directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = do
-  initializeBotAddress cc
+directoryService st DirectoryOpts {superUsers, serviceName, testing} User {userId} cc = do
+  initializeBotAddress' (not testing) cc
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
     forM_ (crDirectoryEvent resp) $ \case
@@ -131,7 +132,7 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
 
     deContactConnected :: Contact -> IO ()
     deContactConnected ct = do
-      putStrLn $ T.unpack (localDisplayName' ct) <> " connected"
+      unless testing $ putStrLn $ T.unpack (localDisplayName' ct) <> " connected"
       sendMessage cc ct $
         "Welcome to " <> serviceName <> " service!\n\
         \Send a search string to find groups or */help* to learn how to add groups to directory.\n\n\
@@ -387,8 +388,8 @@ directoryService st DirectoryOpts {superUsers, serviceName} User {userId} cc = d
             atomically (filterListedGroups st groups) >>= \case
               [] -> sendReply "No groups found"
               gs -> do
-                sendReply $ "Found " <> show (length gs) <> " group(s)"
-                void . forkIO $ forM_ gs $
+                sendReply $ "Found " <> show (length gs) <> " group(s)" <> if length gs > 10 then ", sending 10." else ""
+                void . forkIO $ forM_ (take 10 gs) $
                   \(GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
                     let membersStr = tshow currentMembers <> " members"
                         text = groupInfoText p <> "\n" <> membersStr

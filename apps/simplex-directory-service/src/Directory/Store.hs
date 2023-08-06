@@ -217,10 +217,10 @@ instance StrEncoding GroupRegData where
         "status=" <> strEncode groupRegStatus_
       ]
   strP = do
-    dbGroupId_ <- "group_id=" *> strP
-    userGroupRegId_ <- "user_group_id=" *> strP
-    dbContactId_ <- "contact_id=" *> strP
-    dbOwnerMemberId_ <- "owner_member_id=" *> strP
+    dbGroupId_ <- "group_id=" *> strP_
+    userGroupRegId_ <- "user_group_id=" *> strP_
+    dbContactId_ <- "contact_id=" *> strP_
+    dbOwnerMemberId_ <- "owner_member_id=" *> strP_
     groupRegStatus_ <- "status=" *> strP
     pure GroupRegData {dbGroupId_, userGroupRegId_, dbContactId_, dbOwnerMemberId_, groupRegStatus_}
 
@@ -235,7 +235,7 @@ instance StrEncoding GroupRegStatus where
     GRSSuspendedBadRoles -> "suspended_bad_roles"
     GRSRemoved -> "removed"
   strP =
-    A.takeTill (== ' ') >>= \case
+    A.takeTill (\c -> c == ' ' || c == ':') >>= \case
       "pending_confirmation" -> pure GRSPendingConfirmation
       "proposed" -> pure GRSProposed
       "pending_update" -> pure GRSPendingUpdate
@@ -273,7 +273,6 @@ restoreDirectoryStore = \case
       grs <- readDirectoryData f
       renameFile f (f <> ".bak")
       h <- writeDirectoryData f grs -- compact
-      hSetBuffering h LineBuffering
       atomically $ mkDirectoryStore h grs
 
 emptyStoreData :: ([GroupReg], Set GroupId, Set GroupId)
@@ -324,5 +323,6 @@ readDirectoryData f =
 writeDirectoryData :: FilePath -> [GroupRegData] -> IO Handle
 writeDirectoryData f grs = do
   h <- openFile f WriteMode
+  hSetBuffering h LineBuffering
   forM_ grs $ B.hPutStrLn h . strEncode . GRCreate
   pure h

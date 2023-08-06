@@ -4847,13 +4847,13 @@ createInternalChatItem user cd content itemTs_ = do
   ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs createdAt
   toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
 
-getCreateActiveUser :: SQLiteStore -> IO User
-getCreateActiveUser st = do
+getCreateActiveUser :: SQLiteStore -> Bool -> IO User
+getCreateActiveUser st testView = do
   user <-
     withTransaction st getUsers >>= \case
       [] -> newUser
       users -> maybe (selectUser users) pure (find activeUser users)
-  putStrLn $ "Current user: " <> userStr user
+  unless testView $ putStrLn $ "Current user: " <> userStr user
   pure user
   where
     newUser :: IO User

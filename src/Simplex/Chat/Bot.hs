@@ -38,18 +38,21 @@ chatBotRepl welcome answer _user cc = do
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"
 
 initializeBotAddress :: ChatController -> IO ()
-initializeBotAddress cc = do
+initializeBotAddress = initializeBotAddress' True
+
+initializeBotAddress' :: Bool -> ChatController -> IO ()
+initializeBotAddress' logAddress cc = do
   sendChatCmd cc ShowMyAddress >>= \case
     CRUserContactLink _ UserContactLink {connReqContact} -> showBotAddress connReqContact
     CRChatCmdError _ (ChatErrorStore SEUserContactLinkNotFound) -> do
-      putStrLn "No bot address, creating..."
+      when logAddress $ putStrLn "No bot address, creating..."
       sendChatCmd cc CreateMyAddress >>= \case
         CRUserContactLinkCreated _ uri -> showBotAddress uri
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
   where
     showBotAddress uri = do
-      putStrLn $ "Bot's contact address is: " <> B.unpack (strEncode uri)
+      when logAddress $ putStrLn $ "Bot's contact address is: " <> B.unpack (strEncode uri)
       void $ sendChatCmd cc $ AddressAutoAccept $ Just AutoAccept {acceptIncognito = False, autoReply = Nothing}
 
 sendMessage :: ChatController -> Contact -> String -> IO ()

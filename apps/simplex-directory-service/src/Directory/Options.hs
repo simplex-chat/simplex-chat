@@ -20,7 +20,8 @@ data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     superUsers :: [KnownContact],
     directoryLog :: Maybe FilePath,
-    serviceName :: String
+    serviceName :: String,
+    testing :: Bool
   }
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
@@ -32,10 +33,9 @@ directoryOpts appDir defaultDbFileName = do
       ( long "super-users"
           <> metavar "SUPER_USERS"
           <> help "Comma-separated list of super-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
-          <> value []
       )
   directoryLog <-
-    optional $
+    Just <$>
       strOption
         ( long "directory-file"
             <> metavar "DIRECTORY_FILE"
@@ -53,7 +53,8 @@ directoryOpts appDir defaultDbFileName = do
       { coreOptions,
         superUsers,
         directoryLog,
-        serviceName
+        serviceName,
+        testing = False
       }
 
 getDirectoryOpts :: FilePath -> FilePath -> IO DirectoryOpts
