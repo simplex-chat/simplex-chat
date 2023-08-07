@@ -43,22 +43,18 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
       contentAlignment = Alignment.TopEnd
     ) {
       val ts = getTimestampText(contactConnection.updatedAt)
-//      Column(
-//        Modifier.fillMaxHeight(),
-//      ) {
-        Text(
-          ts,
-          color = MaterialTheme.colors.secondary,
-          style = MaterialTheme.typography.body2,
-          modifier = Modifier.padding(bottom = 5.dp)
-        )
-        Box(
-          Modifier.padding(top = 52.dp),
-          contentAlignment = Alignment.Center
-        ) {
-          IncognitoIcon(contactConnection.incognito)
-        }
-//      }
+      Text(
+        ts,
+        color = MaterialTheme.colors.secondary,
+        style = MaterialTheme.typography.body2,
+        modifier = Modifier.padding(bottom = 5.dp)
+      )
+      Box(
+        Modifier.padding(top = 52.dp),
+        contentAlignment = Alignment.Center
+      ) {
+        IncognitoIcon(contactConnection.incognito)
+      }
     }
   }
 }
