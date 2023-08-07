@@ -14,6 +14,7 @@ module Simplex.Chat.MarkdownEditing where
 
 import           Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
+import           Data.Sequence ( Seq )
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Generics ( Generic )
@@ -49,7 +50,7 @@ instance ToJSON EditedText where
 
 
 formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
-formattedEditedText s s' = diff_ (toEditedChars s) (toEditedChars s')
+formattedEditedText s s' = diff (toEditedChars s) (toEditedChars s')
 
 
 toEditedChars :: [FormattedText] -> [EditedChar]
@@ -78,8 +79,18 @@ toEditedChars = concatMap toChars
 --     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
 
 
-diff_ :: [EditedChar] -> [EditedChar] -> [EditedChar]
-diff_ left right = undefined
+diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
+diff left right = 
+  let
+    toText :: [EditedChar] -> T.Text
+    toText = T.pack . fmap char 
+
+    formulate :: Seq DM.Edit -> [EditedChar] -> [EditedChar] -> [EditedChar]
+    formulate = undefined
+
+    edits = DM.diffTexts (toText left) (toText right)
+  in
+    formulate edits left right
 
 
 
