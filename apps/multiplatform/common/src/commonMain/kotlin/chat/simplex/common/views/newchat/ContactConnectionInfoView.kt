@@ -98,7 +98,6 @@ private fun ContactConnectionInfoLayout(
           Icon(
             painterResource(MR.images.ic_info),
             null,
-            //          Modifier.clickable(onClick = { ModalManager.start.showModal { IncognitoView() } }),
             tint = MaterialTheme.colors.primary
           )
         }
