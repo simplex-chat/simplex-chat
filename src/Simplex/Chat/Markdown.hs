@@ -5,8 +5,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
@@ -30,9 +28,7 @@ import Data.Maybe (fromMaybe, isNothing)
 import Data.Semigroup (sconcat)
 import Data.String ( IsString(..) )
 import Data.Text (Text)
-import Data.Text.Internal (Text(..))
 import qualified Data.Text as T 
-import qualified Data.Text.Array as A
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics ( Generic )
 import Simplex.Chat.Types ( decodeJSON, CReqClientData(CRDataGroup) )
@@ -41,27 +37,9 @@ import Simplex.Messaging.Encoding.String( StrEncoding(strEncode, strDecode) )
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SrvLoc (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
-import qualified Data.Vector.Unboxed as VU
 import System.Console.ANSI.Types ( Color(..) )
 import qualified Text.Email.Validate as Email
 
---------------
---------------
-instance VU.Unbox Color
-instance VU.Unbox Format
-instance VU.Unbox (Maybe Format)
--- instance Unbox A.Array
-instance VU.Unbox T.Text
-instance VU.Unbox (NonEmpty T.Text)
-instance VU.Unbox SimplexLinkType
-
--- instance Generic A.Array
--- deriving instance Generic A.Array
-deriving instance Generic Color
-deriving instance Generic T.Text
--- instance Generic T.Text
---------------
---------------
 
 data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
@@ -116,7 +94,7 @@ instance Monoid Markdown where mempty = unmarked ""
 instance IsString Markdown where fromString = unmarked . T.pack
 
 newtype FormatColor = FormatColor Color
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
 instance ToJSON FormatColor where
   toJSON (FormatColor c) = case c of
@@ -128,9 +106,6 @@ instance ToJSON FormatColor where
     Magenta -> "magenta"
     Black -> "black"
     White -> "white"
-
-instance VU.Unbox FormatColor
-
 
 
 data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
