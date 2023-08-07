@@ -33,7 +33,6 @@ fun ChatPreviewView(
   chat: Chat,
   chatModelDraft: ComposeState?,
   chatModelDraftChatId: ChatId?,
-  chatModelIncognito: Boolean,
   currentUserProfileDisplayName: String?,
   contactNetworkStatus: NetworkStatus?,
   stopped: Boolean,
@@ -138,7 +137,7 @@ fun ChatPreviewView(
   }
 
   @Composable
-  fun chatPreviewText(chatModelIncognito: Boolean) {
+  fun chatPreviewText() {
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
       val (text: CharSequence, inlineTextContent) = when {
@@ -175,12 +174,43 @@ fun ChatPreviewView(
           }
         is ChatInfo.Group ->
           when (cInfo.groupInfo.membership.memberStatus) {
-            GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(chatModelIncognito, currentUserProfileDisplayName, cInfo.groupInfo))
+            GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(currentUserProfileDisplayName, cInfo.groupInfo))
             GroupMemberStatus.MemAccepted -> Text(stringResource(MR.strings.group_connection_pending), color = MaterialTheme.colors.secondary)
             else -> {}
           }
         else -> {}
       }
+    }
+  }
+
+  @Composable
+  fun chatStatusImage() {
+    if (cInfo is ChatInfo.Direct) {
+      val descr = contactNetworkStatus?.statusString
+      when (contactNetworkStatus) {
+        is NetworkStatus.Connected ->
+          IncognitoIcon(chat.chatInfo.incognito)
+
+        is NetworkStatus.Error ->
+          Icon(
+            painterResource(MR.images.ic_error),
+            contentDescription = descr,
+            tint = MaterialTheme.colors.secondary,
+            modifier = Modifier
+              .size(19.dp)
+          )
+
+        else ->
+          CircularProgressIndicator(
+            Modifier
+              .padding(horizontal = 2.dp)
+              .size(15.dp),
+            color = MaterialTheme.colors.secondary,
+            strokeWidth = 1.5.dp
+          )
+      }
+    } else {
+      IncognitoIcon(chat.chatInfo.incognito)
     }
   }
 
@@ -199,14 +229,14 @@ fun ChatPreviewView(
       chatPreviewTitle()
       val height = with(LocalDensity.current) { 46.sp.toDp() }
       Row(Modifier.heightIn(min = height)) {
-        chatPreviewText(chatModelIncognito)
+        chatPreviewText()
       }
     }
-    val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
 
     Box(
       contentAlignment = Alignment.TopEnd
     ) {
+      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
       Text(
         ts,
         color = MaterialTheme.colors.secondary,
@@ -262,24 +292,33 @@ fun ChatPreviewView(
           )
         }
       }
-      if (cInfo is ChatInfo.Direct) {
-        Box(
-          Modifier.padding(top = 52.dp),
-          contentAlignment = Alignment.Center
-        ) {
-          ChatStatusImage(contactNetworkStatus)
-        }
+      Box(
+        Modifier.padding(top = 52.dp),
+        contentAlignment = Alignment.Center
+      ) {
+        chatStatusImage()
       }
     }
   }
 }
 
 @Composable
-private fun groupInvitationPreviewText(chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, groupInfo: GroupInfo): String {
+fun IncognitoIcon(incognito: Boolean) {
+  if (incognito) {
+    Icon(
+      painterResource(MR.images.ic_theater_comedy),
+      contentDescription = null,
+      tint = MaterialTheme.colors.secondary,
+      modifier = Modifier
+        .size(21.dp)
+    )
+  }
+}
+
+@Composable
+private fun groupInvitationPreviewText(currentUserProfileDisplayName: String?, groupInfo: GroupInfo): String {
   return if (groupInfo.membership.memberIncognito)
     String.format(stringResource(MR.strings.group_preview_join_as), groupInfo.membership.memberProfile.displayName)
-  else if (chatModelIncognito)
-    String.format(stringResource(MR.strings.group_preview_join_as), currentUserProfileDisplayName ?: "")
   else
     stringResource(MR.strings.group_preview_you_are_invited)
 }
@@ -287,28 +326,6 @@ private fun groupInvitationPreviewText(chatModelIncognito: Boolean, currentUserP
 @Composable
 fun unreadCountStr(n: Int): String {
   return if (n < 1000) "$n" else "${n / 1000}" + stringResource(MR.strings.thousand_abbreviation)
-}
-
-@Composable
-fun ChatStatusImage(s: NetworkStatus?) {
-  val descr = s?.statusString
-  if (s is NetworkStatus.Error) {
-    Icon(
-      painterResource(MR.images.ic_error),
-      contentDescription = descr,
-      tint = MaterialTheme.colors.secondary,
-      modifier = Modifier
-        .size(19.dp)
-    )
-  } else if (s !is NetworkStatus.Connected) {
-    CircularProgressIndicator(
-      Modifier
-        .padding(horizontal = 2.dp)
-        .size(15.dp),
-      color = MaterialTheme.colors.secondary,
-      strokeWidth = 1.5.dp
-    )
-  }
 }
 
 @Preview/*(
@@ -319,6 +336,6 @@ fun ChatStatusImage(s: NetworkStatus?) {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, null, null, false, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
+    ChatPreviewView(Chat.sampleData, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
   }
 }

@@ -331,7 +331,6 @@ object ChatController {
       if (justStarted) {
         chatModel.currentUser.value = user
         chatModel.userCreated.value = true
-        apiSetIncognito(chatModel.incognito.value)
         getUserChatData()
         appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
@@ -544,12 +543,6 @@ object ChatController {
     val r = sendCmd(CC.ApiSetXFTPConfig(cfg))
     if (r is CR.CmdOk) return
     throw Error("apiSetXFTPConfig bad response: ${r.responseType} ${r.details}")
-  }
-
-  suspend fun apiSetIncognito(incognito: Boolean) {
-    val r = sendCmd(CC.SetIncognito(incognito))
-    if (r is CR.CmdOk) return
-    throw Exception("failed to set incognito: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiExportArchive(config: ArchiveConfig) {
@@ -819,14 +812,14 @@ object ChatController {
 
 
 
-  suspend fun apiAddContact(): String? {
+  suspend fun apiAddContact(incognito: Boolean): Pair<String, PendingContactConnection>? {
     val userId = chatModel.currentUser.value?.userId ?: run {
       Log.e(TAG, "apiAddContact: no current user")
       return null
     }
-    val r = sendCmd(CC.APIAddContact(userId))
+    val r = sendCmd(CC.APIAddContact(userId, incognito))
     return when (r) {
-      is CR.Invitation -> r.connReqInvitation
+      is CR.Invitation -> r.connReqInvitation to r.connection
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiAddContact", generalGetString(MR.strings.connection_error), r)
@@ -836,12 +829,19 @@ object ChatController {
     }
   }
 
-  suspend fun apiConnect(connReq: String): Boolean  {
+  suspend fun apiSetConnectionIncognito(connId: Long, incognito: Boolean): PendingContactConnection? {
+    val r = sendCmd(CC.ApiSetConnectionIncognito(connId, incognito))
+    if (r is CR.ConnectionIncognitoUpdated) return r.toConnection
+    Log.e(TAG, "apiSetConnectionIncognito bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiConnect(incognito: Boolean, connReq: String): Boolean  {
     val userId = chatModel.currentUser.value?.userId ?: run {
       Log.e(TAG, "apiConnect: no current user")
       return false
     }
-    val r = sendCmd(CC.APIConnect(userId, connReq))
+    val r = sendCmd(CC.APIConnect(userId, incognito, connReq))
     when {
       r is CR.SentConfirmation || r is CR.SentInvitation -> return true
       r is CR.ContactAlreadyExists -> {
@@ -998,8 +998,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiAcceptContactRequest(contactReqId: Long): Contact? {
-    val r = sendCmd(CC.ApiAcceptContact(contactReqId))
+  suspend fun apiAcceptContactRequest(incognito: Boolean, contactReqId: Long): Contact? {
+    val r = sendCmd(CC.ApiAcceptContact(incognito, contactReqId))
     return when {
       r is CR.AcceptingContactRequest -> r.contact
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
@@ -1805,7 +1805,6 @@ sealed class CC {
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
   class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
-  class SetIncognito(val incognito: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
@@ -1850,8 +1849,9 @@ sealed class CC {
   class APIGetGroupMemberCode(val groupId: Long, val groupMemberId: Long): CC()
   class APIVerifyContact(val contactId: Long, val connectionCode: String?): CC()
   class APIVerifyGroupMember(val groupId: Long, val groupMemberId: Long, val connectionCode: String?): CC()
-  class APIAddContact(val userId: Long): CC()
-  class APIConnect(val userId: Long, val connReq: String): CC()
+  class APIAddContact(val userId: Long, val incognito: Boolean): CC()
+  class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
+  class APIConnect(val userId: Long, val incognito: Boolean, val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
@@ -1872,7 +1872,7 @@ sealed class CC {
   class ApiSendCallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CC()
   class ApiEndCall(val contact: Contact): CC()
   class ApiCallStatus(val contact: Contact, val callStatus: WebRTCCallStatus): CC()
-  class ApiAcceptContact(val contactReqId: Long): CC()
+  class ApiAcceptContact(val incognito: Boolean, val contactReqId: Long): CC()
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
@@ -1908,7 +1908,6 @@ sealed class CC {
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
-    is SetIncognito -> "/incognito ${onOff(incognito)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -1956,8 +1955,9 @@ sealed class CC {
     is APIGetGroupMemberCode -> "/_get code #$groupId $groupMemberId"
     is APIVerifyContact -> "/_verify code @$contactId" + if (connectionCode != null) " $connectionCode" else ""
     is APIVerifyGroupMember -> "/_verify code #$groupId $groupMemberId" + if (connectionCode != null) " $connectionCode" else ""
-    is APIAddContact -> "/_connect $userId"
-    is APIConnect -> "/_connect $userId $connReq"
+    is APIAddContact -> "/_connect $userId incognito=${onOff(incognito)}"
+    is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
+    is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
     is ApiListContacts -> "/_contacts $userId"
@@ -1971,7 +1971,7 @@ sealed class CC {
     is ApiShowMyAddress -> "/_show_address $userId"
     is ApiSetProfileAddress -> "/_profile_address $userId ${onOff(on)}"
     is ApiAddressAutoAccept -> "/_auto_accept $userId ${AutoAccept.cmdString(autoAccept)}"
-    is ApiAcceptContact -> "/_accept $contactReqId"
+    is ApiAcceptContact -> "/_accept incognito=${onOff(incognito)} $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
     is ApiSendCallInvitation -> "/_call invite @${contact.apiId} ${json.encodeToString(callType)}"
     is ApiRejectCall -> "/_call reject @${contact.apiId}"
@@ -2006,7 +2006,6 @@ sealed class CC {
     is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
     is ApiSetXFTPConfig -> "apiSetXFTPConfig"
-    is SetIncognito -> "setIncognito"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
@@ -2052,6 +2051,7 @@ sealed class CC {
     is APIVerifyContact -> "apiVerifyContact"
     is APIVerifyGroupMember -> "apiVerifyGroupMember"
     is APIAddContact -> "apiAddContact"
+    is ApiSetConnectionIncognito -> "apiSetConnectionIncognito"
     is APIConnect -> "apiConnect"
     is ApiDeleteChat -> "apiDeleteChat"
     is ApiClearChat -> "apiClearChat"
@@ -3249,7 +3249,8 @@ sealed class CR {
   @Serializable @SerialName("contactCode") class ContactCode(val user: User, val contact: Contact, val connectionCode: String): CR()
   @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
   @Serializable @SerialName("connectionVerified") class ConnectionVerified(val user: User, val verified: Boolean, val expectedCode: String): CR()
-  @Serializable @SerialName("invitation") class Invitation(val user: User, val connReqInvitation: String): CR()
+  @Serializable @SerialName("invitation") class Invitation(val user: User, val connReqInvitation: String, val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: User, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation(val user: User): CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation(val user: User): CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: User, val contact: Contact): CR()
@@ -3378,6 +3379,7 @@ sealed class CR {
     is GroupMemberCode -> "groupMemberCode"
     is ConnectionVerified -> "connectionVerified"
     is Invitation -> "invitation"
+    is ConnectionIncognitoUpdated -> "connectionIncognitoUpdated"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
     is ContactAlreadyExists -> "contactAlreadyExists"
@@ -3503,6 +3505,7 @@ sealed class CR {
     is GroupMemberCode -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionCode: $connectionCode")
     is ConnectionVerified -> withUser(user, "verified: $verified\nconnectionCode: $expectedCode")
     is Invitation -> withUser(user, connReqInvitation)
+    is ConnectionIncognitoUpdated -> withUser(user, json.encodeToString(toConnection))
     is SentConfirmation -> withUser(user, noDetails())
     is SentInvitation -> withUser(user, noDetails())
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
@@ -3822,6 +3825,7 @@ sealed class ChatErrorType {
       is ServerProtocol -> "serverProtocol"
       is AgentCommandError -> "agentCommandError"
       is InvalidFileDescription -> "invalidFileDescription"
+      is ConnectionIncognitoChangeProhibited -> "connectionIncognitoChangeProhibited"
       is InternalError -> "internalError"
       is CEException -> "exception $message"
     }
@@ -3895,6 +3899,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("serverProtocol") object ServerProtocol: ChatErrorType()
   @Serializable @SerialName("agentCommandError") class AgentCommandError(val message: String): ChatErrorType()
   @Serializable @SerialName("invalidFileDescription") class InvalidFileDescription(val message: String): ChatErrorType()
+  @Serializable @SerialName("connectionIncognitoChangeProhibited") object ConnectionIncognitoChangeProhibited: ChatErrorType()
   @Serializable @SerialName("internalError") class InternalError(val message: String): ChatErrorType()
   @Serializable @SerialName("exception") class CEException(val message: String): ChatErrorType()
 }

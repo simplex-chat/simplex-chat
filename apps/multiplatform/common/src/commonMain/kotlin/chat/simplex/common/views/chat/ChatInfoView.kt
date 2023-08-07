@@ -5,6 +5,7 @@ import InfoRowEllipsis
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
+import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -271,7 +272,10 @@ fun ChatInfoLayout(
     SectionSpacer()
     if (customUserProfile != null) {
       SectionView(generalGetString(MR.strings.incognito).uppercase()) {
-        InfoRow(generalGetString(MR.strings.incognito_random_profile), customUserProfile.chatViewName)
+        SectionItemViewSpaceBetween {
+          Text(generalGetString(MR.strings.incognito_random_profile))
+          Text(customUserProfile.chatViewName, color = Indigo)
+        }
       }
       SectionDividerSpaced()
     }

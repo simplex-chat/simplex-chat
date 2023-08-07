@@ -39,16 +39,26 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
       val height = with(LocalDensity.current) { 46.sp.toDp() }
       Text(contactConnection.description, Modifier.heightIn(min = height), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
     }
-    val ts = getTimestampText(contactConnection.updatedAt)
-    Column(
-      Modifier.fillMaxHeight(),
+    Box(
+      contentAlignment = Alignment.TopEnd
     ) {
-      Text(
-        ts,
-        color = MaterialTheme.colors.secondary,
-        style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(bottom = 5.dp)
-      )
+      val ts = getTimestampText(contactConnection.updatedAt)
+//      Column(
+//        Modifier.fillMaxHeight(),
+//      ) {
+        Text(
+          ts,
+          color = MaterialTheme.colors.secondary,
+          style = MaterialTheme.typography.body2,
+          modifier = Modifier.padding(bottom = 5.dp)
+        )
+        Box(
+          Modifier.padding(top = 52.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          IncognitoIcon(contactConnection.incognito)
+        }
+//      }
     }
   }
 }
