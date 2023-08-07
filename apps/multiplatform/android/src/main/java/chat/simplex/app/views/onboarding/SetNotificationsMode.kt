@@ -58,7 +58,8 @@ fun SetNotificationsMode(m: ChatModel) {
 
 @Composable
 fun SetNotificationsModeAdditions() {
-  if (Build.VERSION.SDK_INT >= 33) {
+  // When target and compile SDK are different
+  if (Build.VERSION.SDK_INT >= 33 && SimplexApp.context.applicationInfo.targetSdkVersion >= 33) {
     val notificationsPermissionState = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
     LaunchedEffect(notificationsPermissionState.hasPermission) {
       if (notificationsPermissionState.hasPermission) {
