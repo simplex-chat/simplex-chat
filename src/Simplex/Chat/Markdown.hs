@@ -41,19 +41,23 @@ import Simplex.Messaging.Encoding.String( StrEncoding(strEncode, strDecode) )
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SrvLoc (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
-import Streamly.Data.Array (Unbox(..))
+import qualified Data.Vector.Unboxed as VU
 import System.Console.ANSI.Types ( Color(..) )
 import qualified Text.Email.Validate as Email
 
 --------------
 --------------
-instance Unbox Format
-instance Unbox A.Array
-instance Unbox T.Text
-instance Unbox (NonEmpty T.Text)
-instance Unbox SimplexLinkType
+instance VU.Unbox Color
+instance VU.Unbox Format
+instance VU.Unbox (Maybe Format)
+-- instance Unbox A.Array
+instance VU.Unbox T.Text
+instance VU.Unbox (NonEmpty T.Text)
+instance VU.Unbox SimplexLinkType
 
-instance Generic A.Array
+-- instance Generic A.Array
+-- deriving instance Generic A.Array
+deriving instance Generic Color
 deriving instance Generic T.Text
 -- instance Generic T.Text
 --------------
@@ -112,7 +116,7 @@ instance Monoid Markdown where mempty = unmarked ""
 instance IsString Markdown where fromString = unmarked . T.pack
 
 newtype FormatColor = FormatColor Color
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON FormatColor where
   toJSON (FormatColor c) = case c of
@@ -124,7 +128,9 @@ instance ToJSON FormatColor where
     Magenta -> "magenta"
     Black -> "black"
     White -> "white"
-instance Unbox FormatColor
+
+instance VU.Unbox FormatColor
+
 
 
 data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
