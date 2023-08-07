@@ -14,7 +14,8 @@ module Simplex.Chat.MarkdownEditing where
 
 import           Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
-import           Data.Sequence ( Seq )
+import qualified Data.Foldable as F
+import qualified Data.Sequence as S
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Generics ( Generic )
@@ -79,18 +80,49 @@ toEditedChars = concatMap toChars
 --     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
 
 
+-- -- todo move to util
+-- takeStartingAt :: Int -> Int -> S.Seq a -> S.Seq a
+
 diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
 diff left right = 
+  -- No Substitute for now; however a subsequent scan for adjacent Add/Delete can swap both for one sub
   let
     toText :: [EditedChar] -> T.Text
     toText = T.pack . fmap char 
 
-    formulate :: Seq DM.Edit -> [EditedChar] -> [EditedChar] -> [EditedChar]
-    formulate = undefined
+    fromEdits :: S.Seq EditedChar -> S.Seq EditedChar -> S.Seq DM.Edit -> S.Seq EditedChar
+    -- fromEdits ls rs es = snd $ F.foldl' f (0, S.empty) es
+    --   where 
+    --     f :: (Int, S.Seq EditedChar) -> DM.Edit -> (Int, S.Seq EditedChar)
+    --     f (parsedUntilI, res) e = case e of
+    --       DM.EditDelete leftFrom leftTo -> 
+    --         (parsedUntilI', res <> (S.take leftFrom ls)) -- ++ ___ 
+    --           where parsedUntilI' = parsedUntilI + leftTo
+    fromEdits ls rs es = snd $ F.foldl' f (ls, S.empty) es
+      where 
+        f :: (S.Seq EditedChar, S.Seq EditedChar) -> DM.Edit -> (S.Seq EditedChar, S.Seq EditedChar)
+        f (leftFeed, res) e = case e of
+          DM.EditDelete leftFrom leftTo -> 
+            (leftFeed', res <> S.take leftFrom leftFeed <> drops)
+              where 
+                leftFeed' = S.drop leftFrom leftFeed
+                drops = undefined
 
-    edits = DM.diffTexts (toText left) (toText right)
+          DM.EditInsert leftPos rightFrom rightTo -> 
+            undefined
+
+
+
+    -- fromEdit :: S.Seq EditedChar -> S.Seq EditedChar -> DM.Edit -> S.Seq EditedChar
+    -- fromEdit ls rs e = case e of
+    --   DM.EditDelete leftFrom leftTo -> (S.take leftFrom ls) ++ ___ ++ (S.drop (leftTo + 1) ls)
+    --   DM.EditInsert leftPos rightFrom rightTo -> _
+
+    leftT = toText left
+    rightT = toText right
+    leftS = S.fromList left
+    rightS = S.fromList right
+
+    edits = DM.diffTexts leftT rightT
   in
-    formulate edits left right
-
-
-
+    F.toList $ fromEdits leftS rightS edits

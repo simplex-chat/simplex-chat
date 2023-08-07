@@ -41,4 +41,10 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
         , EditedChar Nothing 'l' Nothing
         , EditedChar Nothing 'o' Nothing                
         ]
-      -- `shouldBe` [plainText "H", plainEdited "r" False, plainEdited "e" True, plainText "llo"]
+        -- [ EditedChar Nothing 'H' Nothing
+        -- , EditedChar Nothing 'e' $ Just Substitute
+        -- , EditedChar Nothing 'l' Nothing
+        -- , EditedChar Nothing 'l' Nothing
+        -- , EditedChar Nothing 'o' Nothing                
+        -- ]        
+
