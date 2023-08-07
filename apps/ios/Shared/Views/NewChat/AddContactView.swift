@@ -61,7 +61,6 @@ struct AddContactView: View {
 
 struct IncognitoToggle: View {
     @Binding var incognitoEnabled: Bool
-    var disabled = false
     @State private var showIncognitoSheet = false
 
     var body: some View {
