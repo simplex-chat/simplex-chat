@@ -132,7 +132,7 @@ testGroupShared alice bob cath checkMessages = do
   when checkMessages $ getReadChats msgItem1 msgItem2
   -- list groups
   alice ##> "/gs"
-  alice <## "#team"
+  alice <## "#team (3 members)"
   -- list group members
   alice ##> "/ms team"
   alice
@@ -739,18 +739,18 @@ testGroupList =
         ]
       -- alice sees both groups
       alice ##> "/gs"
-      alice <### ["#team", "#tennis"]
+      alice <### ["#team (2 members)", "#tennis (1 member)"]
       -- bob sees #tennis as invitation
       bob ##> "/gs"
       bob
-        <### [ "#team",
+        <### [ "#team (2 members)",
                "#tennis - you are invited (/j tennis to join, /d #tennis to delete invitation)"
              ]
       -- after deleting invitation bob sees only one group
       bob ##> "/d #tennis"
       bob <## "#tennis: you deleted the group"
       bob ##> "/gs"
-      bob <## "#team"
+      bob <## "#team (2 members)"
 
 testGroupMessageQuotedReply :: HasCallStack => FilePath -> IO ()
 testGroupMessageQuotedReply =

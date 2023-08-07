@@ -28,7 +28,7 @@ main = do
         t <- withTerminal pure
         simplexChatTerminal terminalChatConfig opts t
     else simplexChatCore terminalChatConfig opts Nothing $ \user cc -> do
-      r <- sendChatCmd cc chatCmd
+      r <- sendChatCmdStr cc chatCmd
       ts <- getCurrentTime
       tz <- getCurrentTimeZone
       putStrLn $ serializeChatResponse (Just user) ts tz r

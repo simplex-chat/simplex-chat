@@ -79,6 +79,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
+  CRGroupInfo u g s -> ttyUser u $ viewGroupInfo g s
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
   CRContactSwitchStarted {} -> ["switch started"]
   CRGroupMemberSwitchStarted {} -> ["switch started"]
@@ -200,7 +201,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       addressSS UserContactSubStatus {userContactError} = maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
   CRGroupInvitation u g -> ttyUser u [groupInvitation' g]
-  CRReceivedGroupInvitation u g c role -> ttyUser u $ viewReceivedGroupInvitation g c role
+  CRReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CRHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
@@ -217,6 +218,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
+  CRGroupDescription u g -> ttyUser u $ viewGroupDescription g
   CRGroupLinkCreated u g cReq mRole -> ttyUser u $ groupLink_ "Group link is created!" g cReq mRole
   CRGroupLink u g cReq mRole -> ttyUser u $ groupLink_ "Group link:" g cReq mRole
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
@@ -810,12 +812,12 @@ viewContactConnected ct@Contact {localDisplayName} userIncognitoProfile testView
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
 
-viewGroupsList :: [GroupInfo] -> [StyledString]
+viewGroupsList :: [(GroupInfo, GroupSummary)] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
 viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
-    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
-    groupSS g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings} =
+    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName) . fst
+    groupSS (g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> membershipIncognito g <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
@@ -825,9 +827,10 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
           GSMemLeft -> delete "you left"
           GSMemGroupDeleted -> delete "group deleted"
           _
-            | enableNtfs chatSettings -> ""
-            | otherwise -> " (muted, you can " <> highlight ("/unmute #" <> ldn) <> ")"
+            | enableNtfs chatSettings -> " (" <> memberCount <> ")"
+            | otherwise -> " (" <> memberCount <> ", muted, you can " <> highlight ("/unmute #" <> ldn) <> ")"
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> ldn) <> ")"
+        memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
 
 groupInvitation' :: GroupInfo -> StyledString
 groupInvitation' GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership = membership@GroupMember {memberProfile}} =
@@ -933,6 +936,12 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
+
+viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
+viewGroupInfo GroupInfo {groupId} s =
+  [ "group ID: " <> sShow groupId,
+    "current members: " <> sShow (currentMembers s)
+  ]
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
 viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}} stats =
@@ -1134,6 +1143,10 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, g
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)
       where
         pref = getGroupPreference f . mergeGroupPreferences
+
+viewGroupDescription :: GroupInfo -> [StyledString]
+viewGroupDescription GroupInfo {groupProfile = GroupProfile {description}} =
+  maybe ["No welcome message!"] ((bold' "Welcome message:" :) . map plain . T.lines) description
 
 bold' :: String -> StyledString
 bold' = styled Bold

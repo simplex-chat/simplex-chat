@@ -45,6 +45,8 @@ module Simplex.Chat.Store.Groups
     deleteGroup,
     getUserGroups,
     getUserGroupDetails,
+    getUserGroupsWithSummary,
+    getGroupSummary,
     getContactGroupPreferences,
     checkContactHasGroups,
     getGroupInvitation,
@@ -448,8 +450,8 @@ getUserGroups db user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroup db user) groupIds
 
-getUserGroupDetails :: DB.Connection -> User -> IO [GroupInfo]
-getUserGroupDetails db User {userId, userContactId} =
+getUserGroupDetails :: DB.Connection -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
+getUserGroupDetails db User {userId, userContactId} _contactId_ search_ =
   map (toGroupInfo userContactId)
     <$> DB.query
       db
@@ -462,8 +464,35 @@ getUserGroupDetails db User {userId, userContactId} =
         JOIN group_members mu USING (group_id)
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         WHERE g.user_id = ? AND mu.contact_id = ?
+          AND (gp.display_name LIKE '%' || ? || '%' OR gp.full_name LIKE '%' || ? || '%' OR gp.description LIKE '%' || ? || '%')
       |]
-      (userId, userContactId)
+      (userId, userContactId, search, search, search)
+  where
+    search = fromMaybe "" search_
+
+getUserGroupsWithSummary :: DB.Connection -> User -> Maybe ContactId -> Maybe String -> IO [(GroupInfo, GroupSummary)]
+getUserGroupsWithSummary db user _contactId_ search_ =
+  getUserGroupDetails db user _contactId_ search_
+    >>= mapM (\g@GroupInfo {groupId} -> (g,) <$> getGroupSummary db user groupId)
+
+-- the statuses on non-current members should match memberCurrent' function
+getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary
+getGroupSummary db User {userId} groupId = do
+  currentMembers_ <- maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT count (m.group_member_id)
+        FROM groups g
+        JOIN group_members m USING (group_id)
+        WHERE g.user_id = ?
+          AND g.group_id = ?
+          AND m.member_status != ?
+          AND m.member_status != ?
+          AND m.member_status != ?
+      |]
+      (userId, groupId, GSMemRemoved, GSMemLeft, GSMemInvited)
+  pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [FullGroupPreferences]
 getContactGroupPreferences db User {userId} Contact {contactId} = do
