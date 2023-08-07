@@ -4,7 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Directory.Options where
+module Directory.Options
+ ( DirectoryOpts (..),
+   getDirectoryOpts,
+   mkChatOpts,
+ )
+where
 
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
@@ -14,8 +19,9 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts, coreChatOptsP)
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     superUsers :: [KnownContact],
-    directoryLog :: FilePath,
-    serviceName :: String
+    directoryLog :: Maybe FilePath,
+    serviceName :: String,
+    testing :: Bool
   }
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
@@ -27,14 +33,14 @@ directoryOpts appDir defaultDbFileName = do
       ( long "super-users"
           <> metavar "SUPER_USERS"
           <> help "Comma-separated list of super-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
-          <> value []
       )
   directoryLog <-
-    strOption
-      ( long "directory-file"
-          <> metavar "DIRECTORY_FILE"
-          <> help "Append only log for directory state"
-      )
+    Just <$>
+      strOption
+        ( long "directory-file"
+            <> metavar "DIRECTORY_FILE"
+            <> help "Append only log for directory state"
+        )
   serviceName <-
     strOption
       ( long "service-name"
@@ -47,7 +53,8 @@ directoryOpts appDir defaultDbFileName = do
       { coreOptions,
         superUsers,
         directoryLog,
-        serviceName
+        serviceName,
+        testing = False
       }
 
 getDirectoryOpts :: FilePath -> FilePath -> IO DirectoryOpts
