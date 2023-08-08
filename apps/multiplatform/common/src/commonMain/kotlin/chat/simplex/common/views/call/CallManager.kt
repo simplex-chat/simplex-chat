@@ -25,10 +25,12 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  fun acceptIncomingCall(invitation: RcvCallInvitation) {
+  fun acceptIncomingCall(invitation: RcvCallInvitation, lockscreen: Boolean = false) = withBGApi {
     if (appPlatform.isDesktop) {
-      return showInDevelopingAlert()
+      return@withBGApi showInDevelopingAlert()
     }
+    if (!lockscreen && !platform.androidIsCallAllowed()) return@withBGApi
+
     val call = chatModel.activeCall.value
     if (call == null) {
       justAcceptIncomingCall(invitation = invitation)
@@ -45,8 +47,7 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  private fun justAcceptIncomingCall(invitation: RcvCallInvitation) = withBGApi {
-    if (!platform.androidIsCallAllowed()) return@withBGApi
+  private fun justAcceptIncomingCall(invitation: RcvCallInvitation) {
     with (chatModel) {
       activeCall.value = Call(
         contact = invitation.contact,
