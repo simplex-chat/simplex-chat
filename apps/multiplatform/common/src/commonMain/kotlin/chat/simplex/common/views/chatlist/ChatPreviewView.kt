@@ -293,7 +293,7 @@ fun ChatPreviewView(
         }
       }
       Box(
-        Modifier.padding(top = 52.dp),
+        Modifier.padding(top = 50.dp),
         contentAlignment = Alignment.Center
       ) {
         chatStatusImage()

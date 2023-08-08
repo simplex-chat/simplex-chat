@@ -50,7 +50,7 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
         modifier = Modifier.padding(bottom = 5.dp)
       )
       Box(
-        Modifier.padding(top = 52.dp),
+        Modifier.padding(top = 50.dp),
         contentAlignment = Alignment.Center
       ) {
         IncognitoIcon(contactConnection.incognito)
