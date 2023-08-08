@@ -10,13 +10,13 @@ import SwiftUI
 import SimpleXChat
 
 enum NewChatAction: Identifiable {
-    case createLink(link: String)
+    case createLink(link: String, connection: PendingContactConnection)
     case connectViaLink
     case createGroup
 
     var id: String {
         switch self {
-        case let .createLink(link): return "createLink \(link)"
+        case let .createLink(link, _): return "createLink \(link)"
         case .connectViaLink: return "connectViaLink"
         case .createGroup: return "createGroup"
         }
@@ -41,8 +41,8 @@ struct NewChatButton: View {
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
-            case let .createLink(link):
-                CreateLinkView(selection: .oneTime, connReqInvitation: link)
+            case let .createLink(link, pcc):
+                CreateLinkView(selection: .oneTime, connReqInvitation: link, contactConnection: pcc)
             case .connectViaLink: ConnectViaLinkView()
             case .createGroup: AddGroupView()
             }
@@ -51,8 +51,8 @@ struct NewChatButton: View {
 
     func addContactAction() {
         Task {
-            if let connReq = await apiAddContact() {
-                actionSheet = .createLink(link: connReq)
+            if let (connReq, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
+                actionSheet = .createLink(link: connReq, connection: pcc)
             }
         }
     }
@@ -63,9 +63,9 @@ enum ConnReqType: Equatable {
     case invitation
 }
 
-func connectViaLink(_ connectionLink: String, _ dismiss: DismissAction? = nil) {
+func connectViaLink(_ connectionLink: String, dismiss: DismissAction? = nil, incognito: Bool) {
     Task {
-        if let connReqType = await apiConnect(connReq: connectionLink) {
+        if let connReqType = await apiConnect(incognito: incognito, connReq: connectionLink) {
             DispatchQueue.main.async {
                 dismiss?()
                 AlertManager.shared.showAlert(connReqSentAlert(connReqType))
@@ -100,12 +100,12 @@ func checkCRDataGroup(_ crData: CReqClientData) -> Bool {
     return crData.type == "group" && crData.groupLinkId != nil
 }
 
-func groupLinkAlert(_ connectionLink: String) -> Alert {
+func groupLinkAlert(_ connectionLink: String, incognito: Bool) -> Alert {
     return Alert(
         title: Text("Connect via group link?"),
         message: Text("You will join a group this link refers to and connect to its group members."),
-        primaryButton: .default(Text("Connect")) {
-            connectViaLink(connectionLink)
+        primaryButton: .default(Text(incognito ? "Connect incognito" : "Connect")) {
+            connectViaLink(connectionLink, incognito: incognito)
         },
         secondaryButton: .cancel()
     )

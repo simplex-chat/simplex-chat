@@ -568,7 +568,7 @@
     <string name="icon_descr_address">Indirizzo di SimpleX</string>
     <string name="icon_descr_simplex_team">Squadra di SimpleX</string>
     <string name="you_accepted_connection">Hai accettato la connessione</string>
-    <string name="you_invited_your_contact">Hai invitato il contatto</string>
+    <string name="you_invited_a_contact">Hai invitato il contatto</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Il tuo profilo di chat verrà inviato
 \nal tuo contatto</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Il tuo contatto deve essere in linea per completare la connessione.

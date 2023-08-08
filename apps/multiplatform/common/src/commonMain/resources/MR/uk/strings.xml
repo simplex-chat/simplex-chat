@@ -226,7 +226,7 @@
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 мобільний: торкніться <b>Відкрийте в мобільному додатку</b>, потім торкніться <b>Підключіть</b> в додатку.]]></string>
     <string name="mute_chat">Вимкнути звук</string>
     <string name="unmute_chat">Увімкнути звук</string>
-    <string name="you_invited_your_contact">Ви запросили свого контакта</string>
+    <string name="you_invited_a_contact">Ви запросили свого контакта</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Контакт, якому ви надали це посилання, НЕ зможе підключитися!</string>
     <string name="icon_descr_profile_image_placeholder">заповнювач зображення профілю</string>
     <string name="image_descr_qr_code">QR-код</string>

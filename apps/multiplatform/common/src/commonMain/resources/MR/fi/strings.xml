@@ -1232,7 +1232,7 @@
     <string name="group_preview_you_are_invited">sinut on kutsuttu ryhmään</string>
     <string name="unmute_chat">Poista mykistys</string>
     <string name="you_accepted_connection">Hyväksyit yhteyden</string>
-    <string name="you_invited_your_contact">Kutsuit kontaktisi</string>
+    <string name="you_invited_a_contact">Kutsuit kontaktisi</string>
     <string name="call_connection_via_relay">releellä</string>
     <string name="database_downgrade_warning">Varoitus: saatat menettää joitain tietoja!</string>
     <string name="icon_descr_address">SimpleX Osoite</string>

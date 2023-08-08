@@ -184,7 +184,9 @@ contactConn = activeConn
 contactConnId :: Contact -> ConnId
 contactConnId = aConnId . contactConn
 
-contactConnIncognito :: Contact -> Bool
+type IncognitoEnabled = Bool
+
+contactConnIncognito :: Contact -> IncognitoEnabled
 contactConnIncognito = connIncognito . contactConn
 
 contactDirect :: Contact -> Bool
@@ -317,6 +319,13 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
+
+data GroupSummary = GroupSummary
+  { currentMembers :: Int
+  }
+  deriving (Show, Generic)
+
+instance ToJSON GroupSummary where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ContactOrGroup = CGContact Contact | CGGroup Group
 
@@ -595,7 +604,7 @@ memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId
 
-memberIncognito :: GroupMember -> Bool
+memberIncognito :: GroupMember -> IncognitoEnabled
 memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
 
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
@@ -784,6 +793,7 @@ memberActive m = case memberStatus m of
 memberCurrent :: GroupMember -> Bool
 memberCurrent = memberCurrent' . memberStatus
 
+-- update getGroupSummary if this is changed
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case
   GSMemRemoved -> False

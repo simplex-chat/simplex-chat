@@ -104,7 +104,7 @@ jobs:
           echo "    flags: +openssl"                                        >> cabal.project.local
 
       - name: Install AppImage dependencies
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-22.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-20.04'
         run: sudo apt install -y desktop-file-utils
 
       - name: Install pkg-config for Mac
@@ -156,7 +156,7 @@ jobs:
       
       - name: Linux make AppImage
         id: linux_appimage_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-22.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-20.04'
         shell: bash
         run: |
           scripts/desktop/make-appimage-linux.sh
@@ -170,7 +170,7 @@ jobs:
           scripts/desktop/build-lib-mac.sh
           cd apps/multiplatform
           ./gradlew packageDmg
-          echo "::set-output name=package_path::$(echo $PWD/release/main/dmg/simplex-*.dmg)"
+          echo "::set-output name=package_path::$(echo $PWD/release/main/dmg/SimpleX-*.dmg)"
 
       - name: Linux upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')

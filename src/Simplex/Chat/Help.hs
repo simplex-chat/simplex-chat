@@ -8,6 +8,7 @@ module Simplex.Chat.Help
     groupsHelpInfo,
     contactsHelpInfo,
     myAddressHelpInfo,
+    incognitoHelpInfo,
     messagesHelpInfo,
     markdownInfo,
     settingsInfo,
@@ -48,7 +49,7 @@ chatWelcome user =
       "Welcome " <> green userName <> "!",
       "Thank you for installing SimpleX Chat!",
       "",
-      "Connect to SimpleX Chat lead developer for any questions - just type " <> highlight "/simplex",
+      "Connect to SimpleX Chat developers for any questions - just type " <> highlight "/simplex",
       "",
       "Follow our updates:",
       "> Reddit: https://www.reddit.com/r/SimpleXChat/",
@@ -213,6 +214,26 @@ myAddressHelpInfo =
       "The commands may be abbreviated: " <> listHighlight ["/ad", "/da", "/sa", "/ac", "/rc"]
     ]
 
+incognitoHelpInfo :: [StyledString]
+incognitoHelpInfo =
+  map
+    styleMarkdown
+    [ markdown (colored Red) "/incognito" <> " command is deprecated, use commands below instead.",
+      "",
+      "Incognito mode protects the privacy of your main profile — you can choose to create a new random profile for each new contact.",
+      "It allows having many anonymous connections without any shared data between them in a single chat profile.",
+      "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.",
+      "",
+      green "Incognito commands:",
+      indent <> highlight "/connect incognito               " <> " - create new invitation link using incognito profile",
+      indent <> highlight "/connect incognito <invitation>  " <> " - accept invitation using incognito profile",
+      indent <> highlight "/accept incognito <name>         " <> " - accept contact request using incognito profile",
+      indent <> highlight "/simplex incognito               " <> " - connect to SimpleX Chat developers using incognito profile",
+      "",
+      "The commands may be abbreviated: " <> listHighlight ["/c i", "/c i <invitation>", "/ac i <name>"],
+      "To find the profile used for an incognito connection, use " <> highlight "/info <contact>" <> "."
+    ]
+
 messagesHelpInfo :: [StyledString]
 messagesHelpInfo =
   map
@@ -269,7 +290,6 @@ settingsInfo =
   map
     styleMarkdown
     [ green "Chat settings:",
-      indent <> highlight "/incognito on/off        " <> " - enable/disable incognito mode",
       indent <> highlight "/network                 " <> " - show / set network access options",
       indent <> highlight "/smp                     " <> " - show / set configured SMP servers",
       indent <> highlight "/xftp                    " <> " - show / set configured XFTP servers",
@@ -285,12 +305,12 @@ databaseHelpInfo :: [StyledString]
 databaseHelpInfo =
   map
     styleMarkdown
-      [ green "Database export:",
-        indent <> highlight "/db export             " <> " - create database export file that can be imported in mobile apps",
-        indent <> highlight "/files_folder <path>   " <> " - set files folder path to include app files in the exported archive",
-        "",
-        green "Database encryption:",
-        indent <> highlight "/db encrypt <key>      " <> " - encrypt chat database with key/passphrase",
-        indent <> highlight "/db key <current> <new>" <> " - change the key of the encrypted app database",
-        indent <> highlight "/db decrypt <key>      " <> " - decrypt chat database"
-      ]
+    [ green "Database export:",
+      indent <> highlight "/db export             " <> " - create database export file that can be imported in mobile apps",
+      indent <> highlight "/files_folder <path>   " <> " - set files folder path to include app files in the exported archive",
+      "",
+      green "Database encryption:",
+      indent <> highlight "/db encrypt <key>      " <> " - encrypt chat database with key/passphrase",
+      indent <> highlight "/db key <current> <new>" <> " - change the key of the encrypted app database",
+      indent <> highlight "/db decrypt <key>      " <> " - decrypt chat database"
+    ]

@@ -219,7 +219,6 @@ func startChat() -> DBMigrationResult? {
             let justStarted = try apiStartChat()
             chatStarted = true
             if justStarted {
-                try apiSetIncognito(incognito: incognitoGroupDefault.get())
                 chatLastStartGroupDefault.set(Date.now)
                 Task { await receiveMessages() }
             }
@@ -348,12 +347,6 @@ func apiSetFilesFolder(filesFolder: String) throws {
 
 func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
     let r = sendSimpleXCmd(.apiSetXFTPConfig(config: cfg))
-    if case .cmdOk = r { return }
-    throw r
-}
-
-func apiSetIncognito(incognito: Bool) throws {
-    let r = sendSimpleXCmd(.setIncognito(incognito: incognito))
     if case .cmdOk = r { return }
     throw r
 }
