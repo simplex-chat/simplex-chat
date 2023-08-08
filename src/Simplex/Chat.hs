@@ -332,7 +332,13 @@ execChatCommand s = do
   u <- readTVarIO =<< asks currentUser
   case parseChatCommand s of
     Left e -> pure $ chatCmdError u e
-    Right cmd -> either (CRChatCmdError u) id <$> runExceptT (processChatCommand cmd)
+    Right cmd -> execChatCommand_ u cmd
+
+execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
+execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` cmd)
+
+execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
+execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processChatCommand cmd)
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
@@ -1138,6 +1144,9 @@ processChatCommand = \case
     incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
     connectionStats <- withAgent (`getConnectionServers` contactConnId ct)
     pure $ CRContactInfo user ct connectionStats (fmap fromLocalProfile incognitoProfile)
+  APIGroupInfo gId -> withUser $ \user -> do
+    (g, s) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> liftIO (getGroupSummary db user gId)
+    pure $ CRGroupInfo user g s
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
@@ -1224,6 +1233,9 @@ processChatCommand = \case
   SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
   SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   ContactInfo cName -> withContactName cName APIContactInfo
+  ShowGroupInfo gName -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APIGroupInfo groupId
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   SwitchContact cName -> withContactName cName APISwitchContact
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
@@ -1486,8 +1498,11 @@ processChatCommand = \case
   ListMembers gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
-  ListGroups -> withUser $ \user ->
-    CRGroupsList user <$> withStore' (`getUserGroupDetails` user)
+  APIListGroups userId contactId_ search_ -> withUserId userId $ \user ->
+    CRGroupsList user <$> withStore' (\db -> getUserGroupsWithSummary db user contactId_ search_)
+  ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
+    ct_ <- forM cName_ $ \cName -> withStore $ \db -> getContactByName db user cName
+    processChatCommand $ APIListGroups userId (contactId' <$> ct_) search_
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     g <- withStore $ \db -> getGroup db user groupId
     runUpdateGroupProfile user g p'
@@ -1497,6 +1512,8 @@ processChatCommand = \case
     CRGroupProfile user <$> withStore (\db -> getGroupInfoByName db user gName)
   UpdateGroupDescription gName description ->
     updateGroupProfileByName gName $ \p -> p {description}
+  ShowGroupDescription gName -> withUser $ \user ->
+    CRGroupDescription user <$> withStore (\db -> getGroupInfoByName db user gName)
   APICreateGroupLink groupId mRole -> withUser $ \user -> withChatLock "createGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     assertUserGroupRole gInfo GRAdmin
@@ -2534,7 +2551,7 @@ expireChatItems user@User {userId} ttl sync = do
       createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   contacts <- withStoreCtx' (Just "expireChatItems, getUserContacts") (`getUserContacts` user)
   loop contacts $ processContact expirationDate
-  groups <- withStoreCtx' (Just "expireChatItems, getUserGroupDetails") (`getUserGroupDetails` user)
+  groups <- withStoreCtx' (Just "expireChatItems, getUserGroupDetails") (\db -> getUserGroupDetails db user Nothing Nothing)
   loop groups $ processGroup expirationDate createdAtCutoff
   where
     loop :: [a] -> (a -> m ()) -> m ()
@@ -3954,7 +3971,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content
           withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
-          toView $ CRReceivedGroupInvitation user gInfo ct memRole
+          toView $ CRReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}          
           whenContactNtfs user ct $
             showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
       where
@@ -4830,13 +4847,13 @@ createInternalChatItem user cd content itemTs_ = do
   ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs createdAt
   toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
 
-getCreateActiveUser :: SQLiteStore -> IO User
-getCreateActiveUser st = do
+getCreateActiveUser :: SQLiteStore -> Bool -> IO User
+getCreateActiveUser st testView = do
   user <-
     withTransaction st getUsers >>= \case
       [] -> newUser
       users -> maybe (selectUser users) pure (find activeUser users)
-  putStrLn $ "Current user: " <> userStr user
+  unless testView $ putStrLn $ "Current user: " <> userStr user
   pure user
   where
     newUser :: IO User
@@ -5081,8 +5098,10 @@ chatCommandP =
       "/reconnect" $> ReconnectAllServers,
       "/_settings " *> (APISetChatSettings <$> chatRefP <* A.space <*> jsonP),
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
+      "/_info #" *> (APIGroupInfo <$> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* char_ '@' <*> displayName),
+      ("/info #" <|> "/i #") *> (ShowGroupInfo <$> displayName),
       ("/info " <|> "/i ") *> char_ '@' *> (ContactInfo <$> displayName),
       "/_switch #" *> (APISwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_switch @" *> (APISwitchContact <$> A.decimal),
@@ -5128,11 +5147,15 @@ chatCommandP =
       "/clear #" *> (ClearGroup <$> displayName),
       "/clear " *> char_ '@' *> (ClearContact <$> displayName),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayName),
-      ("/groups" <|> "/gs") $> ListGroups,
+      "/_groups" *> (APIListGroups <$> A.decimal <*> optional (" @" *> A.decimal) <*> optional (A.space *> stringP)),
+      ("/groups" <|> "/gs") *> (ListGroups <$> optional (" @" *> displayName) <*> optional (A.space *> stringP)),
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayName <* A.space <*> groupProfile),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayName),
       "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> optional (A.space *> msgTextP)),
+      "/set welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayName <* A.space <*> (Just <$> msgTextP)),
+      "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> pure Nothing),
+      "/show welcome " *> char_ '#' *> (ShowGroupDescription <$> displayName),
       "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),

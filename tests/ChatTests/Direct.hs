@@ -990,7 +990,7 @@ testMuteGroup =
         (bob </)
         (cath <# "#team alice> hi")
       bob ##> "/gs"
-      bob <## "#team (muted, you can /unmute #team)"
+      bob <## "#team (3 members, muted, you can /unmute #team)"
       bob ##> "/unmute #team"
       bob <## "ok"
       alice #> "#team hi again"
@@ -998,7 +998,7 @@ testMuteGroup =
         (bob <# "#team alice> hi again")
         (cath <# "#team alice> hi again")
       bob ##> "/gs"
-      bob <## "#team"
+      bob <## "#team (3 members)"
 
 testCreateSecondUser :: HasCallStack => FilePath -> IO ()
 testCreateSecondUser =

@@ -291,6 +291,7 @@ data ChatCommand
   | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
+  | APIGroupInfo GroupId
   | APIGroupMemberInfo GroupId GroupMemberId
   | APISwitchContact ContactId
   | APISwitchGroupMember GroupId GroupMemberId
@@ -307,6 +308,7 @@ data ChatCommand
   | SetShowMessages ChatName Bool
   | SetSendReceipts ChatName (Maybe Bool)
   | ContactInfo ContactName
+  | ShowGroupInfo GroupName
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
@@ -362,10 +364,12 @@ data ChatCommand
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
-  | ListGroups -- UserId (not used in UI)
+  | APIListGroups UserId (Maybe ContactId) (Maybe String)
+  | ListGroups (Maybe ContactName) (Maybe String)
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
+  | ShowGroupDescription GroupName
   | CreateGroupLink GroupName GroupMemberRole
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
@@ -422,6 +426,7 @@ data ChatResponse
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
+  | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
@@ -459,7 +464,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRGroupsList {user :: User, groups :: [GroupInfo]}
+  | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem
@@ -518,7 +523,7 @@ data ChatResponse
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {user :: User, groupInfo :: GroupInfo}
-  | CRReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
+  | CRReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CRUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
@@ -533,6 +538,7 @@ data ChatResponse
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
+  | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
   | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
