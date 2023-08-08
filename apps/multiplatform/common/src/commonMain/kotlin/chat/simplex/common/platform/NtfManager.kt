@@ -10,7 +10,8 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 enum class NotificationAction {
-  ACCEPT_CONTACT_REQUEST
+  ACCEPT_CONTACT_REQUEST,
+  ACCEPT_CONTACT_REQUEST_INCOGNITO
 }
 
 lateinit var ntfManager: NtfManager
@@ -29,7 +30,10 @@ abstract class NtfManager {
     displayName = cInfo.displayName,
     msgText = generalGetString(MR.strings.notification_new_contact_request),
     image = cInfo.image,
-    listOf(NotificationAction.ACCEPT_CONTACT_REQUEST to { acceptContactRequestAction(user.userId, cInfo.id) })
+    listOf(
+      NotificationAction.ACCEPT_CONTACT_REQUEST to { acceptContactRequestAction(user.userId, incognito = false, cInfo.id) },
+      NotificationAction.ACCEPT_CONTACT_REQUEST_INCOGNITO to { acceptContactRequestAction(user.userId, incognito = true, cInfo.id) }
+    )
   )
 
   fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) {
@@ -37,7 +41,7 @@ abstract class NtfManager {
     displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
   }
 
-  fun acceptContactRequestAction(userId: Long?, chatId: ChatId) {
+  fun acceptContactRequestAction(userId: Long?, incognito: Boolean, chatId: ChatId) {
     val isCurrentUser = ChatModel.currentUser.value?.userId == userId
     val cInfo: ChatInfo.ContactRequest? = if (isCurrentUser) {
       (ChatModel.getChat(chatId)?.chatInfo as? ChatInfo.ContactRequest) ?: return
@@ -45,7 +49,7 @@ abstract class NtfManager {
       null
     }
     val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
-    acceptContactRequest(apiId, cInfo, isCurrentUser, ChatModel)
+    acceptContactRequest(incognito, apiId, cInfo, isCurrentUser, ChatModel)
     cancelNotificationsForChat(chatId)
   }
 

@@ -13,7 +13,8 @@ actual fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit) {
     cameraPermissionState.launchPermissionRequest()
   }
   ConnectContactLayout(
-    chatModelIncognito = chatModel.incognito.value,
-    close
+    chatModel = chatModel,
+    incognitoPref = chatModel.controller.appPrefs.incognito,
+    close = close
   )
 }

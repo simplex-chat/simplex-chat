@@ -1,23 +1,23 @@
 package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
+import SectionTextFooter
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import chat.simplex.common.platform.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.buildAnnotatedString
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.TAG
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.json
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
-import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -25,36 +25,6 @@ import java.net.URI
 
 @Composable
 expect fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit)
-
-@Composable
-fun QRCodeScanner(close: () -> Unit) {
-  QRCodeScanner { connReqUri ->
-    try {
-      val uri = URI(connReqUri)
-      withUriAction(uri) { linkType ->
-        val action = suspend {
-          Log.d(TAG, "connectViaUri: connecting")
-          if (connectViaUri(ChatModel, linkType, uri)) {
-            close()
-          }
-        }
-        if (linkType == ConnectionLinkType.GROUP) {
-          AlertManager.shared.showAlertDialog(
-            title = generalGetString(MR.strings.connect_via_group_link),
-            text = generalGetString(MR.strings.you_will_join_group),
-            confirmText = generalGetString(MR.strings.connect_via_link_verb),
-            onConfirm = { withApi { action() } }
-          )
-        } else action()
-      }
-    } catch (e: RuntimeException) {
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.invalid_QR_code),
-        text = generalGetString(MR.strings.this_QR_code_is_not_a_link)
-      )
-    }
-  }
-}
 
 enum class ConnectionLinkType {
   CONTACT, INVITATION, GROUP
@@ -93,8 +63,8 @@ fun withUriAction(uri: URI, run: suspend (ConnectionLinkType) -> Unit) {
   }
 }
 
-suspend fun connectViaUri(chatModel: ChatModel, action: ConnectionLinkType, uri: URI): Boolean {
-  val r = chatModel.controller.apiConnect(uri.toString())
+suspend fun connectViaUri(chatModel: ChatModel, action: ConnectionLinkType, uri: URI, incognito: Boolean): Boolean {
+  val r = chatModel.controller.apiConnect(incognito, uri.toString())
   if (r) {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
@@ -110,28 +80,65 @@ suspend fun connectViaUri(chatModel: ChatModel, action: ConnectionLinkType, uri:
 }
 
 @Composable
-fun ConnectContactLayout(chatModelIncognito: Boolean, close: () -> Unit) {
+fun ConnectContactLayout(
+  chatModel: ChatModel,
+  incognitoPref: SharedPreference<Boolean>,
+  close: () -> Unit
+) {
+  val incognito = remember { mutableStateOf(incognitoPref.get()) }
+
+  @Composable
+  fun QRCodeScanner(close: () -> Unit) {
+    QRCodeScanner { connReqUri ->
+      try {
+        val uri = URI(connReqUri)
+        withUriAction(uri) { linkType ->
+          val action = suspend {
+            Log.d(TAG, "connectViaUri: connecting")
+            if (connectViaUri(ChatModel, linkType, uri, incognito = incognito.value)) {
+              close()
+            }
+          }
+          if (linkType == ConnectionLinkType.GROUP) {
+            AlertManager.shared.showAlertDialog(
+              title = generalGetString(MR.strings.connect_via_group_link),
+              text = generalGetString(MR.strings.you_will_join_group),
+              confirmText = if (incognito.value) generalGetString(MR.strings.connect_via_link_incognito) else generalGetString(MR.strings.connect_via_link_verb),
+              onConfirm = { withApi { action() } }
+            )
+          } else action()
+        }
+      } catch (e: RuntimeException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.invalid_QR_code),
+          text = generalGetString(MR.strings.this_QR_code_is_not_a_link)
+        )
+      }
+    }
+  }
+
   Column(
     Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
-    verticalArrangement = Arrangement.spacedBy(12.dp)
+    verticalArrangement = Arrangement.SpaceBetween
   ) {
     AppBarTitle(stringResource(MR.strings.scan_QR_code), false)
-    InfoAboutIncognito(
-      chatModelIncognito,
-      true,
-      generalGetString(MR.strings.incognito_random_profile_description),
-      generalGetString(MR.strings.your_profile_will_be_sent)
-    )
     Box(
       Modifier
         .fillMaxWidth()
         .aspectRatio(ratio = 1F)
         .padding(bottom = 12.dp)
     ) { QRCodeScanner(close) }
-    Text(
-      annotatedStringResource(MR.strings.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link),
-      lineHeight = 22.sp
+
+    IncognitoToggle(incognitoPref, incognito) { ModalManager.start.showModal { IncognitoView() } }
+
+    SectionTextFooter(
+      buildAnnotatedString {
+        append(sharedProfileInfo(chatModel, incognito.value))
+        append("\n\n")
+        append(annotatedStringResource(MR.strings.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link))
+      }
     )
+
     SectionBottomSpacer()
   }
 }
@@ -150,7 +157,8 @@ fun URI.getQueryParameter(param: String): String? {
 fun PreviewConnectContactLayout() {
   SimpleXTheme {
     ConnectContactLayout(
-      chatModelIncognito = false,
+      chatModel = ChatModel,
+      incognitoPref = SharedPreference({ false }, {}),
       close = {},
     )
   }

@@ -10,6 +10,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.PendingContactConnection
 import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.withApi
 import chat.simplex.common.views.usersettings.UserAddressView
@@ -23,10 +24,16 @@ enum class CreateLinkTab {
 fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
   val selection = remember { mutableStateOf(initialSelection) }
   val connReqInvitation = rememberSaveable { m.connReqInv }
+  val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable { mutableStateOf(null) }
   val creatingConnReq = rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(selection.value) {
-    if (selection.value == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() && !creatingConnReq.value) {
-      createInvitation(m, creatingConnReq, connReqInvitation)
+    if (
+      selection.value == CreateLinkTab.ONE_TIME
+      && connReqInvitation.value.isNullOrEmpty()
+      && contactConnection.value == null
+      && !creatingConnReq.value
+    ) {
+      createInvitation(m, creatingConnReq, connReqInvitation, contactConnection)
     }
   }
   /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv].
@@ -42,9 +49,12 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
   }
   val tabTitles = CreateLinkTab.values().map {
     when {
-      it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() -> stringResource(MR.strings.create_one_time_link)
-      it == CreateLinkTab.ONE_TIME -> stringResource(MR.strings.one_time_link)
-      it == CreateLinkTab.LONG_TERM -> stringResource(MR.strings.your_simplex_contact_address)
+      it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() && contactConnection.value == null ->
+        stringResource(MR.strings.create_one_time_link)
+      it == CreateLinkTab.ONE_TIME ->
+        stringResource(MR.strings.one_time_link)
+      it == CreateLinkTab.LONG_TERM ->
+        stringResource(MR.strings.your_simplex_contact_address)
       else -> ""
     }
   }
@@ -56,7 +66,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
     Column(Modifier.weight(1f)) {
       when (selection.value) {
         CreateLinkTab.ONE_TIME -> {
-          AddContactView(connReqInvitation.value ?: "", m.incognito.value)
+          AddContactView(m, connReqInvitation.value ?: "", contactConnection)
         }
         CreateLinkTab.LONG_TERM -> {
           UserAddressView(m, viaCreateLinkView = true, close = {})
@@ -89,12 +99,18 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
   }
 }
 
-private fun createInvitation(m: ChatModel, creatingConnReq: MutableState<Boolean>, connReqInvitation: MutableState<String?>) {
+private fun createInvitation(
+  m: ChatModel,
+  creatingConnReq: MutableState<Boolean>,
+  connReqInvitation: MutableState<String?>,
+  contactConnection: MutableState<PendingContactConnection?>
+) {
   creatingConnReq.value = true
   withApi {
-    val connReq = m.controller.apiAddContact()
-    if (connReq != null) {
-      connReqInvitation.value = connReq
+    val r = m.controller.apiAddContact(incognito = m.controller.appPrefs.incognito.get())
+    if (r != null) {
+      connReqInvitation.value = r.first
+      contactConnection.value = r.second
     } else {
       creatingConnReq.value = false
     }

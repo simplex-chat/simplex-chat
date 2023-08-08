@@ -20,17 +20,16 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.InfoAboutIncognito
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.group.GroupPreferencesView
 import chat.simplex.res.MR
 
 @Composable
@@ -41,7 +40,6 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   BackHandler(onBack = close)
   AddGroupMembersLayout(
-    chatModel.incognito.value,
     groupInfo = groupInfo,
     creatingGroup = creatingGroup,
     contactsToAdd = getContactsToAdd(chatModel, searchText.value.text),
@@ -92,7 +90,6 @@ fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
 
 @Composable
 fun AddGroupMembersLayout(
-  chatModelIncognito: Boolean,
   groupInfo: GroupInfo,
   creatingGroup: Boolean,
   contactsToAdd: List<Contact>,
@@ -107,19 +104,31 @@ fun AddGroupMembersLayout(
   removeContact: (Long) -> Unit,
   close: () -> Unit,
 ) {
+  @Composable fun profileText() {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.Center
+    ) {
+      Icon(
+        painterResource(MR.images.ic_info),
+        null,
+        tint = MaterialTheme.colors.secondary,
+        modifier = Modifier.padding(end = 10.dp).size(20.dp)
+      )
+      Text(generalGetString(MR.strings.group_main_profile_sent), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2)
+    }
+  }
+
   Column(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(MR.strings.button_add_members))
-    InfoAboutIncognito(
-      chatModelIncognito,
-      false,
-      generalGetString(MR.strings.group_unsupported_incognito_main_profile_sent),
-      generalGetString(MR.strings.group_main_profile_sent),
-      true
-    )
+    profileText()
     Spacer(Modifier.size(DEFAULT_PADDING))
     Row(
       Modifier.fillMaxWidth(),
@@ -350,7 +359,6 @@ fun showProhibitedToInviteIncognitoAlertDialog() {
 fun PreviewAddGroupMembersLayout() {
   SimpleXTheme {
     AddGroupMembersLayout(
-      chatModelIncognito = false,
       groupInfo = GroupInfo.sampleData,
       creatingGroup = false,
       contactsToAdd = listOf(Contact.sampleData, Contact.sampleData, Contact.sampleData),

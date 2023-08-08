@@ -914,7 +914,7 @@
     <string name="you_are_observer">Tu rol es observador</string>
     <string name="verify_security_code">Comprobar código de seguridad</string>
     <string name="you_accepted_connection">Has aceptado la conexión</string>
-    <string name="you_invited_your_contact">Has invitado a tu contacto</string>
+    <string name="you_invited_a_contact">Has invitado a tu contacto</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
     <string name="your_settings">Tu configuración</string>
     <string name="your_SMP_servers">Servidores SMP</string>

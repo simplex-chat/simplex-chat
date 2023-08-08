@@ -201,7 +201,7 @@
     <string name="mark_unread">Označit jako nepřečteno</string>
     <string name="mute_chat">Ztlumit</string>
     <string name="unmute_chat">Zrušit ztlumení</string>
-    <string name="you_invited_your_contact">Pozvali jste kontakt</string>
+    <string name="you_invited_a_contact">Pozvali jste kontakt</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Kontakt, se kterým jste tento odkaz sdíleli, se NEBUDE moci připojit!</string>
     <string name="connection_you_accepted_will_be_cancelled">Připojení, které jste přijali, bude zrušeno!</string>
     <string name="icon_descr_help">help</string>

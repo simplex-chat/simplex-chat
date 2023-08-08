@@ -127,7 +127,6 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       searchText,
       useLinkPreviews = useLinkPreviews,
       linkMode = chatModel.simplexLinkMode.value,
-      chatModelIncognito = chatModel.incognito.value,
       back = {
         hideKeyboard(view)
         AudioPlayer.stop()
@@ -379,7 +378,6 @@ fun ChatLayout(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
@@ -465,7 +463,7 @@ fun ChatLayout(
           ) {
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
-              useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
+              useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage,
               receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature,
               updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
               setReaction, showItemDetails, markRead, setFloatingButton, onComposed,
@@ -634,7 +632,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  chatModelIncognito: Boolean,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -1184,7 +1181,6 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      chatModelIncognito = false,
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
@@ -1252,7 +1248,6 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      chatModelIncognito = false,
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
