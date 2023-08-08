@@ -112,6 +112,9 @@ testDirectoryService tmp =
         superUser <# "SimpleX-Directory> The group ID 1 (PSA) is updated."
         approvalRequested superUser welcomeWithLink' (2 :: Int)
         -- putStrLn "*** try approving with the old registration code"
+        bob #> "@SimpleX-Directory /approve 1:PSA 1"
+        bob <# "SimpleX-Directory> > /approve 1:PSA 1"
+        bob <## "      You are not allowed to use this command"
         superUser #> "@SimpleX-Directory /approve 1:PSA 1"
         superUser <# "SimpleX-Directory> > /approve 1:PSA 1"
         superUser <## "      Incorrect approval code"
@@ -138,6 +141,14 @@ testDirectoryService tmp =
         search bob "security" welcomeWithLink'
         cath `connectVia` dsLink
         search cath "privacy" welcomeWithLink'
+        bob #> "@SimpleX-Directory /exec /contacts"
+        bob <# "SimpleX-Directory> > /exec /contacts"
+        bob <## "      You are not allowed to use this command"
+        superUser #> "@SimpleX-Directory /exec /contacts"
+        superUser <# "SimpleX-Directory> > /exec /contacts"
+        superUser <## "      alice (Alice)"
+        superUser <## "bob (Bob)"
+        superUser <## "cath (Catherine)"
   where
     search u s welcome = do
       u #> ("@SimpleX-Directory " <> s)
@@ -152,9 +163,11 @@ testDirectoryService tmp =
       u <## "description changed to:"
       u <## welcome
     approvalRequested su welcome grId = do
-      su <# "SimpleX-Directory> bob submitted the group ID 1: PSA (Privacy, Security & Anonymity)"
+      su <# "SimpleX-Directory> bob submitted the group ID 1:"
+      su <## "PSA (Privacy, Security & Anonymity)"
       su <## "Welcome message:"
       su <## welcome
+      su <## "2 members"
       su <## ""
       su <## "To approve send:"
       su <# ("SimpleX-Directory> /approve 1:PSA " <> show grId)
@@ -376,7 +389,7 @@ testRegOwnerChangedProfile tmp =
         cath <## "full name changed to: Privacy and Security"
         groupNotFound cath "privacy"
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated."
-        reapproveGroup superUser bob
+        reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
 
 testAnotherOwnerChangedProfile :: HasCallStack => FilePath -> IO ()
@@ -395,7 +408,7 @@ testAnotherOwnerChangedProfile tmp =
         bob <## "It is hidden from the directory until approved."
         groupNotFound cath "privacy"
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated."
-        reapproveGroup superUser bob
+        reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
 
 testRegOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
@@ -428,7 +441,7 @@ testRegOwnerRemovedLink tmp =
         cath <## "bob updated group #privacy:"
         cath <## "description changed to:"
         cath <## welcomeWithLink
-        reapproveGroup superUser bob
+        reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
 
 testAnotherOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
@@ -470,7 +483,7 @@ testAnotherOwnerRemovedLink tmp =
         cath <## "bob updated group #privacy:"
         cath <## "description changed to:"
         cath <## (welcomeWithLink <> " - welcome!")
-        reapproveGroup superUser bob
+        reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
 
 testDuplicateAskConfirmation :: HasCallStack => FilePath -> IO ()
@@ -661,6 +674,9 @@ listGroups superUser bob cath = do
   cath <## "2 members"
   cath <## "Status: suspended because roles changed"
   -- superuser lists all groups
+  bob #> "@SimpleX-Directory /last"
+  bob <# "SimpleX-Directory> > /last"
+  bob <## "      You are not allowed to use this command"
   superUser #> "@SimpleX-Directory /last"
   superUser <# "SimpleX-Directory> > /last"
   superUser <## "      3 registered group(s)"
@@ -693,11 +709,13 @@ listGroups superUser bob cath = do
   superUser <## "2 members"
   superUser <## "Status: suspended because roles changed"
 
-reapproveGroup :: HasCallStack => TestCC -> TestCC -> IO ()
-reapproveGroup superUser bob = do
-  superUser <#. "SimpleX-Directory> bob submitted the group ID 1: privacy ("
+reapproveGroup :: HasCallStack => Int -> TestCC -> TestCC -> IO ()
+reapproveGroup count superUser bob = do
+  superUser <# "SimpleX-Directory> bob submitted the group ID 1:"
+  superUser <##. "privacy ("
   superUser <## "Welcome message:"
   superUser <##. "Link to join the group privacy: "
+  superUser <## (show count <> " members")
   superUser <## ""
   superUser <## "To approve send:"
   superUser <# "SimpleX-Directory> /approve 1:privacy 1"
@@ -804,9 +822,11 @@ updateProfileWithLink u n welcomeWithLink ugId = do
 notifySuperUser :: TestCC -> TestCC -> String -> String -> String -> Int -> IO ()
 notifySuperUser su u n fn welcomeWithLink gId = do
   uName <- userName u
-  su <# ("SimpleX-Directory> " <> uName <> " submitted the group ID " <> show gId <> ": " <> n <> " (" <> fn <> ")")
+  su <# ("SimpleX-Directory> " <> uName <> " submitted the group ID " <> show gId <> ":")
+  su <## (n <> " (" <> fn <> ")")
   su <## "Welcome message:"
   su <## welcomeWithLink
+  su .<## "members"
   su <## ""
   su <## "To approve send:"
   let approve = "/approve " <> show gId <> ":" <> n <> " 1"
