@@ -141,11 +141,11 @@ testDirectoryService tmp =
         search bob "security" welcomeWithLink'
         cath `connectVia` dsLink
         search cath "privacy" welcomeWithLink'
-        bob #> "@SimpleX-Directory /chat /contacts"
-        bob <# "SimpleX-Directory> > /chat /contacts"
+        bob #> "@SimpleX-Directory /exec /contacts"
+        bob <# "SimpleX-Directory> > /exec /contacts"
         bob <## "      You are not allowed to use this command"
-        superUser #> "@SimpleX-Directory /chat /contacts"
-        superUser <# "SimpleX-Directory> > /chat /contacts"
+        superUser #> "@SimpleX-Directory /exec /contacts"
+        superUser <# "SimpleX-Directory> > /exec /contacts"
         superUser <## "      alice (Alice)"
         superUser <## "bob (Bob)"
         superUser <## "cath (Catherine)"

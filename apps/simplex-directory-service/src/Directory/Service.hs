@@ -488,7 +488,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
               ct_ <- getContact cc dbContactId
               let ownerStr = "Owner: " <> maybe "getContact error" localDisplayName' ct_
               sendGroupInfo ct gr dbGroupId $ Just ownerStr
-        DCChatCommand cmdStr ->
+        DCExecuteCommand cmdStr ->
           sendChatCmdStr cc cmdStr >>= \r -> do
             ts <- getCurrentTime
             tz <- getCurrentTimeZone
