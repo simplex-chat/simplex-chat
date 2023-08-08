@@ -21,11 +21,10 @@ struct ScanProtocolServer: View {
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)
-            ZStack {
-                CodeScannerView(codeTypes: [.qr], completion: processQRCode)
-                    .aspectRatio(1, contentMode: .fit)
-                    .border(.gray)
-            }
+            CodeScannerView(codeTypes: [.qr], completion: processQRCode)
+                .aspectRatio(1, contentMode: .fit)
+                .cornerRadius(12)
+                .padding(.top)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
