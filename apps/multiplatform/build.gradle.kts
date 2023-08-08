@@ -1,6 +1,4 @@
-import org.gradle.initialization.Environment.Properties
 import java.io.File
-import java.io.FileInputStream
 
 buildscript {
     val prop = java.util.Properties().apply {
@@ -33,7 +31,6 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:${rootProject.extra["gradle.plugin.version"]}")
         classpath(kotlin("gradle-plugin", version = rootProject.extra["kotlin.version"] as String))
-        classpath("org.jetbrains.kotlin:kotlin-serialization:1.3.2")
         classpath("dev.icerock.moko:resources-generator:0.22.3")
 
         // NOTE: Do not place your application dependencies here; they belong

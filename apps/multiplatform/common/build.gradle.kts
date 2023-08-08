@@ -22,7 +22,6 @@ kotlin {
         optIn("androidx.compose.foundation.ExperimentalFoundationApi")
         optIn("androidx.compose.ui.text.ExperimentalTextApi")
         optIn("androidx.compose.material.ExperimentalMaterialApi")
-        optIn("com.arkivanov.decompose.ExperimentalDecomposeApi")
         optIn("kotlinx.serialization.InternalSerializationApi")
         optIn("kotlinx.serialization.ExperimentalSerializationApi")
         optIn("androidx.compose.ui.ExperimentalComposeUiApi")
@@ -104,11 +103,11 @@ kotlin {
 }
 
 android {
-  compileSdkVersion(33)
+  namespace = "chat.simplex.common"
+  compileSdk = 33
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
-    minSdkVersion(26)
-    targetSdkVersion(33)
+    minSdk = 26
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -123,11 +122,17 @@ android {
     // No other ways to exclude a file work but it's large and should be excluded
     kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
   }
+  kotlin {
+    jvmToolchain(8)
+  }
+  lint {
+    disable += "MissingTranslation"
+    disable += "ExtraTranslation"
+  }
 }
 
 multiplatformResources {
   multiplatformResourcesPackage = "chat.simplex.res"
-  //  multiplatformResourcesClassName = "MR"
 }
 
 buildConfig {

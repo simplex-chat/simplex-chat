@@ -8,12 +8,13 @@ plugins {
 }
 
 android {
-    compileSdkVersion(33)
+    namespace = "chat.simplex.app"
+    compileSdk = 33
 
     defaultConfig {
         applicationId = "chat.simplex.app"
-        minSdkVersion(26)
-        targetSdkVersion(33)
+        minSdk = 26
+        targetSdk = 33
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
         versionCode = (extra["android.version_code"] as String).toInt()
@@ -56,8 +57,6 @@ android {
         freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
         freeCompilerArgs += "-opt-in=androidx.compose.ui.text.ExperimentalTextApi"
         freeCompilerArgs += "-opt-in=androidx.compose.material.ExperimentalMaterialApi"
-        freeCompilerArgs += "-opt-in=com.google.accompanist.insets.ExperimentalAnimatedInsets"
-        freeCompilerArgs += "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi"
         freeCompilerArgs += "-opt-in=kotlinx.serialization.InternalSerializationApi"
         freeCompilerArgs += "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
     }
