@@ -3,6 +3,7 @@ package chat.simplex.common.views.call
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.withApi
+import chat.simplex.common.views.helpers.withBGApi
 import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
@@ -44,7 +45,8 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  private fun justAcceptIncomingCall(invitation: RcvCallInvitation) {
+  private fun justAcceptIncomingCall(invitation: RcvCallInvitation) = withBGApi {
+    if (!platform.androidIsCallAllowed()) return@withBGApi
     with (chatModel) {
       activeCall.value = Call(
         contact = invitation.contact,

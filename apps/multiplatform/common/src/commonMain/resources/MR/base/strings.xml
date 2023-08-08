@@ -134,6 +134,15 @@
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
   <string name="periodic_notifications_desc">The app fetches new messages periodically — it uses a few percent of the battery per day. The app doesn\'t use push notifications — data from your device is not sent to the servers.</string>
+  <string name="turn_off_battery_optimization_button">Disable</string>
+  <string name="turn_off_system_restriction_button">Unrestrict</string>
+  <string name="disable_notifications_button">Disable notifications</string>
+  <string name="system_restricted_in_call_skip_button">Skip</string>
+  <string name="system_restricted_background_desc"><![CDATA[To constantly deliver notifications SimpleX <b>should be allowed to run in background</b> but Android restricted all background activity for the app. However, you can still allow background activity by choosing <b>Battery</b> -> <b>Unrestricted</b> on the next screen.]]></string>
+  <string name="system_restricted_background_warn">If you don\'t do that, notifications will work only when the app is running.</string>
+  <string name="system_restricted_background_in_call_title">Restricted in background</string>
+  <string name="system_restricted_background_in_call_desc"><![CDATA[When the app is in call, it should record sound in background but Android restricted all background activity for the app. However, you can still allow background activity by choosing <b>Battery</b> -> <b>Unrestricted</b> on the next screen.]]></string>
+  <string name="system_restricted_background_in_call_warn">If you don\'t do that, the app may be closed by the system after a minute or so while it\'s in background.</string>
   <string name="enter_passphrase_notification_title">Passphrase is needed</string>
   <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
   <string name="database_initialization_error_title">Can\'t initialize the database</string>

@@ -4,6 +4,8 @@ import android.app.Application
 import chat.simplex.common.platform.Log
 import androidx.lifecycle.*
 import androidx.work.*
+import chat.simplex.app.SimplexService.Companion.isBackgroundRestricted
+import chat.simplex.app.SimplexService.Companion.isIgnoringBatteryOptimizations
 import chat.simplex.app.model.NtfManager
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.requiresIgnoringBattery
@@ -93,12 +95,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   fun allowToStartServiceAfterAppExit() = with(chatModel.controller) {
     appPrefs.notificationsMode.get() == NotificationsMode.SERVICE &&
-        (!NotificationsMode.SERVICE.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
+        (!NotificationsMode.SERVICE.requiresIgnoringBattery || (isIgnoringBatteryOptimizations() && !isBackgroundRestricted()))
   }
 
   private fun allowToStartPeriodically() = with(chatModel.controller) {
     appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC &&
-        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
+        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || (isIgnoringBatteryOptimizations() && !isBackgroundRestricted()))
   }
 
   /*
@@ -158,7 +160,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
 
       override fun androidNotificationsModeChanged(mode: NotificationsMode) {
-        if (mode.requiresIgnoringBattery && !SimplexService.isIgnoringBatteryOptimizations()) {
+        if (mode.requiresIgnoringBattery && (!isIgnoringBatteryOptimizations() || isBackgroundRestricted())) {
           appPrefs.backgroundServiceNoticeShown.set(false)
         }
         SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
@@ -198,6 +200,19 @@ class SimplexApp: Application(), LifecycleEventObserver {
               platform.androidServiceStart()
             }
         }
+      }
+
+      override suspend fun androidIsCallAllowed(): Boolean {
+        val allowed = isIgnoringBatteryOptimizations() && !isBackgroundRestricted()
+        if (!allowed) {
+          val mode = appPrefs.notificationsMode.get()
+          val userChoice: CompletableDeferred<Boolean> = CompletableDeferred()
+          SimplexService.showBGRestrictedInCall(mode) {
+            userChoice.complete(it)
+          }
+          return userChoice.await()
+        }
+        return true
       }
     }
   }
