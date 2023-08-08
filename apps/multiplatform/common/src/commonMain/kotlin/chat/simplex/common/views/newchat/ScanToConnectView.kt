@@ -119,7 +119,7 @@ fun ConnectContactLayout(
 
   Column(
     Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
-    verticalArrangement = Arrangement.spacedBy(12.dp)
+    verticalArrangement = Arrangement.SpaceBetween
   ) {
     AppBarTitle(stringResource(MR.strings.scan_QR_code), false)
     Box(
