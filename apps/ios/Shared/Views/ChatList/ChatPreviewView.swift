@@ -41,11 +41,9 @@ struct ChatPreviewView: View {
 
                 ZStack(alignment: .topTrailing) {
                     chatMessagePreview(cItem)
-                    if case .direct = chat.chatInfo {
-                        chatStatusImage()
-                            .padding(.top, 24)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
+                    chatStatusImage()
+                        .padding(.top, 26)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .padding(.trailing, 8)
                 
@@ -59,12 +57,9 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
         if case let .group(groupInfo) = chat.chatInfo {
             switch (groupInfo.membership.memberStatus) {
-            case .memLeft:
-                groupInactiveIcon()
-            case .memRemoved:
-                groupInactiveIcon()
-            case .memGroupDeleted:
-                groupInactiveIcon()
+            case .memLeft: groupInactiveIcon()
+            case .memRemoved: groupInactiveIcon()
+            case .memGroupDeleted: groupInactiveIcon()
             default: EmptyView()
             }
         } else {
@@ -74,7 +69,7 @@ struct ChatPreviewView: View {
 
     @ViewBuilder private func groupInactiveIcon() -> some View {
         Image(systemName: "multiply.circle.fill")
-            .foregroundColor(.secondary)
+            .foregroundColor(.secondary.opacity(0.65))
             .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
     }
 
@@ -198,10 +193,7 @@ struct ChatPreviewView: View {
     @ViewBuilder private func groupInvitationPreviewText(_ groupInfo: GroupInfo) -> some View {
         groupInfo.membership.memberIncognito
         ? chatPreviewInfoText("join as \(groupInfo.membership.memberProfile.displayName)")
-        : (chatModel.incognito
-           ? chatPreviewInfoText("join as \(chatModel.currentUser?.profile.displayName ?? "yourself")")
-           : chatPreviewInfoText("you are invited to group")
-        )
+        : chatPreviewInfoText("you are invited to group")
     }
 
     @ViewBuilder private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
@@ -229,7 +221,7 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             switch (chatModel.contactNetworkStatus(contact)) {
-            case .connected: EmptyView()
+            case .connected: incognitoIcon(chat.chatInfo.incognito)
             case .error:
                 Image(systemName: "exclamationmark.circle")
                     .resizable()
@@ -240,8 +232,20 @@ struct ChatPreviewView: View {
                 ProgressView()
             }
         default:
-            EmptyView()
+            incognitoIcon(chat.chatInfo.incognito)
         }
+    }
+}
+
+@ViewBuilder func incognitoIcon(_ incognito: Bool) -> some View {
+    if incognito {
+        Image(systemName: "theatermasks")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 22, height: 22)
+            .foregroundColor(.secondary)
+    } else {
+        EmptyView()
     }
 }
 

@@ -37,16 +37,12 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
 
-  MaintainIncognitoState(chatModel)
-
   if (user != null) {
     val requireAuth = remember { chatModel.controller.appPrefs.performLA.state }
     SettingsLayout(
       profile = user.profile,
       stopped,
       chatModel.chatDbEncrypted.value == true,
-      chatModel.incognito,
-      chatModel.controller.appPrefs.incognito,
       remember { chatModel.controller.appPrefs.notificationsMode.state },
       user.displayName,
       setPerformLA = setPerformLA,
@@ -119,8 +115,6 @@ fun SettingsLayout(
   profile: LocalProfile,
   stopped: Boolean,
   encrypted: Boolean,
-  incognito: MutableState<Boolean>,
-  incognitoPref: SharedPreference<Boolean>,
   notificationsMode: State<NotificationsMode>,
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
@@ -157,7 +151,6 @@ fun SettingsLayout(
         }
         val profileHidden = rememberSaveable { mutableStateOf(false) }
         SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.your_chat_profiles), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
-        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
         SettingsActionItem(painterResource(MR.images.ic_qr_code), stringResource(MR.strings.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped, extraPadding = true)
         ChatPreferencesItem(showCustomModal, stopped = stopped)
       }
@@ -213,43 +206,6 @@ expect fun SettingsSectionApp(
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 )
-
-@Composable
-fun SettingsIncognitoActionItem(
-  incognitoPref: SharedPreference<Boolean>,
-  incognito: MutableState<Boolean>,
-  stopped: Boolean,
-  onClickInfo: () -> Unit,
-) {
-  SettingsPreferenceItemWithInfo(
-    if (incognito.value) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_theater_comedy),
-    if (incognito.value) Indigo else MaterialTheme.colors.secondary,
-    stringResource(MR.strings.incognito),
-    stopped,
-    onClickInfo,
-    incognitoPref,
-    incognito
-  )
-}
-
-@Composable
-fun MaintainIncognitoState(chatModel: ChatModel) {
-  // Cache previous value and once it changes in background, update it via API
-  var cachedIncognito by remember { mutableStateOf(chatModel.incognito.value) }
-  LaunchedEffect(chatModel.incognito.value) {
-    // Don't do anything if nothing changed
-    if (cachedIncognito == chatModel.incognito.value) return@LaunchedEffect
-    try {
-      chatModel.controller.apiSetIncognito(chatModel.incognito.value)
-    } catch (e: Exception) {
-      // Rollback the state
-      chatModel.controller.appPrefs.incognito.set(cachedIncognito)
-      // Crash the app
-      throw e
-    }
-    cachedIncognito = chatModel.incognito.value
-  }
-}
 
 @Composable private fun DatabaseItem(encrypted: Boolean, openDatabaseView: () -> Unit, stopped: Boolean) {
   SectionItemViewWithIcon(openDatabaseView) {
@@ -456,21 +412,6 @@ fun SettingsPreferenceItem(
 }
 
 @Composable
-fun SettingsPreferenceItemWithInfo(
-  icon: Painter,
-  iconTint: Color,
-  text: String,
-  stopped: Boolean,
-  onClickInfo: () -> Unit,
-  pref: SharedPreference<Boolean>,
-  prefState: MutableState<Boolean>? = null
-) {
-  SettingsActionItemWithContent(icon, null, click = if (stopped) null else onClickInfo, iconColor = iconTint, extraPadding = true,) {
-    SharedPreferenceToggleWithIcon(text, painterResource(MR.images.ic_info), stopped, onClickInfo, pref, prefState)
-  }
-}
-
-@Composable
 fun PreferenceToggle(
   text: String,
   checked: Boolean,
@@ -525,8 +466,6 @@ fun PreviewSettingsLayout() {
       profile = LocalProfile.sampleData,
       stopped = false,
       encrypted = false,
-      incognito = remember { mutableStateOf(false) },
-      incognitoPref = SharedPreference({ false }, {}),
       notificationsMode = remember { mutableStateOf(NotificationsMode.OFF) },
       userDisplayName = "Alice",
       setPerformLA = { _ -> },

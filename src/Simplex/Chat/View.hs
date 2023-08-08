@@ -116,6 +116,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
     HSGroups -> groupsHelpInfo
     HSContacts -> contactsHelpInfo
     HSMyAddress -> myAddressHelpInfo
+    HSIncognito -> incognitoHelpInfo
     HSMessages -> messagesHelpInfo
     HSMarkdown -> markdownInfo
     HSSettings -> settingsInfo
@@ -139,7 +140,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRUserProfileNoChange u -> ttyUser u ["user profile did not change"]
   CRUserPrivacy u u' -> ttyUserPrefix u $ viewUserPrivacy u u'
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
-  CRInvitation u cReq -> ttyUser u $ viewConnReqInvitation cReq
+  CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
+  CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
@@ -1161,6 +1163,11 @@ viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
   | localAlias == "" = ["connection " <> sShow pccConnId <> " alias removed"]
   | otherwise = ["connection " <> sShow pccConnId <> " alias updated: " <> plain localAlias]
 
+viewConnectionIncognitoUpdated :: PendingContactConnection -> [StyledString]
+viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserProfileId}
+  | isJust customUserProfileId = ["connection " <> sShow pccConnId <> " changed to incognito"]
+  | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
+
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
   Contact {localDisplayName = n, profile = LocalProfile {fullName, contactLink}}
@@ -1552,6 +1559,7 @@ viewChatError logLevel = \case
     CECommandError e -> ["bad chat command: " <> plain e]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
+    CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
   -- e -> ["chat error: " <> sShow e]

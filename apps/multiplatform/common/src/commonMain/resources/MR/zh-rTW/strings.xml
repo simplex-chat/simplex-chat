@@ -533,7 +533,7 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[你可以透過 <font color="#0088ff">連接到 SimpleX Chat 開發人員提出任何問題並同意更新</font>。]]></string>
     <string name="to_start_a_new_chat_help_header">開啟新的對話</string>
     <string name="set_contact_name">設定聯絡人名稱</string>
-    <string name="you_invited_your_contact">你已邀請了你的聯絡人</string>
+    <string name="you_invited_a_contact">你已邀請了你的聯絡人</string>
     <string name="you_accepted_connection">你接受了連接</string>
     <string name="delete_pending_connection__question">刪除等待中的連接？</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">當聯絡人發現此連結後，嘗試點擊的聯絡人將無法連接！</string>

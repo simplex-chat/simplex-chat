@@ -28,6 +28,17 @@ struct ContentView: View {
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
+    @State private var chatListActionSheet: ChatListActionSheet? = nil
+
+    private enum ChatListActionSheet: Identifiable {
+        case connectViaUrl(action: ConnReqType, link: String)
+
+        var id: String {
+            switch self {
+            case .connectViaUrl: return "connectViaUrl \(link)"
+            }
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -80,6 +91,11 @@ struct ContentView: View {
             if case .onboardingComplete = step,
                chatModel.currentUser != nil {
                 mainView()
+                .actionSheet(item: $chatListActionSheet) { sheet in
+                    switch sheet {
+                    case let .connectViaUrl(action, link): return connectViaUrlSheet(action, link)
+                    }
+                }
             } else {
                 OnboardingView(onboarding: step)
             }
@@ -132,7 +148,9 @@ struct ContentView: View {
                     }
                 }
                 prefShowLANotice = true
+                connectViaUrl()
             }
+            .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
             .sheet(isPresented: $showWhatsNew) {
                 WhatsNewView()
             }
@@ -265,36 +283,38 @@ struct ContentView: View {
             secondaryButton: .cancel()
         )
     }
-}
 
-func connectViaUrl() {
-    let m = ChatModel.shared
-    if let url = m.appOpenUrl {
-        m.appOpenUrl = nil
-        AlertManager.shared.showAlert(connectViaUrlAlert(url))
+    func connectViaUrl() {
+        let m = ChatModel.shared
+        if let url = m.appOpenUrl {
+            m.appOpenUrl = nil
+            var path = url.path
+            logger.debug("ContentView.connectViaUrl path: \(path)")
+            if (path == "/contact" || path == "/invitation") {
+                path.removeFirst()
+                let action: ConnReqType = path == "contact" ? .contact : .invitation
+                let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+                chatListActionSheet = .connectViaUrl(action: action, link: link)
+            } else {
+                AlertManager.shared.showAlert(Alert(title: Text("Error: URL is invalid")))
+            }
+        }
     }
-}
 
-func connectViaUrlAlert(_ url: URL) -> Alert {
-    var path = url.path
-    logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
-    if (path == "/contact" || path == "/invitation") {
-        path.removeFirst()
-        let action: ConnReqType = path == "contact" ? .contact : .invitation
-        let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+    private func connectViaUrlSheet(_ action: ConnReqType, _ link: String) -> ActionSheet {
         let title: LocalizedStringKey
-        if case .contact = action { title = "Connect via contact link?" }
-        else { title = "Connect via one-time link?" }
-        return Alert(
+        switch action {
+        case .contact: title = "Connect via contact link"
+        case .invitation: title = "Connect via one-time link"
+        }
+        return ActionSheet(
             title: Text(title),
-            message: Text("Your profile will be sent to the contact that you received this link from"),
-            primaryButton: .default(Text("Connect")) {
-                connectViaLink(link)
-            },
-            secondaryButton: .cancel()
+            buttons: [
+                .default(Text("Use current profile")) { connectViaLink(link, incognito: false) },
+                .default(Text("Use new incognito profile")) { connectViaLink(link, incognito: true) },
+                .cancel()
+            ]
         )
-    } else {
-        return Alert(title: Text("Error: URL is invalid"))
     }
 }
 

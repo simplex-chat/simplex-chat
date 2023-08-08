@@ -7,9 +7,12 @@
   <string name="connect_via_contact_link">Connect via contact link?</string>
   <string name="connect_via_invitation_link">Connect via invitation link?</string>
   <string name="connect_via_group_link">Connect via group link?</string>
+  <string name="connect_use_current_profile">Use current profile</string>
+  <string name="connect_use_new_incognito_profile">Use new incognito profile</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
   <string name="you_will_join_group">You will join a group this link refers to and connect to its group members.</string>
   <string name="connect_via_link_verb">Connect</string>
+  <string name="connect_via_link_incognito">Connect incognito</string>
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>
@@ -452,7 +455,7 @@
 
 
   <!-- Pending contact connection alert dialogues -->
-  <string name="you_invited_your_contact">You invited your contact</string>
+  <string name="you_invited_a_contact">You invited a contact</string>
   <string name="you_accepted_connection">You accepted connection</string>
   <string name="delete_pending_connection__question">Delete pending connection?</string>
   <string name="contact_you_shared_link_with_wont_be_able_to_connect">The contact you shared this link with will NOT be able to connect!</string>
@@ -498,10 +501,12 @@
   <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
   <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.]]></string>
   <string name="share_invitation_link">Share 1-time link</string>
-  <string name="paste_connection_link_below_to_connect">Paste the link you received into the box below to connect with your contact.</string>
-  <string name="your_profile_will_be_sent">Your chat profile will be sent to your contact</string>
+  <string name="paste_the_link_you_received_to_connect_with_your_contact">Paste the link you received to connect with your contact…</string>
   <string name="learn_more">Learn more</string>
   <string name="learn_more_about_address">About SimpleX address</string>
+
+  <string name="connect__a_new_random_profile_will_be_shared">A new random profile will be shared.</string>
+  <string name="connect__your_profile_will_be_shared">Your profile %1$s will be shared.</string>
 
   <!-- Add Contact Learn More - AddContactLearnMore.kt -->
   <string name="scan_qr_to_connect_to_contact">To connect, your contact can scan QR code or use the link in the app.</string>
@@ -1256,7 +1261,6 @@
   <string name="group_is_decentralized">The group is fully decentralized – it is visible only to the members.</string>
   <string name="group_display_name_field">Group display name:</string>
   <string name="group_full_name_field">Group full name:</string>
-  <string name="group_unsupported_incognito_main_profile_sent">Incognito mode is not supported here - your main profile will be sent to group members</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
 
 
@@ -1310,13 +1314,10 @@
   <!-- Incognito mode -->
   <string name="incognito">Incognito</string>
   <string name="incognito_random_profile">Your random profile</string>
-  <string name="incognito_random_profile_description">A random profile will be sent to your contact</string>
-  <string name="incognito_random_profile_from_contact_description">A random profile will be sent to the contact that you received this link from</string>
 
-  <string name="incognito_info_protects">Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.</string>
+  <string name="incognito_info_protects">Incognito mode protects your privacy by using a new random profile for each contact.</string>
   <string name="incognito_info_allows">It allows having many anonymous connections without any shared data between them in a single chat profile.</string>
   <string name="incognito_info_share">When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</string>
-  <string name="incognito_info_find">To find the profile used for an incognito connection, tap the contact or group name on top of the chat.</string>
 
   <!-- Default themes -->
   <string name="theme_system">System</string>

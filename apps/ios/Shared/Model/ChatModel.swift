@@ -43,9 +43,8 @@ final class ChatModel: ObservableObject {
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
     @Published var notificationPreview: NotificationPreviewMode = ntfPreviewModeGroupDefault.get()
-    @Published var incognito: Bool = incognitoGroupDefault.get()
     // pending notification actions
-    @Published var ntfContactRequest: ChatId?
+    @Published var ntfContactRequest: NTFContactRequest?
     @Published var ntfCallInvitationAction: (ChatId, NtfCallAction)?
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
@@ -587,6 +586,11 @@ final class ChatModel: ObservableObject {
         }
         terminalItems.append(item)
     }
+}
+
+struct NTFContactRequest {
+    var incognito: Bool
+    var chatId: String
 }
 
 struct UnreadChatItemCounts {

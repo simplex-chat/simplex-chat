@@ -18,10 +18,9 @@ struct IncognitoHelp: View {
             ScrollView {
                 VStack(alignment: .leading) {
                     Group {
-                    Text("Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.")
+                    Text("Incognito mode protects your privacy by using a new random profile for each contact.")
                     Text("It allows having many anonymous connections without any shared data between them in a single chat profile.")
                     Text("When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.")
-                    Text("To find the profile used for an incognito connection, tap the contact or group name on top of the chat.")
                     }
                     .padding(.bottom)
                 }

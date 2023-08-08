@@ -1,7 +1,13 @@
 package chat.simplex.common.views.helpers
 
+import androidx.compose.foundation.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.DialogParams
 import chat.simplex.res.MR
@@ -21,6 +27,8 @@ actual fun DefaultDialog(
 ) {
   Dialog(
     undecorated = true,
+    transparent = true,
+    resizable = false,
     title = "",
     onCloseRequest = onDismissRequest,
     onPreviewKeyEvent = { event ->
@@ -29,7 +37,12 @@ actual fun DefaultDialog(
       } else false
     }
   ) {
-    content()
+    Surface(
+      Modifier
+        .border(border = BorderStroke(1.dp, MaterialTheme.colors.secondary.copy(alpha = 0.3F)), shape = RoundedCornerShape(8))
+    ) {
+      content()
+    }
   }
 }
 

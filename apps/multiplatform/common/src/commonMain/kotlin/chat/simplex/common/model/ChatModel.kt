@@ -80,7 +80,6 @@ object ChatModel {
   }
   val performLA by lazy { mutableStateOf(ChatController.appPrefs.performLA.get()) }
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
-  val incognito by lazy { mutableStateOf(ChatController.appPrefs.incognito.get()) }
 
   // current WebRTC call
   val callManager = CallManager(this)
