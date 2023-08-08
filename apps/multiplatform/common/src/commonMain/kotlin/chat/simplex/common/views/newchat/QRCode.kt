@@ -37,7 +37,7 @@ fun QRCode(
       bitmap = qr,
       contentDescription = stringResource(MR.strings.image_descr_qr_code),
       Modifier
-        .widthIn(max = 500.dp)
+        .widthIn(max = 360.dp)
         .then(modifier)
         .clickable {
           scope.launch {
