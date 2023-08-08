@@ -1817,8 +1817,7 @@ testGroupLinkIncognitoMembership =
       -- bob connected incognito to alice
       alice ##> "/c"
       inv <- getInvitation alice
-      bob #$> ("/incognito on", id, "ok")
-      bob ##> ("/c " <> inv)
+      bob ##> ("/c i " <> inv)
       bob <## "confirmation sent!"
       bobIncognito <- getTermLine bob
       concurrentlyN_
@@ -1827,7 +1826,6 @@ testGroupLinkIncognitoMembership =
             bob <## "use /i alice to print out this incognito profile again",
           alice <## (bobIncognito <> ": contact is connected")
         ]
-      bob #$> ("/incognito off", id, "ok")
       -- alice creates group
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -1870,8 +1868,7 @@ testGroupLinkIncognitoMembership =
       cath #> ("@" <> bobIncognito <> " hey, I'm cath")
       bob ?<# "cath> hey, I'm cath"
       -- dan joins incognito
-      dan #$> ("/incognito on", id, "ok")
-      dan ##> ("/c " <> gLink)
+      dan ##> ("/c i " <> gLink)
       danIncognito <- getTermLine dan
       dan <## "connection request sent incognito!"
       bob <## (danIncognito <> ": accepting request to join group #team...")
@@ -1898,7 +1895,6 @@ testGroupLinkIncognitoMembership =
             cath <## ("#team: " <> bobIncognito <> " added " <> danIncognito <> " to the group (connecting...)")
             cath <## ("#team: new member " <> danIncognito <> " is connected")
         ]
-      dan #$> ("/incognito off", id, "ok")
       bob ?#> ("@" <> danIncognito <> " hi, I'm incognito")
       dan ?<# (bobIncognito <> "> hi, I'm incognito")
       dan ?#> ("@" <> bobIncognito <> " hey, me too")
@@ -2006,7 +2002,6 @@ testGroupLinkIncognitoUnusedHostContactsDeleted :: HasCallStack => FilePath -> I
 testGroupLinkIncognitoUnusedHostContactsDeleted =
   testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
-      bob #$> ("/incognito on", id, "ok")
       bobIncognitoTeam <- createGroupBobIncognito alice bob "team" "alice"
       bobIncognitoClub <- createGroupBobIncognito alice bob "club" "alice_1"
       bobIncognitoTeam `shouldNotBe` bobIncognitoClub
@@ -2036,7 +2031,7 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
       alice <## ("to add members use /a " <> group <> " <name> or /create link #" <> group)
       alice ##> ("/create link #" <> group)
       gLinkTeam <- getGroupLink alice group GRMember True
-      bob ##> ("/c " <> gLinkTeam)
+      bob ##> ("/c i " <> gLinkTeam)
       bobIncognito <- getTermLine bob
       bob <## "connection request sent incognito!"
       alice <## (bobIncognito <> ": accepting request to join group #" <> group <> "...")
