@@ -22,6 +22,7 @@ import           GHC.Generics ( Generic )
 import           Simplex.Messaging.Parsers ( sumTypeJSON ) 
 import qualified Data.Diff.Myers as DM
 import           Simplex.Chat.Markdown ( FormattedText(..), Format )
+import Simplex.Messaging.Agent.Store.SQLite (addSndChunkReplicaRecipients)
 
 
 
@@ -91,7 +92,7 @@ diff left right =
     toText = T.pack . fmap char 
 
     fromEdits :: S.Seq EditedChar -> S.Seq EditedChar -> S.Seq DM.Edit -> S.Seq EditedChar
-    fromEdits leftS rightS editS = snd $ F.foldl' f (leftS, S.empty) editS
+    fromEdits leftS rightS editS = x
 
     -- fromEdits ls rs es = snd $ F.foldl' f (0, S.empty) es
     --   where 
@@ -102,17 +103,25 @@ diff left right =
     --           where parsedUntilI' = parsedUntilI + leftTo
 
       where 
-        f :: (S.Seq EditedChar, S.Seq EditedChar) -> DM.Edit -> (S.Seq EditedChar, S.Seq EditedChar)
-        f (leftFeed, result) e = case e of
-          DM.EditDelete leftFrom leftTo -> (leftFeed', result')
+        (_, _, x) = F.foldl' f (0, leftS, S.empty) editS
+
+        f :: (Int, S.Seq EditedChar, S.Seq EditedChar) -> DM.Edit -> (Int, S.Seq EditedChar, S.Seq EditedChar)
+        f (i, leftFeed, result) e = case e of
+          DM.EditDelete leftFrom leftTo -> (i', leftFeed', result')
               where 
-                leftFeed' = S.drop leftFrom leftFeed
+                i' = i + leftFrom 
+                leftFeed' = S.drop (leftFrom - i) leftFeed
                 result' = result <> S.take leftFrom leftFeed <> drops
-                drops = (\x -> x {operation = Just Delete}) <$> S.take dropCt leftFeed'
+                drops = (\c -> c {operation = Just Delete}) <$> S.take dropCt leftFeed'
                 dropCt = leftTo - leftFrom
 
-          DM.EditInsert leftPos rightFrom rightTo -> 
-            undefined
+          DM.EditInsert leftPos rightFrom rightTo -> (i', leftFeed', result')
+              where 
+                i' = i + leftPos
+                leftFeed' = S.drop (leftPos - i) leftFeed
+                result' = result <> S.take leftFrom leftFeed <> adds
+                adds = (\c -> c {operation = Just Add}) <$> -- S.take addCt leftFeed'
+                addCt = rightTo - rightFrom
 
     -- fromEdit :: S.Seq EditedChar -> S.Seq EditedChar -> DM.Edit -> S.Seq EditedChar
     -- fromEdit ls rs e = case e of
