@@ -1,7 +1,6 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
