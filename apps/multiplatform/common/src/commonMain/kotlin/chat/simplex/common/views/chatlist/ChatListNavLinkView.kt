@@ -486,38 +486,6 @@ fun rejectContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: Cha
   }
 }
 
-fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel: ChatModel) {
-  AlertManager.shared.showAlertDialogButtons(
-    title = generalGetString(
-      if (connection.initiated) MR.strings.you_invited_your_contact
-      else MR.strings.you_accepted_connection
-    ),
-    text = generalGetString(
-      if (connection.viaContactUri) MR.strings.you_will_be_connected_when_your_connection_request_is_accepted
-      else MR.strings.you_will_be_connected_when_your_contacts_device_is_online
-    ),
-    buttons = {
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.Center,
-      ) {
-        TextButton(onClick = {
-          AlertManager.shared.hideAlert()
-          deleteContactConnectionAlert(connection, chatModel) {}
-        }) {
-          Text(stringResource(MR.strings.delete_verb))
-        }
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        TextButton(onClick = { AlertManager.shared.hideAlert() }) {
-          Text(stringResource(MR.strings.ok))
-        }
-      }
-    }
-  )
-}
-
 fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_pending_connection__question),

@@ -221,7 +221,7 @@
     <string name="mark_read">Marquer comme lu</string>
     <string name="mark_unread">Marquer non lu</string>
     <string name="set_contact_name">Définir le nom du contact</string>
-    <string name="you_invited_your_contact">Vous avez invité votre contact</string>
+    <string name="you_invited_a_contact">Vous avez invité votre contact</string>
     <string name="you_accepted_connection">Vous avez accepté la connexion</string>
     <string name="delete_pending_connection__question">Supprimer la connexion en attente \?</string>
     <string name="connection_you_accepted_will_be_cancelled">La connexion que vous avez acceptée sera annulée !</string>

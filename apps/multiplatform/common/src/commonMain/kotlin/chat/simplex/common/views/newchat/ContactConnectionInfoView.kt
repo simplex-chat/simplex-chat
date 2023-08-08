@@ -111,7 +111,7 @@ private fun ContactConnectionInfoLayout(
   ) {
     AppBarTitle(
       stringResource(
-        if (contactConnection.initiated) MR.strings.you_invited_your_contact
+        if (contactConnection.initiated) MR.strings.you_invited_a_contact
         else MR.strings.you_accepted_connection
       )
     )

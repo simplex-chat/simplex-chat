@@ -292,7 +292,7 @@
     <string name="mute_chat">Stummschalten</string>
     <string name="unmute_chat">Stummschaltung aufheben</string>
     <!-- Pending contact connection alert dialogues -->
-    <string name="you_invited_your_contact">Sie haben Ihren Kontakt eingeladen</string>
+    <string name="you_invited_a_contact">Sie haben Ihren Kontakt eingeladen</string>
     <string name="you_accepted_connection">Sie haben die Verbindung akzeptiert</string>
     <string name="delete_pending_connection__question">Ausstehende Verbindung löschen?</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Der Kontakt, mit dem Sie diesen Link geteilt haben, kann sich NICHT verbinden!</string>

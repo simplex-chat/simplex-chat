@@ -473,7 +473,7 @@
     <string name="simplex_service_notification_text">Recebendo mensagens…</string>
     <string name="large_file">Aruivo grande!</string>
     <string name="mark_read">Marcado como lido</string>
-    <string name="you_invited_your_contact">Você convidou seu contato</string>
+    <string name="you_invited_a_contact">Você convidou seu contato</string>
     <string name="invalid_QR_code">Código QR inválido</string>
     <string name="icon_descr_more_button">Mais</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Você será conectado ao grupo quando o dispositivo do host do grupo estiver online, por favor aguarde ou verifique mais tarde!</string>

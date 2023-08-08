@@ -715,7 +715,7 @@
     <string name="thank_you_for_installing_simplex">SimpleX Chatをご利用いただきありがとうございます！</string>
     <string name="use_camera_button">カメラ</string>
     <string name="you_accepted_connection">繋がりを承認しました</string>
-    <string name="you_invited_your_contact">連絡先に招待を送りました</string>
+    <string name="you_invited_a_contact">連絡先に招待を送りました</string>
     <string name="connection_you_accepted_will_be_cancelled">承認ずみの接続がキャンセルされます！</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">あなたからリンクを受けた連絡先が接続できなくなります！</string>
     <string name="icon_descr_address">SimpleXアドレス</string>

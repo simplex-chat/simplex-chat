@@ -446,7 +446,7 @@
 
 
   <!-- Pending contact connection alert dialogues -->
-  <string name="you_invited_your_contact">You invited your contact</string>
+  <string name="you_invited_a_contact">You invited a contact</string>
   <string name="you_accepted_connection">You accepted connection</string>
   <string name="delete_pending_connection__question">Delete pending connection?</string>
   <string name="contact_you_shared_link_with_wont_be_able_to_connect">The contact you shared this link with will NOT be able to connect!</string>
