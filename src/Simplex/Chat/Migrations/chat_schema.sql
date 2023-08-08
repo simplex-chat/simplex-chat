@@ -283,6 +283,8 @@ CREATE TABLE connections(
   security_code TEXT NULL,
   security_code_verified_at TEXT NULL,
   auth_err_counter INTEGER DEFAULT 0 CHECK(auth_err_counter NOT NULL),
+  chat_vrange_min_version INTEGER NOT NULL DEFAULT 1,
+  chat_vrange_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
