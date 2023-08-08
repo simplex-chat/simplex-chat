@@ -91,6 +91,8 @@ diff left right =
     toText = T.pack . fmap char 
 
     fromEdits :: S.Seq EditedChar -> S.Seq EditedChar -> S.Seq DM.Edit -> S.Seq EditedChar
+    fromEdits leftS rightS editS = snd $ F.foldl' f (leftS, S.empty) editS
+
     -- fromEdits ls rs es = snd $ F.foldl' f (0, S.empty) es
     --   where 
     --     f :: (Int, S.Seq EditedChar) -> DM.Edit -> (Int, S.Seq EditedChar)
@@ -98,31 +100,25 @@ diff left right =
     --       DM.EditDelete leftFrom leftTo -> 
     --         (parsedUntilI', res <> (S.take leftFrom ls)) -- ++ ___ 
     --           where parsedUntilI' = parsedUntilI + leftTo
-    fromEdits ls rs es = snd $ F.foldl' f (ls, S.empty) es
+
       where 
         f :: (S.Seq EditedChar, S.Seq EditedChar) -> DM.Edit -> (S.Seq EditedChar, S.Seq EditedChar)
-        f (leftFeed, res) e = case e of
-          DM.EditDelete leftFrom leftTo -> 
-            (leftFeed', res <> S.take leftFrom leftFeed <> drops)
+        f (leftFeed, result) e = case e of
+          DM.EditDelete leftFrom leftTo -> (leftFeed', result')
               where 
                 leftFeed' = S.drop leftFrom leftFeed
-                drops = undefined
+                result' = result <> S.take leftFrom leftFeed <> drops
+                drops = (\x -> x {operation = Just Delete}) <$> S.take dropCt leftFeed'
+                dropCt = leftTo - leftFrom
 
           DM.EditInsert leftPos rightFrom rightTo -> 
             undefined
-
-
 
     -- fromEdit :: S.Seq EditedChar -> S.Seq EditedChar -> DM.Edit -> S.Seq EditedChar
     -- fromEdit ls rs e = case e of
     --   DM.EditDelete leftFrom leftTo -> (S.take leftFrom ls) ++ ___ ++ (S.drop (leftTo + 1) ls)
     --   DM.EditInsert leftPos rightFrom rightTo -> _
 
-    leftT = toText left
-    rightT = toText right
-    leftS = S.fromList left
-    rightS = S.fromList right
-
-    edits = DM.diffTexts leftT rightT
+    edits = DM.diffTexts (toText left) (toText right)
   in
-    F.toList $ fromEdits leftS rightS edits
+    F.toList $ fromEdits (S.fromList left) (S.fromList right) edits
