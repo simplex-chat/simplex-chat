@@ -109,7 +109,7 @@ data AppMessage (e :: MsgEncoding) where
 
 -- chat message is sent as JSON with these properties
 data AppMessageJson = AppMessageJson
-  { chatVersionRange :: Maybe VersionRange,
+  { chatVersionRange :: Maybe ChatVersionRange,
     msgId :: Maybe SharedMsgId,
     event :: Text,
     params :: J.Object
@@ -134,6 +134,25 @@ instance StrEncoding AppMessageBinary where
     (tag, msgId', Tail body) <- smpP
     let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
     pure AppMessageBinary {tag, msgId, body}
+
+data ChatVersionRange = ChatVRange
+  { minVersion :: Version,
+    maxVersion :: Version
+  }
+  deriving (Eq, Show, Generic)
+
+instance FromJSON ChatVersionRange where
+  parseJSON = J.genericParseJSON J.defaultOptions
+
+instance ToJSON ChatVersionRange where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
+toChatVRange :: VersionRange -> ChatVersionRange
+toChatVRange (VersionRange minVersion maxVersion) = ChatVRange {minVersion, maxVersion}
+
+fromChatVRange :: ChatVersionRange -> VersionRange
+fromChatVRange ChatVRange {minVersion, maxVersion} = mkVersionRange minVersion maxVersion
 
 newtype SharedMsgId = SharedMsgId ByteString
   deriving (Eq, Show)
@@ -170,7 +189,7 @@ instance ToJSON MsgRef where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data ChatMessage e = ChatMessage
-  { chatVersionRange :: Maybe VersionRange,
+  { chatVersionRange :: Maybe ChatVersionRange,
     msgId :: Maybe SharedMsgId,
     chatMsgEvent :: ChatMsgEvent e
   }

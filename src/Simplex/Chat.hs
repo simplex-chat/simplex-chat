@@ -4599,15 +4599,15 @@ sendDirectMessage conn chatMsgEvent connOrGroupId = do
 createSndMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> ConnOrGroupId -> m SndMessage
 createSndMessage chatMsgEvent connOrGroupId = do
   gVar <- asks idsDrg
-  chatVRange <- asks $ chatVRange . config
+  vrange <- asks $ chatVRange . config
   withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
-    let msgBody = strEncode ChatMessage {chatVersionRange = Just chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+    let msgBody = strEncode ChatMessage {chatVersionRange = Just $ toChatVRange vrange, msgId = Just sharedMsgId, chatMsgEvent}
      in NewMessage {chatMsgEvent, msgBody}
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
-  cvr <- asks $ chatVRange . config
-  pure $ strEncode ChatMessage {chatVersionRange = Just cvr, msgId = Nothing, chatMsgEvent}
+  vrange <- asks $ chatVRange . config
+  pure $ strEncode ChatMessage {chatVersionRange = Just $ toChatVRange vrange, msgId = Nothing, chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
