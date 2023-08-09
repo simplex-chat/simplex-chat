@@ -10,11 +10,17 @@ m20230808_connections_chat_vrange =
   [sql|
 ALTER TABLE connections ADD COLUMN chat_vrange_min_version INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE connections ADD COLUMN chat_vrange_max_version INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE contact_requests ADD COLUMN chat_vrange_min_version INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE contact_requests ADD COLUMN chat_vrange_max_version INTEGER NOT NULL DEFAULT 1;
 |]
 
 down_m20230808_connections_chat_vrange :: Query
 down_m20230808_connections_chat_vrange =
   [sql|
+ALTER TABLE contact_requests DROP COLUMN chat_vrange_max_version;
+ALTER TABLE contact_requests DROP COLUMN chat_vrange_min_version;
+
 ALTER TABLE connections DROP COLUMN chat_vrange_max_version;
 ALTER TABLE connections DROP COLUMN chat_vrange_min_version;
 |]

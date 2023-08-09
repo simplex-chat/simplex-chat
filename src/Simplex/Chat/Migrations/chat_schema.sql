@@ -318,6 +318,8 @@ CREATE TABLE contact_requests(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
+  chat_vrange_min_version INTEGER NOT NULL DEFAULT 1,
+  chat_vrange_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE

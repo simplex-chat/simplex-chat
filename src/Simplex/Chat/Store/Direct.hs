@@ -75,6 +75,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId, InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import Simplex.Messaging.Version
 
 getPendingContactConnection :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO PendingContactConnection
 getPendingContactConnection db userId connId = do
@@ -412,13 +413,16 @@ getUserContacts db user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
   rights <$> mapM (runExceptT . getContact db user) contactIds
 
-createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
-createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profile {displayName, fullName, image, contactLink, preferences} xContactId_ =
+createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> Maybe VersionRange -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
+createOrUpdateContactRequest db user@User {userId} userContactLinkId invId chatVRange Profile {displayName, fullName, image, contactLink, preferences} xContactId_ =
   liftIO (maybeM getContact' xContactId_) >>= \case
     Just contact -> pure $ CORContact contact
     Nothing -> CORRequest <$> createOrUpdate_
   where
     maybeM = maybe (pure Nothing)
+    (minV, maxV) = case chatVRange of
+      Just (VersionRange minVer maxVer) -> (minVer, maxVer)
+      Nothing -> (1, 1)
     createOrUpdate_ :: ExceptT StoreError IO UserContactRequest
     createOrUpdate_ = do
       cReqId <-
@@ -442,10 +446,10 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
             db
             [sql|
               INSERT INTO contact_requests
-                (user_contact_link_id, agent_invitation_id, contact_profile_id, local_display_name, user_id, created_at, updated_at, xcontact_id)
-              VALUES (?,?,?,?,?,?,?,?)
+                (user_contact_link_id, agent_invitation_id, chat_vrange_min_version, chat_vrange_max_version, contact_profile_id, local_display_name, user_id, created_at, updated_at, xcontact_id)
+              VALUES (?,?,?,?,?,?,?,?,?,?)
             |]
-            (userContactLinkId, invId, profileId, ldn, userId, currentTs, currentTs, xContactId_)
+            (userContactLinkId, invId, minV, maxV, profileId, ldn, userId, currentTs, currentTs, xContactId_)
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId =
@@ -477,7 +481,8 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
           [sql|
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at
+              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at,
+              cr.chat_vrange_min_version, cr.chat_vrange_max_version
             FROM contact_requests cr
             JOIN connections c USING (user_contact_link_id)
             JOIN contact_profiles p USING (contact_profile_id)
@@ -491,10 +496,24 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
       currentTs <- liftIO getCurrentTime
       updateProfile currentTs
       if displayName == oldDisplayName
-        then Right <$> DB.execute db "UPDATE contact_requests SET agent_invitation_id = ?, updated_at = ? WHERE user_id = ? AND contact_request_id = ?" (invId, currentTs, userId, cReqId)
+        then Right <$> DB.execute
+          db
+          [sql|
+            UPDATE contact_requests
+            SET agent_invitation_id = ?, chat_vrange_min_version = ?, chat_vrange_max_version = ?, updated_at = ?
+            WHERE user_id = ? AND contact_request_id = ?
+          |]
+          (invId, minV, maxV, currentTs, userId, cReqId)
         else withLocalDisplayName db userId displayName $ \ldn ->
           Right <$> do
-            DB.execute db "UPDATE contact_requests SET agent_invitation_id = ?, local_display_name = ?, updated_at = ? WHERE user_id = ? AND contact_request_id = ?" (invId, ldn, currentTs, userId, cReqId)
+            DB.execute
+              db
+              [sql|
+                UPDATE contact_requests
+                SET agent_invitation_id = ?, chat_vrange_min_version = ?, chat_vrange_max_version = ?, local_display_name = ?, updated_at = ?
+                WHERE user_id = ? AND contact_request_id = ?
+              |]
+              (invId, minV, maxV, ldn, currentTs, userId, cReqId)
             DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (oldLdn, userId)
       where
         updateProfile currentTs =
@@ -529,7 +548,8 @@ getContactRequest db User {userId} contactRequestId =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at,
+          cr.chat_vrange_min_version, cr.chat_vrange_max_version
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -568,8 +588,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> User -> ConnId -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> IO Contact
-createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
+createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionRange -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> IO Contact
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
@@ -581,7 +601,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id) VALUES (?,?,?,?,?,?,?,?,?)"
     (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
-  activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
+  activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId (Just cReqChatVRange) Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
   pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt}
 

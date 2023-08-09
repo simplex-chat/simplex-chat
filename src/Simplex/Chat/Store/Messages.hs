@@ -609,7 +609,8 @@ getContactRequestChatPreviews_ db User {userId} =
       [sql|
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at,
+          cr.chat_vrange_min_version, cr.chat_vrange_max_version
         FROM contact_requests cr
         JOIN connections c ON c.user_contact_link_id = cr.user_contact_link_id
         JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id

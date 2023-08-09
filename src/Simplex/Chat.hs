@@ -2295,18 +2295,18 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
+acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
   let profileToSend = profileToSendOnAccept user incognitoProfile
   dm <- directMessage $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm
-  withStore' $ \db -> createAcceptedContact db user acId cName profileId cp userContactLinkId xContactId incognitoProfile
+  withStore' $ \db -> createAcceptedContact db user acId cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile
 
 acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
+acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
   let profileToSend = profileToSendOnAccept user incognitoProfile
   (cmdId, acId) <- agentAcceptContactAsync user True invId $ XInfo profileToSend
   withStore' $ \db -> do
-    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db user acId cName profileId p userContactLinkId xContactId incognitoProfile
+    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db user acId cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile
     setCommandConnId db user cmdId connId
     pure ct
 
@@ -3337,11 +3337,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
-        ChatMessage {chatVRange = _chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
+        ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         -- TODO [chat version] save vRange on contact_requests / auto accept: create connection with vRange
         case chatMsgEvent of
-          XContact p xContactId_ -> profileContactRequest invId p xContactId_
-          XInfo p -> profileContactRequest invId p Nothing
+          XContact p xContactId_ -> profileContactRequest invId chatVRange p xContactId_
+          XInfo p -> profileContactRequest invId chatVRange p Nothing
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -3353,9 +3353,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> Profile -> Maybe XContactId -> m ()
-        profileContactRequest invId p xContactId_ = do
-          withStore (\db -> createOrUpdateContactRequest db user userContactLinkId invId p xContactId_) >>= \case
+        profileContactRequest :: InvitationId -> Maybe VersionRange -> Profile -> Maybe XContactId -> m ()
+        profileContactRequest invId chatVRange p xContactId_ = do
+          withStore (\db -> createOrUpdateContactRequest db user userContactLinkId invId chatVRange p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case

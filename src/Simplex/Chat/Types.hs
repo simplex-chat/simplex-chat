@@ -232,6 +232,7 @@ data UserContactRequest = UserContactRequest
     agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
+    cReqChatVRange :: VersionRange,
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile,
