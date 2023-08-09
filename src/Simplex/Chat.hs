@@ -4601,13 +4601,13 @@ createSndMessage chatMsgEvent connOrGroupId = do
   gVar <- asks idsDrg
   vrange <- asks $ chatVRange . config
   withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
-    let msgBody = strEncode ChatMessage {chatVersionRange = Just $ toChatVRange vrange, msgId = Just sharedMsgId, chatMsgEvent}
+    let msgBody = strEncode ChatMessage {chatVersionRange = Just vrange, msgId = Just sharedMsgId, chatMsgEvent}
      in NewMessage {chatMsgEvent, msgBody}
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
   vrange <- asks $ chatVRange . config
-  pure $ strEncode ChatMessage {chatVersionRange = Just $ toChatVRange vrange, msgId = Nothing, chatMsgEvent}
+  pure $ strEncode ChatMessage {chatVersionRange = Just vrange, msgId = Nothing, chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
