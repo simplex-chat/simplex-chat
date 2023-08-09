@@ -46,7 +46,7 @@ import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
-import Simplex.Messaging.Version
+import Simplex.Messaging.Version hiding (version)
 
 currentChatVersion :: Version
 currentChatVersion = 2
@@ -128,7 +128,7 @@ fromChatVRange ChatVersionRange {minVer, maxVer} = fromMaybe (versionToRange max
 
 -- chat message is sent as JSON with these properties
 data AppMessageJson = AppMessageJson
-  { vRange :: Maybe ChatVersionRange,
+  { version :: Maybe ChatVersionRange,
     msgId :: Maybe SharedMsgId,
     event :: Text,
     params :: J.Object
@@ -762,10 +762,10 @@ appBinaryToCM AppMessageBinary {msgId, tag, body} = do
       BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
 
 appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
-appJsonToCM AppMessageJson {vRange, msgId, event, params} = do
+appJsonToCM AppMessageJson {version, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
-  pure ChatMessage {chatVRange = fromChatVRange <$> vRange, msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = fromChatVRange <$> version, msgId, chatMsgEvent}
   where
     p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
@@ -819,7 +819,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
   SBinary ->
     let (binaryMsgId, body) = toBody chatMsgEvent
      in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
-  SJson -> AMJson AppMessageJson {vRange = toChatVRange <$> chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
+  SJson -> AMJson AppMessageJson {version = toChatVRange <$> chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
   where
     tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
