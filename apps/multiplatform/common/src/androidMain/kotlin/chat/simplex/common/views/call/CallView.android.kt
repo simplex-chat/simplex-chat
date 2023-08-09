@@ -268,8 +268,9 @@ private fun ActiveCallOverlayLayout(
     when (call.peerMedia ?: call.localMedia) {
       CallMediaType.Video -> {
         CallInfoView(call, alignment = Alignment.Start)
-        Spacer(Modifier.fillMaxHeight().weight(1f))
-        DisabledBackgroundCallsButton(call.onLockScreen)
+        Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
+          DisabledBackgroundCallsButton(call.onLockScreen)
+        }
         Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
           ToggleAudioButton(call, toggleAudio)
           Spacer(Modifier.size(40.dp))
@@ -295,8 +296,9 @@ private fun ActiveCallOverlayLayout(
           ProfileImage(size = 192.dp, image = call.contact.profile.image)
           CallInfoView(call, alignment = Alignment.CenterHorizontally)
         }
-        Spacer(Modifier.fillMaxHeight().weight(1f))
-        DisabledBackgroundCallsButton(call.onLockScreen)
+        Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
+          DisabledBackgroundCallsButton(call.onLockScreen)
+        }
         Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
           Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             IconButton(onClick = dismiss) {
@@ -362,13 +364,12 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
 }
 
 @Composable
-private fun ColumnScope.DisabledBackgroundCallsButton(lockscreen: Boolean) {
+private fun DisabledBackgroundCallsButton(lockscreen: Boolean) {
   var show by remember { mutableStateOf(!lockscreen && !platform.androidIsBackgroundCallAllowed()) }
   if (show) {
     Row(
       Modifier
         .padding(bottom = 24.dp)
-        .align(Alignment.CenterHorizontally)
         .clickable {
           withBGApi {
             show = !platform.androidAskToAllowBackgroundCalls()
