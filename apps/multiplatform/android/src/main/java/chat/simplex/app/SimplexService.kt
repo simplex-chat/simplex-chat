@@ -538,7 +538,7 @@ class SimplexService: Service() {
           }
         },
         dismissButton = {
-          TextButton(onClick = skip) { Text(stringResource(MR.strings.system_restricted_in_call_skip_button), color = MaterialTheme.colors.error) }
+          TextButton(onClick = skip) { Text(stringResource(MR.strings.system_restricted_in_call_skip_button)) }
         },
         confirmButton = {
           TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
