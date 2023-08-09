@@ -25,9 +25,6 @@ data class Call(
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null
 ) {
-  @Transient
-  var onLockScreen = false
-
   val encrypted: Boolean get() = localEncrypted && sharedKey != null
   val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false
 

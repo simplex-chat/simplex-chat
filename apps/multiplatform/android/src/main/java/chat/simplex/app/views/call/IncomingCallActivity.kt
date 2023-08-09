@@ -131,7 +131,7 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
       chatModel.activeCallInvitation.value = null
       ntfManager.cancelCallNotification()
     },
-    acceptCall = { cm.acceptIncomingCall(invitation = invitation, lockscreen = true) },
+    acceptCall = { cm.acceptIncomingCall(invitation = invitation) },
     openApp = {
       val intent = Intent(context, MainActivity::class.java)
         .setAction(OpenChatAction)

@@ -25,20 +25,20 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  fun acceptIncomingCall(invitation: RcvCallInvitation, lockscreen: Boolean = false) {
+  fun acceptIncomingCall(invitation: RcvCallInvitation) {
     if (appPlatform.isDesktop) {
       return showInDevelopingAlert()
     }
 
     val call = chatModel.activeCall.value
     if (call == null) {
-      justAcceptIncomingCall(invitation = invitation, lockscreen)
+      justAcceptIncomingCall(invitation = invitation)
     } else {
       withApi {
         chatModel.switchingCall.value = true
         try {
           endCall(call = call)
-          justAcceptIncomingCall(invitation = invitation, lockscreen)
+          justAcceptIncomingCall(invitation = invitation)
         } finally {
           withApi { chatModel.switchingCall.value = false }
         }
@@ -46,14 +46,14 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  private fun justAcceptIncomingCall(invitation: RcvCallInvitation, lockscreen: Boolean) {
+  private fun justAcceptIncomingCall(invitation: RcvCallInvitation) {
     with (chatModel) {
       activeCall.value = Call(
         contact = invitation.contact,
         callState = CallState.InvitationAccepted,
         localMedia = invitation.callType.media,
         sharedKey = invitation.sharedKey,
-      ).apply { onLockScreen = lockscreen }
+      )
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
       val iceServers = getIceServers()

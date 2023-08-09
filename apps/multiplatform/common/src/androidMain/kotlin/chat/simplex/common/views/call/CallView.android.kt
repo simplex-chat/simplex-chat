@@ -269,7 +269,7 @@ private fun ActiveCallOverlayLayout(
       CallMediaType.Video -> {
         CallInfoView(call, alignment = Alignment.Start)
         Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
-          DisabledBackgroundCallsButton(call.onLockScreen)
+          DisabledBackgroundCallsButton()
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
           ToggleAudioButton(call, toggleAudio)
@@ -297,7 +297,7 @@ private fun ActiveCallOverlayLayout(
           CallInfoView(call, alignment = Alignment.CenterHorizontally)
         }
         Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
-          DisabledBackgroundCallsButton(call.onLockScreen)
+          DisabledBackgroundCallsButton()
         }
         Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
           Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -364,8 +364,8 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
 }
 
 @Composable
-private fun DisabledBackgroundCallsButton(lockscreen: Boolean) {
-  var show by remember { mutableStateOf(!lockscreen && !platform.androidIsBackgroundCallAllowed()) }
+private fun DisabledBackgroundCallsButton() {
+  var show by remember { mutableStateOf(!platform.androidIsBackgroundCallAllowed()) }
   if (show) {
     Row(
       Modifier
