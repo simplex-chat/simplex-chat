@@ -367,7 +367,7 @@ private fun ColumnScope.DisabledBackgroundCallsButton(lockscreen: Boolean) {
   if (show) {
     Row(
       Modifier
-        .padding(bottom = 10.dp)
+        .padding(bottom = 24.dp)
         .align(Alignment.CenterHorizontally)
         .clickable {
           withBGApi {
