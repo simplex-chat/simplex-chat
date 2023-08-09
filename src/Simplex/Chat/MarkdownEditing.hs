@@ -23,6 +23,7 @@ import           Simplex.Messaging.Parsers ( sumTypeJSON )
 import qualified Data.Diff.Myers as DM
 import           Simplex.Chat.Markdown ( FormattedText(..), Format )
 
+import qualified Debug.Trace as DBG
 
 data EditingOperation = Add | Delete | Substitute
   deriving (Show, Eq)
@@ -106,12 +107,15 @@ fromEdits left right edits =
         f :: DM.Edit -> S.Seq EditedChar -> S.Seq EditedChar
         f e acc = case e of
           DM.EditDelete {} -> acc
-          DM.EditInsert i m n -> S.take i acc S.>< adds S.>< S.drop i acc
+          DM.EditInsert i m n -> DBG.trace ("DM.EditInsert i m n: " <> show (i, m, n, rightChars, adds)) $ S.take i acc S.>< adds S.>< S.drop i acc
             where 
-              rightChars = S.take (n - m) $ S.drop m right
+              rightChars = S.take (n - m + 1) $ S.drop m right
               adds = fmap (\c -> c {operation = Just Add}) rightChars
+
+    q = DBG.trace ("markDels: " <> show markDels) markDels
+    qq = DBG.trace ("addAdds: " <> show (addAdds q)) addAdds q 
   in
-    addAdds markDels 
+    qq -- addAdds q 
 
 
 diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
