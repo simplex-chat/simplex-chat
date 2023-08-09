@@ -174,7 +174,6 @@ createConnection_ db userId connType entityId acId connChatVRange_ viaContact vi
         :. (minV, maxV)
     )
   connId <- insertedRowId db
-  -- TODO [chat version] create with vrange?
   pure Connection {connId, agentConnId = AgentConnId acId, connChatVRange, connType, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
   where
     (minV, maxV, connChatVRange) = case connChatVRange_ of

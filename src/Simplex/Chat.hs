@@ -3338,7 +3338,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-        -- TODO [chat version] save vRange on contact_requests / auto accept: create connection with vRange
         case chatMsgEvent of
           XContact p xContactId_ -> profileContactRequest invId chatVRange p xContactId_
           XInfo p -> profileContactRequest invId chatVRange p Nothing
