@@ -26,8 +26,11 @@ import           Simplex.Chat.Markdown ( FormattedText(..), Format )
 
 import qualified Debug.Trace as DBG
 
-data EditingOperation = Add | Delete | Substitute
-  -- todo AddChar | DeleteChar | ChangeFormatOnly -- | SubstitueChar
+data EditingOperation 
+  = AddChar 
+  | DeleteChar 
+  | ChangeFormatOnly 
+  -- todo ? | SubstitueChar
   deriving (Show, Eq)
 
 
@@ -38,6 +41,8 @@ data EditedChar = EditedChar
   }
   deriving (Show, Eq)
 
+newtype Diffs = Diffs [EditedChar]
+  deriving (Show, Eq)
 
 data EditedText =  EditedText 
   { format :: Maybe Format
@@ -100,7 +105,7 @@ fromEdits left right edits =
     markDels = S.mapWithIndex f left
       where
         f :: Int -> EditedChar -> EditedChar
-        f i c = if i `elem` delIndices then c {operation = Just Delete} else c
+        f i c = if i `elem` delIndices then c {operation = Just DeleteChar} else c
 
     addAdds :: Seq EditedChar -> Seq EditedChar
     addAdds base = F.foldr f base edits -- start from end and work backwards, hence foldr
@@ -111,11 +116,20 @@ fromEdits left right edits =
           D.EditInsert i m n -> DBG.trace ("D.EditInsert i m n: " <> show (i, m, n, rightChars, adds)) $ S.take i acc >< adds >< S.drop i acc
             where 
               rightChars = S.take (n - m + 1) $ S.drop m right
-              adds = fmap (\c -> c {operation = Just Add}) rightChars
+              adds = fmap (\c -> c {operation = Just AddChar}) rightChars
   in
     addAdds markDels
 
 
+-- todo unused
 diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
 diff left right = F.toList $ fromEdits (S.fromList left) (S.fromList right) edits
   where edits = D.diffTexts (toText left) (toText right)
+
+
+findDiffs :: [EditedChar] -> [EditedChar] -> Diffs
+findDiffs left right = Diffs diffs
+    where 
+      textDiffs = D.diffTexts (toText left) (toText right)  
+      formatDiffs = 
+      diffs = 
