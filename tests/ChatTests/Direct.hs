@@ -97,7 +97,17 @@ chatDirectTests = do
     it "should send delivery receipts" testSendDeliveryReceipts
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
   describe "negotiate connection chat protocol version range" $ do
-    it "update connection chat protocol version range on received messages" testUpdateConnChatVRange
+    describe "version range correctly set for new connection via invitation" $ do
+      it (currentChatVRange <> " - " <> currentChatVRange) $ testConnInvChatVRange supportedChatVRange supportedChatVRange
+      it (currentChatVRange <> " - (1, 1)") $ testConnInvChatVRange supportedChatVRange vr11
+      it ("(1, 1) - " <> currentChatVRange) $ testConnInvChatVRange vr11 supportedChatVRange
+      it "(1, 1) - (1, 1)" $ testConnInvChatVRange vr11 vr11
+    describe "version range correctly set for new connection via contact request" $ do
+      it (currentChatVRange <> " - " <> currentChatVRange) $ testConnReqChatVRange supportedChatVRange supportedChatVRange
+      it (currentChatVRange <> " - (1, 1)") $ testConnReqChatVRange supportedChatVRange vr11
+      it ("(1, 1) - " <> currentChatVRange) $ testConnReqChatVRange vr11 supportedChatVRange
+      it "(1, 1) - (1, 1)" $ testConnReqChatVRange vr11 vr11
+    it "update connection version range on received messages" testUpdateConnChatVRange
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -1967,7 +1977,7 @@ testMarkContactVerified =
       alice <## "sending messages via: localhost"
       alice <## "you've shared main profile with this contact"
       alice <## connVerified
-      alice <## currentChatVRange
+      alice <## currentChatVRangeInfo
       where
         connVerified
           | verified = "connection verified"
@@ -2002,7 +2012,7 @@ testMarkGroupMemberVerified =
       alice <## "receiving messages via: localhost"
       alice <## "sending messages via: localhost"
       alice <## connVerified
-      alice <## currentChatVRange
+      alice <## currentChatVRangeInfo
       where
         connVerified
           | verified = "connection verified"
@@ -2137,7 +2147,7 @@ testSyncRatchetCodeReset tmp =
       bob <## "sending messages via: localhost"
       bob <## "you've shared main profile with this contact"
       bob <## connVerified
-      bob <## currentChatVRange
+      bob <## currentChatVRangeInfo
       where
         connVerified
           | verified = "connection verified"
@@ -2285,6 +2295,38 @@ testConfigureDeliveryReceipts tmp =
       cc2 <# (name1 <> "> " <> msg)
       cc1 <// 50000
 
+testConnInvChatVRange :: HasCallStack => VersionRange -> VersionRange -> FilePath -> IO ()
+testConnInvChatVRange ct1VRange ct2VRange tmp =
+  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+
+      alice ##> "/i bob"
+      contactInfoChatVRange alice ct2VRange
+
+      bob ##> "/i alice"
+      contactInfoChatVRange bob ct1VRange
+
+testConnReqChatVRange :: HasCallStack => VersionRange -> VersionRange -> FilePath -> IO ()
+testConnReqChatVRange ct1VRange ct2VRange tmp =
+  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+
+      alice ##> "/i bob"
+      contactInfoChatVRange alice ct2VRange
+
+      bob ##> "/i alice"
+      contactInfoChatVRange bob ct1VRange
+
 testUpdateConnChatVRange :: HasCallStack => FilePath -> IO ()
 testUpdateConnChatVRange tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -2292,10 +2334,10 @@ testUpdateConnChatVRange tmp =
       connectUsers alice bob
 
       alice ##> "/i bob"
-      contactInfo alice vr11
+      contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfo bob supportedChatVRange
+      contactInfoChatVRange bob supportedChatVRange
 
     withTestChat tmp "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2304,10 +2346,10 @@ testUpdateConnChatVRange tmp =
       alice <# "bob> hello 1"
 
       alice ##> "/i bob"
-      contactInfo alice supportedChatVRange
+      contactInfoChatVRange alice supportedChatVRange
 
       bob ##> "/i alice"
-      contactInfo bob supportedChatVRange
+      contactInfoChatVRange bob supportedChatVRange
 
     withTestChatCfg tmp cfg11 "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2316,18 +2358,21 @@ testUpdateConnChatVRange tmp =
       alice <# "bob> hello 2"
 
       alice ##> "/i bob"
-      contactInfo alice vr11
+      contactInfoChatVRange alice vr11
 
       bob ##> "/i alice"
-      contactInfo bob supportedChatVRange
+      contactInfoChatVRange bob supportedChatVRange
   where
-    vr11 = mkVersionRange 1 1
     cfg11 = testCfg {chatVRange = vr11} :: ChatConfig
-    contactInfo :: TestCC -> VersionRange -> IO ()
-    contactInfo cc (VersionRange minVer maxVer) = do
-      cc <## "contact ID: 2"
-      cc <## "receiving messages via: localhost"
-      cc <## "sending messages via: localhost"
-      cc <## "you've shared main profile with this contact"
-      cc <## "connection not verified, use /code command to see security code"
-      cc <## ("chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
+
+vr11 :: VersionRange
+vr11 = mkVersionRange 1 1
+
+contactInfoChatVRange :: TestCC -> VersionRange -> IO ()
+contactInfoChatVRange cc (VersionRange minVer maxVer) = do
+  cc <## "contact ID: 2"
+  cc <## "receiving messages via: localhost"
+  cc <## "sending messages via: localhost"
+  cc <## "you've shared main profile with this contact"
+  cc <## "connection not verified, use /code command to see security code"
+  cc <## ("chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")

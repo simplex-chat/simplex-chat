@@ -2329,7 +2329,7 @@ testGroupSyncRatchetCodeReset tmp =
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
       bob <## connVerified
-      bob <## currentChatVRange
+      bob <## currentChatVRangeInfo
       where
         connVerified
           | verified = "connection verified"

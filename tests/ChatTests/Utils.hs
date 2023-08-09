@@ -526,8 +526,11 @@ startFileTransferWithDest' cc1 cc2 fileName fileSize fileDest_ = do
     (cc2 <## ("started receiving file 1 (" <> fileName <> ") from " <> name1))
     (cc1 <## ("started sending file 1 (" <> fileName <> ") to " <> name2))
 
+currentChatVRangeInfo :: String
+currentChatVRangeInfo =
+  "chat protocol version range: " <> currentChatVRange
+
 currentChatVRange :: String
-currentChatVRange =
-  "chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")"
+currentChatVRange = "(" <> show minVer <> ", " <> show maxVer <> ")"
   where
     VersionRange minVer maxVer = supportedChatVRange
