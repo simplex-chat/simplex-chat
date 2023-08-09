@@ -84,7 +84,7 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
     formattedEditedText [plainText "Hrllo"] [plainText "Hexyzo"]
       `shouldBe` 
         [ EditedChar Nothing 'H' Nothing
-        , EditedChar Nothing 'e' $ Just Add     
+        , EditedChar Nothing 'e' $ Just Add  -- but dels should come before adds
         , EditedChar Nothing 'x' $ Just Add
         , EditedChar Nothing 'y' $ Just Add
         , EditedChar Nothing 'z' $ Just Add     
