@@ -98,16 +98,19 @@ chatDirectTests = do
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
   describe "negotiate connection chat protocol version range" $ do
     describe "version range correctly set for new connection via invitation" $ do
-      it (currentChatVRange <> " - " <> currentChatVRange) $ testConnInvChatVRange supportedChatVRange supportedChatVRange
-      it (currentChatVRange <> " - (1, 1)") $ testConnInvChatVRange supportedChatVRange vr11
-      it ("(1, 1) - " <> currentChatVRange) $ testConnInvChatVRange vr11 supportedChatVRange
-      it "(1, 1) - (1, 1)" $ testConnInvChatVRange vr11 vr11
+      testInvVRange supportedChatVRange supportedChatVRange
+      testInvVRange supportedChatVRange vr11
+      testInvVRange vr11 supportedChatVRange
+      testInvVRange vr11 vr11
     describe "version range correctly set for new connection via contact request" $ do
-      it (currentChatVRange <> " - " <> currentChatVRange) $ testConnReqChatVRange supportedChatVRange supportedChatVRange
-      it (currentChatVRange <> " - (1, 1)") $ testConnReqChatVRange supportedChatVRange vr11
-      it ("(1, 1) - " <> currentChatVRange) $ testConnReqChatVRange vr11 supportedChatVRange
-      it "(1, 1) - (1, 1)" $ testConnReqChatVRange vr11 vr11
+      testReqVRange supportedChatVRange supportedChatVRange
+      testReqVRange supportedChatVRange vr11
+      testReqVRange vr11 supportedChatVRange
+      testReqVRange vr11 vr11
     it "update connection version range on received messages" testUpdateConnChatVRange
+  where
+    testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
+    testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
