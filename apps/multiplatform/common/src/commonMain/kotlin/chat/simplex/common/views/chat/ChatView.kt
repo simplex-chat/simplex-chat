@@ -239,11 +239,13 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         if (appPlatform.isDesktop) {
           return@out showInDevelopingAlert()
         }
-        val cInfo = chat.chatInfo
-        if (cInfo is ChatInfo.Direct) {
-          chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
-          chatModel.showCallView.value = true
-          chatModel.callCommand.value = WCallCommand.Capabilities
+        withBGApi {
+          val cInfo = chat.chatInfo
+          if (cInfo is ChatInfo.Direct) {
+            chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+            chatModel.showCallView.value = true
+            chatModel.callCommand.value = WCallCommand.Capabilities
+          }
         }
       },
       acceptCall = { contact ->
