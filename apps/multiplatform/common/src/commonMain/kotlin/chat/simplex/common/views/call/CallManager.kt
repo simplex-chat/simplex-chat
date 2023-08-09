@@ -3,6 +3,7 @@ package chat.simplex.common.views.call
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.withApi
+import chat.simplex.common.views.helpers.withBGApi
 import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
@@ -28,6 +29,7 @@ class CallManager(val chatModel: ChatModel) {
     if (appPlatform.isDesktop) {
       return showInDevelopingAlert()
     }
+
     val call = chatModel.activeCall.value
     if (call == null) {
       justAcceptIncomingCall(invitation = invitation)
@@ -50,7 +52,7 @@ class CallManager(val chatModel: ChatModel) {
         contact = invitation.contact,
         callState = CallState.InvitationAccepted,
         localMedia = invitation.callType.media,
-        sharedKey = invitation.sharedKey
+        sharedKey = invitation.sharedKey,
       )
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
