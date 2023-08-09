@@ -282,7 +282,7 @@ struct ChatItemInfoView: View {
                     memberDeliveryStatusView(memberStatus.0, memberStatus.1)
                 }
             } else {
-                Text("No info on delivery")
+                Text("No delivery info")
                     .foregroundColor(.secondary)
             }
         }

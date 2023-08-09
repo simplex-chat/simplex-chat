@@ -2377,7 +2377,7 @@ public enum CIStatus: Decodable {
         case .sndSent: return nil
         case .sndRcvd: return nil
         case .sndErrorAuth: return (
-                NSLocalizedString("Message delivery error.", comment: "item status text"),
+                NSLocalizedString("Message delivery error", comment: "item status text"),
                 NSLocalizedString("Most likely this connection is deleted.", comment: "item status description")
             )
         case let .sndError(agentError): return (
