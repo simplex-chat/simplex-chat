@@ -111,20 +111,25 @@ fromEdits left right edits =
     --           g :: DM.Edit -> DM.Edit
     --           g e = 
 
-    delIndices :: S.Seq DM.Edit -> S.Seq Int
-    delIndices es = F.foldl' f S.Empty es
+    delIndices :: S.Seq Int
+    delIndices = F.foldl' f S.Empty edits
       where
         f :: S.Seq Int -> DM.Edit -> S.Seq Int
         f acc e = case e of
           DM.EditInsert {} -> acc
           DM.EditDelete m n -> acc S.>< S.fromList [m .. n]
 
+    markDels :: S.Seq EditedChar
+    markDels = S.mapWithIndex f left
+      where
+        f :: Int -> EditedChar -> EditedChar
+        f i c = if i `elem` delIndices then c {operation = Just Delete} else c
 
     addAdds :: S.Seq EditedChar -> S.Seq DM.Edit -> S.Seq EditedChar -> S.Seq EditedChar
     addAdds right withDels = undefined -- start from end and work backwards
 
   in
-    addAdds right adds withDels 
+    addAdds right adds markDels 
 
 
 diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
