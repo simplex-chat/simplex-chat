@@ -241,7 +241,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         }
         withBGApi {
           val cInfo = chat.chatInfo
-          if (cInfo is ChatInfo.Direct && platform.androidIsCallAllowed()) {
+          if (cInfo is ChatInfo.Direct) {
             chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
             chatModel.showCallView.value = true
             chatModel.callCommand.value = WCallCommand.Capabilities

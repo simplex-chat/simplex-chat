@@ -9,7 +9,8 @@ interface PlatformInterface {
   fun androidChatStartedAfterBeingOff() {}
   fun androidChatStopped() {}
   fun androidChatInitializedAndStarted() {}
-  suspend fun androidIsCallAllowed(): Boolean = true
+  fun androidIsBackgroundCallAllowed(): Boolean = true
+  suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
 }
 /**
  * Multiplatform project has separate directories per platform + common directory that contains directories per platform + common for all of them.

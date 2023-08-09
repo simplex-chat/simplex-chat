@@ -25,21 +25,20 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  fun acceptIncomingCall(invitation: RcvCallInvitation, lockscreen: Boolean = false) = withBGApi {
+  fun acceptIncomingCall(invitation: RcvCallInvitation, lockscreen: Boolean = false) {
     if (appPlatform.isDesktop) {
-      return@withBGApi showInDevelopingAlert()
+      return showInDevelopingAlert()
     }
-    if (!lockscreen && !platform.androidIsCallAllowed()) return@withBGApi
 
     val call = chatModel.activeCall.value
     if (call == null) {
-      justAcceptIncomingCall(invitation = invitation)
+      justAcceptIncomingCall(invitation = invitation, lockscreen)
     } else {
       withApi {
         chatModel.switchingCall.value = true
         try {
           endCall(call = call)
-          justAcceptIncomingCall(invitation = invitation)
+          justAcceptIncomingCall(invitation = invitation, lockscreen)
         } finally {
           withApi { chatModel.switchingCall.value = false }
         }
@@ -47,14 +46,14 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  private fun justAcceptIncomingCall(invitation: RcvCallInvitation) {
+  private fun justAcceptIncomingCall(invitation: RcvCallInvitation, lockscreen: Boolean) {
     with (chatModel) {
       activeCall.value = Call(
         contact = invitation.contact,
         callState = CallState.InvitationAccepted,
         localMedia = invitation.callType.media,
-        sharedKey = invitation.sharedKey
-      )
+        sharedKey = invitation.sharedKey,
+      ).apply { onLockScreen = lockscreen }
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
       val iceServers = getIceServers()

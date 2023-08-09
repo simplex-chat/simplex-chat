@@ -515,13 +515,8 @@ class SimplexService: Service() {
       val unrestrict = {
         askToUnrestrictBackground()
       }
-      var skipped = remember { false }
-      val skip = {
-        AlertManager.shared.hideAlert()
-        skipped = true
-      }
       AlertDialog(
-        onDismissRequest = skip,
+        onDismissRequest = AlertManager.shared::hideAlert,
         title = {
           Text(
             stringResource(MR.strings.system_restricted_background_in_call_title),
@@ -536,9 +531,6 @@ class SimplexService: Service() {
             )
             Text(annotatedStringResource(MR.strings.system_restricted_background_in_call_warn))
           }
-        },
-        dismissButton = {
-          TextButton(onClick = skip) { Text(stringResource(MR.strings.system_restricted_in_call_skip_button)) }
         },
         confirmButton = {
           TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
@@ -555,7 +547,7 @@ class SimplexService: Service() {
           }
         }
         onDispose {
-          onDismiss(skipped || !isBackgroundRestricted())
+          onDismiss(!isBackgroundRestricted())
         }
       }
     }
