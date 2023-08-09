@@ -234,18 +234,17 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
       val statusIcon = status.statusIcon(MaterialTheme.colors.primary, CurrentColors.value.colors.secondary)
-      Box(
-        Modifier
-          .size(36.dp)
-          .clip(RoundedCornerShape(20.dp))
-          .clickable {
-            AlertManager.shared.showAlertMsg(
-              title = status.statusText,
-              text = status.statusDescription
-            )
-          },
-        contentAlignment = Alignment.Center
-      ) {
+      var modifier = Modifier.size(36.dp).clip(RoundedCornerShape(20.dp))
+      val info = status.statusInto
+      if (info != null) {
+        modifier = modifier.clickable {
+          AlertManager.shared.showAlertMsg(
+            title = info.first,
+            text = info.second
+          )
+        }
+      }
+      Box(modifier, contentAlignment = Alignment.Center) {
         if (statusIcon != null) {
           val (icon, statusColor) = statusIcon
           Icon(
@@ -433,22 +432,6 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
     }
     val t = qi.text
     shareText.add(if (t != "") t else generalGetString(MR.strings.item_info_no_text))
-  }
-  val mdss = chatItemInfo.memberDeliveryStatuses
-  if (mdss != null) {
-    val mss = membersStatuses(chatModel, mdss)
-    if (mss.isNotEmpty()) {
-      shareText.add("")
-      shareText.add("## " + generalGetString(MR.strings.delivery))
-      shareText.add("")
-      mss.forEach { (member, status) ->
-        shareText.add(String.format(
-          generalGetString(MR.strings.recipient_colon_delivery_status),
-          member.chatViewName,
-          status.statusDescription
-        ))
-      }
-    }
   }
   val versions = chatItemInfo.itemVersions
   if (versions.isNotEmpty()) {

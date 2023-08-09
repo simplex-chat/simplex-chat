@@ -2371,29 +2371,25 @@ public enum CIStatus: Decodable {
         }
     }
 
-    public var statusText: String {
+    public var statusInfo: (String, String)? {
         switch self {
-        case .sndNew: return NSLocalizedString("Sending message", comment: "item status text")
-        case .sndSent: return NSLocalizedString("Message sent", comment: "item status text")
-        case .sndRcvd: return NSLocalizedString("Sent message received", comment: "item status text")
-        case .sndErrorAuth: return NSLocalizedString("Error sending message", comment: "item status text")
-        case .sndError: return NSLocalizedString("Error sending message", comment: "item status text")
-        case .rcvNew: return NSLocalizedString("Message received", comment: "item status text")
-        case .rcvRead: return NSLocalizedString("Message read", comment: "item status text")
-        case .invalid: return NSLocalizedString("Invalid status", comment: "item status text")
-        }
-    }
-
-    public var statusDescription: String {
-        switch self {
-        case .sndNew: return NSLocalizedString("Sending message is in progress or pending.", comment: "item status description")
-        case .sndSent: return NSLocalizedString("Message has been sent to the recipient's relay.", comment: "item status description")
-        case .sndRcvd: return NSLocalizedString("Message has been received by the recipient.", comment: "item status description")
-        case .sndErrorAuth: return NSLocalizedString("Message delivery error. Most likely this recipient has deleted the connection with you.", comment: "item status description")
-        case let .sndError(agentError): return String.localizedStringWithFormat(NSLocalizedString("Unexpected message delivery error: %@", comment: "item status description"), agentError)
-        case .rcvNew: return NSLocalizedString("New message from this sender.", comment: "item status description")
-        case .rcvRead: return NSLocalizedString("You've read this received message.", comment: "item status description")
-        case let .invalid(text): return text
+        case .sndNew: return nil
+        case .sndSent: return nil
+        case .sndRcvd: return nil
+        case .sndErrorAuth: return (
+                NSLocalizedString("Message delivery error.", comment: "item status text"),
+                NSLocalizedString("Most likely this connection is deleted.", comment: "item status description")
+            )
+        case let .sndError(agentError): return (
+                NSLocalizedString("Message delivery error", comment: "item status text"),
+                String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "item status description"), agentError)
+            )
+        case .rcvNew: return nil
+        case .rcvRead: return nil
+        case let .invalid(text): return (
+                NSLocalizedString("Invalid status", comment: "item status text"),
+                text
+            )
         }
     }
 }
