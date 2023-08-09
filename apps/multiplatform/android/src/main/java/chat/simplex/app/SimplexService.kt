@@ -363,27 +363,27 @@ class SimplexService: Service() {
 
       if (!appPrefs.backgroundServiceNoticeShown.get()) {
         // the branch for the new users who have never seen service notice
-        if (!mode.requiresIgnoringBattery || (isIgnoringBatteryOptimizations() && !isBackgroundRestricted())) {
+        if (!mode.requiresIgnoringBattery || isBackgroundAllowed()) {
           showBGServiceNotice(mode)
-        } else if (!isIgnoringBatteryOptimizations() && !isBackgroundRestricted()) {
-          showBGServiceNoticeIgnoreOptimization(mode)
         } else if (isBackgroundRestricted()) {
           showBGServiceNoticeSystemRestricted(mode)
+        } else if (!isIgnoringBatteryOptimizations()) {
+          showBGServiceNoticeIgnoreOptimization(mode)
         }
         // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
         appPrefs.backgroundServiceNoticeShown.set(true)
         appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-      } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations() && !isBackgroundRestricted()) {
-        // the branch for users who have app installed, and have seen the service notice,
-        // but the battery optimization for the app is in OPTIMIZED state (Android 12+) AND the service is running
-        showBGServiceNoticeIgnoreOptimization(mode)
-        if (!appPrefs.backgroundServiceBatteryNoticeShown.get()) {
-          appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-        }
       } else if (mode.requiresIgnoringBattery && isBackgroundRestricted()) {
         // the branch for users who have app installed, and have seen the service notice,
         // but the service is running AND system background restriction is on OR the battery optimization for the app is in RESTRICTED state
         showBGServiceNoticeSystemRestricted(mode)
+        if (!appPrefs.backgroundServiceBatteryNoticeShown.get()) {
+          appPrefs.backgroundServiceBatteryNoticeShown.set(true)
+        }
+      } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations()) {
+        // the branch for users who have app installed, and have seen the service notice,
+        // but the battery optimization for the app is in OPTIMIZED state (Android 12+) AND the service is running
+        showBGServiceNoticeIgnoreOptimization(mode)
         if (!appPrefs.backgroundServiceBatteryNoticeShown.get()) {
           appPrefs.backgroundServiceBatteryNoticeShown.set(true)
         }
@@ -581,6 +581,8 @@ class SimplexService: Service() {
         }
       )
     }
+
+    fun isBackgroundAllowed(): Boolean = isIgnoringBatteryOptimizations() && !isBackgroundRestricted()
 
     fun isIgnoringBatteryOptimizations(): Boolean {
       val powerManager = androidAppContext.getSystemService(Application.POWER_SERVICE) as PowerManager
