@@ -204,9 +204,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override suspend fun androidIsCallAllowed(): Boolean {
         if (isBackgroundRestricted()) {
-          val mode = appPrefs.notificationsMode.get()
           val userChoice: CompletableDeferred<Boolean> = CompletableDeferred()
-          SimplexService.showBGRestrictedInCall(mode) {
+          SimplexService.showBGRestrictedInCall {
             userChoice.complete(it)
           }
           return userChoice.await()

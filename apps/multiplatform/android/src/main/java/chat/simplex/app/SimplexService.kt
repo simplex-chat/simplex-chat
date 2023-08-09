@@ -365,7 +365,7 @@ class SimplexService: Service() {
         // the branch for the new users who have never seen service notice
         if (!mode.requiresIgnoringBattery || (isIgnoringBatteryOptimizations() && !isBackgroundRestricted())) {
           showBGServiceNotice(mode)
-        } else if (!isIgnoringBatteryOptimizations()) {
+        } else if (!isIgnoringBatteryOptimizations() && !isBackgroundRestricted()) {
           showBGServiceNoticeIgnoreOptimization(mode)
         } else if (isBackgroundRestricted()) {
           showBGServiceNoticeSystemRestricted(mode)
@@ -373,16 +373,16 @@ class SimplexService: Service() {
         // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
         appPrefs.backgroundServiceNoticeShown.set(true)
         appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-      } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations()) {
+      } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations() && !isBackgroundRestricted()) {
         // the branch for users who have app installed, and have seen the service notice,
-        // but the battery optimization for the app is on (Android 12+) AND the service is running
+        // but the battery optimization for the app is in OPTIMIZED state (Android 12+) AND the service is running
         showBGServiceNoticeIgnoreOptimization(mode)
         if (!appPrefs.backgroundServiceBatteryNoticeShown.get()) {
           appPrefs.backgroundServiceBatteryNoticeShown.set(true)
         }
       } else if (mode.requiresIgnoringBattery && isBackgroundRestricted()) {
         // the branch for users who have app installed, and have seen the service notice,
-        // but the service is running AND system background restriction is on
+        // but the service is running AND system background restriction is on OR the battery optimization for the app is in RESTRICTED state
         showBGServiceNoticeSystemRestricted(mode)
         if (!appPrefs.backgroundServiceBatteryNoticeShown.get()) {
           appPrefs.backgroundServiceBatteryNoticeShown.set(true)
@@ -428,11 +428,16 @@ class SimplexService: Service() {
     }
 
     private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode) = AlertManager.shared.showAlert {
+      val ignoreOptimization = {
+        AlertManager.shared.hideAlert()
+        askAboutIgnoringBatteryOptimization()
+      }
+      val disableNotifications = {
+        AlertManager.shared.hideAlert()
+        disableNotifications(mode)
+      }
       AlertDialog(
-        onDismissRequest = {
-          AlertManager.shared.hideAlert()
-          disableNotifications(mode)
-        },
+        onDismissRequest = disableNotifications,
         title = {
           Row {
             Icon(
@@ -455,11 +460,11 @@ class SimplexService: Service() {
             Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
           }
         },
+        dismissButton = {
+          TextButton(onClick = disableNotifications) { Text(stringResource(MR.strings.disable_notifications_button), color = MaterialTheme.colors.error) }
+        },
         confirmButton = {
-          TextButton(onClick = {
-            AlertManager.shared.hideAlert()
-            askAboutIgnoringBatteryOptimization()
-          }) { Text(stringResource(MR.strings.turn_off_battery_optimization_button)) }
+          TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.turn_off_battery_optimization_button)) }
         }
       )
     }
@@ -506,7 +511,7 @@ class SimplexService: Service() {
       )
     }
 
-    fun showBGRestrictedInCall(mode: NotificationsMode, onDismiss: (allowedCall: Boolean) -> Unit) = AlertManager.shared.showAlert {
+    fun showBGRestrictedInCall(onDismiss: (allowedCall: Boolean) -> Unit) = AlertManager.shared.showAlert {
       val unrestrict = {
         askToUnrestrictBackground()
       }
