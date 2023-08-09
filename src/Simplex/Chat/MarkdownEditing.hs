@@ -15,17 +15,19 @@ module Simplex.Chat.MarkdownEditing where
 import           Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Foldable as F
+import           Data.Sequence ( Seq(..), (><) )
 import qualified Data.Sequence as S
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Generics ( Generic )
 import           Simplex.Messaging.Parsers ( sumTypeJSON ) 
-import qualified Data.Diff.Myers as DM
+import qualified Data.Diff.Myers as D
 import           Simplex.Chat.Markdown ( FormattedText(..), Format )
 
 import qualified Debug.Trace as DBG
 
 data EditingOperation = Add | Delete | Substitute
+  -- todo AddChar | DeleteChar | ChangeFormatOnly -- | SubstitueChar
   deriving (Show, Eq)
 
 
@@ -83,30 +85,30 @@ toText :: [EditedChar] -> T.Text
 toText = T.pack . fmap char  
 
 
-fromEdits :: S.Seq EditedChar -> S.Seq EditedChar -> S.Seq DM.Edit -> S.Seq EditedChar
+fromEdits :: Seq EditedChar -> Seq EditedChar -> Seq D.Edit -> Seq EditedChar
 fromEdits left right edits =   
   let
-    delIndices :: S.Seq Int
+    delIndices :: Seq Int
     delIndices = F.foldl' f S.Empty edits
       where
-        f :: S.Seq Int -> DM.Edit -> S.Seq Int
+        f :: Seq Int -> D.Edit -> Seq Int
         f acc e = case e of
-          DM.EditInsert {} -> acc
-          DM.EditDelete m n -> acc S.>< S.fromList [m .. n]
+          D.EditInsert {} -> acc
+          D.EditDelete m n -> acc >< S.fromList [m .. n]
 
-    markDels :: S.Seq EditedChar
+    markDels :: Seq EditedChar
     markDels = S.mapWithIndex f left
       where
         f :: Int -> EditedChar -> EditedChar
         f i c = if i `elem` delIndices then c {operation = Just Delete} else c
 
-    addAdds :: S.Seq EditedChar -> S.Seq EditedChar
+    addAdds :: Seq EditedChar -> Seq EditedChar
     addAdds base = F.foldr f base edits -- start from end and work backwards, hence foldr
       where
-        f :: DM.Edit -> S.Seq EditedChar -> S.Seq EditedChar
+        f :: D.Edit -> Seq EditedChar -> Seq EditedChar
         f e acc = case e of
-          DM.EditDelete {} -> acc
-          DM.EditInsert i m n -> DBG.trace ("DM.EditInsert i m n: " <> show (i, m, n, rightChars, adds)) $ S.take i acc S.>< adds S.>< S.drop i acc
+          D.EditDelete {} -> acc
+          D.EditInsert i m n -> DBG.trace ("D.EditInsert i m n: " <> show (i, m, n, rightChars, adds)) $ S.take i acc >< adds >< S.drop i acc
             where 
               rightChars = S.take (n - m + 1) $ S.drop m right
               adds = fmap (\c -> c {operation = Just Add}) rightChars
@@ -116,4 +118,4 @@ fromEdits left right edits =
 
 diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
 diff left right = F.toList $ fromEdits (S.fromList left) (S.fromList right) edits
-  where edits = DM.diffTexts (toText left) (toText right)
+  where edits = D.diffTexts (toText left) (toText right)
