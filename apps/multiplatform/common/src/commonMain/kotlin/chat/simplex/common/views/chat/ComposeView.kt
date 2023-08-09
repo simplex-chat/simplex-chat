@@ -240,7 +240,7 @@ fun ComposeView(
     link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
 
   fun parseMessage(msg: String): String? {
-    val parsedMsg = runBlocking { chatModel.controller.apiParseMarkdown(msg) }
+    val parsedMsg = parseToMarkdown(msg)
     val link = parsedMsg?.firstOrNull { ft -> ft.format is Format.Uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text) }
     return link?.text
   }

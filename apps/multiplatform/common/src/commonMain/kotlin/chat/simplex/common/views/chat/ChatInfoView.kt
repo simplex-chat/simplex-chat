@@ -400,6 +400,7 @@ fun LocalAliasEditor(
   updateValue: (String) -> Unit
 ) {
   var value by rememberSaveable { mutableStateOf(initialValue) }
+  var updatedValueAtLeastOnce = remember { false }
   val modifier = if (center)
     Modifier.padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).widthIn(min = 100.dp)
   else
@@ -424,19 +425,23 @@ fun LocalAliasEditor(
       keyboardActions = KeyboardActions(onDone = { updateValue(value) })
     ) {
       value = it
+      updatedValueAtLeastOnce = true
     }
   }
   LaunchedEffect(Unit) {
+    var prevValue = value
     snapshotFlow { value }
+      .distinctUntilChanged()
       .onEach { delay(500) } // wait a little after every new character, don't emit until user stops typing
       .conflate() // get the latest value
-      .filter { it == value } // don't process old ones
+      .filter { it == value && it != prevValue } // don't process old ones
       .collect {
-        updateValue(value)
+        updateValue(it)
+        prevValue = it
       }
   }
   DisposableEffect(Unit) {
-    onDispose { updateValue(value) } // just in case snapshotFlow will be canceled when user presses Back too fast
+    onDispose { if (updatedValueAtLeastOnce) updateValue(value) } // just in case snapshotFlow will be canceled when user presses Back too fast
   }
 }
 
