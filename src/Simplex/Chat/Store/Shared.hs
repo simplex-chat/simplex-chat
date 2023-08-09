@@ -17,8 +17,8 @@ import Control.Monad.Except
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
-import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64 as B64
+import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
@@ -36,8 +36,8 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util (allFinally)
-import UnliftIO.STM
 import Simplex.Messaging.Version
+import UnliftIO.STM
 
 -- These error type constructors must be added to mobile apps
 data StoreError
@@ -132,16 +132,16 @@ toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, file
 
 type EntityIdsRow = (Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64)
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, Int)
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, Int, Version, Version)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe Int)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe Int, Maybe Version, Maybe Version)
 
--- TODO [chat version] read vrange
 toConnection :: ConnectionRow -> Connection
-toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter)) =
+toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer)) =
   let entityId = entityId_ connType
       connectionCode = SecurityCode <$> code_ <*> verifiedAt_
-   in Connection {connId, agentConnId = AgentConnId acId, connChatVRange = mkVersionRange 1 1, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias, entityId, connectionCode, authErrCounter, createdAt}
+      connChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
+   in Connection {connId, agentConnId = AgentConnId acId, connChatVRange, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias, entityId, connectionCode, authErrCounter, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId
@@ -151,8 +151,8 @@ toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroup
     entityId_ ConnUserContact = userContactLinkId
 
 toMaybeConnection :: MaybeConnectionRow -> Maybe Connection
-toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just authErrCounter)) =
-  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter))
+toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just authErrCounter, Just minVer, Just maxVer)) =
+  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer))
 toMaybeConnection _ = Nothing
 
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> IO Connection
@@ -172,10 +172,21 @@ createConnection_ db userId connType entityId acId viaContact viaUserContactLink
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
     )
   connId <- insertedRowId db
-  -- TODO [chat version] read vrange
+  -- TODO [chat version] create with vrange?
   pure Connection {connId, agentConnId = AgentConnId acId, connChatVRange = mkVersionRange 1 1, connType, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
   where
     ent ct = if connType == ct then entityId else Nothing
+
+setConnChatVRange :: DB.Connection -> Int64 -> VersionRange -> IO ()
+setConnChatVRange db connId (VersionRange minVer maxVer) =
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET chat_vrange_min_version = ?, chat_vrange_max_version = ?
+      WHERE connection_id = ?
+    |]
+    (minVer, maxVer, connId)
 
 setCommandConnId :: DB.Connection -> User -> CommandId -> Int64 -> IO ()
 setCommandConnId db User {userId} cmdId connId = do

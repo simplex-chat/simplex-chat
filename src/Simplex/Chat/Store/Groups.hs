@@ -151,7 +151,8 @@ getGroupLinkConnection db User {userId} groupInfo@GroupInfo {groupId} =
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+          c.chat_vrange_min_version, c.chat_vrange_max_version
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
         WHERE c.user_id = ? AND uc.user_id = ? AND uc.group_id = ?
@@ -232,7 +233,8 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+          c.chat_vrange_min_version, c.chat_vrange_max_version
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
         JOIN groups g ON g.group_id = m.group_id
@@ -524,7 +526,8 @@ groupMemberQuery =
       m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
       m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
+      c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+      c.chat_vrange_min_version, c.chat_vrange_max_version
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.connection_id = (
@@ -682,7 +685,8 @@ getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+          c.chat_vrange_min_version, c.chat_vrange_max_version
         FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
         JOIN connections c ON c.connection_id = (
@@ -987,7 +991,8 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+          c.chat_vrange_min_version, c.chat_vrange_max_version
         FROM group_members m
         JOIN contacts ct ON ct.contact_id = m.contact_id
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -1020,7 +1025,8 @@ getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, ct.via_group, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
           p.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+          c.chat_vrange_min_version, c.chat_vrange_max_version
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
         JOIN connections c ON c.connection_id = (

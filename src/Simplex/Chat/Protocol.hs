@@ -107,9 +107,28 @@ data AppMessage (e :: MsgEncoding) where
   AMJson :: AppMessageJson -> AppMessage 'Json
   AMBinary :: AppMessageBinary -> AppMessage 'Binary
 
+data ChatVersionRange = ChatVersionRange
+  { minVer :: Version,
+    maxVer :: Version
+  }
+  deriving (Eq, Show, Generic)
+
+instance FromJSON ChatVersionRange where
+  parseJSON = J.genericParseJSON J.defaultOptions
+
+instance ToJSON ChatVersionRange where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
+toChatVRange :: VersionRange -> ChatVersionRange
+toChatVRange (VersionRange minVer maxVer) = ChatVersionRange {minVer, maxVer}
+
+fromChatVRange :: ChatVersionRange -> VersionRange
+fromChatVRange ChatVersionRange {minVer, maxVer} = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
+
 -- chat message is sent as JSON with these properties
 data AppMessageJson = AppMessageJson
-  { chatVersionRange :: Maybe VersionRange,
+  { vRange :: Maybe ChatVersionRange,
     msgId :: Maybe SharedMsgId,
     event :: Text,
     params :: J.Object
@@ -170,7 +189,7 @@ instance ToJSON MsgRef where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data ChatMessage e = ChatMessage
-  { chatVersionRange :: Maybe VersionRange,
+  { chatVRange :: Maybe VersionRange,
     msgId :: Maybe SharedMsgId,
     chatMsgEvent :: ChatMsgEvent e
   }
@@ -736,17 +755,17 @@ appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
   eventTag <- strDecode $ B.singleton tag
   chatMsgEvent <- parseAll (msg eventTag) body
-  pure ChatMessage {chatVersionRange = Nothing, msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = Nothing, msgId, chatMsgEvent}
   where
     msg :: CMEventTag 'Binary -> A.Parser (ChatMsgEvent 'Binary)
     msg = \case
       BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
 
 appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
-appJsonToCM AppMessageJson {chatVersionRange, msgId, event, params} = do
+appJsonToCM AppMessageJson {vRange, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
-  pure ChatMessage {chatVersionRange, msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = fromChatVRange <$> vRange, msgId, chatMsgEvent}
   where
     p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
@@ -796,11 +815,11 @@ appJsonToCM AppMessageJson {chatVersionRange, msgId, event, params} = do
 key .=? value = maybe id ((:) . (key .=)) value
 
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
-chatToAppMessage ChatMessage {chatVersionRange, msgId, chatMsgEvent} = case encoding @e of
+chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
   SBinary ->
     let (binaryMsgId, body) = toBody chatMsgEvent
      in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
-  SJson -> AMJson AppMessageJson {chatVersionRange, msgId, event = textEncode tag, params = params chatMsgEvent}
+  SJson -> AMJson AppMessageJson {vRange = toChatVRange <$> chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
   where
     tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
