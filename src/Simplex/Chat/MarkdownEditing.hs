@@ -37,7 +37,6 @@ data EditedChar = EditedChar
   deriving (Show, Eq)
 
 
--- TODO unused?
 data EditedText =  EditedText 
   { format :: Maybe Format
   , text :: Text
@@ -111,51 +110,10 @@ fromEdits left right edits =
             where 
               rightChars = S.take (n - m + 1) $ S.drop m right
               adds = fmap (\c -> c {operation = Just Add}) rightChars
-
-    q = DBG.trace ("markDels: " <> show markDels) markDels
-    qq = DBG.trace ("addAdds: " <> show (addAdds q)) addAdds q 
   in
-    qq -- addAdds q 
+    addAdds markDels
 
 
 diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
 diff left right = F.toList $ fromEdits (S.fromList left) (S.fromList right) edits
   where edits = DM.diffTexts (toText left) (toText right)
-
-
--- -- todo move to util
--- takeStartingAt :: Int -> Int -> S.Seq a -> S.Seq a
-
--- diff_ :: [EditedChar] -> [EditedChar] -> [EditedChar]
--- diff_ left right = undefined
-  -- -- No Substitute for now; however a subsequent scan for adjacent Add/Delete can swap both for one sub
-  -- let
-  --   toText :: [EditedChar] -> T.Text
-  --   toText = T.pack . fmap char 
-
-  --   fromEdits :: S.Seq EditedChar -> S.Seq EditedChar -> S.Seq DM.Edit -> S.Seq EditedChar
-  --   fromEdits leftS rightS editS = x
-  --     where 
-  --       (_, _, x) = F.foldl' f (0, leftS, S.empty) editS
-
-  --       f :: (Int, S.Seq EditedChar, S.Seq EditedChar) -> DM.Edit -> (Int, S.Seq EditedChar, S.Seq EditedChar)
-  --       f (i, leftFeed, result) e = case e of
-  --         DM.EditDelete leftFrom leftTo -> (i', leftFeed', result')
-  --             where 
-  --               i' = i + leftFrom 
-  --               leftFeed' = S.drop (leftFrom - i) leftFeed
-  --               result' = result <> S.take leftFrom leftFeed <> drops
-  --               drops = (\c -> c {operation = Just Delete}) <$> S.take dropCt leftFeed'
-  --               dropCt = leftTo - leftFrom
-
-  --         DM.EditInsert leftPos rightFrom rightTo -> (i', leftFeed', result')
-  --             where 
-  --               i' = i + leftPos
-  --               leftFeed' = S.drop (leftPos - i) leftFeed
-  --               result' = result <> S.take leftFrom leftFeed <> adds
-  --               adds = (\c -> c {operation = Just Add}) <$> -- S.take addCt leftFeed'
-  --               addCt = rightTo - rightFrom
-
-  --   edits = DM.diffTexts (toText left) (toText right)
-  -- in
-  --   F.toList $ fromEdits (S.fromList left) (S.fromList right) edits

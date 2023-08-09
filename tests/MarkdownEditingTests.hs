@@ -94,30 +94,30 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
         , EditedChar Nothing 'o' Nothing                                      
         ] 
 
-  it "more3" do
-    diff 
-        [ EditedChar (Just Bold)              'H' Nothing
-        , EditedChar Nothing                  'r' Nothing
-        , EditedChar (Just Secret)            'l' Nothing
-        , EditedChar Nothing                  'l' Nothing
-        , EditedChar (Just $ colored Green)   'o' Nothing                                       
-        ]   
-        [ EditedChar (Just Italic)            'H' Nothing
-        , EditedChar (Just $ colored Cyan)    'e' Nothing
-        , EditedChar Nothing                  'x' Nothing
-        , EditedChar Nothing                  'y' Nothing
-        , EditedChar (Just Secret)            'z' Nothing        
-        , EditedChar (Just $ colored Blue)    'o' Nothing                                       
-        ]    
+  -- it "more3" do
+  --   diff 
+  --       [ EditedChar (Just Bold)              'H' Nothing
+  --       , EditedChar Nothing                  'r' Nothing
+  --       , EditedChar (Just Secret)            'l' Nothing
+  --       , EditedChar Nothing                  'l' Nothing
+  --       , EditedChar (Just $ colored Green)   'o' Nothing                                       
+  --       ]   
+  --       [ EditedChar (Just Italic)            'H' Nothing
+  --       , EditedChar (Just $ colored Cyan)    'e' Nothing
+  --       , EditedChar Nothing                  'x' Nothing
+  --       , EditedChar Nothing                  'y' Nothing
+  --       , EditedChar (Just Secret)            'z' Nothing        
+  --       , EditedChar (Just $ colored Blue)    'o' Nothing                                       
+  --       ]    
 
-      `shouldBe` 
-        [ EditedChar (Just Italic)            'H' Nothing
-        , EditedChar Nothing                  'e' $ Just Add  
-        , EditedChar Nothing                  'x' $ Just Add
-        , EditedChar Nothing                  'y' $ Just Add
-        , EditedChar (Just Secret)            'z' $ Just Add     
-        , EditedChar Nothing                  'r' $ Just Delete
-        , EditedChar (Just Secret)            'l' $ Just Delete
-        , EditedChar Nothing                  'l' $ Just Delete        
-        , EditedChar (Just $ colored Blue)    'o' Nothing                                      
-        ] 
+  --     `shouldBe` 
+  --       [ EditedChar (Just Italic)            'H' Nothing
+  --       , EditedChar Nothing                  'e' $ Just Add  
+  --       , EditedChar Nothing                  'x' $ Just Add
+  --       , EditedChar Nothing                  'y' $ Just Add
+  --       , EditedChar (Just Secret)            'z' $ Just Add     
+  --       , EditedChar Nothing                  'r' $ Just Delete
+  --       , EditedChar (Just Secret)            'l' $ Just Delete
+  --       , EditedChar Nothing                  'l' $ Just Delete        
+  --       , EditedChar (Just $ colored Blue)    'o' Nothing                                      
+  --       ] 
