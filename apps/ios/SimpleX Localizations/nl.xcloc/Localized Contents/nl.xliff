@@ -1652,14 +1652,14 @@
         <target>Verdwijnende berichten zijn verboden in deze groep.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at" xml:space="preserve">
+      <trans-unit id="Disappears at" xml:space="preserve" approved="no">
         <source>Disappears at</source>
-        <target>Verdwijnt om</target>
+        <target state="translated">Verdwijnt op</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at: %@" xml:space="preserve">
+      <trans-unit id="Disappears at: %@" xml:space="preserve" approved="no">
         <source>Disappears at: %@</source>
-        <target>Verdwijnt om: %@</target>
+        <target state="translated">Verdwijnt op: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
@@ -1972,9 +1972,9 @@
         <target>Fout bij het verwijderen van gebruikers profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
+      <trans-unit id="Error enabling delivery receipts!" xml:space="preserve" approved="no">
         <source>Error enabling delivery receipts!</source>
-        <target>Fout bij het inschakelen van ontvangstbevestiging!</target>
+        <target state="translated">Fout bij het inschakelen van ontvangst bevestiging!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
@@ -2057,9 +2057,9 @@
         <target>Fout bij verzenden van bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
+      <trans-unit id="Error setting delivery receipts!" xml:space="preserve" approved="no">
         <source>Error setting delivery receipts!</source>
-        <target>Fout bij het instellen van ontvangstbevestiging!</target>
+        <target state="translated">Fout bij het instellen van ontvangst bevestiging!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -2172,9 +2172,9 @@
         <target>Het bestand wordt van de servers verwijderd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>File will be received when your contact completes uploading it.</source>
-        <target>Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target state="translated">Het bestand wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -2512,9 +2512,9 @@
         <target>Negeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>Image will be received when your contact completes uploading it.</source>
-        <target>De afbeelding wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target state="translated">De afbeelding wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -2913,9 +2913,9 @@
         <target>Fout bij bezorging van bericht</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message delivery receipts!" xml:space="preserve">
+      <trans-unit id="Message delivery receipts!" xml:space="preserve" approved="no">
         <source>Message delivery receipts!</source>
-        <target>Ontvangstbevestiging voor berichten!</target>
+        <target state="translated">Ontvangst bevestiging voor berichten!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
@@ -4059,14 +4059,14 @@
         <target>De afzender heeft mogelijk het verbindingsverzoek verwijderd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve" approved="no">
         <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
-        <target>Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</target>
+        <target state="translated">Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve" approved="no">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
-        <target>Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contactpersonen.</target>
+        <target state="translated">Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contactpersonen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
@@ -4074,9 +4074,9 @@
         <target>Het verzenden van het bestand wordt gestopt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve">
+      <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve" approved="no">
         <source>Sending receipts is disabled for %lld contacts</source>
-        <target>Het verzenden van ontvangstbevestiging is uitgeschakeld voor %lld-contactpersonen</target>
+        <target state="translated">Het verzenden van ontvangst bevestiging is uitgeschakeld voor %lld-contactpersonen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is disabled for %lld groups" xml:space="preserve">
@@ -4085,7 +4085,7 @@
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve">
         <source>Sending receipts is enabled for %lld contacts</source>
-        <target>Het verzenden van ontvangstbevestiging is ingeschakeld voor %lld-contactpersonen</target>
+        <target state="translated">Het verzenden van ontvangst bevestiging is ingeschakeld voor %lld-contactpersonen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld groups" xml:space="preserve">
@@ -4929,9 +4929,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>video oproep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>Video will be received when your contact completes uploading it.</source>
-        <target>De video wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target state="translated">De video wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
