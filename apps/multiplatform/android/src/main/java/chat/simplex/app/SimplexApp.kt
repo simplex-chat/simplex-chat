@@ -172,7 +172,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         if (mode != NotificationsMode.PERIODIC) {
           MessagesFetcherWorker.cancelAll()
         }
-        SimplexService.showBackgroundServiceNoticeIfNeeded()
+        SimplexService.showBackgroundServiceNoticeIfNeeded(showOffAlert = false)
       }
 
       override fun androidChatStartedAfterBeingOff() {

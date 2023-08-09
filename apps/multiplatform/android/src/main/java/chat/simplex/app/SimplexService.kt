@@ -354,7 +354,7 @@ class SimplexService: Service() {
 
     private fun getPreferences(context: Context): SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
-    fun showBackgroundServiceNoticeIfNeeded() {
+    fun showBackgroundServiceNoticeIfNeeded(showOffAlert: Boolean = true) {
       val appPrefs = ChatController.appPrefs
       val mode = appPrefs.notificationsMode.get()
       Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
@@ -366,9 +366,9 @@ class SimplexService: Service() {
         if (!mode.requiresIgnoringBattery || isBackgroundAllowed()) {
           showBGServiceNotice(mode)
         } else if (isBackgroundRestricted()) {
-          showBGServiceNoticeSystemRestricted(mode)
+          showBGServiceNoticeSystemRestricted(mode, showOffAlert)
         } else if (!isIgnoringBatteryOptimizations()) {
-          showBGServiceNoticeIgnoreOptimization(mode)
+          showBGServiceNoticeIgnoreOptimization(mode, showOffAlert)
         }
         // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
         appPrefs.backgroundServiceNoticeShown.set(true)
@@ -376,14 +376,14 @@ class SimplexService: Service() {
       } else if (mode.requiresIgnoringBattery && isBackgroundRestricted()) {
         // the branch for users who have app installed, and have seen the service notice,
         // but the service is running AND system background restriction is on OR the battery optimization for the app is in RESTRICTED state
-        showBGServiceNoticeSystemRestricted(mode)
+        showBGServiceNoticeSystemRestricted(mode, showOffAlert)
         if (!appPrefs.backgroundServiceBatteryNoticeShown.get()) {
           appPrefs.backgroundServiceBatteryNoticeShown.set(true)
         }
       } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations()) {
         // the branch for users who have app installed, and have seen the service notice,
         // but the battery optimization for the app is in OPTIMIZED state (Android 12+) AND the service is running
-        showBGServiceNoticeIgnoreOptimization(mode)
+        showBGServiceNoticeIgnoreOptimization(mode, showOffAlert)
         if (!appPrefs.backgroundServiceBatteryNoticeShown.get()) {
           appPrefs.backgroundServiceBatteryNoticeShown.set(true)
         }
@@ -427,14 +427,14 @@ class SimplexService: Service() {
       )
     }
 
-    private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode) = AlertManager.shared.showAlert {
+    private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode, showOffAlert: Boolean) = AlertManager.shared.showAlert {
       val ignoreOptimization = {
         AlertManager.shared.hideAlert()
         askAboutIgnoringBatteryOptimization()
       }
       val disableNotifications = {
         AlertManager.shared.hideAlert()
-        disableNotifications(mode)
+        disableNotifications(mode, showOffAlert)
       }
       AlertDialog(
         onDismissRequest = disableNotifications,
@@ -469,14 +469,14 @@ class SimplexService: Service() {
       )
     }
 
-    private fun showBGServiceNoticeSystemRestricted(mode: NotificationsMode) = AlertManager.shared.showAlert {
+    private fun showBGServiceNoticeSystemRestricted(mode: NotificationsMode, showOffAlert: Boolean) = AlertManager.shared.showAlert {
       val unrestrict = {
         AlertManager.shared.hideAlert()
         askToUnrestrictBackground()
       }
       val disableNotifications = {
         AlertManager.shared.hideAlert()
-        disableNotifications(mode)
+        disableNotifications(mode, showOffAlert)
       }
       AlertDialog(
         onDismissRequest = disableNotifications,
@@ -623,8 +623,10 @@ class SimplexService: Service() {
       }
     }
 
-    private fun disableNotifications(mode: NotificationsMode) {
-      showDisablingServiceNotice(mode)
+    private fun disableNotifications(mode: NotificationsMode, showOffAlert: Boolean) {
+      if (showOffAlert) {
+        showDisablingServiceNotice(mode)
+      }
       ChatController.appPrefs.notificationsMode.set(NotificationsMode.OFF)
       StartReceiver.toggleReceiver(false)
       MessagesFetcherWorker.cancelAll()
