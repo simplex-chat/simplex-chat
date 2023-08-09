@@ -83,34 +83,9 @@ toText :: [EditedChar] -> T.Text
 toText = T.pack . fmap char  
 
 
--- isDel :: DM.Edit -> Bool
--- isDel DM.EditDelete {} = True
--- isDel _ = False
-
-
--- isInsert :: DM.Edit -> Bool
--- isInsert DM.EditInsert {} = True
--- isInsert _ = False
-
-
 fromEdits :: S.Seq EditedChar -> S.Seq EditedChar -> S.Seq DM.Edit -> S.Seq EditedChar
 fromEdits left right edits =   
   let
-    -- dels = S.filter isDel edits
-    -- adds = S.filter isInsert edits
-    -- withDels = markDels left edits -- dels
-
-    -- markDels :: S.Seq EditedChar -> S.Seq DM.Edit -> S.Seq EditedChar
-    -- markDels cs es = F.foldl' f cs es
-    --   where
-    --     f :: S.Seq EditedChar -> DM.Edit -> S.Seq EditedChar
-    --     f acc e = case e of
-    --       DM.EditInsert _ _ _ -> acc
-    --       DM.EditDelete leftFrom leftTo -> fmap g acc
-    --         where
-    --           g :: DM.Edit -> DM.Edit
-    --           g e = 
-
     delIndices :: S.Seq Int
     delIndices = F.foldl' f S.Empty edits
       where
@@ -125,11 +100,19 @@ fromEdits left right edits =
         f :: Int -> EditedChar -> EditedChar
         f i c = if i `elem` delIndices then c {operation = Just Delete} else c
 
-    addAdds :: S.Seq EditedChar -> S.Seq DM.Edit -> S.Seq EditedChar -> S.Seq EditedChar
-    addAdds right withDels = undefined -- start from end and work backwards
-
+    -- start from end and work backwards, hence foldr
+    addAdds :: S.Seq EditedChar -> S.Seq EditedChar
+    addAdds base = F.foldr f base edits
+      where
+        f :: DM.Edit -> S.Seq EditedChar -> S.Seq EditedChar
+        f e acc = case e of
+          DM.EditDelete {} -> acc
+          DM.EditInsert i m n -> S.take i acc S.>< adds S.>< S.drop i acc
+            where 
+              rightChars = S.take (n - m) $ S.drop m right
+              adds = fmap (\c -> c {operation = Just Add}) rightChars
   in
-    addAdds right adds markDels 
+    addAdds markDels 
 
 
 diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
