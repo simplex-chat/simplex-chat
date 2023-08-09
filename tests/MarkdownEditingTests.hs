@@ -66,3 +66,30 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
         -- , EditedChar Nothing 'o' Nothing                
         -- ]        
 
+  it "more..." do
+    formattedEditedText [plainText "Hrllo"] [plainText "Helloxyz"]
+      `shouldBe` 
+        [ EditedChar Nothing 'H' Nothing
+        , EditedChar Nothing 'r' $ Just Delete
+        , EditedChar Nothing 'e' $ Just Add
+        , EditedChar Nothing 'l' Nothing
+        , EditedChar Nothing 'l' Nothing
+        , EditedChar Nothing 'o' Nothing       
+        , EditedChar Nothing 'x' $ Just Add
+        , EditedChar Nothing 'y' $ Just Add
+        , EditedChar Nothing 'z' $ Just Add                                 
+        ]        
+
+  it "more... ..." do
+    formattedEditedText [plainText "Hrllo"] [plainText "Hexyzo"]
+      `shouldBe` 
+        [ EditedChar Nothing 'H' Nothing
+        , EditedChar Nothing 'r' $ Just Delete
+        , EditedChar Nothing 'l' $ Just Delete
+        , EditedChar Nothing 'l' $ Just Delete
+        , EditedChar Nothing 'e' $ Just Add     
+        , EditedChar Nothing 'x' $ Just Add
+        , EditedChar Nothing 'y' $ Just Add
+        , EditedChar Nothing 'z' $ Just Add     
+        , EditedChar Nothing 'o' Nothing                                      
+        ] 
