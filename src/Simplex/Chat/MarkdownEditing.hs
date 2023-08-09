@@ -100,9 +100,8 @@ fromEdits left right edits =
         f :: Int -> EditedChar -> EditedChar
         f i c = if i `elem` delIndices then c {operation = Just Delete} else c
 
-    -- start from end and work backwards, hence foldr
     addAdds :: S.Seq EditedChar -> S.Seq EditedChar
-    addAdds base = F.foldr f base edits
+    addAdds base = F.foldr f base edits -- start from end and work backwards, hence foldr
       where
         f :: DM.Edit -> S.Seq EditedChar -> S.Seq EditedChar
         f e acc = case e of
