@@ -47,21 +47,21 @@ import qualified Debug.Trace as DBG
 --   }
 --     deriving (Show, Eq)
 
-data DiffStatus = DiffStatus
-  = Unchanged
-  | Inserted 
-  | Deleted 
-  | ChangedFormatOnly {newFormat :: Maybe Format}
-  -- | Replaced {original :: FormattedChar} -- same as Delete+Insert
-    deriving (Show, Eq)
+data DiffStatus 
+    = Unchanged
+    | Inserted 
+    | Deleted 
+    | ChangedFormatOnly {newFormat :: Maybe Format}
+    -- | Replaced {original :: FormattedChar} -- same as Delete+Insert
+      deriving (Show, Eq)
 
 data DiffedChar = DiffedChar FormattedChar DiffStatus
     deriving (Show, Eq)
 
 data FormattedChar = FormattedChar 
-  { format :: Maybe Format
-  , char :: Char
-  }
+    { format :: Maybe Format
+    , char :: Char
+    }
     deriving (Show, Eq)
 
 
@@ -70,23 +70,26 @@ data FormattedChar = FormattedChar
 
 
 data EditedText =  EditedText 
-  { format :: Maybe Format
-  , text :: Text
-  , added :: Maybe Bool
-  }
-  deriving (Eq, Show, Generic)
+    { format :: Maybe Format
+    , text :: Text
+    , added :: Maybe Bool
+    }
+    deriving (Eq, Show, Generic)
 
 instance ToJSON EditedText where
-  toEncoding :: EditedText -> J.Encoding
-  toEncoding = J.genericToEncoding $ sumTypeJSON id
+    toEncoding :: EditedText -> J.Encoding
+    toEncoding = J.genericToEncoding $ sumTypeJSON id
 
+
+newtype DeleteIndicies = DeleteIndicies {deleteIndicies :: Seq Int} deriving (Show, Eq)
+newtype InsertIndicies = InsertIndicies {insertIndicies :: Seq Int} deriving (Show, Eq)
 
 -- formatRep :: Format -> Word64
 -- formatRep = word64 . BS.pack . show --todo do not depend on show, in case it changes
 
 
-formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
-formattedEditedText s s' = diff (toEditedChars s) (toEditedChars s')
+-- formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
+-- formattedEditedText s s' = diff (toEditedChars s) (toEditedChars s')
 
 
 -- toEditedChars :: [FormattedText] -> [EditedChar]
@@ -98,9 +101,9 @@ formattedEditedText s s' = diff (toEditedChars s) (toEditedChars s')
 
 toFormattedChars :: [FormattedText] -> [FormattedChar]
 toFormattedChars = concatMap toChars
-  where
+    where
     toChars FormattedText {format, text} =
-      map (\char -> FormattedChar {format, char}) $ T.unpack text
+        map (\char -> FormattedChar {format, char}) $ T.unpack text
 
 
 -- fromEditedChars :: [EditedChar] -> [EditedText]
@@ -122,35 +125,35 @@ toFormattedChars = concatMap toChars
 --     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
 
 
-fromEdits :: Seq EditedChar -> Seq EditedChar -> Seq D.Edit -> Seq EditedChar
-fromEdits left right edits =   
-  let
-    delIndices :: Seq Int
-    delIndices = F.foldl' f S.Empty edits
-      where
-        f :: Seq Int -> D.Edit -> Seq Int
-        f acc e = case e of
-          D.EditInsert {} -> acc
-          D.EditDelete m n -> acc >< S.fromList [m .. n]
+-- fromEdits :: Seq EditedChar -> Seq EditedChar -> Seq D.Edit -> Seq EditedChar
+-- fromEdits left right edits =   
+--   let
+--     delIndices :: Seq Int
+--     delIndices = F.foldl' f S.Empty edits
+--       where
+--         f :: Seq Int -> D.Edit -> Seq Int
+--         f acc e = case e of
+--           D.EditInsert {} -> acc
+--           D.EditDelete m n -> acc >< S.fromList [m .. n]
 
-    markDeletes :: Seq EditedChar
-    markDeletes = S.mapWithIndex f left
-      where
-        f :: Int -> EditedChar -> EditedChar
-        f i c = if i `elem` delIndices then c {operation = Just DeleteChar} else c
+--     markDeletes :: Seq EditedChar
+--     markDeletes = S.mapWithIndex f left
+--       where
+--         f :: Int -> EditedChar -> EditedChar
+--         f i c = if i `elem` delIndices then c {operation = Just DeleteChar} else c
 
-    addInserts :: Seq EditedChar -> Seq EditedChar
-    addInserts base = F.foldr f base edits -- start from end and work backwards, hence foldr
-      where
-        f :: D.Edit -> Seq EditedChar -> Seq EditedChar
-        f e acc = case e of
-          D.EditDelete {} -> acc
-          D.EditInsert i m n -> DBG.trace ("D.EditInsert i m n: " <> show (i, m, n, rightChars, adds)) $ S.take i acc >< adds >< S.drop i acc
-            where 
-              rightChars = S.take (n - m + 1) $ S.drop m right
-              adds = fmap (\c -> c {operation = Just AddChar}) rightChars
-  in
-    addInserts markDeletes
+--     addInserts :: Seq EditedChar -> Seq EditedChar
+--     addInserts base = F.foldr f base edits -- start from end and work backwards, hence foldr
+--       where
+--         f :: D.Edit -> Seq EditedChar -> Seq EditedChar
+--         f e acc = case e of
+--           D.EditDelete {} -> acc
+--           D.EditInsert i m n -> DBG.trace ("D.EditInsert i m n: " <> show (i, m, n, rightChars, adds)) $ S.take i acc >< adds >< S.drop i acc
+--             where 
+--               rightChars = S.take (n - m + 1) $ S.drop m right
+--               adds = fmap (\c -> c {operation = Just AddChar}) rightChars
+--   in
+--     addInserts markDeletes
 
 
 -- todo unused
@@ -166,14 +169,13 @@ fromEdits left right edits =
 findDiffs :: Seq FormattedChar -> Seq FormattedChar -> Seq DiffedChar
 findDiffs left right = 
     let
-        newtype DeleteIndicies = DeleteIndicies (Seq Int) deriving (Show, Eq)
-        newtype InsertIndicies = InsertIndicies (Seq Int) deriving (Show, Eq)
+        toText :: Seq FormattedChar -> T.Text
+        toText = T.pack . F.toList . fmap char  
 
-        toText :: [FormattedChar] -> T.Text
-        toText = T.pack . fmap char  
 
         edits :: Seq D.Edit
         edits = D.diffTexts (toText left) (toText right)  
+
 
         indices :: (DeleteIndicies, InsertIndicies)
         indices = F.foldl' f (S.Empty, S.Empty) edits
@@ -183,21 +185,28 @@ findDiffs left right =
               D.EditDelete   m n -> (x', y) where x' = DeleteIndicies ds >< S.fromList [m .. n]  
               D.EditInsert _ m n -> (x, y') where y' = InsertIndicies is >< S.fromList [m .. n] 
 
+
         withDeletes :: Seq DiffedChar
         withDeletes = S.mapWithIndex f pristine
             where
             pristine :: Seq DiffedChar
-            pristine = S.fmap (\x ->  DiffedChar x Unchanged) left
+            pristine = fmap (\x ->  DiffedChar x Unchanged) left
 
-        f :: Int -> DiffedChar -> DiffedChar
-        f i x@(DiffedChar c _) = if i `elem` deleteIndices then DiffedChar c Deleted else x
-    
-        rightWithoutInserts :: Seq FormattedChar
-        rightWithoutInserts = 
+            ns = deleteIndicies $ fst indices
 
-        unchangedTextually :: Seq FormattedChar
-        unchangedTextually = S.filter f right
-          where
-            f :: 
+            f :: Int -> DiffedChar -> DiffedChar
+            f i x@(DiffedChar c _) = if i `elem` ns then DiffedChar c Deleted else x
+        
+
+        -- rightWithoutInserts :: Seq FormattedChar
+        -- rightWithoutInserts = S.foldrWithIndex f Seq.Empty right
+        --     where
+        --     f ::
+
+
+        -- unchangedTextually :: Seq FormattedChar
+        -- unchangedTextually = S.filter f right
+        --   where
+        --     f :: 
     in
         undefined
