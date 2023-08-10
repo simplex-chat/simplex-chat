@@ -53,7 +53,7 @@ struct PasteToConnectView: View {
                 IncognitoToggle(incognitoEnabled: $incognitoDefault)
             } footer: {
                 sharedProfileInfo(incognitoDefault)
-                + Text("\n\n")
+                + Text(String("\n\n"))
                 + Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
             }
         }
@@ -63,7 +63,7 @@ struct PasteToConnectView: View {
         ZStack {
             Group {
                 if connectionLink.isEmpty {
-                    TextEditor(text: Binding.constant(NSLocalizedString("Paste the link you received to connect with your contact…", comment: "placeholder")))
+                    TextEditor(text: Binding.constant(NSLocalizedString("Paste the link you received to connect with your contact.", comment: "placeholder")))
                         .foregroundColor(.secondary)
                         .disabled(true)
                 }
