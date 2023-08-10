@@ -208,7 +208,7 @@ struct PrivacySettings: View {
                     }
                 }
             } catch let error {
-                alert = .error(title: "Error setting contact delivery receipts!", error: "Error: \(responseError(error))")
+                alert = .error(title: "Error setting delivery receipts!", error: "Error: \(responseError(error))")
             }
         }
     }
@@ -256,7 +256,7 @@ struct PrivacySettings: View {
                     }
                 }
             } catch let error {
-                alert = .error(title: "Error setting group delivery receipts!", error: "Error: \(responseError(error))")
+                alert = .error(title: "Error setting delivery receipts!", error: "Error: \(responseError(error))")
             }
         }
     }

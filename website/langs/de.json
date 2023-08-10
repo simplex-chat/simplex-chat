@@ -1,6 +1,6 @@
 {
-    "simplex-privacy": "SimpleX Privatsphäre",
-    "simplex-network": "SimpleX Netzwerk",
+    "simplex-privacy": "Privatsphäre mit SimpleX",
+    "simplex-network": "SimpleX-Netzwerk",
     "home": "Startseite",
     "developers": "Entwickler",
     "reference": "Referenz",
@@ -9,7 +9,7 @@
     "features": "Funktionen",
     "simplex-private-card-6-point-2": "Um das zu verhindern, werden von SimpleX Einmal-Schlüssel Out-of-Band weitergeleitet, wenn Sie eine Adresse als Link oder QR-Code teilen.",
     "simplex-explained": "SimpleX erklärt",
-    "simplex-explained-tab-2-text": "2. Wie funktioniert es",
+    "simplex-explained-tab-2-text": "2. Wie es funktioniert",
     "simplex-explained-tab-3-text": "3. Was die Server sehen",
     "simplex-explained-tab-1-text": "1. Wie es die Nutzer erleben",
     "simplex-explained-tab-1-p-1": "Sie können Kontakte und Gruppen erstellen und haben Zwei-Wege-Kommunikation wie in jedem anderen Messenger.",

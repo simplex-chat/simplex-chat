@@ -245,12 +245,6 @@
 "A new contact" = "Nowy kontakt";
 
 /* No comment provided by engineer. */
-"A random profile will be sent to the contact that you received this link from" = "Losowy profil zostanie wysłany do kontaktu, od którego otrzymałeś ten link";
-
-/* No comment provided by engineer. */
-"A random profile will be sent to your contact" = "Losowy profil zostanie wysłany do Twojego kontaktu";
-
-/* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "Oddzielne połączenie TCP będzie używane **dla każdego profilu czatu, który masz w aplikacji**.";
 
 /* No comment provided by engineer. */
@@ -285,12 +279,12 @@
 "Accept" = "Akceptuj";
 
 /* No comment provided by engineer. */
-"Accept contact" = "Akceptuj kontakt";
+"Accept connection request?" = "Akceptuj kontakt";
 
 /* notification body */
 "Accept contact request from %@?" = "Zaakceptuj prośbę o kontakt od %@?";
 
-/* No comment provided by engineer. */
+/* accept contact request via notification */
 "Accept incognito" = "Akceptuj incognito";
 
 /* call status */
@@ -700,7 +694,7 @@
 "connect to SimpleX Chat developers." = "połącz się z deweloperami SimpleX Chat.";
 
 /* No comment provided by engineer. */
-"Connect via contact link?" = "Połączyć się przez link kontaktowy?";
+"Connect via contact link" = "Połączyć się przez link kontaktowy?";
 
 /* No comment provided by engineer. */
 "Connect via group link?" = "Połącz się przez link grupowy?";
@@ -712,7 +706,7 @@
 "Connect via link / QR code" = "Połącz się przez link / kod QR";
 
 /* No comment provided by engineer. */
-"Connect via one-time link?" = "Połączyć się przez jednorazowy link?";
+"Connect via one-time link" = "Połączyć się przez jednorazowy link?";
 
 /* No comment provided by engineer. */
 "connected" = "połączony";
@@ -755,9 +749,6 @@
 
 /* chat list item title (it should not be shown */
 "connection established" = "połączenie ustanowione";
-
-/* No comment provided by engineer. */
-"Connection request" = "Prośba o połączenie";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "Prośba o połączenie wysłana!";
@@ -1650,7 +1641,7 @@
 /* No comment provided by engineer. */
 "Hide:" = "Ukryj:";
 
-/* copied message info */
+/* No comment provided by engineer. */
 "History" = "Historia";
 
 /* time unit */
@@ -1719,7 +1710,7 @@
 /* No comment provided by engineer. */
 "Improved server configuration" = "Ulepszona konfiguracja serwera";
 
-/* copied message info */
+/* No comment provided by engineer. */
 "In reply to" = "W odpowiedzi na";
 
 /* No comment provided by engineer. */
@@ -1727,12 +1718,6 @@
 
 /* No comment provided by engineer. */
 "Incognito mode" = "Tryb incognito";
-
-/* No comment provided by engineer. */
-"Incognito mode is not supported here - your main profile will be sent to group members" = "Tryb Incognito nie jest tutaj obsługiwany - główny profil zostanie wysłany do członków grupy";
-
-/* No comment provided by engineer. */
-"Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." = "Tryb incognito chroni prywatność nazwy i obrazu głównego profilu — dla każdego nowego kontaktu tworzony jest nowy losowy profil.";
 
 /* chat list item description */
 "incognito via contact address link" = "incognito poprzez link adresu kontaktowego";
@@ -1986,7 +1971,7 @@
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Członek zostanie usunięty z grupy - nie można tego cofnąć!";
 
-/* No comment provided by engineer. */
+/* item status text */
 "Message delivery error" = "Błąd dostarczenia wiadomości";
 
 /* No comment provided by engineer. */
@@ -2302,8 +2287,8 @@
 /* No comment provided by engineer. */
 "Paste received link" = "Wklej otrzymany link";
 
-/* No comment provided by engineer. */
-"Paste the link you received into the box below to connect with your contact." = "Wklej otrzymany link w pole poniżej, aby połączyć się z kontaktem.";
+/* placeholder */
+"Paste the link you received to connect with your contact." = "Wklej otrzymany link w pole poniżej, aby połączyć się z kontaktem.";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "peer-to-peer";
@@ -2510,7 +2495,7 @@
 "Reject" = "Odrzuć";
 
 /* No comment provided by engineer. */
-"Reject contact (sender NOT notified)" = "Odrzuć kontakt (nadawca NIE został powiadomiony)";
+"Reject (sender NOT notified)" = "Odrzuć kontakt (nadawca NIE został powiadomiony)";
 
 /* No comment provided by engineer. */
 "Reject contact request" = "Odrzuć prośbę kontaktu";
@@ -3083,7 +3068,7 @@
 "These settings are for your current profile **%@**." = "Te ustawienia dotyczą Twojego bieżącego profilu **%@**.";
 
 /* No comment provided by engineer. */
-"They can be overridden in contact settings" = "Można je nadpisać w ustawieniach kontaktu";
+"They can be overridden in contact and group settings." = "Można je nadpisać w ustawieniach kontaktu";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Tego działania nie można cofnąć - wszystkie odebrane i wysłane pliki oraz media zostaną usunięte. Obrazy o niskiej rozdzielczości pozostaną.";
@@ -3108,9 +3093,6 @@
 
 /* No comment provided by engineer. */
 "To connect, your contact can scan QR code or use the link in the app." = "Aby się połączyć, Twój kontakt może zeskanować kod QR lub skorzystać z linku w aplikacji.";
-
-/* No comment provided by engineer. */
-"To find the profile used for an incognito connection, tap the contact or group name on top of the chat." = "Aby znaleźć profil używany do połączenia incognito, dotknij nazwę kontaktu lub grupy w górnej części czatu.";
 
 /* No comment provided by engineer. */
 "To make a new connection" = "Aby nawiązać nowe połączenie";
@@ -3157,7 +3139,7 @@
 /* No comment provided by engineer. */
 "Unable to record voice message" = "Nie można nagrać wiadomości głosowej";
 
-/* No comment provided by engineer. */
+/* item status description */
 "Unexpected error: %@" = "Nieoczekiwany błąd: %@";
 
 /* No comment provided by engineer. */
@@ -3479,7 +3461,7 @@
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Musisz wprowadzić hasło przy każdym uruchomieniu aplikacji - nie jest one przechowywane na urządzeniu.";
 
 /* No comment provided by engineer. */
-"You invited your contact" = "Zaprosiłeś swój kontakt";
+"You invited a contact" = "Zaprosiłeś swój kontakt";
 
 /* No comment provided by engineer. */
 "You joined this group" = "Dołączyłeś do tej grupy";
@@ -3560,9 +3542,6 @@
 "Your chat profile will be sent to group members" = "Twój profil czatu zostanie wysłany do członków grupy";
 
 /* No comment provided by engineer. */
-"Your chat profile will be sent to your contact" = "Twój profil czatu zostanie wysłany do Twojego kontaktu";
-
-/* No comment provided by engineer. */
 "Your chat profiles" = "Twoje profile czatu";
 
 /* No comment provided by engineer. */
@@ -3597,9 +3576,6 @@
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Twój profil jest przechowywany na urządzeniu i udostępniany tylko Twoim kontaktom.\nSerwery SimpleX nie mogą zobaczyć Twojego profilu.";
-
-/* No comment provided by engineer. */
-"Your profile will be sent to the contact that you received this link from" = "Twój profil zostanie wysłany do kontaktu, od którego otrzymałeś ten link";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Twój profil, kontakty i dostarczone wiadomości są przechowywane na Twoim urządzeniu.";
