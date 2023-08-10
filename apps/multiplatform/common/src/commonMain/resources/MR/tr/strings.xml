@@ -73,7 +73,7 @@
     <string name="all_group_members_will_remain_connected">Konuşma üyelerinin tümü bağlı kalacaktır.</string>
     <string name="allow_verb">İzin ver</string>
     <string name="v5_0_app_passcode">Uygulama erişim kodu</string>
-    <string name="network_session_mode_user_description"><b>Uygulamadaki her konuşma profliniz için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır.</string>
+    <string name="network_session_mode_user_description"><![CDATA[<b>Uygulamadaki her konuşma profliniz için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır.]]></string>
     <string name="network_session_mode_entity_description"><b>Konuştuğun kişilerin ve grup üyelerinin tamamı için</b> ayrı bir TCP bağlantısı (ve SOCKS kimliği) kullanılacaktır.
 \n<b>Bilgin olsun</b>: Çok sayıda bağlantın varsa pilin ve veri kullanımın önemli ölçüde artabilir ve bazı bağlantılar başarısız olabilir.</string>
     <string name="save_and_notify_group_members">Kaydet ve grup üyelerini bilgilendir</string>
@@ -391,7 +391,7 @@
     <string name="send_disappearing_message_custom_time">Kişiselleştirilmiş süre</string>
     <string name="copied">Panoya kopyalandı</string>
     <string name="share_one_time_link">Tek seferlik davet bağlantısı oluştur</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 masaüstü: uygulamadaki <b>Karekodu okut</b> ile karekodu okut</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 masaüstü: uygulamadaki <b>Karekodu okut</b> ile karekodu okut]]></string>
     <string name="delete_pending_connection__question">Bekleyen bağlantıları sil\?</string>
     <string name="delete_contact_menu_action">Sil</string>
     <string name="delete_group_menu_action">Sil</string>
@@ -625,8 +625,8 @@
     <string name="notification_display_mode_hidden_desc">Konuşulan kişileri ve mesajları gizle</string>
     <string name="v4_3_improved_privacy_and_security_desc">Uygulamayı, son kullanılanlar kısmından gizle.</string>
     <string name="how_simplex_works">SimpleX nasıl çalışıyor</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Eğer yüz yüze görüşemiyorsanız <b>bir görüntülü aramada karşıdakine karekodunu gösterebilir</b> ya da konuştuğun kişiye bir katılım bağlantısı paylaşabilirsin.</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Eğer yüz yüze görüşemiyorsanız <b>bir görüntülü aramada karşıdakinin karekodunu okutabilirsin</b> ya da konuştuğun kişi seninle bir katılım bağlantısı paylaşabilir.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Eğer yüz yüze görüşemiyorsanız <b>bir görüntülü aramada karşıdakine karekodunu gösterebilir</b> ya da konuştuğun kişiye bir katılım bağlantısı paylaşabilirsin.]]></string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Eğer yüz yüze görüşemiyorsanız <b>bir görüntülü aramada karşıdakinin karekodunu okutabilirsin</b> ya da konuştuğun kişi seninle bir katılım bağlantısı paylaşabilir.]]></string>
     <string name="if_you_cant_meet_in_person">Eğer yüz yüze görüşemiyorsanız bir görüntülü aramada karşıdakine karekodunu gösterebilir ya da konuştuğun kişiye bir katılım bağlantısı paylaşabilirsin.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Eğer geri çevirmeyi seçersen göndericiye bildirilmeyecek.</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Eğer SimplexX Chat katılım bağlantısı alırsan bu bağlantıyı tarayıcında açabilirsin:</string>
@@ -717,7 +717,7 @@
     <string name="icon_descr_instant_notifications">Anlık bildirimler</string>
     <string name="service_notifications">Anlık bildirimler</string>
     <string name="service_notifications_disabled">Anlık bildirimler devre dışı!</string>
-    <string name="turn_off_battery_optimization">Bunu kullanmak için lütfen bir sonraki iletişim kutusunda SimpleX için <b>pil optimizasyonunu devre dışı bırakın</b>. Aksi takdirde, bildirimler devre dışı bırakılacaktır.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Bunu kullanmak için lütfen bir sonraki iletişim kutusunda SimpleX için <b>pil optimizasyonunu devre dışı bırakın</b>. Aksi takdirde, bildirimler devre dışı bırakılacaktır.]]></string>
     <string name="notification_preview_mode_contact">Kişi ismi</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Cihaz doğrulaması devre dışı. SimpleX Kilidi Kapatılıyor.</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Cihaz doğrulaması etkin değil. Cihaz doğrulamasını etkinleştirdikten sonra SimpleX Kilidini Ayarlar üzerinden açabilirsiniz.</string>
@@ -740,7 +740,7 @@
     <string name="v4_3_irreversible_message_deletion">Geri alınamaz mesaj silme</string>
     <string name="v4_5_italian_interface">İtalyanca arayüz</string>
     <string name="choose_file_title">Dosya seç</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>QR kodunu tara</b>: size QR kodunu gösteren kişiyle bağlantı kurmak için.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR kodunu tara</b>: size QR kodunu gösteren kişiyle bağlantı kurmak için.]]></string>
     <string name="invite_friends">Arkadaşlarınızı davet edin</string>
     <string name="bold_text">kalın</string>
     <string name="italic_text">İtalik</string>
@@ -748,7 +748,7 @@
     <string name="status_contact_has_e2e_encryption">Kişi uçtan uca şifrelemeye sahiptir</string>
     <string name="status_contact_has_no_e2e_encryption">Kişi uçtan uca şifrelemeye sahip değildir</string>
     <string name="chat_is_stopped">Sohbet durduruldu</string>
-    <string name="impossible_to_recover_passphrase"><b>Aklınızda bulunsun</b>: kaybederseniz, parolayı kurtaramaz veya değiştiremezsiniz.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Aklınızda bulunsun</b>: kaybederseniz, parolayı kurtaramaz veya değiştiremezsiniz.]]></string>
     <string name="chat_archive_header">Sohbet arşivi</string>
     <string name="chat_archive_section">SOHBET ARŞİVİ</string>
     <string name="group_invitation_item_description">1$s grubuna davet</string>
@@ -767,7 +767,7 @@
     <string name="callstatus_connecting">Aramaya bağlanılıyor…</string>
     <string name="delivery_receipts_are_disabled">Gönderildi bilgisi kapalı!</string>
     <string name="v5_2_more_things">Birkaç şey daha</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Daha fazla pil kullanır</b>! Arka plan hizmeti her zaman çalışır - mesajlar gelir gelmez bildirim gönderilir.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Daha fazla pil kullanır</b>! Arka plan hizmeti her zaman çalışır - mesajlar gelir gelmez bildirim gönderilir.]]></string>
     <string name="in_developing_title">Çok yakında!</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Kişi ve tüm mesajlar silinecektir - bu geri alınamaz!</string>
     <string name="alert_title_contact_connection_pending">Kişi henüz bağlanmadı!</string>
@@ -783,7 +783,7 @@
     <string name="description_via_contact_address_link_incognito">Bağlantı linki ile gizli</string>
     <string name="description_via_one_time_link_incognito">Tek seferlik bağlantı ile gizli</string>
     <string name="smp_server_test_compare_file">Dosyaları karşılaştır</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>ayarlardan devre dışı bırakılabilir</b> - uygulama çalışıyorken bildirimler gösterilmeye devam edilecektir.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>ayarlardan devre dışı bırakılabilir</b> - uygulama çalışıyorken bildirimler gösterilmeye devam edilecektir.]]></string>
     <string name="turning_off_service_and_periodic">Pil optimizasyonu etkin, arka plan hizmeti kapatılacak ve düzenli olarak yeni mesajlar kontrol edilmeyecek . Bunları ayarlardan yeniden etkinleştirebilirsiniz.</string>
     <string name="enter_passphrase_notification_title">Parola gerekli</string>
     <string name="notification_preview_mode_message">Mesaj metni</string>
@@ -794,7 +794,7 @@
     <string name="delete_message_cannot_be_undone_warning">Mesajlar silinecek - bu geri alınamaz!</string>
     <string name="switch_receiving_address_question">Alıcı adresini değiştir\?</string>
     <string name="back">Geri</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Yeni kişi ekle</b>: Kişiniz için tek seferlik QR Kodunuzu oluşturmak için.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Yeni kişi ekle</b>: Kişiniz için tek seferlik QR Kodunuzu oluşturmak için.]]></string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Bağlantı isteğiniz kabul edildiğinde bağlanacaksınız, lütfen bekleyin veya daha sonra kontrol edin!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Kişinizin cihazı çevrimiçi olduğunda bağlanacaksınız, lütfen bekleyin veya daha sonra kontrol edin!</string>
     <string name="learn_more">Daha fazla bilgi edinin</string>
@@ -836,10 +836,10 @@
     <string name="mark_read">Okundu olarak işaretle</string>
     <string name="mark_unread">Okunmadı olarak işaretle</string>
     <string name="chat_console">Sohbet konsolu</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Pil için iyi</b>. Arka plan hizmeti mesajları 10 dakikada bir kontrol eder. Aramaları veya acil mesajları kaçırabilirsiniz.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Pil için iyi</b>. Arka plan hizmeti mesajları 10 dakikada bir kontrol eder. Aramaları veya acil mesajları kaçırabilirsiniz.]]></string>
     <string name="v4_4_verify_connection_security_desc">Güvenlik kodlarını kişilerinizle karşılaştırın.</string>
     <string name="notifications_mode_service_desc">Arka plan hizmeti her zaman çalışır - mesajlar gelir gelmez bildirim gönderilir.</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Pil için en iyisi</b>. Sadece uygulama çalışırken bildirim alırsınız (arka plan hizmeti YOK).</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Pil için en iyisi</b>. Sadece uygulama çalışırken bildirim alırsınız (arka plan hizmeti YOK).]]></string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">%s için adres değiştiriliyor.</string>
     <string name="large_file">Büyük dosya!</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Grup sahibinin cihazı çevrimiçi olduğunda gruba bağlanacaksınız, lütfen bekleyin veya daha sonra kontrol edin!</string>
@@ -869,7 +869,7 @@
     <string name="your_ICE_servers">ICE sunucularınız</string>
     <string name="how_to">Nasıl</string>
     <string name="your_current_profile">Mevcut profiliniz</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Mesajların hangi sunucu(lar)dan <b>alınacağını</b> siz kontrol edersiniz, kişileriniz - onlara mesaj göndermek için kullandığınız sunucular.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Mesajların hangi sunucu(lar)dan <b>alınacağını</b> siz kontrol edersiniz, kişileriniz - onlara mesaj göndermek için kullandığınız sunucular.]]></string>
     <string name="video_call_no_encryption">video arama (uçtan uca şifreli değil)</string>
     <string name="your_ice_servers">ICE sunucularınız</string>
     <string name="icon_descr_video_off">Video kapalı</string>
@@ -908,8 +908,8 @@
 \nBu bağlantıyı iptal edebilir ve kişiyi kaldırabilirsiniz (ve daha sonra yeni bir bağlantıyla deneyebilirsiniz).</string>
     <string name="contact_sent_large_file">Kişiniz desteklenen maksimum boyuttan (%1$s) daha büyük bir dosya gönderdi.</string>
     <string name="video_will_be_received_when_contact_completes_uploading">Kişiniz yüklemeyi tamamladığında video alınacaktır.</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Ayrıca bağlantıya tıklayarak da bağlanabilirsiniz. Eğer bağlantı tarayıcda açılırsa, <b>mobil uygulamada aç</b> seçeneğine tıklayın.</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Soru sormak ve güncellemeleri almak için &lt;font color=#0088ff&gt;SimpleX Chat geliştiricilerine bağlanabilirsiniz&lt;/font&gt;.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Ayrıca bağlantıya tıklayarak da bağlanabilirsiniz. Eğer bağlantı tarayıcda açılırsa, <b>mobil uygulamada aç</b> seçeneğine tıklayın.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Soru sormak ve güncellemeleri almak için <font color=#0088ff>SimpleX Chat geliştiricilerine bağlanabilirsiniz</font>.]]></string>
     <string name="you_can_hide_or_mute_user_profile">Bir kullanıcının profilini gizleyebilir veya sessize alabilirsiniz - menü için basılı tutun.</string>
     <string name="you_invited_your_contact">Kişinizi davet ettiniz</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sohbet veritabanınızın en son sürümünü SADECE bir cihazda kullanmalısınız, aksi takdirde bazı kişilerden daha fazla mesaj alamayabilirsiniz.</string>
@@ -957,7 +957,7 @@
 \n- ve daha fazlası!</string>
     <string name="item_status_rcv_new_desc">Bu göndericiden yeni bir mesaj var.</string>
     <string name="item_status_snd_error_auth_desc">Mesaj teslim hatası. Büyük olasılıkla bu alıcı sizinle olan bağlantısını silmiştir.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Sadece istemci cihazlar <b>2 katmanlı uçtan uca şifreleme</b> ile kullanıcı profillerini, kişileri, grupları ve gönderilen mesajları depolar.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Sadece istemci cihazlar <b>2 katmanlı uçtan uca şifreleme</b> ile kullanıcı profillerini, kişileri, grupları ve gönderilen mesajları depolar.]]></string>
     <string name="only_group_owners_can_change_prefs">Grup tercihlerini sadece grup sahipleri değiştirebilir.</string>
     <string name="item_info_no_text">metin yok</string>
     <string name="network_status">Ağ durumu</string>
@@ -966,7 +966,7 @@
     <string name="change_lock_mode">Kilit modunu değiştir</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor.</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Lütfen doğru bağlantıyı kullandığınızı kontrol edin veya irtibat kişinizden size başka bir bağlantı göndermesini isteyin.</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Gizliliğinizi korumak için, anlık bildirimler yerine <b>SimpleX arka plan hizmeti</b> kullanılır - günde pilin yüzde birkaçını kullanır.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Gizliliğinizi korumak için, anlık bildirimler yerine <b>SimpleX arka plan hizmeti</b> kullanılır - günde pilin yüzde birkaçını kullanır.]]></string>
     <string name="periodic_notifications">Periyodik bildirimler</string>
     <string name="periodic_notifications_disabled">Periyodik bildirimler devre dışı</string>
     <string name="enter_passphrase_notification_desc">Bildirimleri almak için lütfen veri tabanı parolasını girin</string>
@@ -988,7 +988,7 @@
     <string name="this_link_is_not_a_valid_connection_link">Bu geçerli bir bağlantı linki değil</string>
     <string name="this_QR_code_is_not_a_link">Bu QR kodu bir bağlantı değil!</string>
     <string name="paste_connection_link_below_to_connect">Kişinizle bağlantı kurmak için aldığınız bağlantıyı aşağıdaki kutuya yapıştırın.</string>
-    <string name="read_more_in_user_guide_with_link">Daha fazla bilgi için &lt;font color=#0088ff&gt;Kullanıcı Kılavuzu&lt;/font&gt;.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Daha fazla bilgi için <font color=#0088ff>Kullanıcı Kılavuzu</font>.]]></string>
     <string name="paste_button">Yapıştır</string>
     <string name="this_string_is_not_a_connection_link">Bu dize bir bağlantı linki değil!</string>
     <string name="rate_the_app">Uygulamaya puan verin</string>
@@ -1033,7 +1033,7 @@
     <string name="unfavorite_chat">Favorilerden çıkar</string>
     <string name="make_profile_private">Sohbeti gizli yap!</string>
     <string name="profile_update_will_be_sent_to_contacts">Profil güncellemesi kişilerinize gönderilecektir.</string>
-    <string name="read_more_in_github_with_link">&lt;font color=#0088ff&gt;GitHub repomuzda&lt;/font&gt; daha fazlasını okuyun.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[<font color=#0088ff>GitHub repomuzda</font> daha fazlasını okuyun.]]></string>
     <string name="alert_text_fragment_please_report_to_developers">Lütfen geliştiricilere bildirin.</string>
     <string name="users_delete_with_connections">Profil ve sunucu bağlantıları</string>
     <string name="user_unhide">gizlemeyi kaldır</string>

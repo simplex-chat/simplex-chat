@@ -147,7 +147,7 @@
     <string name="rcv_conn_event_switch_queue_phase_completed">تم تغيير العنوان من أجلك</string>
     <string name="cant_delete_user_profile">لا يمكن حذف ملف تعريف المستخدم!</string>
     <string name="icon_descr_video_asked_to_receive">طلب لاستلام الفيديو</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b> إضافة جهة اتصال جديدة </b>: لإنشاء رمز الاستجابة السريعة الخاص بك لمرة واحدة لجهة اتصالك.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b> إضافة جهة اتصال جديدة </b>: لإنشاء رمز الاستجابة السريعة الخاص بك لمرة واحدة لجهة اتصالك.]]></string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b> امسح رمز الاستجابة السريعة </b>: للاتصال بجهة الاتصال التي تعرض لك رمز الاستجابة السريعة.]]></string>
     <string name="callstatus_in_progress">مكالمتك تحت الإجراء</string>
     <string name="callstatus_ended">انتهت المكالمة</string>
@@ -414,7 +414,7 @@
     <string name="settings_developer_tools">أدوات المطور</string>
     <string name="smp_server_test_delete_queue">حذف قائمة الانتظار</string>
     <string name="error_updating_user_privacy">خطأ في تحديث خصوصية المستخدم</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 سطح المكتب: امسح رمز الاستجابة السريعة (QR) المعروض من التطبيق، عبر <b>مسح رمز QR</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 سطح المكتب: امسح رمز الاستجابة السريعة (QR) المعروض من التطبيق، عبر <b>مسح رمز QR</b>.]]></string>
     <string name="delete_profile">حذف ملف التعريف</string>
     <string name="smp_servers_delete_server">حذف الخادم</string>
     <string name="error_updating_link_for_group">خطأ في تحديث ارتباط المجموعة</string>
@@ -498,7 +498,7 @@
     <string name="custom_time_unit_hours">ساعات</string>
     <string name="edit_history">السجل</string>
     <string name="image_will_be_received_when_contact_completes_uploading">سيتم استلام الصورة عند اكتمال تحميل جهة اتصالك.</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">إذا لم تتمكن من الالتقاء شخصيًا، <b>اعرض رمز الاستجابة السريعة في مكالمة الفيديو</b>، أو شارك الرابط.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[إذا لم تتمكن من الالتقاء شخصيًا، <b>اعرض رمز الاستجابة السريعة في مكالمة الفيديو</b>، أو شارك الرابط.]]></string>
     <string name="install_simplex_chat_for_terminal">ثبّت SimpleX Chat لطرفية</string>
     <string name="network_disable_socks_info">إذا قمت بالتأكيد، فستتمكن خوادم المراسلة من رؤية عنوان IP الخاص بك ومزود الخدمة الخاص بك - أي الخوادم التي تتصل بها.</string>
     <string name="hide_dev_options">إخفاء:</string>
@@ -521,7 +521,7 @@
     <string name="info_menu">المعلومات</string>
     <string name="v4_3_improved_privacy_and_security_desc">إخفاء شاشة التطبيق في التطبيقات الحديثة.</string>
     <string name="v4_3_improved_privacy_and_security">تحسن الخصوصية والأمان</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">إذا لم تتمكن من الالتقاء شخصيًا، فيمكنك <b>مسح رمز QR في مكالمة الفيديو</b>، أو يمكن لجهة الاتصال مشاركة رابط الدعوة.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[إذا لم تتمكن من الالتقاء شخصيًا، فيمكنك <b>مسح رمز QR في مكالمة الفيديو</b>، أو يمكن لجهة الاتصال مشاركة رابط الدعوة.]]></string>
     <string name="immune_to_spam_and_abuse">محصن ضد البريد العشوائي وسوء المعاملة</string>
     <string name="description_via_one_time_link_incognito">التخفي عبر رابط لمرة واحدة</string>
     <string name="icon_descr_image_snd_complete">أرسلت صورة</string>
@@ -541,7 +541,7 @@
     <string name="onboarding_notifications_mode_service">فوري</string>
     <string name="host_verb">المضيف</string>
     <string name="hide_notification">إخفاء</string>
-    <string name="turn_off_battery_optimization">من أجل استخدامها، يرجى <b>تعطيل تحسين البطارية</b> لSimpleX في مربع الحوار التالي. وإلا، سيتم تعطيل الإخطارات.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[من أجل استخدامها، يرجى <b>تعطيل تحسين البطارية</b> لSimpleX في مربع الحوار التالي. وإلا، سيتم تعطيل الإخطارات.]]></string>
     <string name="in_reply_to">ردًا على</string>
     <string name="icon_descr_instant_notifications">إشعارات فورية</string>
     <string name="enter_one_ICE_server_per_line">خوادم ICE (واحد لكل سطر)</string>
@@ -716,7 +716,7 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">تأكد من أن عناوين خادم WebRTC ICE بالتنسيق الصحيح، وأن تكون مفصولة بأسطر وليست مكررة.</string>
     <string name="mark_code_verified">وضع علامة تَحقق منه</string>
     <string name="error_saving_user_password">خطأ في حفظ كلمة مرور المستخدم</string>
-    <string name="many_people_asked_how_can_it_deliver">سأل الكثير من الناس: <i>إذا SimpleX ليس لديه معرّفات مستخدم، كيف يمكنه توصيل الرسائل؟</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[سأل الكثير من الناس: <i>إذا SimpleX ليس لديه معرّفات مستخدم، كيف يمكنه توصيل الرسائل؟</i>]]></string>
     <string name="error_saving_group_profile">خطأ في حفظ ملف تعريف المجموعة</string>
     <string name="notification_preview_mode_message">رسالة نصية</string>
     <string name="message_reactions">ردود فعل الرسائل</string>
@@ -725,7 +725,7 @@
     <string name="message_delivery_error_title">خطأ في تسليم الرسالة</string>
     <string name="network_and_servers">الشبكة والخوادم</string>
     <string name="moderate_verb">إشراف</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 للجوال: انقر فوق <b>فتح في تطبيق الجوال</b> ، ثم انقر فوق <b>اتصال</b> في التطبيق.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 للجوال: انقر فوق <b>فتح في تطبيق الجوال</b> ، ثم انقر فوق <b>اتصال</b> في التطبيق.]]></string>
     <string name="share_text_moderated_at">تحت الإشراف في: %s</string>
     <string name="message_reactions_prohibited_in_this_chat">ردود الفعل الرسائل ممنوعة في هذه الدردشة.</string>
     <string name="moderated_item_description">مُشرف بواسطة %s</string>
@@ -839,7 +839,7 @@
     <string name="call_connection_peer_to_peer">ند لند</string>
     <string name="people_can_connect_only_via_links_you_share">يمكن للناس التواصل معك فقط عبر الرابط الذي تقوم بمشاركته</string>
     <string name="icon_descr_call_pending_sent">مكالمة في الانتظار</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل المرسلة باستخدام <b>تشفير ثنائي الطبقات من بين الطريفين</b>.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل المرسلة باستخدام <b>تشفير ثنائي الطبقات من بين الطريفين</b>.]]></string>
     <string name="reset_color">إعادة تعيين الألوان</string>
     <string name="save_verb">حفظ</string>
     <string name="smp_servers_preset_address">عنوان الخادم المحدد مسبقًا</string>
@@ -853,7 +853,7 @@
     <string name="onboarding_notifications_mode_title">الإشعارات خاصة</string>
     <string name="store_passphrase_securely_without_recover">يرجى تخزين عبارة المرور بشكل آمن، فلن تتمكن من الوصول إلى الدردشة إذا فقدتها.</string>
     <string name="contact_developers">يرجى تحديث التطبيق والاتصال بالمطورين.</string>
-    <string name="read_more_in_user_guide_with_link">اقرأ المزيد في &lt;font color=#0088ff&gt;دليل المستخدم&lt;/font&gt;.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[اقرأ المزيد في <font color="#0088ff">دليل المستخدم</font>.]]></string>
     <string name="auth_open_chat_profiles">افتح ملفات تعريف الدردشة</string>
     <string name="revoke_file__confirm">اسحب الوصول</string>
     <string name="save_archive">حفظ الأرشيف</string>
@@ -878,7 +878,7 @@
     <string name="saved_ICE_servers_will_be_removed">ستتم إزالة خوادم WebRTC ICE المحفوظة.</string>
     <string name="prohibit_sending_files">منع إرسال الملفات والوسائط.</string>
     <string name="callstate_received_answer">استلمت إجابة…</string>
-    <string name="read_more_in_github_with_link">اقرأ المزيد في &lt;font color=#0088ff&gt;مستودع GitHub&lt;/font&gt;.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[اقرأ المزيد في <font color="#0088ff">مستودع GitHub</font>.]]></string>
     <string name="reject">رفض</string>
     <string name="relay_server_protects_ip">يحمي خادم الترحيل عنوان IP الخاص بك، ولكن يمكنه مراقبة مدة المكالمة.</string>
     <string name="restore_database_alert_desc">الرجاء إدخال كلمة المرور السابقة بعد استعادة نسخة احتياطية لقاعدة البيانات. لا يمكن التراجع عن هذا الإجراء.</string>
@@ -1090,7 +1090,7 @@
     <string name="stop_file__action">إيقاف الملف</string>
     <string name="stop_snd_file__title">التوقف عن استلام الملف؟</string>
     <string name="icon_descr_address">عنوان SimpleX</string>
-    <string name="disable_onion_hosts_when_not_supported">اضبط <i>استخدم مضيفي .onion</i> إلى \"لا\" إذا كان وكيل SOCKS لا يدعمها.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[اضبط <i>استخدم مضيفي .onion</i> إلى \"لا\" إذا كان وكيل SOCKS لا يدعمها.]]></string>
     <string name="share_with_contacts">مشاركة مع جهات الاتصال</string>
     <string name="shutdown_alert_question">إيقاف التشغيل؟</string>
     <string name="network_socks_proxy_settings">إعدادات وكيل SOCKS</string>
@@ -1117,7 +1117,7 @@
     <string name="v4_4_french_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
     <string name="v4_6_audio_video_calls_descr">دعم البلوتوث وتحسينات أخرى.</string>
     <string name="v5_0_polish_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">للحفاظ على خصوصيتك، بدلاً من دفع الإشعارات، يحتوي التطبيق على <b>خدمة SimpleX تعمل في الخلفية</b> – يستخدم نسبة قليلة من البطارية يوميًا.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[للحفاظ على خصوصيتك، بدلاً من دفع الإشعارات، يحتوي التطبيق على <b>خدمة SimpleX تعمل في الخلفية</b> – يستخدم نسبة قليلة من البطارية يوميًا.]]></string>
     <string name="tap_to_start_new_chat">انقر لبدء محادثة جديدة</string>
     <string name="to_share_with_your_contact">(للمشاركة مع جهة اتصالك)</string>
     <string name="to_connect_via_link_title">للتواصل عبر الرابط</string>
@@ -1240,7 +1240,7 @@
     <string name="snd_group_event_user_left">غادرت</string>
     <string name="you_must_use_the_most_recent_version_of_database">يجب عليك استخدام أحدث إصدار من قاعدة بيانات الدردشة الخاصة بك على جهاز واحد فقط، وإلا فقد تتوقف عن تلقي الرسائل من بعض جهات الاتصال.</string>
     <string name="video_will_be_received_when_contact_is_online">سيتم استلام الفيديو عندما تكون جهة اتصالك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">يمكنك التحكم من خلال الخادم (الخوادم) <b>لتلقي</b> الرسائل وجهات اتصالك - الخوادم التي تستخدمها لمراسلتهم.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[يمكنك التحكم من خلال الخادم (الخوادم) <b>لتلقي</b> الرسائل وجهات اتصالك - الخوادم التي تستخدمها لمراسلتهم.]]></string>
     <string name="you_can_share_this_address_with_your_contacts">يمكنك مشاركة هذا العنوان مع جهات اتصالك للسماح لهم بالاتصال بـ%s.</string>
     <string name="snd_group_event_member_deleted">أُزيلت %1$s</string>
     <string name="update_database">تحديث</string>
@@ -1293,7 +1293,7 @@
     <string name="unhide_profile">إلغاء إخفاء ملف تعريف</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">يجب أن تكون جهة الاتصال متصلة بالإنترنت حتى يكتمل الاتصال.
 \nيمكنك إلغاء هذا الاتصال وإزالة جهة الاتصال (والمحاولة لاحقًا باستخدام رابط جديد).</string>
-    <string name="you_can_also_connect_by_clicking_the_link">يمكنك أيضًا الاتصال بالضغط على الرابط. إذا تم فتحه في المتصفح، فانقر فوق الزر <b>فتح في تطبيق الجوال</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[يمكنك أيضًا الاتصال بالضغط على الرابط. إذا تم فتحه في المتصفح، فانقر فوق الزر <b>فتح في تطبيق الجوال</b>.]]></string>
     <string name="smp_servers_use_server_for_new_conn">استخدم للاتصالات الجديدة</string>
     <string name="smp_servers_use_server">استخدم الخادم</string>
     <string name="smp_servers_your_server_address">عنوان خادمك</string>
@@ -1335,7 +1335,7 @@
     <string name="observer_cant_send_message_title">لا يمكنك إرسال رسائل!</string>
     <string name="you_need_to_allow_to_send_voice">تحتاج إلى السماح لجهة الاتصال الخاصة بك بإرسال رسائل صوتية لتتمكن من إرسالها.</string>
     <string name="contact_sent_large_file">أرسلت جهة اتصالك ملفًا أكبر من الحجم الأقصى المعتمد حاليًا (%1$s).</string>
-    <string name="you_can_connect_to_simplex_chat_founder">يمكنك &lt;font color=#0088ff&gt;الاتصال بمطوري SimpleX Chat لطرح أي أسئلة وتلقي التحديثات&lt;/font&gt;.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[يمكنك <font color=#0088ff>الاتصال بمطوري SimpleX Chat لطرح أي أسئلة وتلقي التحديثات</font>.]]></string>
     <string name="smp_servers_your_server">خادمك</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">يُخزن ملف تعريفك على جهازك ومشاركته فقط مع جهات اتصالك. لا تستطيع خوادم SimpleX رؤية ملف تعريفك.</string>
     <string name="icon_descr_video_off">الفيديو مقفل</string>

@@ -140,11 +140,11 @@
   <string name="turn_off_battery_optimization_button">Allow</string>
   <string name="turn_off_system_restriction_button">Open app settings</string>
   <string name="disable_notifications_button">Disable notifications</string>
-  <string name="system_restricted_background_desc"><![CDATA[SimpleX can\'t run in background. You will receive the notifications only when the app is running.]]></string>
+  <string name="system_restricted_background_desc">SimpleX can\'t run in background. You will receive the notifications only when the app is running.</string>
   <string name="system_restricted_background_warn"><![CDATA[To enable notifications, please choose <b>App battery usage</b> / <b>Unrestricted</b> in the app settings.]]></string>
   <string name="system_restricted_background_in_call_title">No background calls</string>
-  <string name="system_restricted_background_in_call_desc"><![CDATA[The app may be closed after 1 minute in background.]]></string>
-  <string name="system_restricted_background_in_call_warn"><![CDATA[To make calls in background, please choose <b>App battery usage</b> / <b>Unrestricted</b> in the app settings]]>.</string>
+  <string name="system_restricted_background_in_call_desc">The app may be closed after 1 minute in background.</string>
+  <string name="system_restricted_background_in_call_warn"><![CDATA[To make calls in background, please choose <b>App battery usage</b> / <b>Unrestricted</b> in the app settings.]]></string>
   <string name="enter_passphrase_notification_title">Passphrase is needed</string>
   <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
   <string name="database_initialization_error_title">Can\'t initialize the database</string>
