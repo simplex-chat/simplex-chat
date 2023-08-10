@@ -44,7 +44,6 @@ struct ComposeState {
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
-    var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
     init(
