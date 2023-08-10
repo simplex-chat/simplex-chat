@@ -1220,7 +1220,7 @@
     <string name="v5_1_self_destruct_passcode">Samodestrukční heslo</string>
     <string name="v5_1_japanese_portuguese_interface">Japonské a portugalské uživatelské rozhraní</string>
     <string name="custom_time_unit_minutes">minut</string>
-    <string name="custom_time_unit_seconds">vteřiny</string>
+    <string name="custom_time_unit_seconds">vteřin</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Díky uživatelům - překládejte prostřednictvím Weblate!</string>
     <string name="v5_1_better_messages_descr">- 5 minutové hlasové zprávy.
 \n- vlastní čas mizení.
@@ -1338,4 +1338,9 @@
     <string name="files_and_media_prohibited">Soubory a média jsou zakázány!</string>
     <string name="in_reply_to">V odpovědi na</string>
     <string name="no_history">Žádná historie</string>
+    <string name="network_option_protocol_timeout_per_kb">Časový limit protokolu na KB</string>
+    <string name="settings_section_title_delivery_receipts">ZASLAT POTVRZENÍ O DORUČENÍ NA</string>
+    <string name="v5_2_message_delivery_receipts_descr">Druhé zaškrtnutí jsme přehlédli! ✅</string>
+    <string name="switch_receiving_address_desc">Přijímací adresa bude změněna na jiný server. Změna adresy bude dokončena po připojení odesílatele.</string>
+    <string name="choose_file_title">Vybrat soubor</string>
 </resources>
