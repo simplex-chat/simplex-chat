@@ -14,15 +14,20 @@ module Simplex.Chat.MarkdownEditing where
 
 import           Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.Foldable as F
 import           Data.Sequence ( Seq(..), (><) )
 import qualified Data.Sequence as S
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Vector.Unboxed as VU
+import           Data.Word ( Word64 )
 import           GHC.Generics ( Generic )
+import           Network.ByteOrder (word64)
 import           Simplex.Messaging.Parsers ( sumTypeJSON ) 
 import qualified Data.Diff.Myers as D
 import           Simplex.Chat.Markdown ( FormattedText(..), Format )
+-- import           Sound.Osc.Coding.Byte
 
 import qualified Debug.Trace as DBG
 
@@ -35,14 +40,14 @@ data EditingOperation
 
 
 data EditedChar = EditedChar 
-  { format :: Maybe Format
-  , char :: Char
-  , operation :: Maybe EditingOperation
+  { ecFormat :: Maybe Format
+  , ecChar :: Char
+  , ecOperation :: Maybe EditingOperation
   }
   deriving (Show, Eq)
 
-newtype Diffs = Diffs [EditedChar]
-  deriving (Show, Eq)
+-- newtype Diffs = Diffs [EditedChar]
+--   deriving (Show, Eq)
 
 data EditedText =  EditedText 
   { format :: Maybe Format
@@ -56,6 +61,10 @@ instance ToJSON EditedText where
   toEncoding = J.genericToEncoding $ sumTypeJSON id
 
 
+formatRep :: Format -> Word64
+formatRep = word64 . BS.pack . show --todo do not depend on show, in case it changes
+
+
 formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
 formattedEditedText s s' = diff (toEditedChars s) (toEditedChars s')
 
@@ -64,7 +73,7 @@ toEditedChars :: [FormattedText] -> [EditedChar]
 toEditedChars = concatMap toChars
   where
     toChars FormattedText {format, text} =
-      map (\char -> EditedChar {format, char, operation = Nothing}) $ T.unpack text
+      map (\char -> EditedChar {ecFormat, ecChar, ecOperation = Nothing}) $ T.unpack text
 
 
 -- fromEditedChars :: [EditedChar] -> [EditedText]
@@ -87,7 +96,7 @@ toEditedChars = concatMap toChars
 
 
 toText :: [EditedChar] -> T.Text
-toText = T.pack . fmap char  
+toText = T.pack . fmap ecChar  
 
 
 fromEdits :: Seq EditedChar -> Seq EditedChar -> Seq D.Edit -> Seq EditedChar
@@ -101,14 +110,14 @@ fromEdits left right edits =
           D.EditInsert {} -> acc
           D.EditDelete m n -> acc >< S.fromList [m .. n]
 
-    markDels :: Seq EditedChar
-    markDels = S.mapWithIndex f left
+    markDeletes :: Seq EditedChar
+    markDeletes = S.mapWithIndex f left
       where
         f :: Int -> EditedChar -> EditedChar
-        f i c = if i `elem` delIndices then c {operation = Just DeleteChar} else c
+        f i c = if i `elem` delIndices then c {ecOperation = Just DeleteChar} else c
 
-    addAdds :: Seq EditedChar -> Seq EditedChar
-    addAdds base = F.foldr f base edits -- start from end and work backwards, hence foldr
+    addInserts :: Seq EditedChar -> Seq EditedChar
+    addInserts base = F.foldr f base edits -- start from end and work backwards, hence foldr
       where
         f :: D.Edit -> Seq EditedChar -> Seq EditedChar
         f e acc = case e of
@@ -116,9 +125,9 @@ fromEdits left right edits =
           D.EditInsert i m n -> DBG.trace ("D.EditInsert i m n: " <> show (i, m, n, rightChars, adds)) $ S.take i acc >< adds >< S.drop i acc
             where 
               rightChars = S.take (n - m + 1) $ S.drop m right
-              adds = fmap (\c -> c {operation = Just AddChar}) rightChars
+              adds = fmap (\c -> c {ecOperation = Just AddChar}) rightChars
   in
-    addAdds markDels
+    addInserts markDeletes
 
 
 -- todo unused
@@ -127,9 +136,13 @@ diff left right = F.toList $ fromEdits (S.fromList left) (S.fromList right) edit
   where edits = D.diffTexts (toText left) (toText right)
 
 
-findDiffs :: [EditedChar] -> [EditedChar] -> Diffs
-findDiffs left right = Diffs diffs
+toVectorF :: [EditedChar] -> VU.Vector Word64
+toVectorF = VU.fromList . fmap (formatRep . ecFormat) 
+
+
+findDiffs :: [EditedChar] -> [EditedChar] -> [EditedChar] 
+findDiffs left right = undefined
     where 
       textDiffs = D.diffTexts (toText left) (toText right)  
-      formatDiffs = 
-      diffs = 
+      formatDiffs = D.diff (toVectorF left) (toVectorF right)
+      diffs = undefined
