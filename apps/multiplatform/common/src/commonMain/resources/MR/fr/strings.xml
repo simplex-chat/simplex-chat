@@ -147,7 +147,7 @@
     <string name="you_have_no_chats">Vous n\'avez aucune discussion</string>
     <string name="images_limit_title">Trop d’images !</string>
     <string name="share_file">Partager le fichier…</string>
-    <string name="attach">Joindre</string>
+    <string name="attach">Attacher</string>
     <string name="icon_descr_cancel_image_preview">Annuler l’aperçu d’image</string>
     <string name="icon_descr_cancel_file_preview">Annuler l’aperçu du fichier</string>
     <string name="icon_descr_sent_msg_status_send_failed">échec d’envoi</string>
