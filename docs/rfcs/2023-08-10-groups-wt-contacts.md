@@ -72,4 +72,4 @@ Additional cons:
 Group state may be de-synchronized and clients can have different value for "direct messages allowed" setting - there's two options how to process such case:
 
 - Either don't establish connection if any of group members has it as off;
-- Or establish or not based on group member introduction - establish if it has direct connection even if the setting is off, since it means that's what was communicated by host to the introduced member. Optionally host can remove direct connection invitation from introduction if the rule doesn't allow it but invited member still offered it - in case of race in with preferences update or incorrect behavior of connected member client.
+- Or establish or not based on group member introduction - establish if it has direct connection even if the setting is off, since it means that's what was communicated by host to the introduced member. Optionally host can remove direct connection invitation from introduction if the rule doesn't allow it but invited member still offered it - in case of race with preferences update or incorrect behavior of invited member client.
