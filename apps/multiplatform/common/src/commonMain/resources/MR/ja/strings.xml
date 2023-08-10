@@ -1278,13 +1278,11 @@
     <string name="snd_conn_event_ratchet_sync_allowed">%s の暗号化の再ネゴシエーションを許可しました</string>
     <string name="snd_conn_event_ratchet_sync_required">%s の暗号化の再ネゴシエーションが必要</string>
     <string name="rcv_conn_event_verification_code_reset">セキュリティコードが変更されました</string>
-    <string name="send_receipts">既読を通知する</string>
     <string name="fix_connection_confirm">修正</string>
     <string name="fix_connection_question">接続を修正しますか\?</string>
     <string name="renegotiate_encryption">暗号化の再ネゴシエート</string>
     <string name="allow_to_send_files">ファイルやメディアの送信を許可</string>
     <string name="prohibit_sending_files">ファイルやメディアの送信を禁止します。</string>
-    <string name="v5_2_message_delivery_receipts">既読を通知します！</string>
     <string name="v5_2_fix_encryption">接続を維持</string>
     <string name="v5_2_message_delivery_receipts_descr">長らくお待たせしました！ ✅</string>
     <string name="v5_2_more_things">その他</string>
@@ -1292,11 +1290,8 @@
     <string name="v5_2_more_things_descr">- より安定したメッセージ配信。
 \n- 改良されたグループ。
 \n- などなど！</string>
-    <string name="delivery_receipts_title">既読の通知</string>
     <string name="you_can_enable_delivery_receipts_later">あとで設定から有効にできます。</string>
     <string name="dont_enable_receipts">有効にしない</string>
-    <string name="sending_delivery_receipts_will_be_enabled">既読の通知は全ての連絡先に対して有効になります。</string>
-    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">既読の通知は、表示されているすべてのチャットプロファイルのすべての連絡先に対して有効になります。</string>
     <string name="error_aborting_address_change">アドレス変更中止エラー</string>
     <string name="no_filtered_chats">フィルタされたチャットはありません</string>
     <string name="files_and_media_prohibited">ファイルとメディアは禁止されています!</string>
@@ -1327,7 +1322,6 @@
     <string name="files_and_media">ファイルとメディア</string>
     <string name="you_can_enable_delivery_receipts_later_alert">あとでアプリのプライバシーとセキュリティの設定から有効にすることができます。</string>
     <string name="error_enabling_delivery_receipts">既読通知の有効化でエラーが発生しました！</string>
-    <string name="delivery_receipts_are_disabled">既読の通知は無効になっています!</string>
     <string name="item_info_no_text">テキストなし</string>
     <string name="error_synchronizing_connection">接続の同期エラー</string>
     <string name="no_history">履歴はありません</string>
