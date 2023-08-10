@@ -129,7 +129,7 @@ struct SendMessageView: View {
                         startVoiceMessageRecording: startVoiceMessageRecording,
                         finishVoiceMessageRecording: finishVoiceMessageRecording,
                         holdingVMR: $holdingVMR,
-                        disabled: progressByTimeout
+                        disabled: composeState.inProgress
                     )
                 } else {
                     voiceMessageNotAllowedButton()
@@ -175,7 +175,7 @@ struct SendMessageView: View {
         }
         .disabled(
             !composeState.sendEnabled ||
-            progressByTimeout ||
+            composeState.inProgress ||
             (!voiceMessageAllowed && composeState.voicePreview) ||
             composeState.endLiveDisabled
         )
@@ -303,7 +303,7 @@ struct SendMessageView: View {
             Image(systemName: "mic")
                 .foregroundColor(.secondary)
         }
-        .disabled(progressByTimeout)
+        .disabled(composeState.inProgress)
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
     }
@@ -388,7 +388,7 @@ struct SendMessageView: View {
             Image(systemName: "stop.fill")
                 .foregroundColor(.accentColor)
         }
-        .disabled(progressByTimeout)
+        .disabled(composeState.inProgress)
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
     }
