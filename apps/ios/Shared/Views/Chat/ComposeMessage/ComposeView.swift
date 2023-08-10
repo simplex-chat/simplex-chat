@@ -655,10 +655,7 @@ struct ComposeView: View {
         return sent
 
         func sending() async {
-            await MainActor.run { composeState.disabled = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if composeState.disabled { composeState.inProgress = true }
-            }
+            await MainActor.run { composeState.inProgress = true }
         }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
@@ -852,7 +849,6 @@ struct ComposeView: View {
 
     private func clearState(live: Bool = false) {
         if live {
-            composeState.disabled = false
             composeState.inProgress = false
         } else {
             composeState = ComposeState()
