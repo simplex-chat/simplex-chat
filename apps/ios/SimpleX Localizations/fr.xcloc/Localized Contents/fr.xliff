@@ -718,7 +718,7 @@
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve" approved="no">
         <source>Attach</source>
-        <target state="translated">Joindre</target>
+        <target>Attacher</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio &amp; video calls" xml:space="preserve">
