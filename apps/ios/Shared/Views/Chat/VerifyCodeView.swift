@@ -64,7 +64,7 @@ struct VerifyCodeView: View {
                         HStack {
                             NavigationLink {
                                 ScanCodeView(connectionVerified: $connectionVerified, verify: verify)
-                                    .navigationBarTitleDisplayMode(.inline)
+                                    .navigationBarTitleDisplayMode(.large)
                                     .navigationTitle("Scan code")
                             } label: {
                                 Label("Scan code", systemImage: "qrcode")

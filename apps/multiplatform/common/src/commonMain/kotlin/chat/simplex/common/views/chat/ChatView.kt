@@ -11,8 +11,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
@@ -34,6 +33,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.AudioPlayer
+import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -127,7 +127,6 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       searchText,
       useLinkPreviews = useLinkPreviews,
       linkMode = chatModel.simplexLinkMode.value,
-      chatModelIncognito = chatModel.incognito.value,
       back = {
         hideKeyboard(view)
         AudioPlayer.stop()
@@ -139,7 +138,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           if (chat.chatInfo is ChatInfo.Direct) {
             val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
             val (_, code) = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)
-            ModalManager.shared.showModalCloseable(true) { close ->
+            ModalManager.end.closeModals()
+            ModalManager.end.showModalCloseable(true) { close ->
               remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.apiId)?.chatInfo as? ChatInfo.Direct)?.contact } }.value?.let { ct ->
                 ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
               }
@@ -149,7 +149,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             val link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
             var groupLink = link?.first
             var groupLinkMemberRole = link?.second
-            ModalManager.shared.showModalCloseable(true) { close ->
+            ModalManager.end.closeModals()
+            ModalManager.end.showModalCloseable(true) { close ->
               GroupChatInfoView(chatModel, groupLink, groupLinkMemberRole, {
                 groupLink = it.first;
                 groupLinkMemberRole = it.second
@@ -174,7 +175,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             member to null
           }
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(true) { close ->
+          ModalManager.end.closeModals()
+          ModalManager.end.showModalCloseable(true) { close ->
             remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
               GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, close, close)
             }
@@ -233,12 +235,17 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       joinGroup = { groupId ->
         withApi { chatModel.controller.apiJoinGroup(groupId) }
       },
-      startCall = { media ->
-        val cInfo = chat.chatInfo
-        if (cInfo is ChatInfo.Direct) {
-          chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
-          chatModel.showCallView.value = true
-          chatModel.callCommand.value = WCallCommand.Capabilities
+      startCall = out@ { media ->
+        if (appPlatform.isDesktop) {
+          return@out showInDevelopingAlert()
+        }
+        withBGApi {
+          val cInfo = chat.chatInfo
+          if (cInfo is ChatInfo.Direct) {
+            chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+            chatModel.showCallView.value = true
+            chatModel.callCommand.value = WCallCommand.Capabilities
+          }
         }
       },
       acceptCall = { contact ->
@@ -314,10 +321,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         withApi {
           val ciInfo = chatModel.controller.apiGetChatItemInfo(cInfo.chatType, cInfo.apiId, cItem.id)
           if (ciInfo != null) {
-            ModalManager.shared.showModal(endButtons = { ShareButton {
-              clipboard.shareText(itemInfoShareText(cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
+            if (chat.chatInfo is ChatInfo.Group) {
+              setGroupMembers(chat.chatInfo.groupInfo, chatModel)
+            }
+            ModalManager.end.closeModals()
+            ModalManager.end.showModal(endButtons = { ShareButton {
+              clipboard.shareText(itemInfoShareText(chatModel, cItem, ciInfo, chatModel.controller.appPrefs.developerTools.get()))
             } }) {
-              ChatItemInfoView(cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+              ChatItemInfoView(chatModel, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
             }
           }
         }
@@ -326,8 +337,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         hideKeyboard(view)
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(true) { close ->
-              AddGroupMembersView(groupInfo, false, chatModel, close)
+          ModalManager.end.closeModals()
+          ModalManager.end.showModalCloseable(true) { close ->
+            AddGroupMembersView(groupInfo, false, chatModel, close)
           }
         }
       },
@@ -368,7 +380,6 @@ fun ChatLayout(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
@@ -398,6 +409,31 @@ fun ChatLayout(
   Box(
     Modifier
       .fillMaxWidth()
+      .desktopOnExternalDrag(
+        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value,
+        onFiles = { paths ->
+          val uris = paths.map { URI.create(it) }
+          val groups =  uris.groupBy { isImage(it) }
+          val images = groups[true] ?: emptyList()
+          val files = groups[false] ?: emptyList()
+          if (images.isNotEmpty()) {
+            composeState.processPickedMedia(images, null)
+          } else if (files.isNotEmpty()) {
+            composeState.processPickedFile(uris.first(), null)
+          }
+        },
+        onImage = {
+          val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
+          tmpFile.deleteOnExit()
+          chatModel.filesToDelete.add(tmpFile)
+          val uri = tmpFile.toURI()
+          composeState.processPickedMedia(listOf(uri), null)
+        },
+        onText = {
+          // Need to parse HTML in order to correctly display the content
+          //composeState.value = composeState.value.copy(message = composeState.value.message + it)
+        },
+      )
   ) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       ModalBottomSheetLayout(
@@ -429,7 +465,7 @@ fun ChatLayout(
           ) {
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
-              useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
+              useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage,
               receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature,
               updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
               setReaction, showItemDetails, markRead, setFloatingButton, onComposed,
@@ -462,7 +498,9 @@ fun ChatInfoToolbar(
       showSearch = false
     }
   }
-  BackHandler(onBack = onBackClicked)
+  if (appPlatform.isAndroid) {
+    BackHandler(onBack = onBackClicked)
+  }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   menuItems.add {
@@ -520,7 +558,7 @@ fun ChatInfoToolbar(
   }
 
   DefaultTopAppBar(
-    navigationButton = { NavigationButtonBack(onBackClicked) },
+    navigationButton = { if (appPlatform.isAndroid || showSearch) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chat.chatInfo) },
     onTitleClick = info,
     showSearch = showSearch,
@@ -596,7 +634,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  chatModelIncognito: Boolean,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -1146,7 +1183,6 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      chatModelIncognito = false,
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
@@ -1214,7 +1250,6 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      chatModelIncognito = false,
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },

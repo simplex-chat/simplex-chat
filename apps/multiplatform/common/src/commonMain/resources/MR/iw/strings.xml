@@ -1182,7 +1182,7 @@
     <string name="waiting_for_video">ממתין לסרטון</string>
     <string name="waiting_for_file">ממתין לקובץ</string>
     <string name="voice_messages_prohibited">הודעות קוליות אסורות!</string>
-    <string name="you_invited_your_contact">הזמנת את איש הקשר שלך</string>
+    <string name="you_invited_a_contact">הזמנת את איש הקשר שלך</string>
     <string name="you_can_share_your_address">באפשרותכם לשתף את הכתובת שלכם כקישור או כקוד QR – כל אחד יכול להתחבר אליכם.</string>
     <string name="you_can_accept_or_reject_connection">כאשר אנשים מבקשים להתחבר, באפשרותך לקבל או לדחות זאת.</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[באפשרותכם גם להתחבר על־ידי לחיצה על הקישור. אם הוא נפתח בדפדפן, ליחצו על הכפתור <b>פתח באפליקציה</b>.]]></string>
@@ -1340,4 +1340,7 @@
     <string name="sending_delivery_receipts_will_be_enabled">שליחת קבלות שליחה תתאפשר עבור כל אנשי הקשר.</string>
     <string name="you_can_enable_delivery_receipts_later">תוכל לאפשר מאוחר יותר דרך הגדרות</string>
     <string name="you_can_enable_delivery_receipts_later_alert">תוכל לאפשר אותם מאוחר יותר באמצעות הגדרות פרטיות ואבטחה של האפליקציה.</string>
+    <string name="v5_2_message_delivery_receipts">קבלות על הודעות!</string>
+    <string name="v5_2_disappear_one_message_descr">גם אם הוא מושבת בשיחה.</string>
+    <string name="v5_2_fix_encryption">שימרו על הקשרים שלכם</string>
 </resources>

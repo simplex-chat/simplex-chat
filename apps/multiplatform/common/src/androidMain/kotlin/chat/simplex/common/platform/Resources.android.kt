@@ -48,4 +48,6 @@ actual fun screenOrientation(): ScreenOrientation = when (mainActivity.get()?.re
 @Composable
 actual fun screenWidth(): Dp = LocalConfiguration.current.screenWidthDp.dp
 
+actual fun desktopExpandWindowToWidth(width: Dp) {}
+
 actual fun isRtl(text: CharSequence): Boolean = BidiFormatter.getInstance().isRtl(text)

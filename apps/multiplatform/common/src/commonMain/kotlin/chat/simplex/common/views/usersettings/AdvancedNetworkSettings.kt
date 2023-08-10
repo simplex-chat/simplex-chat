@@ -154,19 +154,19 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
-          listOf(2_500000, 5_000000, 7_500000, 10_000000, 15_000000, 20_000000), secondsLabel
+          listOf(5_000000, 7_500000, 10_000000, 15_000000, 20_000000, 30_000_000, 45_000_000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeout,
-          listOf(1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000), secondsLabel
+          listOf(3_000000, 5_000000, 7_000000, 10_000000, 15_000000, 20_000_000, 30_000_000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
-          listOf(5_000, 10_000, 20_000, 40_000), secondsLabel
+          listOf(10_000, 20_000, 40_000, 75_000, 100_000), secondsLabel
         )
       }
       SectionItemView {
@@ -341,7 +341,9 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
       DefaultExposedDropdownMenu(
         expanded = expanded
       ) {
-        values.forEach { selectionOption ->
+        val v = selection.value
+        val vs = if (values.contains(v)) values else values + v
+        vs.forEach { selectionOption ->
           DropdownMenuItem(
             onClick = {
               selection.value = selectionOption

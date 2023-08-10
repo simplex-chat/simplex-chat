@@ -142,7 +142,7 @@
     <string name="group_member_status_announced">conectando (anunciado)</string>
     <string name="connection_local_display_name">conexión %1$d</string>
     <string name="connect_via_link_or_qr">Conecta vía enlace / Código QR</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No se podrá deshacer!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacto y todos los mensajes serán eliminados. ¡No podrá deshacerse!</string>
     <string name="icon_descr_contact_checked">Contacto verificado</string>
     <string name="status_contact_has_e2e_encryption">el contacto dispone de cifrado de extremo a extremo</string>
     <string name="smp_server_test_disconnect">Desconectar</string>
@@ -766,7 +766,7 @@
     <string name="icon_descr_settings">Configuración</string>
     <string name="icon_descr_speaker_off">Altavoz desactivado</string>
     <string name="add_contact_or_create_group">Inciar chat nuevo</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">Para poder exportar, importar o eliminar la base de datos primero debes detener Chat. Durante el tiempo que esté detenido no podrás recibir ni enviar mensajes.</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Para exportar, importar o eliminar la base de datos debes detener Chat. Durante la parada no podrás recibir o enviar mensajes.</string>
     <string name="thank_you_for_installing_simplex">Gracias por instalar SimpleX Chat!</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger la privacidad, en lugar de los identificadores de usuario que usan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa Bloqueo SimpleX.
@@ -890,7 +890,7 @@
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">La base de datos actual será ELIMINADA y SUSTITUIDA por la importada.
 \nEsta acción no se puede deshacer. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.</string>
     <string name="incognito_random_profile">Tu perfil aleatorio</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando se acepte tu solicitud de conexión, por favor espere o compruébalo más tarde.</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando tu solicitud de conexión sea aceptada, por favor espera o compruébalo más tarde.</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Te conectarás cuando el dispositivo de tu contacto esté en línea, por favor espera o compruébalo más tarde.</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Se te pedirá identificarte cuándo inicies o continues usando la aplicación tras 30 segundos en segundo plano.</string>
     <string name="invite_prohibited_description">Estás intentando invitar a un contacto con el que compartes un perfil incógnito a un grupo en el que usas tu perfil principal</string>
@@ -914,9 +914,9 @@
     <string name="you_are_observer">Tu rol es observador</string>
     <string name="verify_security_code">Comprobar código de seguridad</string>
     <string name="you_accepted_connection">Has aceptado la conexión</string>
-    <string name="you_invited_your_contact">Has invitado a tu contacto</string>
+    <string name="you_invited_a_contact">Has invitado a tu contacto</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
-    <string name="your_settings">Tu configuración</string>
+    <string name="your_settings">Configuración</string>
     <string name="your_SMP_servers">Servidores SMP</string>
     <string name="you_control_your_chat">¡Tú controlas tu chat!</string>
     <string name="your_profile_is_stored_on_your_device">Tu perfil, contactos y mensajes entregados se almacenan en tu dispositivo.</string>
@@ -1278,7 +1278,7 @@
     <string name="unfavorite_chat">No favorito</string>
     <string name="abort_switch_receiving_address">Cancelar cambio de dirección</string>
     <string name="files_and_media">Archivos y multimedia</string>
-    <string name="prohibit_sending_files">No permitir el envío de archivos y multimedia.</string>
+    <string name="prohibit_sending_files">No se permite el envío de archivos y multimedia.</string>
     <string name="files_are_prohibited_in_group">No se permiten archivos y multimedia en este grupo.</string>
     <string name="group_members_can_send_files">Los miembros del grupo pueden enviar archivos y multimedia.</string>
     <string name="allow_to_send_files">Se permite enviar archivos y multimedia</string>
@@ -1290,7 +1290,7 @@
     <string name="conn_event_ratchet_sync_ok">cifrado ok</string>
     <string name="conn_event_ratchet_sync_required">se requiere renegociar el cifrado</string>
     <string name="error_synchronizing_connection">Error al sincronizar conexión</string>
-    <string name="fix_connection_not_supported_by_contact">Reparación no compatible con el contacto</string>
+    <string name="fix_connection_not_supported_by_contact">Corrección no compatible con el contacto</string>
     <string name="sync_connection_force_confirm">Renegociar</string>
     <string name="fix_connection_not_supported_by_group_member">Reparación no compatible con miembro del grupo</string>
     <string name="sync_connection_force_desc">El cifrado funciona y un cifrado nuevo no es necesario. ¡Podría dar lugar a errores de conexión!</string>
@@ -1322,7 +1322,7 @@
     <string name="enable_receipts_all">Activar</string>
     <string name="receipts_contacts_title_disable">¿Desactivar confirmaciones\?</string>
     <string name="receipts_contacts_title_enable">¿Activar confirmaciones\?</string>
-    <string name="receipts_section_description_1">Se pueden anular en la configuración de los contactos</string>
+    <string name="receipts_section_description_1">Se pueden anular en la configuración de grupos y contactos.</string>
     <string name="receipts_contacts_enable_for_all">Activar para todos</string>
     <string name="receipts_contacts_enable_keep_overrides">Activar (conservar anulaciones)</string>
     <string name="receipts_contacts_disable_for_all">Desactivar para todos</string>
@@ -1343,4 +1343,38 @@
     <string name="you_can_enable_delivery_receipts_later">Puedes activar más tarde en Configuración</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Puedes activarlos más tarde en la configuración de Privacidad y Seguridad.</string>
     <string name="v5_2_more_things">Algunas cosas más</string>
+    <string name="choose_file_title">Selecciona un archivo</string>
+    <string name="no_selected_chat">Ningún chat seleccionado</string>
+    <string name="in_developing_title">¡Muy pronto!</string>
+    <string name="in_developing_desc">Esta función no está disponible aún. Prueba en la próxima versión.</string>
+    <string name="delivery">Entrega</string>
+    <string name="no_info_on_delivery">Sin información sobre la entrega</string>
+    <string name="receipts_groups_title_enable">¿Permitir confirmaciones para grupos\?</string>
+    <string name="receipts_groups_override_disabled">Las confirmaciones están deshabilitadas para los grupos %d</string>
+    <string name="receipts_groups_override_enabled">Las confirmaciones están activadas para %d grupos</string>
+    <string name="receipts_section_groups">Grupos pequeños (máx. 20)</string>
+    <string name="receipts_groups_enable_for_all">Activar para todos los grupos</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="item_status_rcv_read_text">Mensaje leído</string>
+    <string name="item_status_rcv_new_text">Mensaje recibido</string>
+    <string name="item_status_snd_new_text">Enviando mensaje</string>
+    <string name="item_status_snd_rcvd_text">Mensaje saliente recibido</string>
+    <string name="item_status_snd_sent_desc">El mensaje ha sido enviado al relay del destinatario.</string>
+    <string name="item_status_snd_new_desc">El envío del mensaje está en curso o pendiente.</string>
+    <string name="item_status_snd_rcvd_desc">El mensaje ha sido recibido por el destinatario.</string>
+    <string name="item_status_rcv_new_desc">Mensaje nuevo de este remitente.</string>
+    <string name="item_status_snd_error_unexpected_desc">Error inesperado en la entrega del mensaje: %1$s</string>
+    <string name="item_status_rcv_read_desc">Has leído este mensaje.</string>
+    <string name="send_receipts_disabled">desactivado</string>
+    <string name="receipts_groups_disable_for_all">Desactivado para todos los grupos</string>
+    <string name="receipts_groups_disable_keep_overrides">Desactivar (mantener anulaciones de grupo)</string>
+    <string name="receipts_groups_title_disable">¿Desactivar confirmaciones para grupos\?</string>
+    <string name="receipts_groups_enable_keep_overrides">Activar (mantener anulaciones de grupo)</string>
+    <string name="item_status_snd_error_text">Error al enviar mensaje</string>
+    <string name="item_status_snd_error_auth_desc">Error en la entrega del mensaje. Lo más probable es que el destinatario haya eliminado la conexión contigo.</string>
+    <string name="item_status_snd_sent_text">Mensaje enviado</string>
+    <string name="send_receipts_disabled_alert_title">Confirmaciones desactivadas</string>
+    <string name="send_receipts_disabled_alert_msg">Este grupo tiene más de %1$d miembros, no se enviarán confirmaciones de entrega.</string>
+    <string name="connect_via_member_address_alert_title">¿Conectar directamente\?</string>
+    <string name="connect_via_member_address_alert_desc">La solicitud se enviará a este miembro del grupo.</string>
 </resources>

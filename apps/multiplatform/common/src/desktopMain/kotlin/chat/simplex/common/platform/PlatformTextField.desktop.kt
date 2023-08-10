@@ -14,10 +14,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.chat.*
@@ -26,6 +28,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
 import kotlin.math.min
+import kotlin.text.substring
 
 @Composable
 actual fun PlatformTextField(
@@ -33,12 +36,14 @@ actual fun PlatformTextField(
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
-  onMessageChange: (String) -> Unit
+  onMessageChange: (String) -> Unit,
+  onUpArrow: () -> Unit,
+  onDone: () -> Unit,
 ) {
   val cs = composeState.value
   val focusRequester = remember { FocusRequester() }
   val keyboard = LocalSoftwareKeyboardController.current
-  val padding = PaddingValues(12.dp, 7.dp, 45.dp, 0.dp)
+  val padding = PaddingValues(12.dp, 12.dp, 45.dp, 0.dp)
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
@@ -47,11 +52,14 @@ actual fun PlatformTextField(
     keyboard?.show()
   }
   val isRtl = remember(cs.message) { isRtl(cs.message.subSequence(0, min(50, cs.message.length))) }
+  var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message)) }
+  val textFieldValue = textFieldValueState.copy(text = cs.message)
   BasicTextField(
-    value = cs.message,
+    value = textFieldValue,
     onValueChange = {
-      if (!composeState.value.inProgress && !(composeState.value.preview is ComposePreview.VoicePreview && it != "")) {
-        onMessageChange(it)
+      if (!composeState.value.inProgress && !(composeState.value.preview is ComposePreview.VoicePreview && it.text != "")) {
+        textFieldValueState = it
+        onMessageChange(it.text)
       }
     },
     textStyle = textStyle.value,
@@ -60,7 +68,30 @@ actual fun PlatformTextField(
       capitalization = KeyboardCapitalization.Sentences,
       autoCorrect = true
     ),
-    modifier = Modifier.padding(vertical = 4.dp).focusRequester(focusRequester),
+    modifier = Modifier
+      .padding(vertical = 4.dp)
+      .focusRequester(focusRequester)
+      .onPreviewKeyEvent {
+        if (it.key == Key.Enter && it.type == KeyEventType.KeyDown) {
+          if (it.isShiftPressed) {
+            val start = if (minOf(textFieldValue.selection.min) == 0) "" else textFieldValue.text.substring(0 until textFieldValue.selection.min)
+            val newText = start + "\n" +
+                  textFieldValue.text.substring(textFieldValue.selection.max, textFieldValue.text.length)
+            textFieldValueState = textFieldValue.copy(
+              text = newText,
+              selection = TextRange(textFieldValue.selection.min + 1)
+            )
+            onMessageChange(newText)
+          } else if (cs.message.isNotEmpty()) {
+            onDone()
+          }
+          true
+        } else if (it.key == Key.DirectionUp && it.type == KeyEventType.KeyDown && cs.message.isEmpty()) {
+          onUpArrow()
+          true
+        }
+        else false
+      },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->
       Surface(
@@ -74,14 +105,10 @@ actual fun PlatformTextField(
           CompositionLocalProvider(
             LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
           ) {
-            Box(
-              Modifier
-                .weight(1f)
-                .padding(horizontal = 12.dp)
-                .padding(top = 4.dp)
-                .padding(bottom = 6.dp)
-            ) {
+            Column(Modifier.weight(1f).padding(start = 12.dp, end = 32.dp)) {
+              Spacer(Modifier.height(8.dp))
               innerTextField()
+              Spacer(Modifier.height(10.dp))
             }
           }
         }

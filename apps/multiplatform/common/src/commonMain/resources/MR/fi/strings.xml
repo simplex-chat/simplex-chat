@@ -193,7 +193,7 @@
     <string name="icon_descr_cancel_live_message">Peruuta live-viesti</string>
     <string name="configure_ICE_servers">Määritä ICE-palvelimet</string>
     <string name="add_address_to_your_profile">Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">Kaikki kontaktisi pysyvät yhteydessä. Profiilipäivitys lähetetään yhteystietoihisi.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Kaikki kontaktisi pysyvät yhteydessä. Profiilipäivitys lähetetään kontakteillesi.</string>
     <string name="create_simplex_address">Luo SimpleX-osoite</string>
     <string name="accept_call_on_lock_screen">Hyväksy</string>
     <string name="settings_audio_video_calls">Ääni- ja videopuhelut</string>
@@ -1232,7 +1232,7 @@
     <string name="group_preview_you_are_invited">sinut on kutsuttu ryhmään</string>
     <string name="unmute_chat">Poista mykistys</string>
     <string name="you_accepted_connection">Hyväksyit yhteyden</string>
-    <string name="you_invited_your_contact">Kutsuit kontaktisi</string>
+    <string name="you_invited_a_contact">Kutsuit kontaktisi</string>
     <string name="call_connection_via_relay">releellä</string>
     <string name="database_downgrade_warning">Varoitus: saatat menettää joitain tietoja!</string>
     <string name="icon_descr_address">SimpleX Osoite</string>

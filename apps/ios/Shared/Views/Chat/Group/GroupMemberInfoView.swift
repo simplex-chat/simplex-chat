@@ -19,6 +19,7 @@ struct GroupMemberInfoView: View {
     @State private var connectionCode: String? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
+    @State private var connectToMemberDialog: Bool = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var justOpened = true
 
@@ -38,8 +39,8 @@ struct GroupMemberInfoView: View {
             case let .changeMemberRoleAlert(_, role): return "changeMemberRoleAlert \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
-            case .connRequestSentAlert: return "connRequestSentAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
+            case .connRequestSentAlert: return "connRequestSentAlert"
             case let .error(title, _): return "error \(title)"
             case let .other(alert): return "other \(alert)"
             }
@@ -142,7 +143,7 @@ struct GroupMemberInfoView: View {
                             connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
                             || connStats.ratchetSyncSendProhibited
                         )
-                        if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
+                        if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
                             Button("Abort changing address") {
                                 alert = .abortSwitchAddressAlert
                             }
@@ -210,15 +211,19 @@ struct GroupMemberInfoView: View {
 
     func connectViaAddressButton(_ contactLink: String) -> some View {
         Button {
-            connectViaAddress(contactLink)
+            connectToMemberDialog = true
         } label: {
             Label("Connect", systemImage: "link")
         }
+        .confirmationDialog("Connect directly", isPresented: $connectToMemberDialog, titleVisibility: .visible) {
+            Button("Use current profile") { connectViaAddress(incognito: false, contactLink: contactLink) }
+            Button("Use new incognito profile") { connectViaAddress(incognito: true, contactLink: contactLink) }
+        }
     }
 
-    func connectViaAddress(_ contactLink: String) {
+    func connectViaAddress(incognito: Bool, contactLink: String) {
         Task {
-            let (connReqType, connectAlert) = await apiConnect_(connReq: contactLink)
+            let (connReqType, connectAlert) = await apiConnect_(incognito: incognito, connReq: contactLink)
             if let connReqType = connReqType {
                 alert = .connRequestSentAlert(type: connReqType)
             } else if let connectAlert = connectAlert {

@@ -23,20 +23,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.appVersionInfo
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
+fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerState: DrawerState) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
-
-  MaintainIncognitoState(chatModel)
 
   if (user != null) {
     val requireAuth = remember { chatModel.controller.appPrefs.performLA.state }
@@ -44,14 +43,13 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       profile = user.profile,
       stopped,
       chatModel.chatDbEncrypted.value == true,
-      chatModel.incognito,
-      chatModel.controller.appPrefs.incognito,
+      remember { chatModel.controller.appPrefs.notificationsMode.state },
       user.displayName,
       setPerformLA = setPerformLA,
-      showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
-      showSettingsModal = { modalView -> { ModalManager.shared.showModal(true) { modalView(chatModel) } } },
+      showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
+      showSettingsModal = { modalView -> { ModalManager.start.showModal(true) { modalView(chatModel) } } },
       showSettingsModalWithSearch = { modalView ->
-        ModalManager.shared.showCustomModal { close ->
+        ModalManager.start.showCustomModal { close ->
           val search = rememberSaveable { mutableStateOf("") }
           ModalView(
             { close() },
@@ -61,12 +59,12 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
             content = { modalView(chatModel, search) })
         }
       },
-      showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
+      showCustomModal = { modalView -> { ModalManager.start.showCustomModal { close -> modalView(chatModel, close) } } },
       showVersion = {
         withApi {
           val info = chatModel.controller.apiGetVersion()
           if (info != null) {
-            ModalManager.shared.showModal { VersionInfoView(info) }
+            ModalManager.start.showModal { VersionInfoView(info) }
           }
         }
       },
@@ -75,7 +73,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
           block()
         } else {
           var autoShow = true
-          ModalManager.shared.showModalCloseable { close ->
+          ModalManager.fullscreen.showModalCloseable { close ->
             val onFinishAuth = { success: Boolean ->
               if (success) {
                 close()
@@ -104,6 +102,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
           }
         }
       },
+      drawerState = drawerState,
     )
   }
 }
@@ -116,8 +115,7 @@ fun SettingsLayout(
   profile: LocalProfile,
   stopped: Boolean,
   encrypted: Boolean,
-  incognito: MutableState<Boolean>,
-  incognitoPref: SharedPreference<Boolean>,
+  notificationsMode: State<NotificationsMode>,
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -125,15 +123,25 @@ fun SettingsLayout(
   showSettingsModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
-  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
+  withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
+  drawerState: DrawerState,
 ) {
+  val scope = rememberCoroutineScope()
+  val closeSettings: () -> Unit = { scope.launch { drawerState.close() } }
+  if (drawerState.isOpen) {
+    BackHandler {
+      closeSettings()
+    }
+  }
   val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
-  Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).themedBackground(theme.value.base)) {
+  Box(Modifier.fillMaxSize()) {
     Column(
       Modifier
         .fillMaxSize()
-        .padding(top = DEFAULT_PADDING)
+        .verticalScroll(rememberScrollState())
+        .themedBackground(theme.value.base)
+        .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 3)
     ) {
       AppBarTitle(stringResource(MR.strings.your_settings))
 
@@ -143,14 +151,13 @@ fun SettingsLayout(
         }
         val profileHidden = rememberSaveable { mutableStateOf(false) }
         SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.your_chat_profiles), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
-        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
         SettingsActionItem(painterResource(MR.images.ic_qr_code), stringResource(MR.strings.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped, extraPadding = true)
         ChatPreferencesItem(showCustomModal, stopped = stopped)
       }
       SectionDividerSpaced()
 
       SectionView(stringResource(MR.strings.settings_section_title_settings)) {
-        SettingsActionItem(painterResource(MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
@@ -163,7 +170,7 @@ fun SettingsLayout(
         SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) }, extraPadding = true)
-        SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openUriCatching(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary, extraPadding = true)
       }
       SectionDividerSpaced()
@@ -178,6 +185,17 @@ fun SettingsLayout(
       SettingsSectionApp(showSettingsModal, showCustomModal, showVersion, withAuth)
       SectionBottomSpacer()
     }
+    if (appPlatform.isDesktop) {
+      Box(
+        Modifier
+        .fillMaxWidth()
+        .background(MaterialTheme.colors.background)
+        .background(if (isInDarkTheme()) ToolbarDark else ToolbarLight)
+        .padding(start = 4.dp, top = 8.dp)
+      ) {
+        NavigationButtonBack(closeSettings)
+      }
+    }
   }
 }
 
@@ -188,43 +206,6 @@ expect fun SettingsSectionApp(
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 )
-
-@Composable
-fun SettingsIncognitoActionItem(
-  incognitoPref: SharedPreference<Boolean>,
-  incognito: MutableState<Boolean>,
-  stopped: Boolean,
-  onClickInfo: () -> Unit,
-) {
-  SettingsPreferenceItemWithInfo(
-    if (incognito.value) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_theater_comedy),
-    if (incognito.value) Indigo else MaterialTheme.colors.secondary,
-    stringResource(MR.strings.incognito),
-    stopped,
-    onClickInfo,
-    incognitoPref,
-    incognito
-  )
-}
-
-@Composable
-fun MaintainIncognitoState(chatModel: ChatModel) {
-  // Cache previous value and once it changes in background, update it via API
-  var cachedIncognito by remember { mutableStateOf(chatModel.incognito.value) }
-  LaunchedEffect(chatModel.incognito.value) {
-    // Don't do anything if nothing changed
-    if (cachedIncognito == chatModel.incognito.value) return@LaunchedEffect
-    try {
-      chatModel.controller.apiSetIncognito(chatModel.incognito.value)
-    } catch (e: Exception) {
-      // Rollback the state
-      chatModel.controller.appPrefs.incognito.set(cachedIncognito)
-      // Crash the app
-      throw e
-    }
-    cachedIncognito = chatModel.incognito.value
-  }
-}
 
 @Composable private fun DatabaseItem(encrypted: Boolean, openDatabaseView: () -> Unit, stopped: Boolean) {
   SectionItemViewWithIcon(openDatabaseView) {
@@ -431,21 +412,6 @@ fun SettingsPreferenceItem(
 }
 
 @Composable
-fun SettingsPreferenceItemWithInfo(
-  icon: Painter,
-  iconTint: Color,
-  text: String,
-  stopped: Boolean,
-  onClickInfo: () -> Unit,
-  pref: SharedPreference<Boolean>,
-  prefState: MutableState<Boolean>? = null
-) {
-  SettingsActionItemWithContent(icon, null, click = if (stopped) null else onClickInfo, iconColor = iconTint, extraPadding = true,) {
-    SharedPreferenceToggleWithIcon(text, painterResource(MR.images.ic_info), stopped, onClickInfo, pref, prefState)
-  }
-}
-
-@Composable
 fun PreferenceToggle(
   text: String,
   checked: Boolean,
@@ -500,8 +466,7 @@ fun PreviewSettingsLayout() {
       profile = LocalProfile.sampleData,
       stopped = false,
       encrypted = false,
-      incognito = remember { mutableStateOf(false) },
-      incognitoPref = SharedPreference({ false }, {}),
+      notificationsMode = remember { mutableStateOf(NotificationsMode.OFF) },
       userDisplayName = "Alice",
       setPerformLA = { _ -> },
       showModal = { {} },
@@ -510,6 +475,7 @@ fun PreviewSettingsLayout() {
       showCustomModal = { {} },
       showVersion = {},
       withAuth = { _, _, _ -> },
+      drawerState = DrawerState(DrawerValue.Closed),
     )
   }
 }

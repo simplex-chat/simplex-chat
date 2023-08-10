@@ -47,7 +47,9 @@ actual fun PlatformTextField(
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
-  onMessageChange: (String) -> Unit
+  onMessageChange: (String) -> Unit,
+  onUpArrow: () -> Unit,
+  onDone: () -> Unit,
 ) {
   val cs = composeState.value
   val textColor = MaterialTheme.colors.onBackground

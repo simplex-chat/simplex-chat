@@ -14,6 +14,9 @@ enum class DesktopPlatform(val libPath: String, val libExtension: String, val co
   WINDOWS_X86_64("/libs/windows-x86_64", "dll", System.getenv("AppData") + File.separator + "SimpleX", System.getenv("AppData") + File.separator + "SimpleX"),
   MAC_X86_64("/libs/mac-x86_64", "dylib", unixConfigPath, unixDataPath),
   MAC_AARCH64("/libs/mac-aarch64", "dylib", unixConfigPath, unixDataPath);
+
+  fun isLinux() = this == LINUX_X86_64 || this == LINUX_AARCH64
+  fun isMac() = this == MAC_X86_64 || this == MAC_AARCH64
 }
 
 private fun detectDesktopPlatform(): DesktopPlatform {

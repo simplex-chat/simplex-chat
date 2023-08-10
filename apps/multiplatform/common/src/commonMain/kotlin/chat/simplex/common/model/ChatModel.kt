@@ -80,7 +80,6 @@ object ChatModel {
   }
   val performLA by lazy { mutableStateOf(ChatController.appPrefs.performLA.get()) }
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
-  val incognito by lazy { mutableStateOf(ChatController.appPrefs.incognito.get()) }
 
   // current WebRTC call
   val callManager = CallManager(this)
@@ -130,10 +129,11 @@ object ChatModel {
     }
   }
 
-  fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
-  fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
-  fun getContactChat(contactId: Long): Chat? = chats.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
-  private fun getChatIndex(id: String): Int = chats.indexOfFirst { it.id == id }
+  // toList() here is to prevent ConcurrentModificationException that is rarely happens but happens
+  fun hasChat(id: String): Boolean = chats.toList().firstOrNull { it.id == id } != null
+  fun getChat(id: String): Chat? = chats.toList().firstOrNull { it.id == id }
+  fun getContactChat(contactId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
+  private fun getChatIndex(id: String): Int = chats.toList().indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
   fun updateChatInfo(cInfo: ChatInfo) {
@@ -437,7 +437,7 @@ object ChatModel {
     val info = getChat(id)?.chatInfo as? ChatInfo.ContactConnection ?: return
     if (info.contactConnection.connReqInv == connReqInv.value) {
       connReqInv.value = null
-      ModalManager.shared.closeModals()
+      ModalManager.center.closeModals()
     }
   }
 
@@ -1623,18 +1623,12 @@ data class CIMeta (
 
   val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew
 
-  fun statusIcon(primaryColor: Color, metaColor: Color = CurrentColors.value.colors.secondary): Pair<ImageResource, Color>? =
-    when (itemStatus) {
-      is CIStatus.SndSent -> MR.images.ic_check_filled to metaColor
-      is CIStatus.SndRcvd -> when(itemStatus.msgRcptStatus) {
-        MsgReceiptStatus.Ok -> MR.images.ic_double_check to metaColor
-        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
-      }
-      is CIStatus.SndErrorAuth -> MR.images.ic_close to Color.Red
-      is CIStatus.SndError -> MR.images.ic_warning_filled to WarningYellow
-      is CIStatus.RcvNew -> MR.images.ic_circle_filled to primaryColor
-      else -> null
-    }
+  fun statusIcon(
+    primaryColor: Color,
+    metaColor: Color = CurrentColors.value.colors.secondary,
+    paleMetaColor: Color = CurrentColors.value.colors.secondary
+  ): Pair<ImageResource, Color>? =
+    itemStatus.statusIcon(primaryColor, metaColor, paleMetaColor)
 
   companion object {
     fun getSample(
@@ -1713,18 +1707,61 @@ fun localTimestamp(t: Instant): String {
 @Serializable
 sealed class CIStatus {
   @Serializable @SerialName("sndNew") class SndNew: CIStatus()
-  @Serializable @SerialName("sndSent") class SndSent: CIStatus()
-  @Serializable @SerialName("sndRcvd") class SndRcvd(val msgRcptStatus: MsgReceiptStatus): CIStatus()
+  @Serializable @SerialName("sndSent") class SndSent(val sndProgress: SndCIStatusProgress): CIStatus()
+  @Serializable @SerialName("sndRcvd") class SndRcvd(val msgRcptStatus: MsgReceiptStatus, val sndProgress: SndCIStatusProgress): CIStatus()
   @Serializable @SerialName("sndErrorAuth") class SndErrorAuth: CIStatus()
   @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): CIStatus()
+
+  fun statusIcon(
+    primaryColor: Color,
+    metaColor: Color = CurrentColors.value.colors.secondary,
+    paleMetaColor: Color = CurrentColors.value.colors.secondary
+  ): Pair<ImageResource, Color>? =
+    when (this) {
+      is SndNew -> null
+      is SndSent -> when (this.sndProgress) {
+        SndCIStatusProgress.Complete -> MR.images.ic_check_filled to metaColor
+        SndCIStatusProgress.Partial -> MR.images.ic_check_filled to paleMetaColor
+      }
+      is SndRcvd -> when(this.msgRcptStatus) {
+        MsgReceiptStatus.Ok -> when (this.sndProgress) {
+          SndCIStatusProgress.Complete -> MR.images.ic_double_check to metaColor
+          SndCIStatusProgress.Partial -> MR.images.ic_double_check to paleMetaColor
+        }
+        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
+      }
+      is SndErrorAuth -> MR.images.ic_close to Color.Red
+      is SndError -> MR.images.ic_warning_filled to WarningYellow
+      is RcvNew -> MR.images.ic_circle_filled to primaryColor
+      is RcvRead -> null
+      is CIStatus.Invalid -> MR.images.ic_question_mark to metaColor
+    }
+
+  val statusInto: Pair<String, String>? get() = when (this) {
+    is SndNew -> null
+    is SndSent -> null
+    is SndRcvd -> null
+    is SndErrorAuth -> generalGetString(MR.strings.message_delivery_error_title) to generalGetString(MR.strings.message_delivery_error_desc)
+    is SndError -> generalGetString(MR.strings.message_delivery_error_title) to (generalGetString(MR.strings.unknown_error) + ": $agentError")
+    is RcvNew -> null
+    is RcvRead -> null
+    is Invalid -> "Invalid status" to this.text
+  }
 }
 
 @Serializable
 enum class MsgReceiptStatus {
   @SerialName("ok") Ok,
   @SerialName("badMsgHash") BadMsgHash;
+}
+
+@Serializable
+enum class SndCIStatusProgress {
+  @SerialName("partial") Partial,
+  @SerialName("complete") Complete;
 }
 
 @Serializable
@@ -1956,6 +1993,7 @@ class CIFile(
     is CIFileStatus.RcvCancelled -> false
     is CIFileStatus.RcvComplete -> true
     is CIFileStatus.RcvError -> false
+    is CIFileStatus.Invalid -> false
   }
 
   @Transient
@@ -1976,6 +2014,7 @@ class CIFile(
     is CIFileStatus.RcvCancelled -> null
     is CIFileStatus.RcvComplete -> null
     is CIFileStatus.RcvError -> null
+    is CIFileStatus.Invalid -> null
   }
 
   companion object {
@@ -2045,6 +2084,7 @@ sealed class CIFileStatus {
   @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
   @Serializable @SerialName("rcvError") object RcvError: CIFileStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): CIFileStatus()
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
@@ -2487,6 +2527,7 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
 @Serializable
 class ChatItemInfo(
   val itemVersions: List<ChatItemVersion>,
+  val memberDeliveryStatuses: List<MemberDeliveryStatus>?
 )
 
 @Serializable
@@ -2496,6 +2537,12 @@ data class ChatItemVersion(
   val formattedText: List<FormattedText>?,
   val itemVersionTs: Instant,
   val createdAt: Instant,
+)
+
+@Serializable
+data class MemberDeliveryStatus(
+  val groupMemberId: Long,
+  val memberDeliveryStatus: CIStatus
 )
 
 enum class NotificationPreviewMode {

@@ -24,7 +24,7 @@ struct ContactRequestView: View {
                     Text(contactRequest.chatViewName)
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(chatModel.incognito ? .indigo : .accentColor)
+                        .foregroundColor(.accentColor)
                         .padding(.leading, 8)
                         .frame(alignment: .topLeading)
                     Spacer()

@@ -15,7 +15,7 @@ import System.Exit (exitFailure)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} sendToast chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} sendToast chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -27,7 +27,7 @@ simplexChatCore cfg@ChatConfig {confirmMigrations} opts@ChatOpts {coreOptions = 
       putStrLn $ "Error opening database: " <> show e
       exitFailure
     run db@ChatDatabase {chatStore} = do
-      u <- getCreateActiveUser chatStore
+      u <- getCreateActiveUser chatStore testView
       cc <- newChatController db (Just u) cfg opts sendToast
       runSimplexChat opts u cc chat
 
@@ -39,5 +39,8 @@ runSimplexChat ChatOpts {maintenance} u cc chat
     a2 <- async $ chat u cc
     waitEither_ a1 a2
 
-sendChatCmd :: ChatController -> String -> IO ChatResponse
-sendChatCmd cc s = runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
+sendChatCmdStr :: ChatController -> String -> IO ChatResponse
+sendChatCmdStr cc s = runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc
+
+sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
+sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc

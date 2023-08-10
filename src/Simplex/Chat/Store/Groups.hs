@@ -39,11 +39,14 @@ module Simplex.Chat.Store.Groups
     getGroupMemberById,
     getGroupMembers,
     getGroupMembersForExpiration,
+    getGroupCurrentMembersCount,
     deleteGroupConnectionsAndFiles,
     deleteGroupItemsAndMembers,
     deleteGroup,
     getUserGroups,
     getUserGroupDetails,
+    getUserGroupsWithSummary,
+    getGroupSummary,
     getContactGroupPreferences,
     checkContactHasGroups,
     getGroupInvitation,
@@ -97,6 +100,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Crypto as C
@@ -446,8 +450,8 @@ getUserGroups db user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroup db user) groupIds
 
-getUserGroupDetails :: DB.Connection -> User -> IO [GroupInfo]
-getUserGroupDetails db User {userId, userContactId} =
+getUserGroupDetails :: DB.Connection -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
+getUserGroupDetails db User {userId, userContactId} _contactId_ search_ =
   map (toGroupInfo userContactId)
     <$> DB.query
       db
@@ -460,8 +464,35 @@ getUserGroupDetails db User {userId, userContactId} =
         JOIN group_members mu USING (group_id)
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         WHERE g.user_id = ? AND mu.contact_id = ?
+          AND (gp.display_name LIKE '%' || ? || '%' OR gp.full_name LIKE '%' || ? || '%' OR gp.description LIKE '%' || ? || '%')
       |]
-      (userId, userContactId)
+      (userId, userContactId, search, search, search)
+  where
+    search = fromMaybe "" search_
+
+getUserGroupsWithSummary :: DB.Connection -> User -> Maybe ContactId -> Maybe String -> IO [(GroupInfo, GroupSummary)]
+getUserGroupsWithSummary db user _contactId_ search_ =
+  getUserGroupDetails db user _contactId_ search_
+    >>= mapM (\g@GroupInfo {groupId} -> (g,) <$> getGroupSummary db user groupId)
+
+-- the statuses on non-current members should match memberCurrent' function
+getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary
+getGroupSummary db User {userId} groupId = do
+  currentMembers_ <- maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT count (m.group_member_id)
+        FROM groups g
+        JOIN group_members m USING (group_id)
+        WHERE g.user_id = ?
+          AND g.group_id = ?
+          AND m.member_status != ?
+          AND m.member_status != ?
+          AND m.member_status != ?
+      |]
+      (userId, groupId, GSMemRemoved, GSMemLeft, GSMemInvited)
+  pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [FullGroupPreferences]
 getContactGroupPreferences db User {userId} Contact {contactId} = do
@@ -546,6 +577,20 @@ getGroupMembersForExpiration db user@User {userId, userContactId} GroupInfo {gro
 toContactMember :: User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember User {userContactId} (memberRow :. connRow) =
   (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection connRow}
+
+getGroupCurrentMembersCount :: DB.Connection -> User -> GroupInfo -> IO Int
+getGroupCurrentMembersCount db User {userId} GroupInfo {groupId} = do
+  statuses :: [GroupMemberStatus] <-
+    map fromOnly
+      <$> DB.query
+        db
+        [sql|
+          SELECT member_status
+          FROM group_members
+          WHERE group_id = ? AND user_id = ?
+        |]
+        (groupId, userId)
+  pure $ length $ filter memberCurrent' statuses
 
 getGroupInvitation :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db user groupId =

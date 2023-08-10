@@ -221,7 +221,7 @@
     <string name="mark_read">Marquer comme lu</string>
     <string name="mark_unread">Marquer non lu</string>
     <string name="set_contact_name">Définir le nom du contact</string>
-    <string name="you_invited_your_contact">Vous avez invité votre contact</string>
+    <string name="you_invited_a_contact">Vous avez invité votre contact</string>
     <string name="you_accepted_connection">Vous avez accepté la connexion</string>
     <string name="delete_pending_connection__question">Supprimer la connexion en attente \?</string>
     <string name="connection_you_accepted_will_be_cancelled">La connexion que vous avez acceptée sera annulée !</string>
@@ -804,7 +804,7 @@
     <string name="group_preferences">Préférences du groupe</string>
     <string name="set_group_preferences">Définir les préférences du groupe</string>
     <string name="your_preferences">Vos préférences</string>
-    <string name="allow_your_contacts_irreversibly_delete">Autorise votre contact à supprimer de façon définitive des messages envoyés.</string>
+    <string name="allow_your_contacts_irreversibly_delete">Autorise vos contacts à supprimer de manière irréversible les messages envoyés.</string>
     <string name="contacts_can_mark_messages_for_deletion">Vos contacts peuvent marquer les messages pour les supprimer ; vous pourrez les consulter.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Autorise vos contacts à envoyer des messages vocaux.</string>
     <string name="allow_voice_messages_only_if">Autoriser les messages vocaux uniquement si votre contact les autorise.</string>
@@ -910,7 +910,7 @@
     <string name="feature_offered_item">offert %s</string>
     <string name="feature_offered_item_with_param">offert %s: %2s</string>
     <string name="feature_cancelled_item">annulé %s</string>
-    <string name="app_version_title">Version de l\'application</string>
+    <string name="app_version_title">Version de l\'app</string>
     <string name="core_simplexmq_version">simplexmq : v%s (%2s)</string>
     <string name="app_version_code">Build de l\'app : %s</string>
     <string name="app_version_name">Version de l\'app : v%s</string>
@@ -928,8 +928,8 @@
     <string name="network_session_mode_entity">Connexion</string>
     <string name="delete_files_and_media_for_all_users">Effacer les fichiers de tous les profils de chat</string>
     <string name="users_delete_with_connections">Profil et connexions au serveur</string>
-    <string name="network_session_mode_transport_isolation">Isolement du transport</string>
-    <string name="update_network_session_mode_question">Mettre à jour le mode d\'isolation du transport \?</string>
+    <string name="network_session_mode_transport_isolation">Transport isolé</string>
+    <string name="update_network_session_mode_question">Mettre à jour le mode d\'isolement du transport \?</string>
     <string name="network_session_mode_entity_description">Une connexion TCP distincte (et identifiant SOCKS) sera utilisée <b>pour chaque contact et membre de groupe</b>.
 \n<b>Veuillez noter</b> : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.</string>
     <string name="network_session_mode_user">Profil de chat</string>
@@ -953,8 +953,8 @@
     <string name="v4_5_italian_interface_descr">Merci aux utilisateurs - contribuez via Weblate !</string>
     <string name="v4_4_french_interface_descr">Merci aux utilisateurs - contribuez via Weblate !</string>
     <string name="v4_5_private_filenames_descr">Pour préserver le fuseau horaire, les fichiers image/voix utilisent le système UTC.</string>
-    <string name="v4_5_transport_isolation">Isolation du transport</string>
-    <string name="v4_5_multiple_chat_profiles_descr">Différents noms, avatars et mode d\'isolation de transport.</string>
+    <string name="v4_5_transport_isolation">Transport isolé</string>
+    <string name="v4_5_multiple_chat_profiles_descr">Différents noms, avatars et modes d\'isolement de transport.</string>
     <string name="moderated_description">modéré</string>
     <string name="moderated_item_description">modéré par %s</string>
     <string name="delete_member_message__question">Supprimer le message de ce membre \?</string>
@@ -996,7 +996,7 @@
     <string name="make_profile_private">Rendre un profil privé !</string>
     <string name="user_mute">Mute</string>
     <string name="v4_6_hidden_chat_profiles_descr">Protégez vos profils de chat par un mot de passe !</string>
-    <string name="tap_to_activate_profile">Appuyez pour activer le profil.</string>
+    <string name="tap_to_activate_profile">Appuyez pour activer un profil.</string>
     <string name="save_and_update_group_profile">Sauvegarder et mettre à jour le profil du groupe</string>
     <string name="save_profile_password">Enregistrer le mot de passe du profil</string>
     <string name="to_reveal_profile_enter_password">Pour révéler votre profil caché, entrez le mot de passe dans le champ de recherche de la page Profils de chat.</string>
@@ -1025,7 +1025,7 @@
     <string name="show_dev_options">Afficher :</string>
     <string name="show_developer_options">Afficher les options pour les développeurs</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Le fichier sera reçu lorsque votre contact aura terminé de le mettre en ligne.</string>
-    <string name="developer_options">IDs de base de données et option d\'isolation du transport.</string>
+    <string name="developer_options">IDs de base de données et option d\'isolement du transport.</string>
     <string name="settings_section_title_experimenta">EXPÉRIMENTALE</string>
     <string name="hide_dev_options">Cacher :</string>
     <string name="unhide_chat_profile">Dévoiler le profil de chat</string>
@@ -1107,7 +1107,7 @@
     <string name="submit_passcode">Soumettre</string>
     <string name="both_you_and_your_contact_can_make_calls">Vous et votre contact pouvez tous deux passer des appels.</string>
     <string name="only_you_can_make_calls">Vous seul pouvez passer des appels.</string>
-    <string name="calls_prohibited_with_this_contact">Interdire les appels audio/vidéo.</string>
+    <string name="calls_prohibited_with_this_contact">Les appels audio/vidéo sont interdits.</string>
     <string name="confirm_passcode">Confirmer le code d\'accès</string>
     <string name="lock_after">Verrouillage après</string>
     <string name="lock_mode">Mode de verrouillage</string>
@@ -1163,7 +1163,7 @@
     <string name="add_address_to_your_profile">Ajoutez une adresse à votre profil, afin que vos contacts puissent la partager avec d\'autres personnes. La mise à jour du profil sera envoyée à vos contacts.</string>
     <string name="color_secondary_variant">Secondaire supplémentaire</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Tous vos contacts resteront connectés. La mise à jour du profil sera envoyée à vos contacts.</string>
-    <string name="auto_accept_contact">Auto-acceptation</string>
+    <string name="auto_accept_contact">Auto-accepter</string>
     <string name="create_simplex_address">Créer une adresse SimpleX</string>
     <string name="customize_theme_title">Personnaliser le thème</string>
     <string name="continue_to_next_step">Continuer</string>
@@ -1227,7 +1227,7 @@
     <string name="error_loading_details">Erreur de chargement des détails</string>
     <string name="edit_history">Historique</string>
     <string name="info_menu">Info</string>
-    <string name="search_verb">Rechercher</string>
+    <string name="search_verb">Recherche</string>
     <string name="received_message">Message reçu</string>
     <string name="custom_time_picker_custom">personnalisé</string>
     <string name="custom_time_picker_select">Choisir</string>
@@ -1314,7 +1314,7 @@
     <string name="sync_connection_force_confirm">Renégocier</string>
     <string name="rcv_conn_event_verification_code_reset">code de sécurité modifié</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">L\'envoi d\'accusés de réception sera activé pour tous les contacts dans tous les profils de chat visibles.</string>
-    <string name="receipts_section_description_1">Ils peuvent être remplacés dans les paramètres des contacts</string>
+    <string name="receipts_section_description_1">Ils peuvent être modifiés dans les paramètres des contacts et des groupes.</string>
     <string name="receipts_section_description">Ces paramètres s\'appliquent à votre profil actuel</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Vous pouvez les activer ultérieurement via les paramètres de Confidentialité et Sécurité de l\'application.</string>
     <string name="receipts_contacts_title_enable">Activer les accusés de réception \?</string>
@@ -1342,4 +1342,38 @@
     <string name="error_synchronizing_connection">Erreur de synchronisation de connexion</string>
     <string name="no_history">Aucun historique</string>
     <string name="sync_connection_force_question">Renégocier le chiffrement\?</string>
+    <string name="choose_file_title">Choisissez un fichier</string>
+    <string name="in_developing_title">Bientôt disponible !</string>
+    <string name="receipts_section_groups">Petits groupes (max 20)</string>
+    <string name="receipts_groups_disable_keep_overrides">Désactivé (conserver la priorité sur les groupes)</string>
+    <string name="receipts_groups_title_disable">Désactiver les reçus pour les groupes \?</string>
+    <string name="receipts_groups_enable_for_all">Activé pour tous les groupes</string>
+    <string name="receipts_groups_enable_keep_overrides">Activé (conserver la priorité sur les groupes)</string>
+    <string name="receipts_groups_override_disabled">L\'envoi de reçus est désactivé pour %d groupes</string>
+    <string name="receipts_groups_override_enabled">L\'envoi de reçus est activé pour %d groupes</string>
+    <string name="receipts_groups_disable_for_all">Désactivé pour tous les groupes</string>
+    <string name="send_receipts_disabled_alert_title">Les accusés de réception sont désactivés</string>
+    <string name="item_status_snd_new_text">Envoi d\'un message</string>
+    <string name="item_status_snd_rcvd_text">Message envoyé reçu</string>
+    <string name="item_status_snd_error_unexpected_desc">Erreur inattendue dans la distribution du message : %1$s</string>
+    <string name="item_status_rcv_read_desc">Vous avez lu ce message.</string>
+    <string name="in_developing_desc">Cette fonctionnalité n\'est pas encore prise en charge. Essayez la dans la prochaine version.</string>
+    <string name="delivery">Distribution</string>
+    <string name="send_receipts_disabled">désactivé</string>
+    <string name="item_status_snd_error_auth_desc">Erreur de distribution du message. Il est très probable que ce destinataire ait supprimé la connexion avec vous.</string>
+    <string name="item_status_snd_error_text">Erreur lors de l\'envoi du message</string>
+    <string name="item_status_snd_rcvd_desc">Le destinataire a reçu le message.</string>
+    <string name="item_status_snd_sent_desc">Message envoyé au relais du destinataire.</string>
+    <string name="item_status_rcv_read_text">Message lu</string>
+    <string name="item_status_rcv_new_text">Message reçu</string>
+    <string name="item_status_snd_sent_text">Message envoyé</string>
+    <string name="item_status_rcv_new_desc">Nouveau message de cet expéditeur.</string>
+    <string name="no_info_on_delivery">Pas d\'information sur la distribution</string>
+    <string name="no_selected_chat">Aucun chat sélectionné</string>
+    <string name="item_status_snd_new_desc">L\'envoi du message est en cours ou en attente.</string>
+    <string name="receipts_groups_title_enable">Activer les reçus pour les groupes \?</string>
+    <string name="send_receipts_disabled_alert_msg">Ce groupe compte plus de %1$d membres, les accusés de réception ne sont pas envoyés.</string>
+    <string name="recipient_colon_delivery_status">%s : %s</string>
+    <string name="connect_via_member_address_alert_title">Connexion directe \?</string>
+    <string name="connect_via_member_address_alert_desc">Une demande de connexion sera envoyée à ce membre du groupe.</string>
 </resources>

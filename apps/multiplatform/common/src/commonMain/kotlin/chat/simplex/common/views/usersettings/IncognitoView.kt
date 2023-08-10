@@ -31,7 +31,6 @@ fun IncognitoLayout() {
       Text(generalGetString(MR.strings.incognito_info_protects))
       Text(generalGetString(MR.strings.incognito_info_allows))
       Text(generalGetString(MR.strings.incognito_info_share))
-      Text(generalGetString(MR.strings.incognito_info_find))
       SectionBottomSpacer()
     }
   }

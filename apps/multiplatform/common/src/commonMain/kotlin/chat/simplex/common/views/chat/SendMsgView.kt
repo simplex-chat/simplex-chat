@@ -24,6 +24,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -47,6 +48,7 @@ fun SendMsgView(
   sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
+  editPrevMessage: () -> Unit,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
@@ -66,7 +68,9 @@ fun SendMsgView(
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
-    PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange)
+    PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage) {
+      sendMessage(null)
+    }
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
       Box(
@@ -83,7 +87,7 @@ fun SendMsgView(
     if (showDeleteTextButton.value) {
       DeleteTextButton(composeState)
     }
-    Box(Modifier.align(Alignment.BottomEnd)) {
+    Box(Modifier.align(Alignment.BottomEnd).padding(bottom = if (appPlatform.isAndroid) 0.dp else 5.dp)) {
       val sendButtonSize = remember { Animatable(36f) }
       val sendButtonAlpha = remember { Animatable(1f) }
       val scope = rememberCoroutineScope()
@@ -320,7 +324,10 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
     LockToCurrentOrientationUntilDispose()
     StopRecordButton(stopRecordingAndAddAudio)
   } else {
-    val startRecording: () -> Unit = {
+    val startRecording: () -> Unit = out@ {
+      if (appPlatform.isDesktop) {
+        return@out showInDevelopingAlert()
+      }
       recState.value = RecordingState.Started(
         filePath = rec.start { progress: Int?, finished: Boolean ->
           val state = recState.value
@@ -446,7 +453,8 @@ private fun SendMsgButton(
         role = Role.Button,
         interactionSource = interactionSource,
         indication = rememberRipple(bounded = false, radius = 24.dp)
-      ),
+      )
+      .onRightClick { onLongClick?.invoke() },
     contentAlignment = Alignment.Center
   ) {
     Icon(
@@ -586,6 +594,7 @@ fun PreviewSendMsgView() {
       allowVoiceToContact = {},
       timedMessageAllowed = false,
       sendMessage = {},
+      editPrevMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
     )
@@ -616,6 +625,7 @@ fun PreviewSendMsgViewEditing() {
       allowVoiceToContact = {},
       timedMessageAllowed = false,
       sendMessage = {},
+      editPrevMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
     )
@@ -646,6 +656,7 @@ fun PreviewSendMsgViewInProgress() {
       allowVoiceToContact = {},
       timedMessageAllowed = false,
       sendMessage = {},
+      editPrevMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
     )

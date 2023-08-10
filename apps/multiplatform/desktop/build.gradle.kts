@@ -1,4 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
+import java.util.*
 
 plugins {
   kotlin("multiplatform")
@@ -30,8 +32,16 @@ kotlin {
 compose {
   desktop {
     application {
-      mainClass = "MainKt"
+      // For debugging via VisualVM
+      /*jvmArgs += listOf(
+        "-Dcom.sun.management.jmxremote.port=8080",
+        "-Dcom.sun.management.jmxremote.ssl=false",
+        "-Dcom.sun.management.jmxremote.authenticate=false"
+      )*/
+      mainClass = "chat.simplex.desktop.MainKt"
       nativeDistributions {
+        // For debugging via VisualVM
+        //modules("jdk.zipfs", "jdk.management.agent")
         modules("jdk.zipfs")
         //includeAllModules = true
         outputBaseDir.set(project.file("../release"))
@@ -40,23 +50,28 @@ compose {
           //, TargetFormat.AppImage // Gradle doesn't sync on Mac with it
         )
         linux {
-          iconFile.set(project.file("../common/src/commonMain/resources/distribute/simplex.png"))
+          iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.png"))
           appCategory = "Messenger"
         }
         windows {
-          // LALAL
-          iconFile.set(project.file("../common/src/commonMain/resources/distribute/simplex.ico"))
+          packageName = "SimpleX"
+          iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.ico"))
           console = true
           perUserInstall = true
           dirChooser = true
         }
         macOS {
-          // LALAL
-          //iconFile.set(project.file("../common/src/commonMain/resources/distribute/simplex.icns"))
+          packageName = "SimpleX"
+          iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
         }
-        packageName = "simplex"
+        val os = System.getProperty("os.name", "generic").toLowerCaseAsciiOnly()
+        if (os.contains("mac") || os.contains("win")) {
+          packageName = "SimpleX"
+        } else {
+          packageName = "simplex"
+        }
         // Packaging requires to have version like MAJOR.MINOR.PATCH
         var adjustedVersion = rootProject.extra["desktop.version_name"] as String
         adjustedVersion = adjustedVersion.replace(Regex("[^0-9.]"), "")
@@ -116,8 +131,8 @@ afterEvaluate {
     doLast {
       copy {
         from("${project(":desktop").buildDir}/cmake/main/linux-amd64", "$cppPath/desktop/libs/linux-x86_64", "$cppPath/desktop/libs/linux-x86_64/deps")
-        into("../common/src/commonMain/resources/libs/linux-x86_64")
-        include("*.so")
+        into("src/jvmMain/resources/libs/linux-x86_64")
+        include("*.so*")
         eachFile {
           path = name
         }
@@ -126,8 +141,8 @@ afterEvaluate {
       }
       copy {
         from("${project(":desktop").buildDir}/cmake/main/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64/deps")
-        into("../common/src/commonMain/resources/libs/linux-aarch64")
-        include("*.so")
+        into("src/jvmMain/resources/libs/linux-aarch64")
+        include("*.so*")
         eachFile {
           path = name
         }
@@ -136,7 +151,7 @@ afterEvaluate {
       }
       copy {
         from("${project(":desktop").buildDir}/cmake/main/win-amd64", "$cppPath/desktop/libs/windows-x86_64", "$cppPath/desktop/libs/windows-x86_64/deps")
-        into("../common/src/commonMain/resources/libs/windows-x86_64")
+        into("src/jvmMain/resources/libs/windows-x86_64")
         include("*.dll")
         eachFile {
           path = name
@@ -146,7 +161,7 @@ afterEvaluate {
       }
       copy {
         from("${project(":desktop").buildDir}/cmake/main/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64/deps")
-        into("../common/src/commonMain/resources/libs/mac-x86_64")
+        into("src/jvmMain/resources/libs/mac-x86_64")
         include("*.dylib")
         eachFile {
           path = name
@@ -156,7 +171,7 @@ afterEvaluate {
       }
       copy {
         from("${project(":desktop").buildDir}/cmake/main/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64/deps")
-        into("../common/src/commonMain/resources/libs/mac-aarch64")
+        into("src/jvmMain/resources/libs/mac-aarch64")
         include("*.dylib")
         eachFile {
           path = name

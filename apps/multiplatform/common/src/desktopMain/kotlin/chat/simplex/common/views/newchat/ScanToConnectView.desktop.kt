@@ -6,7 +6,8 @@ import chat.simplex.common.model.ChatModel
 @Composable
 actual fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit) {
   ConnectContactLayout(
-    chatModelIncognito = chatModel.incognito.value,
+    chatModel = chatModel,
+    incognitoPref = chatModel.controller.appPrefs.incognito,
     close = close
   )
 }

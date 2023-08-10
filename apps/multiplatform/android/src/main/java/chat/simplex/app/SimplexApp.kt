@@ -36,6 +36,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     initHaskell()
     initMultiplatform()
     tmpDir.deleteRecursively()
+    tmpDir.mkdir()
 
     withBGApi {
       initChatController()
@@ -92,12 +93,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   fun allowToStartServiceAfterAppExit() = with(chatModel.controller) {
     appPrefs.notificationsMode.get() == NotificationsMode.SERVICE &&
-        (!NotificationsMode.SERVICE.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
+        (!NotificationsMode.SERVICE.requiresIgnoringBattery || SimplexService.isBackgroundAllowed())
   }
 
   private fun allowToStartPeriodically() = with(chatModel.controller) {
     appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC &&
-        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
+        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || SimplexService.isBackgroundAllowed())
   }
 
   /*
@@ -139,14 +140,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
     androidAppContext = this
     APPLICATION_ID = BuildConfig.APPLICATION_ID
     ntfManager = object : chat.simplex.common.platform.NtfManager() {
-      override fun notifyContactConnected(user: User, contact: Contact) = NtfManager.notifyContactConnected(user, contact)
-      override fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) = NtfManager.notifyContactRequestReceived(user, cInfo)
-      override fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) = NtfManager.notifyMessageReceived(user, cInfo, cItem)
       override fun notifyCallInvitation(invitation: RcvCallInvitation) = NtfManager.notifyCallInvitation(invitation)
       override fun hasNotificationsForChat(chatId: String): Boolean = NtfManager.hasNotificationsForChat(chatId)
       override fun cancelNotificationsForChat(chatId: String) = NtfManager.cancelNotificationsForChat(chatId)
-      override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<NotificationAction>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
-      override fun createNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
+      override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions.map { it.first })
+      override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
       override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
     }
@@ -160,7 +158,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
 
       override fun androidNotificationsModeChanged(mode: NotificationsMode) {
-        if (mode.requiresIgnoringBattery && !SimplexService.isIgnoringBatteryOptimizations()) {
+        if (mode.requiresIgnoringBattery && !SimplexService.isBackgroundAllowed()) {
           appPrefs.backgroundServiceNoticeShown.set(false)
         }
         SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
@@ -174,7 +172,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         if (mode != NotificationsMode.PERIODIC) {
           MessagesFetcherWorker.cancelAll()
         }
-        SimplexService.showBackgroundServiceNoticeIfNeeded()
+        SimplexService.showBackgroundServiceNoticeIfNeeded(showOffAlert = false)
       }
 
       override fun androidChatStartedAfterBeingOff() {
@@ -200,6 +198,19 @@ class SimplexApp: Application(), LifecycleEventObserver {
               platform.androidServiceStart()
             }
         }
+      }
+
+      override fun androidIsBackgroundCallAllowed(): Boolean = !SimplexService.isBackgroundRestricted()
+
+      override suspend fun androidAskToAllowBackgroundCalls(): Boolean {
+        if (SimplexService.isBackgroundRestricted()) {
+          val userChoice: CompletableDeferred<Boolean> = CompletableDeferred()
+          SimplexService.showBGRestrictedInCall {
+            userChoice.complete(it)
+          }
+          return userChoice.await()
+        }
+        return true
       }
     }
   }

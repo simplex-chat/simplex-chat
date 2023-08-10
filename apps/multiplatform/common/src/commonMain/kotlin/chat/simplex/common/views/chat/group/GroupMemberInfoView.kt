@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.group
 import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -76,13 +77,7 @@ fun GroupMemberInfoView(
         }
       },
       connectViaAddress = { connReqUri ->
-        val uri = URI(connReqUri)
-        withUriAction(uri) { linkType ->
-          withApi {
-            Log.d(TAG, "connectViaUri: connecting")
-            connectViaUri(chatModel, linkType, uri)
-          }
-        }
+        connectViaMemberAddressAlert(connReqUri)
       },
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) },
       onRoleSelected = {
@@ -149,7 +144,7 @@ fun GroupMemberInfoView(
         })
       },
       verifyClicked = {
-        ModalManager.shared.showModalCloseable { close ->
+        ModalManager.end.showModalCloseable { close ->
           remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
             VerifyCodeView(
               mem.displayName,
@@ -447,6 +442,46 @@ private fun updateMemberRoleDialog(
     onDismiss = onDismiss,
     onConfirm = onConfirm,
     onDismissRequest = onDismiss
+  )
+}
+
+fun connectViaMemberAddressAlert(connReqUri: String) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.connect_via_member_address_alert_title),
+    text = AnnotatedString(generalGetString(MR.strings.connect_via_member_address_alert_desc)),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          val uri = URI(connReqUri)
+          withUriAction(uri) { linkType ->
+            withApi {
+              Log.d(TAG, "connectViaUri: connecting")
+              connectViaUri(chatModel, linkType, uri, incognito = false)
+            }
+          }
+        }) {
+          Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          val uri = URI(connReqUri)
+          withUriAction(uri) { linkType ->
+            withApi {
+              Log.d(TAG, "connectViaUri: connecting incognito")
+              connectViaUri(chatModel, linkType, uri, incognito = true)
+            }
+          }
+        }) {
+          Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
   )
 }
 

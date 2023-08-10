@@ -94,6 +94,9 @@ kotlin {
     val desktopMain by getting {
       dependencies {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.1")
+        implementation("com.github.Dansoftowner:jSystemThemeDetector:3.6")
+        implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
+        implementation("org.slf4j:slf4j-simple:2.0.7")
       }
     }
     val desktopTest by getting
@@ -110,6 +113,15 @@ android {
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
+  }
+  val isAndroid = gradle.startParameter.taskNames.find {
+    val lower = it.toLowerCase()
+    lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")
+  } != null
+  if (isAndroid) {
+    // This is not needed on Android but can't be moved to desktopMain because MR lib don't support this.
+    // No other ways to exclude a file work but it's large and should be excluded
+    kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
   }
 }
 

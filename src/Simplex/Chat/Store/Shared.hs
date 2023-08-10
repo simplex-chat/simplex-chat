@@ -31,6 +31,7 @@ import GHC.Generics (Generic)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
@@ -91,6 +92,7 @@ data StoreError
   | SEGroupLinkNotFound {groupInfo :: GroupInfo}
   | SEHostMemberIdNotFound {groupId :: Int64}
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
+  | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
@@ -201,7 +203,7 @@ createContact_ db userId connId Profile {displayName, fullName, image, contactLi
     pure $ Right (ldn, contactId, profileId)
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
-deleteUnusedIncognitoProfileById_ db User {userId} profile_id =
+deleteUnusedIncognitoProfileById_ db User {userId} profileId =
   DB.executeNamed
     db
     [sql|
@@ -216,7 +218,7 @@ deleteUnusedIncognitoProfileById_ db User {userId} profile_id =
           WHERE user_id = :user_id AND member_profile_id = :profile_id LIMIT 1
         )
     |]
-    [":user_id" := userId, ":profile_id" := profile_id]
+    [":user_id" := userId, ":profile_id" := profileId]
 
 type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Bool) :. (Maybe Bool, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime)
 

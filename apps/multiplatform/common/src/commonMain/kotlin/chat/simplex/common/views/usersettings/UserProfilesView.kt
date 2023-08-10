@@ -30,6 +30,7 @@ import chat.simplex.common.views.database.PassphraseField
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.CreateProfile
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
@@ -47,11 +48,15 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
     addUser = {
-      ModalManager.shared.showModalCloseable { close ->
+      ModalManager.center.showModalCloseable { close ->
         CreateProfile(m, close)
       }
     },
     activateUser = { user ->
+      if (appPlatform.isDesktop) {
+        ModalManager.center.closeModals()
+        ModalManager.end.closeModals()
+      }
       withBGApi {
         m.controller.changeActiveUser(user.userId, userViewPassword(user, searchTextOrPassword.value.trim()))
       }
@@ -99,7 +104,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     },
     unhideUser = { user ->
       if (passwordEntryRequired(user, searchTextOrPassword.value)) {
-        ModalManager.shared.showModalCloseable(true) { close ->
+        ModalManager.start.showModalCloseable(true) { close ->
           ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
             withBGApi {
               setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, pwd) }
@@ -122,7 +127,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user.userId) } }
     },
     showHiddenProfile = { user ->
-      ModalManager.shared.showModalCloseable(true) { close ->
+      ModalManager.start.showModalCloseable(true) { close ->
         HiddenProfileView(m, user) {
           profileHidden.value = true
           withBGApi {
@@ -328,7 +333,7 @@ private fun passwordEntryRequired(user: User, searchTextOrPassword: String): Boo
 
 private fun removeUser(m: ChatModel, user: User, users: List<User>, delSMPQueues: Boolean, searchTextOrPassword: String) {
   if (passwordEntryRequired(user, searchTextOrPassword)) {
-    ModalManager.shared.showModalCloseable(true) { close ->
+    ModalManager.start.showModalCloseable(true) { close ->
       ProfileActionView(UserProfileAction.DELETE, user) { pwd ->
         withBGApi {
           doRemoveUser(m, user, users, delSMPQueues, pwd)

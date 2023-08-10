@@ -24,6 +24,12 @@ import chat.simplex.common.platform.*
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
+  val close = {
+    close()
+    if (appPlatform.isDesktop) {
+      ModalManager.center.closeModals()
+    }
+  }
   BackHandler(onBack = {
     close()
   })
@@ -40,7 +46,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
   val prefPerformLA = chatModel.controller.appPrefs.performLA.get()
   val s = composeState.value.message
   if (s.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
-    val resp = CR.ChatCmdError(null, ChatError.ChatErrorChat(ChatErrorType.СommandError("Failed reading: empty")))
+    val resp = CR.ChatCmdError(null, ChatError.ChatErrorChat(ChatErrorType.CommandError("Failed reading: empty")))
     chatModel.addTerminalItem(TerminalItem.cmd(CC.Console(s)))
     chatModel.addTerminalItem(TerminalItem.resp(resp))
     composeState.value = ComposeState(useLinkPreviews = false)
@@ -87,6 +93,7 @@ fun TerminalLayout(
             sendMessage = { sendCommand() },
             sendLiveMessage = null,
             updateLiveMessage = null,
+            editPrevMessage = {},
             onMessageChange = ::onMessageChange,
             textStyle = textStyle
           )
@@ -126,7 +133,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
         modifier = Modifier
           .fillMaxWidth()
           .clickable {
-            ModalManager.shared.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
+            ModalManager.start.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
               }

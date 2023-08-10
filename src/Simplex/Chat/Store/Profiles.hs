@@ -30,6 +30,7 @@ module Simplex.Chat.Store.Profiles
     updateUserPrivacy,
     updateAllContactReceipts,
     updateUserContactReceipts,
+    updateUserGroupReceipts,
     updateUserProfile,
     setUserProfileContactLink,
     getUserContactProfiles,
@@ -74,6 +75,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Crypto as C
@@ -91,7 +93,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
         sendRcptsContacts = True
-        sendRcptsSmallGroups = False
+        sendRcptsSmallGroups = True
     DB.execute
       db
       "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,0,?,?,?,?,?)"
@@ -221,12 +223,20 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
 
 updateAllContactReceipts :: DB.Connection -> Bool -> IO ()
 updateAllContactReceipts db onOff =
-  DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE view_pwd_hash IS NULL" (Only onOff)
+  DB.execute
+    db
+    "UPDATE users SET send_rcpts_contacts = ?, send_rcpts_small_groups = ? WHERE view_pwd_hash IS NULL"
+    (onOff, onOff)
 
 updateUserContactReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
 updateUserContactReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
   DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE user_id = ?" (enable, userId)
   when clearOverrides $ DB.execute_ db "UPDATE contacts SET send_rcpts = NULL"
+
+updateUserGroupReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
+updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
+  DB.execute db "UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?" (enable, userId)
+  when clearOverrides $ DB.execute_ db "UPDATE groups SET send_rcpts = NULL"
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
@@ -387,14 +397,14 @@ data UserContactLink = UserContactLink
 instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
 
 data AutoAccept = AutoAccept
-  { acceptIncognito :: Bool,
+  { acceptIncognito :: IncognitoEnabled,
     autoReply :: Maybe MsgContent
   }
   deriving (Show, Generic)
 
 instance ToJSON AutoAccept where toEncoding = J.genericToEncoding J.defaultOptions
 
-toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
+toUserContactLink :: (ConnReqContact, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
 toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
   UserContactLink connReq $
     if autoAccept then Just AutoAccept {acceptIncognito, autoReply} else Nothing
@@ -441,9 +451,6 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
     ucl = case autoAccept of
       Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
       _ -> (False, False, Nothing)
-
-
-
 
 getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> IO [ServerCfg p]
 getProtocolServers db User {userId} =

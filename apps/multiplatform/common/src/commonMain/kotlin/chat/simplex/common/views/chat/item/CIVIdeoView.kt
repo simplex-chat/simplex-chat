@@ -44,7 +44,7 @@ fun CIVideoView(
       val view = LocalMultiplatformView()
       VideoView(uri, file, preview, duration * 1000L, showMenu, onClick = {
         hideKeyboard(view)
-        ModalManager.shared.showCustomModal(animated = false) { close ->
+        ModalManager.fullscreen.showCustomModal(animated = false) { close ->
           ImageFullScreenView(imageProvider, close)
         }
       })
@@ -113,7 +113,7 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
   }
   Box {
     val windowWidth = LocalWindowWidth()
-    val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 1000.dp }
+    val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
     PlayerView(
       player,
       width,
@@ -142,7 +142,8 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
     Box(
       Modifier
         .defaultMinSize(minWidth = 40.dp, minHeight = 40.dp)
-        .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        .onRightClick { onLongClick.invoke() },
       contentAlignment = Alignment.Center
     ) {
       Icon(
@@ -202,7 +203,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
 @Composable
 private fun ImageView(preview: ImageBitmap, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
   val windowWidth = LocalWindowWidth()
-  val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else 1000.dp }
+  val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
   Image(
     preview,
     contentDescription = stringResource(MR.strings.video_descr),
@@ -211,7 +212,8 @@ private fun ImageView(preview: ImageBitmap, showMenu: MutableState<Boolean>, onC
       .combinedClickable(
         onLongClick = { showMenu.value = true },
         onClick = onClick
-      ),
+      )
+      .onRightClick { showMenu.value = true },
     contentScale = ContentScale.FillWidth,
   )
 }
@@ -285,6 +287,7 @@ private fun loadingIndicator(file: CIFile?) {
           }
         is CIFileStatus.RcvCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
         is CIFileStatus.RcvError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.Invalid -> fileIcon(painterResource(MR.images.ic_question_mark), MR.strings.icon_descr_file)
         else -> {}
       }
     }
@@ -311,5 +314,5 @@ private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
 
 private fun videoViewFullWidth(windowWidth: Dp): Dp {
   val approximatePadding = 100.dp
-  return minOf(1000.dp, windowWidth - approximatePadding)
+  return minOf(DEFAULT_MAX_IMAGE_WIDTH, windowWidth - approximatePadding)
 }

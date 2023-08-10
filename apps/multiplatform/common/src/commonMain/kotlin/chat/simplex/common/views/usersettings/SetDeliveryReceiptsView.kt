@@ -11,10 +11,10 @@ import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.*
 import chat.simplex.res.MR
-import chat.simplex.common.platform.TAG
-import chat.simplex.common.platform.Log
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 
@@ -73,8 +73,9 @@ private fun SetDeliveryReceiptsLayout(
   skip: () -> Unit,
   userCount: Int,
 ) {
+  val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   Column(
-    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = DEFAULT_PADDING),
+    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = DEFAULT_PADDING, end = endPadding),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     AppBarTitle(stringResource(MR.strings.delivery_receipts_title))

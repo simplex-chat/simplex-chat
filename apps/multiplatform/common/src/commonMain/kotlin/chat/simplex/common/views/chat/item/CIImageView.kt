@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
@@ -20,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import java.io.File
@@ -76,6 +76,7 @@ fun CIImageView(
           is CIFileStatus.RcvTransfer -> progressIndicator()
           is CIFileStatus.RcvCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.RcvError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+          is CIFileStatus.Invalid -> fileIcon(painterResource(MR.images.ic_question_mark), MR.strings.icon_descr_file)
           else -> {}
         }
       }
@@ -85,7 +86,7 @@ fun CIImageView(
   @Composable
   fun imageViewFullWidth(): Dp {
     val approximatePadding = 100.dp
-    return with(LocalDensity.current) { minOf(1000.dp, LocalWindowWidth() - approximatePadding) }
+    return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
   }
 
   @Composable
@@ -93,14 +94,15 @@ fun CIImageView(
     Image(
       imageBitmap,
       contentDescription = stringResource(MR.strings.image_descr),
-      // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
+      // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else 1000.dp)
+        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
-        ),
+        )
+        .onRightClick { showMenu.value = true },
       contentScale = ContentScale.FillWidth,
     )
   }
@@ -110,14 +112,15 @@ fun CIImageView(
     Image(
       painter,
       contentDescription = stringResource(MR.strings.image_descr),
-      // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
+      // .width(DEFAULT_MAX_IMAGE_WIDTH) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else 1000.dp)
+        .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
-        ),
+        )
+        .onRightClick { showMenu.value = true },
       contentScale = ContentScale.FillWidth,
     )
   }

@@ -139,10 +139,10 @@ struct SimpleXApp: App {
                let chat = chatModel.getChat(id) {
                 loadChat(chat: chat)
             }
-            if let chatId = chatModel.ntfContactRequest {
+            if let ncr = chatModel.ntfContactRequest {
                 chatModel.ntfContactRequest = nil
-                if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-                    Task { await acceptContactRequest(contactRequest) }
+                if case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
+                    Task { await acceptContactRequest(incognito: ncr.incognito, contactRequest: contactRequest) }
                 }
             }
         } catch let error {

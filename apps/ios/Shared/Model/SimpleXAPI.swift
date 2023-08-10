@@ -171,6 +171,12 @@ func apiSetUserContactReceipts(_ userId: Int64, userMsgReceiptSettings: UserMsgR
     throw r
 }
 
+func apiSetUserGroupReceipts(_ userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings) async throws {
+    let r = await chatSendCmd(.apiSetUserGroupReceipts(userId: userId, userMsgReceiptSettings: userMsgReceiptSettings))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
 }
@@ -242,12 +248,6 @@ func apiSetFilesFolder(filesFolder: String) throws {
 
 func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
     let r = chatSendCmdSync(.apiSetXFTPConfig(config: cfg))
-    if case .cmdOk = r { return }
-    throw r
-}
-
-func apiSetIncognito(incognito: Bool) throws {
-    let r = chatSendCmdSync(.setIncognito(incognito: incognito))
     if case .cmdOk = r { return }
     throw r
 }
@@ -558,19 +558,25 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
     return nil
 }
 
-func apiAddContact() async -> String? {
+func apiAddContact(incognito: Bool) async -> (String, PendingContactConnection)? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiAddContact: no current user")
         return nil
     }
-    let r = await chatSendCmd(.apiAddContact(userId: userId), bgTask: false)
-    if case let .invitation(_, connReqInvitation) = r { return connReqInvitation }
+    let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
+    if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
     AlertManager.shared.showAlert(connectionErrorAlert(r))
     return nil
 }
 
-func apiConnect(connReq: String) async -> ConnReqType? {
-    let (connReqType, alert) = await apiConnect_(connReq: connReq)
+func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> PendingContactConnection? {
+    let r = await chatSendCmd(.apiSetConnectionIncognito(connId: connId, incognito: incognito))
+    if case let .connectionIncognitoUpdated(_, toConnection) = r { return toConnection }
+    throw r
+}
+
+func apiConnect(incognito: Bool, connReq: String) async -> ConnReqType? {
+    let (connReqType, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
     if let alert = alert {
         AlertManager.shared.showAlert(alert)
         return nil
@@ -579,12 +585,12 @@ func apiConnect(connReq: String) async -> ConnReqType? {
     }
 }
 
-func apiConnect_(connReq: String) async -> (ConnReqType?, Alert?) {
+func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnect: no current user")
         return (nil, nil)
     }
-    let r = await chatSendCmd(.apiConnect(userId: userId, connReq: connReq))
+    let r = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connReq: connReq))
     switch r {
     case .sentConfirmation: return (.invitation, nil)
     case .sentInvitation: return (.contact, nil)
@@ -760,8 +766,8 @@ func userAddressAutoAccept(_ autoAccept: AutoAccept?) async throws -> UserContac
     }
 }
 
-func apiAcceptContactRequest(contactReqId: Int64) async -> Contact? {
-    let r = await chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
+func apiAcceptContactRequest(incognito: Bool, contactReqId: Int64) async -> Contact? {
+    let r = await chatSendCmd(.apiAcceptContact(incognito: incognito, contactReqId: contactReqId))
     let am = AlertManager.shared
 
     if case let .acceptingContactRequest(_, contact) = r { return contact }
@@ -796,29 +802,35 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
-func receiveFile(user: User, fileId: Int64) async {
-    if let chatItem = await apiReceiveFile(fileId: fileId) {
+func receiveFile(user: User, fileId: Int64, auto: Bool = false) async {
+    if let chatItem = await apiReceiveFile(fileId: fileId, auto: auto) {
         DispatchQueue.main.async { chatItemSimpleUpdate(user, chatItem) }
     }
 }
 
-func apiReceiveFile(fileId: Int64, inline: Bool? = nil) async -> AChatItem? {
+func apiReceiveFile(fileId: Int64, inline: Bool? = nil, auto: Bool = false) async -> AChatItem? {
     let r = await chatSendCmd(.receiveFile(fileId: fileId, inline: inline))
     let am = AlertManager.shared
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     if case .rcvFileAcceptedSndCancelled = r {
-        am.showAlertMsg(
-            title: "Cannot receive file",
-            message: "Sender cancelled file transfer."
-        )
+        logger.debug("apiReceiveFile error: sender cancelled file transfer")
+        if !auto {
+            am.showAlertMsg(
+                title: "Cannot receive file",
+                message: "Sender cancelled file transfer."
+            )
+        }
     } else if let networkErrorAlert = networkErrorAlert(r) {
+        logger.error("apiReceiveFile network error: \(String(describing: r))")
         am.showAlert(networkErrorAlert)
     } else {
-        logger.error("apiReceiveFile error: \(String(describing: r))")
-        switch r {
-        case .chatCmdError(_, .error(.fileAlreadyReceiving)):
+        switch chatError(r) {
+        case .fileCancelled:
+            logger.debug("apiReceiveFile ignoring fileCancelled error")
+        case .fileAlreadyReceiving:
             logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
         default:
+            logger.error("apiReceiveFile error: \(String(describing: r))")
             am.showAlertMsg(
                 title: "Error receiving file",
                 message: "Error: \(String(describing: r))"
@@ -863,8 +875,8 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
     }
 }
 
-func acceptContactRequest(_ contactRequest: UserContactRequest) async {
-    if let contact = await apiAcceptContactRequest(contactReqId: contactRequest.apiId) {
+func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) async {
+    if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
         DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
     }
@@ -1098,7 +1110,6 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try setXFTPConfig(getXFTPCfg())
-    try apiSetIncognito(incognito: incognitoGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
@@ -1317,7 +1328,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
             if let file = cItem.autoReceiveFile() {
                 Task {
-                    await receiveFile(user: user, fileId: file.fileId)
+                    await receiveFile(user: user, fileId: file.fileId, auto: true)
                 }
             }
             if cItem.showNotification {

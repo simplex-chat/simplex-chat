@@ -169,6 +169,7 @@ fun CIFileView(
           is CIFileStatus.RcvComplete -> fileIcon()
           is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.Invalid -> fileIcon(innerIcon = painterResource(MR.images.ic_question_mark))
         }
       } else {
         fileIcon()
@@ -207,7 +208,7 @@ fun CIFileView(
 
 @Composable
 fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
-  rememberFileChooserLauncher(false) { to: URI? ->
+  rememberFileChooserLauncher(false, ciFile) { to: URI? ->
     val filePath = getLoadedFilePath(ciFile)
     if (filePath != null && to != null) {
       copyFileToFile(File(filePath), to) {}

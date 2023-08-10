@@ -47,6 +47,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
@@ -175,7 +176,6 @@ data ChatController = ChatController
     currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
-    incognitoMode :: TVar Bool,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
@@ -186,7 +186,7 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings | HSDatabase
+data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -202,6 +202,8 @@ data ChatCommand
   | SetAllContactReceipts Bool
   | APISetUserContactReceipts UserId UserMsgReceiptSettings
   | SetUserContactReceipts UserMsgReceiptSettings
+  | APISetUserGroupReceipts UserId UserMsgReceiptSettings
+  | SetUserGroupReceipts UserMsgReceiptSettings
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId
@@ -220,7 +222,6 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | APISetXFTPConfig (Maybe XFTPFileConfig)
-  | SetIncognito Bool
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
@@ -241,7 +242,7 @@ data ChatCommand
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef
   | APIClearChat ChatRef
-  | APIAcceptContact Int64
+  | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
@@ -288,6 +289,7 @@ data ChatCommand
   | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
+  | APIGroupInfo GroupId
   | APIGroupMemberInfo GroupId GroupMemberId
   | APISwitchContact ContactId
   | APISwitchGroupMember GroupId GroupMemberId
@@ -304,6 +306,7 @@ data ChatCommand
   | SetShowMessages ChatName Bool
   | SetSendReceipts ChatName (Maybe Bool)
   | ContactInfo ContactName
+  | ShowGroupInfo GroupName
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
@@ -319,11 +322,12 @@ data ChatCommand
   | EnableGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
-  | APIAddContact UserId
-  | AddContact
-  | APIConnect UserId (Maybe AConnectionRequestUri)
-  | Connect (Maybe AConnectionRequestUri)
-  | ConnectSimplex -- UserId (not used in UI)
+  | APIAddContact UserId IncognitoEnabled
+  | AddContact IncognitoEnabled
+  | APISetConnectionIncognito Int64 IncognitoEnabled
+  | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
+  | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
+  | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName
   | ClearContact ContactName
   | APIListContacts UserId
@@ -338,7 +342,7 @@ data ChatCommand
   | SetProfileAddress Bool
   | APIAddressAutoAccept UserId (Maybe AutoAccept)
   | AddressAutoAccept (Maybe AutoAccept)
-  | AcceptContact ContactName
+  | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName
   | SendMessage ChatName Text
   | SendLiveMessage ChatName Text
@@ -359,10 +363,12 @@ data ChatCommand
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
-  | ListGroups -- UserId (not used in UI)
+  | APIListGroups UserId (Maybe ContactId) (Maybe String)
+  | ListGroups (Maybe ContactName) (Maybe String)
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
+  | ShowGroupDescription GroupName
   | CreateGroupLink GroupName GroupMemberRole
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
@@ -419,6 +425,7 @@ data ChatResponse
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
+  | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
@@ -456,7 +463,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRGroupsList {user :: User, groups :: [GroupInfo]}
+  | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem
@@ -464,7 +471,8 @@ data ChatResponse
   | CRUserProfileNoChange {user :: User}
   | CRUserPrivacy {user :: User, updatedUser :: User}
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
-  | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation}
+  | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
+  | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
@@ -515,7 +523,7 @@ data ChatResponse
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {user :: User, groupInfo :: GroupInfo}
-  | CRReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
+  | CRReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CRUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
@@ -530,6 +538,7 @@ data ChatResponse
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
+  | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
   | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
@@ -873,6 +882,7 @@ data ChatErrorType
   | CEServerProtocol {serverProtocol :: AProtocolType}
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
+  | CEConnectionIncognitoChangeProhibited
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception, Generic)

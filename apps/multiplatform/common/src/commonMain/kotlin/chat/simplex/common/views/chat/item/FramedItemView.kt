@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.UriHandler
@@ -23,10 +22,8 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.model.*
 import chat.simplex.common.platform.base64ToBitmap
 import chat.simplex.res.MR
-import kotlinx.datetime.Clock
 import kotlin.math.min
 
 @Composable
@@ -110,6 +107,7 @@ fun FramedItemView(
           onLongClick = { showMenu.value = true },
           onClick = { scrollToItem(qi.itemId?: return@combinedClickable) }
         )
+        .onRightClick { showMenu.value = true }
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {
@@ -235,7 +233,9 @@ fun FramedItemView(
                 }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview)
-                CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler, onLinkLongClick)
+                Box(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
+                  CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler, onLinkLongClick)
+                }
               }
               else -> CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler, onLinkLongClick)
             }

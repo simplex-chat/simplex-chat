@@ -7,15 +7,6 @@ import chat.simplex.res.MR
 import java.io.*
 import java.net.URI
 
-private fun applicationParentPath(): String = try {
-  DesktopApp::class.java.protectionDomain!!.codeSource.location.toURI().path
-    .replaceAfterLast("/", "")
-    .replaceAfterLast(File.separator, "")
-    .replace("/", File.separator)
-} catch (e: Exception) {
-  "./"
-}
-
 actual val dataDir: File = File(desktopPlatform.dataPath)
 actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex").also { it.deleteOnExit() }
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")
@@ -29,8 +20,8 @@ actual val agentDatabaseFileName: String = "simplex_v1_agent.db"
 actual val databaseExportDir: File = tmpDir
 
 @Composable
-actual fun rememberFileChooserLauncher(getContent: Boolean, onResult: (URI?) -> Unit): FileChooserLauncher =
-  remember { FileChooserLauncher(getContent, onResult) }
+actual fun rememberFileChooserLauncher(getContent: Boolean, rememberedValue: Any?, onResult: (URI?) -> Unit): FileChooserLauncher =
+  remember(rememberedValue) { FileChooserLauncher(getContent, onResult) }
 
 @Composable
 actual fun rememberFileChooserMultipleLauncher(onResult: (List<URI>) -> Unit): FileChooserMultipleLauncher =
@@ -46,15 +37,19 @@ actual class FileChooserLauncher actual constructor() {
   }
 
   actual suspend fun launch(input: String) {
-    val res = if (getContent) {
+    var res: File?
+    if (getContent) {
       val params = DialogParams(
         allowMultiple = false,
         fileFilter = fileFilter(input),
         fileFilterDescription = fileFilterDescription(input),
       )
-      simplexWindowState.openDialog.awaitResult(params)
+      res = simplexWindowState.openDialog.awaitResult(params)
     } else {
-      simplexWindowState.saveDialog.awaitResult()
+      res = simplexWindowState.saveDialog.awaitResult(DialogParams(filename = input))
+      if (res != null && res.isDirectory) {
+        res = File(res, input)
+      }
     }
     onResult(res?.toURI())
   }

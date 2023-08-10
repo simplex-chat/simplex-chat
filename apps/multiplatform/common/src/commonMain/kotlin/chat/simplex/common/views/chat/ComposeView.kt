@@ -124,6 +124,8 @@ data class ComposeState(
   }
 }
 
+private val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
+
 sealed class RecordingState {
   object NotStarted: RecordingState()
   class Started(val filePath: String, val progressMs: Int = 0): RecordingState()
@@ -155,6 +157,66 @@ expect fun AttachmentSelection(
   processPickedMedia: (List<URI>, String?) -> Unit
 )
 
+fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
+  if (uri != null) {
+    val fileSize = getFileSize(uri)
+    if (fileSize != null && fileSize <= maxFileSize) {
+      val fileName = getFileName(uri)
+      if (fileName != null) {
+        value = value.copy(message = text ?: value.message, preview = ComposePreview.FilePreview(fileName, uri))
+      }
+    } else {
+      AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.large_file),
+        String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
+      )
+    }
+  }
+}
+
+fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text: String?) {
+  val content = ArrayList<UploadContent>()
+  val imagesPreview = ArrayList<String>()
+  uris.forEach { uri ->
+    var bitmap: ImageBitmap?
+    when {
+      isImage(uri) -> {
+        // Image
+        val drawable = getDrawableFromUri(uri)
+        bitmap = getBitmapFromUri(uri)
+        if (isAnimImage(uri, drawable)) {
+          // It's a gif or webp
+          val fileSize = getFileSize(uri)
+          if (fileSize != null && fileSize <= maxFileSize) {
+            content.add(UploadContent.AnimatedImage(uri))
+          } else {
+            bitmap = null
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.large_file),
+              String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
+            )
+          }
+        } else {
+          content.add(UploadContent.SimpleImage(uri))
+        }
+      }
+      else -> {
+        // Video
+        val res = getBitmapFromVideo(uri)
+        bitmap = res.preview
+        val durationMs = res.duration
+        content.add(UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0))
+      }
+    }
+    if (bitmap != null) {
+      imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
+    }
+  }
+  if (imagesPreview.isNotEmpty()) {
+    value = value.copy(message = text ?: value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
+  }
+}
+
 @Composable
 fun ComposeView(
   chatModel: ChatModel,
@@ -168,70 +230,11 @@ fun ComposeView(
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
-  val maxFileSize = getMaxFileSize(FileProtocol.XFTP)
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
-  val textStyle = remember { mutableStateOf(smallFont) }
-  val processPickedMedia = { uris: List<URI>, text: String? ->
-    val content = ArrayList<UploadContent>()
-    val imagesPreview = ArrayList<String>()
-    uris.forEach { uri ->
-      var bitmap: ImageBitmap?
-      when {
-        isImage(uri) -> {
-          // Image
-          val drawable = getDrawableFromUri(uri)
-          bitmap = getBitmapFromUri(uri)
-          if (isAnimImage(uri, drawable)) {
-            // It's a gif or webp
-            val fileSize = getFileSize(uri)
-            if (fileSize != null && fileSize <= maxFileSize) {
-              content.add(UploadContent.AnimatedImage(uri))
-            } else {
-              bitmap = null
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.large_file),
-                String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
-              )
-            }
-          } else {
-            content.add(UploadContent.SimpleImage(uri))
-          }
-        }
-        else -> {
-          // Video
-          val res = getBitmapFromVideo(uri)
-          bitmap = res.preview
-          val durationMs = res.duration
-          content.add(UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0))
-        }
-      }
-      if (bitmap != null) {
-        imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
-      }
-    }
-    if (imagesPreview.isNotEmpty()) {
-      composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.MediaPreview(imagesPreview, content))
-    }
-  }
-  val processPickedFile = { uri: URI?, text: String? ->
-    if (uri != null) {
-      val fileSize = getFileSize(uri)
-      if (fileSize != null && fileSize <= maxFileSize) {
-        val fileName = getFileName(uri)
-        if (fileName != null) {
-          composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.FilePreview(fileName, uri))
-        }
-      } else {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.large_file),
-          String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
-        )
-      }
-    }
-  }
+  val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
-  AttachmentSelection(composeState, attachmentOption, processPickedFile, processPickedMedia)
+  AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile, composeState::processPickedMedia)
 
   fun isSimplexLink(link: String): Boolean =
     link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
@@ -556,6 +559,14 @@ fun ComposeView(
     }
   }
 
+  fun editPrevMessage() {
+    if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
+    val lastEditable = chatModel.chatItems.findLast { it.meta.editable }
+    if (lastEditable != null) {
+      composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
+    }
+  }
+
   @Composable
   fun previewView() {
     when (val preview = composeState.value.preview) {
@@ -612,8 +623,8 @@ fun ComposeView(
 
     when (val shared = chatModel.sharedContent.value) {
       is SharedContent.Text -> onMessageChange(shared.text)
-      is SharedContent.Media -> processPickedMedia(shared.uris, shared.text)
-      is SharedContent.File -> processPickedFile(shared.uri, shared.text)
+      is SharedContent.Media -> composeState.processPickedMedia(shared.uris, shared.text)
+      is SharedContent.File -> composeState.processPickedFile(shared.uri, shared.text)
       null -> {}
     }
     chatModel.sharedContent.value = null
@@ -655,7 +666,11 @@ fun ComposeView(
       } else {
         showChooseAttachment
       }
-      IconButton(attachmentClicked, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
+      IconButton(
+        attachmentClicked,
+        Modifier.padding(bottom = if (appPlatform.isAndroid) 0.dp else 7.dp),
+        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value
+      ) {
         Icon(
           painterResource(MR.images.ic_attach_file_filled_500),
           contentDescription = stringResource(MR.strings.attach),
@@ -750,6 +765,7 @@ fun ComposeView(
           composeState.value = composeState.value.copy(liveMessage = null)
           chatModel.removeLiveDummy()
         },
+        editPrevMessage = ::editPrevMessage,
         onMessageChange = ::onMessageChange,
         textStyle = textStyle
       )
