@@ -236,12 +236,6 @@
 "A new contact" = "新しい連絡先";
 
 /* No comment provided by engineer. */
-"A random profile will be sent to the contact that you received this link from" = "このリンクの送信元にランダムなプロフィール(ダミー)が送られます";
-
-/* No comment provided by engineer. */
-"A random profile will be sent to your contact" = "連絡先にランダムなプロフィール(ダミー)が送られます";
-
-/* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "**アプリ内のチャット プロフィールごとに**、個別の TCP 接続が使用されます。";
 
 /* No comment provided by engineer. */
@@ -267,12 +261,12 @@
 "Accept" = "承諾";
 
 /* No comment provided by engineer. */
-"Accept contact" = "連絡を受け入れる";
+"Accept connection request?" = "連絡を受け入れる";
 
 /* notification body */
 "Accept contact request from %@?" = "%@ からの連絡要求を受け入れますか?";
 
-/* No comment provided by engineer. */
+/* accept contact request via notification */
 "Accept incognito" = "シークレットモードで承諾";
 
 /* call status */
@@ -661,7 +655,7 @@
 "connect to SimpleX Chat developers." = "SimpleX Chat 開発者に接続します。";
 
 /* No comment provided by engineer. */
-"Connect via contact link?" = "連絡先リンク経由で接続しますか？";
+"Connect via contact link" = "連絡先リンク経由で接続しますか？";
 
 /* No comment provided by engineer. */
 "Connect via group link?" = "グループリンク経由で接続しますか？";
@@ -673,7 +667,7 @@
 "Connect via link / QR code" = "リンク・QRコード経由で接続";
 
 /* No comment provided by engineer. */
-"Connect via one-time link?" = "使い捨てリンク経由で接続しますか？";
+"Connect via one-time link" = "使い捨てリンク経由で接続しますか？";
 
 /* No comment provided by engineer. */
 "connected" = "接続中";
@@ -716,9 +710,6 @@
 
 /* chat list item title (it should not be shown */
 "connection established" = "接続済み";
-
-/* No comment provided by engineer. */
-"Connection request" = "接続のリクエスト";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "接続リクエストを送信しました！";
@@ -1500,7 +1491,7 @@
 /* No comment provided by engineer. */
 "Hide:" = "隠す：";
 
-/* copied message info */
+/* No comment provided by engineer. */
 "History" = "履歴";
 
 /* time unit */
@@ -1574,12 +1565,6 @@
 
 /* No comment provided by engineer. */
 "Incognito mode" = "シークレットモード";
-
-/* No comment provided by engineer. */
-"Incognito mode is not supported here - your main profile will be sent to group members" = "ここではシークレットモードが無効です。メインのプロフィールがグループのメンバーに送られます";
-
-/* No comment provided by engineer. */
-"Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." = "シークレットモードとは、メインのプロフィールとプロフィール画像を守るために、新しい連絡先を追加する時に、その連絡先に対してランダムなプロフィールが作成されます。";
 
 /* chat list item description */
 "incognito via contact address link" = "連絡先リンク経由でシークレットモード";
@@ -1827,7 +1812,7 @@
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "メンバーをグループから除名する (※元に戻せません※)！";
 
-/* No comment provided by engineer. */
+/* item status text */
 "Message delivery error" = "メッセージ送信エラー";
 
 /* No comment provided by engineer. */
@@ -2128,8 +2113,8 @@
 /* No comment provided by engineer. */
 "Paste received link" = "頂いたリンクを貼り付ける";
 
-/* No comment provided by engineer. */
-"Paste the link you received into the box below to connect with your contact." = "連絡相手から頂いたリンクを以下の入力欄に貼り付けて繋がります。";
+/* placeholder */
+"Paste the link you received to connect with your contact." = "連絡相手から頂いたリンクを以下の入力欄に貼り付けて繋がります。";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "P2P";
@@ -2318,7 +2303,7 @@
 "Reject" = "拒否";
 
 /* No comment provided by engineer. */
-"Reject contact (sender NOT notified)" = "連絡を拒否（送信者には通知されません）";
+"Reject (sender NOT notified)" = "連絡を拒否（送信者には通知されません）";
 
 /* No comment provided by engineer. */
 "Reject contact request" = "連絡要求を拒否する";
@@ -2873,9 +2858,6 @@
 "To connect, your contact can scan QR code or use the link in the app." = "接続するにはQRコードを読み込むか、アプリ内のリンクを使用する必要があります。";
 
 /* No comment provided by engineer. */
-"To find the profile used for an incognito connection, tap the contact or group name on top of the chat." = "シークレットモード接続のプロフィールを確認するには、チャットの上部の連絡先、またはグループ名をタップします。";
-
-/* No comment provided by engineer. */
 "To make a new connection" = "新規に接続する場合";
 
 /* No comment provided by engineer. */
@@ -2920,7 +2902,7 @@
 /* No comment provided by engineer. */
 "Unable to record voice message" = "音声メッセージを録音できません";
 
-/* No comment provided by engineer. */
+/* item status description */
 "Unexpected error: %@" = "予期しないエラー: %@";
 
 /* No comment provided by engineer. */
@@ -3233,7 +3215,7 @@
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "アプリ起動時にパスフレーズを入力しなければなりません。端末に保存されてません。";
 
 /* No comment provided by engineer. */
-"You invited your contact" = "連絡先に招待を送りました";
+"You invited a contact" = "連絡先に招待を送りました";
 
 /* No comment provided by engineer. */
 "You joined this group" = "グループに参加しました";
@@ -3314,9 +3296,6 @@
 "Your chat profile will be sent to group members" = "あなたのチャットプロフィールが他のグループメンバーに送られます";
 
 /* No comment provided by engineer. */
-"Your chat profile will be sent to your contact" = "あなたのチャットプロフィールが連絡相手に送られます";
-
-/* No comment provided by engineer. */
 "Your chat profiles" = "あなたのチャットプロフィール";
 
 /* No comment provided by engineer. */
@@ -3351,9 +3330,6 @@
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。\nSimpleX サーバーはあなたのプロファイルを参照できません。";
-
-/* No comment provided by engineer. */
-"Your profile will be sent to the contact that you received this link from" = "あなたのプロフィールは、このリンクを受け取った連絡先に送信されます";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "あなたのプロフィール、連絡先、送信したメッセージがご自分の端末に保存されます。";

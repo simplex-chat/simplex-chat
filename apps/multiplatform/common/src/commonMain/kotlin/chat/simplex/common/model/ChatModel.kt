@@ -1740,26 +1740,15 @@ sealed class CIStatus {
       is CIStatus.Invalid -> MR.images.ic_question_mark to metaColor
     }
 
-  val statusText: String get() = when (this) {
-    is SndNew -> generalGetString(MR.strings.item_status_snd_new_text)
-    is SndSent -> generalGetString(MR.strings.item_status_snd_sent_text)
-    is SndRcvd -> generalGetString(MR.strings.item_status_snd_rcvd_text)
-    is SndErrorAuth -> generalGetString(MR.strings.item_status_snd_error_text)
-    is SndError -> generalGetString(MR.strings.item_status_snd_error_text)
-    is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_text)
-    is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_text)
-    is Invalid -> "Invalid status"
-  }
-
-  val statusDescription: String get() = when (this) {
-    is SndNew -> generalGetString(MR.strings.item_status_snd_new_desc)
-    is SndSent -> generalGetString(MR.strings.item_status_snd_sent_desc)
-    is SndRcvd -> generalGetString(MR.strings.item_status_snd_rcvd_desc)
-    is SndErrorAuth -> generalGetString(MR.strings.item_status_snd_error_auth_desc)
-    is SndError -> String.format(generalGetString(MR.strings.item_status_snd_error_unexpected_desc), this.agentError)
-    is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_desc)
-    is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_desc)
-    is Invalid -> this.text
+  val statusInto: Pair<String, String>? get() = when (this) {
+    is SndNew -> null
+    is SndSent -> null
+    is SndRcvd -> null
+    is SndErrorAuth -> generalGetString(MR.strings.message_delivery_error_title) to generalGetString(MR.strings.message_delivery_error_desc)
+    is SndError -> generalGetString(MR.strings.message_delivery_error_title) to (generalGetString(MR.strings.unknown_error) + ": $agentError")
+    is RcvNew -> null
+    is RcvRead -> null
+    is Invalid -> "Invalid status" to this.text
   }
 }
 

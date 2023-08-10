@@ -8,7 +8,7 @@
       <trans-unit id="&#10;" xml:space="preserve" approved="no">
         <source>
 </source>
-        <target state="needs-translation">
+        <target state="translated">
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -19,22 +19,22 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id=" " xml:space="preserve" approved="no">
         <source> </source>
-        <target state="needs-translation"> </target>
+        <target state="translated"> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="  " xml:space="preserve" approved="no">
         <source>  </source>
-        <target state="needs-translation">  </target>
+        <target state="translated">  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="   " xml:space="preserve" approved="no">
         <source>   </source>
-        <target state="needs-translation">   </target>
+        <target state="translated">   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (" xml:space="preserve" approved="no">
         <source> (</source>
-        <target state="needs-translation"> (</target>
+        <target state="translated"> (</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (can be copied)" xml:space="preserve" approved="no">
@@ -279,7 +279,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id=", " xml:space="preserve" approved="no">
         <source>, </source>
-        <target state="needs-translation">, </target>
+        <target state="translated">, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="." xml:space="preserve" approved="no">
@@ -4975,6 +4975,11 @@ SimpleX servers cannot see your profile.</source>
         <source>If you enter this passcode when opening the app, all app data will be irreversibly removed!</source>
         <target state="translated">אם תזינו קוד גישה זה בעת פתיחת האפליקציה, כל נתוני האפליקציה יימחקו באופן בלתי הפיך!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
+        <source>%1$@ at %2$@:</source>
+        <target state="translated">%1$@ בזמן %2$@:</target>
+        <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
     </body>
   </file>

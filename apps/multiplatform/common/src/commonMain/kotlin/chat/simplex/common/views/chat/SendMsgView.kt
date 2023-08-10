@@ -64,12 +64,22 @@ fun SendMsgView(
 
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
-    val showProgress = cs.inProgress && (cs.preview is ComposePreview.MediaPreview || cs.preview is ComposePreview.FilePreview)
+    var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(composeState.value.inProgress) {
+      progressByTimeout = if (composeState.value.inProgress) {
+        delay(500)
+        composeState.value.inProgress
+      } else {
+        false
+      }
+    }
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage) {
-      sendMessage(null)
+      if (!cs.inProgress) {
+        sendMessage(null)
+      }
     }
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
@@ -98,7 +108,7 @@ fun SendMsgView(
         }
       }
       when {
-        showProgress -> ProgressIndicator()
+        progressByTimeout -> ProgressIndicator()
         showVoiceButton -> {
           Row(verticalAlignment = Alignment.CenterVertically) {
             val stopRecOnNextClick = remember { mutableStateOf(false) }
