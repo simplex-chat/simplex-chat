@@ -26,176 +26,218 @@
         <source> (</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" (can be copied)" xml:space="preserve">
+      <trans-unit id=" (can be copied)" xml:space="preserve" approved="no">
         <source> (can be copied)</source>
+        <target state="translated"> (kopyalanabilir)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="!1 colored!" xml:space="preserve">
+      <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
         <source>!1 colored!</source>
+        <target state="translated">!1 renkli!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="#secret#" xml:space="preserve">
+      <trans-unit id="#secret#" xml:space="preserve" approved="no">
         <source>#secret#</source>
+        <target state="translated">#gizli#</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@" xml:space="preserve">
+      <trans-unit id="%@" xml:space="preserve" approved="no">
         <source>%@</source>
+        <target state="translated">%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ %@" xml:space="preserve">
+      <trans-unit id="%@ %@" xml:space="preserve" approved="no">
         <source>%@ %@</source>
+        <target state="translated">%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ (current)" xml:space="preserve">
+      <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
         <source>%@ (current)</source>
+        <target state="translated">%@ (güncel)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ (current):" xml:space="preserve">
+      <trans-unit id="%@ (current):" xml:space="preserve" approved="no">
         <source>%@ (current):</source>
+        <target state="translated">%@ (güncel):</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="%@ / %@" xml:space="preserve">
+      <trans-unit id="%@ / %@" xml:space="preserve" approved="no">
         <source>%@ / %@</source>
+        <target state="translated">%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ at %@:" xml:space="preserve">
         <source>%1$@ at %2$@:</source>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
-      <trans-unit id="%@ is connected!" xml:space="preserve">
+      <trans-unit id="%@ is connected!" xml:space="preserve" approved="no">
         <source>%@ is connected!</source>
+        <target state="translated">%@ bağlandı!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@ is not verified" xml:space="preserve">
+      <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
         <source>%@ is not verified</source>
+        <target state="translated">%@ onaylanmadı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ is verified" xml:space="preserve">
+      <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
         <source>%@ is verified</source>
+        <target state="translated">%@ onaylandı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ servers" xml:space="preserve">
+      <trans-unit id="%@ servers" xml:space="preserve" approved="no">
         <source>%@ servers</source>
+        <target state="translated">%@ sunucuları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ wants to connect!" xml:space="preserve">
+      <trans-unit id="%@ wants to connect!" xml:space="preserve" approved="no">
         <source>%@ wants to connect!</source>
+        <target state="translated">%@ bağlanmak istiyor!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@:" xml:space="preserve">
+      <trans-unit id="%@:" xml:space="preserve" approved="no">
         <source>%@:</source>
+        <target state="translated">%@:</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="%d days" xml:space="preserve">
+      <trans-unit id="%d days" xml:space="preserve" approved="no">
         <source>%d days</source>
+        <target state="translated">%d gün</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d hours" xml:space="preserve">
+      <trans-unit id="%d hours" xml:space="preserve" approved="no">
         <source>%d hours</source>
+        <target state="translated">%d saat</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d min" xml:space="preserve">
+      <trans-unit id="%d min" xml:space="preserve" approved="no">
         <source>%d min</source>
+        <target state="translated">%d dakika</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d months" xml:space="preserve">
+      <trans-unit id="%d months" xml:space="preserve" approved="no">
         <source>%d months</source>
+        <target state="translated">%d ay</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d sec" xml:space="preserve">
+      <trans-unit id="%d sec" xml:space="preserve" approved="no">
         <source>%d sec</source>
+        <target state="translated">%d saniye</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d skipped message(s)" xml:space="preserve">
+      <trans-unit id="%d skipped message(s)" xml:space="preserve" approved="no">
         <source>%d skipped message(s)</source>
+        <target state="translated">%d okunmamış mesaj(lar)</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="%d weeks" xml:space="preserve">
+      <trans-unit id="%d weeks" xml:space="preserve" approved="no">
         <source>%d weeks</source>
+        <target state="translated">%d hafta</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%lld" xml:space="preserve">
+      <trans-unit id="%lld" xml:space="preserve" approved="no">
         <source>%lld</source>
+        <target state="translated">%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld %@" xml:space="preserve">
+      <trans-unit id="%lld %@" xml:space="preserve" approved="no">
         <source>%lld %@</source>
+        <target state="translated">%lld %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld contact(s) selected" xml:space="preserve">
+      <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
         <source>%lld contact(s) selected</source>
+        <target state="translated">%lld kişi seçildi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve">
+      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
         <source>%lld file(s) with total size of %@</source>
+        <target state="translated">%lld dosya , toplam büyüklüğü %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld members" xml:space="preserve">
+      <trans-unit id="%lld members" xml:space="preserve" approved="no">
         <source>%lld members</source>
+        <target state="translated">%lld üyeler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld minutes" xml:space="preserve">
+      <trans-unit id="%lld minutes" xml:space="preserve" approved="no">
         <source>%lld minutes</source>
+        <target state="translated">%lld dakika</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld second(s)" xml:space="preserve">
+      <trans-unit id="%lld second(s)" xml:space="preserve" approved="no">
         <source>%lld second(s)</source>
+        <target state="translated">%lld saniye</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld seconds" xml:space="preserve">
+      <trans-unit id="%lld seconds" xml:space="preserve" approved="no">
         <source>%lld seconds</source>
+        <target state="translated">%lld saniye</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldd" xml:space="preserve">
+      <trans-unit id="%lldd" xml:space="preserve" approved="no">
         <source>%lldd</source>
+        <target state="translated">%lldd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldh" xml:space="preserve">
+      <trans-unit id="%lldh" xml:space="preserve" approved="no">
         <source>%lldh</source>
+        <target state="translated">%lldh</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldk" xml:space="preserve">
+      <trans-unit id="%lldk" xml:space="preserve" approved="no">
         <source>%lldk</source>
+        <target state="translated">%lldk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldm" xml:space="preserve">
+      <trans-unit id="%lldm" xml:space="preserve" approved="no">
         <source>%lldm</source>
+        <target state="translated">%lldm</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldmth" xml:space="preserve">
+      <trans-unit id="%lldmth" xml:space="preserve" approved="no">
         <source>%lldmth</source>
+        <target state="translated">%lldmth</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%llds" xml:space="preserve">
+      <trans-unit id="%llds" xml:space="preserve" approved="no">
         <source>%llds</source>
+        <target state="translated">%llds</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldw" xml:space="preserve">
+      <trans-unit id="%lldw" xml:space="preserve" approved="no">
         <source>%lldw</source>
+        <target state="translated">%lldw</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
         <source>%u messages failed to decrypt.</source>
+        <target state="translated">%u mesaj deşifrelenememektedir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages skipped." xml:space="preserve">
+      <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
         <source>%u messages skipped.</source>
+        <target state="translated">%u mesaj atlandı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(" xml:space="preserve">
+      <trans-unit id="(" xml:space="preserve" approved="no">
         <source>(</source>
+        <target state="translated">(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=")" xml:space="preserve">
+      <trans-unit id=")" xml:space="preserve" approved="no">
         <source>)</source>
+        <target state="translated">)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
+      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
         <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
+        <target state="translated">**Yeni kişi ekleyin**: tek seferlik QR Kodunuzu oluşturmak veya kişisel ulaşım bilgileri bağlantısı için.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve">
+      <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve" approved="no">
         <source>**Create link / QR code** for your contact to use.</source>
+        <target state="translated">Kişisel kullanım için **Bağlantı / QR Kodu**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
@@ -437,8 +479,9 @@
         <source>All data is erased when it is entered.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All group members will remain connected." xml:space="preserve">
+      <trans-unit id="All group members will remain connected." xml:space="preserve" approved="no">
         <source>All group members will remain connected.</source>
+        <target state="translated">Tüm grup üyeleri bağlı kalacaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
@@ -477,8 +520,9 @@
         <source>Allow message reactions.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
+      <trans-unit id="Allow sending direct messages to members." xml:space="preserve" approved="no">
         <source>Allow sending direct messages to members.</source>
+        <target state="translated">Üyelere direkt mesaj göndermeye izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
@@ -1286,8 +1330,9 @@
         <source>Direct messages</source>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
+      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve" approved="no">
         <source>Direct messages between members are prohibited in this group.</source>
+        <target state="translated">Bu grupta üyeler arasında direkt mesajlaşma yasaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -2174,12 +2219,14 @@
         <source>Learn more</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave" xml:space="preserve">
+      <trans-unit id="Leave" xml:space="preserve" approved="no">
         <source>Leave</source>
+        <target state="translated">Ayrıl</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave group" xml:space="preserve">
+      <trans-unit id="Leave group" xml:space="preserve" approved="no">
         <source>Leave group</source>
+        <target state="translated">Gruptan ayrıl</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave group?" xml:space="preserve">
@@ -4582,28 +4629,34 @@ SimpleX servers cannot see your profile.</source>
         <source>connected</source>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="message received" xml:space="preserve">
+      <trans-unit id="message received" xml:space="preserve" approved="no">
         <source>message received</source>
+        <target state="translated">mesaj alındı</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="minutes" xml:space="preserve">
+      <trans-unit id="minutes" xml:space="preserve" approved="no">
         <source>minutes</source>
+        <target state="translated">dakikalar</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="missed call" xml:space="preserve">
+      <trans-unit id="missed call" xml:space="preserve" approved="no">
         <source>missed call</source>
+        <target state="translated">cevapsız arama</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="moderated" xml:space="preserve">
+      <trans-unit id="moderated" xml:space="preserve" approved="no">
         <source>moderated</source>
+        <target state="needs-translation">moderated</target>
         <note>moderated chat item</note>
       </trans-unit>
-      <trans-unit id="moderated by %@" xml:space="preserve">
+      <trans-unit id="moderated by %@" xml:space="preserve" approved="no">
         <source>moderated by %@</source>
+        <target state="translated">%@ tarafından yönetilmekte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="months" xml:space="preserve">
+      <trans-unit id="months" xml:space="preserve" approved="no">
         <source>months</source>
+        <target state="translated">aylar</target>
         <note>time unit</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
@@ -4695,120 +4748,149 @@ SimpleX servers cannot see your profile.</source>
         <source>secret</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="security code changed" xml:space="preserve">
+      <trans-unit id="security code changed" xml:space="preserve" approved="no">
         <source>security code changed</source>
+        <target state="translated">güvenlik kodu değiştirildi</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="starting…" xml:space="preserve">
+      <trans-unit id="starting…" xml:space="preserve" approved="no">
         <source>starting…</source>
+        <target state="translated">başlıyor…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="strike" xml:space="preserve">
+      <trans-unit id="strike" xml:space="preserve" approved="no">
         <source>strike</source>
+        <target state="needs-translation">strike</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="this contact" xml:space="preserve">
+      <trans-unit id="this contact" xml:space="preserve" approved="no">
         <source>this contact</source>
+        <target state="translated">Bu kişi</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="unknown" xml:space="preserve">
+      <trans-unit id="unknown" xml:space="preserve" approved="no">
         <source>unknown</source>
+        <target state="translated">bilinmeyen</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="updated group profile" xml:space="preserve">
+      <trans-unit id="updated group profile" xml:space="preserve" approved="no">
         <source>updated group profile</source>
+        <target state="translated">grup profili güncellendi</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="v%@ (%@)" xml:space="preserve">
+      <trans-unit id="v%@ (%@)" xml:space="preserve" approved="no">
         <source>v%@ (%@)</source>
+        <target state="translated">v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="via contact address link" xml:space="preserve">
+      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
         <source>via contact address link</source>
+        <target state="translated">bağlantı adres uzantısı ile</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="via group link" xml:space="preserve">
+      <trans-unit id="via group link" xml:space="preserve" approved="no">
         <source>via group link</source>
+        <target state="translated">grup bağlantısı ile</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="via one-time link" xml:space="preserve">
+      <trans-unit id="via one-time link" xml:space="preserve" approved="no">
         <source>via one-time link</source>
+        <target state="translated">tek kullanımlık bağlantısı ile</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="via relay" xml:space="preserve">
+      <trans-unit id="via relay" xml:space="preserve" approved="no">
         <source>via relay</source>
+        <target state="needs-translation">via relay</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
+      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve" approved="no">
         <source>video call (not e2e encrypted)</source>
+        <target state="translated">Görüntülü arama (şifrelenmiş değil)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="waiting for answer…" xml:space="preserve">
+      <trans-unit id="waiting for answer…" xml:space="preserve" approved="no">
         <source>waiting for answer…</source>
+        <target state="translated">cevap bekleniyor…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="waiting for confirmation…" xml:space="preserve">
+      <trans-unit id="waiting for confirmation…" xml:space="preserve" approved="no">
         <source>waiting for confirmation…</source>
+        <target state="translated">onay bekleniyor…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="wants to connect to you!" xml:space="preserve">
+      <trans-unit id="wants to connect to you!" xml:space="preserve" approved="no">
         <source>wants to connect to you!</source>
+        <target state="translated">bağlanmak istiyor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="weeks" xml:space="preserve">
+      <trans-unit id="weeks" xml:space="preserve" approved="no">
         <source>weeks</source>
+        <target state="translated">haftalar</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="yes" xml:space="preserve">
+      <trans-unit id="yes" xml:space="preserve" approved="no">
         <source>yes</source>
+        <target state="translated">evet</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
+      <trans-unit id="you are invited to group" xml:space="preserve" approved="no">
         <source>you are invited to group</source>
+        <target state="translated">gruba davet edildiniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you are observer" xml:space="preserve">
+      <trans-unit id="you are observer" xml:space="preserve" approved="no">
         <source>you are observer</source>
+        <target state="translated">gözlemcisiniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you changed address" xml:space="preserve">
+      <trans-unit id="you changed address" xml:space="preserve" approved="no">
         <source>you changed address</source>
+        <target state="translated">adresinizi değiştirdiniz</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="you changed address for %@" xml:space="preserve">
+      <trans-unit id="you changed address for %@" xml:space="preserve" approved="no">
         <source>you changed address for %@</source>
+        <target state="translated">adresinizi %@ ile değiştirdiniz</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
+      <trans-unit id="you changed role for yourself to %@" xml:space="preserve" approved="no">
         <source>you changed role for yourself to %@</source>
+        <target state="translated">kişisel yetkinizi %@ olarak değiştirdiniz</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you changed role of %@ to %@" xml:space="preserve">
+      <trans-unit id="you changed role of %@ to %@" xml:space="preserve" approved="no">
         <source>you changed role of %1$@ to %2$@</source>
+        <target state="translated">%1$@'in yetkisini %2$@ olarak değiştirdiniz</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you left" xml:space="preserve">
+      <trans-unit id="you left" xml:space="preserve" approved="no">
         <source>you left</source>
+        <target state="translated">terk ettiniz</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you removed %@" xml:space="preserve">
+      <trans-unit id="you removed %@" xml:space="preserve" approved="no">
         <source>you removed %@</source>
+        <target state="translated">%@'yi çıkarttınız</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you shared one-time link" xml:space="preserve">
+      <trans-unit id="you shared one-time link" xml:space="preserve" approved="no">
         <source>you shared one-time link</source>
+        <target state="translated">tek kullanımlık bağlantınızı paylaştınız</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="you shared one-time link incognito" xml:space="preserve">
+      <trans-unit id="you shared one-time link incognito" xml:space="preserve" approved="no">
         <source>you shared one-time link incognito</source>
+        <target state="translated">tek kullanımlık link paylaştınız gizli</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="you: " xml:space="preserve">
+      <trans-unit id="you: " xml:space="preserve" approved="no">
         <source>you: </source>
+        <target state="translated">sen: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="~strike~" xml:space="preserve">
+      <trans-unit id="~strike~" xml:space="preserve" approved="no">
         <source>\~strike~</source>
+        <target state="needs-translation">\~strike~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
@@ -4818,8 +4900,9 @@ SimpleX servers cannot see your profile.</source>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.3.1" build-num="14E300c"/>
     </header>
     <body>
-      <trans-unit id="CFBundleName" xml:space="preserve">
+      <trans-unit id="CFBundleName" xml:space="preserve" approved="no">
         <source>SimpleX</source>
+        <target state="translated">SimpleX</target>
         <note>Bundle name</note>
       </trans-unit>
       <trans-unit id="NSCameraUsageDescription" xml:space="preserve">

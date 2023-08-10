@@ -245,12 +245,6 @@
 "A new contact" = "Новый контакт";
 
 /* No comment provided by engineer. */
-"A random profile will be sent to the contact that you received this link from" = "Контакту, от которого Вы получили эту ссылку, будет отправлен случайный профиль";
-
-/* No comment provided by engineer. */
-"A random profile will be sent to your contact" = "Вашему контакту будет отправлен случайный профиль";
-
-/* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "Отдельное TCP-соединение будет использоваться **для каждого профиля чата, который Вы имеете в приложении**.";
 
 /* No comment provided by engineer. */
@@ -285,12 +279,12 @@
 "Accept" = "Принять";
 
 /* No comment provided by engineer. */
-"Accept contact" = "Принять запрос";
+"Accept connection request?" = "Принять запрос?";
 
 /* notification body */
 "Accept contact request from %@?" = "Принять запрос на соединение от %@?";
 
-/* No comment provided by engineer. */
+/* accept contact request via notification */
 "Accept incognito" = "Принять инкогнито";
 
 /* call status */
@@ -700,7 +694,7 @@
 "connect to SimpleX Chat developers." = "соединитесь с разработчиками.";
 
 /* No comment provided by engineer. */
-"Connect via contact link?" = "Соединиться через ссылку-контакт?";
+"Connect via contact link" = "Соединиться через ссылку-контакт";
 
 /* No comment provided by engineer. */
 "Connect via group link?" = "Соединиться через ссылку группы?";
@@ -712,7 +706,7 @@
 "Connect via link / QR code" = "Соединиться через ссылку / QR код";
 
 /* No comment provided by engineer. */
-"Connect via one-time link?" = "Соединиться через одноразовую ссылку?";
+"Connect via one-time link" = "Соединиться через одноразовую ссылку?";
 
 /* No comment provided by engineer. */
 "connected" = "соединение установлено";
@@ -755,9 +749,6 @@
 
 /* chat list item title (it should not be shown */
 "connection established" = "соединение установлено";
-
-/* No comment provided by engineer. */
-"Connection request" = "Запрос на соединение";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "Запрос на соединение отправлен!";
@@ -1650,7 +1641,7 @@
 /* No comment provided by engineer. */
 "Hide:" = "Скрыть:";
 
-/* copied message info */
+/* No comment provided by engineer. */
 "History" = "История";
 
 /* time unit */
@@ -1719,7 +1710,7 @@
 /* No comment provided by engineer. */
 "Improved server configuration" = "Улучшенная конфигурация серверов";
 
-/* copied message info */
+/* No comment provided by engineer. */
 "In reply to" = "В ответ на";
 
 /* No comment provided by engineer. */
@@ -1727,12 +1718,6 @@
 
 /* No comment provided by engineer. */
 "Incognito mode" = "Режим Инкогнито";
-
-/* No comment provided by engineer. */
-"Incognito mode is not supported here - your main profile will be sent to group members" = "Режим Инкогнито здесь не поддерживается - Ваш основной профиль будет отправлен членам группы";
-
-/* No comment provided by engineer. */
-"Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." = "Режим Инкогнито защищает конфиденциальность имени и изображения Вашего основного профиля — для каждого нового контакта создается новый случайный профиль.";
 
 /* chat list item description */
 "incognito via contact address link" = "инкогнито через ссылку-контакт";
@@ -1986,7 +1971,7 @@
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Член группы будет удален - это действие нельзя отменить!";
 
-/* No comment provided by engineer. */
+/* item status text */
 "Message delivery error" = "Ошибка доставки сообщения";
 
 /* No comment provided by engineer. */
@@ -2302,8 +2287,8 @@
 /* No comment provided by engineer. */
 "Paste received link" = "Вставить полученную ссылку";
 
-/* No comment provided by engineer. */
-"Paste the link you received into the box below to connect with your contact." = "Чтобы соединиться, вставьте ссылку, полученную от Вашего контакта.";
+/* placeholder */
+"Paste the link you received to connect with your contact." = "Чтобы соединиться, вставьте ссылку, полученную от Вашего контакта.";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "peer-to-peer";
@@ -2510,7 +2495,7 @@
 "Reject" = "Отклонить";
 
 /* No comment provided by engineer. */
-"Reject contact (sender NOT notified)" = "Отклонить (не уведомляя отправителя)";
+"Reject (sender NOT notified)" = "Отклонить (не уведомляя отправителя)";
 
 /* No comment provided by engineer. */
 "Reject contact request" = "Отклонить запрос";
@@ -3083,7 +3068,7 @@
 "These settings are for your current profile **%@**." = "Установки для Вашего активного профиля **%@**.";
 
 /* No comment provided by engineer. */
-"They can be overridden in contact settings" = "Они могут быть переопределены в настройках контактов";
+"They can be overridden in contact and group settings." = "Они могут быть переопределены в настройках контактов и групп.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.";
@@ -3108,9 +3093,6 @@
 
 /* No comment provided by engineer. */
 "To connect, your contact can scan QR code or use the link in the app." = "Чтобы соединиться с Вами, Ваш контакт может отсканировать QR-код или использовать ссылку в приложении.";
-
-/* No comment provided by engineer. */
-"To find the profile used for an incognito connection, tap the contact or group name on top of the chat." = "Чтобы найти инкогнито профиль, используемый в разговоре, нажмите на имя контакта или группы в верхней части чата.";
 
 /* No comment provided by engineer. */
 "To make a new connection" = "Чтобы соединиться";
@@ -3157,7 +3139,7 @@
 /* No comment provided by engineer. */
 "Unable to record voice message" = "Невозможно записать голосовое сообщение";
 
-/* No comment provided by engineer. */
+/* item status description */
 "Unexpected error: %@" = "Неожиданная ошибка: %@";
 
 /* No comment provided by engineer. */
@@ -3479,7 +3461,7 @@
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Пароль не сохранен на устройстве — Вы будете должны ввести его при каждом запуске чата.";
 
 /* No comment provided by engineer. */
-"You invited your contact" = "Вы пригласили Ваш контакт";
+"You invited a contact" = "Вы пригласили контакт";
 
 /* No comment provided by engineer. */
 "You joined this group" = "Вы вступили в эту группу";
@@ -3560,9 +3542,6 @@
 "Your chat profile will be sent to group members" = "Ваш профиль чата будет отправлен членам группы";
 
 /* No comment provided by engineer. */
-"Your chat profile will be sent to your contact" = "Ваш профиль будет отправлен Вашему контакту";
-
-/* No comment provided by engineer. */
 "Your chat profiles" = "Ваши профили чата";
 
 /* No comment provided by engineer. */
@@ -3597,9 +3576,6 @@
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам.\nSimpleX серверы не могут получить доступ к Вашему профилю.";
-
-/* No comment provided by engineer. */
-"Your profile will be sent to the contact that you received this link from" = "Ваш профиль будет отправлен Вашему контакту.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Ваш профиль, контакты и доставленные сообщения хранятся на Вашем устройстве.";

@@ -234,7 +234,7 @@
   <string name="no_history">No history</string>
   <string name="in_reply_to">In reply to</string>
   <string name="delivery">Delivery</string>
-  <string name="no_info_on_delivery">No info on delivery</string>
+  <string name="no_info_on_delivery">No delivery information</string>
   <string name="delete_verb">Delete</string>
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>

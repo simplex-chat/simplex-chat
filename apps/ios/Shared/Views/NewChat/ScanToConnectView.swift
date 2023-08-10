@@ -38,7 +38,7 @@ struct ScanToConnectView: View {
 
                 Group {
                     sharedProfileInfo(incognitoDefault)
-                    + Text("\n\n")
+                    + Text(String("\n\n"))
                     + Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
                 }
                 .font(.footnote)
