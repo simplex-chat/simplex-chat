@@ -107,28 +107,24 @@ data AppMessage (e :: MsgEncoding) where
   AMJson :: AppMessageJson -> AppMessage 'Json
   AMBinary :: AppMessageBinary -> AppMessage 'Binary
 
-data ChatVersionRange = ChatVersionRange
-  { minVer :: Version,
-    maxVer :: Version
-  }
-  deriving (Eq, Show, Generic)
+newtype ChatVersionRange = ChatVersionRange {versionRange :: VersionRange} deriving (Eq, Show)
 
 instance FromJSON ChatVersionRange where
-  parseJSON = J.genericParseJSON J.defaultOptions
+  parseJSON j = ChatVersionRange <$> strParseJSON "ChatVersionRange" j
 
 instance ToJSON ChatVersionRange where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON (ChatVersionRange vr) = strToJSON vr
+  toEncoding (ChatVersionRange vr) = strToJEncoding vr
 
 toChatVRange :: VersionRange -> ChatVersionRange
-toChatVRange (VersionRange minVer maxVer) = ChatVersionRange {minVer, maxVer}
+toChatVRange = ChatVersionRange
 
 fromChatVRange :: ChatVersionRange -> VersionRange
-fromChatVRange ChatVersionRange {minVer, maxVer} = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
+fromChatVRange (ChatVersionRange vr) = vr
 
 -- chat message is sent as JSON with these properties
 data AppMessageJson = AppMessageJson
-  { version :: Maybe ChatVersionRange,
+  { v :: Maybe ChatVersionRange,
     msgId :: Maybe SharedMsgId,
     event :: Text,
     params :: J.Object
@@ -762,10 +758,10 @@ appBinaryToCM AppMessageBinary {msgId, tag, body} = do
       BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
 
 appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
-appJsonToCM AppMessageJson {version, msgId, event, params} = do
+appJsonToCM AppMessageJson {v, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
-  pure ChatMessage {chatVRange = fromChatVRange <$> version, msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = fromChatVRange <$> v, msgId, chatMsgEvent}
   where
     p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
@@ -819,7 +815,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
   SBinary ->
     let (binaryMsgId, body) = toBody chatMsgEvent
      in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
-  SJson -> AMJson AppMessageJson {version = toChatVRange <$> chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
+  SJson -> AMJson AppMessageJson {v = toChatVRange <$> chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
   where
     tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
