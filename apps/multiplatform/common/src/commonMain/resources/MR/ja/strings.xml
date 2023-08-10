@@ -1269,7 +1269,6 @@
     <string name="receipts_contacts_override_disabled">連絡先 %d に対して既読の通知が無効です</string>
     <string name="receipts_contacts_disable_for_all">すべて無効</string>
     <string name="settings_shutdown">終了</string>
-    <string name="settings_section_title_delivery_receipts">既読の通知先</string>
     <string name="conn_event_ratchet_sync_started">暗号化に同意しています…</string>
     <string name="conn_event_ratchet_sync_ok">暗号化OK</string>
     <string name="conn_event_ratchet_sync_allowed">暗号化の再ネゴシエーションを許可</string>
