@@ -88,8 +88,8 @@
     <string name="icon_descr_instant_notifications">Sofortige Benachrichtigungen</string>
     <string name="service_notifications">Sofortige Benachrichtigungen!</string>
     <string name="service_notifications_disabled">Sofortige Benachrichtigungen sind deaktiviert!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Um Ihre Privatsphäre zu schützen, kann statt der Push-Benachrichtigung der <b>SimpleX-Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Diese können über die Einstellungen deaktiviert werden</b> – solange die App läuft, werden Benachrichtigungen weiterhin angezeigt.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Um Ihre Privatsphäre zu schützen, kann statt der Push-Benachrichtigung der <b>SimpleX-Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.]]></string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Diese können über die Einstellungen deaktiviert werden</b> – solange die App läuft, werden Benachrichtigungen weiterhin angezeigt.]]></string>
     <string name="turn_off_battery_optimization"><![CDATA[Um diese Funktion zu nutzen, ist es nötig, die Einstellung <b>Akkuoptimierung</b> für SimpleX im nächsten Dialog zu <b>deaktivieren</b>. Ansonsten werden die Benachrichtigungen deaktiviert.]]></string>
     <string name="turning_off_service_and_periodic">Die Akkuoptimierung ist aktiv, der Hintergrunddienst und die periodische Nachfrage nach neuen Nachrichten ist abgeschaltet. Sie können diese Funktion in den Einstellungen wieder aktivieren.</string>
     <string name="periodic_notifications">Periodische Benachrichtigungen</string>
@@ -262,7 +262,7 @@
     <string name="gallery_video_button">Video</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Danke, dass Sie SimpleX Chat installiert haben!</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Sie können sich &lt;font color=#0088ff&gt;mit SimpleX-Chat-Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten&lt;/font&gt;.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Sie können sich <font color=#0088ff>mit SimpleX-Chat-Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.]]></string>
     <string name="to_start_a_new_chat_help_header">Um einen neuen Chat zu starten</string>
     <string name="chat_help_tap_button">Schaltfläche antippen</string>
     <string name="above_then_preposition_continuation">Danach die gewünschte Aktion auswählen:</string>
@@ -271,7 +271,7 @@
     <string name="to_connect_via_link_title">Über Link verbinden</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Wenn Sie einen SimpleX-Chat-Einladungslink erhalten haben, können Sie ihn in Ihrem Browser öffnen:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Desktop: Angezeigten QR-Code aus der App scannen, über <b>QR-Code scannen</b>.]]></string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 Handy: Tippen Sie in der App auf „<b>In mobiler App öffnen</b>“ und dann auf „<b>Verbinden</b>“.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 Handy: Tippen Sie in der App auf „<b>In mobiler App öffnen</b>“ und dann auf „<b>Verbinden</b>“.]]></string>
     <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
     <string name="accept_connection_request__question">Die Verbindungsanfrage akzeptieren?</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Wenn Sie ablehnen, wird der Absender NICHT benachrichtigt.</string>
@@ -341,7 +341,7 @@
     <string name="connect_button">Verbinden</string>
     <string name="paste_button">Einfügen</string>
     <string name="this_string_is_not_a_connection_link">Diese Zeichenfolge entspricht keinem gültigen Verbindungslink!</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche „<b>In mobiler App öffnen</b>“.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche „<b>In mobiler App öffnen</b>“.]]></string>
     <!-- CreateLinkView.kt -->
     <string name="create_one_time_link">Link / QR-Code erstellen</string>
     <string name="one_time_link">Einmaliger Einladungs-Link</string>
@@ -485,7 +485,7 @@
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Viele Menschen haben gefragt: <i>Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?</i>]]></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet SimpleX anstelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Sie können selbst festlegen, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b> wollen.]]></string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>zweischichtige Ende-zu-Ende-Verschlüsselung</b> gesendet werden.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>zweischichtige Ende-zu-Ende-Verschlüsselung</b> gesendet werden.]]></string>
     <string name="read_more_in_github">Erfahren Sie in unserem GitHub-Repository mehr dazu.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.]]></string>
     <!-- MakeConnection -->
@@ -906,7 +906,7 @@
     <string name="view_security_code">Schauen Sie sich den Sicherheitscode an</string>
     <string name="onboarding_notifications_mode_service">Sofort</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Gute Option für die Batterieausdauer</b>. Der Hintergrundservice überprüft alle 10 Minuten nach Nachrichten. Sie können eventuell Anrufe oder dringende Nachrichten verpassen.]]></string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Beste Option für die Akkulaufzeit</b>. Sie empfangen Benachrichtigungen nur, solange die App läuft (kein aktiver Hintergrundservice).</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Beste Option für die Akkulaufzeit</b>. Sie empfangen Benachrichtigungen nur, solange die App läuft (kein aktiver Hintergrundservice).]]></string>
     <string name="send_verb">Senden</string>
     <string name="is_verified">%s wurde erfolgreich überprüft</string>
     <string name="clear_verification">Verifikation zurücknehmen</string>
