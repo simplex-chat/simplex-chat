@@ -1,6 +1,6 @@
 ---
 title: Hosting your own SMP Server
-revision: 05.06.2023
+revision: 31.07.2023
 ---
 
 | Updated 05.06.2023 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
@@ -19,16 +19,26 @@ _Please note_: when you change the servers in the app configuration, it only aff
 
 0. First, install `smp-server`:
 
-   - Manual deployment:
+   - Manual deployment (see below)
 
-     - [Compiling from source](https://github.com/simplex-chat/simplexmq#using-your-distribution)
-     - [Using pre-compiled binaries](https://github.com/simplex-chat/simplexmq#install-binaries)
-
-   - Alternatively, you can deploy `smp-server` using:
-     - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker-1)
+   - Semi-automatic deployment:
+     - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
+     - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
      - [Linode StackScript](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)
 
 Manual installation requires some preliminary actions:
+
+0. Install binary:
+
+   - Using offical binaries:
+
+     ```sh
+     curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server
+     ```
+
+   - Compiling from source:
+
+     Please refer to [Build from source: Using your distribution](https://github.com/simplex-chat/simplexmq#using-your-distribution)
 
 1. Create user and group for `smp-server`:
 
@@ -57,23 +67,103 @@ Manual installation requires some preliminary actions:
 
    ```sh
    [Unit]
-   Description=SMP server
+   Description=SMP server systemd service
+
    [Service]
    User=smp
    Group=smp
    Type=simple
-   ExecStart=smp-server start
+   ExecStart=/usr/local/bin/smp-server start +RTS -N -RTS
    ExecStopPost=/usr/bin/env sh -c '[ -e "/var/opt/simplex/smp-server-store.log" ] && cp "/var/opt/simplex/smp-server-store.log" "/var/opt/simplex/smp-server-store.log.bak"'
+   LimitNOFILE=65535
    KillSignal=SIGINT
    TimeoutStopSec=infinity
-   Restart=always
-   RestartSec=10
-   LimitNOFILE=65535
+
    [Install]
    WantedBy=multi-user.target
    ```
 
    And execute `sudo systemctl daemon-reload`.
+
+## Tor installation
+
+smp-server can also be deployed to serve from [tor](https://www.torproject.org) network. Run the following commands as `root` user.
+
+1. Install tor:
+
+   We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to [offical tor documentation](https://community.torproject.org/onion-services/setup/install/) or your distribution guide.
+
+   - Configure offical Tor PPA repository:
+
+     ```sh
+     CODENAME="$(lsb_release -c | awk '{print $2}')"
+     echo "deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
+     deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main" > /etc/apt/sources.list.d/tor.list
+     ```
+
+   - Import repository key:
+
+     ```sh
+     curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg >/dev/null
+     ```
+
+   - Update repository index:
+
+     ```sh
+     apt update
+     ```
+
+   - Install `tor` package:
+
+     ```sh
+     apt install -y tor deb.torproject.org-keyring
+     ```
+
+2. Configure tor:
+
+   - File configuration:
+  
+     Open tor configuration with your editor of choice (`nano`,`vim`,`emacs`,etc.):
+
+     ```sh
+     vim /etc/tor/torrc
+     ```
+
+     And insert the following lines to the bottom of configuration. Please note lines starting with `#`: this is comments about each individual options.
+
+     ```sh
+     # Enable log (otherwise, tor doesn't seemd to deploy onion address)
+     Log notice file /var/log/tor/notices.log
+     # Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside smp-server and onion address will be displayed in clients, this is totally fine)
+     SOCKSPort 0
+     HiddenServiceNonAnonymousMode 1
+     HiddenServiceSingleHopMode 1
+     # smp-server hidden service host directory and port mappings
+     HiddenServiceDir /var/lib/tor/simplex-smp/
+     HiddenServicePort 5223 localhost:5223
+     ```
+
+   - Create directories:
+
+     ```sh
+     mkdir /var/lib/tor/simplex-smp/ && chown debian-tor:debian-tor /var/lib/tor/simplex-smp/ && chmod 700 /var/lib/tor/simplex-smp/
+     ```
+
+3. Start tor:
+
+   Enable `systemd` service and start tor. Offical `tor` is a bit flunky on the first start and may not create onion host address, so we're restarting it just in case.
+
+   ```sh
+   systemctl enable tor && systemctl start tor && systemctl restart tor
+   ```
+
+4. Display onion host:
+
+   Execute the following command to display your onion host address:
+
+   ```sh
+   cat /var/lib/tor/simplex-smp/hostname
+   ```
 
 ## Configuration
 
