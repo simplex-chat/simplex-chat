@@ -270,8 +270,6 @@
     <string name="allow_your_contacts_to_send_voice_messages">Permetti ai tuoi contatti di inviare messaggi vocali.</string>
     <string name="chat_database_deleted">Database della chat eliminato</string>
     <string name="settings_section_title_icon">ICONA APP</string>
-    <string name="incognito_random_profile_from_contact_description">Verrà inviato un profilo casuale al contatto da cui hai ricevuto questo link</string>
-    <string name="incognito_random_profile_description">Verrà inviato un profilo casuale al tuo contatto</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Ideale per la batteria</b>. Riceverai notifiche solo quando l\'app è in esecuzione (NO servizio in secondo piano).]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consuma più batteria</b>! Servizio in secondo piano sempre attivo: le notifiche sono mostrate non appena i messaggi sono disponibili.]]></string>
     <string name="callstatus_calling">chiamata…</string>
@@ -582,7 +580,6 @@
     <string name="mark_code_verified">Segna come verificato/a</string>
     <string name="one_time_link">Link di invito una tantum</string>
     <string name="paste_button">Incolla</string>
-    <string name="paste_connection_link_below_to_connect">Incolla il link che hai ricevuto nella casella sottostante per connetterti con il tuo contatto.</string>
     <string name="smp_servers_preset_server">Server preimpostato</string>
     <string name="smp_servers_preset_address">Indirizzo server preimpostato</string>
     <string name="smp_servers_save">Salva i server</string>
@@ -606,7 +603,6 @@
     <string name="smp_servers_use_server_for_new_conn">Usa per connessioni nuove</string>
     <string name="smp_servers_use_server">Usa il server</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Puoi anche connetterti cliccando il link. Se si apre nel browser, clicca il pulsante <b>Apri nell\'app mobile</b>.]]></string>
-    <string name="your_profile_will_be_sent">Il tuo profilo di chat verrà inviato al tuo contatto</string>
     <string name="smp_servers_your_server">Il tuo server</string>
     <string name="smp_servers_your_server_address">L\'indirizzo del tuo server</string>
     <string name="your_simplex_contact_address">Il tuo indirizzo SimpleX</string>
@@ -814,7 +810,6 @@
     <string name="invite_prohibited_description">Stai tentando di invitare un contatto con cui hai condiviso un profilo in incognito nel gruppo in cui stai usando il tuo profilo principale</string>
     <string name="group_info_member_you">tu: %1$s</string>
     <string name="incognito">Incognito</string>
-    <string name="group_unsupported_incognito_main_profile_sent">La modalità in incognito non è supportata qui: il tuo profilo principale verrà inviato ai membri del gruppo</string>
     <string name="incognito_info_protects">La modalità in incognito protegge la privacy del nome e dell\'immagine del tuo profilo principale: per ogni nuovo contatto viene creato un nuovo profilo casuale.</string>
     <string name="conn_level_desc_indirect">indiretta (%1$s)</string>
     <string name="incognito_info_allows">Permette di avere molte connessioni anonime senza dati condivisi tra di loro in un unico profilo di chat.</string>
@@ -836,7 +831,6 @@
     <string name="group_is_decentralized">Il gruppo è completamente decentralizzato: è visibile solo ai membri.</string>
     <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in \"%s\". Tutti i membri del gruppo riceveranno una notifica.</string>
     <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in \"%s\". Il membro riceverà un nuovo invito.</string>
-    <string name="incognito_info_find">Per trovare il profilo usato per una connessione in incognito, tocca il nome del contatto o del gruppo in cima alla chat.</string>
     <string name="update_network_settings_confirmation">Aggiorna</string>
     <string name="update_network_settings_question">Aggiornare le impostazioni di rete\?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">L\'aggiornamento delle impostazioni riconnetterà il client a tutti i server.</string>
@@ -1353,25 +1347,12 @@
     <string name="receipts_groups_override_disabled">L\'invio di ricevute è disattivato per %d gruppi</string>
     <string name="receipts_groups_override_enabled">L\'invio di ricevute è attivato per %d gruppi</string>
     <string name="send_receipts_disabled_alert_title">Le ricevute sono disattivate</string>
-    <string name="item_status_rcv_read_text">Messaggio letto</string>
-    <string name="item_status_snd_new_text">Invio del messaggio</string>
-    <string name="item_status_snd_rcvd_text">Messaggio inviato ricevuto</string>
-    <string name="item_status_snd_sent_desc">Il messaggio è stato inviato al relay del destinatario.</string>
-    <string name="item_status_snd_new_desc">L\'invio del messaggio è in corso o in attesa.</string>
-    <string name="item_status_snd_error_unexpected_desc">Errore imprevisto di recapito del messaggio: %1$s</string>
-    <string name="item_status_rcv_read_desc">Hai letto questo messaggio ricevuto.</string>
     <string name="delivery">Consegna</string>
     <string name="receipts_groups_enable_keep_overrides">Attiva (mantieni sostituzioni dei gruppi)</string>
     <string name="send_receipts_disabled">disattivato</string>
     <string name="receipts_groups_disable_keep_overrides">Disattiva (mantieni sostituzioni dei gruppi)</string>
     <string name="receipts_groups_title_disable">Disattivare le ricevute per i gruppi\?</string>
     <string name="receipts_groups_disable_for_all">Disattiva per tutti i gruppi</string>
-    <string name="item_status_snd_error_auth_desc">Errore di consegna del messaggio. Molto probabilmente questo destinatario ha eliminato la connessione con te.</string>
-    <string name="item_status_snd_error_text">Errore nell\'invio del messaggio</string>
-    <string name="item_status_rcv_new_text">Messaggio ricevuto</string>
-    <string name="item_status_snd_rcvd_desc">Il messaggio è stato ricevuto dal destinatario.</string>
-    <string name="item_status_rcv_new_desc">Nuovo messaggio da questo mittente.</string>
-    <string name="item_status_snd_sent_text">Messaggio inviato</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="send_receipts_disabled_alert_msg">Questo gruppo ha più di %1$d membri, le ricevute di consegna non vengono inviate.</string>
     <string name="connect_via_member_address_alert_title">Connettersi direttamente\?</string>

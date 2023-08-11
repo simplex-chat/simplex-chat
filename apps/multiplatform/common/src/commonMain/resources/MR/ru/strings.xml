@@ -335,8 +335,6 @@
 \nВашему контакту</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Если Вы не можете встретиться лично, Вы можете <b>сосканировать QR код во время видеозвонка</b>, или Ваш контакт может отправить Вам ссылку.]]></string>
     <string name="share_invitation_link">Поделиться одноразовой ссылкой</string>
-    <string name="paste_connection_link_below_to_connect">Чтобы соединиться, вставьте в это поле ссылку, полученную от Вашего контакта.</string>
-    <string name="your_profile_will_be_sent">Ваш профиль будет отправлен Вашему контакту</string>
     <!-- PasteToConnect.kt -->
     <string name="connect_button">Соединиться</string>
     <string name="paste_button">Вставить</string>
@@ -823,7 +821,6 @@
     <string name="group_is_decentralized">Группа полностью децентрализована — она видна только членам.</string>
     <string name="group_display_name_field">Имя группы:</string>
     <string name="group_full_name_field">Полное имя:</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Режим Инкогнито здесь не поддерживается - Ваш основной профиль будет отправлен членам группы</string>
     <string name="group_main_profile_sent">Ваш профиль чата будет отправлен членам группы</string>
     <!-- GroupProfileView.kt -->
     <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов, а не на серверах.</string>
@@ -844,12 +841,9 @@
     <!-- Incognito mode -->
     <string name="incognito">Инкогнито</string>
     <string name="incognito_random_profile">Случайный профиль</string>
-    <string name="incognito_random_profile_description">Вашему контакту будет отправлен случайный профиль</string>
-    <string name="incognito_random_profile_from_contact_description">Контакту, от которого Вы получили эту ссылку, будет отправлен случайный профиль</string>
     <string name="incognito_info_protects">Режим Инкогнито защищает конфиденциальность имени и изображения Вашего основного профиля — для каждого нового контакта создается новый случайный профиль.</string>
     <string name="incognito_info_allows">Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.</string>
     <string name="incognito_info_share">Когда Вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.</string>
-    <string name="incognito_info_find">Чтобы найти инкогнито профиль, используемый в разговоре, нажмите на имя контакта или группы в верхней части чата.</string>
     <!-- Default themes -->
     <string name="theme_system">Системная</string>
     <string name="theme_light">Светлая</string>
