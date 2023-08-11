@@ -247,6 +247,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
   CRSQLResult rows -> map plain rows
+  CRSlowSQLQueries {chatQueries, agentQueries} ->
+    ("Chat queries" : map viewSlowSQLQuery chatQueries) <> [""] <> ("Agent queries" : map viewSlowSQLQuery agentQueries)
   CRDebugLocks {chatLockName, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
@@ -1478,6 +1480,9 @@ viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCo
       else [versionString version, updateStr]
   where
     parens s = " (" <> s <> ")"
+
+viewSlowSQLQuery :: SlowSQLQuery -> [StyledString]
+viewSlowSQLQuery SlowSQLQuery {query, duration} = sShow duration <> "ms: " <> query
 
 viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
 viewChatError logLevel = \case
