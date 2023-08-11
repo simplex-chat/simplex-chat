@@ -329,3 +329,22 @@ fun DisposableEffectOnRotate(always: () -> Unit = {}, whenDispose: () -> Unit = 
     }
   }
 }
+
+/**
+ * Runs the [block] only after initial value of the [key1] changes, not after initial launch
+ * */
+@Composable
+@NonRestartableComposable
+fun KeyChangeEffect(
+  key1: Any?,
+  block: suspend CoroutineScope.() -> Unit
+) {
+  val initialKey = remember { key1 }
+  var anyChange by remember { mutableStateOf(false) }
+  LaunchedEffect(key1) {
+    if (anyChange || key1 != initialKey) {
+      block()
+      anyChange = true
+    }
+  }
+}

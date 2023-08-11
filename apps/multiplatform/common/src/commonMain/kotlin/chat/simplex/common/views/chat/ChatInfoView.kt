@@ -51,15 +51,16 @@ fun ChatInfoView(
   close: () -> Unit,
 ) {
   BackHandler(onBack = close)
-  val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
-  val currentUser = chatModel.currentUser.value
-  val connStats = remember { mutableStateOf(connectionStats) }
+  val contact = rememberUpdatedState(contact).value
+  val chat = remember(contact.id) { chatModel.chats.firstOrNull { it.id == contact.id } }
+  val currentUser = remember { chatModel.currentUser }.value
+  val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && currentUser != null) {
-    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap()) {
+    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap(), contact) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
     }
-    val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
+    val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     ChatInfoLayout(
       chat,
       contact,
@@ -239,7 +240,7 @@ fun ChatInfoLayout(
   currentUser: User,
   sendReceipts: State<SendReceipts>,
   setSendReceipts: (SendReceipts) -> Unit,
-  connStats: MutableState<ConnectionStats?>,
+  connStats: State<ConnectionStats?>,
   contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
   localAlias: String,

@@ -41,6 +41,7 @@ import kotlinx.datetime.Clock
 import java.io.File
 import java.net.URI
 import kotlin.math.sign
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
@@ -133,24 +134,30 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         chatModel.chatId.value = null
       },
       info = {
+        if (ModalManager.end.hasModalsOpen()) {
+          ModalManager.end.closeModals()
+          return@ChatLayout
+        }
         hideKeyboard(view)
         withApi {
-          if (chat.chatInfo is ChatInfo.Direct) {
-            val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
-            val (_, code) = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)
-            ModalManager.end.closeModals()
-            ModalManager.end.showModalCloseable(true) { close ->
-              remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.apiId)?.chatInfo as? ChatInfo.Direct)?.contact } }.value?.let { ct ->
-                ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
+          ModalManager.end.showModalCloseable(true) { close ->
+            val chat = remember { activeChat }.value
+            if (chat?.chatInfo is ChatInfo.Direct) {
+              var contactInfo: Pair<ConnectionStats, Profile?>? by remember { mutableStateOf(null) }
+              var code: String? by remember { mutableStateOf(null) }
+              LaunchedEffect(chat.id, ChatModel.networkStatuses.toMap()) {
+                contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+                code = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId).second
               }
-            }
-          } else if (chat.chatInfo is ChatInfo.Group) {
-            setGroupMembers(chat.chatInfo.groupInfo, chatModel)
-            val link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
-            var groupLink = link?.first
-            var groupLinkMemberRole = link?.second
-            ModalManager.end.closeModals()
-            ModalManager.end.showModalCloseable(true) { close ->
+              ChatInfoView(chatModel, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
+            } else if (chat?.chatInfo is ChatInfo.Group) {
+              var link: Pair<String, GroupMemberRole>? by remember(chat.id) { mutableStateOf(null) }
+              LaunchedEffect(chat.id) {
+                setGroupMembers((chat.chatInfo as ChatInfo.Group).groupInfo, chatModel)
+                link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+              }
+              var groupLink by remember(chat.id) { mutableStateOf(link?.first) }
+              var groupLinkMemberRole by remember(chat.id) { mutableStateOf(link?.second) }
               GroupChatInfoView(chatModel, groupLink, groupLinkMemberRole, {
                 groupLink = it.first;
                 groupLinkMemberRole = it.second

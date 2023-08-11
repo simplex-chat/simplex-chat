@@ -220,7 +220,7 @@ fun GroupChatInfoLayout(
         AddMembersButton(tint, onAddMembersClick)
       }
       val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
-      val filteredMembers = remember { derivedStateOf { members.filter { it.chatViewName.lowercase().contains(searchText.value.text.trim()) } } }
+      val filteredMembers = remember(members) { derivedStateOf { members.filter { it.chatViewName.lowercase().contains(searchText.value.text.trim()) } } }
       if (members.size > 8) {
         SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)
