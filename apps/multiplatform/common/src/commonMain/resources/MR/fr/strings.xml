@@ -243,7 +243,6 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">Votre profil de chat sera envoyé
 \nà votre contact</string>
     <string name="share_invitation_link">Partager un lien unique</string>
-    <string name="your_profile_will_be_sent">Votre profil de chat sera envoyé à votre contact</string>
     <string name="paste_button">Coller</string>
     <string name="this_string_is_not_a_connection_link">Cette chaîne n\'est pas un lien de connexion !</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Vous pouvez aussi vous connecter en cliquant sur le lien. Si il s\'ouvre dans le navigateur, cliquez sur <b>Ouvrir dans l\'app mobile</b>.]]></string>
@@ -255,7 +254,6 @@
     <string name="accept_connection_request__question">Accepter la demande de connexion \?</string>
     <string name="clear_verb">Effacer</string>
     <string name="clear_chat_button">Effacer la conversation</string>
-    <string name="paste_connection_link_below_to_connect">Collez le lien que vous avez reçu dans le cadre ci-dessous pour vous connecter avec votre contact.</string>
     <string name="connect_via_link">Se connecter via un lien</string>
     <string name="clear_verification">Retirer la vérification</string>
     <string name="one_time_link">Lien d\'invitation unique</string>
@@ -784,10 +782,7 @@
     <string name="update_network_settings_question">Mettre à jour les paramètres réseau \?</string>
     <string name="incognito">Incognito</string>
     <string name="incognito_random_profile">Votre profil aléatoire</string>
-    <string name="incognito_random_profile_description">Un profil aléatoire sera envoyé à votre contact</string>
-    <string name="incognito_random_profile_from_contact_description">Un profil aléatoire sera envoyé au contact qui vous a envoyé ce lien</string>
     <string name="incognito_info_allows">Cela permet d\'avoir plusieurs connections anonymes sans aucune données partagées entre elles sur un même profil.</string>
-    <string name="incognito_info_find">Pour trouver le profil utilisé lors d\'une connexion incognito, appuyez sur le nom du contact ou du groupe en haut du chat.</string>
     <string name="theme_light">Clair</string>
     <string name="theme_dark">Sombre</string>
     <string name="theme">Thème</string>
@@ -855,7 +850,6 @@
     <string name="both_you_and_your_contact_can_send_disappearing">Vous et votre contact êtes tous deux en mesure d\'envoyer des messages éphémères.</string>
     <string name="voice_messages_are_prohibited">Les messages vocaux sont interdits dans ce groupe.</string>
     <string name="group_display_name_field">Nom affiché du groupe :</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Le mode Incognito n\'est pas supporté ici - votre profil principal sera envoyé aux membres du groupe</string>
     <string name="conn_level_desc_indirect">indirecte (%1$s)</string>
     <string name="info_row_group">Groupe</string>
     <string name="info_row_connection">Connexion</string>
@@ -1353,24 +1347,11 @@
     <string name="receipts_groups_override_enabled">L\'envoi de reçus est activé pour %d groupes</string>
     <string name="receipts_groups_disable_for_all">Désactivé pour tous les groupes</string>
     <string name="send_receipts_disabled_alert_title">Les accusés de réception sont désactivés</string>
-    <string name="item_status_snd_new_text">Envoi d\'un message</string>
-    <string name="item_status_snd_rcvd_text">Message envoyé reçu</string>
-    <string name="item_status_snd_error_unexpected_desc">Erreur inattendue dans la distribution du message : %1$s</string>
-    <string name="item_status_rcv_read_desc">Vous avez lu ce message.</string>
     <string name="in_developing_desc">Cette fonctionnalité n\'est pas encore prise en charge. Essayez la dans la prochaine version.</string>
     <string name="delivery">Distribution</string>
     <string name="send_receipts_disabled">désactivé</string>
-    <string name="item_status_snd_error_auth_desc">Erreur de distribution du message. Il est très probable que ce destinataire ait supprimé la connexion avec vous.</string>
-    <string name="item_status_snd_error_text">Erreur lors de l\'envoi du message</string>
-    <string name="item_status_snd_rcvd_desc">Le destinataire a reçu le message.</string>
-    <string name="item_status_snd_sent_desc">Message envoyé au relais du destinataire.</string>
-    <string name="item_status_rcv_read_text">Message lu</string>
-    <string name="item_status_rcv_new_text">Message reçu</string>
-    <string name="item_status_snd_sent_text">Message envoyé</string>
-    <string name="item_status_rcv_new_desc">Nouveau message de cet expéditeur.</string>
     <string name="no_info_on_delivery">Pas d\'information sur la distribution</string>
     <string name="no_selected_chat">Aucun chat sélectionné</string>
-    <string name="item_status_snd_new_desc">L\'envoi du message est en cours ou en attente.</string>
     <string name="receipts_groups_title_enable">Activer les reçus pour les groupes \?</string>
     <string name="send_receipts_disabled_alert_msg">Ce groupe compte plus de %1$d membres, les accusés de réception ne sont pas envoyés.</string>
     <string name="recipient_colon_delivery_status">%s : %s</string>

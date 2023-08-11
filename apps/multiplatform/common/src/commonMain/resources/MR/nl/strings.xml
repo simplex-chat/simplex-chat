@@ -48,7 +48,6 @@
     <string name="allow_verb">Toestaan</string>
     <string name="chat_item_ttl_day">1 dag</string>
     <string name="accept_feature">Accepteer</string>
-    <string name="incognito_random_profile_from_contact_description">Er wordt een willekeurig profiel verzonden naar het contact van wie je deze link hebt ontvangen</string>
     <string name="network_session_mode_entity_description">Er wordt een afzonderlijke TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk contact en groepslid </b>.
 \n<b>Let op</b>: als u veel verbindingen heeft, kan uw batterij- en verkeersverbruik aanzienlijk hoger zijn en kunnen sommige verbindingen uitvallen.</string>
     <string name="icon_descr_audio_call">audio oproep</string>
@@ -59,7 +58,6 @@
     <string name="back">Terug</string>
     <string name="v4_2_auto_accept_contact_requests">Contact verzoeken automatisch accepteren</string>
     <string name="bold_text">vetgedrukt</string>
-    <string name="incognito_random_profile_description">Er wordt een willekeurig profiel naar uw contactpersoon verzonden</string>
     <string name="attach">Bijvoegen</string>
     <string name="allow_irreversible_message_deletion_only_if">Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contactpersoon dit toestaat.</string>
     <string name="allow_to_send_disappearing">Sta toe om verdwijnende berichten te verzenden.</string>
@@ -451,7 +449,6 @@
     <string name="group_member_status_invited">uitgenodigd</string>
     <string name="button_leave_group">Groep verlaten</string>
     <string name="info_row_local_name">Lokale naam</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Incognito modus wordt hier niet ondersteund, uw hoofdprofiel wordt naar groepsleden verzonden</string>
     <string name="users_delete_data_only">Alleen lokale profielgegevens</string>
     <string name="message_deletion_prohibited_in_chat">Het onomkeerbaar verwijderen van berichten is verboden in deze groep.</string>
     <string name="v4_3_improved_privacy_and_security_desc">App scherm verbergen in de recente apps.</string>
@@ -583,7 +580,6 @@
     <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts zijn vereist voor verbinding.</string>
     <string name="only_group_owners_can_change_prefs">Alleen groep eigenaren kunnen groep voorkeuren wijzigen.</string>
     <string name="only_stored_on_members_devices">(alleen opgeslagen door groepsleden)</string>
-    <string name="paste_connection_link_below_to_connect">Plak de link die je hebt ontvangen in het vak hieronder om verbinding te maken met je contactpersoon.</string>
     <string name="smp_servers_preset_server">Vooraf ingestelde server</string>
     <string name="periodic_notifications_disabled">Periodieke meldingen zijn uitgeschakeld!</string>
     <string name="icon_descr_server_status_pending">In behandeling</string>
@@ -701,7 +697,6 @@
     <string name="is_verified">%s is geverifieerd</string>
     <string name="to_verify_compare">Vergelijk (of scan) de code op uw apparaten om end-to-end codering met uw contactpersoon te verifiëren.</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[U kunt ook verbinding maken door op de link te klikken. Als het in de browser wordt geopend, klikt u op de knop <b> Openen in mobiele app </b>.]]></string>
-    <string name="your_profile_will_be_sent">Uw chat profiel wordt naar uw contactpersoon verzonden</string>
     <string name="your_chat_profiles">Uw chat profielen</string>
     <string name="your_simplex_contact_address">Uw SimpleX adres</string>
     <string name="chat_with_the_founder">Stuur vragen en ideeën</string>
@@ -820,7 +815,6 @@
     <string name="network_options_revert">Terugdraaien</string>
     <string name="network_options_save">Opslaan</string>
     <string name="network_option_seconds_label">sec</string>
-    <string name="incognito_info_find">Om het profiel te vinden dat wordt gebruikt voor een incognito verbinding, tikt u op de naam van het contact of de groep bovenaan het gesprek.</string>
     <string name="incognito_info_share">Wanneer je een incognito profiel met iemand deelt, wordt dit profiel gebruikt voor de groepen waarvoor ze je uitnodigen.</string>
     <string name="theme">Thema</string>
     <string name="reset_color">Kleuren resetten</string>
@@ -1358,20 +1352,7 @@
     <string name="receipts_groups_override_enabled">Het verzenden van ontvangstbevestigingen is ingeschakeld voor %d-groepen</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="send_receipts_disabled_alert_msg">Deze groep heeft meer dan %1$d leden, Ontvangstbevestigingen worden niet verzonden.</string>
-    <string name="item_status_snd_new_text">Bericht versturen</string>
-    <string name="item_status_rcv_new_text">Bericht ontvangen</string>
-    <string name="item_status_snd_rcvd_text">Verzonden bericht ontvangen</string>
-    <string name="item_status_snd_sent_desc">Het bericht is verzonden naar de relay van de ontvanger.</string>
-    <string name="item_status_rcv_read_text">Bericht gelezen</string>
-    <string name="item_status_snd_error_auth_desc">Fout bij het bezorgen van berichten. Hoogstwaarschijnlijk heeft deze ontvanger de verbinding met u verwijderd.</string>
-    <string name="item_status_rcv_new_desc">Nieuw bericht van deze afzender.</string>
-    <string name="item_status_snd_error_unexpected_desc">Onverwachte bericht bezorgingsfout: %1$s</string>
     <string name="send_receipts_disabled">uitgeschakeld</string>
-    <string name="item_status_snd_error_text">Fout bij verzenden van bericht</string>
-    <string name="item_status_snd_rcvd_desc">Het bericht is ontvangen door de ontvanger.</string>
-    <string name="item_status_snd_sent_text">Bericht verzonden</string>
     <string name="send_receipts_disabled_alert_title">Ontvangstbevestigingen zijn uitgeschakeld</string>
-    <string name="item_status_snd_new_desc">Het bericht wordt verzonden of bezig.</string>
-    <string name="item_status_rcv_read_desc">U heeft dit ontvangen bericht gelezen.</string>
     <string name="connect_via_member_address_alert_title">Verbind direct\?</string>
 </resources>

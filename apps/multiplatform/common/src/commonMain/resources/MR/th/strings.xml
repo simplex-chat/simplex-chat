@@ -31,8 +31,6 @@
     <string name="audio_call_no_encryption">การโทรด้วยเสียง (ไม่ได้ encrypt จากต้นจนจบ)</string>
     <string name="notifications_mode_off_desc">แอปสามารถรับการแจ้งเตือนได้เฉพาะเมื่อกำลังทำงานอยู่เท่านั้น โดยจะไม่มีการเริ่มบริการพื้นหลัง</string>
     <string name="appearance_settings">รูปร่างลักษณะ</string>
-    <string name="incognito_random_profile_from_contact_description">โปรไฟล์แบบสุ่มจะถูกส่งไปยังผู้ติดต่อที่คุณได้รับลิงก์นี้จาก</string>
-    <string name="incognito_random_profile_description">โปรไฟล์แบบสุ่มจะถูกส่งไปยังผู้ติดต่อของคุณ</string>
     <string name="network_session_mode_user_description"><![CDATA[การเชื่อมต่อ TCP (และข้อมูลรับรอง SOCKS) แบบแยกต่างหาก จะถูกใช้ <b> สําหรับแต่ละโปรไฟล์แชทที่คุณมีในแอป </b>]]></string>
     <string name="network_session_mode_entity_description"><![CDATA[การเชื่อมต่อ TCP (และข้อมูลรับรอง SOCKS) แบบแยกต่างหาก จะถูกใช้ <b> สําหรับผู้ติดต่อแต่ละคนและสมาชิกกลุ่มแต่ละคน </b>\n<b>โปรดทราบ </b>: หากคุณมีการเชื่อมต่อจํานวนมากแบตเตอรี่และปริมาณการใช้การจราจรของคุณอาจสูงขึ้นอย่างมากและการเชื่อมต่อบางอย่างอาจล้มเหลว]]></string>
     <string name="attach">แนบ</string>
@@ -535,7 +533,6 @@
     <string name="if_you_cant_meet_in_person">หากคุณไม่สามารถพบกันในชีวิตจริงได้ ให้แสดงคิวอาร์โค้ดในวิดีโอคอล หรือแชร์ลิงก์</string>
     <string name="network_disable_socks_info">หากคุณยืนยัน เซิร์ฟเวอร์การส่งข้อความจะสามารถเห็นที่อยู่ IP ของคุณและผู้ให้บริการของคุณ - ซึ่งคือเซิร์ฟเวอร์ใดที่คุณกำลังเชื่อมต่ออยู่</string>
     <string name="if_you_enter_self_destruct_code">หากคุณใส่รหัสผ่านทำลายตัวเองขณะเปิดแอป:</string>
-    <string name="group_unsupported_incognito_main_profile_sent">ไม่รองรับโหมดไม่ระบุตัวตนที่นี่ - โปรไฟล์หลักของคุณจะถูกส่งไปยังสมาชิกกลุ่ม</string>
     <string name="incognito_info_protects">โหมดไม่ระบุตัวตนปกป้องความเป็นส่วนตัวของชื่อและรูปภาพโปรไฟล์หลักของคุณ — สำหรับผู้ติดต่อใหม่แต่ละราย จะมีการสร้างโปรไฟล์ใหม่แบบสุ่ม</string>
     <string name="conn_level_desc_indirect">ทางอ้อม (%1$s)</string>
     <string name="install_simplex_chat_for_terminal">ติดตั้ง SimpleX Chat สำหรับเทอร์มินัล</string>
@@ -663,7 +660,6 @@
     <string name="mark_unread">ทำเครื่องหมายว่ายังไม่ได้อ่าน</string>
     <string name="mute_chat">ปิดเสียง</string>
     <string name="icon_descr_more_button">เพิ่มเติม</string>
-    <string name="paste_connection_link_below_to_connect">แปะลิงก์ที่คุณได้รับลงในช่องด้านล่างเพื่อเชื่อมต่อกับผู้ติดต่อของคุณ</string>
     <string name="paste_button">แปะ</string>
     <string name="one_time_link">ลิงก์คําเชิญแบบใช้ครั้งเดียว</string>
     <string name="mark_code_verified">ทําเครื่องหมายว่ายืนยันแล้ว</string>
@@ -1139,7 +1135,6 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">โปรไฟล์แชทของคุณจะถูกส่ง
 \nให้กับผู้ติดต่อของคุณ</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">คุณจะเชื่อมต่อเมื่ออุปกรณ์ของผู้ติดต่อของคุณออนไลน์อยู่ โปรดรอหรือตรวจสอบภายหลัง!</string>
-    <string name="your_profile_will_be_sent">โปรไฟล์การแชทของคุณจะถูกส่งไปยังผู้ติดต่อของคุณ</string>
     <string name="you_can_accept_or_reject_connection">เมื่อมีคนขอเชื่อมต่อ คุณสามารถยอมรับหรือปฏิเสธได้</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[คุณสามารถเชื่อมต่อได้โดยคลิกที่ลิงค์ หากเปิดในเบราว์เซอร์ ให้คลิกปุ่ม <b>เปิดในแอปมือถือ</b>]]></string>
     <string name="to_verify_compare">ในการตรวจสอบการเข้ารหัสแบบ encrypt จากต้นจนจบ กับผู้ติดต่อของคุณ ให้เปรียบเทียบ (หรือสแกน) รหัสบนอุปกรณ์ของคุณ</string>
@@ -1242,7 +1237,6 @@
     <string name="v5_0_large_files_support">วิดีโอและไฟล์สูงสุด 1gb</string>
     <string name="custom_time_unit_weeks">สัปดาห์</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">การดำเนินการนี้ไม่สามารถยกเลิกได้ - โปรไฟล์ ผู้ติดต่อ ข้อความ และไฟล์ของคุณจะสูญหายไปอย่างถาวร</string>
-    <string name="incognito_info_find">หากต้องการค้นหาโปรไฟล์ที่ใช้สำหรับการเชื่อมต่อแบบโหมดไม่ระบุตัวตน ให้แตะชื่อผู้ติดต่อหรือชื่อกลุ่มที่ด้านบนของแชท</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[เพื่อรักษาความเป็นส่วนตัวของคุณ แทนที่จะใช้การแจ้งเตือนแบบพุช แอปมีบริการพื้นหลัง <b>SimpleX </b> – ใช้แบตเตอรี่เพียงไม่กี่เปอร์เซ็นต์ต่อวัน]]></string>
     <string name="group_info_member_you">คุณ: %1$s</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">เพื่อปกป้องความเป็นส่วนตัว แทนที่จะใช้ ID ผู้ใช้เหมือนที่แพลตฟอร์มอื่นๆใช้ SimpleX มีตัวระบุสำหรับคิวข้อความ โดยแยกจากกันสำหรับผู้ติดต่อแต่ละราย</string>
@@ -1335,36 +1329,23 @@
     <string name="receipts_groups_title_enable">เปิดใช้ใบเสร็จสำหรับกลุ่มไหม</string>
     <string name="receipts_groups_disable_keep_overrides">ปิดใช้งาน (เก็บการแทนที่กลุ่ม)</string>
     <string name="snd_conn_event_ratchet_sync_required">จำเป็นต้องมีการเจรจา encryption อีกครั้งสำหรับ %s</string>
-    <string name="item_status_snd_error_text">เกิดข้อผิดพลาดในการส่งข้อความ</string>
     <string name="v5_2_disappear_one_message_descr">แม้ในขณะที่ปิดใช้งานในการสนทนา</string>
     <string name="fix_connection_question">แก้ไขการเชื่อมต่อ\?</string>
     <string name="v5_2_message_delivery_receipts">ใบเสร็จการส่งข้อความ!</string>
     <string name="fix_connection_not_supported_by_contact">การแก้ไขไม่รองรับโดยผู้ติดต่อ</string>
     <string name="fix_connection_not_supported_by_group_member">การแก้ไขไม่สนับสนุนโดยสมาชิกกลุ่ม</string>
-    <string name="item_status_snd_error_auth_desc">ข้อผิดพลาดในการส่งข้อความ เป็นไปได้มากที่ผู้รับรายนี้จะลบการเชื่อมต่อกับคุณ</string>
-    <string name="item_status_rcv_new_text">ข้อความที่ได้รับแล้ว</string>
     <string name="v5_2_disappear_one_message">ทำให้ข้อความหายไปหนึ่งข้อความ</string>
     <string name="no_info_on_delivery">ไม่มีข้อมูลเกี่ยวกับการจัดส่ง</string>
-    <string name="item_status_snd_rcvd_desc">ผู้รับได้รับข้อความแล้ว</string>
-    <string name="item_status_snd_sent_desc">ข้อความถูกส่งไปยังรีเลย์ของผู้รับแล้ว</string>
-    <string name="item_status_rcv_read_text">อ่านข้อความแล้ว</string>
-    <string name="item_status_snd_sent_text">ส่งข้อความแล้ว</string>
-    <string name="item_status_rcv_new_desc">ข้อความใหม่จากผู้ส่งรายนี้</string>
     <string name="no_selected_chat">ไม่มีแชทที่เลือก</string>
-    <string name="item_status_snd_new_text">กำลังส่งข้อความ</string>
     <string name="send_receipts_disabled_alert_title">ใบเสร็จรับข้อความถูกปิดใช้งาน</string>
     <string name="rcv_conn_event_verification_code_reset">เปลี่ยนรหัสความปลอดภัยแล้ว</string>
     <string name="receipts_groups_override_disabled">การส่งใบเสร็จถูกปิดใช้งานสำหรับกลุ่ม %d</string>
-    <string name="item_status_snd_new_desc">กำลังส่งข้อความอยู่ระหว่างดำเนินการ</string>
     <string name="receipts_contacts_override_disabled">การส่งใบเสร็จถูกปิดใช้งานสำหรับผู้ติดต่อ %d</string>
     <string name="receipts_groups_override_enabled">เปิดใช้งานการส่งใบเสร็จสำหรับกลุ่ม %d</string>
     <string name="send_receipts">ส่งใบเสร็จ</string>
-    <string name="item_status_snd_rcvd_text">ได้รับข้อความที่ส่งแล้ว</string>
     <string name="in_developing_desc">ยังไม่รองรับคุณสมบัตินี้ ลองรุ่นถัดไป</string>
     <string name="send_receipts_disabled_alert_msg">กลุ่มนี้มีสมาชิกมากกว่า %1$d ไม่มีการส่งใบเสร็จข้อความที่ส่งมา</string>
     <string name="you_can_enable_delivery_receipts_later_alert">คุณสามารถเปิดใช้งานได้ในภายหลังผ่านการตั้งค่าความเป็นส่วนตัวและความปลอดภัยของแอป</string>
-    <string name="item_status_rcv_read_desc">คุณได้อ่านข้อความที่ได้รับนี้แล้ว</string>
-    <string name="item_status_snd_error_unexpected_desc">ข้อผิดพลาดในการส่งข้อความที่ไม่คาดคิด: %1$s</string>
     <string name="receipts_section_groups">กลุ่มเล็ก (สูงสุด 20 คน)</string>
     <string name="sync_connection_force_question">เจรจา enryption ใหม่หรือไม่\?</string>
     <string name="v5_2_fix_encryption_descr">แก้ไข encryption หลังจากกู้คืนข้อมูลสำรอง</string>

@@ -59,8 +59,6 @@
     <string name="notifications_mode_off_desc">האפליקציה יכולה לקבל התראות רק כאשר היא מופעלת, לא יופעל שירות ברקע.</string>
     <string name="v5_0_app_passcode">קוד גישה לאפליקציה</string>
     <string name="app_version_title">גרסת האפליקציה</string>
-    <string name="incognito_random_profile_description">פרופיל אקראי יישלח לאיש הקשר</string>
-    <string name="incognito_random_profile_from_contact_description">פרופיל אקראי יישלח לאיש הקשר שממנו קיבלת קישור זה</string>
     <string name="network_session_mode_user_description"><![CDATA[חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל פרופיל צ׳אט שיש ברשותך באפליקציה</b>.]]></string>
     <string name="network_session_mode_entity_description">חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל איש קשר וחבר קבוצה</b>.
 \n<b>שימו לב</b>: אם ברשותכם חיבורים רבים, צריכת הסוללה ותעבורת האינטרנט עשויה להיות גבוהה משמעותית וחלק מהחיבורים עלולים להיכשל.</string>
@@ -526,7 +524,6 @@
     <string name="import_database_confirmation">ייבא</string>
     <string name="import_theme">ייבא ערכת נושא</string>
     <string name="import_theme_error">שגיאה בייבוא ערכת נושא</string>
-    <string name="group_unsupported_incognito_main_profile_sent">מצב זהות נסתרת אינו נתמך כאן – הפרופיל הראשי שלך יישלח לחברי הקבוצה</string>
     <string name="v4_3_improved_server_configuration">תצורת שרתים משופרת</string>
     <string name="v4_3_improved_privacy_and_security">פרטיות ואבטחה משופרים</string>
     <string name="settings_section_title_incognito">מצב זהות נסתרת</string>
@@ -766,7 +763,6 @@
     <string name="auth_open_chat_console">פתיחת מסוף צ׳אט</string>
     <string name="auth_open_chat_profiles">פתיחת פרופילי צ׳אט</string>
     <string name="icon_descr_server_status_pending">ממתין</string>
-    <string name="paste_connection_link_below_to_connect">הדביקו את הקישור שקיבלתם בתיבה למטה כדי להתחבר לאיש הקשר שלכם.</string>
     <string name="smp_servers_preset_address">כתובת שרת מוגדר מראש</string>
     <string name="password_to_show">סיסמה להצגה</string>
     <string name="onboarding_notifications_mode_title">התראות פרטיות</string>
@@ -1048,7 +1044,6 @@
     <string name="alert_text_msg_bad_hash">הגיבוב של ההודעה הקודמת שונה.</string>
     <string name="enable_automatic_deletion_message">לא ניתן לבטל פעולה זו - ההודעות שנשלחו והתקבלו לפני הזמן שנבחר יימחקו. זה עשוי להימשך מספר דקות.</string>
     <string name="alert_message_no_group">הקבוצה הזו כבר לא קיימת.</string>
-    <string name="incognito_info_find">כדי למצוא את הפרופיל המשמש לזהות נסתרת, הקישו על שם איש הקשר או הקבוצה בחלק העליון של הצ\'אט.</string>
     <string name="image_decoding_exception_desc">לא ניתן לפענח את התמונה. אנא נסו תמונה אחרת או צרו קשר עם המפתחים.</string>
     <string name="videos_limit_title">יותר מדי סרטונים!</string>
     <string name="switch_receiving_address_desc">כתובת הקבלה תשתנה לשרת אחר. שינוי הכתובת יושלם לאחר שהשולח יתחבר לאינטרנט.</string>
@@ -1222,7 +1217,6 @@
 \nניתן לבטל חיבור זה ולהסיר את איש הקשר (ולנסות מאוחר יותר עם קישור חדש).</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">פרופיל הצ׳אט שלך יישלח
 \nלאיש הקשר שלך</string>
-    <string name="your_profile_will_be_sent">פרופיל הצ׳אט שלך יישלח לאיש הקשר שלך</string>
     <string name="your_chat_database">מסד הנתונים שלך</string>
     <string name="you_rejected_group_invitation">דחית את ההזמנה לקבוצה</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">מסד הנתונים הנוכחי שלך יימחק ויוחלף במסד הנתונים המיובא.
