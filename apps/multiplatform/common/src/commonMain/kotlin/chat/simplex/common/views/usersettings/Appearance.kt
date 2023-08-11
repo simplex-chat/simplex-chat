@@ -213,7 +213,7 @@ object AppearanceScope {
       "ru" to "Русский",
       "zh-CN" to "简体中文"
     )
-    val values by remember { mutableStateOf(supportedLanguages.map { it.key to it.value }) }
+    val values by remember(ChatController.appPrefs.appLanguage.state.value) { mutableStateOf(supportedLanguages.map { it.key to it.value }) }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.settings_section_title_language).lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() },
       values,
@@ -227,7 +227,9 @@ object AppearanceScope {
   @Composable
   private fun ThemeSelector(state: State<String>, onSelected: (String) -> Unit) {
     val darkTheme = chat.simplex.common.ui.theme.isSystemInDarkTheme()
-    val values by remember { mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second.name to it.third }) }
+    val values by remember(ChatController.appPrefs.appLanguage.state.value) {
+      mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second.name to it.third })
+    }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.theme),
       values,

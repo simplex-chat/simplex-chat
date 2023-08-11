@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.defaultLocale
 import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.helpers.FileDialogChooser
@@ -34,84 +35,87 @@ fun showApp() = application {
   val width = if (desktopPlatform.isLinux()) 1376.dp else 1366.dp
   val windowState = rememberWindowState(placement = WindowPlacement.Floating, width = width, height = 768.dp)
   simplexWindowState.windowState = windowState
-  Window(state = windowState, onCloseRequest = ::exitApplication, onKeyEvent = {
-    if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
-      simplexWindowState.backstack.lastOrNull()?.invoke() != null
-    } else {
-      false
-    }
-  }, title = "SimpleX") {
-    SimpleXTheme {
-      AppScreen()
-      if (simplexWindowState.openDialog.isAwaiting) {
-        FileDialogChooser(
-          title = "SimpleX",
-          isLoad = true,
-          params = simplexWindowState.openDialog.params,
-          onResult = {
-            simplexWindowState.openDialog.onResult(it.firstOrNull())
-          }
-        )
+  // Dirty hack to reload all strings in all @Composable's after language change at runtime
+  if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
+    Window(state = windowState, onCloseRequest = ::exitApplication, onKeyEvent = {
+      if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
+        simplexWindowState.backstack.lastOrNull()?.invoke() != null
+      } else {
+        false
       }
-
-      if (simplexWindowState.openMultipleDialog.isAwaiting) {
-        FileDialogChooser(
-          title = "SimpleX",
-          isLoad = true,
-          params = simplexWindowState.openMultipleDialog.params,
-          onResult = {
-            simplexWindowState.openMultipleDialog.onResult(it)
-          }
-        )
-      }
-
-      if (simplexWindowState.saveDialog.isAwaiting) {
-        FileDialogChooser(
-          title = "SimpleX",
-          isLoad = false,
-          params = simplexWindowState.saveDialog.params,
-          onResult = { simplexWindowState.saveDialog.onResult(it.firstOrNull()) }
-        )
-      }
-      val toasts = remember { simplexWindowState.toasts }
-      val toast = toasts.firstOrNull()
-      if (toast != null) {
-        Box(Modifier.fillMaxSize().padding(bottom = 20.dp), contentAlignment = Alignment.BottomCenter) {
-          Text(
-            toast.first,
-            Modifier.background(MaterialTheme.colors.primary, RoundedCornerShape(100)).padding(vertical = 5.dp, horizontal = 10.dp),
-            color = MaterialTheme.colors.onPrimary,
-            style = MaterialTheme.typography.body1
+    }, title = "SimpleX") {
+      SimpleXTheme {
+        AppScreen()
+        if (simplexWindowState.openDialog.isAwaiting) {
+          FileDialogChooser(
+            title = "SimpleX",
+            isLoad = true,
+            params = simplexWindowState.openDialog.params,
+            onResult = {
+              simplexWindowState.openDialog.onResult(it.firstOrNull())
+            }
           )
         }
-        // Shows toast in insertion order with preferred delay per toast. New one will be shown once previous one expires
-        LaunchedEffect(toast, toasts.size) {
-          delay(toast.second)
-          simplexWindowState.toasts.removeFirst()
-        }
-      }
-    }
-    var windowFocused by remember { simplexWindowState.windowFocused }
-    LaunchedEffect(windowFocused) {
-      val delay = ChatController.appPrefs.laLockDelay.get()
-      if (!windowFocused && ChatModel.performLA.value && delay > 0) {
-        delay(delay * 1000L)
-        // Trigger auth state check when delay ends (and if it ends)
-        AppLock.recheckAuthState()
-      }
-    }
-    LaunchedEffect(Unit) {
-      window.addWindowFocusListener(object : WindowFocusListener {
-        override fun windowGainedFocus(p0: WindowEvent?) {
-          windowFocused = true
-          AppLock.recheckAuthState()
+
+        if (simplexWindowState.openMultipleDialog.isAwaiting) {
+          FileDialogChooser(
+            title = "SimpleX",
+            isLoad = true,
+            params = simplexWindowState.openMultipleDialog.params,
+            onResult = {
+              simplexWindowState.openMultipleDialog.onResult(it)
+            }
+          )
         }
 
-        override fun windowLostFocus(p0: WindowEvent?) {
-          windowFocused = false
-          AppLock.appWasHidden()
+        if (simplexWindowState.saveDialog.isAwaiting) {
+          FileDialogChooser(
+            title = "SimpleX",
+            isLoad = false,
+            params = simplexWindowState.saveDialog.params,
+            onResult = { simplexWindowState.saveDialog.onResult(it.firstOrNull()) }
+          )
         }
-      })
+        val toasts = remember { simplexWindowState.toasts }
+        val toast = toasts.firstOrNull()
+        if (toast != null) {
+          Box(Modifier.fillMaxSize().padding(bottom = 20.dp), contentAlignment = Alignment.BottomCenter) {
+            Text(
+              toast.first,
+              Modifier.background(MaterialTheme.colors.primary, RoundedCornerShape(100)).padding(vertical = 5.dp, horizontal = 10.dp),
+              color = MaterialTheme.colors.onPrimary,
+              style = MaterialTheme.typography.body1
+            )
+          }
+          // Shows toast in insertion order with preferred delay per toast. New one will be shown once previous one expires
+          LaunchedEffect(toast, toasts.size) {
+            delay(toast.second)
+            simplexWindowState.toasts.removeFirst()
+          }
+        }
+      }
+      var windowFocused by remember { simplexWindowState.windowFocused }
+      LaunchedEffect(windowFocused) {
+        val delay = ChatController.appPrefs.laLockDelay.get()
+        if (!windowFocused && ChatModel.performLA.value && delay > 0) {
+          delay(delay * 1000L)
+          // Trigger auth state check when delay ends (and if it ends)
+          AppLock.recheckAuthState()
+        }
+      }
+      LaunchedEffect(Unit) {
+        window.addWindowFocusListener(object: WindowFocusListener {
+          override fun windowGainedFocus(p0: WindowEvent?) {
+            windowFocused = true
+            AppLock.recheckAuthState()
+          }
+
+          override fun windowLostFocus(p0: WindowEvent?) {
+            windowFocused = false
+            AppLock.appWasHidden()
+          }
+        })
+      }
     }
   }
 }
