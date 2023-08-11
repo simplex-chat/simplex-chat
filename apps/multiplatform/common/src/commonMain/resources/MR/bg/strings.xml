@@ -1351,4 +1351,11 @@
     <string name="v5_1_better_messages_descr">- гласови съобщения до 5 минути.
 \n- персонализирано време за изчезване.
 \n- история на редактиране.</string>
+    <string name="connect_via_link_incognito">Свързване инкогнито</string>
+    <string name="turn_off_system_restriction_button">Отвори настройките на приложението</string>
+    <string name="turn_off_battery_optimization_button">Позволи</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Нов произволен профил ще бъде споделен.</string>
+    <string name="disable_notifications_button">Деактивирай известията</string>
+    <string name="system_restricted_background_in_call_title">Без фонови разговори</string>
+    <string name="connect_via_member_address_alert_title">Свързване директно\?</string>
 </resources>
