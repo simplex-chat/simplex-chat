@@ -33,6 +33,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
@@ -177,10 +178,15 @@ fun GroupChatInfoLayout(
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
 ) {
+  val scrollState = rememberScrollState()
+  val scope = rememberCoroutineScope()
+  KeyChangeEffect(chat.id) {
+    scope.launch { scrollState.scrollTo(0) }
+  }
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
+      .verticalScroll(scrollState)
   ) {
     Row(
       Modifier.fillMaxWidth(),

@@ -38,6 +38,7 @@ import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 @Composable
@@ -257,10 +258,15 @@ fun ChatInfoLayout(
   verifyClicked: () -> Unit,
 ) {
   val cStats = connStats.value
+  val scrollState = rememberScrollState()
+  val scope = rememberCoroutineScope()
+  KeyChangeEffect(chat.id) {
+    scope.launch { scrollState.scrollTo(0) }
+  }
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
+      .verticalScroll(scrollState)
   ) {
     Row(
       Modifier.fillMaxWidth(),
