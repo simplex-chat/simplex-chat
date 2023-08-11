@@ -970,9 +970,9 @@
     <string name="description_via_contact_address_link_incognito">incognito poprzez link adresu kontaktowego</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Jeśli otrzymałeś link do zaproszenia SimpleX Chat, możesz go otworzyć w swojej przeglądarce:</string>
     <string name="import_database_question">Zaimportować bazę danych czatu\?</string>
-    <string name="incognito_info_protects">Tryb incognito chroni prywatność nazwy i obrazu głównego profilu — dla każdego nowego kontaktu tworzony jest nowy losowy profil.</string>
+    <string name="incognito_info_protects">Tryb incognito chroni Twoją prywatność używając nowego losowego profilu dla każdego kontaktu.</string>
     <string name="conn_level_desc_indirect">pośrednie (%1$s)</string>
-    <string name="turn_off_battery_optimization"><![CDATA[Aby z niej skorzystać, należy <b>wyłączyć optymalizację baterii</b> dla SimpleX w następnym oknie dialogowym. W przeciwnym razie powiadomienia zostaną wyłączone.]]></string>
+    <string name="turn_off_battery_optimization">Aby z niej skorzystać, należy <b>pozwolić SimpleX na działanie tle</b> w następnym oknie dialogowym. W przeciwnym razie powiadomienia zostaną wyłączone.</string>
     <string name="install_simplex_chat_for_terminal">Zainstaluj SimpleX Chat na terminal</string>
     <string name="invalid_migration_confirmation">Nieprawidłowe potwierdzenie migracji</string>
     <string name="group_invitation_item_description">zaproszenie do grupy %1$s</string>
@@ -1344,7 +1344,7 @@
     <string name="send_receipts_disabled">wyłączony</string>
     <string name="receipts_groups_disable_keep_overrides">Wyłącz (zachowaj nadpisania grup)</string>
     <string name="receipts_groups_title_disable">Wyłączyć potwierdzenia dla grup\?</string>
-    <string name="no_info_on_delivery">Brak informacji o dostawie</string>
+    <string name="no_info_on_delivery">Brak informacji dostawy</string>
     <string name="receipts_groups_title_enable">Włączyć potwierdzenia dla grup\?</string>
     <string name="receipts_section_groups">Małe grupy (maks. 20)</string>
     <string name="receipts_groups_override_enabled">Wysyłanie potwierdzeń jest włączone dla %d grup.</string>
@@ -1357,4 +1357,18 @@
     <string name="receipts_groups_override_disabled">Wysyłanie potwierdzeń jest wyłączone dla %d grup.</string>
     <string name="connect_via_member_address_alert_desc">Prośba o połączenie zostanie wysłana do tego członka grupy.</string>
     <string name="connect_via_member_address_alert_title">Połączyć bezpośrednio\?</string>
+    <string name="connect_use_current_profile">Użyj obecnego profilu</string>
+    <string name="turn_off_battery_optimization_button">Pozwól</string>
+    <string name="disable_notifications_button">Wyłącz powiadomienia</string>
+    <string name="turn_off_system_restriction_button">Otwórz ustawienia aplikacji</string>
+    <string name="system_restricted_background_in_call_title">Brak rozmów w tle</string>
+    <string name="system_restricted_background_desc">SimpleX nie może działać w tle. Otrzymasz powiadomienia gdy aplikacja jest uruchomiona.</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Nowy losowy profil zostanie udostępniony.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Wklej otrzymany link w pole poniżej, aby połączyć się z kontaktem…</string>
+    <string name="connect__your_profile_will_be_shared">Twój profil %1$s zostanie udostępniony.</string>
+    <string name="connect_via_link_incognito">Połącz incognito</string>
+    <string name="system_restricted_background_in_call_desc">Aplikacja może zostać zamknięta po 1 minucie w tle.</string>
+    <string name="system_restricted_background_warn">Aby włączyć powiadomienia, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.</string>
+    <string name="system_restricted_background_in_call_warn">Aby robić połączenia w tle, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.</string>
+    <string name="connect_use_new_incognito_profile">Użyj nowego profilu incognito</string>
 </resources>
