@@ -1466,6 +1466,8 @@ public struct SecurityCode: Decodable, Equatable {
 
 public struct UserContact: Decodable {
     public var userContactLinkId: Int64
+//    public var connReqContact: String
+    public var groupId: Int64?
 
     public init(userContactLinkId: Int64) {
         self.userContactLinkId = userContactLinkId
@@ -1925,6 +1927,16 @@ public enum ConnectionEntity: Decodable {
             return userContact.id
         default:
             return nil
+        }
+    }
+
+    public var ntfsEnabled: Bool {
+        switch self {
+        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs ?? false
+        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs
+        case .sndFileConnection: return false
+        case .rcvFileConnection: return false
+        case let .userContactConnection(userContact): return userContact.groupId == nil
         }
     }
 }
