@@ -1357,4 +1357,6 @@
     <string name="recipient_colon_delivery_status">%s : %s</string>
     <string name="connect_via_member_address_alert_title">Connexion directe \?</string>
     <string name="connect_via_member_address_alert_desc">Une demande de connexion sera envoyée à ce membre du groupe.</string>
+    <string name="turn_off_battery_optimization_button">Autoriser</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Un nouveau profil aléatoire sera partagé.</string>
 </resources>
