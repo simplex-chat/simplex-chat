@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 import SwiftyGif
 
-private let memberImageSize: CGFloat = 34
+let memberImageSize: CGFloat = 34
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -430,35 +430,46 @@ struct ChatView: View {
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
         if case let .groupRcv(member) = ci.chatDir,
            case let .group(groupInfo) = chat.chatInfo {
-            let prevItem = chatModel.getPrevChatItem(ci)
-            HStack(alignment: .top, spacing: 0) {
-                let showMember = prevItem == nil || showMemberImage(member, prevItem)
-                if showMember {
-                    ProfileImage(imageStr: member.memberProfile.image)
-                        .frame(width: memberImageSize, height: memberImageSize)
-                        .onTapGesture { selectedMember = member }
-                        .appSheet(item: $selectedMember) { member in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
-                        }
+            let nextItem = chatModel.getNextChatItem(ci)
+            if ci.isMemberConnected != nil && (nextItem?.isMemberConnected != nil) {
+                EmptyView()
+            } else {
+                let prevItem = chatModel.getPrevChatItem(ci)
+                if ci.isMemberConnected != nil,
+                   let prevItem = prevItem,
+                   let prevMember = prevItem.isMemberConnected {
+                    membersConnectedItem(ci, maxWidth, member, prevMember, prevItem)
                 } else {
-                    Rectangle().fill(.clear)
-                        .frame(width: memberImageSize, height: memberImageSize)
+                    HStack(alignment: .top, spacing: 0) {
+                        let showMember = prevItem == nil || showMemberImage(member, prevItem)
+                        if showMember {
+                            ProfileImage(imageStr: member.memberProfile.image)
+                                .frame(width: memberImageSize, height: memberImageSize)
+                                .onTapGesture { selectedMember = member }
+                                .appSheet(item: $selectedMember) { member in
+                                    GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
+                                }
+                        } else {
+                            Rectangle().fill(.clear)
+                                .frame(width: memberImageSize, height: memberImageSize)
+                        }
+                        ChatItemWithMenu(
+                            ci: ci,
+                            showMember: showMember,
+                            maxWidth: maxWidth,
+                            scrollProxy: scrollProxy,
+                            deleteMessage: deleteMessage,
+                            deletingItem: $deletingItem,
+                            composeState: $composeState,
+                            showDeleteMessage: $showDeleteMessage
+                        )
+                        .padding(.leading, 8)
+                        .environmentObject(chat)
+                    }
+                    .padding(.trailing)
+                    .padding(.leading, 12)
                 }
-                ChatItemWithMenu(
-                    ci: ci,
-                    showMember: showMember,
-                    maxWidth: maxWidth,
-                    scrollProxy: scrollProxy,
-                    deleteMessage: deleteMessage,
-                    deletingItem: $deletingItem,
-                    composeState: $composeState,
-                    showDeleteMessage: $showDeleteMessage
-                )
-                .padding(.leading, 8)
-                .environmentObject(chat)
             }
-            .padding(.trailing)
-            .padding(.leading, 12)
         } else {
             ChatItemWithMenu(
                 ci: ci,
@@ -472,6 +483,49 @@ struct ChatView: View {
             .padding(.horizontal)
             .environmentObject(chat)
         }
+    }
+
+    @ViewBuilder private func membersConnectedItem(
+        _ ci: ChatItem,
+        _ maxWidth: CGFloat,
+        _ member: GroupMember,
+        _ prevMember: GroupMember,
+        _ prevItem: ChatItem
+    ) -> some View {
+        let membersConnected: [GroupMember] = [member, prevMember] + collectPrevMembersConnected(prevItem)
+        let replacingItem = ChatItem(
+            chatDir: ci.chatDir,
+            meta: ci.meta,
+            content: .membersConnected(members: membersConnected)
+        )
+        let alignment: Alignment = .leading
+        VStack(alignment: alignment.horizontal, spacing: 3) {
+            ChatItemView(chatInfo: chat.chatInfo, chatItem: replacingItem, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: .constant(false))
+        }
+        .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+        .padding(.horizontal)
+        .environmentObject(chat)
+//        return ChatItemWithMenu(
+//            ci: replacingItem,
+//            maxWidth: maxWidth,
+//            scrollProxy: scrollProxy,
+//            deleteMessage: deleteMessage,
+//            deletingItem: $deletingItem,
+//            composeState: $composeState,
+//            showDeleteMessage: $showDeleteMessage
+//        )
+//        .padding(.horizontal)
+//        .environmentObject(chat)
+    }
+
+    private func collectPrevMembersConnected(_ ci: ChatItem) -> [GroupMember] {
+        guard let prevItem = chatModel.getPrevChatItem(ci),
+              let memberConnected = prevItem.isMemberConnected else {
+            return []
+        }
+        let prevMembers = collectPrevMembersConnected(prevItem)
+        return [memberConnected] + prevMembers
     }
     
     private struct ChatItemWithMenu: View {

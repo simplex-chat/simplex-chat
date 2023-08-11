@@ -2009,6 +2009,17 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public var isMemberConnected: GroupMember? {
+        switch chatDir {
+        case .groupRcv(let groupMember):
+            switch content {
+            case .rcvGroupEvent(rcvGroupEvent: .memberConnected): return groupMember
+            default: return nil
+            }
+        default: return nil
+        }
+    }
+
     private var showNtfDir: Bool {
         return !chatDir.sent
     }
@@ -2052,6 +2063,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndModerated: return true
         case .rcvModerated: return true
         case .invalidJSON: return false
+        case .membersConnected: return false
         }
     }
 
@@ -2168,6 +2180,16 @@ public struct ChatItem: Identifiable, Decodable {
             chatDir: .directRcv,
             meta: CIMeta.getSample(1, .now, content.text, .rcvRead),
             content: content,
+            quotedItem: nil,
+            file: nil
+        )
+    }
+
+    public static func getMembersConnectedSample () -> ChatItem {
+        ChatItem(
+            chatDir: .groupRcv(groupMember: GroupMember.sampleData),
+            meta: CIMeta.getSample(1, .now, "group event text", .rcvRead),
+            content: .membersConnected(members: [GroupMember.sampleData, GroupMember.sampleData]),
             quotedItem: nil,
             file: nil
         )
@@ -2451,6 +2473,7 @@ public enum CIContent: Decodable, ItemContent {
     case sndModerated
     case rcvModerated
     case invalidJSON(json: String)
+    case membersConnected(members: [GroupMember])
 
     public var text: String {
         get {
@@ -2480,8 +2503,22 @@ public enum CIContent: Decodable, ItemContent {
             case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
+            case let .membersConnected(members):
+                if members.count > 4 {
+                    return String.localizedStringWithFormat(
+                        "%@ and %d other members connected",
+                        CIContent.membersConnectedNames(Array(members.prefix(3))),
+                        members.count - 3
+                    )
+                } else {
+                    return String.localizedStringWithFormat("%@ members connected", CIContent.membersConnectedNames(members))
+                }
             }
         }
+    }
+
+    static func membersConnectedNames(_ members: [GroupMember]) -> String {
+        members.map { $0.chatViewName }.joined(separator: ", ")
     }
 
     static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {

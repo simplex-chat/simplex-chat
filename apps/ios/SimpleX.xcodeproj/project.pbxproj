@@ -180,6 +180,7 @@
 		64D0C2C229FA57AB00B38D5F /* UserAddressLearnMore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2C129FA57AB00B38D5F /* UserAddressLearnMore.swift */; };
 		64D0C2C629FAC1EC00B38D5F /* AddContactLearnMore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2C529FAC1EC00B38D5F /* AddContactLearnMore.swift */; };
 		64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */; };
+		64EC940B2A86805D0025EAA3 /* CIMembersConnectedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64EC940A2A86805D0025EAA3 /* CIMembersConnectedView.swift */; };
 		64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
@@ -459,6 +460,7 @@
 		64D0C2C529FAC1EC00B38D5F /* AddContactLearnMore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactLearnMore.swift; sourceTree = "<group>"; };
 		64DAE1502809D9F5000DA960 /* FileUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUtils.swift; sourceTree = "<group>"; };
 		64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIGroupInvitationView.swift; sourceTree = "<group>"; };
+		64EC940A2A86805D0025EAA3 /* CIMembersConnectedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIMembersConnectedView.swift; sourceTree = "<group>"; };
 		64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncognitoHelp.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -823,6 +825,7 @@
 				6407BA82295DA85D0082BA18 /* CIInvalidJSONView.swift */,
 				18415FD2E36F13F596A45BB4 /* CIVideoView.swift */,
 				5CC868F229EB540C0017BBFD /* CIRcvDecryptionError.swift */,
+				64EC940A2A86805D0025EAA3 /* CIMembersConnectedView.swift */,
 			);
 			path = ChatItem;
 			sourceTree = "<group>";
@@ -1145,6 +1148,7 @@
 				5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */,
 				5C58BCD6292BEBE600AF9E4F /* CIChatFeatureView.swift in Sources */,
 				5CB346E72868D76D001FD2EF /* NotificationsView.swift in Sources */,
+				64EC940B2A86805D0025EAA3 /* CIMembersConnectedView.swift in Sources */,
 				647F090E288EA27B00644C40 /* GroupMemberInfoView.swift in Sources */,
 				646BB38E283FDB6D001CE359 /* LocalAuthenticationUtils.swift in Sources */,
 				5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */,

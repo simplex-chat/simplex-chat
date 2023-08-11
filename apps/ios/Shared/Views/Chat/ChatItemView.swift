@@ -92,6 +92,7 @@ struct ChatItemContentView<Content: View>: View {
         case .sndModerated: deletedItemView()
         case .rcvModerated: deletedItemView()
         case let .invalidJSON(json): CIInvalidJSONView(json: json)
+        case let .membersConnected(members): CIMembersConnectedView(chatItem: chatItem, members: members)
         }
     }
 
