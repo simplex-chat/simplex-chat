@@ -201,6 +201,7 @@ object AppearanceScope {
     val supportedLanguages = mapOf(
       "system" to generalGetString(MR.strings.language_system),
       "en" to "English",
+      "bg" to "Български",
       "cs" to "Čeština",
       "de" to "Deutsch",
       "es" to "Español",
