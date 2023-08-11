@@ -19,7 +19,7 @@ import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
-import Data.Maybe (fromMaybe, isJust, maybeToList)
+import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -134,7 +134,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
         _ -> "Error joining group " <> displayName <> ", please re-send the invitation!"
 
     deContactConnected :: Contact -> IO ()
-    deContactConnected ct = unless (isJust $ viaGroup ct) $ do
+    deContactConnected ct = when (contactDirect ct) $ do
       unless testing $ putStrLn $ T.unpack (localDisplayName' ct) <> " connected"
       sendMessage cc ct $
         "Welcome to " <> serviceName <> " service!\n\

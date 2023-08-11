@@ -25,6 +25,7 @@ directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
   it "should register group" testDirectoryService
   it "should suspend and resume group" testSuspendResume
+  it "should join found group via link" testJoinGroup
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
@@ -189,6 +190,56 @@ testSuspendResume tmp =
       superUser <## "      Group listing resumed!"
       bob <# "SimpleX-Directory> The group ID 1 (privacy) is listed in the directory again!"
       groupFound bob "privacy"
+
+testJoinGroup :: HasCallStack => FilePath -> IO ()
+testJoinGroup tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath ->
+        withNewTestChat tmp "dan" danProfile $ \dan -> do
+          bob `connectVia` dsLink
+          registerGroup superUser bob "privacy" "Privacy"
+          cath `connectVia` dsLink
+          cath #> "@SimpleX-Directory privacy"
+          cath <# "SimpleX-Directory> > privacy"
+          cath <## "      Found 1 group(s)"
+          cath <# "SimpleX-Directory> privacy (Privacy)"
+          cath <## "Welcome message:"
+          welcomeMsg <- getTermLine cath
+          let groupLink = dropStrPrefix "Link to join the group privacy: " welcomeMsg
+          cath <## "2 members"
+          cath ##> ("/c " <> groupLink)
+          cath <## "connection request sent!"
+          cath <## "SimpleX-Directory_1: contact is connected"
+          cath <## "contact SimpleX-Directory_1 is merged into SimpleX-Directory"
+          cath <## "use @SimpleX-Directory <message> to send messages"
+          cath <## "#privacy: you joined the group"
+          cath <# ("#privacy SimpleX-Directory> " <> welcomeMsg)
+          cath <## "#privacy: member bob (Bob) is connected"
+          bob <## "#privacy: SimpleX-Directory added cath (Catherine) to the group (connecting...)"
+          bob <## "#privacy: new member cath is connected"
+          bob ##> "/create link #privacy"
+          bobLink <- getGroupLink bob "privacy" GRMember True
+          dan ##> ("/c " <> bobLink)
+          dan <## "connection request sent!"
+          concurrentlyN_
+            [ do
+                bob <## "dan (Daniel): accepting request to join group #privacy..."
+                bob <## "dan (Daniel): contact is connected"
+                bob <## "dan invited to group #privacy via your group link"
+                bob <## "#privacy: dan joined the group",
+              do
+                dan <## "bob (Bob): contact is connected"
+                dan <## "#privacy: you joined the group"
+                dan <# ("#privacy bob> " <> welcomeMsg)
+                dan <###
+                  [ "#privacy: member SimpleX-Directory is connected",
+                    "#privacy: member cath (Catherine) is connected"
+                  ],
+              do
+                cath <## "#privacy: bob added dan (Daniel) to the group (connecting...)"
+                cath <## "#privacy: new member dan is connected"
+            ]
 
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
