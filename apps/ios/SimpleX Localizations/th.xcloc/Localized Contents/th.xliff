@@ -753,7 +753,7 @@
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve" approved="no">
         <source>Both you and your contact can irreversibly delete sent messages.</source>
-        <target state="translated">ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้</target>
+        <target state="translated">ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can make calls." xml:space="preserve" approved="no">
@@ -1552,22 +1552,22 @@
       </trans-unit>
       <trans-unit id="Disappearing message" xml:space="preserve" approved="no">
         <source>Disappearing message</source>
-        <target state="translated">ข้อความที่จะหายไปหลังปิดแชท (disappearing message)</target>
+        <target state="translated">ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing messages" xml:space="preserve" approved="no">
         <source>Disappearing messages</source>
-        <target state="translated">ข้อความที่จะหายไปหลังปิดแชท (disappearing message)</target>
+        <target state="translated">ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message)</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Disappearing messages are prohibited in this chat.</source>
-        <target state="translated">ข้อความที่จะหายไปหลังปิดแชท (disappearing message) เป็นสิ่งต้องห้ามในแชทนี้</target>
+        <target state="translated">ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message) เป็นสิ่งต้องห้ามในแชทนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve" approved="no">
         <source>Disappearing messages are prohibited in this group.</source>
-        <target state="translated">ข้อความที่จะหายไปหลังปิดแชท (disappearing message) เป็นสิ่งต้องห้ามในกลุ่มนี้</target>
+        <target state="translated">ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message) เป็นสิ่งต้องห้ามในกลุ่มนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappears at" xml:space="preserve" approved="no">
@@ -3404,7 +3404,7 @@
       </trans-unit>
       <trans-unit id="Receiving via" xml:space="preserve" approved="no">
         <source>Receiving via</source>
-        <target state="translated">กำลังจะรับทาง</target>
+        <target state="translated">กำลังรับผ่าน</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Recipients see updates as you type them." xml:space="preserve" approved="no">
@@ -5485,7 +5485,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="no" xml:space="preserve" approved="no">
         <source>no</source>
-        <target state="translated">เลขที่</target>
+        <target state="translated">ไม่</target>
         <note>pref value</note>
       </trans-unit>
       <trans-unit id="no e2e encryption" xml:space="preserve" approved="no">
