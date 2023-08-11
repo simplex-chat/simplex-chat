@@ -349,7 +349,7 @@ module.exports = function (ty) {
       if (parsed.path.startsWith("../../blog")) {
         parsed.path = parsed.path.replace("../../blog", "/blog")
       }
-      parsed.path = parsed.path.replace(/\.md$/, ".html")
+      parsed.path = parsed.path.replace(/\.md$/, ".html").toLowerCase()
       return uri.serialize(parsed)
     }
   }).use(markdownItAnchor, {
