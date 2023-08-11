@@ -1355,4 +1355,5 @@
     <string name="send_receipts_disabled">uitgeschakeld</string>
     <string name="send_receipts_disabled_alert_title">Ontvangstbevestigingen zijn uitgeschakeld</string>
     <string name="connect_via_member_address_alert_title">Verbind direct\?</string>
+    <string name="turn_off_battery_optimization_button">Toestaan</string>
 </resources>
