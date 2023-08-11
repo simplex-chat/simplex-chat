@@ -1356,4 +1356,8 @@
     <string name="send_receipts_disabled_alert_title">Ontvangstbevestigingen zijn uitgeschakeld</string>
     <string name="connect_via_member_address_alert_title">Verbind direct\?</string>
     <string name="turn_off_battery_optimization_button">Toestaan</string>
+    <string name="connect_via_link_incognito">Verbind incognito</string>
+    <string name="disable_notifications_button">Meldingen uitzetten</string>
+    <string name="turn_off_system_restriction_button">Open app instellingen</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Een nieuw willekeurig profiel zal gedeeld worden.</string>
 </resources>
