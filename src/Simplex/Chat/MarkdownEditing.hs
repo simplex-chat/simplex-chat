@@ -172,27 +172,43 @@ findDiffs left right =
               D.EditDelete   m n -> (x', y) where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
               D.EditInsert _ m n -> (x, y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
 
-        withDeletes :: Seq DiffedChar
-        withDeletes = S.mapWithIndex f pristine
+        -- todo unused
+        withDeleteDiffs :: Seq DiffedChar
+        withDeleteDiffs = S.mapWithIndex f pristine
             where
             pristine :: Seq DiffedChar
-            pristine = fmap (\x ->  DiffedChar x Unchanged) left
+            pristine = fmap (`DiffedChar` Unchanged) left
 
             ns = deleteIndicies $ fst indices
 
             f :: Int -> DiffedChar -> DiffedChar
             f i x@(DiffedChar c _) = if i `elem` ns then DiffedChar c Deleted else x
         
+        nonNegativeInts :: Seq Int
+        nonNegativeInts = S.fromList [0 ..]
 
-        -- rightWithoutInserts :: Seq FormattedChar
-        -- rightWithoutInserts = S.foldrWithIndex f Seq.Empty right
+        -- indexed in original left
+        leftWithoutDeletes :: Seq (Int, FormattedChar) 
+        leftWithoutDeletes = without
+            where
+            ns = deleteIndicies $ fst indices
+            leftZ = S.zip nonNegativeInts left
+            without = S.filter (\(i, _) -> i `notElem` ns) leftZ
+
+        -- indexed in original right
+        rightWithoutInserts :: Seq (Int, FormattedChar)
+        rightWithoutInserts = without 
+            -- todo del thsi comment: fmap snd without 
+            where
+            ns = insertIndicies $ snd indices
+            rightZ = S.zip nonNegativeInts right
+            without = S.filter (\(i, _) -> i `notElem` ns) rightZ
+
+        -- withMarkedFormatChanges :: Seq DiffedChar
+        -- withMarkedFormatChanges = undefined
         --     where
-        --     f ::
-
-
-        -- unchangedTextually :: Seq FormattedChar
-        -- unchangedTextually = S.filter f right
-        --   where
-        --     f :: 
+        --     withDeleteDiffsZ = S.zip nonNegativeInts withDeleteDiffs
+        --     unchangedTextually = S.filter (\(_, x -> not $ )) withDeleteDiffsZ
+            
     in
         undefined
