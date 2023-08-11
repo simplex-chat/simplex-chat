@@ -35,7 +35,7 @@ fun showApp() = application {
   val width = if (desktopPlatform.isLinux()) 1376.dp else 1366.dp
   val windowState = rememberWindowState(placement = WindowPlacement.Floating, width = width, height = 768.dp)
   simplexWindowState.windowState = windowState
-  // Dirty hack to reload all strings in all @Composable's after language change at runtime
+  // Reload all strings in all @Composable's after language change at runtime
   if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
     Window(state = windowState, onCloseRequest = ::exitApplication, onKeyEvent = {
       if (it.key == Key.Escape && it.type == KeyEventType.KeyUp) {
