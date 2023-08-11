@@ -345,7 +345,7 @@
     <string name="error_saving_file">เกิดข้อผิดพลาดในการบันทึกไฟล์</string>
     <string name="icon_descr_server_status_disconnected">ตัดการเชื่อมต่อแล้ว</string>
     <string name="icon_descr_server_status_error">ข้อผิดพลาด</string>
-    <string name="disappearing_message">ข้อความที่จะหายไปหลังปิดแชท (disappearing message)</string>
+    <string name="disappearing_message">ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message)</string>
     <string name="choose_file">ไฟล์</string>
     <string name="from_gallery_button">จากแกลเลอรี</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 เดสก์ท็อป: สแกนรหัส QR ที่แสดงอยู่บนแอปผ่าน <b> สแกนรหัส QR </b>]]></string>
@@ -669,7 +669,7 @@
     <string name="network_and_servers">เครือข่ายและเซิร์ฟเวอร์</string>
     <string name="network_settings_title">การตั้งค่าเครือข่าย</string>
     <string name="network_use_onion_hosts_required_desc">จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ</string>
-    <string name="network_use_onion_hosts_no">เลขที่</string>
+    <string name="network_use_onion_hosts_no">ไม่</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">โฮสต์หัวหอมจะถูกใช้เมื่อมี</string>
     <string name="network_use_onion_hosts_no_desc">โฮสต์หัวหอมจะไม่ถูกใช้</string>
@@ -726,7 +726,7 @@
     <string name="import_theme_error_desc">ตรวจสอบให้แน่ใจว่าไฟล์มีไวยากรณ์ YAML ที่ถูกต้อง ส่งออกธีมเพื่อให้มีตัวอย่างโครงสร้างไฟล์ธีม</string>
     <string name="color_surface">เมนู &amp; การแจ้งเตือน</string>
     <string name="chat_preferences_on">เปิด</string>
-    <string name="chat_preferences_no">เลขที่</string>
+    <string name="chat_preferences_no">ไม่</string>
     <string name="chat_preferences_off">ปิด</string>
     <string name="message_reactions">ปฏิกิริยาต่อข้อความ</string>
     <string name="feature_off">ปิด</string>
@@ -856,7 +856,7 @@
     <string name="remove_member_confirmation">ลบ</string>
     <string name="role_in_group">บทบาท</string>
     <string name="save_and_update_group_profile">บันทึกและอัปเดตโปรไฟล์กลุ่ม</string>
-    <string name="receiving_via">กำลังจะรับทาง</string>
+    <string name="receiving_via">กำลังรับผ่าน</string>
     <string name="network_options_reset_to_defaults">รีเซ็ตเป็นค่าเริ่มต้น</string>
     <string name="network_options_revert">เปลี่ยนกลับ</string>
     <string name="network_options_save">บันทึก</string>
@@ -877,7 +877,8 @@
     <string name="self_destruct_passcode_enabled">เปิดใช้งานรหัสผ่านแบบทําลายตัวเองแล้ว!</string>
     <string name="send_disappearing_message_send">ส่ง</string>
     <string name="send_live_message_desc">ส่งข้อความสด - มันจะอัปเดตสําหรับผู้รับในขณะที่คุณพิมพ์</string>
-    <string name="send_disappearing_message">ส่งข้อความที่จะหายไปหลังปิดแชท (disappearing message)</string>
+    <string name="send_disappearing_message">ข้อความที่จะหายไปหลังเวลาที่กําหนด
+\n(disappearing message)</string>
     <string name="sender_cancelled_file_transfer">ผู้ส่งยกเลิกการโอนไฟล์</string>
     <string name="info_row_sent_at">ส่งเมื่อ</string>
     <string name="share_message">แชร์ข้อความ…</string>
