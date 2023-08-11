@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SimpleXChat
+import WrappingHStack
 
 struct CIMembersConnectedView: View {
     @EnvironmentObject var chat: Chat
@@ -17,10 +18,8 @@ struct CIMembersConnectedView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            HStack {
-                ForEach(members, id: \.groupMemberId) { member in
-                    memberPicture(member)
-                }
+            WrappingHStack(0..<members.count, id: \.self, spacing: .constant(8), lineSpacing: 4) { index in
+                memberPicture(members[index])
             }
             chatEventText(chatItem)
         }
