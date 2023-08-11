@@ -14,6 +14,9 @@ extension View {
     func uiKitContextMenu(menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
             self.overlay {
                 if allowMenu.wrappedValue {
+//                    let v = InteractionView(content: self, menu: menu)
+//                        .accessibilityHidden(true)
+//                    self.overlay(Color(uiColor: .systemBackground)).overlay(v)
                     self.overlay(Color(uiColor: .systemBackground)).overlay(InteractionView(content: self, menu: menu))
                 }
             }
@@ -33,6 +36,7 @@ private struct InteractionView<Content: View>: UIViewRepresentable {
         let view = UIView()
         view.backgroundColor = .clear
         let hostView = UIHostingController(rootView: content)
+        hostView.view.accessibilityElementsHidden = true
         hostView.view.translatesAutoresizingMaskIntoConstraints = false
         let constraints = [
             hostView.view.topAnchor.constraint(equalTo: view.topAnchor),

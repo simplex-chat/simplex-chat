@@ -68,6 +68,7 @@ struct FramedItemView: View {
                     .padding(.horizontal, 12)
                     .padding(.bottom, 6)
                     .overlay(DetermineWidth())
+                    .accessibilityHidden(true)
             }
         }
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, colorScheme))
