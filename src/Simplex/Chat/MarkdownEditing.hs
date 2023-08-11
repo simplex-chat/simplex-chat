@@ -53,7 +53,7 @@ data DiffStatus
     | Deleted 
     | ChangedFormatOnly {newFormat :: Maybe Format}
     -- | Replaced {original :: FormattedChar} -- same as Delete+Insert
-      deriving (Show, Eq)
+    deriving (Show, Eq)
 
 data DiffedChar = DiffedChar FormattedChar DiffStatus
     deriving (Show, Eq)
@@ -63,10 +63,6 @@ data FormattedChar = FormattedChar
     , char :: Char
     }
     deriving (Show, Eq)
-
-
--- newtype Diffs = Diffs [DiffChar]
---   deriving (Show, Eq)
 
 
 data EditedText =  EditedText 
@@ -83,9 +79,6 @@ instance ToJSON EditedText where
 
 newtype DeleteIndicies = DeleteIndicies {deleteIndicies :: Seq Int} deriving (Show, Eq)
 newtype InsertIndicies = InsertIndicies {insertIndicies :: Seq Int} deriving (Show, Eq)
-
--- formatRep :: Format -> Word64
--- formatRep = word64 . BS.pack . show --todo do not depend on show, in case it changes
 
 
 -- formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
@@ -162,29 +155,22 @@ toFormattedChars = concatMap toChars
 --   where edits = D.diffTexts (toText left) (toText right)
 
 
--- toVectorF :: [EditedChar] -> VU.Vector Word64
--- toVectorF = VU.fromList . fmap (formatRep . ecFormat) 
-
-
 findDiffs :: Seq FormattedChar -> Seq FormattedChar -> Seq DiffedChar
 findDiffs left right = 
     let
         toText :: Seq FormattedChar -> T.Text
         toText = T.pack . F.toList . fmap char  
 
-
         edits :: Seq D.Edit
         edits = D.diffTexts (toText left) (toText right)  
 
-
         indices :: (DeleteIndicies, InsertIndicies)
-        indices = F.foldl' f (S.Empty, S.Empty) edits
+        indices = F.foldl' f (DeleteIndicies S.empty, InsertIndicies S.empty) edits
             where
-            f :: Seq Int -> D.Edit -> Seq Int
+            f :: (DeleteIndicies, InsertIndicies) -> D.Edit -> (DeleteIndicies, InsertIndicies)
             f (x@(DeleteIndicies ds), y@(InsertIndicies is)) e = case e of
-              D.EditDelete   m n -> (x', y) where x' = DeleteIndicies ds >< S.fromList [m .. n]  
-              D.EditInsert _ m n -> (x, y') where y' = InsertIndicies is >< S.fromList [m .. n] 
-
+              D.EditDelete   m n -> (x', y) where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
+              D.EditInsert _ m n -> (x, y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
 
         withDeletes :: Seq DiffedChar
         withDeletes = S.mapWithIndex f pristine
