@@ -469,7 +469,7 @@
     <string name="v4_5_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
     <string name="button_add_members">Nodig leden uit</string>
     <string name="notification_display_mode_hidden_desc">Verberg contact en bericht</string>
-    <string name="turn_off_battery_optimization"><![CDATA[Om het te gebruiken <b>batterijoptimalisatie uitschakelen</b> voor SimpleX in het volgende dialoogvenster. Anders worden de meldingen uitgeschakeld.]]></string>
+    <string name="turn_off_battery_optimization">Om het te gebruiken, kunt u Simplex in het volgende dialoogvenster \u0020<b>op de achtergrond uitvoeren</b>. Anders worden de meldingen uitgeschakeld.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Als u ervoor kiest om te weigeren, wordt de afzender NIET op de hoogte gesteld.</string>
     <string name="onboarding_notifications_mode_service">Onmiddellijk</string>
     <string name="rcv_group_event_member_added">heeft %1$s uitgenodigd</string>
@@ -498,7 +498,7 @@
     <string name="import_database">Database importeren</string>
     <string name="v4_3_improved_privacy_and_security">Verbeterde privacy en veiligheid</string>
     <string name="image_will_be_received_when_contact_is_online">De afbeelding wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of kijk later!</string>
-    <string name="incognito_info_protects">De incognito modus beschermt de privacy van uw hoofdprofielnaam en afbeelding, voor elk nieuw contact wordt een nieuw willekeurig profiel gemaakt.</string>
+    <string name="incognito_info_protects">Incognito beschermt je privacy door een nieuw willekeurig profiel te gebruiken voor elk contact.</string>
     <string name="new_database_archive">Nieuw database archief</string>
     <string name="no_details">geen details</string>
     <string name="conn_level_desc_indirect">indirect (%1$s)</string>
@@ -1340,7 +1340,7 @@
     <string name="in_developing_desc">Deze functie wordt nog niet ondersteund. Probeer de volgende versie.</string>
     <string name="no_selected_chat">Geen geselecteerd gesprek</string>
     <string name="delivery">Levering</string>
-    <string name="no_info_on_delivery">Geen informatie over levering</string>
+    <string name="no_info_on_delivery">Geen leveringsinformatie</string>
     <string name="receipts_groups_title_disable">Ontvangstbevestiging voor groepen uitschakelen\?</string>
     <string name="receipts_groups_title_enable">Ontvangstbevestiging inschakelen voor groepen\?</string>
     <string name="receipts_section_groups">Kleine groepen (max 20)</string>
@@ -1360,4 +1360,14 @@
     <string name="disable_notifications_button">Meldingen uitzetten</string>
     <string name="turn_off_system_restriction_button">Open app instellingen</string>
     <string name="connect__a_new_random_profile_will_be_shared">Een nieuw willekeurig profiel zal gedeeld worden.</string>
+    <string name="connect_use_current_profile">Gebruik het huidige profiel</string>
+    <string name="system_restricted_background_in_call_title">Geen achtergrondgesprekken</string>
+    <string name="system_restricted_background_desc">SimpleX kan niet op de achtergrond draaien. Je krijgt alleen de berichten als de app open is.</string>
+    <string name="system_restricted_background_in_call_desc">De app is misschien afgesloten na 1 minuut achtergrond.</string>
+    <string name="system_restricted_background_in_call_warn">Kies de <b>app -batterijgebruik</b> / <b>onbeperkt</b> in de app -instellingen om met gesloten app te bellen.</string>
+    <string name="connect__your_profile_will_be_shared">Uw profiel %1$s wordt gedeeld.</string>
+    <string name="connect_via_member_address_alert_desc">Verzoek voor het verbinden wordt naar dit groepslid verzonden.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Plak de link die je hebt ontvangen om verbinding te maken met je contact…</string>
+    <string name="system_restricted_background_warn">Als u meldingen wilt inschakelen, kiest u <b> App-batterijgebruik</b> /<b> Onbeperkt</b> in de app-instellingen.</string>
+    <string name="connect_use_new_incognito_profile">Gebruik een nieuw incognito -profiel</string>
 </resources>
