@@ -30,6 +30,7 @@ import Foreign.C.Types (CInt (..))
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke)
+import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import GHC.Generics (Generic)
 import Simplex.Chat
 import Simplex.Chat.Controller
@@ -47,6 +48,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
+import System.IO (utf8)
 import System.Timeout (timeout)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
@@ -70,6 +72,12 @@ foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Wo
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 cChatMigrateInit fp key conf ctrl = do
+  -- ensure we are set to UTF-8; iOS does not have locale, and will default to
+  -- US-ASCII all the time.
+  setLocaleEncoding utf8
+  setFileSystemEncoding utf8
+  setForeignEncoding utf8
+
   dbPath <- peekCAString fp
   dbKey <- peekCAString key
   confirm <- peekCAString conf
