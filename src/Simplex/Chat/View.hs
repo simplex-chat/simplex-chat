@@ -247,6 +247,9 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
   CRSQLResult rows -> map plain rows
+  CRSlowSQLQueries {chatQueries, agentQueries} ->
+    let viewQuery SlowSQLQuery {query, duration} = sShow duration <> " ms: " <> plain (T.unwords $ T.lines query)
+     in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
   CRDebugLocks {chatLockName, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
