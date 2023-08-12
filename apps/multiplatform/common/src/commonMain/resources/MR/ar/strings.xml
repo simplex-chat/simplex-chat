@@ -514,7 +514,7 @@
     <string name="how_it_works">آلية العمل</string>
     <string name="incoming_video_call">مكالمة فيديو واردة</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">إذا تلقيت رابط دعوة SimpleX Chat، فيمكنك فتحه في متصفحك:</string>
-    <string name="incognito_info_protects">يحمي وضع التخفي خصوصية اسم وصورة ملف التعريف الرئيسي - يتم إنشاء ملف تعريف عشوائي جديد لكل جهة اتصال جديدة.</string>
+    <string name="incognito_info_protects">يحمي وضع التخفي خصوصيتك بأستخدام ملف تعريف عشوائي جديد لكل جهة اتصال جديدة.</string>
     <string name="info_menu">المعلومات</string>
     <string name="v4_3_improved_privacy_and_security_desc">إخفاء شاشة التطبيق في التطبيقات الحديثة.</string>
     <string name="v4_3_improved_privacy_and_security">تحسن الخصوصية والأمان</string>
@@ -538,7 +538,7 @@
     <string name="onboarding_notifications_mode_service">فوري</string>
     <string name="host_verb">المضيف</string>
     <string name="hide_notification">إخفاء</string>
-    <string name="turn_off_battery_optimization"><![CDATA[من أجل استخدامها، يرجى <b>تعطيل تحسين البطارية</b> لSimpleX في مربع الحوار التالي. وإلا، سيتم تعطيل الإخطارات.]]></string>
+    <string name="turn_off_battery_optimization">من أجل استخدامها، <b>يرجى السماح لSimpleX للتشغيل في الخلفية</b> في مربع الحوار التالي. وإلا، سيتم تعطيل الإخطارات.</string>
     <string name="in_reply_to">ردًا على</string>
     <string name="icon_descr_instant_notifications">إشعارات فورية</string>
     <string name="enter_one_ICE_server_per_line">خوادم ICE (واحد لكل سطر)</string>
@@ -1354,4 +1354,19 @@
     <string name="receipts_section_groups">مجموعات صغيرة (الحد الأقصى 20)</string>
     <string name="connect_via_member_address_alert_title">الاتصال مباشرةً؟</string>
     <string name="connect_via_member_address_alert_desc">سيتم إرسال طلب الاتصال لعضو المجموعة هذا.</string>
+    <string name="connect_via_link_incognito">اتصال متخفي</string>
+    <string name="connect_use_current_profile">استخدم ملف التعريف الحالي</string>
+    <string name="disable_notifications_button">تعطيل الإشعارات</string>
+    <string name="turn_off_system_restriction_button">افتح إعدادات التطبيق</string>
+    <string name="system_restricted_background_desc">لا يمكن تشغيل SimpleX في الخلفية. ستتلقى الإشعارات فقط عندما يكون التطبيق قيد التشغيل.</string>
+    <string name="connect__a_new_random_profile_will_be_shared">سيتم مشاركة ملف تعريف عشوائي جديد.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">الصق الرابط الذي تلقيته للتواصل مع جهة الاتصال الخاصة بك…</string>
+    <string name="connect__your_profile_will_be_shared">ستتم مشاركة ملفك الشخصي %1$s.</string>
+    <string name="system_restricted_background_in_call_desc">قد يغلق التطبيق بعد دقيقة واحدة في الخلفية.</string>
+    <string name="turn_off_battery_optimization_button">سماح</string>
+    <string name="system_restricted_background_in_call_title">لا مكالمات في الخلفية</string>
+    <string name="system_restricted_background_warn">لتمكين الإشعارات، يرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.</string>
+    <string name="system_restricted_background_in_call_warn">لإجراء مكالمات في الخلفية، يرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.</string>
+    <string name="connect_use_new_incognito_profile">استخدم ملف تعريف متخفي جديد</string>
+    <string name="you_invited_a_contact">أنت دعوت جهة اتصال</string>
 </resources>
