@@ -212,7 +212,7 @@
 \nPer connetterti, chiedi al tuo contatto di creare un altro link di connessione e controlla di avere una connessione di rete stabile.</string>
     <string name="error_smp_test_certificate">Probabilmente l\'impronta del certificato nell\'indirizzo del server è sbagliata</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Per rispettare la tua privacy, invece delle notifiche push l\'app ha un <b>servizio SimpleX in secondo piano</b>; usa una piccola percentuale di batteria al giorno.]]></string>
-    <string name="turn_off_battery_optimization"><![CDATA[Per poterlo usare, <b>disattiva l\'ottimizzazione della batteria</b> per SimpleX nella prossima schermata. Altrimenti le notifiche saranno disattivate.]]></string>
+    <string name="turn_off_battery_optimization">Per usarlo, <b>consenti a SimpleX di funzionare in secondo piano</b> nella prossima schermata. Altrimenti le notifiche saranno disattivate.</string>
     <string name="simplex_service_notification_title">Servizio SimpleX Chat</string>
     <string name="notifications_mode_service_desc">Servizio in secondo piano sempre attivo. Le notifiche verranno mostrate appena i messaggi saranno disponibili.</string>
     <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
@@ -420,7 +420,7 @@
     <string name="rcv_group_event_changed_your_role">cambiato il tuo ruolo in %s</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">cambio indirizzo per %s…</string>
-    <string name="rcv_group_event_member_connected">connesso</string>
+    <string name="rcv_group_event_member_connected">connesso/a</string>
     <string name="group_member_status_connected">connesso/a</string>
     <string name="group_member_status_accepted">in connessione (accettato)</string>
     <string name="group_member_status_announced">in connessione (annunciato)</string>
@@ -810,7 +810,7 @@
     <string name="invite_prohibited_description">Stai tentando di invitare un contatto con cui hai condiviso un profilo in incognito nel gruppo in cui stai usando il tuo profilo principale</string>
     <string name="group_info_member_you">tu: %1$s</string>
     <string name="incognito">Incognito</string>
-    <string name="incognito_info_protects">La modalità in incognito protegge la privacy del nome e dell\'immagine del tuo profilo principale: per ogni nuovo contatto viene creato un nuovo profilo casuale.</string>
+    <string name="incognito_info_protects">La modalità in incognito protegge la tua privacy usando un nuovo profilo casuale per ogni contatto.</string>
     <string name="conn_level_desc_indirect">indiretta (%1$s)</string>
     <string name="incognito_info_allows">Permette di avere molte connessioni anonime senza dati condivisi tra di loro in un unico profilo di chat.</string>
     <string name="theme_light">Chiaro</string>
@@ -1357,4 +1357,18 @@
     <string name="send_receipts_disabled_alert_msg">Questo gruppo ha più di %1$d membri, le ricevute di consegna non vengono inviate.</string>
     <string name="connect_via_member_address_alert_title">Connettersi direttamente\?</string>
     <string name="connect_via_member_address_alert_desc">La richiesta di connessione verrà inviata a questo membro del gruppo.</string>
+    <string name="connect_via_link_incognito">Connetti in incognito</string>
+    <string name="connect_use_current_profile">Usa il profilo attuale</string>
+    <string name="connect_use_new_incognito_profile">Usa nuovo profilo in incognito</string>
+    <string name="turn_off_battery_optimization_button">Consenti</string>
+    <string name="turn_off_system_restriction_button">Apri impostazioni app</string>
+    <string name="system_restricted_background_in_call_desc">L\'app potrebbe venire chiusa dopo 1 minuto in secondo piano.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Incolla il link che hai ricevuto per connetterti con il contatto…</string>
+    <string name="connect__your_profile_will_be_shared">Il tuo profilo %1$s verrà condiviso.</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Verrà condiviso un nuovo profilo casuale.</string>
+    <string name="disable_notifications_button">Disattiva le notifiche</string>
+    <string name="system_restricted_background_in_call_title">Nessuna chiamata in secondo piano</string>
+    <string name="system_restricted_background_desc">SimpleX non può funzionare in secondo piano. Riceverai le notifiche solo quando l\'app è aperta.</string>
+    <string name="system_restricted_background_warn">Per attivare le notifiche, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.</string>
+    <string name="system_restricted_background_in_call_warn">Per effettuare chiamate in secondo piano, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.</string>
 </resources>
