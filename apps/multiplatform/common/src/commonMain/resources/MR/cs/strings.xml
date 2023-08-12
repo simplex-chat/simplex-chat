@@ -885,7 +885,7 @@
     <string name="users_delete_profile_for">Smazat chat profil pro</string>
     <string name="users_delete_with_connections">Profil a připojení k serveru</string>
     <string name="users_delete_data_only">Pouze místní data profilu</string>
-    <string name="incognito_info_protects">Režim inkognito chrání soukromí vašeho hlavního profilu, jména a obrázku - pro každý nový kontakt je vytvořen nový náhodný profil.</string>
+    <string name="incognito_info_protects">Režim inkognito chrání vaše soukromí používáním nového náhodného profilu pro každý kontakt.</string>
     <string name="theme_light">Světlé</string>
     <string name="theme_dark">Tmavé</string>
     <string name="theme">Téma</string>
@@ -1337,4 +1337,22 @@
     <string name="v5_2_message_delivery_receipts_descr">Druhé zaškrtnutí jsme přehlédli! ✅</string>
     <string name="switch_receiving_address_desc">Přijímací adresa bude změněna na jiný server. Změna adresy bude dokončena po připojení odesílatele.</string>
     <string name="choose_file_title">Vybrat soubor</string>
+    <string name="connect_via_link_incognito">Připojit se inkognito</string>
+    <string name="turn_off_battery_optimization_button">Povolit</string>
+    <string name="disable_notifications_button">Vypnout upozornění</string>
+    <string name="turn_off_system_restriction_button">Otevřít nastavení aplikace</string>
+    <string name="system_restricted_background_in_call_title">Žádné volání na pozadí</string>
+    <string name="receipts_groups_enable_keep_overrides">Povolit (zachovat nastavení skupin)</string>
+    <string name="receipts_groups_disable_keep_overrides">Vypnout (zachovat nastavení skupin)</string>
+    <string name="connect_via_member_address_alert_title">Připojit se přímo\?</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Nový náhodný profil bude sdílen.</string>
+    <string name="receipts_groups_enable_for_all">Povolit pro všechny skupiny</string>
+    <string name="no_selected_chat">Žádný vybraný chat</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Vložte odkaz který jste obdrželi, pro spojení se svým kontaktem…</string>
+    <string name="no_info_on_delivery">Žádné informace o doručení</string>
+    <string name="receipts_groups_override_disabled">Odesílání doručenky je zakázáno pro %d skupin</string>
+    <string name="receipts_groups_disable_for_all">Vypnout pro všechny skupiny</string>
+    <string name="send_receipts_disabled">vypnut</string>
+    <string name="send_receipts_disabled_alert_title">Receipts jsou zakázány</string>
+    <string name="in_developing_title">Již brzy!</string>
 </resources>
