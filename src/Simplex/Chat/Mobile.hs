@@ -74,9 +74,9 @@ cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatControll
 cChatMigrateInit fp key conf ctrl = do
   -- ensure we are set to UTF-8; iOS does not have locale, and will default to
   -- US-ASCII all the time.
-  setLocaleEncoding     utf8
+  setLocaleEncoding utf8
   setFileSystemEncoding utf8
-  setForeignEncoding    utf8
+  setForeignEncoding utf8
 
   dbPath <- peekCAString fp
   dbKey <- peekCAString key
