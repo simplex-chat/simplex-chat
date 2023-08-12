@@ -398,7 +398,7 @@ processChatCommand = \case
     asks currentUser >>= atomically . (`writeTVar` Just user'')
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
-    tryError (withStore (`getUserIdByName` uName)) >>= \case
+    tryChatError (withStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
   SetAllContactReceipts onOff -> withUser $ \_ -> withStore' (`updateAllContactReceipts` onOff) >> ok_
@@ -498,7 +498,7 @@ processChatCommand = \case
     agentQueries <- slowQueries $ agentClientStore smpAgent
     pure CRSlowSQLQueries {chatQueries, agentQueries}
     where
-      slowQueries st = map (uncurry SlowSQLQuery . first SQL.fromQuery) . sortOn snd . M.assocs <$> withConnection st (readTVarIO . DB.slow)
+      slowQueries st = liftIO $ map (uncurry SlowSQLQuery . first SQL.fromQuery) . sortOn snd . M.assocs <$> withConnection st (readTVarIO . DB.slow)
   APIGetChats userId withPCC -> withUserId userId $ \user ->
     CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
