@@ -36,6 +36,7 @@ struct SendMessageView: View {
     @State private var showCustomDisappearingMessageDialogue = false
     @State private var showCustomTimePicker = false
     @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
+    @State private var progressByTimeout = false
     var maxHeight: CGFloat = 360
     var minHeight: CGFloat = 37
     @AppStorage(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
@@ -81,7 +82,7 @@ struct SendMessageView: View {
                     }
                 }
 
-                if composeState.inProgress {
+                if progressByTimeout {
                     ProgressView()
                         .scaleEffect(1.4)
                         .frame(width: 31, height: 31, alignment: .center)
@@ -102,6 +103,15 @@ struct SendMessageView: View {
                 .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
                 .frame(height: teHeight)
         }
+        .onChange(of: composeState.inProgress) { inProgress in
+            if inProgress {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    progressByTimeout = composeState.inProgress
+                }
+            } else {
+                progressByTimeout = false
+            }
+        }
         .padding(.vertical, 8)
     }
 
@@ -119,7 +129,7 @@ struct SendMessageView: View {
                         startVoiceMessageRecording: startVoiceMessageRecording,
                         finishVoiceMessageRecording: finishVoiceMessageRecording,
                         holdingVMR: $holdingVMR,
-                        disabled: composeState.disabled
+                        disabled: composeState.inProgress
                     )
                 } else {
                     voiceMessageNotAllowedButton()
@@ -165,7 +175,7 @@ struct SendMessageView: View {
         }
         .disabled(
             !composeState.sendEnabled ||
-            composeState.disabled ||
+            composeState.inProgress ||
             (!voiceMessageAllowed && composeState.voicePreview) ||
             composeState.endLiveDisabled
         )
@@ -293,7 +303,7 @@ struct SendMessageView: View {
             Image(systemName: "mic")
                 .foregroundColor(.secondary)
         }
-        .disabled(composeState.disabled)
+        .disabled(composeState.inProgress)
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
     }
@@ -378,7 +388,7 @@ struct SendMessageView: View {
             Image(systemName: "stop.fill")
                 .foregroundColor(.accentColor)
         }
-        .disabled(composeState.disabled)
+        .disabled(composeState.inProgress)
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
     }

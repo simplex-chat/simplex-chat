@@ -44,7 +44,6 @@ struct ComposeState {
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
-    var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
     init(
@@ -655,10 +654,7 @@ struct ComposeView: View {
         return sent
 
         func sending() async {
-            await MainActor.run { composeState.disabled = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if composeState.disabled { composeState.inProgress = true }
-            }
+            await MainActor.run { composeState.inProgress = true }
         }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
@@ -852,7 +848,6 @@ struct ComposeView: View {
 
     private func clearState(live: Bool = false) {
         if live {
-            composeState.disabled = false
             composeState.inProgress = false
         } else {
             composeState = ComposeState()

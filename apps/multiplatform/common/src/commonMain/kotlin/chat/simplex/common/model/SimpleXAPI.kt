@@ -401,19 +401,15 @@ object ChatController {
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      if (cmd !is CC.ApiParseMarkdown) {
-        chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
-        Log.d(TAG, "sendCmd: ${cmd.cmdType}")
-      }
+      chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
+      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       val json = chatSendCmd(ctrl, c)
       val r = APIResponse.decodeStr(json)
       Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
       if (r.resp is CR.Response || r.resp is CR.Invalid) {
         Log.d(TAG, "sendCmd response json $json")
       }
-      if (r.resp !is CR.ParsedMarkdown) {
-        chatModel.addTerminalItem(TerminalItem.resp(r.resp))
-      }
+      chatModel.addTerminalItem(TerminalItem.resp(r.resp))
       r.resp
     }
   }
@@ -1290,13 +1286,6 @@ object ChatController {
     }
   }
 
-  suspend fun apiParseMarkdown(text: String): List<FormattedText>? {
-    val r = sendCmd(CC.ApiParseMarkdown(text))
-    if (r is CR.ParsedMarkdown) return r.formattedText
-    Log.e(TAG, "apiParseMarkdown bad response: ${r.responseType} ${r.details}")
-    return null
-  }
-
   private fun networkErrorAlert(r: CR): Boolean {
     return when {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
@@ -1857,7 +1846,6 @@ sealed class CC {
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
-  class ApiParseMarkdown(val text: String): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
   class ApiCreateMyAddress(val userId: Long): CC()
@@ -1963,7 +1951,6 @@ sealed class CC {
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
-    is ApiParseMarkdown -> "/_parse $text"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
     is ApiCreateMyAddress -> "/_address $userId"
@@ -2058,7 +2045,6 @@ sealed class CC {
     is ApiListContacts -> "apiListContacts"
     is ApiUpdateProfile -> "apiUpdateProfile"
     is ApiSetContactPrefs -> "apiSetContactPrefs"
-    is ApiParseMarkdown -> "apiParseMarkdown"
     is ApiSetContactAlias -> "apiSetContactAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
     is ApiCreateMyAddress -> "apiCreateMyAddress"
@@ -3340,7 +3326,6 @@ sealed class CR {
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val user: User, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: User, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
-  @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: User?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: User?, val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val user_: User?, val chatError: ChatError): CR()
@@ -3465,7 +3450,6 @@ sealed class CR {
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
     is VersionInfo -> "versionInfo"
-    is ParsedMarkdown -> "apiParsedMarkdown"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -3518,7 +3502,6 @@ sealed class CR {
     is ContactAliasUpdated -> withUser(user, json.encodeToString(toContact))
     is ConnectionAliasUpdated -> withUser(user, json.encodeToString(toConnection))
     is ContactPrefsUpdated -> withUser(user, "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}")
-    is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> withUser(user, contactLink.responseDetails)
     is UserContactLinkUpdated -> withUser(user, contactLink.responseDetails)
     is UserContactLinkCreated -> withUser(user, connReqContact)

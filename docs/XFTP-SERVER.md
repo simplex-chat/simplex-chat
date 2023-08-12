@@ -1,6 +1,6 @@
 ---
 title: Hosting your own XFTP Server
-revision: 21.04.2023
+revision: 31.07.2023
 ---
 # Hosting your own XFTP Server
 
@@ -17,26 +17,43 @@ XFTP is a new file transfer protocol focussed on meta-data protection - it is ba
 
 ## Installation
 
-1. Download `xftp-server` binary:
+0. First, install `xftp-server`:
 
-   ```sh
-   sudo curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server && sudo chmod +x /usr/local/bin/xftp-server
-   ```
+   - Manual deployment (see below)
 
-2. Create user and group for `xftp-server`:
+   - Semi-automatic deployment:
+     - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
+     - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
+
+Manual installation requires some preliminary actions:
+
+0. Install binary:
+
+   - Using offical binaries:
+
+     ```sh
+     curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server
+     ```
+
+   - Compiling from source:
+
+     Please refer to [Build from source: Using your distribution](https://github.com/simplex-chat/simplexmq#using-your-distribution)
+
+
+1. Create user and group for `xftp-server`:
 
    ```sh
    sudo useradd -m xftp
    ```
 
-3. Create necessary directories and assign permissions:
+2. Create necessary directories and assign permissions:
 
    ```sh
    sudo mkdir -p /var/opt/simplex-xftp /etc/opt/simplex-xftp /srv/xftp
    sudo chown xftp:xftp /var/opt/simplex-xftp /etc/opt/simplex-xftp /srv/xftp
    ```
 
-4. Allow xftp-server port in firewall:
+3. Allow xftp-server port in firewall:
 
    ```sh
    # For Ubuntu
@@ -46,7 +63,7 @@ XFTP is a new file transfer protocol focussed on meta-data protection - it is ba
    sudo firewall-cmd --reload
    ```
 
-5. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/xftp-server.service` file with the following content:
+4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/xftp-server.service` file with the following content:
 
    ```sh
    [Unit]
@@ -68,6 +85,86 @@ XFTP is a new file transfer protocol focussed on meta-data protection - it is ba
    ```
 
    And execute `sudo systemctl daemon-reload`.
+
+## Tor installation
+
+xftp-server can also be deployed to serve from [tor](https://www.torproject.org) network. Run the following commands as `root` user.
+
+1. Install tor:
+
+   We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to [offical tor documentation](https://community.torproject.org/onion-services/setup/install/) or your distribution guide.
+
+   - Configure offical Tor PPA repository:
+
+     ```sh
+     CODENAME="$(lsb_release -c | awk '{print $2}')"
+     echo "deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
+     deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main" > /etc/apt/sources.list.d/tor.list
+     ```
+
+   - Import repository key:
+
+     ```sh
+     curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg >/dev/null
+     ```
+
+   - Update repository index:
+
+     ```sh
+     apt update
+     ```
+
+   - Install `tor` package:
+
+     ```sh
+     apt install -y tor deb.torproject.org-keyring
+     ```
+
+2. Configure tor:
+
+   - File configuration:
+  
+     Open tor configuration with your editor of choice (`nano`,`vim`,`emacs`,etc.):
+
+     ```sh
+     vim /etc/tor/torrc
+     ```
+
+     And insert the following lines to the bottom of configuration. Please note lines starting with `#`: this is comments about each individual options.
+
+     ```sh
+     # Enable log (otherwise, tor doesn't seemd to deploy onion address)
+     Log notice file /var/log/tor/notices.log
+     # Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside xftp-server and onion address will be displayed in clients, this is totally fine)
+     SOCKSPort 0
+     HiddenServiceNonAnonymousMode 1
+     HiddenServiceSingleHopMode 1
+     # xftp-server hidden service host directory and port mappings
+     HiddenServiceDir /var/lib/tor/simplex-xftp/
+     HiddenServicePort 443 localhost:443
+     ```
+
+   - Create directories:
+
+     ```sh
+     mkdir /var/lib/tor/simplex-xftp/ && chown debian-tor:debian-tor /var/lib/tor/simplex-xftp/ && chmod 700 /var/lib/tor/simplex-xftp/
+     ```
+
+3. Start tor:
+
+   Enable `systemd` service and start tor. Offical `tor` is a bit flunky on the first start and may not create onion host address, so we're restarting it just in case.
+
+   ```sh
+   systemctl enable tor && systemctl start tor && systemctl restart tor
+   ```
+
+4. Display onion host:
+
+   Execute the following command to display your onion host address:
+
+   ```sh
+   cat /var/lib/tor/simplex-xftp/hostname
+   ```
 
 ## Configuration
 
