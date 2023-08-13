@@ -90,7 +90,7 @@
     <string name="service_notifications_disabled">Sofortige Benachrichtigungen sind deaktiviert!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Um Ihre Privatsphäre zu schützen, kann statt der Push-Benachrichtigung der <b>SimpleX-Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Diese können über die Einstellungen deaktiviert werden</b> – solange die App läuft, werden Benachrichtigungen weiterhin angezeigt.]]></string>
-    <string name="turn_off_battery_optimization"><![CDATA[Um diese Funktion zu nutzen, ist es nötig, die Einstellung <b>Akkuoptimierung</b> für SimpleX im nächsten Dialog zu <b>deaktivieren</b>. Ansonsten werden die Benachrichtigungen deaktiviert.]]></string>
+    <string name="turn_off_battery_optimization">Um diese Funktion zu nutzen, wählen Sie im nächsten Dialog bitte die Einstellung <b>Erlauben Sie SimpleX im Hintergrund abzulaufen</b>. Ansonsten werden die Benachrichtigungen deaktiviert.</string>
     <string name="turning_off_service_and_periodic">Die Akkuoptimierung ist aktiv, der Hintergrunddienst und die periodische Nachfrage nach neuen Nachrichten ist abgeschaltet. Sie können diese Funktion in den Einstellungen wieder aktivieren.</string>
     <string name="periodic_notifications">Periodische Benachrichtigungen</string>
     <string name="periodic_notifications_disabled">Periodische Benachrichtigungen sind deaktiviert!</string>
@@ -836,7 +836,7 @@
     <!-- Incognito mode -->
     <string name="incognito">Inkognito</string>
     <string name="incognito_random_profile">Ihr Zufallsprofil</string>
-    <string name="incognito_info_protects">Der Inkognito-Modus schützt die Privatsphäre Ihres Hauptprofilnamens und -bildes – für jeden neuen Kontakt wird ein neues Zufallsprofil erstellt.</string>
+    <string name="incognito_info_protects">Der Inkognito-Modus schützt Ihre Privatsphäre, indem für jeden Kontakt ein neues Zufallsprofil erstellt wird.</string>
     <string name="incognito_info_allows">Es ermöglicht, viele anonyme Verbindungen ohne gemeinsame Daten zwischen diesen in einem einzigen Chat-Profil zu haben.</string>
     <string name="incognito_info_share">Wenn Sie ein Inkognito-Profil mit jemandem teilen, wird dieses Profil für die Gruppen verwendet, zu denen derjenige Sie einlädt.</string>
     <!-- Default themes -->
@@ -1438,4 +1438,18 @@
     <string name="send_receipts_disabled_alert_msg">Diese Gruppe hat über %1$d Mitglieder. Daher werden keine Empfangsbestätigungen gesendet.</string>
     <string name="connect_via_member_address_alert_desc">An dieses Gruppenmitglied wird eine Verbindungsanfrage gesendet.</string>
     <string name="connect_via_member_address_alert_title">Direkt verbinden\?</string>
+    <string name="connect_via_link_incognito">Inkognito verbinden</string>
+    <string name="connect_use_current_profile">Nutzen Sie das aktuelle Profil</string>
+    <string name="connect_use_new_incognito_profile">Nutzen Sie das neue Inkognito-Profil</string>
+    <string name="system_restricted_background_in_call_warn">Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Anrufe im Hintergrund zu führen.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Fügen Sie den erhaltenen Link ein, um sich mit Ihrem Kontakt zu verbinden…</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Es wird ein neues Zufallsprofil geteilt.</string>
+    <string name="connect__your_profile_will_be_shared">Ihr Profil %1$s wird geteilt.</string>
+    <string name="turn_off_battery_optimization_button">Erlauben</string>
+    <string name="disable_notifications_button">Benachrichtigungen deaktivieren</string>
+    <string name="system_restricted_background_in_call_title">Keine Anrufe im Hintergrund</string>
+    <string name="turn_off_system_restriction_button">App-Einstellungen öffnen</string>
+    <string name="system_restricted_background_desc">SimpleX kann nicht im Hintergrund ablaufen. Sie erhalten Benachrichtigungen nur dann, solange die App läuft.</string>
+    <string name="system_restricted_background_in_call_desc">Die App kann nach einer Minute im Hintergrund geschlossen werden.</string>
+    <string name="system_restricted_background_warn">Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Benachrichtigungen zu aktivieren.</string>
 </resources>
