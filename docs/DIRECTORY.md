@@ -43,13 +43,13 @@ Removing the group does not prevent you from registering the group again in the 
 
 ### Why limit which groups can be listed
 
-We are partially responsible for the content that the users can discover via the app. While currently the discovery service is not preset in the app, we eventually want to have it present in the app, potentially with some alternative discovery services, and the content in them should be restricted to generally appropriate to avoid violating the policies of the application distribution channels (App Store, Play Store, etc.).
+The reason to restrict the acceptable content is to have a better experience for a wider range of the users, and to comply with the content policies of app distribution channels (App Store, Play Store, etc.) once the directory service is available via the app without additional configuration. To achieve that, the content in the listed groups should be restricted to generally appropriate.
 
 Doesn't it go against the idea of decentralization and freedom of speech?
 
-No, it does not, as:
-1. The service can only restrict the groups that you choose to register.
-2. The service itself is open-source and you can self-host it, applying different content policies there.
+We believe it does not, because:
+1. The service only restricts the content in the groups that you choose to register – we have no register of all existing groups, and no access to their content.
+2. The service itself is open-source, and self-hostable, so anybody can run an alternative directory service with the different content policies.
 
 ### Which groups can be registered
 
@@ -80,7 +80,7 @@ The content in the listed groups must:
 
 Group owners are responsible for moderating the content in the group, if members post inappropriate or excessive amount of content and group owners do not moderate it, the group is likely to be removed from the directory.
 
-We reserve the right refuse to approve the group listing in the directory or cancel its listing without providing any explanations.
+We reserve the right to not accept the group listing in the directory or cancel its listing without providing any reasons.
 
 The combination of display name and full name has to be unique for the listed groups.
 
