@@ -63,7 +63,7 @@ Please ONLY submit the groups on the following subjects:
 - cryptocurrencies
 - product and software development
 - science and technology
-- media and entertainment: games, books, movies and music
+- media and entertainment: books, music, movies and games
 - politics, society, culture and education
 
 The content in the group must be "appropriate" for the general audience, starting from 12 years old.
