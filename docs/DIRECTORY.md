@@ -76,7 +76,7 @@ The content in the listed groups must:
 - NOT contain racism, hate speech, or any other content that promotes discrimination.
 - NOT contain information about drugs, alcohol, or any other substances.
 - NOT contain [NSFW](https://en.wikipedia.org/wiki/Not_safe_for_work) content.
-- be offensive. We do cannot say in advance what "offensive" means, but we will know it when we see it.
+- be offensive. We cannot say in advance what "offensive" means, but we will know it when we see it.
 
 Group owners are responsible for moderating the content in the group, if members post inappropriate or excessive amount of content and group owners do not moderate it, the group is likely to be removed from the directory.
 
