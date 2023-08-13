@@ -76,7 +76,6 @@ cChatMigrateInit fp key conf ctrl = do
   -- US-ASCII all the time.
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
-  setForeignEncoding utf8
 
   dbPath <- peekCAString fp
   dbKey <- peekCAString key
