@@ -147,7 +147,7 @@
     <string name="notification_preview_mode_contact">Contacto</string>
     <string name="copy_verb">Copiar</string>
     <string name="create_your_profile">Crear tu perfil</string>
-    <string name="always_use_relay">Siempre usar relay</string>
+    <string name="always_use_relay">Usar siempre retransmisor</string>
     <string name="set_password_to_export_desc">La base de datos está cifrada con una contraseña aleatoria. Cámbiala antes de exportar.</string>
     <string name="total_files_count_and_size">%d archivo(s) con tamaño total de %s</string>
     <string name="enable_automatic_deletion_question">¿Activar eliminación automática de mensajes\?</string>
@@ -277,7 +277,7 @@
     <string name="chat_is_stopped_indication">Chat está detenido</string>
     <string name="rcv_group_event_changed_member_role">rol de %s cambiado a %s</string>
     <string name="change_role">Cambiar rol</string>
-    <string name="v4_5_transport_isolation_descr">Mediante perfil de Chat (por defecto) o por conexión (BETA)</string>
+    <string name="v4_5_transport_isolation_descr">Mediante perfil (por defecto) o por conexión (BETA)</string>
     <string name="snd_conn_event_switch_queue_phase_changing">cambiando de servidor…</string>
     <string name="chat_preferences">Preferencias de Chat</string>
     <string name="feature_cancelled_item">cancelado %s</string>
@@ -526,7 +526,7 @@
     <string name="v4_5_italian_interface">Interfaz en italiano</string>
     <string name="v4_5_message_draft">Borrador de mensaje</string>
     <string name="v4_5_reduced_battery_usage_descr">¡Pronto habrá más mejoras!</string>
-    <string name="v4_5_multiple_chat_profiles">Múltiples perfiles de chat</string>
+    <string name="v4_5_multiple_chat_profiles">Múltiples perfiles</string>
     <string name="notifications">Notificaciones</string>
     <string name="no_details">sin detalles</string>
     <string name="ok">OK</string>
@@ -614,7 +614,7 @@
     <string name="icon_descr_server_status_pending">Pendiente</string>
     <string name="periodic_notifications">Notificaciones periódicas</string>
     <string name="store_passphrase_securely">Guarda la contraseña de forma segura, NO podrás cambiarla si la pierdes.</string>
-    <string name="restart_the_app_to_create_a_new_chat_profile">Reinicia la aplicación para crear un nuevo perfil de chat.</string>
+    <string name="restart_the_app_to_create_a_new_chat_profile">Reinicia la aplicación para crear un perfil nuevo.</string>
     <string name="restore_database_alert_title">¿Restaurar copia de seguridad de la base de datos\?</string>
     <string name="onboarding_notifications_mode_title">Notificaciones privadas</string>
     <string name="image_descr_profile_image">imagen del perfil</string>
@@ -863,18 +863,18 @@
     <string name="v4_4_verify_connection_security">Comprobar la seguridad de la conexión</string>
     <string name="you_are_already_connected_to_vName_via_this_link">¡Ya estás conectado a %1$s.</string>
     <string name="welcome">¡Bienvenido!</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Tu perfil Chat será enviado
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Tu perfil será enviado
 \na tu contacto</string>
     <string name="your_ICE_servers">Servidores ICE</string>
     <string name="you_rejected_group_invitation">Has rechazado la invitación del grupo.</string>
     <string name="snd_group_event_changed_member_role">has cambiado el rol de %s a %s</string>
-    <string name="call_connection_via_relay">mediante relay</string>
+    <string name="call_connection_via_relay">mediante retransmisor</string>
     <string name="contact_wants_to_connect_with_you">¡quiere contactar contigo!</string>
     <string name="voice_message">Mensaje de voz</string>
     <string name="waiting_for_image">Esperando imagen</string>
     <string name="webrtc_ice_servers">Servidores WebRTC ICE</string>
     <string name="contact_wants_to_connect_via_call">%1$s quiere conectarse contigo mediante</string>
-    <string name="failed_to_create_user_duplicate_desc">Tienes un perfil de chat con el mismo nombre mostrado. Debes elegir otro nombre.</string>
+    <string name="failed_to_create_user_duplicate_desc">Ya tienes un perfil con este nombre mostrado. Por favor, elige otro nombre.</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[También puedes conectarte pulsando el enlace. Si se abre en el navegador, pulsa en <b>Abrir en aplicación móvil</b>.]]></string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Puedes <font color="#0088ff">ponerte en contacto con los desarrolladores de SimpleX Chat para consultas y para recibir actualizaciones</font>.]]></string>
     <string name="observer_cant_send_message_title">¡No puedes enviar mensajes!</string>
@@ -950,11 +950,11 @@
     <string name="view_security_code">Mostrar código de seguridad</string>
     <string name="you_need_to_allow_to_send_voice">Para poder enviar mensajes de voz antes debes permitir que tu contacto pueda enviarlos.</string>
     <string name="voice_messages_prohibited">¡Mensajes de voz prohibidos!</string>
-    <string name="group_main_profile_sent">Tu perfil Chat será enviado a los miembros del grupo</string>
+    <string name="group_main_profile_sent">Tu perfil será enviado a los miembros del grupo</string>
     <string name="icon_descr_address">Dirección SimpleX</string>
     <string name="image_descr_simplex_logo">Logo SimpleX</string>
     <string name="icon_descr_simplex_team">Equipo SimpleX</string>
-    <string name="your_chat_profiles">Mis perfiles</string>
+    <string name="your_chat_profiles">Perfiles</string>
     <string name="your_simplex_contact_address">Mi dirección SimpleX</string>
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
@@ -968,8 +968,8 @@
     <string name="save_profile_password">Guardar contraseña de perfil</string>
     <string name="password_to_show">Contraseña para hacerlo visible</string>
     <string name="error_saving_user_password">Error al guardar contraseña de usuario</string>
-    <string name="relay_server_if_necessary">El relay sólo se usa en caso de necesidad. Un tercero podría ver tu IP.</string>
-    <string name="relay_server_protects_ip">El servidor relay protege tu IP pero puede ver la duración de la llamada.</string>
+    <string name="relay_server_if_necessary">El retransmisor sólo se usa en caso de necesidad. Un tercero podría ver tu IP.</string>
+    <string name="relay_server_protects_ip">El servidor de retransmisión protege tu IP pero puede ver la duración de la llamada.</string>
     <string name="cant_delete_user_profile">¡No se puede eliminar el perfil!</string>
     <string name="enter_password_to_show">Introduce la contraseña</string>
     <string name="user_hide">Ocultar</string>
@@ -985,7 +985,7 @@
     <string name="dont_show_again">No mostrar de nuevo</string>
     <string name="muted_when_inactive">¡Silenciado cuando está inactivo!</string>
     <string name="v4_6_group_moderation">Moderación de grupos</string>
-    <string name="v4_6_hidden_chat_profiles">Perfiles Chat ocultos</string>
+    <string name="v4_6_hidden_chat_profiles">Perfiles ocultos</string>
     <string name="v4_6_hidden_chat_profiles_descr">¡Protege tus perfiles con contraseña!</string>
     <string name="v4_6_audio_video_calls_descr">Ahora con soporte bluetooth y otras mejoras.</string>
     <string name="v4_6_group_welcome_message_descr">¡Guarda un mensaje para ser mostrado a los miembros nuevos!</string>
@@ -1004,7 +1004,7 @@
     <string name="v4_6_group_moderation_descr">Ahora los administradores pueden:
 \n- borrar mensajes de los miembros.
 \n- desactivar el rol miembro (a rol \"observador\")</string>
-    <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda de la página Mis perfiles.</string>
+    <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda del menú Perfiles.</string>
     <string name="database_upgrade">Actualización de la base de datos</string>
     <string name="database_downgrade">Volviendo a versión anterior de la base de datos</string>
     <string name="invalid_migration_confirmation">Confirmación de migración no válida</string>
@@ -1025,7 +1025,7 @@
     <string name="show_dev_options">Mostrar:</string>
     <string name="delete_chat_profile">Eliminar perfil de chat</string>
     <string name="profile_password">Contraseña del perfil</string>
-    <string name="unhide_chat_profile">Mostrar perfil de chat</string>
+    <string name="unhide_chat_profile">Mostrar perfil oculto</string>
     <string name="unhide_profile">Mostrar perfil</string>
     <string name="delete_profile">Eliminar perfil</string>
     <string name="video_descr">Vídeo</string>
@@ -1122,7 +1122,7 @@
     <string name="v5_0_polish_interface_descr">¡Gracias a los colaboradores! Contribuye a través de Weblate.</string>
     <string name="v5_0_large_files_support">Vídeos y archivos de hasta 1Gb</string>
     <string name="v5_0_large_files_support_descr">¡Rápido y sin necesidad de esperar a que el remitente esté en línea!</string>
-    <string name="auth_open_chat_profiles">Abrir perfiles de chat</string>
+    <string name="auth_open_chat_profiles">Abrir perfiles</string>
     <string name="learn_more">Más información</string>
     <string name="if_you_cant_meet_in_person">Si no puedes reunirte en persona, **muestra el código QR por videollamada**, o comparte el enlace.</string>
     <string name="scan_qr_to_connect_to_contact">Para conectarse, tu contacto puede escanear el código QR o usar el enlace en la aplicación.</string>
@@ -1306,7 +1306,7 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">El envío de confirmaciones de entrega se activará para todos los contactos en todos los perfiles visibles.</string>
     <string name="receipts_section_contacts">Contactos</string>
     <string name="delivery_receipts_title">¡Confirmación de entrega!</string>
-    <string name="receipts_contacts_disable_keep_overrides">Desactivar (mantener anulaciones)</string>
+    <string name="receipts_contacts_disable_keep_overrides">Desactivar (conservar anulaciones)</string>
     <string name="v5_2_favourites_filter">Encontrar chats mas rápido</string>
     <string name="v5_2_disappear_one_message">Escribir un mensaje temporal</string>
     <string name="receipts_contacts_override_disabled">El envío de confirmaciones está desactivado para %d contactos</string>
@@ -1327,7 +1327,7 @@
     <string name="v5_2_disappear_one_message_descr">Incluso si está desactivado para la conversación.</string>
     <string name="v5_2_favourites_filter_descr">Filtrar chats no leídos y favoritos.</string>
     <string name="v5_2_fix_encryption_descr">Reparar el cifrado tras restaurar copias de seguridad.</string>
-    <string name="v5_2_fix_encryption">Mantén tus conexiones</string>
+    <string name="v5_2_fix_encryption">Conserva tus conexiones</string>
     <string name="v5_2_message_delivery_receipts">¡Confirmación de entrega de mensajes!</string>
     <string name="v5_2_more_things_descr">- entrega de mensajes más estable.
 \n- grupos un poco mejores.
@@ -1351,9 +1351,9 @@
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="send_receipts_disabled">desactivado</string>
     <string name="receipts_groups_disable_for_all">Desactivado para todos los grupos</string>
-    <string name="receipts_groups_disable_keep_overrides">Desactivar (mantener anulaciones de grupo)</string>
+    <string name="receipts_groups_disable_keep_overrides">Desactivar (conservar anulaciones de grupo)</string>
     <string name="receipts_groups_title_disable">¿Desactivar confirmaciones para grupos\?</string>
-    <string name="receipts_groups_enable_keep_overrides">Activar (mantener anulaciones de grupo)</string>
+    <string name="receipts_groups_enable_keep_overrides">Activar (conservar anulaciones de grupo)</string>
     <string name="send_receipts_disabled_alert_title">Confirmaciones desactivadas</string>
     <string name="send_receipts_disabled_alert_msg">Este grupo tiene más de %1$d miembros, no se enviarán confirmaciones de entrega.</string>
     <string name="connect_via_member_address_alert_title">¿Conectar directamente\?</string>
