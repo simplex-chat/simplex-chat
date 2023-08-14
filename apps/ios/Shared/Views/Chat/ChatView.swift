@@ -500,16 +500,11 @@ struct ChatView: View {
         )
         let alignment: Alignment = .leading
         VStack(alignment: alignment.horizontal, spacing: 3) {
-//            ChatItemView(chatInfo: chat.chatInfo, chatItem: replacingItem, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: .constant(false))
-            ChatItemView(chatInfo: chat.chatInfo, chatItem: replacingItem, scrollProxy: scrollProxy, revealed: .constant(false))
+            ChatItemView(chatInfo: chat.chatInfo, chatItem: replacingItem, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: .constant(false))
         }
-//        .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-//        .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
-        .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
-//        .padding(.horizontal)
-        .padding(.trailing)
-        .padding(.leading, 12)
-        .padding(.vertical, 4)
+        .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+        .padding(.horizontal)
         .environmentObject(chat)
 //        return ChatItemWithMenu(
 //            ci: replacingItem,
