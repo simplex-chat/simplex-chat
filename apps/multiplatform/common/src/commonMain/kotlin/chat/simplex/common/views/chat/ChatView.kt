@@ -98,6 +98,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
   val view = LocalMultiplatformView()
   if (activeChat.value == null || user == null) {
     chatModel.chatId.value = null
+    ModalManager.end.closeModals()
   } else {
     val chat = activeChat.value!!
     // We need to have real unreadCount value for displaying it inside top right button

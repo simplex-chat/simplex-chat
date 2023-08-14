@@ -524,6 +524,7 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
           chatModel.removeChat(chatInfo.id)
           if (chatModel.chatId.value == chatInfo.id) {
             chatModel.chatId.value = null
+            ModalManager.end.closeModals()
           }
         }
       }
@@ -559,6 +560,7 @@ fun deleteGroup(groupInfo: GroupInfo, chatModel: ChatModel) {
       chatModel.removeChat(groupInfo.id)
       if (chatModel.chatId.value == groupInfo.id) {
         chatModel.chatId.value = null
+        ModalManager.end.closeModals()
       }
       ntfManager.cancelNotificationsForChat(groupInfo.id)
     }
