@@ -368,7 +368,12 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     stringResource(MR.strings.delete_verb),
     painterResource(MR.images.ic_delete),
     onClick = {
-      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {}
+      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {
+        if (chatModel.chatId.value == null) {
+          ModalManager.center.closeModals()
+          ModalManager.end.closeModals()
+        }
+      }
       showMenu.value = false
     },
     color = Color.Red

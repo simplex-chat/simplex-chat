@@ -133,27 +133,45 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         chatModel.chatId.value = null
       },
       info = {
+        if (ModalManager.end.hasModalsOpen()) {
+          ModalManager.end.closeModals()
+          return@ChatLayout
+        }
         hideKeyboard(view)
         withApi {
+          // The idea is to preload information before showing a modal because large groups can take time to load all members
+          var preloadedContactInfo: Pair<ConnectionStats, Profile?>? = null
+          var preloadedCode: String? = null
+          var preloadedLink: Pair<String, GroupMemberRole>? = null
           if (chat.chatInfo is ChatInfo.Direct) {
-            val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
-            val (_, code) = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)
-            ModalManager.end.closeModals()
-            ModalManager.end.showModalCloseable(true) { close ->
-              remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.apiId)?.chatInfo as? ChatInfo.Direct)?.contact } }.value?.let { ct ->
-                ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
-              }
-            }
+            preloadedContactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+            preloadedCode = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId).second
           } else if (chat.chatInfo is ChatInfo.Group) {
             setGroupMembers(chat.chatInfo.groupInfo, chatModel)
-            val link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
-            var groupLink = link?.first
-            var groupLinkMemberRole = link?.second
-            ModalManager.end.closeModals()
-            ModalManager.end.showModalCloseable(true) { close ->
-              GroupChatInfoView(chatModel, groupLink, groupLinkMemberRole, {
-                groupLink = it.first;
-                groupLinkMemberRole = it.second
+            preloadedLink = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+          }
+          ModalManager.end.showModalCloseable(true) { close ->
+            val chat = remember { activeChat }.value
+            if (chat?.chatInfo is ChatInfo.Direct) {
+              var contactInfo: Pair<ConnectionStats, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
+              var code: String? by remember { mutableStateOf(preloadedCode) }
+              KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
+                contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+                preloadedContactInfo = contactInfo
+                code = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId).second
+                preloadedCode = code
+              }
+              ChatInfoView(chatModel, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
+            } else if (chat?.chatInfo is ChatInfo.Group) {
+              var link: Pair<String, GroupMemberRole>? by remember(chat.id) { mutableStateOf(preloadedLink) }
+              KeyChangeEffect(chat.id) {
+                setGroupMembers((chat.chatInfo as ChatInfo.Group).groupInfo, chatModel)
+                link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+                preloadedLink = link
+              }
+              GroupChatInfoView(chatModel, link?.first, link?.second, {
+                link = it
+                preloadedLink = it
               }, close)
             }
           }

@@ -40,7 +40,7 @@ actual fun screenOrientation(): ScreenOrientation = ScreenOrientation.UNDEFINED
 
 @Composable // LALAL
 actual fun screenWidth(): Dp {
-  return java.awt.Toolkit.getDefaultToolkit().screenSize.width.dp.also { println("LALAL $it") }
+  return java.awt.Toolkit.getDefaultToolkit().screenSize.width.dp
   /*var width by remember { mutableStateOf(java.awt.Toolkit.getDefaultToolkit().screenSize.width.also { println("LALAL $it") }) }
   SideEffect {
     if (width != java.awt.Toolkit.getDefaultToolkit().screenSize.width)
