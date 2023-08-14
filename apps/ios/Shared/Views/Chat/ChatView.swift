@@ -433,8 +433,7 @@ struct ChatView: View {
            case let .group(groupInfo) = chat.chatInfo {
             let nextItem = chatModel.getNextChatItem(ci)
             if ci.isMemberConnected != nil && (nextItem?.isMemberConnected != nil) {
-                // EmptyView()
-                ZStack {}
+                ZStack {} // scroll doesn't work if it's EmptyView()
             } else {
                 let prevItem = chatModel.getPrevChatItem(ci)
                 if ci.isMemberConnected != nil,
