@@ -10,10 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct CIMembersConnectedView: View {
-    @EnvironmentObject var chat: Chat
     var chatItem: ChatItem
-    var members: [GroupMember]
-    @State private var selectedMember: GroupMember? = nil
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
@@ -27,9 +24,6 @@ struct CIMembersConnectedView: View {
 
 struct CIMembersConnectedView_Previews: PreviewProvider {
     static var previews: some View {
-        CIMembersConnectedView(
-            chatItem: ChatItem.getMembersConnectedSample(),
-            members: [GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData]
-        )
+        CIMembersConnectedView(chatItem: ChatItem.getMembersConnectedSample())
     }
 }

@@ -438,7 +438,7 @@ struct ChatView: View {
                 if ci.isMemberConnected != nil,
                    let prevItem = prevItem,
                    let prevMember = prevItem.isMemberConnected {
-                    membersConnectedItem(ci, maxWidth, member, prevMember, prevItem, groupInfo)
+                    membersConnectedItem(ci, maxWidth, member, prevMember.chatViewName, prevItem, groupInfo)
                 } else {
                     HStack(alignment: .top, spacing: 0) {
                         let showMember = prevItem == nil || showMemberImage(member, prevItem)
@@ -491,7 +491,7 @@ struct ChatView: View {
         _ ci: ChatItem,
         _ maxWidth: CGFloat,
         _ member: GroupMember,
-        _ prevMember: GroupMember,
+        _ prevMemberName: String,
         _ prevItem: ChatItem,
         _ groupInfo: GroupInfo
     ) -> some View {
@@ -503,11 +503,11 @@ struct ChatView: View {
                     GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
                 }
 
-            let membersConnected: [GroupMember] = [member, prevMember] + collectPrevMembersConnected(prevItem)
+            let connectedMemberNames: [String] = [member.chatViewName, prevMemberName] + collectPrevConnectedMemberNames(prevItem)
             let replacingItem = ChatItem(
                 chatDir: ci.chatDir,
                 meta: ci.meta,
-                content: .membersConnected(members: membersConnected)
+                content: .membersConnected(memberNames: connectedMemberNames)
             )
             let alignment: Alignment = .leading
             VStack(alignment: alignment.horizontal, spacing: 3) {
@@ -523,13 +523,13 @@ struct ChatView: View {
         .padding(.bottom, 5)
     }
 
-    private func collectPrevMembersConnected(_ ci: ChatItem) -> [GroupMember] {
+    private func collectPrevConnectedMemberNames(_ ci: ChatItem) -> [String] {
         guard let prevItem = chatModel.getPrevChatItem(ci),
               let memberConnected = prevItem.isMemberConnected else {
             return []
         }
-        let prevMembers = collectPrevMembersConnected(prevItem)
-        return [memberConnected] + prevMembers
+        let prevMemberNames = collectPrevConnectedMemberNames(prevItem)
+        return [memberConnected.chatViewName] + prevMemberNames
     }
     
     private struct ChatItemWithMenu: View {
