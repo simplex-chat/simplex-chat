@@ -261,7 +261,7 @@ struct ChatView: View {
         return GeometryReader { g in
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 5)  {
+                    LazyVStack(spacing: 0)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
                             let voiceNoFrame = voiceWithoutFrame(ci)
                             let maxWidth = cInfo.chatType == .group
@@ -291,6 +291,7 @@ struct ChatView: View {
                                 }
                         }
                     }
+                    .padding(.vertical, 5)
                 }
                 .onAppear {
                     scrollProxy = proxy
@@ -432,7 +433,8 @@ struct ChatView: View {
            case let .group(groupInfo) = chat.chatInfo {
             let nextItem = chatModel.getNextChatItem(ci)
             if ci.isMemberConnected != nil && (nextItem?.isMemberConnected != nil) {
-                EmptyView()
+                // EmptyView()
+                ZStack {}
             } else {
                 let prevItem = chatModel.getPrevChatItem(ci)
                 if ci.isMemberConnected != nil,
@@ -468,6 +470,7 @@ struct ChatView: View {
                     }
                     .padding(.trailing)
                     .padding(.leading, 12)
+                    .padding(.bottom, 5)
                 }
             }
         } else {
@@ -481,6 +484,7 @@ struct ChatView: View {
                 showDeleteMessage: $showDeleteMessage
             )
             .padding(.horizontal)
+            .padding(.bottom, 5)
             .environmentObject(chat)
         }
     }
@@ -515,6 +519,7 @@ struct ChatView: View {
         }
         .padding(.trailing)
         .padding(.leading, 12)
+        .padding(.bottom, 5)
     }
 
     private func collectPrevMembersConnected(_ ci: ChatItem) -> [GroupMember] {
