@@ -76,7 +76,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem, showMember: showMember)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
-        case .rcvGroupEvent(.memberConnected): membersConnectedItemView()
+        case .rcvGroupEvent(.memberConnected): CIEventView(eventText: membersConnectedItemText())
         case .rcvGroupEvent: eventItemView()
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
@@ -109,18 +109,20 @@ struct ChatItemContentView<Content: View>: View {
         CIGroupInvitationView(chatItem: chatItem, groupInvitation: groupInvitation, memberRole: memberRole, chatIncognito: chatInfo.incognito)
     }
 
-    @ViewBuilder private func eventItemView() -> some View {
+    private func eventItemView() -> some View {
+        return CIEventView(eventText: eventItemViewText())
+    }
+
+    private func eventItemViewText() -> Text {
         if let member = chatItem.memberDisplayName {
-            CIEventView(eventText: (
-                Text(member)
+            return Text(member)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fontWeight(.light)
                 + Text(" ")
                 + chatEventText(chatItem)
-            ))
         } else {
-            CIEventView(eventText: chatEventText(chatItem))
+            return chatEventText(chatItem)
         }
     }
 
@@ -128,18 +130,18 @@ struct ChatItemContentView<Content: View>: View {
         CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor)
     }
 
-    @ViewBuilder private func membersConnectedItemView() -> some View {
+    private func membersConnectedItemText() -> Text {
         if case let .groupRcv(member) = chatItem.chatDir,
            let prevItem = chatModel.getPrevChatItem(chatItem),
-           let prevMember = prevItem.memberConnected {
-            let connectedMemberNames: [String] = [member.chatViewName, prevMember.chatViewName] + collectPrevConnectedMemberNames(prevItem)
-            if let membersConnectedText = membersConnectedText(connectedMemberNames) {
-                CIEventView(eventText: chatEventText(membersConnectedText, chatItem.timestampText))
-            } else {
-                eventItemView()
-            }
+           let prevMember = prevItem.memberConnected,
+           let membersConnectedText = membersConnectedText(connectedMemberNames(member, prevMember, prevItem)) {
+            return chatEventText(membersConnectedText, chatItem.timestampText)
         } else {
-            eventItemView()
+            return eventItemViewText()
+        }
+
+        func connectedMemberNames(_ member: GroupMember, _ prevMember: GroupMember, _ prevItem: ChatItem) -> [String] {
+            [member.chatViewName, prevMember.chatViewName] + collectPrevConnectedMemberNames(prevItem)
         }
     }
 
