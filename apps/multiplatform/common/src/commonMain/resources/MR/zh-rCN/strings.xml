@@ -1283,4 +1283,19 @@
     <string name="v5_2_more_things">还有更多</string>
     <string name="v5_2_disappear_one_message">移除一个消息</string>
     <string name="v5_2_message_delivery_receipts">消息成功送达！</string>
+    <string name="choose_file_title">选择一个文件</string>
+    <string name="receipts_section_contacts">联系人</string>
+    <string name="conn_event_ratchet_sync_started">协调加密中…</string>
+    <string name="v5_2_more_things_descr">- 更稳定的消息送达.
+\n- 更好的群组.
+\n- 还有更多！</string>
+    <string name="connect__a_new_random_profile_will_be_shared">一个新的随机个人档案将被分享。</string>
+    <string name="snd_conn_event_ratchet_sync_started">与 %s 协调加密中…</string>
+    <string name="in_developing_desc">该功能还没支持。请尝试下一个版本。</string>
+    <string name="turn_off_battery_optimization_button">确认</string>
+    <string name="connect_via_link_incognito">隐身连接</string>
+    <string name="connect_via_member_address_alert_title">确认发起私聊？</string>
+    <string name="delivery">发送</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="in_developing_title">敬请期待！</string>
 </resources>
