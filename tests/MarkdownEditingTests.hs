@@ -116,8 +116,8 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
           ])  
 
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar 'H' (Just Bold)) (UnchangedTextually (ChangedFormat (Just Italic)))   
-        , DiffedChar (FormattedChar 'H' (Just Bold)) (UnchangedTextually TotallyUnchanged) 
+        [ DiffedChar (FormattedChar 'H' (Just Bold)) (UnchangedTextually (ChangedToFormat (Just Italic)))   
+        , DiffedChar (FormattedChar 'H' (Just Bold)) (UnchangedTextually Pristine) 
         , DiffedChar (FormattedChar 'e' (Just $ colored Cyan)) Inserted
         , DiffedChar (FormattedChar 'x' Nothing) Inserted
         , DiffedChar (FormattedChar 'y' Nothing) Inserted
@@ -125,5 +125,5 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
         , DiffedChar (FormattedChar 'r' Nothing) Deleted
         , DiffedChar (FormattedChar 'l' (Just Secret)) Deleted  
         , DiffedChar (FormattedChar 'l' Nothing) Deleted  
-        , DiffedChar (FormattedChar 'o' (Just $ colored Green))(UnchangedTextually (ChangedFormat (Just $ colored Blue)))                                    
+        , DiffedChar (FormattedChar 'o' (Just $ colored Green))(UnchangedTextually (ChangedToFormat (Just $ colored Blue)))                                    
         ]

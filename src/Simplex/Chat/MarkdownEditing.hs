@@ -59,8 +59,8 @@ data DiffStatus
     deriving (Show, Eq)
 
 data DiffUnchangedTextuallyStatus
-    = TotallyUnchanged
-    | ChangedFormat {newFormat :: Maybe Format}
+    = Pristine
+    | ChangedToFormat {newFormat :: Maybe Format}
     deriving (Show, Eq)
 
 data DiffedChar = DiffedChar FormattedChar DiffStatus
@@ -203,15 +203,15 @@ findDiffs left right =
         --         where 
         --         result :: DiffUnchangedTextuallyStatus
         --         result = 
-        --             if fL == fR then TotallyUnchanged
-        --             else ChangedFormat {newFormat = fR}
+        --             if fL == fR then Pristine
+        --             else ChangedToFormat {newFormat = fR}
        
         unchangedTextualies :: M.Map Int DiffUnchangedTextuallyStatus
         unchangedTextualies = DBG.trace ("unchangedTextualies: " <> show (F.foldl' f M.empty unchangedTextually)) $ F.foldl' f M.empty unchangedTextually
             where
             f :: M.Map Int DiffUnchangedTextuallyStatus -> (Int, FormattedChar, FormattedChar) -> M.Map Int DiffUnchangedTextuallyStatus
             f acc (i, FormattedChar _ fL, FormattedChar _ fR) = M.insert i x acc
-                where x = if fL == fR then TotallyUnchanged else ChangedFormat {newFormat = fR}
+                where x = if fL == fR then Pristine else ChangedToFormat {newFormat = fR}
 
         markDeletesAndUnchangedTextually :: Seq DiffedChar
         markDeletesAndUnchangedTextually = DBG.trace ("markDeletesAndUnchangedTextually: " <> show (S.mapWithIndex f left)) $ S.mapWithIndex f left
