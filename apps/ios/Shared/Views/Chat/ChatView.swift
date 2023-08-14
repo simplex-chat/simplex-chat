@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 import SwiftyGif
 
-let memberImageSize: CGFloat = 34
+private let memberImageSize: CGFloat = 34
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
