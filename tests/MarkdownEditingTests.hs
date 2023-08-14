@@ -54,26 +54,13 @@ formattedEditedTextTests = describe "show edits" do
         -- , EditedChar Nothing 'l' Nothing
         -- , EditedChar Nothing 'o' Nothing                
         -- ]        
-
-  -- it "more1" do
-  --   formattedEditedText [plainText "Hrllo"] [plainText "Helloxyz"]
-  --     `shouldBe` 
-  --       [ EditedChar Nothing 'H' Nothing
-  --       , EditedChar Nothing 'r' $ Just Delete
-  --       , EditedChar Nothing 'e' $ Just Add
-  --       , EditedChar Nothing 'l' Nothing
-  --       , EditedChar Nothing 'l' Nothing
-  --       , EditedChar Nothing 'o' Nothing       
-  --       , EditedChar Nothing 'x' $ Just Add
-  --       , EditedChar Nothing 'y' $ Just Add
-  --       , EditedChar Nothing 'z' $ Just Add                                 
-  --       ]        
+     
 
   it "more1" do
     findDiffs 
         (S.fromList
           [ FormattedChar 'H' Nothing          
-          , FormattedChar 'e' Nothing                 
+          , FormattedChar 'r' Nothing                 
           , FormattedChar 'l' Nothing           
           , FormattedChar 'l' Nothing                  
           , FormattedChar 'o' Nothing                                    
@@ -92,7 +79,8 @@ formattedEditedTextTests = describe "show edits" do
 
       `shouldBe` S.fromList
         [ DiffedChar (FormattedChar 'H' Nothing) $ UnchangedTextually Pristine
-        , DiffedChar (FormattedChar 'e' Nothing) $ UnchangedTextually Pristine 
+        , DiffedChar (FormattedChar 'r' Nothing) Deleted          
+        , DiffedChar (FormattedChar 'e' Nothing) Inserted      
         , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedTextually Pristine 
         , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedTextually Pristine 
         , DiffedChar (FormattedChar 'o' Nothing) $ UnchangedTextually Pristine                                       
@@ -100,6 +88,7 @@ formattedEditedTextTests = describe "show edits" do
         , DiffedChar (FormattedChar 'y' Nothing) Inserted
         , DiffedChar (FormattedChar 'z' Nothing) Inserted                   
         ]
+
 
   it "more2" do
     findDiffs 
@@ -131,6 +120,7 @@ formattedEditedTextTests = describe "show edits" do
         , DiffedChar (FormattedChar 'l' Nothing) Deleted  
         , DiffedChar (FormattedChar 'o' Nothing) $ UnchangedTextually Pristine                      
         ]
+
 
   it "more3" do
     findDiffs 
