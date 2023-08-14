@@ -176,7 +176,7 @@ fun AddGroupMembersLayout(
       SectionDividerSpaced(maxTopPadding = true)
       SectionView(stringResource(MR.strings.select_contacts)) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
-          SearchRowView(searchText, selectedContacts.size)
+          SearchRowView(searchText)
         }
         ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, allowModifyMembers, addContact, removeContact)
       }
@@ -187,8 +187,7 @@ fun AddGroupMembersLayout(
 
 @Composable
 private fun SearchRowView(
-  searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) },
-  selectedContactsSize: Int
+  searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
 ) {
   Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) {
     Icon(painterResource(MR.images.ic_search), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.secondary)
@@ -196,11 +195,6 @@ private fun SearchRowView(
   Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
   SearchTextField(Modifier.fillMaxWidth(), searchText = searchText, alwaysVisible = true) {
     searchText.value = searchText.value.copy(it)
-  }
-  val view = LocalMultiplatformView()
-  LaunchedEffect(selectedContactsSize) {
-    searchText.value = searchText.value.copy("")
-    hideKeyboard(view)
   }
 }
 
