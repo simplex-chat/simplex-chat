@@ -582,7 +582,7 @@ final class ChatModel: ObservableObject {
 
     func addTerminalItem(_ item: TerminalItem) {
         if terminalItems.count >= 500 {
-            terminalItems.remove(at: 0)
+            terminalItems.removeFirst()
         }
         terminalItems.append(item)
     }
