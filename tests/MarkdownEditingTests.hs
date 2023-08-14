@@ -69,6 +69,38 @@ formattedEditedTextTests = describe "show edits" do
   --       , EditedChar Nothing 'z' $ Just Add                                 
   --       ]        
 
+  it "more1" do
+    findDiffs 
+        (S.fromList
+          [ FormattedChar 'H' Nothing          
+          , FormattedChar 'e' Nothing                 
+          , FormattedChar 'l' Nothing           
+          , FormattedChar 'l' Nothing                  
+          , FormattedChar 'o' Nothing                                    
+          ])   
+
+        (S.fromList
+          [ FormattedChar 'H' Nothing           
+          , FormattedChar 'e' Nothing  
+          , FormattedChar 'l' Nothing           
+          , FormattedChar 'l' Nothing                  
+          , FormattedChar 'o' Nothing            
+          , FormattedChar 'x' Nothing                 
+          , FormattedChar 'y' Nothing                 
+          , FormattedChar 'z' Nothing                                                    
+          ])  
+
+      `shouldBe` S.fromList
+        [ DiffedChar (FormattedChar 'H' Nothing) $ UnchangedTextually Pristine
+        , DiffedChar (FormattedChar 'e' Nothing) $ UnchangedTextually Pristine 
+        , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedTextually Pristine 
+        , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedTextually Pristine 
+        , DiffedChar (FormattedChar 'o' Nothing) $ UnchangedTextually Pristine                                       
+        , DiffedChar (FormattedChar 'x' Nothing) Inserted
+        , DiffedChar (FormattedChar 'y' Nothing) Inserted
+        , DiffedChar (FormattedChar 'z' Nothing) Inserted                   
+        ]
+
   it "more2" do
     findDiffs 
         (S.fromList
