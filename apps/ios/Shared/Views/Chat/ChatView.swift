@@ -492,31 +492,29 @@ struct ChatView: View {
         _ prevMember: GroupMember,
         _ prevItem: ChatItem
     ) -> some View {
-        let membersConnected: [GroupMember] = [member, prevMember] + collectPrevMembersConnected(prevItem)
-        let replacingItem = ChatItem(
-            chatDir: ci.chatDir,
-            meta: ci.meta,
-            content: .membersConnected(members: membersConnected)
-        )
-        let alignment: Alignment = .leading
-        VStack(alignment: alignment.horizontal, spacing: 3) {
-            ChatItemView(chatInfo: chat.chatInfo, chatItem: replacingItem, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: .constant(false))
+        HStack(alignment: .top, spacing: 0) {
+            Image(systemName: "link")
+                .resizable()
+                .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
+                .frame(width: memberImageSize, height: memberImageSize)
+
+            let membersConnected: [GroupMember] = [member, prevMember] + collectPrevMembersConnected(prevItem)
+            let replacingItem = ChatItem(
+                chatDir: ci.chatDir,
+                meta: ci.meta,
+                content: .membersConnected(members: membersConnected)
+            )
+            let alignment: Alignment = .leading
+            VStack(alignment: alignment.horizontal, spacing: 3) {
+                ChatItemView(chatInfo: chat.chatInfo, chatItem: replacingItem, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: .constant(false))
+            }
+            .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+            .padding(.leading, 8)
+            .environmentObject(chat)
         }
-        .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
-        .padding(.horizontal)
-        .environmentObject(chat)
-//        return ChatItemWithMenu(
-//            ci: replacingItem,
-//            maxWidth: maxWidth,
-//            scrollProxy: scrollProxy,
-//            deleteMessage: deleteMessage,
-//            deletingItem: $deletingItem,
-//            composeState: $composeState,
-//            showDeleteMessage: $showDeleteMessage
-//        )
-//        .padding(.horizontal)
-//        .environmentObject(chat)
+        .padding(.trailing)
+        .padding(.leading, 12)
     }
 
     private func collectPrevMembersConnected(_ ci: ChatItem) -> [GroupMember] {

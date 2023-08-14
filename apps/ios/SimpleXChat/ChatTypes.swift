@@ -2504,14 +2504,17 @@ public enum CIContent: Decodable, ItemContent {
             case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
             case let .membersConnected(members):
-                if members.count > 4 {
+                if members.count > 3 {
                     return String.localizedStringWithFormat(
-                        "%@ and %d other members connected",
-                        CIContent.membersConnectedNames(Array(members.prefix(3))),
-                        members.count - 3
+                        NSLocalizedString("%@ and %d other members connected", comment: "<members_names> and <n> other members connected (plural)"),
+                        CIContent.membersConnectedNames(Array(members.prefix(2))),
+                        members.count - 2
                     )
                 } else {
-                    return String.localizedStringWithFormat("%@ members connected", CIContent.membersConnectedNames(members))
+                    return String.localizedStringWithFormat(
+                        NSLocalizedString("%@ connected", comment: "<members_names> connected (plural)"),
+                        CIContent.membersConnectedNames(members)
+                    )
                 }
             }
         }

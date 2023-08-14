@@ -16,28 +16,12 @@ struct CIMembersConnectedView: View {
     @State private var selectedMember: GroupMember? = nil
 
     var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                ForEach(members, id: \.groupMemberId) { member in
-                    memberPicture(member)
-                }
-            }
+        HStack(alignment: .bottom, spacing: 0) {
             chatEventText(chatItem)
         }
-    }
-
-    @ViewBuilder func memberPicture(_ member: GroupMember) -> some View {
-        let v = ProfileImage(imageStr: member.memberProfile.image)
-            .frame(width: memberImageSize, height: memberImageSize)
-        if case let .group(groupInfo) = chat.chatInfo {
-            v
-                .onTapGesture { selectedMember = member }
-                .appSheet(item: $selectedMember) { member in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
-                }
-        } else {
-            v
-        }
+        .padding(.leading, 6)
+        .padding(.bottom, 6)
+        .textSelection(.disabled)
     }
 }
 
