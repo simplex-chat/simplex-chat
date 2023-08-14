@@ -2021,7 +2021,7 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public var isMemberConnected: GroupMember? {
+    public var memberConnected: GroupMember? {
         switch chatDir {
         case .groupRcv(let groupMember):
             switch content {
@@ -2075,7 +2075,6 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndModerated: return true
         case .rcvModerated: return true
         case .invalidJSON: return false
-        case .membersConnected: return false
         }
     }
 
@@ -2192,16 +2191,6 @@ public struct ChatItem: Identifiable, Decodable {
             chatDir: .directRcv,
             meta: CIMeta.getSample(1, .now, content.text, .rcvRead),
             content: content,
-            quotedItem: nil,
-            file: nil
-        )
-    }
-
-    public static func getMembersConnectedSample () -> ChatItem {
-        ChatItem(
-            chatDir: .groupRcv(groupMember: GroupMember.sampleData),
-            meta: CIMeta.getSample(1, .now, "group event text", .rcvRead),
-            content: .membersConnected(memberNames: ["alice", "bob"]),
             quotedItem: nil,
             file: nil
         )
@@ -2485,7 +2474,6 @@ public enum CIContent: Decodable, ItemContent {
     case sndModerated
     case rcvModerated
     case invalidJSON(json: String)
-    case membersConnected(memberNames: [String])
 
     public var text: String {
         get {
@@ -2515,23 +2503,6 @@ public enum CIContent: Decodable, ItemContent {
             case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
-            case let .membersConnected(memberNames):
-                if memberNames.count > 3 {
-                    return String.localizedStringWithFormat(
-                        NSLocalizedString("%@ and %d other members connected", comment: "<member_names> and <n, n >= 2> other members connected (plural)"),
-                        Array(memberNames.prefix(2)).joined(separator: ", "),
-                        memberNames.count - 2
-                    )
-                } else if memberNames.count >= 2,
-                          let lastMemberName = memberNames.last {
-                    return String.localizedStringWithFormat(
-                        NSLocalizedString("%@ and %@ connected", comment: "<member_name(s)> and <member_name> connected (plural)"),
-                        memberNames.dropLast().joined(separator: ", "),
-                        lastMemberName
-                    )
-                } else {
-                    return "members connected" // chat item is created in cases such that this shouldn't happen
-                }
             }
         }
     }

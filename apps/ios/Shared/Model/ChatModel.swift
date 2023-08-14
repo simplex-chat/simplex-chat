@@ -484,7 +484,7 @@ final class ChatModel: ObservableObject {
     }
 
     func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
-        if let i = getChatItemIndex(ci), i < reversedChatItems.count - 1  {
+        if let i = getChatItemIndex(ci), i + 1 < reversedChatItems.count  {
             return reversedChatItems[i + 1]
         } else {
             return nil
