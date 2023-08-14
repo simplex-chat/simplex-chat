@@ -60,10 +60,10 @@ ifCI xrun run d t = do
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
-  it "v2" $ testChat2 aliceProfile bobProfile runTest
-  it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
-  it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
-  it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
+  it "v2" $ \fp -> print "versionTestMatrix2, v2" >> testChat2 aliceProfile bobProfile runTest fp
+  it "v1" $ \fp -> print "versionTestMatrix2, v1" >> testChatCfg2 testCfgV1 aliceProfile bobProfile runTest fp
+  it "v1 to v2" $ \fp -> print "versionTestMatrix2, v1 to v2" >> runTestCfg2 testCfg testCfgV1 runTest fp
+  it "v2 to v1" $ \fp -> print "versionTestMatrix2, v2 to v1" >> runTestCfg2 testCfgV1 testCfg runTest fp
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix3 runTest = do
@@ -356,7 +356,7 @@ dropTime_ msg = case splitAt 6 msg of
   _ -> Nothing
 
 dropStrPrefix :: HasCallStack => String -> String -> String
-dropStrPrefix pfx s = 
+dropStrPrefix pfx s =
   let (p, rest) = splitAt (length pfx) s
    in if p == pfx then rest else error $ "no prefix " <> pfx <> " in string : " <> s
 

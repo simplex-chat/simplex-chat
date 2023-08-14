@@ -226,8 +226,14 @@ readTerminalOutput t termQ = do
 withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
-    (createDirectoryIfMissing False "tests/tmp")
-    (removeDirectoryRecursive "tests/tmp")
+    ( do
+        print "withTmpFiles, createDirectoryIfMissing"
+        createDirectoryIfMissing False "tests/tmp"
+    )
+    ( do
+        print "withTmpFiles, removeDirectoryRecursive"
+        removeDirectoryRecursive "tests/tmp"
+    )
 
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> FilePath -> IO ()
 testChatN cfg opts ps test tmp = do
@@ -249,7 +255,7 @@ getTermLine cc =
     Just s -> do
       -- remove condition to always echo virtual terminal
       when (printOutput cc) $ do
-      -- when True $ do
+        -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
@@ -326,7 +332,9 @@ serverCfg =
     }
 
 withSmpServer :: IO () -> IO ()
-withSmpServer = serverBracket (`runSMPServerBlocking` serverCfg)
+withSmpServer a = do
+  print "withSmpServer"
+  serverBracket (`runSMPServerBlocking` serverCfg) a
 
 xftpTestPort :: ServiceName
 xftpTestPort = "7002"
