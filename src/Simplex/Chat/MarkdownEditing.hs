@@ -253,5 +253,17 @@ findDiffs left right =
                     if i `elem` deleteIndicies then Deleted 
                     else UnchangedTextually $ unchangedTextualies M.! i -- should never error
 
-    in
-        undefined
+        addInserts :: Seq DiffedChar -> Seq DiffedChar
+        addInserts base = F.foldr f base edits -- start from end and work backwards, hence foldr
+            where
+            f :: D.Edit -> Seq DiffedChar -> Seq DiffedChar
+            f e acc = case e of
+                D.EditDelete {} -> acc
+                D.EditInsert i m n -> S.take i acc >< inserts >< S.drop i acc
+                    where 
+                    rightFormatChars = S.take (n - m + 1) $ S.drop m right
+                    inserts = fmap (`DiffedChar` Inserted) rightFormatChars
+
+        result = addInserts markDeletesAndUnchangedTextually
+  in
+        result
