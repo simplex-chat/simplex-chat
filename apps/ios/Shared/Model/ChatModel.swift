@@ -492,7 +492,7 @@ final class ChatModel: ObservableObject {
     }
 
     func getNextChatItem(_ ci: ChatItem) -> ChatItem? {
-        if let i = getChatItemIndex(ci), i - 1 >= 0  {
+        if let i = getChatItemIndex(ci), i > 0  {
             return reversedChatItems[i - 1]
         } else {
             return nil
