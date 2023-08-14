@@ -1278,4 +1278,9 @@
     <string name="search_verb">搜索</string>
     <string name="la_mode_off">已关闭</string>
     <string name="network_option_protocol_timeout_per_kb">协议超时每 KB</string>
+    <string name="v5_2_favourites_filter">更快的发起聊天</string>
+    <string name="v5_2_fix_encryption">保持连接</string>
+    <string name="v5_2_more_things">还有更多</string>
+    <string name="v5_2_disappear_one_message">移除一个消息</string>
+    <string name="v5_2_message_delivery_receipts">消息成功送达！</string>
 </resources>
