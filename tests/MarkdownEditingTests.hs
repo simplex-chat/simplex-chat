@@ -27,11 +27,19 @@ markdownEditingTests = do
 
 formattedEditedTextTests :: Spec
 formattedEditedTextTests = describe "show edits" do
-  -- it "no change" do
-  --   formattedEditedText [plainText "H"] [plainText "H"]
-  --     `shouldBe` 
-  --       [ EditedChar Nothing 'H' Nothing              
-  --       ] 
+  it "no change" do
+    findDiffs 
+        (S.fromList
+          [ FormattedChar 'H' Nothing                                          
+          ])   
+
+        (S.fromList
+          [ FormattedChar 'H' Nothing                                                            
+          ])  
+
+      `shouldBe` S.fromList
+        [ DiffedChar (FormattedChar 'H' Nothing) $ UnchangedTextually Pristine                                                              
+        ]
 
 
   it "add 1 char to empty" do
