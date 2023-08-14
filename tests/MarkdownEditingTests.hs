@@ -98,29 +98,32 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
   it "more3" do
     findDiffs 
         (S.fromList
-          [ FormattedChar (Just Bold)             'H' 
-          , FormattedChar Nothing                 'r'
-          , FormattedChar (Just Secret)           'l' 
-          , FormattedChar Nothing                 'l' 
-          , FormattedChar (Just $ colored Green)  'o'                                     
+          [ FormattedChar 'H' (Just Bold)    
+          , FormattedChar 'H' (Just Bold)          
+          , FormattedChar 'r' Nothing                 
+          , FormattedChar 'l' (Just Secret)           
+          , FormattedChar 'l' Nothing                  
+          , FormattedChar 'o' (Just $ colored Green)                                       
           ])   
         (S.fromList
-          [ FormattedChar (Just Italic)           'H' 
-          , FormattedChar (Just $ colored Cyan)   'e' 
-          , FormattedChar Nothing                 'x' 
-          , FormattedChar Nothing                 'y'
-          , FormattedChar (Just Secret)           'z'        
-          , FormattedChar (Just $ colored Blue)   'o'                                       
+          [ FormattedChar 'H' (Just Italic)   
+          , FormattedChar 'H' (Just Bold)          
+          , FormattedChar 'e' (Just $ colored Cyan)    
+          , FormattedChar 'x' Nothing                 
+          , FormattedChar 'y' Nothing                 
+          , FormattedChar 'z' (Just Secret)                  
+          , FormattedChar 'o' (Just $ colored Blue)                                         
           ])  
 
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar (Just Bold) 'H') (UnchangedTextually (ChangedFormat (Just Italic)))   
-        , DiffedChar (FormattedChar (Just $ colored Cyan) 'e') Inserted
-        , DiffedChar (FormattedChar Nothing 'x') Inserted
-        , DiffedChar (FormattedChar Nothing 'y') Inserted
-        , DiffedChar (FormattedChar (Just Secret) 'z') Inserted
-        , DiffedChar (FormattedChar Nothing 'r') Deleted
-        , DiffedChar (FormattedChar (Just Secret) 'l') Deleted  
-        , DiffedChar (FormattedChar Nothing 'l') Deleted  
-        , DiffedChar (FormattedChar (Just $ colored Green) 'o') (UnchangedTextually (ChangedFormat (Just $ colored Blue)))                                    
+        [ DiffedChar (FormattedChar 'H' (Just Bold)) (UnchangedTextually (ChangedFormat (Just Italic)))   
+        , DiffedChar (FormattedChar 'H' (Just Bold)) (UnchangedTextually TotallyUnchanged) 
+        , DiffedChar (FormattedChar 'e' (Just $ colored Cyan)) Inserted
+        , DiffedChar (FormattedChar 'x' Nothing) Inserted
+        , DiffedChar (FormattedChar 'y' Nothing) Inserted
+        , DiffedChar (FormattedChar 'z' (Just Secret)) Inserted
+        , DiffedChar (FormattedChar 'r' Nothing) Deleted
+        , DiffedChar (FormattedChar 'l' (Just Secret)) Deleted  
+        , DiffedChar (FormattedChar 'l' Nothing) Deleted  
+        , DiffedChar (FormattedChar 'o' (Just $ colored Green))(UnchangedTextually (ChangedFormat (Just $ colored Blue)))                                    
         ]

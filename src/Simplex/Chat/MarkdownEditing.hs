@@ -67,8 +67,8 @@ data DiffedChar = DiffedChar FormattedChar DiffStatus
     deriving (Show, Eq)
 
 data FormattedChar = FormattedChar 
-    { format :: Maybe Format
-    , char :: Char
+    { char :: Char
+    , format :: Maybe Format
     }
     deriving (Show, Eq)
 
@@ -102,9 +102,7 @@ newtype InsertIndicies = InsertIndicies (Seq Int) deriving (Show, Eq)
 
 toFormattedChars :: [FormattedText] -> [FormattedChar]
 toFormattedChars = concatMap toChars
-    where
-    toChars FormattedText {format, text} =
-        map (\char -> FormattedChar {format, char}) $ T.unpack text
+    where toChars (FormattedText f t) = map (`FormattedChar` f) $ T.unpack t
 
 
 -- fromEditedChars :: [EditedChar] -> [EditedText]
@@ -212,7 +210,7 @@ findDiffs left right =
         unchangedTextualies = DBG.trace ("unchangedTextualies: " <> show (F.foldl' f M.empty unchangedTextually)) $ F.foldl' f M.empty unchangedTextually
             where
             f :: M.Map Int DiffUnchangedTextuallyStatus -> (Int, FormattedChar, FormattedChar) -> M.Map Int DiffUnchangedTextuallyStatus
-            f acc (i, FormattedChar fL _, FormattedChar fR _) = M.insert i x acc
+            f acc (i, FormattedChar _ fL, FormattedChar _ fR) = M.insert i x acc
                 where x = if fL == fR then TotallyUnchanged else ChangedFormat {newFormat = fR}
 
         markDeletesAndUnchangedTextually :: Seq DiffedChar
