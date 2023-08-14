@@ -719,7 +719,7 @@ fun ComposeView(
         }
       }
 
-      DisposableEffectOnGone {
+      KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
         val cs = composeState.value
         if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
           sendMessage(null)
@@ -733,7 +733,10 @@ fun ComposeView(
             composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
           }
           chatModel.draft.value = composeState.value
-          chatModel.draftChatId.value = chat.id
+          chatModel.draftChatId.value = prevChatId
+          composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+        } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
+          composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
         } else {
           clearCurrentDraft()
           deleteUnusedFiles()
