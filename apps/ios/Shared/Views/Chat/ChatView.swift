@@ -439,8 +439,10 @@ struct ChatView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
                             Text(member.displayName)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .padding(.leading, memberImageSize + 14)
+                                .padding(.top, 7)
                         }
                         HStack(alignment: .top, spacing: 8) {
                             ProfileImage(imageStr: member.memberProfile.image)
@@ -452,7 +454,7 @@ struct ChatView: View {
                             chatItemWithMenu(ci, maxWidth)
                         }
                     }
-                    .padding(.top, 10)
+                    .padding(.top, 5)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
