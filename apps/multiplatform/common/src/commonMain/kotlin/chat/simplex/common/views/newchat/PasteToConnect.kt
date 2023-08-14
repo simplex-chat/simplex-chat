@@ -23,6 +23,7 @@ import chat.simplex.common.views.usersettings.IncognitoView
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 import java.net.URI
+import java.net.URISyntaxException
 
 @Composable
 fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
@@ -69,6 +70,11 @@ fun PasteToConnectLayout(
         } else action()
       }
     } catch (e: RuntimeException) {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.invalid_connection_link),
+        text = generalGetString(MR.strings.this_string_is_not_a_connection_link)
+      )
+    } catch (e: URISyntaxException) {
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.invalid_connection_link),
         text = generalGetString(MR.strings.this_string_is_not_a_connection_link)
