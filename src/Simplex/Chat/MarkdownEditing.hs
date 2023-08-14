@@ -1,16 +1,20 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
 {-# LANGUAGE InstanceSigs #-}
 
 
-module Simplex.Chat.MarkdownEditing where
+module Simplex.Chat.MarkdownEditing 
+    ( DiffedChar(..)
+    , DiffStatus(..)
+    , DiffUnchangedTextuallyStatus(..)
+    , FormattedChar(..)
+    , findDiffs
+    )
+    where
 
 import           Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
@@ -26,36 +30,12 @@ import qualified Data.Diff.Myers as D
 import           Simplex.Chat.Markdown ( FormattedText(..), Format )
 import qualified Debug.Trace as DBG
 
--- todo unused
--- data EditingOperation 
---   = AddChar 
---   | DeleteChar 
---   | ChangeFormatOnly 
---   | SubstitueChar
---   deriving (Show, Eq)
-
-
--- todo unused
--- data EditedChar = EditedChar 
---   { format :: Maybe Format
---   , char :: Char
---   , operation :: Maybe EditingOperation
---   }
---     deriving (Show, Eq)
-
--- data DiffStatus 
---     = Unchanged
---     | Inserted 
---     | Deleted 
---     | ChangedFormatOnly {newFormat :: Maybe Format}
---     -- | Replaced {original :: FormattedChar} -- same as Delete+Insert
---     deriving (Show, Eq)
-
 
 data DiffStatus 
     = UnchangedTextually DiffUnchangedTextuallyStatus
     | Inserted 
     | Deleted 
+    -- todo Replaced  -- same as Delete+Insert    
     deriving (Show, Eq)
 
 data DiffUnchangedTextuallyStatus
@@ -72,7 +52,7 @@ data FormattedChar = FormattedChar
     }
     deriving (Show, Eq)
 
-
+-- todo What is this for?
 data EditedText =  EditedText 
     { format :: Maybe Format
     , text :: Text
@@ -87,10 +67,6 @@ instance ToJSON EditedText where
 
 newtype DeleteIndicies = DeleteIndicies (Seq Int) deriving (Show, Eq)
 newtype InsertIndicies = InsertIndicies (Seq Int) deriving (Show, Eq)
-
-
--- formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
--- formattedEditedText s s' = diff (toEditedChars s) (toEditedChars s')
 
 
 -- toEditedChars :: [FormattedText] -> [EditedChar]
@@ -122,44 +98,6 @@ toFormattedChars = concatMap toChars
     
 --     appendChar :: EditedText -> EditedChar -> EditedText
 --     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
-
-
--- fromEdits :: Seq EditedChar -> Seq EditedChar -> Seq D.Edit -> Seq EditedChar
--- fromEdits left right edits =   
---   let
---     delIndices :: Seq Int
---     delIndices = F.foldl' f S.Empty edits
---       where
---         f :: Seq Int -> D.Edit -> Seq Int
---         f acc e = case e of
---           D.EditInsert {} -> acc
---           D.EditDelete m n -> acc >< S.fromList [m .. n]
-
---     markDeletes :: Seq EditedChar
---     markDeletes = S.mapWithIndex f left
---       where
---         f :: Int -> EditedChar -> EditedChar
---         f i c = if i `elem` delIndices then c {operation = Just DeleteChar} else c
-
---     addInserts :: Seq EditedChar -> Seq EditedChar
---     addInserts base = F.foldr f base edits -- start from end and work backwards, hence foldr
---       where
---         f :: D.Edit -> Seq EditedChar -> Seq EditedChar
---         f e acc = case e of
---           D.EditDelete {} -> acc
---           D.EditInsert i m n -> DBG.trace ("D.EditInsert i m n: " <> show (i, m, n, rightChars, adds)) $ S.take i acc >< adds >< S.drop i acc
---             where 
---               rightChars = S.take (n - m + 1) $ S.drop m right
---               adds = fmap (\c -> c {operation = Just AddChar}) rightChars
---   in
---     addInserts markDeletes
-
-
--- todo unused
--- diff :: [EditedChar] -> [EditedChar] -> [EditedChar]
--- diff left right = F.toList $ fromEdits (S.fromList left) (S.fromList right) edits
---   where edits = D.diffTexts (toText left) (toText right)
-
 
 
 findDiffs :: Seq FormattedChar -> Seq FormattedChar -> Seq DiffedChar
@@ -194,17 +132,6 @@ findDiffs left right =
 
             f :: ((Int, FormattedChar), (Int, FormattedChar)) -> (Int, FormattedChar, FormattedChar)
             f ((i,c), (_,d)) = (i,c,d)
-
-        -- analysisOfUnchangedTextually :: Seq (Int, DiffUnchangedTextuallyStatus)
-        -- analysisOfUnchangedTextually = f <$> unchangedTextually
-        --     where
-        --     f :: (Int, FormattedChar, FormattedChar) -> (Int, DiffUnchangedTextuallyStatus)
-        --     f (i, FormattedChar fL _, FormattedChar fR _) = (i, result)
-        --         where 
-        --         result :: DiffUnchangedTextuallyStatus
-        --         result = 
-        --             if fL == fR then Pristine
-        --             else ChangedToFormat {newFormat = fR}
        
         unchangedTextualies :: M.Map Int DiffUnchangedTextuallyStatus
         unchangedTextualies = DBG.trace ("unchangedTextualies: " <> show (F.foldl' f M.empty unchangedTextually)) $ F.foldl' f M.empty unchangedTextually

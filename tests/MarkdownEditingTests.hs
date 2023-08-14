@@ -18,20 +18,8 @@ markdownEditingTests = do
   formattedEditedTextTests
 
 
-plainText :: Text -> FormattedText
-plainText = FormattedText Nothing
-
-redText :: Text -> FormattedText
-redText = FormattedText $ Just $ colored Red
-
-plainEdited :: Text -> Bool -> EditedText
-plainEdited t added = EditedText Nothing t (Just added)
-
-redEdited :: Text -> Bool -> EditedText
-redEdited t added = EditedText (Just $ colored Red) t (Just added)
-
 formattedEditedTextTests :: Spec
-formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
+formattedEditedTextTests = describe "show edits" do
   -- it "no change" do
   --   formattedEditedText [plainText "H"] [plainText "H"]
   --     `shouldBe` 
@@ -81,19 +69,36 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
   --       , EditedChar Nothing 'z' $ Just Add                                 
   --       ]        
 
-  -- it "more2" do
-  --   formattedEditedText [plainText "Hrllo"] [plainText "Hexyzo"]
-  --     `shouldBe` 
-  --       [ EditedChar Nothing 'H' Nothing
-  --       , EditedChar Nothing 'e' $ Just Add  
-  --       , EditedChar Nothing 'x' $ Just Add
-  --       , EditedChar Nothing 'y' $ Just Add
-  --       , EditedChar Nothing 'z' $ Just Add     
-  --       , EditedChar Nothing 'r' $ Just Delete
-  --       , EditedChar Nothing 'l' $ Just Delete
-  --       , EditedChar Nothing 'l' $ Just Delete        
-  --       , EditedChar Nothing 'o' Nothing                                      
-  --       ] 
+  it "more2" do
+    findDiffs 
+        (S.fromList
+          [ FormattedChar 'H' Nothing          
+          , FormattedChar 'r' Nothing                 
+          , FormattedChar 'l' Nothing           
+          , FormattedChar 'l' Nothing                  
+          , FormattedChar 'o' Nothing                                    
+          ])   
+
+        (S.fromList
+          [ FormattedChar 'H' Nothing           
+          , FormattedChar 'e' Nothing  
+          , FormattedChar 'x' Nothing                 
+          , FormattedChar 'y' Nothing                 
+          , FormattedChar 'z' Nothing             
+          , FormattedChar 'o' Nothing                                         
+          ])  
+
+      `shouldBe` S.fromList
+        [ DiffedChar (FormattedChar 'H' Nothing) $ UnchangedTextually Pristine
+        , DiffedChar (FormattedChar 'e' Nothing) Inserted
+        , DiffedChar (FormattedChar 'x' Nothing) Inserted
+        , DiffedChar (FormattedChar 'y' Nothing) Inserted
+        , DiffedChar (FormattedChar 'z' Nothing) Inserted
+        , DiffedChar (FormattedChar 'r' Nothing) Deleted
+        , DiffedChar (FormattedChar 'l' Nothing) Deleted  
+        , DiffedChar (FormattedChar 'l' Nothing) Deleted  
+        , DiffedChar (FormattedChar 'o' Nothing) $ UnchangedTextually Pristine                      
+        ]
 
   it "more3" do
     findDiffs 
@@ -105,6 +110,7 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
           , FormattedChar 'l' Nothing                  
           , FormattedChar 'o' (Just $ colored Green)                                       
           ])   
+
         (S.fromList
           [ FormattedChar 'H' (Just Italic)   
           , FormattedChar 'H' (Just Bold)          
@@ -116,8 +122,8 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
           ])  
 
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar 'H' (Just Bold)) (UnchangedTextually (ChangedToFormat (Just Italic)))   
-        , DiffedChar (FormattedChar 'H' (Just Bold)) (UnchangedTextually Pristine) 
+        [ DiffedChar (FormattedChar 'H' (Just Bold)) $ UnchangedTextually (ChangedToFormat (Just Italic)) 
+        , DiffedChar (FormattedChar 'H' (Just Bold)) $ UnchangedTextually Pristine
         , DiffedChar (FormattedChar 'e' (Just $ colored Cyan)) Inserted
         , DiffedChar (FormattedChar 'x' Nothing) Inserted
         , DiffedChar (FormattedChar 'y' Nothing) Inserted
@@ -125,5 +131,5 @@ formattedEditedTextTests = describe "show edits using Myers Diff algorithm" do
         , DiffedChar (FormattedChar 'r' Nothing) Deleted
         , DiffedChar (FormattedChar 'l' (Just Secret)) Deleted  
         , DiffedChar (FormattedChar 'l' Nothing) Deleted  
-        , DiffedChar (FormattedChar 'o' (Just $ colored Green))(UnchangedTextually (ChangedToFormat (Just $ colored Blue)))                                    
+        , DiffedChar (FormattedChar 'o' (Just $ colored Green)) $ UnchangedTextually (ChangedToFormat (Just $ colored Blue))                                  
         ]
