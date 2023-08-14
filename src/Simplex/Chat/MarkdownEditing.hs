@@ -212,12 +212,12 @@ findDiffs left right =
         unchangedTextually = DBG.trace ("unchangedTextually: " <> show (f <$> S.zip leftWithoutDeletes rightWithoutInserts)) $ f <$> S.zip leftWithoutDeletes rightWithoutInserts
             where
             leftWithoutDeletes :: Seq (Int, FormattedChar) 
-            leftWithoutDeletes = S.filter (\(i, _) -> i `notElem` deleteIndicies) leftZ -- indexed in original
-                where leftZ = S.zip nonNegativeInts left
+            leftWithoutDeletes = DBG.trace ("leftWithoutDeletes: " <> show (S.filter (\(i, _) -> i `notElem` deleteIndicies) leftZ)) $ S.filter (\(i, _) -> i `notElem` deleteIndicies) leftZ -- indexed in original
+                where leftZ = DBG.trace ("leftZ: " <> show (S.zip nonNegativeInts left)) $ S.zip nonNegativeInts left
 
             rightWithoutInserts :: Seq (Int, FormattedChar)
-            rightWithoutInserts = S.filter (\(i, _) -> i `notElem` insertIndicies) rightZ -- indexed in original
-                where rightZ = S.zip nonNegativeInts right
+            rightWithoutInserts = DBG.trace ("rightWithoutInserts: " <> show (S.filter (\(i, _) -> i `notElem` insertIndicies) rightZ)) $ S.filter (\(i, _) -> i `notElem` insertIndicies) rightZ -- indexed in original
+                where rightZ = DBG.trace ("rightZ: " <> show (S.zip nonNegativeInts right)) $ S.zip nonNegativeInts right
 
             f :: ((Int, FormattedChar), (Int, FormattedChar)) -> (Int, FormattedChar, FormattedChar)
             f ((i,c), (_,d)) = (i,c,d)
