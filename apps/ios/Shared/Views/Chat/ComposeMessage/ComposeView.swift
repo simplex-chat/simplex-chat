@@ -240,6 +240,7 @@ struct ComposeView: View {
     @State var pendingLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showChooseSource = false
     @State private var showMediaPicker = false
     @State private var showTakePhoto = false
@@ -308,7 +309,10 @@ struct ComposeView: View {
                         allowVoiceMessagesToContact: allowVoiceMessagesToContact,
                         timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
-                        keyboardVisible: $keyboardVisible
+                        keyboardVisible: $keyboardVisible,
+                        sendButtonColor: chat.chatInfo.incognito
+                            ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
+                            : .accentColor
                     )
                     .padding(.trailing, 12)
                     .background(.background)
