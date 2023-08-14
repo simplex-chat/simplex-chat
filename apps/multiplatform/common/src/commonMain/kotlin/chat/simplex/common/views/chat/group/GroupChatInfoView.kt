@@ -133,7 +133,9 @@ fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatM
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
-          chatModel.chatId.value = null
+          if (chatModel.chatId.value == chatInfo.id) {
+            chatModel.chatId.value = null
+          }
           ntfManager.cancelNotificationsForChat(chatInfo.id)
           close?.invoke()
         }

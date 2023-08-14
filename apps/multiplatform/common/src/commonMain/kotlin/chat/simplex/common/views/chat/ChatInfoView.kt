@@ -205,7 +205,9 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
-          chatModel.chatId.value = null
+          if (chatModel.chatId.value == chatInfo.id) {
+            chatModel.chatId.value = null
+          }
           ntfManager.cancelNotificationsForChat(chatInfo.id)
           close?.invoke()
         }

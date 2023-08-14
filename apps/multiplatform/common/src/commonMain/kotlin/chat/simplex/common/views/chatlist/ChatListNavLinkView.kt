@@ -522,7 +522,9 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
-          chatModel.chatId.value = null
+          if (chatModel.chatId.value == chatInfo.id) {
+            chatModel.chatId.value = null
+          }
         }
       }
     },
@@ -555,7 +557,9 @@ fun deleteGroup(groupInfo: GroupInfo, chatModel: ChatModel) {
     val r = chatModel.controller.apiDeleteChat(ChatType.Group, groupInfo.apiId)
     if (r) {
       chatModel.removeChat(groupInfo.id)
-      chatModel.chatId.value = null
+      if (chatModel.chatId.value == groupInfo.id) {
+        chatModel.chatId.value = null
+      }
       ntfManager.cancelNotificationsForChat(groupInfo.id)
     }
   }
