@@ -9,9 +9,16 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.Sequence as S
 import Data.Text (Text)
 import Simplex.Chat.Markdown
+    ( colored, Format(Secret, Italic, Bold) )
 import Simplex.Chat.MarkdownEditing
+    ( FormattedChar(FormattedChar),
+      DiffedChar(DiffedChar),
+      DiffStatus(UnchangedTextually, Inserted, Deleted),
+      findDiffs,
+      DiffUnchangedTextuallyStatus(ChangedToFormat, Pristine) )
 import System.Console.ANSI.Types
 import Test.Hspec
+
 
 markdownEditingTests :: Spec
 markdownEditingTests = do
@@ -36,25 +43,36 @@ formattedEditedTextTests = describe "show edits" do
   --   formattedEditedText [plainText "H"] [plainText ""]
   --     `shouldBe` 
   --       [ EditedChar Nothing 'H' $ Just Delete              
-  --       ] 
+  --       ]       
 
-  -- it "one character change" do
-  --   formattedEditedText [plainText "Hrllo"] [plainText "Hello"]
-  --     `shouldBe` 
-  --       [ EditedChar Nothing 'H' Nothing
-  --       , EditedChar Nothing 'r' $ Just Delete
-  --       , EditedChar Nothing 'e' $ Just Add
-  --       , EditedChar Nothing 'l' Nothing
-  --       , EditedChar Nothing 'l' Nothing
-  --       , EditedChar Nothing 'o' Nothing                
-  --       ]
-        -- [ EditedChar Nothing 'H' Nothing
-        -- , EditedChar Nothing 'e' $ Just Substitute
-        -- , EditedChar Nothing 'l' Nothing
-        -- , EditedChar Nothing 'l' Nothing
-        -- , EditedChar Nothing 'o' Nothing                
-        -- ]        
-     
+
+  it "one character change" do
+    findDiffs 
+        (S.fromList
+          [ FormattedChar 'H' Nothing          
+          , FormattedChar 'r' Nothing                 
+          , FormattedChar 'l' Nothing           
+          , FormattedChar 'l' Nothing                  
+          , FormattedChar 'o' Nothing                                    
+          ])   
+
+        (S.fromList
+          [ FormattedChar 'H' Nothing           
+          , FormattedChar 'e' Nothing  
+          , FormattedChar 'l' Nothing           
+          , FormattedChar 'l' Nothing                  
+          , FormattedChar 'o' Nothing                                                              
+          ])  
+
+      `shouldBe` S.fromList
+        [ DiffedChar (FormattedChar 'H' Nothing) $ UnchangedTextually Pristine
+        , DiffedChar (FormattedChar 'r' Nothing) Deleted          
+        , DiffedChar (FormattedChar 'e' Nothing) Inserted      
+        , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedTextually Pristine 
+        , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedTextually Pristine 
+        , DiffedChar (FormattedChar 'o' Nothing) $ UnchangedTextually Pristine                                                        
+        ]
+
 
   it "more1" do
     findDiffs 
