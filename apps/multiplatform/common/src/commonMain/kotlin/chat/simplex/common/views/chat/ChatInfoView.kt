@@ -207,6 +207,7 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
           chatModel.removeChat(chatInfo.id)
           if (chatModel.chatId.value == chatInfo.id) {
             chatModel.chatId.value = null
+            ModalManager.end.closeModals()
           }
           ntfManager.cancelNotificationsForChat(chatInfo.id)
           close?.invoke()

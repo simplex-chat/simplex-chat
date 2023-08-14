@@ -135,6 +135,7 @@ fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatM
           chatModel.removeChat(chatInfo.id)
           if (chatModel.chatId.value == chatInfo.id) {
             chatModel.chatId.value = null
+            ModalManager.end.closeModals()
           }
           ntfManager.cancelNotificationsForChat(chatInfo.id)
           close?.invoke()
