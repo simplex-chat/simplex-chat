@@ -163,9 +163,6 @@ toFormattedChars = concatMap toChars
 --   where edits = D.diffTexts (toText left) (toText right)
 
 
-nonNegativeInts :: Seq Int
-nonNegativeInts = S.fromList [0 ..]
-
 
 findDiffs :: Seq FormattedChar -> Seq FormattedChar -> Seq DiffedChar
 findDiffs left right = 
@@ -185,39 +182,17 @@ findDiffs left right =
                 D.EditInsert _ m n -> (x , y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
 
         (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = DBG.trace ("indices: " <> show indices) indices
-
-        -- -- todo unused
-        -- withDeleteDiffs :: Seq DiffedChar
-        -- withDeleteDiffs = S.mapWithIndex f pristine
-        --     where
-        --     pristine :: Seq DiffedChar
-        --     pristine = fmap (`DiffedChar` Unchanged) left
-
-        --     ns = deleteIndicies $ fst indices
-
-        --     f :: Int -> DiffedChar -> DiffedChar
-        --     f i x@(DiffedChar c _) = if i `elem` ns then DiffedChar c Deleted else x
-        
-
-
-
-
-        -- withMarkedFormatChanges :: Seq DiffedChar
-        -- withMarkedFormatChanges = undefined
-        --     where
-        --     withDeleteDiffsZ = S.zip nonNegativeInts withDeleteDiffs
-        --     unchangedTextually = S.filter (\(_, x -> not $ )) withDeleteDiffsZ
             
         unchangedTextually :: Seq (Int, FormattedChar, FormattedChar) -- indexed in original
         unchangedTextually = DBG.trace ("unchangedTextually: " <> show (f <$> S.zip leftWithoutDeletes rightWithoutInserts)) $ f <$> S.zip leftWithoutDeletes rightWithoutInserts
             where
             leftWithoutDeletes :: Seq (Int, FormattedChar) 
             leftWithoutDeletes = DBG.trace ("leftWithoutDeletes: " <> show (S.filter (\(i, _) -> i `notElem` deleteIndicies) leftZ)) $ S.filter (\(i, _) -> i `notElem` deleteIndicies) leftZ -- indexed in original
-                where leftZ = DBG.trace ("leftZ: " <> show (S.zip nonNegativeInts left)) $ S.zip nonNegativeInts left
+                where leftZ = S.zip (S.fromList [0 .. S.length left]) left
 
             rightWithoutInserts :: Seq (Int, FormattedChar)
             rightWithoutInserts = DBG.trace ("rightWithoutInserts: " <> show (S.filter (\(i, _) -> i `notElem` insertIndicies) rightZ)) $ S.filter (\(i, _) -> i `notElem` insertIndicies) rightZ -- indexed in original
-                where rightZ = DBG.trace ("rightZ: " <> show (S.zip nonNegativeInts right)) $ S.zip nonNegativeInts right
+                where rightZ = S.zip (S.fromList [0 .. S.length right]) right
 
             f :: ((Int, FormattedChar), (Int, FormattedChar)) -> (Int, FormattedChar, FormattedChar)
             f ((i,c), (_,d)) = (i,c,d)
