@@ -33,13 +33,22 @@ formattedEditedTextTests = describe "show edits" do
   --       [ EditedChar Nothing 'H' Nothing              
   --       ] 
 
-  -- it "add 1 char to empty" do
-  --   formattedEditedText [plainText ""] [plainText "H"]
-  --     `shouldBe` 
-  --       [ EditedChar Nothing 'H' $ Just Add              
-  --       ] 
 
+  it "add 1 char to empty" do
+    findDiffs 
+        (S.fromList
+          [                                          
+          ])   
+
+        (S.fromList
+          [ FormattedChar 'H' Nothing                                                            
+          ])  
+
+      `shouldBe` S.fromList
+        [ DiffedChar (FormattedChar 'H' Nothing) Inserted                                                                 
+        ]
      
+
   it "del the one and only" do
     findDiffs 
         (S.fromList
@@ -53,6 +62,7 @@ formattedEditedTextTests = describe "show edits" do
       `shouldBe` S.fromList
         [ DiffedChar (FormattedChar 'H' Nothing) Deleted                                                                 
         ]
+
 
   it "one character change" do
     findDiffs 
