@@ -483,22 +483,27 @@ final class ChatModel: ObservableObject {
             users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
     }
 
-    func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
-        if let i = getChatItemIndex(ci), i + 1 < reversedChatItems.count  {
-            return reversedChatItems[i + 1]
+    func getConnectedMemberNames(_ ci: ChatItem) -> [String] {
+        guard var i = getChatItemIndex(ci) else { return [] }
+        var ns: [String] = []
+        while i < reversedChatItems.count, let m = reversedChatItems[i].memberConnected {
+            ns.append(m.chatViewName)
+            i += 1
+        }
+        return ns
+    }
+
+    func getChatItemNeighbors(_ ci: ChatItem) -> (ChatItem?, ChatItem?) {
+        if let i = getChatItemIndex(ci)  {
+            return (
+                i + 1 < reversedChatItems.count ? reversedChatItems[i + 1] : nil,
+                i - 1 >= 0 ? reversedChatItems[i - 1] : nil
+            )
         } else {
-            return nil
+            return (nil, nil)
         }
     }
 
-    func getNextChatItem(_ ci: ChatItem) -> ChatItem? {
-        if let i = getChatItemIndex(ci), i > 0  {
-            return reversedChatItems[i - 1]
-        } else {
-            return nil
-        }
-    }
-    
     func popChat(_ id: String) {
         if let i = getChatIndex(id) {
             popChat_(i)

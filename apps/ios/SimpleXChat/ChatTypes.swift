@@ -2530,6 +2530,25 @@ public enum CIContent: Decodable, ItemContent {
             }
         }
     }
+
+    public var showMemberName: Bool {
+        switch self {
+        case .sndMsgContent: true
+        case .rcvMsgContent: true
+        case .sndDeleted: true
+        case .rcvDeleted: true
+        case .sndCall: true
+        case .rcvCall: true
+        case .rcvIntegrityError: true
+        case .rcvDecryptionError: true
+        case .rcvGroupInvitation: true
+        case .sndChatPreference: true
+        case .sndModerated: true
+        case .rcvModerated: true
+        case .invalidJSON: true
+        default: false
+        }
+    }
 }
 
 public enum MsgDecryptError: String, Decodable {
