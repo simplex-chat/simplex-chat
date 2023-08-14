@@ -2518,15 +2518,19 @@ public enum CIContent: Decodable, ItemContent {
             case let .membersConnected(members):
                 if members.count > 3 {
                     return String.localizedStringWithFormat(
-                        NSLocalizedString("%@ and %d other members connected", comment: "<members_names> and <n> other members connected (plural)"),
+                        NSLocalizedString("%@ and %d other members connected", comment: "<members> and <n, n >= 2> other members connected (plural)"),
                         CIContent.membersConnectedNames(Array(members.prefix(2))),
                         members.count - 2
                     )
-                } else {
+                } else if members.count >= 2,
+                          let lastMember = members.last {
                     return String.localizedStringWithFormat(
-                        NSLocalizedString("%@ connected", comment: "<members_names> connected (plural)"),
-                        CIContent.membersConnectedNames(members)
+                        NSLocalizedString("%@ and %@ connected", comment: "<member(s)> and <member> connected (plural)"),
+                        CIContent.membersConnectedNames(members.dropLast()),
+                        lastMember.chatViewName
                     )
+                } else {
+                    return "members connected" // chat item is created in cases such that this shouldn't happen
                 }
             }
         }

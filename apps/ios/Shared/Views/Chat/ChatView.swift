@@ -438,7 +438,7 @@ struct ChatView: View {
                 if ci.isMemberConnected != nil,
                    let prevItem = prevItem,
                    let prevMember = prevItem.isMemberConnected {
-                    membersConnectedItem(ci, maxWidth, member, prevMember, prevItem)
+                    membersConnectedItem(ci, maxWidth, member, prevMember, prevItem, groupInfo)
                 } else {
                     HStack(alignment: .top, spacing: 0) {
                         let showMember = prevItem == nil || showMemberImage(member, prevItem)
@@ -492,13 +492,16 @@ struct ChatView: View {
         _ maxWidth: CGFloat,
         _ member: GroupMember,
         _ prevMember: GroupMember,
-        _ prevItem: ChatItem
+        _ prevItem: ChatItem,
+        _ groupInfo: GroupInfo
     ) -> some View {
         HStack(alignment: .top, spacing: 0) {
-            Image(systemName: "link")
-                .resizable()
-                .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
+            ProfileImage(imageStr: member.memberProfile.image)
                 .frame(width: memberImageSize, height: memberImageSize)
+                .onTapGesture { selectedMember = member }
+                .appSheet(item: $selectedMember) { member in
+                    GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
+                }
 
             let membersConnected: [GroupMember] = [member, prevMember] + collectPrevMembersConnected(prevItem)
             let replacingItem = ChatItem(
