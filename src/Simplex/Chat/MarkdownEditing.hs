@@ -69,35 +69,9 @@ newtype DeleteIndicies = DeleteIndicies (Seq Int) deriving (Show, Eq)
 newtype InsertIndicies = InsertIndicies (Seq Int) deriving (Show, Eq)
 
 
--- toEditedChars :: [FormattedText] -> [EditedChar]
--- toEditedChars = concatMap toChars
---   where
---     toChars FormattedText {format, text} =
---       map (\char -> EditedChar {format, char, operation = Nothing}) $ T.unpack text
-
-
 toFormattedChars :: [FormattedText] -> [FormattedChar]
 toFormattedChars = concatMap toChars
     where toChars (FormattedText f t) = map (`FormattedChar` f) $ T.unpack t
-
-
--- fromEditedChars :: [EditedChar] -> [EditedText]
--- fromEditedChars = reverse . foldl' addChar []
---   where
---     addChar :: [EditedText] -> EditedChar -> [EditedText]
---     addChar [] c = [toText c]
---     addChar ts@(t : rest) c
---       | sameFormat t c = appendChar t c : rest
---       | otherwise = toText c : ts
-
---     toText :: EditedChar -> EditedText
---     toText EditedChar {format, char, added} = EditedText {format, text = T.singleton char, added}
-    
---     sameFormat :: EditedText -> EditedChar -> Bool
---     sameFormat EditedText {format, added} EditedChar {format = format', added = added'} = format == format' && added == added'
-    
---     appendChar :: EditedText -> EditedChar -> EditedText
---     appendChar t@EditedText {text} EditedChar {char} = t {text = text <> T.singleton char}
 
 
 findDiffs :: Seq FormattedChar -> Seq FormattedChar -> Seq DiffedChar
