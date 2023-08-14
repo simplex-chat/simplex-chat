@@ -2021,6 +2021,17 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public var memberConnected: GroupMember? {
+        switch chatDir {
+        case .groupRcv(let groupMember):
+            switch content {
+            case .rcvGroupEvent(rcvGroupEvent: .memberConnected): return groupMember
+            default: return nil
+            }
+        default: return nil
+        }
+    }
+
     private var showNtfDir: Bool {
         return !chatDir.sent
     }

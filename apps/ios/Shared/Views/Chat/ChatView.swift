@@ -261,7 +261,7 @@ struct ChatView: View {
         return GeometryReader { g in
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 5)  {
+                    LazyVStack(spacing: 0)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
                             let voiceNoFrame = voiceWithoutFrame(ci)
                             let maxWidth = cInfo.chatType == .group
@@ -430,35 +430,42 @@ struct ChatView: View {
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
         if case let .groupRcv(member) = ci.chatDir,
            case let .group(groupInfo) = chat.chatInfo {
-            let prevItem = chatModel.getPrevChatItem(ci)
-            HStack(alignment: .top, spacing: 0) {
-                let showMember = prevItem == nil || showMemberImage(member, prevItem)
-                if showMember {
-                    ProfileImage(imageStr: member.memberProfile.image)
-                        .frame(width: memberImageSize, height: memberImageSize)
-                        .onTapGesture { selectedMember = member }
-                        .appSheet(item: $selectedMember) { member in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
-                        }
-                } else {
-                    Rectangle().fill(.clear)
-                        .frame(width: memberImageSize, height: memberImageSize)
+            let nextItem = chatModel.getNextChatItem(ci)
+            if ci.memberConnected != nil && nextItem?.memberConnected != nil {
+                // memberConnected events are aggregated at the last chat item in a row of such events, see ChatItemView
+                ZStack {} // scroll doesn't work if it's EmptyView()
+            } else {
+                let prevItem = chatModel.getPrevChatItem(ci)
+                HStack(alignment: .top, spacing: 0) {
+                    let showMember = prevItem == nil || showMemberImage(member, prevItem)
+                    if showMember {
+                        ProfileImage(imageStr: member.memberProfile.image)
+                            .frame(width: memberImageSize, height: memberImageSize)
+                            .onTapGesture { selectedMember = member }
+                            .appSheet(item: $selectedMember) { member in
+                                GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
+                            }
+                    } else {
+                        Rectangle().fill(.clear)
+                            .frame(width: memberImageSize, height: memberImageSize)
+                    }
+                    ChatItemWithMenu(
+                        ci: ci,
+                        showMember: showMember,
+                        maxWidth: maxWidth,
+                        scrollProxy: scrollProxy,
+                        deleteMessage: deleteMessage,
+                        deletingItem: $deletingItem,
+                        composeState: $composeState,
+                        showDeleteMessage: $showDeleteMessage
+                    )
+                    .padding(.leading, 8)
+                    .environmentObject(chat)
                 }
-                ChatItemWithMenu(
-                    ci: ci,
-                    showMember: showMember,
-                    maxWidth: maxWidth,
-                    scrollProxy: scrollProxy,
-                    deleteMessage: deleteMessage,
-                    deletingItem: $deletingItem,
-                    composeState: $composeState,
-                    showDeleteMessage: $showDeleteMessage
-                )
-                .padding(.leading, 8)
-                .environmentObject(chat)
+                .padding(.trailing)
+                .padding(.leading, 12)
+                .padding(.bottom, 5)
             }
-            .padding(.trailing)
-            .padding(.leading, 12)
         } else {
             ChatItemWithMenu(
                 ci: ci,
@@ -470,10 +477,11 @@ struct ChatView: View {
                 showDeleteMessage: $showDeleteMessage
             )
             .padding(.horizontal)
+            .padding(.bottom, 5)
             .environmentObject(chat)
         }
     }
-    
+
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var chat: Chat
         @Environment(\.colorScheme) var colorScheme
@@ -485,13 +493,13 @@ struct ChatView: View {
         @Binding var deletingItem: ChatItem?
         @Binding var composeState: ComposeState
         @Binding var showDeleteMessage: Bool
-        
+
         @State private var revealed = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
-        
+
         @State private var allowMenu: Bool = true
-        
+
         @State private var audioPlayer: AudioPlayer?
         @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
         @State private var playbackTime: TimeInterval?

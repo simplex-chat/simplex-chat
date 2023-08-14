@@ -58,6 +58,7 @@ struct ChatItemView: View {
 }
 
 struct ChatItemContentView<Content: View>: View {
+    @EnvironmentObject var chatModel: ChatModel
     var chatInfo: ChatInfo
     var chatItem: ChatItem
     var showMember: Bool
@@ -75,6 +76,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem, showMember: showMember)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
+        case .rcvGroupEvent(.memberConnected): CIEventView(eventText: membersConnectedItemText())
         case .rcvGroupEvent: eventItemView()
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
@@ -108,12 +110,84 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func eventItemView() -> some View {
-        CIEventView(chatItem: chatItem)
+        return CIEventView(eventText: eventItemViewText())
+    }
+
+    private func eventItemViewText() -> Text {
+        if let member = chatItem.memberDisplayName {
+            return Text(member)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fontWeight(.light)
+                + Text(" ")
+                + chatEventText(chatItem)
+        } else {
+            return chatEventText(chatItem)
+        }
     }
 
     private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
         CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor)
     }
+
+    private func membersConnectedItemText() -> Text {
+        if case let .groupRcv(member) = chatItem.chatDir,
+           let prevItem = chatModel.getPrevChatItem(chatItem),
+           let prevMember = prevItem.memberConnected,
+           let membersConnectedText = membersConnectedText(connectedMemberNames(member, prevMember, prevItem)) {
+            return chatEventText(membersConnectedText, chatItem.timestampText)
+        } else {
+            return eventItemViewText()
+        }
+
+        func connectedMemberNames(_ member: GroupMember, _ prevMember: GroupMember, _ prevItem: ChatItem) -> [String] {
+            [member.chatViewName, prevMember.chatViewName] + collectPrevConnectedMemberNames(prevItem)
+        }
+    }
+
+    private func collectPrevConnectedMemberNames(_ ci: ChatItem) -> [String] {
+        guard let prevItem = chatModel.getPrevChatItem(ci),
+              let memberConnected = prevItem.memberConnected else {
+            return []
+        }
+        let prevMemberNames = collectPrevConnectedMemberNames(prevItem)
+        return [memberConnected.chatViewName] + prevMemberNames
+    }
+
+    private func membersConnectedText(_ memberNames: [String]) -> String? {
+        if memberNames.count > 3 {
+            return String.localizedStringWithFormat(
+                NSLocalizedString("%@ and %d other members connected", comment: "<member_names> and <n >= 2> other members connected (plural)"),
+                Array(memberNames.prefix(2)).joined(separator: ", "),
+                memberNames.count - 2
+            )
+        } else if memberNames.count >= 2,
+                  let lastMemberName = memberNames.last {
+            return String.localizedStringWithFormat(
+                NSLocalizedString("%@ and %@ connected", comment: "<member_name(s)> and <member_name> connected (plural)"),
+                memberNames.dropLast().joined(separator: ", "),
+                lastMemberName
+            )
+        } else {
+            return nil
+        }
+    }
+}
+
+func chatEventText(_ eventText: String, _ ts: Text) -> Text {
+    Text(eventText)
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .fontWeight(.light)
+    + Text(" ")
+    + ts
+        .font(.caption)
+        .foregroundColor(Color.secondary)
+        .fontWeight(.light)
+}
+
+func chatEventText(_ ci: ChatItem) -> Text {
+    chatEventText(ci.content.text, ci.timestampText)
 }
 
 struct ChatItemView_Previews: PreviewProvider {

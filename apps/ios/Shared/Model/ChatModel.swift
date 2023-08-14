@@ -484,8 +484,16 @@ final class ChatModel: ObservableObject {
     }
 
     func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
-        if let i = getChatItemIndex(ci), i < reversedChatItems.count - 1  {
+        if let i = getChatItemIndex(ci), i + 1 < reversedChatItems.count  {
             return reversedChatItems[i + 1]
+        } else {
+            return nil
+        }
+    }
+
+    func getNextChatItem(_ ci: ChatItem) -> ChatItem? {
+        if let i = getChatItemIndex(ci), i > 0  {
+            return reversedChatItems[i - 1]
         } else {
             return nil
         }
@@ -582,7 +590,7 @@ final class ChatModel: ObservableObject {
 
     func addTerminalItem(_ item: TerminalItem) {
         if terminalItems.count >= 500 {
-            terminalItems.remove(at: 0)
+            terminalItems.removeFirst()
         }
         terminalItems.append(item)
     }

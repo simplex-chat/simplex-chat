@@ -785,7 +785,7 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
     alice <## "group #secret_club is created"
     alice <## "to add members use /a secret_club <name> or /create link #secret_club"
     -- alice invites bob
-    alice ##> "/a secret_club bob"
+    alice ##> "/a secret_club bob admin"
     concurrentlyN_
       [ alice <## "invitation to join the group #secret_club sent to bob",
         do
@@ -797,7 +797,7 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
       (alice <## "#secret_club: bob joined the group")
       (bob <## "#secret_club: you joined the group")
     -- alice invites cath
-    alice ##> ("/a secret_club " <> cathIncognito)
+    alice ##> ("/a secret_club " <> cathIncognito <> " admin")
     concurrentlyN_
       [ alice <## ("invitation to join the group #secret_club sent to " <> cathIncognito),
         do
@@ -819,7 +819,7 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
     cath ##> "/a secret_club dan"
     cath <## "you've connected to this group using an incognito profile - prohibited to invite contacts"
     -- alice invites dan
-    alice ##> "/a secret_club dan"
+    alice ##> "/a secret_club dan admin"
     concurrentlyN_
       [ alice <## "invitation to join the group #secret_club sent to dan",
         do
@@ -1045,7 +1045,7 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     concurrentlyN_
       [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
         do
-          bob <## "#team: alice invites you to join the group as admin"
+          bob <## "#team: alice invites you to join the group as member"
           bob <## ("use /j team to join incognito as " <> bobIncognito)
       ]
     bob ##> "/j team"
@@ -1096,7 +1096,7 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     concurrentlyN_
       [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
         do
-          bob <## "#team: alice invites you to join the group as admin"
+          bob <## "#team: alice invites you to join the group as member"
           bob <## ("use /j team to join incognito as " <> bobIncognito)
       ]
     bob ##> "/j team"
