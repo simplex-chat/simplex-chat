@@ -291,7 +291,6 @@ struct ChatView: View {
                                 }
                         }
                     }
-                    .padding(.vertical, 5)
                 }
                 .onAppear {
                     scrollProxy = proxy
