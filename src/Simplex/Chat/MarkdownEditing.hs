@@ -16,12 +16,13 @@ import           Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.Foldable as F
+import qualified Data.Map.Strict as M
 import           Data.Sequence ( Seq(..), (><) )
 import qualified Data.Sequence as S
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as VU
-import           Data.Word ( Word64 )
+-- import           Data.Word ( Word64 )
 import           GHC.Generics ( Generic )
 -- import           Network.ByteOrder (word64) -- also remove from cabal
 import           Simplex.Messaging.Parsers ( sumTypeJSON ) 
@@ -89,8 +90,8 @@ instance ToJSON EditedText where
     toEncoding = J.genericToEncoding $ sumTypeJSON id
 
 
-newtype DeleteIndicies = DeleteIndicies {deleteIndicies :: Seq Int} deriving (Show, Eq)
-newtype InsertIndicies = InsertIndicies {insertIndicies :: Seq Int} deriving (Show, Eq)
+newtype DeleteIndicies = DeleteIndicies (Seq Int) deriving (Show, Eq)
+newtype InsertIndicies = InsertIndicies (Seq Int) deriving (Show, Eq)
 
 
 -- formattedEditedText :: [FormattedText] -> [FormattedText] -> [EditedChar]
@@ -188,6 +189,8 @@ findDiffs left right =
                 D.EditDelete   m n -> (x', y)  where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
                 D.EditInsert _ m n -> (x , y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
 
+        (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = indices
+
         -- -- todo unused
         -- withDeleteDiffs :: Seq DiffedChar
         -- withDeleteDiffs = S.mapWithIndex f pristine
@@ -214,32 +217,41 @@ findDiffs left right =
         unchangedTextually = f <$> S.zip leftWithoutDeletes rightWithoutInserts
             where
             leftWithoutDeletes :: Seq (Int, FormattedChar) 
-            leftWithoutDeletes = S.filter (\(i, _) -> i `notElem` ns) leftZ -- indexed in original
-                where
-                ns = deleteIndicies $ fst indices
-                leftZ = S.zip nonNegativeInts left
+            leftWithoutDeletes = S.filter (\(i, _) -> i `notElem` deleteIndicies) leftZ -- indexed in original
+                where leftZ = S.zip nonNegativeInts left
 
             rightWithoutInserts :: Seq (Int, FormattedChar)
-            rightWithoutInserts = S.filter (\(i, _) -> i `notElem` ns) rightZ -- indexed in original
-                where
-                ns = insertIndicies $ snd indices
-                rightZ = S.zip nonNegativeInts right
+            rightWithoutInserts = S.filter (\(i, _) -> i `notElem` insertIndicies) rightZ -- indexed in original
+                where rightZ = S.zip nonNegativeInts right
 
             f :: ((Int, FormattedChar), (Int, FormattedChar)) -> (Int, FormattedChar, FormattedChar)
             f ((i,c), (_,d)) = (i,c,d)
 
-        analysisOfUnchangedTextually :: Seq (Int, DiffUnchangedTextuallyStatus)
-        analysisOfUnchangedTextually = f <$> unchangedTextually
-            where
-            f :: (Int, FormattedChar, FormattedChar) -> (Int, DiffUnchangedTextuallyStatus)
-            f (i, FormattedChar fL _, FormattedChar fR _) = (i, result)
-                where 
-                result :: DiffUnchangedTextuallyStatus
-                result = 
-                    if fL == fR then TotallyUnchanged
-                    else ChangedFormat {newFormat = fR}
+        -- analysisOfUnchangedTextually :: Seq (Int, DiffUnchangedTextuallyStatus)
+        -- analysisOfUnchangedTextually = f <$> unchangedTextually
+        --     where
+        --     f :: (Int, FormattedChar, FormattedChar) -> (Int, DiffUnchangedTextuallyStatus)
+        --     f (i, FormattedChar fL _, FormattedChar fR _) = (i, result)
+        --         where 
+        --         result :: DiffUnchangedTextuallyStatus
+        --         result = 
+        --             if fL == fR then TotallyUnchanged
+        --             else ChangedFormat {newFormat = fR}
        
+        unchangedTextualies :: M.Map Int DiffUnchangedTextuallyStatus
+        unchangedTextualies = F.foldl' f M.empty unchangedTextually
+            where
+            f :: M.Map Int DiffUnchangedTextuallyStatus -> (Int, FormattedChar, FormattedChar) -> M.Map Int DiffUnchangedTextuallyStatus
+            f acc (i, FormattedChar fL _, FormattedChar fR _) = M.insert i x acc
+                where x = if fL == fR then TotallyUnchanged else ChangedFormat {newFormat = fR}
 
+        markDeletesAndUnchangedTextually :: Seq DiffedChar
+        markDeletesAndUnchangedTextually = S.mapWithIndex f left
+            where
+                f :: Int -> FormattedChar -> DiffedChar
+                f i x = DiffedChar x $
+                    if i `elem` deleteIndicies then Deleted 
+                    else UnchangedTextually $ unchangedTextualies M.! i -- should never error
 
     in
         undefined
