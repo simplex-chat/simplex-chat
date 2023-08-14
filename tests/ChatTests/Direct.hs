@@ -99,112 +99,112 @@ testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
   where
     runTestAddContact alice bob = do
-      liftIO $ print 1
+      print 1
       alice ##> "/_connect 1"
       inv <- getInvitation alice
-      liftIO $ print 2
+      print 2
       bob ##> ("/_connect 1 " <> inv)
       bob <## "confirmation sent!"
-      liftIO $ print 3
+      print 3
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      liftIO $ print 4
+      print 4
       threadDelay 100000
       chatsEmpty alice bob
-      liftIO $ print 5
+      print 5
       alice #> "@bob hello there 🙂"
       bob <# "alice> hello there 🙂"
-      liftIO $ print 6
+      print 6
       alice ##> "/_unread chat @2 on"
       alice <## "ok"
       alice ##> "/_unread chat @2 off"
       alice <## "ok"
-      liftIO $ print 7
+      print 7
       chatsOneMessage alice bob
-      liftIO $ print 8
+      print 8
       bob #> "@alice hello there"
       alice <# "bob> hello there"
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
-      liftIO $ print 9
+      print 9
       chatsManyMessages alice bob
-      liftIO $ print 10
+      print 10
       -- test adding the same contact one more time - local name will be different
       alice ##> "/c"
       inv' <- getInvitation alice
-      liftIO $ print 11
+      print 11
       bob ##> ("/c " <> inv')
       bob <## "confirmation sent!"
-      liftIO $ print 12
+      print 12
       concurrently_
         (bob <## "alice_1 (Alice): contact is connected")
         (alice <## "bob_1 (Bob): contact is connected")
-      liftIO $ print 13
+      print 13
       alice #> "@bob_1 hello"
       bob <# "alice_1> hello"
       bob #> "@alice_1 hi"
       alice <# "bob_1> hi"
-      liftIO $ print 14
+      print 14
       alice @@@ [("@bob_1", "hi"), ("@bob", "how are you?")]
       bob @@@ [("@alice_1", "hi"), ("@alice", "how are you?")]
-      liftIO $ print 15
+      print 15
       -- test deleting contact
       alice ##> "/d bob_1"
       alice <## "bob_1: contact is deleted"
-      liftIO $ print 16
+      print 16
       alice ##> "@bob_1 hey"
       alice <## "no contact bob_1"
-      liftIO $ print 17
+      print 17
       alice @@@ [("@bob", "how are you?")]
       alice `hasContactProfiles` ["alice", "bob"]
       bob @@@ [("@alice_1", "hi"), ("@alice", "how are you?")]
       bob `hasContactProfiles` ["alice", "alice", "bob"]
-      liftIO $ print 18
+      print 18
       -- test clearing chat
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
       alice #$> ("/_get chat @2 count=100", chat, [])
-      liftIO $ print 19
+      print 19
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
       bob #$> ("/_get chat @2 count=100", chat, [])
-      liftIO $ print 20
+      print 20
     chatsEmpty alice bob = do
-      liftIO $ print "chatsEmpty 1"
+      print "chatsEmpty 1"
       alice @@@ [("@bob", lastChatFeature)]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
-      liftIO $ print "chatsEmpty 2"
+      print "chatsEmpty 2"
       bob @@@ [("@alice", lastChatFeature)]
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures)
-      liftIO $ print "chatsEmpty 3"
+      print "chatsEmpty 3"
     chatsOneMessage alice bob = do
-      liftIO $ print "chatsOneMessage 1"
+      print "chatsOneMessage 1"
       alice @@@ [("@bob", "hello there 🙂")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hello there 🙂")])
-      liftIO $ print "chatsOneMessage 2"
+      print "chatsOneMessage 2"
       bob @@@ [("@alice", "hello there 🙂")]
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hello there 🙂")])
-      liftIO $ print "chatsOneMessage 3"
+      print "chatsOneMessage 3"
     chatsManyMessages alice bob = do
-      liftIO $ print "chatsManyMessages 1"
+      print "chatsManyMessages 1"
       alice @@@ [("@bob", "how are you?")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
-      liftIO $ print "chatsManyMessages 2"
+      print "chatsManyMessages 2"
       bob @@@ [("@alice", "how are you?")]
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hello there 🙂"), (1, "hello there"), (1, "how are you?")])
-      liftIO $ print "chatsManyMessages 3"
+      print "chatsManyMessages 3"
       -- pagination
       alice #$> ("/_get chat @2 after=" <> itemId 1 <> " count=100", chat, [(0, "hello there"), (0, "how are you?")])
       alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, chatFeatures <> [(1, "hello there 🙂")])
-      liftIO $ print "chatsManyMessages 4"
+      print "chatsManyMessages 4"
       -- search
       alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
-      liftIO $ print "chatsManyMessages 5"
+      print "chatsManyMessages 5"
       -- read messages
       alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
       alice #$> ("/_read chat @2", id, "ok")
       bob #$> ("/_read chat @2", id, "ok")
-      liftIO $ print "chatsManyMessages 6"
+      print "chatsManyMessages 6"
 
 testDeleteContactDeletesProfile :: HasCallStack => FilePath -> IO ()
 testDeleteContactDeletesProfile =
