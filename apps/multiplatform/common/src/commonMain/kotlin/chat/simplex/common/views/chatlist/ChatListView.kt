@@ -61,6 +61,13 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       connectIfOpenedViaUri(url, chatModel)
     }
   }
+  if (appPlatform.isDesktop) {
+    KeyChangeEffect(chatModel.chatId.value) {
+      if (chatModel.chatId.value != null) {
+        ModalManager.end.closeModalsExceptFirst()
+      }
+    }
+  }
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scope = rememberCoroutineScope()
