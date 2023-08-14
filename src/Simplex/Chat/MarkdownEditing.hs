@@ -14,21 +14,16 @@ module Simplex.Chat.MarkdownEditing where
 
 import           Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
-import qualified Data.ByteString.Char8 as BS
 import qualified Data.Foldable as F
 import qualified Data.Map.Strict as M
 import           Data.Sequence ( Seq(..), (><) )
 import qualified Data.Sequence as S
 import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Vector.Unboxed as VU
--- import           Data.Word ( Word64 )
 import           GHC.Generics ( Generic )
--- import           Network.ByteOrder (word64) -- also remove from cabal
 import           Simplex.Messaging.Parsers ( sumTypeJSON ) 
 import qualified Data.Diff.Myers as D
 import           Simplex.Chat.Markdown ( FormattedText(..), Format )
--- import           Sound.Osc.Coding.Byte
 import qualified Debug.Trace as DBG
 
 -- todo unused
