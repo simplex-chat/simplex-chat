@@ -47,12 +47,24 @@ import qualified Debug.Trace as DBG
 --   }
 --     deriving (Show, Eq)
 
+-- data DiffStatus 
+--     = Unchanged
+--     | Inserted 
+--     | Deleted 
+--     | ChangedFormatOnly {newFormat :: Maybe Format}
+--     -- | Replaced {original :: FormattedChar} -- same as Delete+Insert
+--     deriving (Show, Eq)
+
+
 data DiffStatus 
-    = Unchanged
+    = UnchangedTextually DiffUnchangedTextuallyStatus
     | Inserted 
     | Deleted 
-    | ChangedFormatOnly {newFormat :: Maybe Format}
-    -- | Replaced {original :: FormattedChar} -- same as Delete+Insert
+    deriving (Show, Eq)
+
+data DiffUnchangedTextuallyStatus
+    = TotallyUnchanged
+    | ChangedFormat {newFormat :: Maybe Format}
     deriving (Show, Eq)
 
 data DiffedChar = DiffedChar FormattedChar DiffStatus
@@ -155,6 +167,10 @@ toFormattedChars = concatMap toChars
 --   where edits = D.diffTexts (toText left) (toText right)
 
 
+nonNegativeInts :: Seq Int
+nonNegativeInts = S.fromList [0 ..]
+
+
 findDiffs :: Seq FormattedChar -> Seq FormattedChar -> Seq DiffedChar
 findDiffs left right = 
     let
@@ -169,40 +185,24 @@ findDiffs left right =
             where
             f :: (DeleteIndicies, InsertIndicies) -> D.Edit -> (DeleteIndicies, InsertIndicies)
             f (x@(DeleteIndicies ds), y@(InsertIndicies is)) e = case e of
-              D.EditDelete   m n -> (x', y) where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
-              D.EditInsert _ m n -> (x, y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
+                D.EditDelete   m n -> (x', y)  where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
+                D.EditInsert _ m n -> (x , y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
 
-        -- todo unused
-        withDeleteDiffs :: Seq DiffedChar
-        withDeleteDiffs = S.mapWithIndex f pristine
-            where
-            pristine :: Seq DiffedChar
-            pristine = fmap (`DiffedChar` Unchanged) left
+        -- -- todo unused
+        -- withDeleteDiffs :: Seq DiffedChar
+        -- withDeleteDiffs = S.mapWithIndex f pristine
+        --     where
+        --     pristine :: Seq DiffedChar
+        --     pristine = fmap (`DiffedChar` Unchanged) left
 
-            ns = deleteIndicies $ fst indices
+        --     ns = deleteIndicies $ fst indices
 
-            f :: Int -> DiffedChar -> DiffedChar
-            f i x@(DiffedChar c _) = if i `elem` ns then DiffedChar c Deleted else x
+        --     f :: Int -> DiffedChar -> DiffedChar
+        --     f i x@(DiffedChar c _) = if i `elem` ns then DiffedChar c Deleted else x
         
-        nonNegativeInts :: Seq Int
-        nonNegativeInts = S.fromList [0 ..]
 
-        -- indexed in original left
-        leftWithoutDeletes :: Seq (Int, FormattedChar) 
-        leftWithoutDeletes = without
-            where
-            ns = deleteIndicies $ fst indices
-            leftZ = S.zip nonNegativeInts left
-            without = S.filter (\(i, _) -> i `notElem` ns) leftZ
 
-        -- indexed in original right
-        rightWithoutInserts :: Seq (Int, FormattedChar)
-        rightWithoutInserts = without 
-            -- todo del thsi comment: fmap snd without 
-            where
-            ns = insertIndicies $ snd indices
-            rightZ = S.zip nonNegativeInts right
-            without = S.filter (\(i, _) -> i `notElem` ns) rightZ
+
 
         -- withMarkedFormatChanges :: Seq DiffedChar
         -- withMarkedFormatChanges = undefined
@@ -210,5 +210,36 @@ findDiffs left right =
         --     withDeleteDiffsZ = S.zip nonNegativeInts withDeleteDiffs
         --     unchangedTextually = S.filter (\(_, x -> not $ )) withDeleteDiffsZ
             
+        unchangedTextually :: Seq (Int, FormattedChar, FormattedChar) -- indexed in original
+        unchangedTextually = f <$> S.zip leftWithoutDeletes rightWithoutInserts
+            where
+            leftWithoutDeletes :: Seq (Int, FormattedChar) 
+            leftWithoutDeletes = S.filter (\(i, _) -> i `notElem` ns) leftZ -- indexed in original
+                where
+                ns = deleteIndicies $ fst indices
+                leftZ = S.zip nonNegativeInts left
+
+            rightWithoutInserts :: Seq (Int, FormattedChar)
+            rightWithoutInserts = S.filter (\(i, _) -> i `notElem` ns) rightZ -- indexed in original
+                where
+                ns = insertIndicies $ snd indices
+                rightZ = S.zip nonNegativeInts right
+
+            f :: ((Int, FormattedChar), (Int, FormattedChar)) -> (Int, FormattedChar, FormattedChar)
+            f ((i,c), (_,d)) = (i,c,d)
+
+        analysisOfUnchangedTextually :: Seq (Int, DiffUnchangedTextuallyStatus)
+        analysisOfUnchangedTextually = f <$> unchangedTextually
+            where
+            f :: (Int, FormattedChar, FormattedChar) -> (Int, DiffUnchangedTextuallyStatus)
+            f (i, FormattedChar fL _, FormattedChar fR _) = (i, result)
+                where 
+                result :: DiffUnchangedTextuallyStatus
+                result = 
+                    if fL == fR then TotallyUnchanged
+                    else ChangedFormat {newFormat = fR}
+       
+
+
     in
         undefined
