@@ -71,6 +71,9 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
     removeContact = { contactId -> selectedContacts.removeIf { it == contactId } },
     close = close,
   )
+  KeyChangeEffect(chatModel.chatId.value) {
+    close()
+  }
 }
 
 fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
