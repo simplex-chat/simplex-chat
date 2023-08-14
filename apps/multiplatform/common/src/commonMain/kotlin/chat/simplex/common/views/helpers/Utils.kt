@@ -348,3 +348,24 @@ fun KeyChangeEffect(
     }
   }
 }
+
+/**
+ * Runs the [block] only after initial value of the [key1] or [key2] changes, not after initial launch
+ * */
+@Composable
+@NonRestartableComposable
+fun KeyChangeEffect(
+  key1: Any?,
+  key2: Any?,
+  block: suspend CoroutineScope.() -> Unit
+) {
+  val initialKey = remember { key1 }
+  val initialKey2 = remember { key2 }
+  var anyChange by remember { mutableStateOf(false) }
+  LaunchedEffect(key1) {
+    if (anyChange || key1 != initialKey || key2 != initialKey2) {
+      block()
+      anyChange = true
+    }
+  }
+}
