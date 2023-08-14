@@ -39,12 +39,20 @@ formattedEditedTextTests = describe "show edits" do
   --       [ EditedChar Nothing 'H' $ Just Add              
   --       ] 
 
-  -- it "del the one and only" do
-  --   formattedEditedText [plainText "H"] [plainText ""]
-  --     `shouldBe` 
-  --       [ EditedChar Nothing 'H' $ Just Delete              
-  --       ]       
+     
+  it "del the one and only" do
+    findDiffs 
+        (S.fromList
+          [ FormattedChar 'H' Nothing                                            
+          ])   
 
+        (S.fromList
+          [                                                             
+          ])  
+
+      `shouldBe` S.fromList
+        [ DiffedChar (FormattedChar 'H' Nothing) Deleted                                                                 
+        ]
 
   it "one character change" do
     findDiffs 
