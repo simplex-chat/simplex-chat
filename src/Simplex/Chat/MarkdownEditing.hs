@@ -174,7 +174,7 @@ findDiffs left right =
         toText = T.pack . F.toList . fmap char  
 
         edits :: Seq D.Edit
-        edits = D.diffTexts (toText left) (toText right)  
+        edits = DBG.trace ("edits: " <> show (D.diffTexts (toText left) (toText right) )) $ D.diffTexts (toText left) (toText right)  
 
         indices :: (DeleteIndicies, InsertIndicies)
         indices = F.foldl' f (DeleteIndicies S.empty, InsertIndicies S.empty) edits
@@ -184,7 +184,7 @@ findDiffs left right =
                 D.EditDelete   m n -> (x', y)  where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
                 D.EditInsert _ m n -> (x , y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
 
-        (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = indices
+        (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = DBG.trace ("indices: " <> show indices) indices
 
         -- -- todo unused
         -- withDeleteDiffs :: Seq DiffedChar
@@ -209,7 +209,7 @@ findDiffs left right =
         --     unchangedTextually = S.filter (\(_, x -> not $ )) withDeleteDiffsZ
             
         unchangedTextually :: Seq (Int, FormattedChar, FormattedChar) -- indexed in original
-        unchangedTextually = f <$> S.zip leftWithoutDeletes rightWithoutInserts
+        unchangedTextually = DBG.trace ("unchangedTextually: " <> show (f <$> S.zip leftWithoutDeletes rightWithoutInserts)) $ f <$> S.zip leftWithoutDeletes rightWithoutInserts
             where
             leftWithoutDeletes :: Seq (Int, FormattedChar) 
             leftWithoutDeletes = S.filter (\(i, _) -> i `notElem` deleteIndicies) leftZ -- indexed in original
@@ -234,14 +234,14 @@ findDiffs left right =
         --             else ChangedFormat {newFormat = fR}
        
         unchangedTextualies :: M.Map Int DiffUnchangedTextuallyStatus
-        unchangedTextualies = F.foldl' f M.empty unchangedTextually
+        unchangedTextualies = DBG.trace ("unchangedTextualies: " <> show (F.foldl' f M.empty unchangedTextually)) $ F.foldl' f M.empty unchangedTextually
             where
             f :: M.Map Int DiffUnchangedTextuallyStatus -> (Int, FormattedChar, FormattedChar) -> M.Map Int DiffUnchangedTextuallyStatus
             f acc (i, FormattedChar fL _, FormattedChar fR _) = M.insert i x acc
                 where x = if fL == fR then TotallyUnchanged else ChangedFormat {newFormat = fR}
 
         markDeletesAndUnchangedTextually :: Seq DiffedChar
-        markDeletesAndUnchangedTextually = S.mapWithIndex f left
+        markDeletesAndUnchangedTextually = DBG.trace ("markDeletesAndUnchangedTextually: " <> show (S.mapWithIndex f left)) $ S.mapWithIndex f left
             where
                 f :: Int -> FormattedChar -> DiffedChar
                 f i x = DiffedChar x $
@@ -249,7 +249,7 @@ findDiffs left right =
                     else UnchangedTextually $ unchangedTextualies M.! i -- should never error
 
         addInserts :: Seq DiffedChar -> Seq DiffedChar
-        addInserts base = F.foldr f base edits -- start from end and work backwards, hence foldr
+        addInserts base = DBG.trace ("addInserts: " <> show (F.foldr f base edits)) $ F.foldr f base edits -- start from end and work backwards, hence foldr
             where
             f :: D.Edit -> Seq DiffedChar -> Seq DiffedChar
             f e acc = case e of
@@ -259,6 +259,6 @@ findDiffs left right =
                     rightFormatChars = S.take (n - m + 1) $ S.drop m right
                     inserts = fmap (`DiffedChar` Inserted) rightFormatChars
 
-        result = addInserts markDeletesAndUnchangedTextually
+        result = DBG.trace ("result: " <> show (addInserts markDeletesAndUnchangedTextually)) $ addInserts markDeletesAndUnchangedTextually
   in
         result
