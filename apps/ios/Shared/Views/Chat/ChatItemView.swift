@@ -12,7 +12,6 @@ import SimpleXChat
 struct ChatItemView: View {
     var chatInfo: ChatInfo
     var chatItem: ChatItem
-    var showMember = false
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
     @Binding var revealed: Bool
@@ -23,7 +22,6 @@ struct ChatItemView: View {
     init(chatInfo: ChatInfo, chatItem: ChatItem, showMember: Bool = false, maxWidth: CGFloat = .infinity, scrollProxy: ScrollViewProxy? = nil, revealed: Binding<Bool>, allowMenu: Binding<Bool> = .constant(false), audioPlayer: Binding<AudioPlayer?> = .constant(nil), playbackState: Binding<VoiceMessagePlaybackState> = .constant(.noPlayback), playbackTime: Binding<TimeInterval?> = .constant(nil)) {
         self.chatInfo = chatInfo
         self.chatItem = chatItem
-        self.showMember = showMember
         self.maxWidth = maxWidth
         _scrollProxy = .init(initialValue: scrollProxy)
         _revealed = revealed
@@ -36,14 +34,14 @@ struct ChatItemView: View {
     var body: some View {
         let ci = chatItem
         if chatItem.meta.itemDeleted != nil && !revealed {
-            MarkedDeletedItemView(chatItem: chatItem, showMember: showMember)
+            MarkedDeletedItemView(chatItem: chatItem)
         } else if ci.quotedItem == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
                 CIVoiceView(chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
-                ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
+                ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
                 framedItemView()
             }
@@ -53,7 +51,7 @@ struct ChatItemView: View {
     }
 
     private func framedItemView() -> some View {
-        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
+        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, maxWidth: maxWidth, scrollProxy: scrollProxy, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
     }
 }
 
@@ -61,7 +59,6 @@ struct ChatItemContentView<Content: View>: View {
     @EnvironmentObject var chatModel: ChatModel
     var chatInfo: ChatInfo
     var chatItem: ChatItem
-    var showMember: Bool
     var msgContentView: () -> Content
 
     var body: some View {
@@ -72,11 +69,11 @@ struct ChatItemContentView<Content: View>: View {
         case .rcvDeleted: deletedItemView()
         case let .sndCall(status, duration): callItemView(status, duration)
         case let .rcvCall(status, duration): callItemView(status, duration)
-        case let .rcvIntegrityError(msgError): IntegrityErrorItemView(msgError: msgError, chatItem: chatItem, showMember: showMember)
-        case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem, showMember: showMember)
+        case let .rcvIntegrityError(msgError): IntegrityErrorItemView(msgError: msgError, chatItem: chatItem)
+        case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
-        case .rcvGroupEvent(.memberConnected): CIEventView(eventText: membersConnectedItemText())
+        case .rcvGroupEvent(.memberConnected): CIEventView(eventText: membersConnectedItemText)
         case .rcvGroupEvent: eventItemView()
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
@@ -98,7 +95,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func deletedItemView() -> some View {
-        DeletedItemView(chatItem: chatItem, showMember: showMember)
+        DeletedItemView(chatItem: chatItem)
     }
 
     private func callItemView(_ status: CICallStatus, _ duration: Int) -> some View {
@@ -115,11 +112,10 @@ struct ChatItemContentView<Content: View>: View {
 
     private func eventItemViewText() -> Text {
         if let member = chatItem.memberDisplayName {
-            return Text(member)
+            return Text(member + " ")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .fontWeight(.light)
-                + Text(" ")
                 + chatEventText(chatItem)
         } else {
             return chatEventText(chatItem)
@@ -130,64 +126,35 @@ struct ChatItemContentView<Content: View>: View {
         CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor)
     }
 
-    private func membersConnectedItemText() -> Text {
-        if case let .groupRcv(member) = chatItem.chatDir,
-           let prevItem = chatModel.getPrevChatItem(chatItem),
-           let prevMember = prevItem.memberConnected,
-           let membersConnectedText = membersConnectedText(connectedMemberNames(member, prevMember, prevItem)) {
-            return chatEventText(membersConnectedText, chatItem.timestampText)
+    private var membersConnectedItemText: Text {
+        if let t = membersConnectedText {
+            return chatEventText(t, chatItem.timestampText)
         } else {
             return eventItemViewText()
         }
-
-        func connectedMemberNames(_ member: GroupMember, _ prevMember: GroupMember, _ prevItem: ChatItem) -> [String] {
-            [member.chatViewName, prevMember.chatViewName] + collectPrevConnectedMemberNames(prevItem)
-        }
     }
 
-    private func collectPrevConnectedMemberNames(_ ci: ChatItem) -> [String] {
-        guard let prevItem = chatModel.getPrevChatItem(ci),
-              let memberConnected = prevItem.memberConnected else {
-            return []
-        }
-        let prevMemberNames = collectPrevConnectedMemberNames(prevItem)
-        return [memberConnected.chatViewName] + prevMemberNames
-    }
-
-    private func membersConnectedText(_ memberNames: [String]) -> String? {
-        if memberNames.count > 3 {
-            return String.localizedStringWithFormat(
-                NSLocalizedString("%@ and %d other members connected", comment: "<member_names> and <n >= 2> other members connected (plural)"),
-                Array(memberNames.prefix(2)).joined(separator: ", "),
-                memberNames.count - 2
-            )
-        } else if memberNames.count >= 2,
-                  let lastMemberName = memberNames.last {
-            return String.localizedStringWithFormat(
-                NSLocalizedString("%@ and %@ connected", comment: "<member_name(s)> and <member_name> connected (plural)"),
-                memberNames.dropLast().joined(separator: ", "),
-                lastMemberName
-            )
-        } else {
-            return nil
-        }
+    private var membersConnectedText: LocalizedStringKey? {
+        let ns = chatModel.getConnectedMemberNames(chatItem)
+        return ns.count > 3
+            ? "\(ns[0]), \(ns[1]) and \(ns.count - 2) other members connected"
+            : ns.count == 3
+            ? "\(ns[0] + ", " + ns[1]) and \(ns[2]) connected"
+            : ns.count == 2
+            ? "\(ns[0]) and \(ns[1]) connected"
+            : nil
     }
 }
 
-func chatEventText(_ eventText: String, _ ts: Text) -> Text {
-    Text(eventText)
+func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text) -> Text {
+    (Text(eventText) + Text(" ") + ts)
         .font(.caption)
         .foregroundColor(.secondary)
-        .fontWeight(.light)
-    + Text(" ")
-    + ts
-        .font(.caption)
-        .foregroundColor(Color.secondary)
         .fontWeight(.light)
 }
 
 func chatEventText(_ ci: ChatItem) -> Text {
-    chatEventText(ci.content.text, ci.timestampText)
+    chatEventText("\(ci.content.text)", ci.timestampText)
 }
 
 struct ChatItemView_Previews: PreviewProvider {
