@@ -112,7 +112,7 @@ data class ComposeState(
     }
 
   val empty: Boolean
-    get() = message.isEmpty() && preview is ComposePreview.NoPreview
+    get() = message.isEmpty() && preview is ComposePreview.NoPreview && contextItem is ComposeContextItem.NoContextItem
 
   companion object {
     fun saver(): Saver<MutableState<ComposeState>, *> = Saver(
@@ -283,6 +283,20 @@ fun ComposeView(
     cancelledLinks.clear()
   }
 
+  fun clearPrevDraft(prevChatId: String?) {
+    if (chatModel.draftChatId.value == prevChatId) {
+      chatModel.draft.value = null
+      chatModel.draftChatId.value = null
+    }
+  }
+
+  fun clearCurrentDraft() {
+    if (chatModel.draftChatId.value == chat.id) {
+      chatModel.draft.value = null
+      chatModel.draftChatId.value = null
+    }
+  }
+
   fun clearState(live: Boolean = false) {
     if (live) {
       composeState.value = composeState.value.copy(inProgress = false)
@@ -378,6 +392,7 @@ fun ComposeView(
       if (liveMessage != null) composeState.value = cs.copy(liveMessage = null)
       sending()
     }
+    clearCurrentDraft()
 
     if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
@@ -705,13 +720,6 @@ fun ComposeView(
           }
       }
 
-      fun clearCurrentDraft() {
-        if (chatModel.draftChatId.value == chat.id) {
-          chatModel.draft.value = null
-          chatModel.draftChatId.value = null
-        }
-      }
-
       LaunchedEffect(rememberUpdatedState(chat.userCanSend).value) {
         if (!chat.userCanSend) {
           clearCurrentDraft()
@@ -719,23 +727,26 @@ fun ComposeView(
         }
       }
 
-      DisposableEffectOnGone {
+      KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
         val cs = composeState.value
         if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
           sendMessage(null)
           resetLinkPreview()
-          clearCurrentDraft()
+          clearPrevDraft(prevChatId)
           deleteUnusedFiles()
-        } else if (composeState.value.inProgress) {
-          clearCurrentDraft()
-        } else if (!composeState.value.empty) {
+        } else if (cs.inProgress) {
+          clearPrevDraft(prevChatId)
+        } else if (!cs.empty) {
           if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
             composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
           }
           chatModel.draft.value = composeState.value
-          chatModel.draftChatId.value = chat.id
+          chatModel.draftChatId.value = prevChatId
+          composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+        } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
+          composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
         } else {
-          clearCurrentDraft()
+          clearPrevDraft(prevChatId)
           deleteUnusedFiles()
         }
         chatModel.removeLiveDummy()

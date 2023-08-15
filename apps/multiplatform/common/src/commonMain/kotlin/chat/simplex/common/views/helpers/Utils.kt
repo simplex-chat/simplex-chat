@@ -335,15 +335,16 @@ fun DisposableEffectOnRotate(always: () -> Unit = {}, whenDispose: () -> Unit = 
  * */
 @Composable
 @NonRestartableComposable
-fun KeyChangeEffect(
-  key1: Any?,
-  block: suspend CoroutineScope.() -> Unit
+fun <T> KeyChangeEffect(
+  key1: T?,
+  block: suspend CoroutineScope.(prevKey: T?) -> Unit
 ) {
-  val initialKey = remember { key1 }
+  var prevKey by remember { mutableStateOf(key1) }
   var anyChange by remember { mutableStateOf(false) }
   LaunchedEffect(key1) {
-    if (anyChange || key1 != initialKey) {
-      block()
+    if (anyChange || key1 != prevKey) {
+      block(prevKey)
+      prevKey = key1
       anyChange = true
     }
   }
