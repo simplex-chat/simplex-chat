@@ -247,9 +247,9 @@ struct FramedItemView: View {
     
     private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int) -> some View {
         MsgContentView(text: qi.text, formattedText: qi.formattedText)
-        .lineLimit(lines)
-        .font(.subheadline)
-        .padding(.bottom, 6)
+            .lineLimit(lines)
+            .font(.subheadline)
+            .padding(.bottom, 6)
     }
 
     private func ciQuoteIconView(_ image: String) -> some View {

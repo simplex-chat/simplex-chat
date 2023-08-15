@@ -459,9 +459,9 @@ struct ChatView: View {
                     .padding(.leading, 12)
                 } else {
                     chatItemWithMenu(ci, maxWidth)
-                    .padding(.top, 5)
-                    .padding(.trailing)
-                    .padding(.leading, memberImageSize + 8 + 12)
+                        .padding(.top, 5)
+                        .padding(.trailing)
+                        .padding(.leading, memberImageSize + 8 + 12)
                 }
             }
         } else {
