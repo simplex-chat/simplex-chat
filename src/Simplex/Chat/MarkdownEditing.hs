@@ -12,6 +12,8 @@ module Simplex.Chat.MarkdownEditing
     , DiffStatus(..)
     , DiffUnchangedTextuallyStatus(..)
     , FormattedChar(..)
+    , LeftSide(..)
+    , RightSide(..)
     , findDiffs
     )
     where
@@ -50,6 +52,10 @@ data FormattedChar = FormattedChar
     deriving (Show, Eq)
 
 
+newtype LeftSide  = LeftSide  (Seq FormattedChar) deriving (Show, Eq)
+newtype RightSide = RightSide (Seq FormattedChar) deriving (Show, Eq)
+
+
 newtype DeleteIndicies = DeleteIndicies (Seq Int) deriving (Show, Eq)
 newtype InsertIndicies = InsertIndicies (Seq Int) deriving (Show, Eq)
 
@@ -59,24 +65,24 @@ toFormattedChars = concatMap toChars
     where toChars (FormattedText f t) = map (`FormattedChar` f) $ T.unpack t
 
 
-findDiffs :: Seq FormattedChar -> Seq FormattedChar -> Seq DiffedChar
-findDiffs left right = addInserts markDeletesAndUnchangedTextually
+toText :: Seq FormattedChar -> T.Text
+toText = T.pack . F.toList . fmap char 
+
+
+indicesFromEdits :: Seq D.Edit -> (DeleteIndicies, InsertIndicies)
+indicesFromEdits = F.foldl' f (DeleteIndicies S.empty, InsertIndicies S.empty) 
     where
-    toText :: Seq FormattedChar -> T.Text
-    toText = T.pack . F.toList . fmap char  
+    f :: (DeleteIndicies, InsertIndicies) -> D.Edit -> (DeleteIndicies, InsertIndicies)
+    f (x@(DeleteIndicies ds), y@(InsertIndicies is)) e = case e of
+        D.EditDelete   m n -> (x', y)  where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
+        D.EditInsert _ m n -> (x , y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
 
-    edits :: Seq D.Edit
+
+findDiffs :: LeftSide -> RightSide -> Seq DiffedChar
+findDiffs (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchangedTextually
+    where
     edits = D.diffTexts (toText left) (toText right)  
-
-    indices :: (DeleteIndicies, InsertIndicies)
-    indices = F.foldl' f (DeleteIndicies S.empty, InsertIndicies S.empty) edits
-        where
-        f :: (DeleteIndicies, InsertIndicies) -> D.Edit -> (DeleteIndicies, InsertIndicies)
-        f (x@(DeleteIndicies ds), y@(InsertIndicies is)) e = case e of
-            D.EditDelete   m n -> (x', y)  where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
-            D.EditInsert _ m n -> (x , y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
-
-    (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = indices
+    (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = indicesFromEdits edits
         
     unchangedTextually :: Seq (Int, FormattedChar, FormattedChar) -- indexed in original
     unchangedTextually = f <$> S.zip leftWithoutDeletes rightWithoutInserts
@@ -91,9 +97,9 @@ findDiffs left right = addInserts markDeletesAndUnchangedTextually
 
         f :: ((Int, FormattedChar), (Int, FormattedChar)) -> (Int, FormattedChar, FormattedChar)
         f ((i,c), (j,d)) = (i,c,d) -- i and j should always be equal
-    
-    unchangedTextualies :: M.Map Int DiffUnchangedTextuallyStatus
-    unchangedTextualies = F.foldl' f M.empty unchangedTextually
+
+    unchangers :: M.Map Int DiffUnchangedTextuallyStatus
+    unchangers = F.foldl' f M.empty unchangedTextually
         where
         f :: M.Map Int DiffUnchangedTextuallyStatus -> (Int, FormattedChar, FormattedChar) -> M.Map Int DiffUnchangedTextuallyStatus
         f acc (i, FormattedChar _ fL, FormattedChar _ fR) = M.insert i x acc
@@ -105,7 +111,7 @@ findDiffs left right = addInserts markDeletesAndUnchangedTextually
             f :: Int -> FormattedChar -> DiffedChar
             f i x = DiffedChar x $
                 if i `elem` deleteIndicies then Deleted 
-                else UnchangedTextually $ unchangedTextualies M.! i -- should never error
+                else UnchangedTextually $ unchangers M.! i -- should never error
 
     addInserts :: Seq DiffedChar -> Seq DiffedChar
     addInserts base = F.foldr f base edits -- start from end and work backwards, hence foldr

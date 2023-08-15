@@ -15,7 +15,9 @@ import Simplex.Chat.MarkdownEditing
       DiffedChar(DiffedChar),
       DiffStatus(UnchangedTextually, Inserted, Deleted),
       findDiffs,
-      DiffUnchangedTextuallyStatus(ChangedToFormat, Pristine) )
+      DiffUnchangedTextuallyStatus(ChangedToFormat, Pristine),
+      LeftSide(..),
+      RightSide(..) )
 import System.Console.ANSI.Types
 import Test.Hspec
 
@@ -29,11 +31,11 @@ formattedEditedTextTests :: Spec
 formattedEditedTextTests = describe "show edits" do
   it "no change" do
     findDiffs 
-        (S.fromList
+        (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing                                          
           ])   
 
-        (S.fromList
+        (RightSide $ S.fromList
           [ FormattedChar 'H' Nothing                                                            
           ])  
 
@@ -44,11 +46,11 @@ formattedEditedTextTests = describe "show edits" do
 
   it "add 1 char to empty" do
     findDiffs 
-        (S.fromList
+        (LeftSide $ S.fromList
           [                                          
           ])   
 
-        (S.fromList
+        (RightSide $ S.fromList
           [ FormattedChar 'H' Nothing                                                            
           ])  
 
@@ -59,11 +61,11 @@ formattedEditedTextTests = describe "show edits" do
 
   it "del the one and only" do
     findDiffs 
-        (S.fromList
+        (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing                                            
           ])   
 
-        (S.fromList
+        (RightSide $ S.fromList
           [                                                             
           ])  
 
@@ -74,7 +76,7 @@ formattedEditedTextTests = describe "show edits" do
 
   it "one character change" do
     findDiffs 
-        (S.fromList
+        (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing          
           , FormattedChar 'r' Nothing                 
           , FormattedChar 'l' Nothing           
@@ -82,7 +84,7 @@ formattedEditedTextTests = describe "show edits" do
           , FormattedChar 'o' Nothing                                    
           ])   
 
-        (S.fromList
+        (RightSide $ S.fromList
           [ FormattedChar 'H' Nothing           
           , FormattedChar 'e' Nothing  
           , FormattedChar 'l' Nothing           
@@ -102,7 +104,7 @@ formattedEditedTextTests = describe "show edits" do
 
   it "more1" do
     findDiffs 
-        (S.fromList
+        (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing          
           , FormattedChar 'r' Nothing                 
           , FormattedChar 'l' Nothing           
@@ -110,7 +112,7 @@ formattedEditedTextTests = describe "show edits" do
           , FormattedChar 'o' Nothing                                    
           ])   
 
-        (S.fromList
+        (RightSide $ S.fromList
           [ FormattedChar 'H' Nothing           
           , FormattedChar 'e' Nothing  
           , FormattedChar 'l' Nothing           
@@ -136,7 +138,7 @@ formattedEditedTextTests = describe "show edits" do
 
   it "more2" do
     findDiffs 
-        (S.fromList
+        (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing          
           , FormattedChar 'r' Nothing                 
           , FormattedChar 'l' Nothing           
@@ -144,7 +146,7 @@ formattedEditedTextTests = describe "show edits" do
           , FormattedChar 'o' Nothing                                    
           ])   
 
-        (S.fromList
+        (RightSide $ S.fromList
           [ FormattedChar 'H' Nothing           
           , FormattedChar 'e' Nothing  
           , FormattedChar 'x' Nothing                 
@@ -168,7 +170,7 @@ formattedEditedTextTests = describe "show edits" do
 
   it "more3" do
     findDiffs 
-        (S.fromList
+        (LeftSide $ S.fromList
           [ FormattedChar 'H' (Just Bold)    
           , FormattedChar 'H' (Just Bold)          
           , FormattedChar 'r' Nothing                 
@@ -177,7 +179,7 @@ formattedEditedTextTests = describe "show edits" do
           , FormattedChar 'o' (Just $ colored Green)                                       
           ])   
 
-        (S.fromList
+        (RightSide $ S.fromList
           [ FormattedChar 'H' (Just Italic)   
           , FormattedChar 'H' (Just Bold)          
           , FormattedChar 'e' (Just $ colored Cyan)    
