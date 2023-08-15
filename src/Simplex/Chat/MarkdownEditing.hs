@@ -16,16 +16,12 @@ module Simplex.Chat.MarkdownEditing
     )
     where
 
-import           Data.Aeson (ToJSON)
-import qualified Data.Aeson as J
+
 import qualified Data.Foldable as F
 import qualified Data.Map.Strict as M
 import           Data.Sequence ( Seq(..), (><) )
 import qualified Data.Sequence as S
-import           Data.Text (Text)
 import qualified Data.Text as T
-import           GHC.Generics ( Generic )
-import           Simplex.Messaging.Parsers ( sumTypeJSON ) 
 import qualified Data.Diff.Myers as D
 import           Simplex.Chat.Markdown ( FormattedText(..), Format )
 
@@ -36,13 +32,16 @@ data DiffStatus
     | Deleted 
     deriving (Show, Eq)
 
+
 data DiffUnchangedTextuallyStatus
     = Pristine
     | ChangedToFormat (Maybe Format)
     deriving (Show, Eq)
 
+
 data DiffedChar = DiffedChar FormattedChar DiffStatus
     deriving (Show, Eq)
+
 
 data FormattedChar = FormattedChar 
     { char :: Char
