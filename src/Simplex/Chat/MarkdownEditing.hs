@@ -1,10 +1,8 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
-{-# LANGUAGE InstanceSigs #-}
 
 
 module Simplex.Chat.MarkdownEditing 
@@ -96,7 +94,7 @@ findDiffs (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchanged
             where rightZ = S.zip (S.fromList [0 .. S.length right]) right
 
         f :: ((Int, FormattedChar), (Int, FormattedChar)) -> (Int, FormattedChar, FormattedChar)
-        f ((i,c), (j,d)) = (i,c,d) -- i and j should always be equal
+        f ((i,c), (_j,d)) = (i,c,d) -- i and _j should always be equal
 
     unchangers :: M.Map Int DiffUnchangedTextuallyStatus
     unchangers = F.foldl' f M.empty unchangedTextually
