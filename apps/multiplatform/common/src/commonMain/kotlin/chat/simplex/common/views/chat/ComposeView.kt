@@ -705,6 +705,13 @@ fun ComposeView(
           }
       }
 
+      fun clearPrevDraft(prevChatId: String?) {
+        if (chatModel.draftChatId.value == prevChatId) {
+          chatModel.draft.value = null
+          chatModel.draftChatId.value = null
+        }
+      }
+
       fun clearCurrentDraft() {
         if (chatModel.draftChatId.value == chat.id) {
           chatModel.draft.value = null
@@ -724,11 +731,11 @@ fun ComposeView(
         if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
           sendMessage(null)
           resetLinkPreview()
-          clearCurrentDraft()
+          clearPrevDraft(prevChatId)
           deleteUnusedFiles()
-        } else if (composeState.value.inProgress) {
-          clearCurrentDraft()
-        } else if (!composeState.value.empty) {
+        } else if (cs.inProgress) {
+          clearPrevDraft(prevChatId)
+        } else if (!cs.empty) {
           if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
             composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
           }
@@ -738,7 +745,7 @@ fun ComposeView(
         } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
           composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
         } else {
-          clearCurrentDraft()
+          clearPrevDraft(prevChatId)
           deleteUnusedFiles()
         }
         chatModel.removeLiveDummy()
