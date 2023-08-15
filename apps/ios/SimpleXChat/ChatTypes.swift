@@ -2533,20 +2533,20 @@ public enum CIContent: Decodable, ItemContent {
 
     public var showMemberName: Bool {
         switch self {
-        case .sndMsgContent: true
-        case .rcvMsgContent: true
-        case .sndDeleted: true
-        case .rcvDeleted: true
-        case .sndCall: true
-        case .rcvCall: true
-        case .rcvIntegrityError: true
-        case .rcvDecryptionError: true
-        case .rcvGroupInvitation: true
-        case .sndChatPreference: true
-        case .sndModerated: true
-        case .rcvModerated: true
-        case .invalidJSON: true
-        default: false
+        case .sndMsgContent: return true
+        case .rcvMsgContent: return true
+        case .sndDeleted: return true
+        case .rcvDeleted: return true
+        case .sndCall: return true
+        case .rcvCall: return true
+        case .rcvIntegrityError: return true
+        case .rcvDecryptionError: return true
+        case .rcvGroupInvitation: return true
+        case .sndChatPreference: return true
+        case .sndModerated: return true
+        case .rcvModerated: return true
+        case .invalidJSON: return true
+        default: return false
         }
     }
 }
