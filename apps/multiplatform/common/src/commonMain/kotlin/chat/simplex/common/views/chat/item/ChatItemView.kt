@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +28,16 @@ import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
+
+val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
+
+fun chatEventText(ci: ChatItem): AnnotatedString =
+  chatEventText(ci.content.text, ci.timestampText)
+
+fun chatEventText(eventText: String, ts: String): AnnotatedString =
+  buildAnnotatedString {
+    withStyle(chatEventStyle) { append("$eventText  $ts") }
+  }
 
 @Composable
 fun ChatItemView(
@@ -53,6 +63,7 @@ fun ChatItemView(
   findModelMember: (String) -> GroupMember?,
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
+  getConnectedMemberNames: (() -> List<String>)? = null,
 ) {
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
@@ -95,7 +106,8 @@ fun ChatItemView(
             ReactionIcon(r.reaction.text, fontSize = 12.sp)
             if (r.totalReacted > 1) {
               Spacer(Modifier.width(4.dp))
-              Text("${r.totalReacted}",
+              Text(
+                "${r.totalReacted}",
                 fontSize = 11.5.sp,
                 fontWeight = if (r.userReacted) FontWeight.Bold else FontWeight.Normal,
                 color = if (r.userReacted) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
@@ -276,6 +288,45 @@ fun ChatItemView(
           CICallItemView(cInfo, cItem, status, duration, acceptCall)
         }
 
+        fun eventItemViewText(): AnnotatedString {
+          val memberDisplayName = cItem.memberDisplayName
+          return if (memberDisplayName != null) {
+            buildAnnotatedString {
+              withStyle(chatEventStyle) { append(memberDisplayName) }
+              append(" ")
+            }.plus(chatEventText(cItem))
+          } else {
+            chatEventText(cItem)
+          }
+        }
+
+        @Composable fun EventItemView() {
+          CIEventView(eventItemViewText())
+        }
+
+        fun membersConnectedText(): String? {
+          return if (getConnectedMemberNames != null) {
+            val ns = getConnectedMemberNames()
+            when {
+              ns.size > 3 -> "${ns[0]}, ${ns[1]} and ${ns.size - 2} other members connected"
+              ns.size == 3 -> "${ns[0]}, ${ns[1]} and ${ns[2]} connected"
+              ns.size == 2 -> "${ns[0]} and ${ns[1]} connected"
+              else -> null
+            }
+          } else {
+            null
+          }
+        }
+
+        fun membersConnectedItemText(): AnnotatedString {
+          val t = membersConnectedText()
+          return if (t != null) {
+            chatEventText(t, cItem.timestampText)
+          } else {
+            eventItemViewText()
+          }
+        }
+
         @Composable
         fun ModeratedItem() {
           MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
@@ -296,10 +347,13 @@ fun ChatItemView(
           is CIContent.RcvDecryptionError -> CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, showMember = showMember)
           is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
           is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
-          is CIContent.RcvGroupEventContent -> CIEventView(cItem)
-          is CIContent.SndGroupEventContent -> CIEventView(cItem)
-          is CIContent.RcvConnEventContent -> CIEventView(cItem)
-          is CIContent.SndConnEventContent -> CIEventView(cItem)
+          is CIContent.RcvGroupEventContent -> when (c.rcvGroupEvent) {
+            is RcvGroupEvent.MemberConnected -> CIEventView(membersConnectedItemText())
+            else -> EventItemView()
+          }
+          is CIContent.SndGroupEventContent -> EventItemView()
+          is CIContent.RcvConnEventContent -> EventItemView()
+          is CIContent.SndConnEventContent -> EventItemView()
           is CIContent.RcvChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
           is CIContent.SndChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
           is CIContent.RcvChatPreference -> {

@@ -2543,6 +2543,9 @@ public enum CIContent: Decodable, ItemContent {
         case .rcvDecryptionError: return true
         case .rcvGroupInvitation: return true
         case .sndChatPreference: return true
+        case .rcvChatPreference: return true
+        case .sndGroupFeature: return true
+        case .rcvGroupFeature: return true
         case .sndModerated: return true
         case .rcvModerated: return true
         case .invalidJSON: return true
