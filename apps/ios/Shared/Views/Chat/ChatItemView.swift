@@ -134,8 +134,8 @@ struct ChatItemContentView<Content: View>: View {
         }
     }
 
-    private var membersConnectedText: String? {
-        var ns = chatModel.getConnectedMemberNames(chatItem)
+    private var membersConnectedText: LocalizedStringKey? {
+        let ns = chatModel.getConnectedMemberNames(chatItem)
         return ns.count > 3
             ? "\(ns[0]), \(ns[1]) and \(ns.count - 2) other members connected"
             : ns.count == 3
@@ -146,15 +146,15 @@ struct ChatItemContentView<Content: View>: View {
     }
 }
 
-func chatEventText(_ eventText: String, _ ts: Text) -> Text {
-    (Text(eventText + " ") + ts)
+func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text) -> Text {
+    (Text(eventText) + Text(" ") + ts)
         .font(.caption)
         .foregroundColor(.secondary)
         .fontWeight(.light)
 }
 
 func chatEventText(_ ci: ChatItem) -> Text {
-    chatEventText(ci.content.text, ci.timestampText)
+    chatEventText("\(ci.content.text)", ci.timestampText)
 }
 
 struct ChatItemView_Previews: PreviewProvider {
