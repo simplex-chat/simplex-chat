@@ -283,6 +283,20 @@ fun ComposeView(
     cancelledLinks.clear()
   }
 
+  fun clearPrevDraft(prevChatId: String?) {
+    if (chatModel.draftChatId.value == prevChatId) {
+      chatModel.draft.value = null
+      chatModel.draftChatId.value = null
+    }
+  }
+
+  fun clearCurrentDraft() {
+    if (chatModel.draftChatId.value == chat.id) {
+      chatModel.draft.value = null
+      chatModel.draftChatId.value = null
+    }
+  }
+
   fun clearState(live: Boolean = false) {
     if (live) {
       composeState.value = composeState.value.copy(inProgress = false)
@@ -378,6 +392,7 @@ fun ComposeView(
       if (liveMessage != null) composeState.value = cs.copy(liveMessage = null)
       sending()
     }
+    clearCurrentDraft()
 
     if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
@@ -703,20 +718,6 @@ fun ComposeView(
               is RecordingState.NotStarted -> {}
             }
           }
-      }
-
-      fun clearPrevDraft(prevChatId: String?) {
-        if (chatModel.draftChatId.value == prevChatId) {
-          chatModel.draft.value = null
-          chatModel.draftChatId.value = null
-        }
-      }
-
-      fun clearCurrentDraft() {
-        if (chatModel.draftChatId.value == chat.id) {
-          chatModel.draft.value = null
-          chatModel.draftChatId.value = null
-        }
       }
 
       LaunchedEffect(rememberUpdatedState(chat.userCanSend).value) {
