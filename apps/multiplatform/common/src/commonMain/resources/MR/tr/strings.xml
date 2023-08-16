@@ -1045,4 +1045,9 @@
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Gizliliği korumak için, diğer tüm platformlar gibi kullanıcı kimliği kullanmak yerine, SimpleX mesaj kuyrukları için kişilerinizin her biri için ayrı tanımlayıcılara sahiptir.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %1$s).</string>
     <string name="v4_4_live_messages_desc">Alıcılar güncellemeleri siz yazdıkça görürler.</string>
+    <string name="auth_log_in_using_credential">Bilgilerinizi kullanarak giriş yapın</string>
+    <string name="markdown_in_messages">Mesajlarda Markdown</string>
+    <string name="users_delete_data_only">Sadece yerel profil verisi</string>
+    <string name="info_row_local_name">Yerel ad</string>
+    <string name="only_you_can_add_message_reactions">Sadece sen mesaj tepkileri ekleyebilirsin.</string>
 </resources>
