@@ -79,6 +79,7 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
@@ -498,7 +499,12 @@ processChatCommand = \case
     agentQueries <- slowQueries $ agentClientStore smpAgent
     pure CRSlowSQLQueries {chatQueries, agentQueries}
     where
-      slowQueries st = liftIO $ map (uncurry SlowSQLQuery . first SQL.fromQuery) . sortOn snd . M.assocs <$> withConnection st (readTVarIO . DB.slow)
+      slowQueries st =
+        liftIO $
+          map (uncurry SlowSQLQuery . first SQL.fromQuery)
+            . sortOn (timeAvgApprx . snd)
+            . M.assocs
+            <$> withConnection st (readTVarIO . DB.slow)
   APIGetChats userId withPCC -> withUserId userId $ \user ->
     CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
@@ -3982,7 +3988,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content
           withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
-          toView $ CRReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}          
+          toView $ CRReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}
           whenContactNtfs user ct $
             showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
       where

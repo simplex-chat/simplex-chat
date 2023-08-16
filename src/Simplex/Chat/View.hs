@@ -47,6 +47,7 @@ import qualified Simplex.FileTransfer.Protocol as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -248,7 +249,11 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRNtfMessages {} -> []
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
-    let viewQuery SlowSQLQuery {query, duration} = sShow duration <> " ms: " <> plain (T.unwords $ T.lines query)
+    let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvgApprx}} =
+          "count: " <> sShow count
+            <> (" :: max: " <> sShow timeMax <> " ms")
+            <> (" :: apprx. avg: " <> sShow timeAvgApprx <> " ms")
+            <> (" :: " <> plain (T.unwords $ T.lines query))
      in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
   CRDebugLocks {chatLockName, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
