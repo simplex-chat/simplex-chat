@@ -67,7 +67,7 @@
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Goed voor de batterij</b>. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.]]></string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scan QR-code</b>: om verbinding te maken met uw contactpersoon die u de QR-code laat zien.]]></string>
-    <string name="integrity_msg_bad_id">Onjuiste bericht ID</string>
+    <string name="integrity_msg_bad_id">Onjuiste bericht-ID</string>
     <string name="call_already_ended">Oproep al beëindigd!</string>
     <string name="chat_item_ttl_month">1 maand</string>
     <string name="about_simplex">Over SimpleX</string>
@@ -227,7 +227,7 @@
     <string name="group_member_status_announced">verbinden (aangekondigd)</string>
     <string name="info_row_connection">Verbinding</string>
     <string name="create_secret_group_title">Maak een geheime groep aan</string>
-    <string name="info_row_database_id">Database ID</string>
+    <string name="info_row_database_id">Database-ID</string>
     <string name="chat_preferences_contact_allows">Contact maakt het mogelijk</string>
     <string name="contact_preferences">Contact voorkeuren</string>
     <string name="contacts_can_mark_messages_for_deletion">Contact personen kunnen berichten markeren voor verwijdering; u kunt ze wel bekijken.</string>
@@ -435,7 +435,7 @@
     <string name="how_it_works">Hoe het werkt</string>
     <string name="callstatus_missed">gemiste oproep</string>
     <string name="how_simplex_works">Hoe SimpleX werkt</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Veel mensen vroegen: <i>als SimpleX geen gebruikers ID\'s heeft, hoe kan het dan berichten bezorgen\?</i>]]></string>
+    <string name="many_people_asked_how_can_it_deliver">Veel mensen vroegen: <i>als SimpleX geen gebruikers-ID\'s heeft, hoe kan het dan berichten bezorgen\?</i></string>
     <string name="incoming_audio_call">Inkomende audio oproep</string>
     <string name="incoming_video_call">Inkomend video gesprek</string>
     <string name="ignore">Negeren</string>
@@ -728,7 +728,7 @@
     <string name="secret_text">geheim</string>
     <string name="next_generation_of_private_messaging">De volgende generatie privéberichten</string>
     <string name="callstate_waiting_for_answer">wachten op antwoord…</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers ID\'s die door alle andere platforms worden gebruikt, ID\'s voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID\'s die door alle andere platforms worden gebruikt, ID\'s voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.</string>
     <string name="use_chat">Gebruik chat</string>
     <string name="onboarding_notifications_mode_off">Wanneer de app actief is</string>
     <string name="video_call_no_encryption">video gesprek (niet e2e versleuteld)</string>
@@ -864,7 +864,7 @@
     <string name="update_network_session_mode_question">Transportisolatiemodus updaten\?</string>
     <string name="callstate_received_confirmation">bevestiging ontvangen…</string>
     <string name="callstate_waiting_for_confirmation">Wachten op bevestiging…</string>
-    <string name="first_platform_without_user_ids">Het eerste platform zonder gebruikers ID\'s, privé door ontwerp.</string>
+    <string name="first_platform_without_user_ids">Het eerste platform zonder gebruikers-ID\'s, privé door ontwerp.</string>
     <string name="prohibit_direct_messages">Verbied het sturen van directe berichten naar leden.</string>
     <string name="prohibit_sending_voice">Verbieden het verzenden van spraak berichten.</string>
     <string name="v4_2_security_assessment_desc">De beveiliging van SimpleX Chat is gecontroleerd door Trail of Bits.</string>
@@ -1017,7 +1017,7 @@
     <string name="file_will_be_received_when_contact_completes_uploading">Het bestand wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">De afbeelding wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</string>
     <string name="show_dev_options">Toon:</string>
-    <string name="developer_options">Database ID\'s en Transport isolatie optie.</string>
+    <string name="developer_options">Database-ID\'s en Transport isolatie optie.</string>
     <string name="hide_dev_options">Verbergen:</string>
     <string name="show_developer_options">Ontwikkelaars opties tonen</string>
     <string name="settings_section_title_experimenta">EXPERIMENTEEL</string>
@@ -1089,7 +1089,7 @@
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.</string>
     <string name="alert_text_fragment_please_report_to_developers">Meld het alsjeblieft aan de ontwikkelaars.</string>
     <string name="alert_title_msg_bad_hash">Onjuiste bericht hash</string>
-    <string name="alert_title_msg_bad_id">Onjuiste bericht ID</string>
+    <string name="alert_title_msg_bad_id">Onjuiste bericht-ID</string>
     <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
 \nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d-berichten konden niet worden ontsleuteld.</string>
