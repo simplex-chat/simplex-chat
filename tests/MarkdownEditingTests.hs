@@ -273,6 +273,74 @@ formattedEditedTextTests = describe "show edits" do
               }                                                      
         ]
 
+  it "SimplexLink 2" do
+    findDiffs 
+        (LeftSide $ S.fromList
+          [ FormattedChar '>' $ Just $ SimplexLink    
+              { linkType = XLContact
+              , simplexUri = "https://api.twitter.com/2/tweets/:id"
+              , trustedUri = True
+              , smpHosts = NE.fromList ["host1", "host2", "host3"]}                                                   
+          ])   
+        (RightSide $ S.fromList
+          [ FormattedChar '>' $ Just SimplexLink    
+              { linkType = XLContact
+              , simplexUri = "https://api.twitter.com/3/tweets/:id"
+              , trustedUri = True
+              , smpHosts = NE.fromList ["host1", "host2", "host3"]
+              }                                                   
+          ])  
+      `shouldBe` S.fromList
+        [ DiffedChar 
+            (FormattedChar '>' $ Just SimplexLink    
+              { linkType = XLContact
+              , simplexUri = "https://api.twitter.com/2/tweets/:id"
+              , trustedUri = True
+              , smpHosts = NE.fromList ["host1", "host2", "host3"]
+              } 
+            ) $           
+            UnchangedChar $ ChangedToFormat $ Just SimplexLink    
+              { linkType = XLContact
+              , simplexUri = "https://api.twitter.com/3/tweets/:id"
+              , trustedUri = True
+              , smpHosts = NE.fromList ["host1", "host2", "host3"]
+              }                                                      
+        ]
+
+  it "SimplexLink 3" do
+    findDiffs 
+        (LeftSide $ S.fromList
+          [ FormattedChar '>' $ Just $ SimplexLink    
+              { linkType = XLContact
+              , simplexUri = "https://api.twitter.com/2/tweets/:id"
+              , trustedUri = True
+              , smpHosts = NE.fromList ["host1", "host2", "host3"]}                                                   
+          ])   
+        (RightSide $ S.fromList
+          [ FormattedChar '>' $ Just SimplexLink    
+              { linkType = XLContact
+              , simplexUri = "https://api.twitter.com/2/tweets/:id"
+              , trustedUri = True
+              , smpHosts = NE.fromList ["host0", "host2", "host3"]
+              }                                                   
+          ])  
+      `shouldBe` S.fromList
+        [ DiffedChar 
+            (FormattedChar '>' $ Just SimplexLink    
+              { linkType = XLContact
+              , simplexUri = "https://api.twitter.com/2/tweets/:id"
+              , trustedUri = True
+              , smpHosts = NE.fromList ["host1", "host2", "host3"]
+              } 
+            ) $           
+            UnchangedChar $ ChangedToFormat $ Just SimplexLink    
+              { linkType = XLContact
+              , simplexUri = "https://api.twitter.com/2/tweets/:id"
+              , trustedUri = True
+              , smpHosts = NE.fromList ["host0", "host2", "host3"]
+              }                                                      
+        ]
+
   it "findPlainDiffs 1" do
     findPlainDiffs 
       (LeftSide  "https://api.twitter.com/2/tweets/:id") 
