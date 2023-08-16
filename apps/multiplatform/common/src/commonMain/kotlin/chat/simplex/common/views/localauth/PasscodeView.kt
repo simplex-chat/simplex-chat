@@ -30,11 +30,16 @@ fun PasscodeView(
 
   @Composable
   fun Modifier.handleKeyboard(): Modifier {
-    val numbers = remember { arrayOf(Key.Zero, Key.One, Key.Two, Key.Three, Key.Four, Key.Five, Key.Six, Key.Seven, Key.Eight, Key.Nine) }
+    val numbers = remember {
+      arrayOf(
+        Key.Zero, Key.One, Key.Two, Key.Three, Key.Four, Key.Five, Key.Six, Key.Seven, Key.Eight, Key.Nine,
+        Key.NumPad0, Key.NumPad1, Key.NumPad2, Key.NumPad3, Key.NumPad4, Key.NumPad5, Key.NumPad6, Key.NumPad7, Key.NumPad8, Key.NumPad9
+      )
+    }
     return onPreviewKeyEvent {
       if (it.key in numbers && it.type == KeyEventType.KeyDown) {
         if (passcode.value.length < 16) {
-          passcode.value += numbers.indexOf(it.key)
+          passcode.value += numbers.indexOf(it.key) % 10
         }
         true
       } else if (it.key == Key.Backspace && it.type == KeyEventType.KeyDown && (it.isCtrlPressed || it.isMetaPressed)) {
