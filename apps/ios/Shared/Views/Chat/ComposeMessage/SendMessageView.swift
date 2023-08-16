@@ -28,6 +28,7 @@ struct SendMessageView: View {
     @State private var holdingVMR = false
     @Namespace var namespace
     @Binding var keyboardVisible: Bool
+    var sendButtonColor = Color.accentColor
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     @State private var teUiFont: UIFont = UIFont.preferredFont(forTextStyle: .body)
@@ -169,7 +170,7 @@ struct SendMessageView: View {
                   ? "checkmark.circle.fill"
                   : "arrow.up.circle.fill")
             .resizable()
-            .foregroundColor(.accentColor)
+            .foregroundColor(sendButtonColor)
             .frame(width: sendButtonSize, height: sendButtonSize)
             .opacity(sendButtonOpacity)
         }

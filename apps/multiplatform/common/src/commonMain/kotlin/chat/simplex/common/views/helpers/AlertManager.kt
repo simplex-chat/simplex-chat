@@ -51,26 +51,31 @@ class AlertManager {
     buttons: @Composable () -> Unit,
   ) {
     showAlert {
-      DefaultDialog(onDismissRequest = ::hideAlert) {
-        Column(
-          Modifier
-            .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
-            .padding(bottom = DEFAULT_PADDING)
-        ) {
+      AlertDialog(
+        onDismissRequest = ::hideAlert,
+        title = {
           Text(
             title,
             Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING),
             textAlign = TextAlign.Center,
             fontSize = 20.sp
           )
-          CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
-            if (text != null) {
-              Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colors.secondary)
+        },
+        buttons = {
+          Column(
+            Modifier
+              .padding(bottom = DEFAULT_PADDING)
+          ) {
+            CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+              if (text != null) {
+                Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colors.secondary)
+              }
+              buttons()
             }
-            buttons()
           }
-        }
-      }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      )
     }
   }
 

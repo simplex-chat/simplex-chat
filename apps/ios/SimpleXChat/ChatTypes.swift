@@ -2021,6 +2021,17 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public var memberConnected: GroupMember? {
+        switch chatDir {
+        case .groupRcv(let groupMember):
+            switch content {
+            case .rcvGroupEvent(rcvGroupEvent: .memberConnected): return groupMember
+            default: return nil
+            }
+        default: return nil
+        }
+    }
+
     private var showNtfDir: Bool {
         return !chatDir.sent
     }
@@ -2517,6 +2528,25 @@ public enum CIContent: Decodable, ItemContent {
             case let .rcvMsgContent(mc): return mc
             default: return nil
             }
+        }
+    }
+
+    public var showMemberName: Bool {
+        switch self {
+        case .sndMsgContent: return true
+        case .rcvMsgContent: return true
+        case .sndDeleted: return true
+        case .rcvDeleted: return true
+        case .sndCall: return true
+        case .rcvCall: return true
+        case .rcvIntegrityError: return true
+        case .rcvDecryptionError: return true
+        case .rcvGroupInvitation: return true
+        case .sndChatPreference: return true
+        case .sndModerated: return true
+        case .rcvModerated: return true
+        case .invalidJSON: return true
+        default: return false
         }
     }
 }

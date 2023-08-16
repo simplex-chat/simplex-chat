@@ -12,10 +12,9 @@ import SimpleXChat
 struct IntegrityErrorItemView: View {
     var msgError: MsgErrorType
     var chatItem: ChatItem
-    var showMember = false
 
     var body: some View {
-        CIMsgError(chatItem: chatItem, showMember: showMember) {
+        CIMsgError(chatItem: chatItem) {
             switch msgError {
             case .msgSkipped:
                 AlertManager.shared.showAlertMsg(
@@ -54,14 +53,10 @@ struct IntegrityErrorItemView: View {
 
 struct CIMsgError: View {
     var chatItem: ChatItem
-    var showMember = false
     var onTap: () -> Void
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            if showMember, let member = chatItem.memberDisplayName {
-                Text(member).fontWeight(.medium) + Text(": ")
-            }
             Text(chatItem.content.text)
                 .foregroundColor(.red)
                 .italic()

@@ -368,7 +368,12 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     stringResource(MR.strings.delete_verb),
     painterResource(MR.images.ic_delete),
     onClick = {
-      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {}
+      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {
+        if (chatModel.chatId.value == null) {
+          ModalManager.center.closeModals()
+          ModalManager.end.closeModals()
+        }
+      }
       showMenu.value = false
     },
     color = Color.Red
@@ -517,7 +522,10 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
-          chatModel.chatId.value = null
+          if (chatModel.chatId.value == chatInfo.id) {
+            chatModel.chatId.value = null
+            ModalManager.end.closeModals()
+          }
         }
       }
     },
@@ -550,7 +558,10 @@ fun deleteGroup(groupInfo: GroupInfo, chatModel: ChatModel) {
     val r = chatModel.controller.apiDeleteChat(ChatType.Group, groupInfo.apiId)
     if (r) {
       chatModel.removeChat(groupInfo.id)
-      chatModel.chatId.value = null
+      if (chatModel.chatId.value == groupInfo.id) {
+        chatModel.chatId.value = null
+        ModalManager.end.closeModals()
+      }
       ntfManager.cancelNotificationsForChat(groupInfo.id)
     }
   }
