@@ -307,18 +307,18 @@ formattedEditedTextTests = describe "show edits" do
   it "findPlainDiffs" do
     findPlainDiffs (LeftSide "Hrl~!@lo") (RightSide "Herxy!@zo12")
       `shouldBe` S.fromList
-          [ DiffedPlainChar 'H' PlainUnchanged
-          , DiffedPlainChar 'e' PlainInserted
-          , DiffedPlainChar 'r' PlainUnchanged
-          , DiffedPlainChar 'l' PlainDeleted
-          , DiffedPlainChar '~' PlainDeleted
-          , DiffedPlainChar 'x' PlainInserted
-          , DiffedPlainChar 'y' PlainInserted
-          , DiffedPlainChar '!' PlainUnchanged
-          , DiffedPlainChar '@' PlainUnchanged
-          , DiffedPlainChar 'l' PlainDeleted
-          , DiffedPlainChar 'z' PlainInserted
-          , DiffedPlainChar 'o' PlainUnchanged
-          , DiffedPlainChar '1' PlainInserted
-          , DiffedPlainChar '2' PlainInserted
+          [ DiffedPlainChar 'H' UnchangedP
+          , DiffedPlainChar 'e' InsertedP
+          , DiffedPlainChar 'r' UnchangedP
+          , DiffedPlainChar 'l' DeletedP
+          , DiffedPlainChar '~' DeletedP
+          , DiffedPlainChar 'x' InsertedP
+          , DiffedPlainChar 'y' InsertedP
+          , DiffedPlainChar '!' UnchangedP
+          , DiffedPlainChar '@' UnchangedP
+          , DiffedPlainChar 'l' DeletedP
+          , DiffedPlainChar 'z' InsertedP
+          , DiffedPlainChar 'o' UnchangedP
+          , DiffedPlainChar '1' InsertedP
+          , DiffedPlainChar '2' InsertedP
           ]

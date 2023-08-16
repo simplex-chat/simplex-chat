@@ -38,9 +38,9 @@ data DiffStatus
 
 
 data DiffPlainStatus
-    = PlainUnchanged
-    | PlainInserted
-    | PlainDeleted
+    = UnchangedP
+    | InsertedP
+    | DeletedP
     deriving (Show, Eq)
 
 
@@ -65,8 +65,8 @@ data FormattedChar = FormattedChar
     deriving (Show, Eq)
 
 
-newtype LeftSide a = LeftSide a 
-newtype RightSide a = RightSide a
+newtype LeftSide  a = LeftSide  a deriving (Show, Eq)
+newtype RightSide a = RightSide a deriving (Show, Eq)
 
 
 newtype DeleteIndicies = DeleteIndicies (Seq Int) deriving (Show, Eq)
@@ -102,9 +102,9 @@ findPlainDiffs (LeftSide left) (RightSide right) = f <$> diffs
     f :: DiffedChar -> DiffedPlainChar
     f (DiffedChar (FormattedChar c _) diffStatus) = DiffedPlainChar c diffStatusPlain
         where diffStatusPlain = case diffStatus of
-                UnchangedChar _ -> PlainUnchanged
-                Inserted -> PlainInserted
-                Deleted -> PlainDeleted
+                UnchangedChar _ -> UnchangedP
+                Inserted -> InsertedP
+                Deleted -> DeletedP
 
 
 findDiffs :: LeftSide (Seq FormattedChar) -> RightSide (Seq FormattedChar) -> Seq DiffedChar
