@@ -502,7 +502,7 @@ processChatCommand = \case
       slowQueries st =
         liftIO $
           map (uncurry SlowSQLQuery . first SQL.fromQuery)
-            . sortOn (timeAvgApprx . snd)
+            . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
   APIGetChats userId withPCC -> withUserId userId $ \user ->

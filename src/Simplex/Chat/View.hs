@@ -249,10 +249,10 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRNtfMessages {} -> []
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
-    let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvgApprx}} =
+    let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
           "count: " <> sShow count
             <> (" :: max: " <> sShow timeMax <> " ms")
-            <> (" :: apprx. avg: " <> sShow timeAvgApprx <> " ms")
+            <> (" :: avg: " <> sShow timeAvg <> " ms")
             <> (" :: " <> plain (T.unwords $ T.lines query))
      in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
   CRDebugLocks {chatLockName, agentLocks} ->
