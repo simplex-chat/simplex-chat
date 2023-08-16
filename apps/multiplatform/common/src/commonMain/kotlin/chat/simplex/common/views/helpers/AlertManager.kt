@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
@@ -159,13 +160,22 @@ class AlertManager {
         title = alertTitle(title),
         text = alertText(text),
         buttons = {
+          val focusRequester = remember { FocusRequester() }
+          LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+          }
           Row(
             Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING_HALF),
             horizontalArrangement = Arrangement.Center
           ) {
-            TextButton(onClick = {
-              hideAlert()
-            }) { Text(confirmText, color = Color.Unspecified) }
+            TextButton(
+              onClick = {
+                hideAlert()
+              },
+              Modifier.focusRequester(focusRequester)
+            ) {
+              Text(confirmText, color = Color.Unspecified)
+            }
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))

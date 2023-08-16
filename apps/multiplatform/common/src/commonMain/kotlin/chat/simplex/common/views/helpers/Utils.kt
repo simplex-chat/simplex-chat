@@ -306,10 +306,10 @@ fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {
   DisposableEffect(Unit) {
     always()
-    val orientation = screenOrientation()
+    val orientation = windowOrientation()
     onDispose {
       whenDispose()
-      if (orientation == screenOrientation()) {
+      if (orientation == windowOrientation()) {
         whenGone()
       }
     }
@@ -320,10 +320,10 @@ fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}
 fun DisposableEffectOnRotate(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenRotate: () -> Unit) {
   DisposableEffect(Unit) {
     always()
-    val orientation = screenOrientation()
+    val orientation = windowOrientation()
     onDispose {
       whenDispose()
-      if (orientation != screenOrientation()) {
+      if (orientation != windowOrientation()) {
         whenRotate()
       }
     }
