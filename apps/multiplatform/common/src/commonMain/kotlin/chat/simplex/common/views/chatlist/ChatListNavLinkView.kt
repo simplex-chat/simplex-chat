@@ -44,7 +44,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     showMenu.value = false
     delay(500L)
   }
-  val showChatPreviews = chatModel.controller.appPrefs.privacyShowChatPreviews.get()
+  // TODO repeat stopped
+  val showChatPreviews = remember { mutableStateOf(chatModel.controller.appPrefs.privacyShowChatPreviews.get()) }
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
@@ -669,7 +670,7 @@ fun PreviewChatListNavLinkDirect() {
             ),
             chatStats = Chat.ChatStats()
           ),
-          true,
+          remember { mutableStateOf(false) },
           null,
           null,
           null,
@@ -709,7 +710,7 @@ fun PreviewChatListNavLinkGroup() {
             ),
             chatStats = Chat.ChatStats()
           ),
-          true,
+          remember { mutableStateOf(false) },
           null,
           null,
           null,

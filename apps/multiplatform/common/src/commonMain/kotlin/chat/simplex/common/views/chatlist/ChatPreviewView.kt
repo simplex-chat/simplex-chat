@@ -31,7 +31,7 @@ import dev.icerock.moko.resources.ImageResource
 @Composable
 fun ChatPreviewView(
   chat: Chat,
-  showChatPreviews: Boolean,
+  showChatPreviews: MutableState<Boolean>,
   chatModelDraft: ComposeState?,
   chatModelDraftChatId: ChatId?,
   currentUserProfileDisplayName: String?,
@@ -141,7 +141,7 @@ fun ChatPreviewView(
   fun chatPreviewText() {
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
-      if (showChatPreviews) {
+      if (showChatPreviews.value) {
         val (text: CharSequence, inlineTextContent) = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { messageDraft(chatModelDraft) }
           ci.meta.itemDeleted == null -> ci.text to null
@@ -339,6 +339,6 @@ fun unreadCountStr(n: Int): String {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
+    ChatPreviewView(Chat.sampleData, remember { mutableStateOf(false) }, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
   }
 }
