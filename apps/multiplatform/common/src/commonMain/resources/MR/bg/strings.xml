@@ -352,7 +352,7 @@
     <string name="group_member_status_creator">създател</string>
     <string name="create_group_link">Създай групов линк</string>
     <string name="button_create_group_link">Създай линк</string>
-    <string name="num_contacts_selected">%d избран(и) контакт(а).</string>
+    <string name="num_contacts_selected">%d избран(и) контакт(а)</string>
     <string name="delete_group_question">Изтрий група\?</string>
     <string name="delete_link">Изтрий линк</string>
     <string name="delete_link_question">Изтрий линк\?</string>
@@ -752,7 +752,7 @@
     <string name="user_unhide">Покажи</string>
     <string name="you_can_hide_or_mute_user_profile">Можете да скриете или заглушите потребителски профил - задръжте върху него за менюто.</string>
     <string name="incognito">Инкогнито</string>
-    <string name="incognito_info_protects">Режимът инкогнито защитава поверителността на името и изображението на вашия основен профил — за всеки нов контакт се създава нов произволен профил.</string>
+    <string name="incognito_info_protects">Режимът инкогнито защитава вашата поверителност, като използва нов произволен профил за всеки контакт.</string>
     <string name="incognito_info_allows">Позволява да имате много анонимни връзки без споделени данни между тях в един чат профил .</string>
     <string name="v4_5_italian_interface">Италиански интерфейс</string>
     <string name="description_via_contact_address_link_incognito">инкогнито чрез линк с адрес за контакт</string>
@@ -763,7 +763,7 @@
     <string name="invalid_message_format">невалиден формат на съобщението</string>
     <string name="invalid_connection_link">Невалиден линк за връзка</string>
     <string name="notification_display_mode_hidden_desc">Скриване на контакт и съобщение</string>
-    <string name="turn_off_battery_optimization"><![CDATA[За да го използвате, моля, <b>деактивирайте оптимизирането на батерията</b> за SimpleX в следващия диалогов прозорец. В противен случай известията ще бъдат деактивирани.]]></string>
+    <string name="turn_off_battery_optimization">За да го използвате, моля, <b>разрешете на SimpleX да работи във фонов режим</b> в следващия диалогов прозорец. В противен случай известията ще бъдат деактивирани.</string>
     <string name="icon_descr_instant_notifications">Незабавни известия</string>
     <string name="service_notifications">Незабавни известия!</string>
     <string name="service_notifications_disabled">Незабавните известия са деактивирани!</string>
@@ -1358,4 +1358,14 @@
     <string name="disable_notifications_button">Деактивирай известията</string>
     <string name="system_restricted_background_in_call_title">Без фонови разговори</string>
     <string name="connect_via_member_address_alert_title">Свързване директно\?</string>
+    <string name="connect_use_current_profile">Използвай текущия профил</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Поставете линка, който сте получили, за да се свържете с вашия контакт…</string>
+    <string name="connect__your_profile_will_be_shared">Вашият профил %1$s ще бъде споделен.</string>
+    <string name="system_restricted_background_desc">SimpleX не може да работи във фонов режим. Ще получавате известията само когато приложението работи.</string>
+    <string name="system_restricted_background_in_call_desc">Приложението може да се затвори след 1 минута във фонов режим.</string>
+    <string name="system_restricted_background_warn">За да активирате известията, моля, изберете <b>Използване на батерията на приложението</b> / <b>Неограничено</b> в системните настройки на приложението.</string>
+    <string name="connect_use_new_incognito_profile">Използвай нов инкогнито профил</string>
+    <string name="system_restricted_background_in_call_warn">За да извършвате разговори във фонов режим, моля, изберете <b>Използване на батерията на приложението</b> / <b>Неограничено</b> в системните настройки на приложението.</string>
+    <string name="you_invited_a_contact">Вие поканихте контакта</string>
+    <string name="connect_via_member_address_alert_desc">Заявката за свързване ще бъде изпратена до този член на групата.</string>
 </resources>
