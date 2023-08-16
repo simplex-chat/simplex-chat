@@ -16,6 +16,8 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.Indigo
+import chat.simplex.common.ui.theme.isSystemInDarkTheme
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -753,6 +755,10 @@ fun ComposeView(
       }
 
       val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
+      val sendButtonColor =
+        if (chat.chatInfo.incognito)
+          if (isSystemInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
+        else MaterialTheme.colors.primary
       SendMsgView(
         composeState,
         showVoiceRecordIcon = true,
@@ -764,6 +770,7 @@ fun ComposeView(
         allowVoiceToContact = ::allowVoiceToContact,
         userIsObserver = userIsObserver.value,
         userCanSend = userCanSend.value,
+        sendButtonColor = sendButtonColor,
         timedMessageAllowed = timedMessageAllowed,
         customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
         sendMessage = { ttl ->
