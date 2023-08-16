@@ -94,17 +94,20 @@ indicesFromEdits = F.foldl' f (DeleteIndicies S.empty, InsertIndicies S.empty)
 findPlainDiffs :: LeftSide T.Text -> RightSide T.Text -> Seq DiffedPlainChar
 findPlainDiffs (LeftSide left) (RightSide right) = f <$> diffs
     where
-    diffs = findDiffs (LeftSide $ toFormattedCharsFromText left) (RightSide $ toFormattedCharsFromText right)
+    diffs = findDiffs 
+        (LeftSide  $ toFormattedCharsFromText left ) 
+        (RightSide $ toFormattedCharsFromText right)
 
     toFormattedCharsFromText :: T.Text -> Seq FormattedChar
     toFormattedCharsFromText = fmap (`FormattedChar` Nothing) . S.fromList . T.unpack 
 
     f :: DiffedChar -> DiffedPlainChar
     f (DiffedChar (FormattedChar c _) diffStatus) = DiffedPlainChar c diffStatusPlain
-        where diffStatusPlain = case diffStatus of
-                UnchangedChar _ -> UnchangedP
-                Inserted -> InsertedP
-                Deleted -> DeletedP
+        where 
+        diffStatusPlain = case diffStatus of
+            UnchangedChar _ -> UnchangedP
+            Inserted -> InsertedP
+            Deleted -> DeletedP
 
 
 findDiffs :: LeftSide (Seq FormattedChar) -> RightSide (Seq FormattedChar) -> Seq DiffedChar
