@@ -48,7 +48,7 @@ fun PasscodeView(
       } else if (it.key == Key.Backspace && it.type == KeyEventType.KeyDown) {
         passcode.value = passcode.value.dropLast(1)
         true
-      } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+      } else if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
         if ((submitEnabled?.invoke(passcode.value) != false && passcode.value.length >= 4)) {
           submit()
         }
