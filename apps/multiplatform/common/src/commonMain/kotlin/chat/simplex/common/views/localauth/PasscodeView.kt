@@ -85,7 +85,7 @@ fun PasscodeView(
   fun HorizontalLayout() {
     Row(Modifier.padding(horizontal = DEFAULT_PADDING).handleKeyboard().focusRequester(focusRequester), horizontalArrangement = Arrangement.Center) {
       Column(
-        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING * 4),
+        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
       ) {
@@ -99,7 +99,7 @@ fun PasscodeView(
       }
 
       Column(
-        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING * 4),
+        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
       ) {
