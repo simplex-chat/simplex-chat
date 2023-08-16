@@ -16,18 +16,17 @@ module Simplex.Chat.MarkdownEditing
     , RightSide(..)
     , findDiffs
     , findPlainDiffs
-    , toFormattedChars
     )
     where
 
 
 import qualified Data.Foldable as F
 import qualified Data.Map.Strict as M
-import           Data.Sequence ( Seq(..), (><) )
+import           Data.Sequence (Seq(..), (><))
 import qualified Data.Sequence as S
 import qualified Data.Text as T
 import qualified Data.Diff.Myers as D
-import           Simplex.Chat.Markdown ( FormattedText(..), Format )
+import           Simplex.Chat.Markdown (Format)
 
 
 data DiffStatus 
@@ -73,48 +72,39 @@ newtype DeleteIndicies = DeleteIndicies (Seq Int) deriving (Show, Eq)
 newtype InsertIndicies = InsertIndicies (Seq Int) deriving (Show, Eq)
 
 
-toFormattedChars :: [FormattedText] -> [FormattedChar]
-toFormattedChars = concatMap toChars
-    where toChars (FormattedText f t) = map (`FormattedChar` f) $ T.unpack t
-
-
-toText :: Seq FormattedChar -> T.Text
-toText = T.pack . F.toList . fmap char 
-
-
-indicesFromEdits :: Seq D.Edit -> (DeleteIndicies, InsertIndicies)
-indicesFromEdits = F.foldl' f (DeleteIndicies S.empty, InsertIndicies S.empty) 
-    where
-    f :: (DeleteIndicies, InsertIndicies) -> D.Edit -> (DeleteIndicies, InsertIndicies)
-    f (x@(DeleteIndicies ds), y@(InsertIndicies is)) e = case e of
-        D.EditDelete   m n -> (x', y)  where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
-        D.EditInsert _ m n -> (x , y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
-
-
 findPlainDiffs :: LeftSide T.Text -> RightSide T.Text -> Seq DiffedPlainChar
-findPlainDiffs (LeftSide left) (RightSide right) = f <$> diffs
+findPlainDiffs (LeftSide left) (RightSide right) = toPlain <$> diffs
     where
-    diffs = findDiffs 
-        (LeftSide  $ toFormattedCharsFromText left ) 
-        (RightSide $ toFormattedCharsFromText right)
+    diffs = findDiffs (LeftSide $ toFormatted left) (RightSide $ toFormatted right)
 
-    toFormattedCharsFromText :: T.Text -> Seq FormattedChar
-    toFormattedCharsFromText = fmap (`FormattedChar` Nothing) . S.fromList . T.unpack 
-
-    f :: DiffedChar -> DiffedPlainChar
-    f (DiffedChar (FormattedChar c _) diffStatus) = DiffedPlainChar c diffStatusPlain
+    toPlain :: DiffedChar -> DiffedPlainChar
+    toPlain (DiffedChar (FormattedChar c _) diffStatus) = DiffedPlainChar c diffStatusPlain
         where 
         diffStatusPlain = case diffStatus of
             UnchangedChar _ -> UnchangedP
             Inserted -> InsertedP
             Deleted -> DeletedP
 
+    toFormatted :: T.Text -> Seq FormattedChar
+    toFormatted = fmap (`FormattedChar` Nothing) . S.fromList . T.unpack             
+
 
 findDiffs :: LeftSide (Seq FormattedChar) -> RightSide (Seq FormattedChar) -> Seq DiffedChar
 findDiffs (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchangedChars
     where
     edits = D.diffTexts (toText left) (toText right)  
-    (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = indicesFromEdits edits
+    (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = indices 
+    
+    toText :: Seq FormattedChar -> T.Text
+    toText = T.pack . F.toList . fmap char 
+
+    indices :: (DeleteIndicies, InsertIndicies)
+    indices = F.foldl' f (DeleteIndicies S.empty, InsertIndicies S.empty) edits
+        where
+        f :: (DeleteIndicies, InsertIndicies) -> D.Edit -> (DeleteIndicies, InsertIndicies)
+        f (x@(DeleteIndicies ds), y@(InsertIndicies is)) e = case e of
+            D.EditDelete   m n -> (x', y)  where x' = DeleteIndicies $ ds >< S.fromList [m .. n]  
+            D.EditInsert _ m n -> (x , y') where y' = InsertIndicies $ is >< S.fromList [m .. n] 
 
     unchangedChars :: M.Map Int DiffFormatStatus 
     unchangedChars = F.foldl' f mempty unchangedCharPairs
