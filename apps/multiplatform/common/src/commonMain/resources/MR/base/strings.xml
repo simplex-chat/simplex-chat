@@ -852,6 +852,8 @@
   <string name="protect_app_screen">Protect app screen</string>
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="privacy_chat_previews">Chat previews</string>
+  <string name="privacy_message_draft">Message draft</string>
   <string name="full_backup">App data backup</string>
   <string name="enable_lock">Enable lock</string>
   <string name="lock_mode">Lock mode</string>
