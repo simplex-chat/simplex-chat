@@ -66,11 +66,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
     launch {
       snapshotFlow { chatModel.chatId.value }
         .distinctUntilChanged()
-        .collect {
-          if (activeChat.value?.id != chatModel.chatId.value && chatModel.chatId.value != null) {
+        .collect { chatId ->
+          if (activeChat.value?.id != chatId && chatId != null) {
             // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
             // Also for situation when chatId changes after clicking in notification, etc
-            activeChat.value = chatModel.getChat(chatModel.chatId.value!!)
+            activeChat.value = chatModel.getChat(chatId)
           }
           markUnreadChatAsRead(activeChat, chatModel)
         }
@@ -842,7 +842,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           }
         }
 
-        if (cItem.isRcvNew) {
+        if (cItem.isRcvNew && chat.id == ChatModel.chatId.value) {
           LaunchedEffect(cItem.id) {
             scope.launch {
               delay(600)
