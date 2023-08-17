@@ -515,6 +515,7 @@ struct ChatView: View {
             VStack(alignment: alignment.horizontal, spacing: 3) {
                 ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
                     .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
+                    .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                     chatItemReactions()
                         .padding(.bottom, 4)
