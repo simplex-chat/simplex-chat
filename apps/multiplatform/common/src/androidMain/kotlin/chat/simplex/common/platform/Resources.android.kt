@@ -39,14 +39,14 @@ private val sharedPreferencesThemes: SharedPreferences by lazy { androidAppConte
 actual val settings: Settings by lazy { SharedPreferencesSettings(sharedPreferences) }
 actual val settingsThemes: Settings by lazy { SharedPreferencesSettings(sharedPreferencesThemes) }
 
-actual fun screenOrientation(): ScreenOrientation = when (mainActivity.get()?.resources?.configuration?.orientation) {
-  Configuration.ORIENTATION_PORTRAIT -> ScreenOrientation.PORTRAIT
-  Configuration.ORIENTATION_LANDSCAPE -> ScreenOrientation.LANDSCAPE
-  else -> ScreenOrientation.UNDEFINED
+actual fun windowOrientation(): WindowOrientation = when (mainActivity.get()?.resources?.configuration?.orientation) {
+  Configuration.ORIENTATION_PORTRAIT -> WindowOrientation.PORTRAIT
+  Configuration.ORIENTATION_LANDSCAPE -> WindowOrientation.LANDSCAPE
+  else -> WindowOrientation.UNDEFINED
 }
 
 @Composable
-actual fun screenWidth(): Dp = LocalConfiguration.current.screenWidthDp.dp
+actual fun windowWidth(): Dp = LocalConfiguration.current.screenWidthDp.dp
 
 actual fun desktopExpandWindowToWidth(width: Dp) {}
 
