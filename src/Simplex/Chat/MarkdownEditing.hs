@@ -114,11 +114,11 @@ findDiffs (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchanged
 
         leftWithoutDeletes :: Seq (Int, FormattedChar) -- indexed in original left
         leftWithoutDeletes = S.filter (\(i, _) -> i `notElem` deleteIndicies) leftZ 
-            where leftZ = S.zip (S.fromList [0 .. S.length left]) left
+            where leftZ = S.zip (S.fromList [0 .. S.length left - 1]) left
 
         rightWithoutInserts :: Seq (Int, FormattedChar) -- indexed in original right
         rightWithoutInserts = S.filter (\(i, _) -> i `notElem` insertIndicies) rightZ 
-            where rightZ = S.zip (S.fromList [0 .. S.length right]) right
+            where rightZ = S.zip (S.fromList [0 .. S.length right - 1]) right
 
         f :: M.Map Int DiffFormatStatus -> (Int, FormattedChar, FormattedChar) -> M.Map Int DiffFormatStatus
         f acc (i, FormattedChar _ fL, FormattedChar _ fR) = M.insert i x acc
