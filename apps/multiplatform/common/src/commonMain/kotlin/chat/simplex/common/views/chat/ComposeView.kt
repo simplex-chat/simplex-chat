@@ -232,6 +232,7 @@ fun ComposeView(
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
+  val saveLastDraft = chatModel.controller.appPrefs.privacySaveLastDraft.get()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
@@ -742,8 +743,10 @@ fun ComposeView(
           if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
             composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
           }
-          chatModel.draft.value = composeState.value
-          chatModel.draftChatId.value = prevChatId
+          if (saveLastDraft) {
+            chatModel.draft.value = composeState.value
+            chatModel.draftChatId.value = prevChatId
+          }
           composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
         } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
           composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
