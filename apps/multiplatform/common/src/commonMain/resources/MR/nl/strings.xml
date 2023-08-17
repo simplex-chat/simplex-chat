@@ -1370,4 +1370,9 @@
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Plak de link die je hebt ontvangen om verbinding te maken met je contact…</string>
     <string name="system_restricted_background_warn">Als u meldingen wilt inschakelen, kiest u <b> App-batterijgebruik</b> /<b> Onbeperkt</b> in de app-instellingen.</string>
     <string name="connect_use_new_incognito_profile">Gebruik een nieuw incognito -profiel</string>
+    <string name="privacy_message_draft">Concept bericht</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s en %d andere leden verbonden</string>
+    <string name="privacy_show_last_messages">Laat laatste berichten zien</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s en %s verbonden</string>
+    <string name="rcv_group_event_2_members_connected">%s en %s verbonden</string>
 </resources>
