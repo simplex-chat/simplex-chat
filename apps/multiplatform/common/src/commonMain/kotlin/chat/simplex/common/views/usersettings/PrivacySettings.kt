@@ -67,8 +67,8 @@ fun PrivacySettingsView(
       SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
       SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SettingsPreferenceItem(
-        painterResource(MR.images.ic_match_case),
-        stringResource(MR.strings.privacy_chat_previews),
+        painterResource(MR.images.ic_chat_bubble),
+        stringResource(MR.strings.privacy_show_last_messages),
         chatModel.controller.appPrefs.privacyShowChatPreviews,
         onChange = { showPreviews ->
           chatModel.showChatPreviews.value = showPreviews
