@@ -130,10 +130,10 @@ findDiffs (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchanged
     markDeletesAndUnchangedChars :: Seq DiffedChar
     markDeletesAndUnchangedChars = S.mapWithIndex f left
         where
-            f :: Int -> FormattedChar -> DiffedChar
-            f i x = DiffedChar x $
-                if i `elem` deleteIndicies then Deleted 
-                else UnchangedChar $ unchangedChars M.! i -- should never error             
+        f :: Int -> FormattedChar -> DiffedChar
+        f i x = DiffedChar x $
+            if i `elem` deleteIndicies then Deleted 
+            else UnchangedChar $ unchangedChars M.! i -- should never error             
 
     addInserts :: Seq DiffedChar -> Seq DiffedChar
     addInserts base = F.foldr f base edits -- start from end and work backwards, hence foldr
