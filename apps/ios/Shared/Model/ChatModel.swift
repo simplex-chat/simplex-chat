@@ -11,6 +11,38 @@ import Combine
 import SwiftUI
 import SimpleXChat
 
+actor TerminalItems {
+    private var terminalItems: [TerminalItem] = []
+
+    static let shared = TerminalItems()
+
+    func items() -> [TerminalItem] {
+        terminalItems
+    }
+
+    func add(_ item: TerminalItem) async {
+        addTermItem(&terminalItems, item)
+        let m = ChatModel.shared
+        if m.showingTerminal {
+            await MainActor.run {
+                addTermItem(&m.terminalItems, item)
+            }
+        }
+    }
+
+    func addCommand(_ start: Date, _ cmd: ChatCommand, _ resp: ChatResponse) async {
+        addTermItem(&terminalItems, .cmd(start, cmd))
+        addTermItem(&terminalItems, .resp(.now, resp))
+    }
+}
+
+private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
+    if items.count >= 200 {
+        items.removeFirst()
+    }
+    items.append(item)
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -33,6 +65,7 @@ final class ChatModel: ObservableObject {
     @Published var chatToTop: String?
     @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
+    @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: UserContactLink?
     @Published var chatItemTTL: ChatItemTTL = .none
@@ -487,7 +520,7 @@ final class ChatModel: ObservableObject {
         guard var i = getChatItemIndex(ci) else { return [] }
         var ns: [String] = []
         while i < reversedChatItems.count, let m = reversedChatItems[i].memberConnected {
-            ns.append(m.chatViewName)
+            ns.append(m.displayName)
             i += 1
         }
         return ns
@@ -591,13 +624,6 @@ final class ChatModel: ObservableObject {
 
     func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
         networkStatuses[contact.activeConn.agentConnId] ?? .unknown
-    }
-
-    func addTerminalItem(_ item: TerminalItem) {
-        if terminalItems.count >= 500 {
-            terminalItems.removeFirst()
-        }
-        terminalItems.append(item)
     }
 }
 
