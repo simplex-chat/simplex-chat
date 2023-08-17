@@ -1466,6 +1466,8 @@ public struct SecurityCode: Decodable, Equatable {
 
 public struct UserContact: Decodable {
     public var userContactLinkId: Int64
+//    public var connReqContact: String
+    public var groupId: Int64?
 
     public init(userContactLinkId: Int64) {
         self.userContactLinkId = userContactLinkId
@@ -1927,6 +1929,16 @@ public enum ConnectionEntity: Decodable {
             return nil
         }
     }
+
+    public var ntfsEnabled: Bool {
+        switch self {
+        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs ?? false
+        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs
+        case .sndFileConnection: return false
+        case .rcvFileConnection: return false
+        case let .userContactConnection(userContact): return userContact.groupId == nil
+        }
+    }
 }
 
 public struct NtfMsgInfo: Decodable {
@@ -2006,6 +2018,17 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndModerated: return true
         case .rcvModerated: return true
         default: return false
+        }
+    }
+
+    public var memberConnected: GroupMember? {
+        switch chatDir {
+        case .groupRcv(let groupMember):
+            switch content {
+            case .rcvGroupEvent(rcvGroupEvent: .memberConnected): return groupMember
+            default: return nil
+            }
+        default: return nil
         }
     }
 
@@ -2505,6 +2528,20 @@ public enum CIContent: Decodable, ItemContent {
             case let .rcvMsgContent(mc): return mc
             default: return nil
             }
+        }
+    }
+
+    public var showMemberName: Bool {
+        switch self {
+        case .rcvMsgContent: return true
+        case .rcvDeleted: return true
+        case .rcvCall: return true
+        case .rcvIntegrityError: return true
+        case .rcvDecryptionError: return true
+        case .rcvGroupInvitation: return true
+        case .rcvModerated: return true
+        case .invalidJSON: return true
+        default: return false
         }
     }
 }

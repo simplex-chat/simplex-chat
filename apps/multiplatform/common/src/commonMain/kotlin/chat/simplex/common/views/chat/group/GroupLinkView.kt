@@ -23,7 +23,7 @@ import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.res.MR
 
 @Composable
-fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?, memberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit) {
+fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?, memberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit) {
   var groupLink by rememberSaveable { mutableStateOf(connReqContact) }
   val groupLinkMemberRole = rememberSaveable { mutableStateOf(memberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
@@ -34,7 +34,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
       if (link != null) {
         groupLink = link.first
         groupLinkMemberRole.value = link.second
-        onGroupLinkUpdated(groupLink to groupLinkMemberRole.value)
+        onGroupLinkUpdated(link)
       }
       creatingLink = false
     }
@@ -60,7 +60,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
           if (link != null) {
             groupLink = link.first
             groupLinkMemberRole.value = link.second
-            onGroupLinkUpdated(groupLink to groupLinkMemberRole.value)
+            onGroupLinkUpdated(link)
           }
         }
       }
@@ -75,7 +75,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
             val r = chatModel.controller.apiDeleteGroupLink(groupInfo.groupId)
             if (r) {
               groupLink = null
-              onGroupLinkUpdated(null to null)
+              onGroupLinkUpdated(null)
             }
           }
         },

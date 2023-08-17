@@ -12,13 +12,9 @@ import SimpleXChat
 struct MarkedDeletedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
-    var showMember = false
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            if showMember, let member = chatItem.memberDisplayName {
-                Text(member).font(.caption).fontWeight(.medium) + Text(": ").font(.caption)
-            }
             if case let .moderated(_, byGroupMember) = chatItem.meta.itemDeleted {
                 markedDeletedText("moderated by \(byGroupMember.chatViewName)")
             } else {

@@ -12,13 +12,9 @@ import SimpleXChat
 struct DeletedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
-    var showMember = false
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            if showMember, let member = chatItem.memberDisplayName {
-                Text(member).fontWeight(.medium) + Text(": ")
-            }
             Text(chatItem.content.text)
                 .foregroundColor(.secondary)
                 .italic()
@@ -37,10 +33,7 @@ struct DeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             DeletedItemView(chatItem: ChatItem.getDeletedContentSample())
-            DeletedItemView(
-                chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData)),
-                showMember: true
-            )
+            DeletedItemView(chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData)))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

@@ -10,20 +10,11 @@ import SwiftUI
 import SimpleXChat
 
 struct CIEventView: View {
-    var chatItem: ChatItem
+    var eventText: Text
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            if let member = chatItem.memberDisplayName {
-                Text(member)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fontWeight(.light)
-                + Text(" ")
-                + chatEventText(chatItem)
-            } else {
-                chatEventText(chatItem)
-            }
+            eventText
         }
         .padding(.leading, 6)
         .padding(.bottom, 6)
@@ -31,20 +22,8 @@ struct CIEventView: View {
     }
 }
 
-func chatEventText(_ ci: ChatItem) -> Text {
-    Text(ci.content.text)
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .fontWeight(.light)
-    + Text(" ")
-    + ci.timestampText
-        .font(.caption)
-        .foregroundColor(Color.secondary)
-        .fontWeight(.light)
-}
-
 struct CIEventView_Previews: PreviewProvider {
     static var previews: some View {
-        CIEventView(chatItem: ChatItem.getGroupEventSample())
+        CIEventView(eventText: Text("event happened"))
     }
 }

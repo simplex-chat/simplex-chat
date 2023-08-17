@@ -13,6 +13,8 @@ struct PrivacySettings: View {
     @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
+    @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
+    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -69,6 +71,18 @@ struct PrivacySettings: View {
                     }
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
+                    }
+                    settingsRow("message") {
+                        Toggle("Show last messages", isOn: $showChatPreviews)
+                    }
+                    settingsRow("rectangle.and.pencil.and.ellipsis") {
+                        Toggle("Message draft", isOn: $saveLastDraft)
+                    }
+                    .onChange(of: saveLastDraft) { saveDraft in
+                        if !saveDraft {
+                            m.draft = nil
+                            m.draftChatId = nil
+                        }
                     }
                     settingsRow("link") {
                         Picker("SimpleX links", selection: $simplexLinkMode) {

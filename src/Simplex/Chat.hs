@@ -48,7 +48,7 @@ import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
 import Data.Word (Word32)
-import qualified Database.SQLite.Simple as DB
+import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -74,11 +74,13 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), temporaryAgentError)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), agentClientStore, temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
@@ -397,7 +399,7 @@ processChatCommand = \case
     asks currentUser >>= atomically . (`writeTVar` Just user'')
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
-    tryError (withStore (`getUserIdByName` uName)) >>= \case
+    tryChatError (withStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
   SetAllContactReceipts onOff -> withUser $ \_ -> withStore' (`updateAllContactReceipts` onOff) >> ok_
@@ -491,6 +493,18 @@ processChatCommand = \case
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
+  SlowSQLQueries -> do
+    ChatController {chatStore, smpAgent} <- ask
+    chatQueries <- slowQueries chatStore
+    agentQueries <- slowQueries $ agentClientStore smpAgent
+    pure CRSlowSQLQueries {chatQueries, agentQueries}
+    where
+      slowQueries st =
+        liftIO $
+          map (uncurry SlowSQLQuery . first SQL.fromQuery)
+            . sortOn (timeAvg . snd)
+            . M.assocs
+            <$> withConnection st (readTVarIO . DB.slow)
   APIGetChats userId withPCC -> withUserId userId $ \user ->
     CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
@@ -1706,7 +1720,7 @@ processChatCommand = \case
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)
-    chatMigrations <- map upMigration <$> withStore' Migrations.getCurrent
+    chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
   DebugLocks -> do
@@ -1959,7 +1973,7 @@ processChatCommand = \case
     drgRandomBytes n = asks idsDrg >>= liftIO . (`randomBytes` n)
     privateGetUser :: UserId -> m User
     privateGetUser userId =
-      tryError (withStore (`getUser` userId)) >>= \case
+      tryChatError (withStore (`getUser` userId)) >>= \case
         Left _ -> throwChatError CEUserUnknown
         Right user -> pure user
     validateUserPassword :: User -> User -> Maybe UserPwd -> m ()
@@ -3974,7 +3988,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content
           withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
-          toView $ CRReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}          
+          toView $ CRReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}
           whenContactNtfs user ct $
             showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
       where
@@ -5040,6 +5054,7 @@ chatCommandP =
       "/db decrypt " *> (APIStorageEncryption . (`DBEncryptionConfig` "") <$> dbKeyP),
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
+      "/sql slow" $> SlowSQLQueries,
       "/_get chats " *> (APIGetChats <$> A.decimal <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
@@ -5141,7 +5156,7 @@ chatCommandP =
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),
-      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRAdmin)),
+      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),

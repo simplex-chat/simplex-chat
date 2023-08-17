@@ -60,6 +60,7 @@ import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, UserProtocol, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors)
@@ -229,6 +230,7 @@ data ChatCommand
   | APIStorageEncryption DBEncryptionConfig
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
+  | SlowSQLQueries
   | APIGetChats {userId :: UserId, pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
@@ -563,6 +565,7 @@ data ChatResponse
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRSQLResult {rows :: [Text]}
+  | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
@@ -800,6 +803,14 @@ data SendFileMode
   = SendFileSMP (Maybe InlineFileMode)
   | SendFileXFTP
   deriving (Show, Generic)
+
+data SlowSQLQuery = SlowSQLQuery
+  { query :: Text,
+    queryStats :: SlowQueryStats
+  }
+  deriving (Show, Generic)
+
+instance ToJSON SlowSQLQuery where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

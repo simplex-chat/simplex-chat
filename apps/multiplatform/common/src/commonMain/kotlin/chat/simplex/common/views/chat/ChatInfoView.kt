@@ -38,6 +38,7 @@ import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 @Composable
@@ -51,15 +52,16 @@ fun ChatInfoView(
   close: () -> Unit,
 ) {
   BackHandler(onBack = close)
-  val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
-  val currentUser = chatModel.currentUser.value
-  val connStats = remember { mutableStateOf(connectionStats) }
+  val contact = rememberUpdatedState(contact).value
+  val chat = remember(contact.id) { chatModel.chats.firstOrNull { it.id == contact.id } }
+  val currentUser = remember { chatModel.currentUser }.value
+  val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && currentUser != null) {
-    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap()) {
+    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap(), contact) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
     }
-    val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
+    val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     ChatInfoLayout(
       chat,
       contact,
@@ -203,7 +205,10 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
-          chatModel.chatId.value = null
+          if (chatModel.chatId.value == chatInfo.id) {
+            chatModel.chatId.value = null
+            ModalManager.end.closeModals()
+          }
           ntfManager.cancelNotificationsForChat(chatInfo.id)
           close?.invoke()
         }
@@ -239,7 +244,7 @@ fun ChatInfoLayout(
   currentUser: User,
   sendReceipts: State<SendReceipts>,
   setSendReceipts: (SendReceipts) -> Unit,
-  connStats: MutableState<ConnectionStats?>,
+  connStats: State<ConnectionStats?>,
   contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
   localAlias: String,
@@ -256,10 +261,15 @@ fun ChatInfoLayout(
   verifyClicked: () -> Unit,
 ) {
   val cStats = connStats.value
+  val scrollState = rememberScrollState()
+  val scope = rememberCoroutineScope()
+  KeyChangeEffect(chat.id) {
+    scope.launch { scrollState.scrollTo(0) }
+  }
   Column(
     Modifier
       .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
+      .verticalScroll(scrollState)
   ) {
     Row(
       Modifier.fillMaxWidth(),

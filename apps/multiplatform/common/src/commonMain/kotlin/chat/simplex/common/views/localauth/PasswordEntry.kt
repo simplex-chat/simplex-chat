@@ -1,7 +1,6 @@
 package chat.simplex.common.views.localauth
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -16,6 +15,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.res.MR
 
 @Composable
@@ -39,7 +39,7 @@ fun PasscodeEntry(
 fun PasscodeView(password: MutableState<String>) {
   var showPasscode by rememberSaveable { mutableStateOf(false) }
   Text(
-    if (password.value.isEmpty()) " " else remember(password.value, showPasscode) { splitPassword(showPasscode, password.value) },
+    if (password.value.isEmpty()) "" else remember(password.value, showPasscode) { splitPassword(showPasscode, password.value) },
     Modifier.padding(vertical = 10.dp).clickable { showPasscode = !showPasscode },
     style = MaterialTheme.typography.body1
   )
@@ -47,7 +47,7 @@ fun PasscodeView(password: MutableState<String>) {
 
 @Composable
 private fun BoxWithConstraintsScope.VerticalPasswordGrid(password: MutableState<String>) {
-  val s = minOf(maxWidth, maxHeight) / 4 - 1.dp
+  val s = if (appPlatform.isAndroid) minOf(maxWidth, maxHeight) / 4 - 1.dp else minOf(minOf(maxWidth, maxHeight) / 4 - 1.dp, 100.dp)
   Column(Modifier.width(IntrinsicSize.Min)) {
     DigitsRow(s, 1, 2, 3, password)
     Divider()
