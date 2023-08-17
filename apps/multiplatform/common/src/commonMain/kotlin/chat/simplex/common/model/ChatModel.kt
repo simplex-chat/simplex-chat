@@ -1385,6 +1385,18 @@ data class ChatItem (
       else -> false
     }
 
+  val memberConnected: GroupMember? get() =
+    when (chatDir) {
+      is CIDirection.GroupRcv -> when (content) {
+        is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
+          is RcvGroupEvent.MemberConnected -> chatDir.groupMember
+          else -> null
+        }
+        else -> null
+      }
+      else -> null
+    }
+
   fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember>? {
     return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
       val m = chatInfo.groupInfo.membership
@@ -1836,6 +1848,19 @@ sealed class CIContent: ItemContent {
       is SndModerated -> generalGetString(MR.strings.moderated_description)
       is RcvModerated -> generalGetString(MR.strings.moderated_description)
       is InvalidJSON -> "invalid data"
+    }
+
+  val showMemberName: Boolean get() =
+    when (this) {
+      is RcvMsgContent -> true
+      is RcvDeleted -> true
+      is RcvCall -> true
+      is RcvIntegrityError -> true
+      is RcvDecryptionError -> true
+      is RcvGroupInvitation -> true
+      is RcvModerated -> true
+      is InvalidJSON -> true
+      else -> false
     }
 
   companion object {

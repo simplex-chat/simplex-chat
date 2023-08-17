@@ -41,6 +41,7 @@ fun SendMsgView(
   allowedVoiceByPrefs: Boolean,
   userIsObserver: Boolean,
   userCanSend: Boolean,
+  sendButtonColor: Color = MaterialTheme.colors.primary,
   allowVoiceToContact: () -> Unit,
   timedMessageAllowed: Boolean = false,
   customDisappearingMessageTimePref: SharedPreference<Int>? = null,
@@ -194,12 +195,12 @@ fun SendMsgView(
 
           val menuItems = MenuItems()
           if (menuItems.isNotEmpty()) {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown.value = true }
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !disabled, sendMessage) { showDropdown.value = true }
             DefaultDropdownMenu(showDropdown) {
               menuItems.forEach { composable -> composable() }
             }
           } else {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage)
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !disabled, sendMessage)
           }
         }
       }
@@ -449,6 +450,7 @@ private fun SendMsgButton(
   icon: Painter,
   sizeDp: Animatable<Float, AnimationVector1D>,
   alpha: Animatable<Float, AnimationVector1D>,
+  sendButtonColor: Color,
   enabled: Boolean,
   sendMessage: (Int?) -> Unit,
   onLongClick: (() -> Unit)? = null
@@ -476,7 +478,7 @@ private fun SendMsgButton(
         .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
-        .background(if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
+        .background(if (enabled) sendButtonColor else MaterialTheme.colors.secondary)
         .padding(3.dp)
     )
   }

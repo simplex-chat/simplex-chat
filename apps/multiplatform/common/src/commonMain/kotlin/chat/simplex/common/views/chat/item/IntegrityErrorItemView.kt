@@ -24,8 +24,8 @@ import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 
 @Composable
-fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {
-  CIMsgError(ci, timedMessagesTTL, showMember) {
+fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, timedMessagesTTL: Int?) {
+  CIMsgError(ci, timedMessagesTTL) {
     when (msgError) {
       is MsgErrorType.MsgSkipped ->
         AlertManager.shared.showAlertMsg(
@@ -50,7 +50,7 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, timedMessagesTT
 }
 
 @Composable
-fun CIMsgError(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false, onClick: () -> Unit) {
+fun CIMsgError(ci: ChatItem, timedMessagesTTL: Int?, onClick: () -> Unit) {
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
     Modifier.clickable(onClick = onClick),
@@ -63,7 +63,6 @@ fun CIMsgError(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false
     ) {
       Text(
         buildAnnotatedString {
-          appendSender(this, if (showMember) ci.memberDisplayName else null, true)
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
