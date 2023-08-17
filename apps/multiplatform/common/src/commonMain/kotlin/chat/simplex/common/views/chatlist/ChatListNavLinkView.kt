@@ -103,7 +103,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
 
 fun directChatAction(chatInfo: ChatInfo, chatModel: ChatModel) {
   if (chatInfo.ready) {
-    withApi { openChat(chatInfo, chatModel) }
+    withBGApi { openChat(chatInfo, chatModel) }
   } else {
     pendingContactAlertDialog(chatInfo, chatModel)
   }
@@ -113,7 +113,7 @@ fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(groupInfo, chatModel)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert()
-    else -> withApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
+    else -> withBGApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
   }
 }
 

@@ -105,7 +105,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
       derivedStateOf {
-        chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }?.chatStats?.unreadCount ?: 0
+        chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
     val clipboard = LocalClipboardManager.current
@@ -928,17 +928,19 @@ fun BoxWithConstraintsScope.FloatingButtons(
     onLongClick = { showDropDown.value = true }
   )
 
-  DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
-    ItemAction(
-      generalGetString(MR.strings.mark_read),
-      painterResource(MR.images.ic_check),
-      onClick = {
-        markRead(
-          CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
-          bottomUnreadCount
-        )
-        showDropDown.value = false
-      })
+  Box(Modifier.background(Color.Red)) {
+    DefaultDropdownMenu(showDropDown, offset = DpOffset(this@FloatingButtons.maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
+      ItemAction(
+        generalGetString(MR.strings.mark_read),
+        painterResource(MR.images.ic_check),
+        onClick = {
+          markRead(
+            CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
+            bottomUnreadCount
+          )
+          showDropDown.value = false
+        })
+    }
   }
 }
 
