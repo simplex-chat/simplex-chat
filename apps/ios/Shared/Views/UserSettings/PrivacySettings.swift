@@ -72,8 +72,8 @@ struct PrivacySettings: View {
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
                     }
-                    settingsRow("textformat") {
-                        Toggle("Chat previews", isOn: $showChatPreviews)
+                    settingsRow("message") {
+                        Toggle("Show last messages", isOn: $showChatPreviews)
                     }
                     settingsRow("rectangle.and.pencil.and.ellipsis") {
                         Toggle("Message draft", isOn: $saveLastDraft)

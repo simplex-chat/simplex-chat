@@ -105,18 +105,17 @@ struct ChatPreviewView: View {
 
     private func chatPreviewLayout(_ text: Text) -> some View {
         ZStack(alignment: .topTrailing) {
-            Group {
-                if showChatPreviews {
-                    text
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                } else {
-                    ZStack {}
-                }
+            let t = text
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(.leading, 8)
+                .padding(.trailing, 36)
+            if showChatPreviews {
+                t
+            } else {
+                t.privacySensitive(!showChatPreviews).redacted(reason: .privacy)
             }
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-            .padding(.leading, 8)
-            .padding(.trailing, 36)
             let s = chat.chatStats
             if s.unreadCount > 0 || s.unreadChat {
                 unreadCountText(s.unreadCount)
