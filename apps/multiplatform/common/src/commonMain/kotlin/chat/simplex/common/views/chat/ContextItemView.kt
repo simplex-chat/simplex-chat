@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.model.*
@@ -27,6 +29,17 @@ fun ContextItemView(
   val sent = contextItem.chatDir.sent
   val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+
+  @Composable
+  fun msgContentView(lines: Int) {
+    MarkdownText(
+      contextItem.text, contextItem.formattedText,
+      maxLines = lines,
+      linkMode = SimplexLinkMode.DESCRIPTION,
+      modifier = Modifier.fillMaxWidth(),
+    )
+  }
+
   Row(
     Modifier
       .padding(top = 8.dp)
@@ -49,12 +62,21 @@ fun ContextItemView(
         contentDescription = stringResource(MR.strings.icon_descr_context),
         tint = MaterialTheme.colors.secondary,
       )
-      MarkdownText(
-        contextItem.text, contextItem.formattedText,
-        sender = contextItem.memberDisplayName, senderBold = true, maxLines = 3,
-        linkMode = SimplexLinkMode.DESCRIPTION,
-        modifier = Modifier.fillMaxWidth(),
-      )
+      val sender = contextItem.memberDisplayName
+      if (sender != null) {
+        Column(
+          horizontalAlignment = Alignment.Start,
+          verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+          Text(
+            sender,
+            style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+          )
+          msgContentView(lines = 2)
+        }
+      } else {
+        msgContentView(lines = 3)
+      }
     }
     IconButton(onClick = cancelContextItem) {
       Icon(
