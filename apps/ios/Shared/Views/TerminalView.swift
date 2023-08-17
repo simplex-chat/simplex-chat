@@ -22,11 +22,14 @@ struct TerminalView: View {
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
     @State private var scrolled = false
+    @State private var showing = false
 
     var body: some View {
         if authorized {
             terminalView()
                 .onAppear {
+                    if showing { return }
+                    showing = true
                     Task {
                         let items = await TerminalItems.shared.items()
                         await MainActor.run {
@@ -36,8 +39,10 @@ struct TerminalView: View {
                     }
                 }
                 .onDisappear {
-                    chatModel.showingTerminal = false
-                    chatModel.terminalItems = []
+                    if terminalItem == nil {
+                        chatModel.showingTerminal = false
+                        chatModel.terminalItems = []
+                    }
                 }
         } else {
             Button(action: runAuth) { Label("Unlock", systemImage: "lock") }

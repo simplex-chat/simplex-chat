@@ -295,6 +295,10 @@ struct SettingsView: View {
             }
             .navigationTitle("Your settings")
         }
+        .onDisappear {
+            chatModel.showingTerminal = false
+            chatModel.terminalItems = []
+        }
     }
     
     private func chatDatabaseRow() -> some View {
