@@ -21,6 +21,7 @@ module Simplex.Chat.MarkdownEditing
 
 
 import qualified Data.Foldable as F
+import           Data.Function ((&))
 import qualified Data.Map.Strict as M
 import           Data.Sequence (Seq(..), (><))
 import qualified Data.Sequence as S
@@ -113,12 +114,16 @@ findDiffs (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchanged
         unchangedCharPairs = g <$> S.zip leftWithoutDeletes rightWithoutInserts
 
         leftWithoutDeletes :: Seq (Int, FormattedChar) 
-        leftWithoutDeletes = S.filter (\(i, _) -> i `notElem` deleteIndicies) leftZ 
-            where leftZ = S.zip (S.fromList [0 .. S.length left - 1]) left
+        leftWithoutDeletes = 
+            left
+            & S.zip (S.fromList [0 .. S.length left - 1])
+            & S.filter (\(i, _) -> i `notElem` deleteIndicies)
 
         rightWithoutInserts :: Seq (Int, FormattedChar) 
-        rightWithoutInserts = S.filter (\(i, _) -> i `notElem` insertIndicies) rightZ 
-            where rightZ = S.zip (S.fromList [0 .. S.length right - 1]) right
+        rightWithoutInserts = 
+            right
+            & S.zip (S.fromList [0 .. S.length right - 1])
+            & S.filter (\(i, _) -> i `notElem` insertIndicies)
 
         f :: M.Map Int DiffFormatStatus -> (Int, FormattedChar, FormattedChar) -> M.Map Int DiffFormatStatus
         f acc (i, FormattedChar _ fL, FormattedChar _ fR) = M.insert i x acc
