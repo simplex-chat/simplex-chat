@@ -1371,4 +1371,9 @@
     <string name="system_restricted_background_in_call_warn">Pour faire des appels en arrière-plan, veuillez choisir <b>Utilisation de la batterie de l\'app</b> / <b>Sans restriction</b> dans les paramètres de l\'app.</string>
     <string name="connect_use_current_profile">Utiliser le profil actuel</string>
     <string name="connect_use_new_incognito_profile">Utiliser un nouveau profil incognito</string>
+    <string name="privacy_message_draft">Brouillon de message</string>
+    <string name="privacy_show_last_messages">Voir les derniers messages</string>
+    <string name="rcv_group_event_2_members_connected">%s et %s sont connecté.es</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s et %d autres membres sont connectés</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s et %s sont connecté.es</string>
 </resources>
