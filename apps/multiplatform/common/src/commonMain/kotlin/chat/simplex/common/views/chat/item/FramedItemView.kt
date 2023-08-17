@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.base64ToBitmap
@@ -57,7 +58,8 @@ fun FramedItemView(
       maxLines = lines,
       overflow = TextOverflow.Ellipsis,
       style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
-      linkMode = linkMode
+      linkMode = linkMode,
+      uriHandler = if (appPlatform.isDesktop) uriHandler else null
     )
   }
 
