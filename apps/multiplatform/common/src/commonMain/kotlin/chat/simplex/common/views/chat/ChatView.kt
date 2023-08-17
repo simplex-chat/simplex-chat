@@ -974,7 +974,7 @@ fun BoxWithConstraintsScope.FloatingButtons(
     onLongClick = { showDropDown.value = true }
   )
 
-  Box(Modifier.background(Color.Red)) {
+  Box {
     DefaultDropdownMenu(showDropDown, offset = DpOffset(this@FloatingButtons.maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
       ItemAction(
         generalGetString(MR.strings.mark_read),
