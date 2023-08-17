@@ -141,7 +141,7 @@ fun ChatPreviewView(
   fun chatPreviewText() {
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
-      if (showChatPreviews) {
+      if (showChatPreviews || (chatModelDraftChatId == chat.id && chatModelDraft != null)) {
         val (text: CharSequence, inlineTextContent) = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { messageDraft(chatModelDraft) }
           ci.meta.itemDeleted == null -> ci.text to null
