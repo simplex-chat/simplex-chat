@@ -94,8 +94,9 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
-    addTerminalItem(.cmd(start, cmd.obfuscated))
-    addTerminalItem(.resp(.now, resp))
+    Task {
+        await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)
+    }
     return resp
 }
 
@@ -1248,7 +1249,9 @@ class ChatReceiver {
 }
 
 func processReceivedMsg(_ res: ChatResponse) async {
-    addTerminalItem(.resp(.now, res))
+    Task {
+        await TerminalItems.shared.add(.resp(.now, res))
+    }
     let m = ChatModel.shared
     logger.debug("processReceivedMsg: \(res.responseType)")
     switch res {
@@ -1328,13 +1331,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
             processContactSubError(contact, chatError)
         }
-    case let .contactSubSummary(user, contactSubscriptions):
-        print(contactSubscriptions.count)
+    case let .contactSubSummary(_, contactSubscriptions):
         await MainActor.run {
             for sub in contactSubscriptions {
-                if active(user) {
-                    m.updateContact(sub.contact)
-                }
+// no need to update contact here, and it is slow
+//                if active(user) {
+//                    m.updateContact(sub.contact)
+//                }
                 if let err = sub.contactError {
                     processContactSubError(sub.contact, err)
                 } else {

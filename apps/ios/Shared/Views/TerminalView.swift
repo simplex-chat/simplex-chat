@@ -27,8 +27,13 @@ struct TerminalView: View {
         if authorized {
             terminalView()
                 .onAppear {
-                    chatModel.terminalItems = terminalItems
-                    chatModel.showingTerminal = true
+                    Task {
+                        let items = await TerminalItems.shared.items()
+                        await MainActor.run {
+                            chatModel.terminalItems = items
+                            chatModel.showingTerminal = true
+                        }
+                    }
                 }
                 .onDisappear {
                     chatModel.showingTerminal = false
@@ -126,8 +131,9 @@ struct TerminalView: View {
         let cmd = ChatCommand.string(composeState.message)
         if composeState.message.starts(with: "/sql") && (!prefPerformLA || !developerTools) {
             let resp = ChatResponse.chatCmdError(user_: nil, chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
-            addTerminalItem(.cmd(.now, cmd))
-            addTerminalItem(.resp(.now, resp))
+            Task {
+                await TerminalItems.shared.addCommand(.now, cmd, resp)
+            }
         } else {
             DispatchQueue.global().async {
                 Task {
