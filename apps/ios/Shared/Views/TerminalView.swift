@@ -26,6 +26,14 @@ struct TerminalView: View {
     var body: some View {
         if authorized {
             terminalView()
+                .onAppear {
+                    chatModel.terminalItems = terminalItems
+                    chatModel.showingTerminal = true
+                }
+                .onDisappear {
+                    chatModel.showingTerminal = false
+                    chatModel.terminalItems = []
+                }
         } else {
             Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
             .onAppear(perform: runAuth)
@@ -118,10 +126,8 @@ struct TerminalView: View {
         let cmd = ChatCommand.string(composeState.message)
         if composeState.message.starts(with: "/sql") && (!prefPerformLA || !developerTools) {
             let resp = ChatResponse.chatCmdError(user_: nil, chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
-            DispatchQueue.main.async {
-                ChatModel.shared.addTerminalItem(.cmd(.now, cmd))
-                ChatModel.shared.addTerminalItem(.resp(.now, resp))
-            }
+            addTerminalItem(.cmd(.now, cmd))
+            addTerminalItem(.resp(.now, resp))
         } else {
             DispatchQueue.global().async {
                 Task {

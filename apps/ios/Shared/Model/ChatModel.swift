@@ -11,6 +11,8 @@ import Combine
 import SwiftUI
 import SimpleXChat
 
+var terminalItems: [TerminalItem] = []
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -33,6 +35,7 @@ final class ChatModel: ObservableObject {
     @Published var chatToTop: String?
     @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
+    @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: UserContactLink?
     @Published var chatItemTTL: ChatItemTTL = .none
@@ -592,12 +595,22 @@ final class ChatModel: ObservableObject {
     func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
         networkStatuses[contact.activeConn.agentConnId] ?? .unknown
     }
+}
 
-    func addTerminalItem(_ item: TerminalItem) {
-        if terminalItems.count >= 500 {
-            terminalItems.removeFirst()
+func addTerminalItem(_ item: TerminalItem) {
+    addItem(&terminalItems)
+    let m = ChatModel.shared
+    if m.showingTerminal {
+        DispatchQueue.main.async {
+            addItem(&m.terminalItems)
         }
-        terminalItems.append(item)
+    }
+
+    func addItem(_ items: inout [TerminalItem]) {
+        if items.count >= 200 {
+            items.removeFirst()
+        }
+        items.append(item)
     }
 }
 
