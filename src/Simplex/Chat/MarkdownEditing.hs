@@ -130,7 +130,7 @@ findDiffs (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchanged
             where x = if fL == fR then UnchangedFormat else ChangedToFormat fR
 
         g :: ((Int, FormattedChar), (Int, FormattedChar)) -> (Int, FormattedChar, FormattedChar)
-        g ((i,c), (_j,d)) = (i,c,d) -- peg on left with i          
+        g ((i,c), (_,d)) = (i,c,d) -- peg on left         
 
     markDeletesAndUnchangedChars :: Seq DiffedChar
     markDeletesAndUnchangedChars = S.mapWithIndex f left
