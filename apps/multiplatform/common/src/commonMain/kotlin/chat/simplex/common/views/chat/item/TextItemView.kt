@@ -7,7 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
@@ -16,8 +16,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.Log
-import chat.simplex.common.platform.TAG
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
@@ -156,7 +155,8 @@ fun MarkdownText (
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       if (hasLinks && uriHandler != null) {
-        ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
+        val icon = remember { mutableStateOf(PointerIcon.Default) }
+        ClickableText(annotatedText, style = style, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
               .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
@@ -178,6 +178,12 @@ fun MarkdownText (
               .firstOrNull()?.let { annotation ->
                 uriHandler.openVerifiedSimplexUri(annotation.item)
               }
+          },
+          onHover = { offset ->
+            icon.value = annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+              .firstOrNull()?.let {
+                PointerIcon.Hand
+              } ?: PointerIcon.Default
           },
           shouldConsumeEvent = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
@@ -202,6 +208,7 @@ fun ClickableText(
   onTextLayout: (TextLayoutResult) -> Unit = {},
   onClick: (Int) -> Unit,
   onLongClick: (Int) -> Unit = {},
+  onHover: (Int) -> Unit = {},
   shouldConsumeEvent: (Int) -> Boolean
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -225,6 +232,14 @@ fun ClickableText(
       consume
     }
     )
+  }.pointerInput(onHover) {
+    if (appPlatform.isDesktop) {
+      detectCursorMove { pos ->
+        layoutResult.value?.let { layoutResult ->
+          onHover(layoutResult.getOffsetForPosition(pos))
+        }
+      }
+    }
   }
 
   BasicText(
