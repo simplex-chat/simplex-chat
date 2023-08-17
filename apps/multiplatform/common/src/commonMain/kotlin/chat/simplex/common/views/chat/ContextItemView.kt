@@ -70,12 +70,12 @@ fun ContextItemView(
         ) {
           Text(
             sender,
-            style = TextStyle(fontSize = 12.sp, color = CurrentColors.value.colors.secondary)
+            style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
           )
-          msgContentView(2)
+          msgContentView(lines = 2)
         }
       } else {
-        msgContentView(3)
+        msgContentView(lines = 3)
       }
     }
     IconButton(onClick = cancelContextItem) {

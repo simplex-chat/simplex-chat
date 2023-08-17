@@ -792,7 +792,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     Text(
                       member.displayName,
                       Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                      style = TextStyle(fontSize = 12.sp, color = CurrentColors.value.colors.secondary)
+                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
                     )
                   }
                   Row(

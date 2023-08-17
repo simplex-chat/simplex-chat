@@ -1852,20 +1852,12 @@ sealed class CIContent: ItemContent {
 
   val showMemberName: Boolean get() =
     when (this) {
-      is SndMsgContent -> true
       is RcvMsgContent -> true
-      is SndDeleted -> true
       is RcvDeleted -> true
-      is SndCall -> true
       is RcvCall -> true
       is RcvIntegrityError -> true
       is RcvDecryptionError -> true
       is RcvGroupInvitation -> true
-      is SndChatPreference -> true
-      is RcvChatPreference -> true
-      is SndGroupFeature -> true
-      is RcvGroupFeature -> true
-      is SndModerated -> true
       is RcvModerated -> true
       is InvalidJSON -> true
       else -> false

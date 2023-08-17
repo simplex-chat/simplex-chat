@@ -50,11 +50,12 @@ fun FramedItemView(
   fun Color.toQuote(): Color = if (isInDarkTheme()) lighter(0.12f) else darker(0.12f)
 
   @Composable
-  fun ciQuotedMsgTextView(qi: CIQuote) {
+  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int) {
     MarkdownText(
       qi.text,
       qi.formattedText,
-      maxLines = 3,
+      maxLines = lines,
+      overflow = TextOverflow.Ellipsis,
       style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
       linkMode = linkMode
     )
@@ -69,17 +70,16 @@ fun FramedItemView(
       val sender = qi.sender(membership())
       if (sender != null) {
         Column(
-          horizontalAlignment = Alignment.Start,
-          verticalArrangement = Arrangement.spacedBy(2.dp),
+          horizontalAlignment = Alignment.Start
         ) {
           Text(
             sender,
-            style = TextStyle(fontSize = 12.sp, color = CurrentColors.value.colors.secondary)
+            style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
           )
-          ciQuotedMsgTextView(qi)
+          ciQuotedMsgTextView(qi, lines = 2)
         }
       } else {
-        ciQuotedMsgTextView(qi)
+        ciQuotedMsgTextView(qi, lines = 3)
       }
     }
   }
