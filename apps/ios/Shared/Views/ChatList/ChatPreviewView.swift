@@ -15,6 +15,8 @@ struct ChatPreviewView: View {
     @Environment(\.colorScheme) var colorScheme
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
 
+    @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
+
     var body: some View {
         let cItem = chat.chatItems.last
         return HStack(spacing: 8) {
@@ -103,12 +105,17 @@ struct ChatPreviewView: View {
 
     private func chatPreviewLayout(_ text: Text) -> some View {
         ZStack(alignment: .topTrailing) {
-            text
+            let t = text
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.leading, 8)
                 .padding(.trailing, 36)
+            if showChatPreviews {
+                t
+            } else {
+                t.privacySensitive(!showChatPreviews).redacted(reason: .privacy)
+            }
             let s = chat.chatStats
             if s.unreadCount > 0 || s.unreadChat {
                 unreadCountText(s.unreadCount)
