@@ -44,8 +44,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     showMenu.value = false
     delay(500L)
   }
-  // TODO repeat stopped
-  val showChatPreviews = chatModel.controller.appPrefs.privacyShowChatPreviews.get()
+  val showChatPreviews = chatModel.showChatPreviews.value
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
