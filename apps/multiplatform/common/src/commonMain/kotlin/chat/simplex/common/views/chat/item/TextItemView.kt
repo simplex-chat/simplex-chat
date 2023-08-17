@@ -25,15 +25,6 @@ import kotlinx.coroutines.*
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
 
-fun appendGroupMember(b: AnnotatedString.Builder, chatItem: ChatItem, groupMemberBold: Boolean) {
-  if (chatItem.chatDir is CIDirection.GroupRcv) {
-    val name = chatItem.chatDir.groupMember.memberProfile.displayName
-    if (groupMemberBold) b.withStyle(boldFont) { append(name) }
-    else b.append(name)
-    b.append(": ")
-  }
-}
-
 fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolean) {
   if (sender != null) {
     if (senderBold) b.withStyle(boldFont) { append(sender) }

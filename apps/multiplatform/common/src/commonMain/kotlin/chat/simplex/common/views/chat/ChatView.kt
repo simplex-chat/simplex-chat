@@ -17,11 +17,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
@@ -718,7 +718,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   )
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
-    itemsIndexed(reversedChatItems, key = { _, item -> item.id}) { i, cItem ->
+    itemsIndexed(reversedChatItems, key = { _, item -> item.id }) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
@@ -760,27 +760,73 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (chat.chatInfo is ChatInfo.Group) {
           if (cItem.chatDir is CIDirection.GroupRcv) {
             val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
-            val member = cItem.chatDir.groupMember
-            val showMember = showMemberImage(member, prevItem)
-            Row(Modifier.padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp).then(swipeableModifier)) {
-              if (showMember) {
-                Box(
-                  Modifier
-                    .clip(CircleShape)
-                    .clickable {
-                      showMemberInfo(chat.chatInfo.groupInfo, member)
-                    }
-                ) {
-                  MemberImage(member)
+            val nextItem = if (i - 1 >= 0) reversedChatItems[i - 1] else null
+            fun getConnectedMemberNames(): List<String> {
+              val ns = mutableListOf<String>()
+              var idx = i
+              while (idx < reversedChatItems.size) {
+                val m = reversedChatItems[idx].memberConnected
+                if (m != null) {
+                  ns.add(m.displayName)
+                } else {
+                  break
                 }
-                Spacer(Modifier.size(4.dp))
-              } else {
-                Spacer(Modifier.size(42.dp))
+                idx++
               }
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
+              return ns
+            }
+            if (cItem.memberConnected != null && nextItem?.memberConnected != null) {
+              // memberConnected events are aggregated at the last chat item in a row of such events, see ChatItemView
+              Box(Modifier.size(0.dp)) {}
+            } else {
+              val member = cItem.chatDir.groupMember
+              if (showMemberImage(member, prevItem)) {
+                Column(
+                  Modifier
+                    .padding(top = 8.dp)
+                    .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp),
+                  verticalArrangement = Arrangement.spacedBy(4.dp),
+                  horizontalAlignment = Alignment.Start
+                ) {
+                  if (cItem.content.showMemberName) {
+                    Text(
+                      member.displayName,
+                      Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
+                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+                    )
+                  }
+                  Row(
+                    swipeableModifier,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                  ) {
+                    Box(
+                      Modifier
+                        .clip(CircleShape)
+                        .clickable {
+                          showMemberInfo(chat.chatInfo.groupInfo, member)
+                        }
+                    ) {
+                      MemberImage(member)
+                    }
+                    ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames)
+                  }
+                }
+              } else {
+                Row(
+                  Modifier
+                    .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                    .then(swipeableModifier)
+                ) {
+                  ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames)
+                }
+              }
             }
           } else {
-            Box(Modifier.padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp).then(swipeableModifier)) {
+            Box(
+              Modifier
+                .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
+                .then(swipeableModifier)
+            ) {
               ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
             }
           }
@@ -973,9 +1019,11 @@ fun showMemberImage(member: GroupMember, prevItem: ChatItem?): Boolean {
       (prevItem.chatDir is CIDirection.GroupRcv && prevItem.chatDir.groupMember.groupMemberId != member.groupMemberId)
 }
 
+val MEMBER_IMAGE_SIZE: Dp = 38.dp
+
 @Composable
 fun MemberImage(member: GroupMember) {
-  ProfileImage(38.dp, member.memberProfile.image)
+  ProfileImage(MEMBER_IMAGE_SIZE, member.memberProfile.image)
 }
 
 @Composable

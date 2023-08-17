@@ -487,7 +487,7 @@ final class ChatModel: ObservableObject {
         guard var i = getChatItemIndex(ci) else { return [] }
         var ns: [String] = []
         while i < reversedChatItems.count, let m = reversedChatItems[i].memberConnected {
-            ns.append(m.chatViewName)
+            ns.append(m.displayName)
             i += 1
         }
         return ns
