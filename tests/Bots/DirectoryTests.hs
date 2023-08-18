@@ -905,6 +905,8 @@ u `connectVia` dsLink = do
   u <## "Send a search string to find groups or /help to learn how to add groups to directory."
   u <## ""
   u <## "For example, send privacy to find groups about privacy."
+  u <## ""
+  u <## "Content and privacy policy: https://simplex.chat/docs/directory.html"
 
 joinGroup :: String -> TestCC -> TestCC -> IO ()
 joinGroup gName member host = do
