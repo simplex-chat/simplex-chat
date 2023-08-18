@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>chat.simplex.app</id>
+  <launchable type="desktop-id">chat.simplex.app.desktop</launchable>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>AGPL-3.0</project_license>
+  <name>SimpleX</name>
+  <summary>Private and secure open-source messenger - no user IDs (not even random numbers)</summary>
+
+  <description>
+    <p>
+      Power Statistics is a program used to view historical and current battery
+      information and will show programs running on your computer using power.
+    </p>
+    <p>Example list:</p>
+    <ul>
+      <li>First item</li>
+      <li>Second item</li>
+    </ul>
+    <p>
+      You probably only need to install this application if you are having problems
+      with your laptop battery, or are trying to work out what programs are using
+      significant amounts of power.
+    </p>
+  </description>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>The options dialog</caption>
+      <image>https://www.audacityteam.org/wp-content/uploads/2016/01/audacity-212-linux.png</image>
+    </screenshot>
+    <screenshot>
+      <image>https://www.audacityteam.org/wp-content/uploads/2015/11/Audacity-2-2-0-on-Linux.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://simplex.chat</url>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="3.12.2" date="2013-04-12">
+      <description>
+        <p>Fixes issues X, Y and Z</p>
+      </description>
+    </release>
+  </releases>
+</component>
