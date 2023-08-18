@@ -8,7 +8,7 @@ Connect to the directory service via [this address](https://simplex.chat/contact
 
 Please note that your search queries can be kept by the bot as the conversation history, but you can use incognito mode when connecting to the bot, to avoid correlation with any other communications. See [Privacy policy](../PRIVACY.md) for more details.
 
-## Registering the group
+## Adding groups to the directory
 
 ### How to register the group
 
