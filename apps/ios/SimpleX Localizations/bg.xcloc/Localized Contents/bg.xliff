@@ -1160,52 +1160,62 @@
         <target state="translated">Създай тайна група</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create your profile" xml:space="preserve">
+      <trans-unit id="Create your profile" xml:space="preserve" approved="no">
         <source>Create your profile</source>
+        <target state="translated">Създай своя профил</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created on %@" xml:space="preserve">
         <source>Created on %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current Passcode" xml:space="preserve">
+      <trans-unit id="Current Passcode" xml:space="preserve" approved="no">
         <source>Current Passcode</source>
+        <target state="translated">Текущ kод за достъп</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current passphrase…" xml:space="preserve">
+      <trans-unit id="Current passphrase…" xml:space="preserve" approved="no">
         <source>Current passphrase…</source>
+        <target state="translated">Текуща парола…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
         <source>Currently maximum supported file size is %@.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Custom time" xml:space="preserve">
+      <trans-unit id="Custom time" xml:space="preserve" approved="no">
         <source>Custom time</source>
+        <target state="translated">Персонализирано време</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Dark" xml:space="preserve">
+      <trans-unit id="Dark" xml:space="preserve" approved="no">
         <source>Dark</source>
+        <target state="translated">Тъмна</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID" xml:space="preserve">
+      <trans-unit id="Database ID" xml:space="preserve" approved="no">
         <source>Database ID</source>
+        <target state="translated">ID в базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID: %d" xml:space="preserve">
+      <trans-unit id="Database ID: %d" xml:space="preserve" approved="no">
         <source>Database ID: %d</source>
+        <target state="translated">ID в базата данни: %d</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
+      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve" approved="no">
         <source>Database IDs and Transport isolation option.</source>
+        <target state="translated">Идентификатори в базата данни и опция за изолация на транспорта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database downgrade" xml:space="preserve">
+      <trans-unit id="Database downgrade" xml:space="preserve" approved="no">
         <source>Database downgrade</source>
+        <target state="translated">Понижаване на версията на базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encrypted!" xml:space="preserve">
+      <trans-unit id="Database encrypted!" xml:space="preserve" approved="no">
         <source>Database encrypted!</source>
+        <target state="translated">Базата данни е криптирана!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve">
@@ -1213,41 +1223,50 @@
 </source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated.
 </source>
+        <target state="translated">Паролата за криптиране на базата данни ще бъде актуализирана.
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database error" xml:space="preserve">
+      <trans-unit id="Database error" xml:space="preserve" approved="no">
         <source>Database error</source>
+        <target state="translated">Грешка в базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database is encrypted using a random passphrase, you can change it." xml:space="preserve">
+      <trans-unit id="Database is encrypted using a random passphrase, you can change it." xml:space="preserve" approved="no">
         <source>Database is encrypted using a random passphrase, you can change it.</source>
+        <target state="translated">Базата данни е криптирана с произволна парола, можете да я промените.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database is encrypted using a random passphrase. Please change it before exporting." xml:space="preserve">
+      <trans-unit id="Database is encrypted using a random passphrase. Please change it before exporting." xml:space="preserve" approved="no">
         <source>Database is encrypted using a random passphrase. Please change it before exporting.</source>
+        <target state="translated">Базата данни е криптирана с произволна парола. Моля, променете я преди експортиране.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase" xml:space="preserve">
+      <trans-unit id="Database passphrase" xml:space="preserve" approved="no">
         <source>Database passphrase</source>
+        <target state="translated">Парола за базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase &amp; export" xml:space="preserve">
+      <trans-unit id="Database passphrase &amp; export" xml:space="preserve" approved="no">
         <source>Database passphrase &amp; export</source>
+        <target state="translated">Парола за базата данни и експортиране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
         <source>Database passphrase is different from saved in the keychain.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
+      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve" approved="no">
         <source>Database passphrase is required to open chat.</source>
+        <target state="translated">Изисква се паролата за базата данни, за да се отвори чата.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database upgrade" xml:space="preserve">
+      <trans-unit id="Database upgrade" xml:space="preserve" approved="no">
         <source>Database upgrade</source>
+        <target state="translated">Актуализация на базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve">
@@ -1255,49 +1274,60 @@
 </source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database will be encrypted.&#10;" xml:space="preserve">
+      <trans-unit id="Database will be encrypted.&#10;" xml:space="preserve" approved="no">
         <source>Database will be encrypted.
 </source>
+        <target state="translated">Базата данни ще бъде криптирана.
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database will be migrated when the app restarts" xml:space="preserve">
         <source>Database will be migrated when the app restarts</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Decentralized" xml:space="preserve">
+      <trans-unit id="Decentralized" xml:space="preserve" approved="no">
         <source>Decentralized</source>
+        <target state="translated">Децентрализиран</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Decryption error" xml:space="preserve">
+      <trans-unit id="Decryption error" xml:space="preserve" approved="no">
         <source>Decryption error</source>
+        <target state="translated">Грешка при декриптиране</target>
         <note>message decrypt error item</note>
       </trans-unit>
-      <trans-unit id="Delete" xml:space="preserve">
+      <trans-unit id="Delete" xml:space="preserve" approved="no">
         <source>Delete</source>
+        <target state="translated">Изтрий</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Delete Contact" xml:space="preserve">
+      <trans-unit id="Delete Contact" xml:space="preserve" approved="no">
         <source>Delete Contact</source>
+        <target state="translated">Изтрий контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete address" xml:space="preserve">
+      <trans-unit id="Delete address" xml:space="preserve" approved="no">
         <source>Delete address</source>
+        <target state="translated">Изтрий адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete address?" xml:space="preserve">
+      <trans-unit id="Delete address?" xml:space="preserve" approved="no">
         <source>Delete address?</source>
+        <target state="translated">Изтрий адрес?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete after" xml:space="preserve">
+      <trans-unit id="Delete after" xml:space="preserve" approved="no">
         <source>Delete after</source>
+        <target state="translated">Изтрий след</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete all files" xml:space="preserve">
+      <trans-unit id="Delete all files" xml:space="preserve" approved="no">
         <source>Delete all files</source>
+        <target state="translated">Изтрий всички файлове</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete archive" xml:space="preserve">
+      <trans-unit id="Delete archive" xml:space="preserve" approved="no">
         <source>Delete archive</source>
+        <target state="translated">Изтрий архив</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat archive?" xml:space="preserve">
