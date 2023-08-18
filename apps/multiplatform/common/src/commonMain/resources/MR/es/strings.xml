@@ -954,7 +954,7 @@
     <string name="icon_descr_address">Dirección SimpleX</string>
     <string name="image_descr_simplex_logo">Logo SimpleX</string>
     <string name="icon_descr_simplex_team">Equipo SimpleX</string>
-    <string name="your_chat_profiles">Perfiles</string>
+    <string name="your_chat_profiles">Mis perfiles</string>
     <string name="your_simplex_contact_address">Mi dirección SimpleX</string>
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
@@ -1004,7 +1004,7 @@
     <string name="v4_6_group_moderation_descr">Ahora los administradores pueden:
 \n- borrar mensajes de los miembros.
 \n- desactivar el rol miembro (a rol \"observador\")</string>
-    <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda del menú Perfiles.</string>
+    <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda del menú Mis perfiles.</string>
     <string name="database_upgrade">Actualización de la base de datos</string>
     <string name="database_downgrade">Volviendo a versión anterior de la base de datos</string>
     <string name="invalid_migration_confirmation">Confirmación de migración no válida</string>
@@ -1372,4 +1372,9 @@
     <string name="system_restricted_background_in_call_warn">Para realizar llamadas en segundo plano, por favor selecciona <b>Uso de batería de la aplicación</b> / <b>No restringido</b> en las configuraciónes de la aplicación.</string>
     <string name="connect_use_current_profile">Usar perfil actual</string>
     <string name="connect_use_new_incognito_profile">Usar nuevo perfil incógnito</string>
+    <string name="privacy_show_last_messages">Mostrar último mensaje</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s y %d miembros más conectados</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s y %s conectados</string>
+    <string name="rcv_group_event_2_members_connected">%s y %s conectados</string>
+    <string name="privacy_message_draft">Borrador de mensaje</string>
 </resources>
