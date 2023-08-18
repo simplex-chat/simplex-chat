@@ -10,23 +10,23 @@ Please note that your search queries can be kept by the bot as the conversation 
 
 ## Adding groups to the directory
 
-### How to register the group
+### How to add the group
 
-To register the group you must be the owner of the group. Once you connect to the directory service and send `/help`, the service will guide you through the process.
+To add the group you must be the owner of the group. Once you connect to the directory service and send `/help`, the service will guide you through the process.
 
 1. Invite SimpleX Service Directory to the group as `admin` member. You can also set the role to `admin` after inviting the directory service.
 
 The directory service needs to be `admin` to provide a good user experience of joining the group, as it will create a new link to join the group, which is expected to be online 99% of the time.
 
-2. Add the link sent to you by the directory service to the group welcome message. This has to be done by the same group member who invited the directory service to the group. This member will be the owner of the group registration record in the directory service.
+2. Add the link sent to you by the directory service to the group welcome message. This has to be done by the same group member who invited the directory service to the group. This member will be the owner of the group record in the directory service.
 
 3. Once the link is added, the group will need to be approved by the directory service admins. This link is functional even before the group is approved, and you can continue using this link even if the group is not approved.
 
-The group is usually approved within 24 hours. Please see below which groups can be registered.
+The group is usually approved within 24 hours. Please see below which groups can be added.
 
 Once the group is approved, it will appear in search results.
 
-You can list all the groups you submitted for the registration by sending `/list` to the directory service.
+You can list all the groups you submitted by sending `/list` to the directory service.
 
 ### How to remove the group from the directory
 
@@ -43,7 +43,7 @@ To remove the group from the directory:
 
 Removing the group does not prevent you from registering the group again in the future.
 
-### Why limit which groups can be listed
+### Why limit which groups can be added
 
 The reason to restrict the acceptable content is to have a better experience for a wider range of the users, and to comply with the content policies of app distribution channels (App Store, Play Store, etc.), once the directory service is available via the app without additional configuration. To achieve that, the content in the listed groups should be restricted to be generally appropriate.
 
@@ -52,9 +52,10 @@ Doesn't it go against the idea of decentralization and freedom of speech?
 We believe it does not, because:
 
 1. The service only restricts the content in the groups that you choose to register – we have no register of all existing groups, and no access to their content.
-2. The service itself is open-source, and self-hostable, so anybody can run an alternative directory service with the different content policies.
+2. The service itself is open-source, and self-hostable, so anybody can run an alternative directory service with the different content policies, or without any policies at all.
+3. Freedom of speech should respect legal rights and freedoms of others, so agreeing some boundaries seems necessary.
 
-### Which groups can be registered
+### Which groups can be added
 
 The below is not the final policy, it is a work in progress.
 
