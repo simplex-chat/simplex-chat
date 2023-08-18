@@ -135,7 +135,7 @@ struct PrivacySettings: View {
                     Button(groupReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
                         setSendReceiptsGroups(groupReceipts, clearOverrides: false)
                     }
-                    Button(contactReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
+                    Button(groupReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
                         setSendReceiptsGroups(groupReceipts, clearOverrides: true)
                     }
                     Button("Cancel", role: .cancel) {
