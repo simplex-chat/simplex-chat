@@ -18,6 +18,7 @@
             "menu": "Reference",
             "data": [
                 "SIMPLEX.md",
+                "DIRECTORY.md",
                 "ANDROID.md",
                 "CLI.md",
                 "SQL.md",

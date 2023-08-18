@@ -1,3 +1,8 @@
+---
+title: SimpleX Directory Service
+revision: 18.08.2023
+---
+
 # SimpleX Directory Service
 
 You can use an experimental directory service to discover the groups created and registered by other users.
@@ -10,9 +15,10 @@ Please note that your search queries can be kept by the bot as the conversation 
 
 ## Adding groups to the directory
 
-### How to add the group
 
-To add the group you must be the owner of the group. Once you connect to the directory service and send `/help`, the service will guide you through the process.
+### How to add a group
+
+To add a group you must be its owner. Once you connect to the directory service and send `/help`, the service will guide you through the process.
 
 1. Invite SimpleX Service Directory to the group as `admin` member. You can also set the role to `admin` after inviting the directory service.
 
