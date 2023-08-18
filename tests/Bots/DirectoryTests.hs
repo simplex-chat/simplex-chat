@@ -689,7 +689,7 @@ testRestoreDirectory tmp = do
         bob <###
           [ "#privacy (Privacy): connected to server(s)",
             "#security (Security): connected to server(s)"
-          ] 
+          ]
         cath <## "2 contacts connected (use /cs for the list)"
         cath <###
           [ "#privacy (Privacy): connected to server(s)",

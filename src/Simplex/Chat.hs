@@ -1806,7 +1806,7 @@ processChatCommand = \case
               xContactId <- maybe randomXContactId pure xContactId_
               connect' Nothing cReqHash xContactId
         Just gLinkId -> procCmd $ do
-          let xContactId = XContactId <$> drgRandomBytes 16
+          xContactId <- XContactId <$> drgRandomBytes 16
           connect' (Just gLinkId) cReqHash xContactId
       where
         connect' groupLinkId cReqHash xContactId = do

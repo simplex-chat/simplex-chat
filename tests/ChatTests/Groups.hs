@@ -49,6 +49,7 @@ chatGroupTests = do
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
+    it "join group twice via same link" testGroupLinkRejoin
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
     it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
@@ -1721,8 +1722,8 @@ testGroupLink =
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
 
-testGroupLinkDeleteGroupRejoin :: HasCallStack => FilePath -> IO ()
-testGroupLinkDeleteGroupRejoin =
+testGroupLinkRejoin :: HasCallStack => FilePath -> IO ()
+testGroupLinkRejoin =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/g team"
@@ -1776,6 +1777,68 @@ testGroupLinkDeleteGroupRejoin =
       bob <# "#team alice> hello"
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
+
+testGroupLinkDeleteGroupRejoin :: HasCallStack => FilePath -> IO ()
+testGroupLinkDeleteGroupRejoin =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: you joined the group"
+        ]
+
+      -- re-join via same link
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact bob_1 is merged into bob",
+                   "use @bob <message> to send messages",
+                   EndsWith "invited to group #team via your group link",
+                   EndsWith "joined the group"
+                 ],
+          bob
+            <### [ "alice_1 (Alice): contact is connected",
+                   "contact alice_1 is merged into alice",
+                   "use @alice <message> to send messages",
+                   "#team_1: you joined the group",
+                   "#team: alice added bob_1 (Bob) to the group (connecting...)",
+                   "#team: new member bob_1 is connected",
+                   "#team_1: member bob_2 (Bob) is connected",
+                   "contact bob_1 is merged into bob_2",
+                   "use @bob_2 <message> to send messages"
+                 ]
+        ]
+      -- alice sends message, both bobs receive
+      alice #> "#team hello"
+      bob <###
+          [ EndsWith "#team alice> hello",
+            EndsWith "#team_1 alice> hello"
+          ]
+      -- original bob sends message
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      bob <# "#team_1 bob_2> hi there"
+      -- second bob sends message
+      bob #> "#team_1 hey"
+      alice <# "#team bob> hey"
+      bob <# "#team bob_2> hey"
 
 testGroupLinkContactUsed :: HasCallStack => FilePath -> IO ()
 testGroupLinkContactUsed =
