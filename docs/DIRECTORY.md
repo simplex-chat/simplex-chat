@@ -4,7 +4,9 @@ You can use an experimental directory service to discover the groups created and
 
 ## Searching for groups
 
-Connect to the directory service via this address and send the message containing the words you want found in the group name or welcome message. You will receive up to 10 groups with the largest number of members in the response, together with the links to join these groups.
+Connect to the directory service via [this address](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) and send the message containing the words you want to find in the group name or welcome message. You will receive up to 10 groups with the largest number of members in the response, together with the links to join these groups.
+
+Please note that your search queries can be kept by the bot as the conversation history, but you can use incognito mode when connecting to the bot, to avoid correlation with any other communications. See [Privacy policy](../PRIVACY.md) for more details.
 
 ## Registering the group
 
@@ -12,9 +14,9 @@ Connect to the directory service via this address and send the message containin
 
 To register the group you must be the owner of the group. Once you connect to the directory service and send `/help`, the service will guide you through the process.
 
-1. Invite SimpleX Service Directory to the group as `admin` member.
+1. Invite SimpleX Service Directory to the group as `admin` member. You can also set the role to `admin` after inviting the directory service.
 
-The directory service needs to be admin to provide a good user experience of joining the group, as it will create a new link to join the group and it is expected to be online 99% of the time.
+The directory service needs to be `admin` to provide a good user experience of joining the group, as it will create a new link to join the group, which is expected to be online 99% of the time.
 
 2. Add the link sent to you by the directory service to the group welcome message. This has to be done by the same group member who invited the directory service to the group. This member will be the owner of the group registration record in the directory service.
 
@@ -26,7 +28,7 @@ Once the group is approved, it will appear in search results.
 
 You can list all the groups you submitted for the registration by sending `/list` to the directory service.
 
-## How to remove the group from the directory
+### How to remove the group from the directory
 
 Changing the group profile in any way (e.g., changing the group name, welcome message, or removing the link to join the group from the welcome message) will remove the group from the search results until the group is approved again by the directory service admins.
 
@@ -43,19 +45,22 @@ Removing the group does not prevent you from registering the group again in the 
 
 ### Why limit which groups can be listed
 
-The reason to restrict the acceptable content is to have a better experience for a wider range of the users, and to comply with the content policies of app distribution channels (App Store, Play Store, etc.) once the directory service is available via the app without additional configuration. To achieve that, the content in the listed groups should be restricted to generally appropriate.
+The reason to restrict the acceptable content is to have a better experience for a wider range of the users, and to comply with the content policies of app distribution channels (App Store, Play Store, etc.), once the directory service is available via the app without additional configuration. To achieve that, the content in the listed groups should be restricted to be generally appropriate.
 
 Doesn't it go against the idea of decentralization and freedom of speech?
 
 We believe it does not, because:
+
 1. The service only restricts the content in the groups that you choose to register – we have no register of all existing groups, and no access to their content.
 2. The service itself is open-source, and self-hostable, so anybody can run an alternative directory service with the different content policies.
 
 ### Which groups can be registered
 
+The below is not the final policy, it is a work in progress.
+
 Currently, the group registration is limited and manual, as we have limited resources to evaluate the content of the groups, so the initial content policy is quite restrictive - we believe it is better to be able to extend what is allowed, than to have to reduce it.
 
-To be "listed in the directory" <sup>\*</sup>, the group must have at least 10 members. The group profiles and group owner profiles must include appropriate, non-offensive avatar images.
+To be "listed in the directory" <sup>\*</sup>, the group must have at least 10 members. Both the group and group owner profiles must include relevant, appropriate, non-offensive avatar images, that do not use the existing trademarks.
 
 Please ONLY submit the groups on the following subjects:
 - communications solutions and providers (messengers, social networks, Internet, etc.)
@@ -76,14 +81,14 @@ The content in the listed groups must:
 - NOT contain racism, hate speech, or any other content that promotes discrimination.
 - NOT contain information about drugs, alcohol, or any other substances.
 - NOT contain [NSFW](https://en.wikipedia.org/wiki/Not_safe_for_work) content.
-- be offensive. We cannot say in advance what "offensive" means, but we will know it when we see it.
+- NOT be offensive – this needs to be clarified.
 
-Group owners are responsible for moderating the content in the group, if members post inappropriate or excessive amount of content and group owners do not moderate it, the group is likely to be removed from the directory.
+Group owners are expected to moderate the content in the groups, if members post inappropriate or excessive amount of content and group owners do not moderate it, the group is likely to be removed from the directory.
 
-We reserve the right to not accept the group listing in the directory or cancel its listing without providing any reasons.
+We reserve the right to not accept the group listing in the directory or cancel its listing, and there may be cases when we can't provide an explanation. We will certainly try to avoid it by communicating with the group owners first.
 
 The combination of display name and full name has to be unique for the listed groups.
 
 Once the group is listed in the directory, the bot will invite you to join the group of the group owners, where you can send any ideas or suggestions for how the groups functionality should evolve, and help steer both the product and the policies.
 
-<sup>\*</sup> (discoverable via search or other directory service functions by any connected users other than the users who submitted the registration)
+<sup>\*</sup> "listed" means discoverable via search or any other directory service functions by any connected users other than the user who submitted the registration
