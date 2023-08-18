@@ -1722,8 +1722,8 @@ testGroupLink =
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
 
-testGroupLinkRejoin :: HasCallStack => FilePath -> IO ()
-testGroupLinkRejoin =
+testGroupLinkDeleteGroupRejoin :: HasCallStack => FilePath -> IO ()
+testGroupLinkDeleteGroupRejoin =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/g team"
@@ -1778,8 +1778,8 @@ testGroupLinkRejoin =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
-testGroupLinkDeleteGroupRejoin :: HasCallStack => FilePath -> IO ()
-testGroupLinkDeleteGroupRejoin =
+testGroupLinkRejoin :: HasCallStack => FilePath -> IO ()
+testGroupLinkRejoin =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/g team"
