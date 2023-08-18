@@ -29,7 +29,7 @@
     <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВЕ</string>
     <string name="abort_switch_receiving_address_question">Откажи смяна на адрес\?</string>
     <string name="abort_switch_receiving_address_confirm">Откажи</string>
-    <string name="abort_switch_receiving_address_desc">Промяната на адреса ще бъде прекъсната. Ще се използва стар адрес за получаване.</string>
+    <string name="abort_switch_receiving_address_desc">Промяната на адреса ще бъде прекъсната. Ще се използва старият адрес за получаване.</string>
     <string name="accept_contact_button">Приеми</string>
     <string name="accept_contact_incognito_button">Приеми инкогнито</string>
     <string name="about_simplex_chat">За SimpleX Chat</string>
@@ -458,7 +458,7 @@
     <string name="receipts_contacts_override_enabled">Изпращането на потвърждениe е активирано за %d контакта</string>
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="receipts_contacts_disable_keep_overrides">Деактивиране (запазване на промените)</string>
-    <string name="total_files_count_and_size">%d файл(а) с общ размер %s</string>
+    <string name="total_files_count_and_size">%d файл(а) с общ размер от %s</string>
     <string name="encrypt_database">Криптирай</string>
     <string name="enter_passphrase">Въведи парола…</string>
     <string name="upgrade_and_open_chat">Актуализирай и отвори чата</string>
@@ -1371,4 +1371,6 @@
     <string name="rcv_group_event_2_members_connected">%s и %s са свързани</string>
     <string name="rcv_group_event_n_members_connected">%s, %s и %d други членове са свързани</string>
     <string name="rcv_group_event_3_members_connected">%s, %s и %s са свързани</string>
+    <string name="privacy_message_draft">Чернова на съобщение</string>
+    <string name="privacy_show_last_messages">Показване на последните съобщения</string>
 </resources>
