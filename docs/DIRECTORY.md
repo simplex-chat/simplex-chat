@@ -52,7 +52,7 @@ Doesn't it go against the idea of decentralization and freedom of speech?
 We believe it does not, because:
 
 1. The service only restricts the content in the groups that you choose to register – we have no register of all existing groups, and no access to their content.
-2. The service itself is open-source, and self-hostable, so anybody can run an alternative directory service with the different content policies, or without any policies at all.
+2. The service itself is open-source, and can be self-hosted, so anybody can run an alternative directory service with the different content policies, or without any policies at all.
 3. Freedom of speech should respect legal rights and freedoms of others, so agreeing some boundaries seems necessary.
 
 ### Which groups can be added
