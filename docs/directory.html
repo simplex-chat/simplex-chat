@@ -37,7 +37,7 @@
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Using custom WebRTC ICE servers in SimpleX Chat</title>
+        <title>SimpleX Directory Service</title>
         <meta name="Content-Type" content="text/html;charset=utf-8"/>
 
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
@@ -169,7 +169,7 @@
                             
                                 <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX platform</a></li>
                             
-                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
+                                <li><a href="/docs/directory.html" class="active lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
                             
                                 <li><a href="/docs/android.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing Android files</a></li>
                             
@@ -179,7 +179,7 @@
                             
                                 <li><a href="/docs/xftp-server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Host XFTP Server</a></li>
                             
-                                <li><a href="/docs/webrtc.html" class="active lg:px-[20px] inline-block whitespace-nowrap">WebRTC servers</a></li>
+                                <li><a href="/docs/webrtc.html" class=" lg:px-[20px] inline-block whitespace-nowrap">WebRTC servers</a></li>
                             
                                 <li><a href="/docs/translations.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Translate SimpleX Chat</a></li>
                             
@@ -278,7 +278,7 @@
                             
                                 <li>
                                     
-                                        <a href="/docs/webrtc.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
+                                        <a href="/docs/directory.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
                                             <img class="h-4" src="/img/flags/en.svg" alt="" srcset="">
                                             <p>English</p>
                                         </a>
@@ -294,84 +294,6 @@
                         
                             
                         
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                    
-                        
-                            
-                        
-                            
-                        
-                            
-                                <li>
-                                    
-                                        <a href="/docs/lang/cs/webrtc.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
-                                            <img class="h-4" src="/img/flags/cs.svg" alt="" srcset="">
-                                            <p>Čeština</p>
-                                        </a>
-                                     
-                                </li>
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                    
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                                <li>
-                                    
-                                        <a href="/docs/lang/fr/webrtc.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
-                                            <img class="h-4" src="/img/flags/fr.svg" alt="" srcset="">
-                                            <p>Français</p>
-                                        </a>
-                                     
-                                </li>
                             
                         
                             
@@ -603,7 +525,7 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/directory.html">SimpleX Directory Service</a>
+                                                    <a class="active" href="/docs/directory.html">SimpleX Directory Service</a>
                                                 </li>
                                             
                                                 <li>
@@ -631,7 +553,7 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="active" href="/docs/webrtc.html">Using custom WebRTC ICE servers in SimpleX Chat</a>
+                                                    <a class="" href="/docs/webrtc.html">Using custom WebRTC ICE servers in SimpleX Chat</a>
                                                 </li>
                                             
                                                 <li>
@@ -744,149 +666,79 @@ window.addEventListener('scroll',changeHeaderBg);
                             </div>
                         </div>
                     </div>
-                    <div><p>| Updated 31.01.2023 | Languages: EN, <a href="/docs/lang/fr/webrtc.html">FR</a>, <a href="/docs/lang/cs/webrtc.html">CZ</a> |</p>
-<h1 id="using-custom-webrtc-ice-servers-in-simplex-chat" tabindex="-1">Using custom WebRTC ICE servers in SimpleX Chat</h1>
-<h2 id="deploy-stunturn-server" tabindex="-1">Deploy STUN/TURN server</h2>
-<p>For this guide, we'll be using the most featureful and battle-tested STUN/TURN server implementation – <a href="https://github.com/coturn/coturn"><code>coturn</code></a> and <a href="https://ubuntu.com/download/server"><code>Ubuntu 20.04 LTS</code></a> Linux distribution.</p>
-<ol start="0">
-<li>
-<p>Obtain <code>stun.$YOUR_DOMAIN</code> and <code>turn.$YOUR_DOMAIN</code> certificates.</p>
-<p>We're using <a href="https://letsencrypt.org/getting-started/">Let's Encrypt</a>.</p>
-</li>
-<li>
-<p>Install <code>coturn</code> package from the main repository.</p>
-</li>
+                    <div><h1 id="simplex-directory-service" tabindex="-1">SimpleX Directory Service</h1>
+<p>You can use an experimental directory service to discover the groups created and registered by other users.</p>
+<h2 id="searching-for-groups" tabindex="-1">Searching for groups</h2>
+<p>Connect to the directory service via <a href="https://simplex.chat/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion">this address</a> and send the message containing the words you want to find in the group name or welcome message. You will receive up to 10 groups with the largest number of members in the response, together with the links to join these groups.</p>
+<p>Please note that your search queries can be kept by the bot as the conversation history, but you can use incognito mode when connecting to the bot, to avoid correlation with any other communications. See <a href="privacy.html">Privacy policy</a> for more details.</p>
+<h2 id="adding-groups-to-the-directory" tabindex="-1">Adding groups to the directory</h2>
+<h3 id="how-to-add-a-group" tabindex="-1">How to add a group</h3>
+<p>To add a group you must be its owner. Once you connect to the directory service and send <code>/help</code>, the service will guide you through the process.</p>
+<ol>
+<li>Invite SimpleX Service Directory to the group as <code>admin</code> member. You can also set the role to <code>admin</code> after inviting the directory service.</li>
 </ol>
-<pre><code class="language-sh">apt update &amp;&amp; apt install coturn`
-</code></pre>
+<p>The directory service needs to be <code>admin</code> to provide a good user experience of joining the group, as it will create a new link to join the group, which is expected to be online 99% of the time.</p>
 <ol start="2">
-<li>Uncomment <code>TURNSERVER_ENABLED=1</code> from <code>/etc/default/coturn</code>:</li>
-</ol>
-<pre><code class="language-sh">sed -i '/TURN/s/^#//g' /etc/default/coturn
-</code></pre>
-<ol start="3">
 <li>
-<p>Configure <code>coturn</code> in <code>/etc/turnserver.conf</code>:</p>
-<p>Also, please see comments for each individual option.</p>
+<p>Add the link sent to you by the directory service to the group welcome message. This has to be done by the same group member who invited the directory service to the group. This member will be the owner of the group record in the directory service.</p>
+</li>
+<li>
+<p>Once the link is added, the group will need to be approved by the directory service admins. This link is functional even before the group is approved, and you can continue using this link even if the group is not approved.</p>
 </li>
 </ol>
-<pre><code class="language-sh"># Also listen to 443 port for tls
-alt-tls-listening-port=443
-# Use fingerprints in the TURN messages
-fingerprint
-# Use long-term credentials mechanism
-lt-cred-mech
-# Your credentials
-user=$YOUR_LOGIN:$YOUR_PASSWORD
-# Your server domain
-server-name=$YOUR_DOMAIN
-# The default realm to be used for the users when no explicit origin/realm relationship was found
-realm=$YOUR_DOMAIN
-# Path to your certificates. Make sure they're readable by cotun process user/group
-cert=/var/lib/turn/cert.pem
-pkey=/var/lib/turn/key.pem
-# Use 2066 bits predefined DH TLS key
-dh2066
-# Log to journalctl
-syslog
-# User/group which will be running coturn service
-proc-user=turnserver
-proc-group=turnserver
-# Disable weak encryption
-no-tlsv1
-no-tlsv1_1
-no-tlsv1_2
-</code></pre>
-<ol start="4">
-<li>Start and enable <code>coturn</code> service:</li>
-</ol>
-<pre><code class="language-sh">systemctl enable coturn &amp;&amp; systemctl start coturn
-</code></pre>
-<ol start="5">
-<li>Optionally, if using <code>ufw</code> firewall, open relevant ports:</li>
-</ol>
-<ul>
-<li><strong>3478</strong> – &quot;plain&quot; TURN/STUN;</li>
-<li><strong>5349</strong> – TURN/STUN over TLS;</li>
-<li><strong>443</strong> – TURN/STUN over TLS, which can bypass firewalls;</li>
-<li><strong>49152:65535</strong> – port range that Coturn will use by default for TURN relay.</li>
-</ul>
-<pre><code class="language-sh"># For Ubuntu
-sudo ufw allow 3478 &amp;&amp; \
-sudo ufw allow 443 &amp;&amp; \
-sudo ufw allow 5349 &amp;&amp; \
-sudo ufw allow 49152:65535/tcp &amp;&amp; \
-sudo ufw allow 49152:65535/udp
-
-# For Fedora
-sudo firewall-cmd --permanent --add-port=443/tcp &amp;&amp; \
-sudo firewall-cmd --permanent --add-port=443/udp &amp;&amp; \
-sudo firewall-cmd --permanent --add-port=5349/tcp &amp;&amp; \
-sudo firewall-cmd --permanent --add-port=5349/udp &amp;&amp; \
-sudo firewall-cmd --permanent --add-port=49152:65535/tcp &amp;&amp; \
-sudo firewall-cmd --permanent --add-port=49152:65535/udp &amp;&amp; \
-sudo firewall-cmd --reload
-</code></pre>
-<h2 id="configure-mobile-apps" tabindex="-1">Configure mobile apps</h2>
-<p>To configure your mobile app to use your server:</p>
+<p>The group is usually approved within 24 hours. Please see below which groups can be added.</p>
+<p>Once the group is approved, it will appear in search results.</p>
+<p>You can list all the groups you submitted by sending <code>/list</code> to the directory service.</p>
+<h3 id="how-to-remove-the-group-from-the-directory" tabindex="-1">How to remove the group from the directory</h3>
+<p>Changing the group profile in any way (e.g., changing the group name, welcome message, or removing the link to join the group from the welcome message) will remove the group from the search results until the group is approved again by the directory service admins.</p>
+<p>If it is undesirable that the service cannot be found in search during this time, please coordinate the time of this change with the directory service admins for quick approval.</p>
+<p>Changing the role of the directory service will temporarily remove the group from the search results, and unless you changed the role to the <code>owner</code>, it will also permanently disrupt the members that were in the process of connecting to other members via the directory service.</p>
+<p>To remove the group from the directory:</p>
 <ol>
-<li>
-<p>Open <code>Settings / Network &amp; Servers / WebRTC ICE servers</code> and switch toggle <code>Configure ICE servers</code>.</p>
-</li>
-<li>
-<p>Enter all server addresses in the field, one per line, for example if you servers are on the port 5349:</p>
-</li>
+<li>Remove the group link created by the directory service from the welcome message. This will not disrupt the members from joining the group, even via this link, but will remove the group from the search results.</li>
+<li>After some time (we recommend 3-4 days) remove the directory service from the group - it will stop receiving the messages and the group will be permanently removed from the search results.</li>
 </ol>
-<pre><code>stun:stun.example.com:5349
-turn:username:password@turn.example.com:5349
-</code></pre>
-<p>This is it - you now can make audio and video calls via your own server, without sharing any data with our servers (other than the key exchange with your contact in E2E encrypted messages).</p>
-<h2 id="troubleshoot" tabindex="-1">Troubleshoot</h2>
-<ul>
-<li>
-<p><strong>Determine if server is available</strong>:</p>
-<p>Run this command in your terminal:</p>
-<pre><code class="language-sh">ping &lt;your_ip_or_domain&gt;
-</code></pre>
-<p>If packets being transmitted, server is up!</p>
-</li>
-<li>
-<p><strong>Determine if ports are open</strong>:</p>
-<p>Run this command in your terminal:</p>
-<pre><code class="language-sh">nc -zvw10 &lt;your_ip_or_domain&gt; 443 5349
-</code></pre>
-<p>You should see:</p>
-<pre><code>Connection to &lt;your_ip_or_domain&gt; 443 port [tcp/https] succeeded!
-Connection to &lt;your_ip_or_domain&gt; 5349 port [tcp/*] succeeded!
-</code></pre>
-</li>
-<li>
-<p><strong>Test STUN/TURN connectivity</strong>:</p>
+<p>Removing the group does not prevent you from registering the group again in the future.</p>
+<h3 id="why-limit-which-groups-can-be-added" tabindex="-1">Why limit which groups can be added</h3>
+<p>The reason to restrict the acceptable content is to have a better experience for a wider range of the users, and to comply with the content policies of app distribution channels (App Store, Play Store, etc.), once the directory service is available via the app without additional configuration. To achieve that, the content in the listed groups should be restricted to be generally appropriate.</p>
+<p>Doesn't it go against the idea of decentralization and freedom of speech?</p>
+<p>We believe it does not, because:</p>
 <ol>
-<li>
-<p>Go to <a href="https://icetest.info/">IceTest</a>.</p>
-</li>
-<li>
-<p>In <strong>Build up ICE Server List</strong> section, add:</p>
-<img src="./stun_1.png">
-<ul>
-<li><code>STUN: stun:&lt;your_ip_or_domain&gt;:&lt;port&gt;</code> and hit <code>Add STUN</code></li>
-<li><code>TURN: turn:&lt;your_ip_or_domain&gt;:&lt;port&gt;</code>, <code>Username: &lt;your_login&gt;</code>, <code>Credential: &lt;your_pass&gt;</code> and hit <code>Add TURN</code></li>
-</ul>
-<p>Where <code>&lt;port&gt;</code> is 443 or 5349.</p>
-</li>
-<li>
-<p>You should see your servers in <strong>ICE server list</strong> section. If everything is set up correctly, hit <code>Start test</code>:</p>
-<img src="./stun_2.png">
-</li>
-<li>
-<p>In <strong>Results</strong> section, you should see something like this:</p>
-<img src="./stun_3.png">
-<p>If results show <code>srflx</code> and <code>relay</code> candidates, everything is set up correctly!</p>
-</li>
+<li>The service only restricts the content in the groups that you choose to register – we have no register of all existing groups, and no access to their content.</li>
+<li>The service itself is open-source, and can be self-hosted, so anybody can run an alternative directory service with the different content policies, or without any policies at all.</li>
+<li>Freedom of speech should respect legal rights and freedoms of others, so agreeing some boundaries seems necessary.</li>
 </ol>
-</li>
+<h3 id="which-groups-can-be-added" tabindex="-1">Which groups can be added</h3>
+<p>The below is not the final policy, it is a work in progress.</p>
+<p>Currently, the group registration is limited and manual, as we have limited resources to evaluate the content of the groups, so the initial content policy is quite restrictive - we believe it is better to be able to extend what is allowed, than to have to reduce it.</p>
+<p>To be &quot;listed in the directory&quot; <sup>*</sup>, the group must have at least 10 members. Both the group and group owner profiles must include relevant, appropriate, non-offensive avatar images, that do not use the existing trademarks.</p>
+<p>Please ONLY submit the groups on the following subjects:</p>
+<ul>
+<li>communications solutions and providers (messengers, social networks, Internet, etc.)</li>
+<li>privacy and security</li>
+<li>cryptocurrencies</li>
+<li>product and software development</li>
+<li>science and technology</li>
+<li>media and entertainment: books, music, movies and games</li>
+<li>politics, society, culture and education</li>
 </ul>
+<p>The content in the group must be &quot;appropriate&quot; for the general audience, starting from 12 years old.</p>
+<p>The content in the listed groups must:</p>
+<ul>
+<li>be legal for the jurisdiction you are in.</li>
+<li>NOT contain spam and advertising.</li>
+<li>NOT contain violence, calls for violence, calls for public demonstrations, or any other disturbing content.</li>
+<li>NOT contain pornography, nudity, erotic or any sex-related content.</li>
+<li>NOT contain racism, hate speech, or any other content that promotes discrimination.</li>
+<li>NOT contain information about drugs, alcohol, or any other substances.</li>
+<li>NOT contain <a href="https://en.wikipedia.org/wiki/Not_safe_for_work">NSFW</a> content.</li>
+<li>NOT be offensive – this needs to be clarified.</li>
+</ul>
+<p>Group owners are expected to moderate the content in the groups, if members post inappropriate or excessive amount of content and group owners do not moderate it, the group is likely to be removed from the directory.</p>
+<p>We reserve the right to not accept the group listing in the directory or cancel its listing, and there may be cases when we can't provide an explanation. We will certainly try to avoid it by communicating with the group owners first.</p>
+<p>The combination of display name and full name has to be unique for the listed groups.</p>
+<p>Once the group is listed in the directory, the bot will invite you to join the group of the group owners, where you can send any ideas or suggestions for how the groups functionality should evolve, and help steer both the product and the policies.</p>
+<p><sup>*</sup> &quot;listed&quot; means discoverable via search or any other directory service functions by any connected users other than the user who submitted the registration</p>
 </div>
                 </article>
             </main>
