@@ -515,7 +515,7 @@
     <string name="network_and_servers">Netwerk &amp; servers</string>
     <string name="enter_one_ICE_server_per_line">ICE servers (één per lijn)</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Zorg ervoor dat WebRTC ICE server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
-    <string name="network_disable_socks_info">Als u bevestigt, kunnen de berichten servers uw IP-adres zien en uw provider, met welke servers u verbinding maakt.</string>
+    <string name="network_disable_socks_info">Als u bevestigt, kunnen de berichten servers en uw provider uw IP-adres zien en met welke servers u verbinding maakt.</string>
     <string name="network_use_onion_hosts_no">Nee</string>
     <string name="immune_to_spam_and_abuse">Immuun voor spam en misbruik</string>
     <string name="make_private_connection">Maak een privéverbinding</string>
@@ -676,7 +676,7 @@
     <string name="reject_contact_button">Afwijzen</string>
     <string name="set_contact_name">Naam contactpersoon instellen</string>
     <string name="connection_you_accepted_will_be_cancelled">De door u geaccepteerde verbinding wordt geannuleerd!</string>
-    <string name="contact_you_shared_link_with_wont_be_able_to_connect">Het contact met wie je deze link hebt gedeeld, kan GEEN verbinding maken!</string>
+    <string name="contact_you_shared_link_with_wont_be_able_to_connect">Het contact met wie je deze link hebt gedeeld kan GEEN verbinding maken!</string>
     <string name="you_accepted_connection">Je hebt de verbinding geaccepteerd</string>
     <string name="you_invited_a_contact">Je hebt je contactpersoon uitgenodigd</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Uw contactpersoon moet online zijn om de verbinding te voltooien.
@@ -919,7 +919,7 @@
     <string name="contact_sent_large_file">Je contactpersoon heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%1$s).</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Uw huidige chatdatabase wordt VERWIJDERD en VERVANGEN door de geïmporteerde.
 \nDeze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
-    <string name="invite_prohibited_description">Je probeert een contact met wie je een incognito profiel hebt gedeeld, uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</string>
+    <string name="invite_prohibited_description">Je probeert een contact met wie je een incognito profiel hebt gedeeld uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten. SimpleX servers kunnen uw profiel niet zien.</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">U moet zich authenticeren wanneer u de app na 30 seconden op de achtergrond start of hervat.</string>
     <string name="images_limit_title">Te veel afbeeldingen!</string>
@@ -1175,7 +1175,7 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[Lees meer in de <font color="#0088ff">Gebruikershandleiding</font>.]]></string>
     <string name="theme_colors_section_title">THEMA KLEUREN</string>
     <string name="you_can_share_your_address">U kunt uw adres delen als een link of QR-code - iedereen kan verbinding met u maken.</string>
-    <string name="your_contacts_will_see_it">Uw contacten in SimpleX zullen het zien.
+    <string name="your_contacts_will_see_it">Uw contacten in SimpleX kunnen het zien.
 \nU kunt dit wijzigen in Instellingen.</string>
     <string name="all_app_data_will_be_cleared">Alle app-gegevens worden verwijderd.</string>
     <string name="empty_chat_profile_is_created">Er wordt een leeg chatprofiel met de opgegeven naam gemaakt en de app wordt zoals gewoonlijk geopend.</string>
