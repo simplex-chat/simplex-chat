@@ -12,7 +12,7 @@ We want to add up to 3 people to the team.
 - **Passionate about joining SimpleX Chat team**:
   - already use SimpleX Chat to communicate with friends/family or participate in public SimpleX Chat groups.
   - passionate about privacy, security and communications.
-  - are willing to make a contribution to the project in your free time before we hire you, as an extended test.
+  - interested to make contributions to SimpleX Chat open-source project in your free time before we hire you, as an extended test.
 
 - **Exceptionally pragmatic, very fast and customer-focussed**:
   - care about the customers (aka users) and about the product we build much more than about the code quality, technology stack, etc.
@@ -31,9 +31,9 @@ We want to add up to 3 people to the team.
     - networking
 
 - **Want to join a very early stage startup**:
-  - high pace and intensity, longer hours
-  - a substantial part of the compensation in stock options
-  - too much [autonomy](https://twitter.com/KentBeck/status/851459129830850561) hurts – we believe in transparency
+  - high pace and intensity, longer hours.
+  - a substantial part of the compensation is stock options.
+  - full transparency – we believe that too much [autonomy](https://twitter.com/KentBeck/status/851459129830850561) hurts learning and slows down progress.
 
 
 ## Who we are looking for
@@ -56,8 +56,8 @@ You will be focussed mostly on our servers code, and will also contribute to the
 You are a product UX expert who designs great user experiences directly in iOS code:
 - iOS and Mac platforms, including:
   - SwiftUI and UIKit.
-  - extensions, including notification service extension and sharing extension
-  - low level inter-process communication primitives for concurrency
+  - extensions, including notification service extension and sharing extension.
+  - low level inter-process communication primitives for concurrency.
 - interested about creating the next generation of UX for a communication/social network.
 
 Knowledge of Android and Kotlin Multiplatform would be a bonus - we use Kotlin Jetpack Compose for our Android and desktop apps.
