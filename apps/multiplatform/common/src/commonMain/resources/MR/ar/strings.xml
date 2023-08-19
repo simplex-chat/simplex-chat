@@ -1369,4 +1369,9 @@
     <string name="system_restricted_background_in_call_warn">لإجراء مكالمات في الخلفية، يرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.</string>
     <string name="connect_use_new_incognito_profile">استخدم ملف تعريف متخفي جديد</string>
     <string name="you_invited_a_contact">أنت دعوت جهة اتصال</string>
+    <string name="privacy_message_draft">مسودة الرسالة</string>
+    <string name="rcv_group_event_2_members_connected">%s و %s متصل</string>
+    <string name="privacy_show_last_messages">إظهار الرسائل الأخيرة</string>
+    <string name="rcv_group_event_n_members_connected">%s، %s و %d أعضاء آخرين متصلون</string>
+    <string name="rcv_group_event_3_members_connected">%s، %s و %s متصل</string>
 </resources>
