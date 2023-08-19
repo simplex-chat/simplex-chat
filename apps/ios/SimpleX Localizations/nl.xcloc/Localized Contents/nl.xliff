@@ -4538,9 +4538,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>De door u geaccepteerde verbinding wordt geannuleerd!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve">
+      <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve" approved="no">
         <source>The contact you shared this link with will NOT be able to connect!</source>
-        <target>Het contact met wie je deze link hebt gedeeld, kan GEEN verbinding maken!</target>
+        <target state="translated">Het contact met wie je deze link hebt gedeeld kan GEEN verbinding maken!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The created archive is available via app Settings / Database / Old database archive." xml:space="preserve">
@@ -5272,9 +5272,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>U verliest uw contacten niet als u deze later verwijdert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
+      <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve" approved="no">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
-        <target>Je probeert een contact met wie je een incognito profiel hebt gedeeld, uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</target>
+        <target state="translated">Je probeert een contact met wie je een incognito profiel hebt gedeeld uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
@@ -5349,10 +5349,11 @@ U kunt deze verbinding verbreken en het contact verwijderen (en later proberen m
         <target>Uw contacten kunnen volledige verwijdering van berichten toestaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
+      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve" approved="no">
         <source>Your contacts in SimpleX will see it.
 You can change it in Settings.</source>
-        <target>Uw contacten in SimpleX zullen het zien. U kunt dit wijzigen in Instellingen.</target>
+        <target state="translated">Uw contacten in SimpleX kunnen het zien. 
+U kunt dit wijzigen in Instellingen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts will remain connected." xml:space="preserve">
