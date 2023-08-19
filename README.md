@@ -142,11 +142,14 @@ It is possible to donate via:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
 - [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
-- Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-- Solana address: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
+- Monero: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- Bitcoin: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- BCH: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- USDT:
+  - BNB Smart Chain: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
+  - Tron: TNnTrKLBmdy2Wn3cAQR98dAVvWhLskQGfW
+- Ethereum: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
+- Solana: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
 
 Thank you,
 
