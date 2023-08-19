@@ -1371,4 +1371,9 @@
     <string name="system_restricted_background_warn">Aby włączyć powiadomienia, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.</string>
     <string name="system_restricted_background_in_call_warn">Aby robić połączenia w tle, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.</string>
     <string name="connect_use_new_incognito_profile">Użyj nowego profilu incognito</string>
+    <string name="privacy_show_last_messages">Pokaż ostatnie wiadomości</string>
+    <string name="privacy_message_draft">Wersja robocza wiadomości</string>
+    <string name="rcv_group_event_2_members_connected">%s i %s połączeni</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s i %d innych członków połączeni</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s i %s połączeni</string>
 </resources>
