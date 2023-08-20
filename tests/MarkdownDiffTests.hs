@@ -8,9 +8,9 @@ import qualified Data.Sequence as S
 import Simplex.Chat.Markdown
 
 import Simplex.Chat.MarkdownDiff
-    ( FormattedChar(..),
-      DiffedChar(..),
-      DiffedPlainChar(..),
+    ( FormatChar(..),
+      DiffChar(..),
+      DiffPlainChar(..),
       DiffStatus(..),
       DiffPlainStatus(..),
       DiffFormatStatus(..),
@@ -47,13 +47,13 @@ formattedEditedTextTests = describe "show edits" do
   it "no change" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar 'H' Nothing                                          
+          [ FormatChar 'H' Nothing                                          
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar 'H' Nothing                                                            
+          [ FormatChar 'H' Nothing                                                            
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar 'H' Nothing) $ UnchangedChar UnchangedFormat                                                              
+        [ DiffChar (FormatChar 'H' Nothing) $ UnchangedChar UnchangedFormat                                                              
         ]
 
   it "add 1 char to empty" do
@@ -62,194 +62,194 @@ formattedEditedTextTests = describe "show edits" do
           [                                          
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar 'H' Nothing                                                            
+          [ FormatChar 'H' Nothing                                                            
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar 'H' Nothing) Inserted                                                                 
+        [ DiffChar (FormatChar 'H' Nothing) Inserted                                                                 
         ]
      
   it "del the one and only" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar 'H' Nothing                                            
+          [ FormatChar 'H' Nothing                                            
           ])   
         (RightSide $ S.fromList
           [                                                             
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar 'H' Nothing) Deleted                                                                 
+        [ DiffChar (FormatChar 'H' Nothing) Deleted                                                                 
         ]
 
   it "one character change" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar 'H' Nothing          
-          , FormattedChar 'r' Nothing                 
-          , FormattedChar 'l' Nothing           
-          , FormattedChar 'l' Nothing                  
-          , FormattedChar 'o' Nothing                                    
+          [ FormatChar 'H' Nothing          
+          , FormatChar 'r' Nothing                 
+          , FormatChar 'l' Nothing           
+          , FormatChar 'l' Nothing                  
+          , FormatChar 'o' Nothing                                    
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar 'H' Nothing           
-          , FormattedChar 'e' Nothing  
-          , FormattedChar 'l' Nothing           
-          , FormattedChar 'l' Nothing                  
-          , FormattedChar 'o' Nothing                                                              
+          [ FormatChar 'H' Nothing           
+          , FormatChar 'e' Nothing  
+          , FormatChar 'l' Nothing           
+          , FormatChar 'l' Nothing                  
+          , FormatChar 'o' Nothing                                                              
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar 'H' Nothing) $ UnchangedChar UnchangedFormat
-        , DiffedChar (FormattedChar 'r' Nothing) Deleted          
-        , DiffedChar (FormattedChar 'e' Nothing) Inserted      
-        , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedChar UnchangedFormat 
-        , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedChar UnchangedFormat 
-        , DiffedChar (FormattedChar 'o' Nothing) $ UnchangedChar UnchangedFormat                                                        
+        [ DiffChar (FormatChar 'H' Nothing) $ UnchangedChar UnchangedFormat
+        , DiffChar (FormatChar 'r' Nothing) Deleted          
+        , DiffChar (FormatChar 'e' Nothing) Inserted      
+        , DiffChar (FormatChar 'l' Nothing) $ UnchangedChar UnchangedFormat 
+        , DiffChar (FormatChar 'l' Nothing) $ UnchangedChar UnchangedFormat 
+        , DiffChar (FormatChar 'o' Nothing) $ UnchangedChar UnchangedFormat                                                        
         ]
 
   it "more1" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar 'H' Nothing          
-          , FormattedChar 'r' Nothing                 
-          , FormattedChar 'l' Nothing           
-          , FormattedChar 'l' Nothing                  
-          , FormattedChar 'o' Nothing                                    
+          [ FormatChar 'H' Nothing          
+          , FormatChar 'r' Nothing                 
+          , FormatChar 'l' Nothing           
+          , FormatChar 'l' Nothing                  
+          , FormatChar 'o' Nothing                                    
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar 'H' Nothing           
-          , FormattedChar 'e' Nothing  
-          , FormattedChar 'l' Nothing           
-          , FormattedChar 'l' Nothing                  
-          , FormattedChar 'o' Nothing            
-          , FormattedChar 'x' Nothing                 
-          , FormattedChar 'y' Nothing                 
-          , FormattedChar 'z' Nothing                                                    
+          [ FormatChar 'H' Nothing           
+          , FormatChar 'e' Nothing  
+          , FormatChar 'l' Nothing           
+          , FormatChar 'l' Nothing                  
+          , FormatChar 'o' Nothing            
+          , FormatChar 'x' Nothing                 
+          , FormatChar 'y' Nothing                 
+          , FormatChar 'z' Nothing                                                    
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar 'H' Nothing) $ UnchangedChar UnchangedFormat
-        , DiffedChar (FormattedChar 'r' Nothing) Deleted          
-        , DiffedChar (FormattedChar 'e' Nothing) Inserted      
-        , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedChar UnchangedFormat 
-        , DiffedChar (FormattedChar 'l' Nothing) $ UnchangedChar UnchangedFormat 
-        , DiffedChar (FormattedChar 'o' Nothing) $ UnchangedChar UnchangedFormat                                       
-        , DiffedChar (FormattedChar 'x' Nothing) Inserted
-        , DiffedChar (FormattedChar 'y' Nothing) Inserted
-        , DiffedChar (FormattedChar 'z' Nothing) Inserted                   
+        [ DiffChar (FormatChar 'H' Nothing) $ UnchangedChar UnchangedFormat
+        , DiffChar (FormatChar 'r' Nothing) Deleted          
+        , DiffChar (FormatChar 'e' Nothing) Inserted      
+        , DiffChar (FormatChar 'l' Nothing) $ UnchangedChar UnchangedFormat 
+        , DiffChar (FormatChar 'l' Nothing) $ UnchangedChar UnchangedFormat 
+        , DiffChar (FormatChar 'o' Nothing) $ UnchangedChar UnchangedFormat                                       
+        , DiffChar (FormatChar 'x' Nothing) Inserted
+        , DiffChar (FormatChar 'y' Nothing) Inserted
+        , DiffChar (FormatChar 'z' Nothing) Inserted                   
         ]
 
   it "more2" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar 'H' Nothing          
-          , FormattedChar 'r' Nothing                 
-          , FormattedChar 'l' Nothing           
-          , FormattedChar 'l' Nothing                  
-          , FormattedChar 'o' Nothing                                    
+          [ FormatChar 'H' Nothing          
+          , FormatChar 'r' Nothing                 
+          , FormatChar 'l' Nothing           
+          , FormatChar 'l' Nothing                  
+          , FormatChar 'o' Nothing                                    
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar 'H' Nothing           
-          , FormattedChar 'e' Nothing  
-          , FormattedChar 'x' Nothing                 
-          , FormattedChar 'y' Nothing                 
-          , FormattedChar 'z' Nothing             
-          , FormattedChar 'o' Nothing                                         
+          [ FormatChar 'H' Nothing           
+          , FormatChar 'e' Nothing  
+          , FormatChar 'x' Nothing                 
+          , FormatChar 'y' Nothing                 
+          , FormatChar 'z' Nothing             
+          , FormatChar 'o' Nothing                                         
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar 'H' Nothing) $ UnchangedChar UnchangedFormat
-        , DiffedChar (FormattedChar 'r' Nothing) Deleted
-        , DiffedChar (FormattedChar 'l' Nothing) Deleted  
-        , DiffedChar (FormattedChar 'l' Nothing) Deleted          
-        , DiffedChar (FormattedChar 'e' Nothing) Inserted
-        , DiffedChar (FormattedChar 'x' Nothing) Inserted
-        , DiffedChar (FormattedChar 'y' Nothing) Inserted
-        , DiffedChar (FormattedChar 'z' Nothing) Inserted
-        , DiffedChar (FormattedChar 'o' Nothing) $ UnchangedChar UnchangedFormat                      
+        [ DiffChar (FormatChar 'H' Nothing) $ UnchangedChar UnchangedFormat
+        , DiffChar (FormatChar 'r' Nothing) Deleted
+        , DiffChar (FormatChar 'l' Nothing) Deleted  
+        , DiffChar (FormatChar 'l' Nothing) Deleted          
+        , DiffChar (FormatChar 'e' Nothing) Inserted
+        , DiffChar (FormatChar 'x' Nothing) Inserted
+        , DiffChar (FormatChar 'y' Nothing) Inserted
+        , DiffChar (FormatChar 'z' Nothing) Inserted
+        , DiffChar (FormatChar 'o' Nothing) $ UnchangedChar UnchangedFormat                      
         ]
 
   it "more3" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar 'H' (Just Bold)    
-          , FormattedChar 'H' (Just Bold)          
-          , FormattedChar 'r' Nothing                 
-          , FormattedChar 'l' (Just Secret)           
-          , FormattedChar 'l' Nothing                  
-          , FormattedChar 'o' (Just $ colored Green)                                       
+          [ FormatChar 'H' (Just Bold)    
+          , FormatChar 'H' (Just Bold)          
+          , FormatChar 'r' Nothing                 
+          , FormatChar 'l' (Just Secret)           
+          , FormatChar 'l' Nothing                  
+          , FormatChar 'o' (Just $ colored Green)                                       
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar 'H' (Just Italic)   
-          , FormattedChar 'H' (Just Bold)          
-          , FormattedChar 'e' (Just $ colored Cyan)    
-          , FormattedChar 'x' Nothing                 
-          , FormattedChar 'y' Nothing                 
-          , FormattedChar 'z' (Just Secret)                  
-          , FormattedChar 'o' (Just $ colored Blue)                                         
+          [ FormatChar 'H' (Just Italic)   
+          , FormatChar 'H' (Just Bold)          
+          , FormatChar 'e' (Just $ colored Cyan)    
+          , FormatChar 'x' Nothing                 
+          , FormatChar 'y' Nothing                 
+          , FormatChar 'z' (Just Secret)                  
+          , FormatChar 'o' (Just $ colored Blue)                                         
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar (FormattedChar 'H' (Just Bold)) $ UnchangedChar (ChangedToFormat (Just Italic)) 
-        , DiffedChar (FormattedChar 'H' (Just Bold)) $ UnchangedChar UnchangedFormat
-        , DiffedChar (FormattedChar 'r' Nothing) Deleted
-        , DiffedChar (FormattedChar 'l' (Just Secret)) Deleted  
-        , DiffedChar (FormattedChar 'l' Nothing) Deleted         
-        , DiffedChar (FormattedChar 'e' (Just $ colored Cyan)) Inserted
-        , DiffedChar (FormattedChar 'x' Nothing) Inserted
-        , DiffedChar (FormattedChar 'y' Nothing) Inserted
-        , DiffedChar (FormattedChar 'z' (Just Secret)) Inserted 
-        , DiffedChar (FormattedChar 'o' (Just $ colored Green)) $ UnchangedChar (ChangedToFormat (Just $ colored Blue))                                  
+        [ DiffChar (FormatChar 'H' (Just Bold)) $ UnchangedChar (ChangedToFormat (Just Italic)) 
+        , DiffChar (FormatChar 'H' (Just Bold)) $ UnchangedChar UnchangedFormat
+        , DiffChar (FormatChar 'r' Nothing) Deleted
+        , DiffChar (FormatChar 'l' (Just Secret)) Deleted  
+        , DiffChar (FormatChar 'l' Nothing) Deleted         
+        , DiffChar (FormatChar 'e' (Just $ colored Cyan)) Inserted
+        , DiffChar (FormatChar 'x' Nothing) Inserted
+        , DiffChar (FormatChar 'y' Nothing) Inserted
+        , DiffChar (FormatChar 'z' (Just Secret)) Inserted 
+        , DiffChar (FormatChar 'o' (Just $ colored Green)) $ UnchangedChar (ChangedToFormat (Just $ colored Blue))                                  
         ]
 
   it "more4" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar 'H' Nothing          
-          , FormattedChar 'r' Nothing                 
-          , FormattedChar 'l' Nothing      
-          , FormattedChar '~' Nothing  
-          , FormattedChar '!' Nothing  
-          , FormattedChar '@' Nothing                                     
-          , FormattedChar 'l' Nothing                  
-          , FormattedChar 'o' Nothing                                    
+          [ FormatChar 'H' Nothing          
+          , FormatChar 'r' Nothing                 
+          , FormatChar 'l' Nothing      
+          , FormatChar '~' Nothing  
+          , FormatChar '!' Nothing  
+          , FormatChar '@' Nothing                                     
+          , FormatChar 'l' Nothing                  
+          , FormatChar 'o' Nothing                                    
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar 'H' Nothing           
-          , FormattedChar 'e' Nothing 
-          , FormattedChar 'r' Nothing             
-          , FormattedChar 'x' Nothing                 
-          , FormattedChar 'y' Nothing     
-          , FormattedChar '!' Nothing  
-          , FormattedChar '@' Nothing                       
-          , FormattedChar 'z' Nothing             
-          , FormattedChar 'o' Nothing      
-          , FormattedChar '1' Nothing 
-          , FormattedChar '2' Nothing                                                        
+          [ FormatChar 'H' Nothing           
+          , FormatChar 'e' Nothing 
+          , FormatChar 'r' Nothing             
+          , FormatChar 'x' Nothing                 
+          , FormatChar 'y' Nothing     
+          , FormatChar '!' Nothing  
+          , FormatChar '@' Nothing                       
+          , FormatChar 'z' Nothing             
+          , FormatChar 'o' Nothing      
+          , FormatChar '1' Nothing 
+          , FormatChar '2' Nothing                                                        
           ])  
       `shouldBe` S.fromList
-          [ DiffedChar (FormattedChar 'H' Nothing) (UnchangedChar UnchangedFormat)
-          , DiffedChar (FormattedChar 'e' Nothing) Inserted
-          , DiffedChar (FormattedChar 'r' Nothing) (UnchangedChar UnchangedFormat)
-          , DiffedChar (FormattedChar 'l' Nothing) Deleted
-          , DiffedChar (FormattedChar '~' Nothing) Deleted
-          , DiffedChar (FormattedChar 'x' Nothing) Inserted
-          , DiffedChar (FormattedChar 'y' Nothing) Inserted
-          , DiffedChar (FormattedChar '!' Nothing) (UnchangedChar UnchangedFormat)
-          , DiffedChar (FormattedChar '@' Nothing) (UnchangedChar UnchangedFormat)
-          , DiffedChar (FormattedChar 'l' Nothing) Deleted
-          , DiffedChar (FormattedChar 'z' Nothing) Inserted
-          , DiffedChar (FormattedChar 'o' Nothing) (UnchangedChar UnchangedFormat)
-          , DiffedChar (FormattedChar '1' Nothing) Inserted
-          , DiffedChar (FormattedChar '2' Nothing) Inserted
+          [ DiffChar (FormatChar 'H' Nothing) (UnchangedChar UnchangedFormat)
+          , DiffChar (FormatChar 'e' Nothing) Inserted
+          , DiffChar (FormatChar 'r' Nothing) (UnchangedChar UnchangedFormat)
+          , DiffChar (FormatChar 'l' Nothing) Deleted
+          , DiffChar (FormatChar '~' Nothing) Deleted
+          , DiffChar (FormatChar 'x' Nothing) Inserted
+          , DiffChar (FormatChar 'y' Nothing) Inserted
+          , DiffChar (FormatChar '!' Nothing) (UnchangedChar UnchangedFormat)
+          , DiffChar (FormatChar '@' Nothing) (UnchangedChar UnchangedFormat)
+          , DiffChar (FormatChar 'l' Nothing) Deleted
+          , DiffChar (FormatChar 'z' Nothing) Inserted
+          , DiffChar (FormatChar 'o' Nothing) (UnchangedChar UnchangedFormat)
+          , DiffChar (FormatChar '1' Nothing) Inserted
+          , DiffChar (FormatChar '2' Nothing) Inserted
           ]
 
   it "SimplexLink 1" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar '>' $ Just $ SimplexLink    
+          [ FormatChar '>' $ Just $ SimplexLink    
               { linkType = XLContact
               , simplexUri = "https://api.twitter.com/2/tweets/:id"
               , trustedUri = True
               , smpHosts = NE.fromList ["host1", "host2", "host3"]}                                                   
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar '>' $ Just SimplexLink    
+          [ FormatChar '>' $ Just SimplexLink    
               { linkType = XLContact
               , simplexUri = "https://api.twitter.com/3/tweets/:id"
               , trustedUri = True
@@ -257,8 +257,8 @@ formattedEditedTextTests = describe "show edits" do
               }                                                   
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar 
-            (FormattedChar '>' $ Just SimplexLink    
+        [ DiffChar 
+            (FormatChar '>' $ Just SimplexLink    
               { linkType = XLContact
               , simplexUri = "https://api.twitter.com/2/tweets/:id"
               , trustedUri = True
@@ -276,14 +276,14 @@ formattedEditedTextTests = describe "show edits" do
   it "SimplexLink 2" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar '>' $ Just $ SimplexLink    
+          [ FormatChar '>' $ Just $ SimplexLink    
               { linkType = XLContact
               , simplexUri = "https://api.twitter.com/2/tweets/:id"
               , trustedUri = True
               , smpHosts = NE.fromList ["host1", "host2", "host3"]}                                                   
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar '>' $ Just SimplexLink    
+          [ FormatChar '>' $ Just SimplexLink    
               { linkType = XLContact
               , simplexUri = "https://api.twitter.com/3/tweets/:id"
               , trustedUri = True
@@ -291,8 +291,8 @@ formattedEditedTextTests = describe "show edits" do
               }                                                   
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar 
-            (FormattedChar '>' $ Just SimplexLink    
+        [ DiffChar 
+            (FormatChar '>' $ Just SimplexLink    
               { linkType = XLContact
               , simplexUri = "https://api.twitter.com/2/tweets/:id"
               , trustedUri = True
@@ -310,14 +310,14 @@ formattedEditedTextTests = describe "show edits" do
   it "SimplexLink 3" do
     diff 
         (LeftSide $ S.fromList
-          [ FormattedChar '>' $ Just $ SimplexLink    
+          [ FormatChar '>' $ Just $ SimplexLink    
               { linkType = XLContact
               , simplexUri = "https://api.twitter.com/2/tweets/:id"
               , trustedUri = True
               , smpHosts = NE.fromList ["host1", "host2", "host3"]}                                                   
           ])   
         (RightSide $ S.fromList
-          [ FormattedChar '>' $ Just SimplexLink    
+          [ FormatChar '>' $ Just SimplexLink    
               { linkType = XLContact
               , simplexUri = "https://api.twitter.com/2/tweets/:id"
               , trustedUri = True
@@ -325,8 +325,8 @@ formattedEditedTextTests = describe "show edits" do
               }                                                   
           ])  
       `shouldBe` S.fromList
-        [ DiffedChar 
-            (FormattedChar '>' $ Just SimplexLink    
+        [ DiffChar 
+            (FormatChar '>' $ Just SimplexLink    
               { linkType = XLContact
               , simplexUri = "https://api.twitter.com/2/tweets/:id"
               , trustedUri = True
@@ -346,43 +346,43 @@ formattedEditedTextTests = describe "show edits" do
       (LeftSide  "https://api.twitter.com/2/tweets/:id") 
       (RightSide "https://api.twitter.com/3/tweets/:id")
         `shouldBe` S.fromList
-            [ DiffedPlainChar 'h' UnchangedP
-            , DiffedPlainChar 't' UnchangedP
-            , DiffedPlainChar 't' UnchangedP
-            , DiffedPlainChar 'p' UnchangedP
-            , DiffedPlainChar 's' UnchangedP
-            , DiffedPlainChar ':' UnchangedP
-            , DiffedPlainChar '/' UnchangedP
-            , DiffedPlainChar '/' UnchangedP
-            , DiffedPlainChar 'a' UnchangedP
-            , DiffedPlainChar 'p' UnchangedP
-            , DiffedPlainChar 'i' UnchangedP
-            , DiffedPlainChar '.' UnchangedP
-            , DiffedPlainChar 't' UnchangedP
-            , DiffedPlainChar 'w' UnchangedP
-            , DiffedPlainChar 'i' UnchangedP
-            , DiffedPlainChar 't' UnchangedP
-            , DiffedPlainChar 't' UnchangedP
-            , DiffedPlainChar 'e' UnchangedP
-            , DiffedPlainChar 'r' UnchangedP
-            , DiffedPlainChar '.' UnchangedP
-            , DiffedPlainChar 'c' UnchangedP
-            , DiffedPlainChar 'o' UnchangedP
-            , DiffedPlainChar 'm' UnchangedP
-            , DiffedPlainChar '/' UnchangedP
-            , DiffedPlainChar '2' DeletedP
-            , DiffedPlainChar '3' InsertedP
-            , DiffedPlainChar '/' UnchangedP
-            , DiffedPlainChar 't' UnchangedP
-            , DiffedPlainChar 'w' UnchangedP
-            , DiffedPlainChar 'e' UnchangedP
-            , DiffedPlainChar 'e' UnchangedP
-            , DiffedPlainChar 't' UnchangedP
-            , DiffedPlainChar 's' UnchangedP
-            , DiffedPlainChar '/' UnchangedP
-            , DiffedPlainChar ':' UnchangedP
-            , DiffedPlainChar 'i' UnchangedP
-            , DiffedPlainChar 'd' UnchangedP
+            [ DiffPlainChar 'h' UnchangedP
+            , DiffPlainChar 't' UnchangedP
+            , DiffPlainChar 't' UnchangedP
+            , DiffPlainChar 'p' UnchangedP
+            , DiffPlainChar 's' UnchangedP
+            , DiffPlainChar ':' UnchangedP
+            , DiffPlainChar '/' UnchangedP
+            , DiffPlainChar '/' UnchangedP
+            , DiffPlainChar 'a' UnchangedP
+            , DiffPlainChar 'p' UnchangedP
+            , DiffPlainChar 'i' UnchangedP
+            , DiffPlainChar '.' UnchangedP
+            , DiffPlainChar 't' UnchangedP
+            , DiffPlainChar 'w' UnchangedP
+            , DiffPlainChar 'i' UnchangedP
+            , DiffPlainChar 't' UnchangedP
+            , DiffPlainChar 't' UnchangedP
+            , DiffPlainChar 'e' UnchangedP
+            , DiffPlainChar 'r' UnchangedP
+            , DiffPlainChar '.' UnchangedP
+            , DiffPlainChar 'c' UnchangedP
+            , DiffPlainChar 'o' UnchangedP
+            , DiffPlainChar 'm' UnchangedP
+            , DiffPlainChar '/' UnchangedP
+            , DiffPlainChar '2' DeletedP
+            , DiffPlainChar '3' InsertedP
+            , DiffPlainChar '/' UnchangedP
+            , DiffPlainChar 't' UnchangedP
+            , DiffPlainChar 'w' UnchangedP
+            , DiffPlainChar 'e' UnchangedP
+            , DiffPlainChar 'e' UnchangedP
+            , DiffPlainChar 't' UnchangedP
+            , DiffPlainChar 's' UnchangedP
+            , DiffPlainChar '/' UnchangedP
+            , DiffPlainChar ':' UnchangedP
+            , DiffPlainChar 'i' UnchangedP
+            , DiffPlainChar 'd' UnchangedP
             ]
 
   it "plainDiff 2" do
@@ -390,18 +390,18 @@ formattedEditedTextTests = describe "show edits" do
       (LeftSide  "Hrl~!@lo") 
       (RightSide "Herxy!@zo12")
         `shouldBe` S.fromList
-            [ DiffedPlainChar 'H' UnchangedP
-            , DiffedPlainChar 'e' InsertedP
-            , DiffedPlainChar 'r' UnchangedP
-            , DiffedPlainChar 'l' DeletedP
-            , DiffedPlainChar '~' DeletedP
-            , DiffedPlainChar 'x' InsertedP
-            , DiffedPlainChar 'y' InsertedP
-            , DiffedPlainChar '!' UnchangedP
-            , DiffedPlainChar '@' UnchangedP
-            , DiffedPlainChar 'l' DeletedP
-            , DiffedPlainChar 'z' InsertedP
-            , DiffedPlainChar 'o' UnchangedP
-            , DiffedPlainChar '1' InsertedP
-            , DiffedPlainChar '2' InsertedP
+            [ DiffPlainChar 'H' UnchangedP
+            , DiffPlainChar 'e' InsertedP
+            , DiffPlainChar 'r' UnchangedP
+            , DiffPlainChar 'l' DeletedP
+            , DiffPlainChar '~' DeletedP
+            , DiffPlainChar 'x' InsertedP
+            , DiffPlainChar 'y' InsertedP
+            , DiffPlainChar '!' UnchangedP
+            , DiffPlainChar '@' UnchangedP
+            , DiffPlainChar 'l' DeletedP
+            , DiffPlainChar 'z' InsertedP
+            , DiffPlainChar 'o' UnchangedP
+            , DiffPlainChar '1' InsertedP
+            , DiffPlainChar '2' InsertedP
             ]

@@ -6,12 +6,12 @@
 
 
 module Simplex.Chat.MarkdownDiff
-    ( DiffedChar(..)
-    , DiffedPlainChar(..)
+    ( DiffChar(..)
+    , DiffPlainChar(..)
     , DiffStatus(..)
     , DiffPlainStatus(..)
     , DiffFormatStatus(..)
-    , FormattedChar(..)
+    , FormatChar(..)
     , LeftSide(..)
     , RightSide(..)
     , diff
@@ -50,15 +50,15 @@ data DiffFormatStatus
     deriving (Show, Eq)
 
 
-data DiffedChar = DiffedChar FormattedChar DiffStatus
+data DiffChar = DiffChar FormatChar DiffStatus
     deriving (Show, Eq)
 
 
-data DiffedPlainChar = DiffedPlainChar Char DiffPlainStatus
+data DiffPlainChar = DiffPlainChar Char DiffPlainStatus
     deriving (Show, Eq)
 
 
-data FormattedChar = FormattedChar 
+data FormatChar = FormatChar 
     { char :: Char
     , format :: Maybe Format
     }
@@ -73,30 +73,30 @@ newtype DeleteIndicies = DeleteIndicies (Seq Int) deriving (Show, Eq)
 newtype InsertIndicies = InsertIndicies (Seq Int) deriving (Show, Eq)
 
 
-plainDiff :: LeftSide T.Text -> RightSide T.Text -> Seq DiffedPlainChar
+plainDiff :: LeftSide T.Text -> RightSide T.Text -> Seq DiffPlainChar
 plainDiff (LeftSide left) (RightSide right) = toPlain <$> formattedDiff
     where
     formattedDiff = diff (LeftSide $ toFormatted left) (RightSide $ toFormatted right)
 
-    toPlain :: DiffedChar -> DiffedPlainChar
-    toPlain (DiffedChar (FormattedChar c _) diffStatus) = DiffedPlainChar c diffStatusPlain
+    toPlain :: DiffChar -> DiffPlainChar
+    toPlain (DiffChar (FormatChar c _) diffStatus) = DiffPlainChar c diffStatusPlain
         where 
         diffStatusPlain = case diffStatus of
             UnchangedChar _ -> UnchangedP
             Inserted -> InsertedP
             Deleted -> DeletedP
 
-    toFormatted :: T.Text -> Seq FormattedChar
-    toFormatted = fmap (`FormattedChar` Nothing) . S.fromList . T.unpack             
+    toFormatted :: T.Text -> Seq FormatChar
+    toFormatted = fmap (`FormatChar` Nothing) . S.fromList . T.unpack             
 
 
-diff :: LeftSide (Seq FormattedChar) -> RightSide (Seq FormattedChar) -> Seq DiffedChar
+diff :: LeftSide (Seq FormatChar) -> RightSide (Seq FormatChar) -> Seq DiffChar
 diff (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchangedChars
     where
     edits = D.diffTexts (toText left) (toText right)  
     (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = indices 
     
-    toText :: Seq FormattedChar -> T.Text
+    toText :: Seq FormatChar -> T.Text
     toText = T.pack . F.toList . fmap char 
 
     indices :: (DeleteIndicies, InsertIndicies)
@@ -110,40 +110,40 @@ diff (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchangedChars
     unchangedChars :: M.Map Int DiffFormatStatus -- indexed in left
     unchangedChars = F.foldl' f mempty unchangedCharPairs
         where
-        unchangedCharPairs :: Seq (Int, FormattedChar, FormattedChar) 
+        unchangedCharPairs :: Seq (Int, FormatChar, FormatChar) 
         unchangedCharPairs = g <$> S.zip leftWithoutDeletes rightWithoutInserts
 
-        leftWithoutDeletes :: Seq (Int, FormattedChar) 
+        leftWithoutDeletes :: Seq (Int, FormatChar) 
         leftWithoutDeletes = 
             left
             & S.zip (S.fromList [0 .. S.length left - 1])
             & S.filter (\(i, _) -> i `notElem` deleteIndicies)
 
-        rightWithoutInserts :: Seq (Int, FormattedChar) 
+        rightWithoutInserts :: Seq (Int, FormatChar) 
         rightWithoutInserts = 
             right
             & S.zip (S.fromList [0 .. S.length right - 1])
             & S.filter (\(i, _) -> i `notElem` insertIndicies)
 
-        f :: M.Map Int DiffFormatStatus -> (Int, FormattedChar, FormattedChar) -> M.Map Int DiffFormatStatus
-        f acc (i, FormattedChar _ fL, FormattedChar _ fR) = M.insert i x acc
+        f :: M.Map Int DiffFormatStatus -> (Int, FormatChar, FormatChar) -> M.Map Int DiffFormatStatus
+        f acc (i, FormatChar _ fL, FormatChar _ fR) = M.insert i x acc
             where x = if fL == fR then UnchangedFormat else ChangedToFormat fR
 
-        g :: ((Int, FormattedChar), (Int, FormattedChar)) -> (Int, FormattedChar, FormattedChar)
+        g :: ((Int, FormatChar), (Int, FormatChar)) -> (Int, FormatChar, FormatChar)
         g ((i,c), (_,d)) = (i,c,d)       
 
-    markDeletesAndUnchangedChars :: Seq DiffedChar
+    markDeletesAndUnchangedChars :: Seq DiffChar
     markDeletesAndUnchangedChars = S.mapWithIndex f left
         where
-        f :: Int -> FormattedChar -> DiffedChar
-        f i x = DiffedChar x $
+        f :: Int -> FormatChar -> DiffChar
+        f i x = DiffChar x $
             if i `elem` deleteIndicies then Deleted 
             else UnchangedChar $ unchangedChars M.! i -- should never error             
 
-    addInserts :: Seq DiffedChar -> Seq DiffedChar
+    addInserts :: Seq DiffChar -> Seq DiffChar
     addInserts base = F.foldr f base edits -- start from end and work backwards, hence foldr
         where
-        f :: D.Edit -> Seq DiffedChar -> Seq DiffedChar
+        f :: D.Edit -> Seq DiffChar -> Seq DiffChar
         f e acc = case e of
             D.EditDelete _ _ -> acc
             D.EditInsert i m n -> S.take i' acc >< inserts >< S.drop i' acc 
@@ -157,9 +157,9 @@ diff (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchangedChars
                 slidePastDeleteBlock :: Int -> Int
                 slidePastDeleteBlock x = case S.lookup x acc of
                     Nothing -> x
-                    Just (DiffedChar _ diffStatus) -> 
+                    Just (DiffChar _ diffStatus) -> 
                         if diffStatus == Deleted then slidePastDeleteBlock (x + 1) 
                         else x
 
                 rightFormatChars = S.take (n - m + 1) $ S.drop m right
-                inserts = fmap (`DiffedChar` Inserted) rightFormatChars
+                inserts = fmap (`DiffChar` Inserted) rightFormatChars
