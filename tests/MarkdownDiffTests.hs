@@ -168,24 +168,24 @@ formattedEditedTextTests = describe "show edits" do
   it "more3" do
     diff 
         (LeftSide $ S.fromList
-          [ FormatChar 'H' (Just Bold)    
-          , FormatChar 'H' (Just Bold)          
+          [ FormatChar 'H' $ Just Bold
+          , FormatChar 'H' $ Just Bold          
           , FormatChar 'r' Nothing                 
-          , FormatChar 'l' (Just Secret)           
+          , FormatChar 'l' $ Just Secret          
           , FormatChar 'l' Nothing                  
-          , FormatChar 'o' (Just $ colored Green)                                       
+          , FormatChar 'o' $ Just $ colored Green                                       
           ])   
         (RightSide $ S.fromList
-          [ FormatChar 'H' (Just Italic)   
-          , FormatChar 'H' (Just Bold)          
-          , FormatChar 'e' (Just $ colored Cyan)    
+          [ FormatChar 'H' $ Just Italic
+          , FormatChar 'H' $ Just Bold          
+          , FormatChar 'e' $ Just $ colored Cyan   
           , FormatChar 'x' Nothing                 
           , FormatChar 'y' Nothing                 
-          , FormatChar 'z' (Just Secret)                  
-          , FormatChar 'o' (Just $ colored Blue)                                         
+          , FormatChar 'z' $ Just Secret                 
+          , FormatChar 'o' $ Just $ colored Blue                                       
           ])  
       `shouldBe` S.fromList
-        [ DiffChar (FormatChar 'H' (Just Bold)) $ UnchangedChar (ChangedToFormat (Just Italic)) 
+        [ DiffChar (FormatChar 'H' (Just Bold)) $ UnchangedChar $ ChangedToFormat $ Just Italic
         , DiffChar (FormatChar 'H' (Just Bold)) $ UnchangedChar UnchangedFormat
         , DiffChar (FormatChar 'r' Nothing) Deleted
         , DiffChar (FormatChar 'l' (Just Secret)) Deleted  
@@ -194,7 +194,7 @@ formattedEditedTextTests = describe "show edits" do
         , DiffChar (FormatChar 'x' Nothing) Inserted
         , DiffChar (FormatChar 'y' Nothing) Inserted
         , DiffChar (FormatChar 'z' (Just Secret)) Inserted 
-        , DiffChar (FormatChar 'o' (Just $ colored Green)) $ UnchangedChar (ChangedToFormat (Just $ colored Blue))                                  
+        , DiffChar (FormatChar 'o' (Just $ colored Green)) $ UnchangedChar $ ChangedToFormat $ Just $ colored Blue                                  
         ]
 
   it "more4" do
@@ -223,18 +223,18 @@ formattedEditedTextTests = describe "show edits" do
           , FormatChar '2' Nothing                                                        
           ])  
       `shouldBe` S.fromList
-          [ DiffChar (FormatChar 'H' Nothing) (UnchangedChar UnchangedFormat)
+          [ DiffChar (FormatChar 'H' Nothing) $ UnchangedChar UnchangedFormat
           , DiffChar (FormatChar 'e' Nothing) Inserted
-          , DiffChar (FormatChar 'r' Nothing) (UnchangedChar UnchangedFormat)
+          , DiffChar (FormatChar 'r' Nothing) $ UnchangedChar UnchangedFormat
           , DiffChar (FormatChar 'l' Nothing) Deleted
           , DiffChar (FormatChar '~' Nothing) Deleted
           , DiffChar (FormatChar 'x' Nothing) Inserted
           , DiffChar (FormatChar 'y' Nothing) Inserted
-          , DiffChar (FormatChar '!' Nothing) (UnchangedChar UnchangedFormat)
-          , DiffChar (FormatChar '@' Nothing) (UnchangedChar UnchangedFormat)
+          , DiffChar (FormatChar '!' Nothing) $ UnchangedChar UnchangedFormat
+          , DiffChar (FormatChar '@' Nothing) $ UnchangedChar UnchangedFormat
           , DiffChar (FormatChar 'l' Nothing) Deleted
           , DiffChar (FormatChar 'z' Nothing) Inserted
-          , DiffChar (FormatChar 'o' Nothing) (UnchangedChar UnchangedFormat)
+          , DiffChar (FormatChar 'o' Nothing) $ UnchangedChar UnchangedFormat
           , DiffChar (FormatChar '1' Nothing) Inserted
           , DiffChar (FormatChar '2' Nothing) Inserted
           ]
