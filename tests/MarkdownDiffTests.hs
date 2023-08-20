@@ -2,12 +2,12 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module MarkdownEditingTests where
+module MarkdownDiffTests where
 
 import qualified Data.Sequence as S
 import Simplex.Chat.Markdown
 
-import Simplex.Chat.MarkdownEditing
+import Simplex.Chat.MarkdownDiff
     ( FormattedChar(..),
       DiffedChar(..),
       DiffedPlainChar(..),
@@ -16,8 +16,8 @@ import Simplex.Chat.MarkdownEditing
       DiffFormatStatus(..),
       LeftSide(..),
       RightSide(..),
-      findDiffs,
-      findPlainDiffs )
+      diff,
+      plainDiff )
 
 
 import           System.Console.ANSI.Types
@@ -25,15 +25,15 @@ import           Test.Hspec
 import qualified Data.List.NonEmpty as NE
 
 
-markdownEditingTests :: Spec
-markdownEditingTests = do
+markdownDiffTests :: Spec
+markdownDiffTests = do
   formattedEditedTextTests
 
 
 formattedEditedTextTests :: Spec
 formattedEditedTextTests = describe "show edits" do
   it "empty no change" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [                                         
           ])   
@@ -45,7 +45,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
 
   it "no change" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing                                          
           ])   
@@ -57,7 +57,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
 
   it "add 1 char to empty" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [                                          
           ])   
@@ -69,7 +69,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
      
   it "del the one and only" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing                                            
           ])   
@@ -81,7 +81,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
 
   it "one character change" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing          
           , FormattedChar 'r' Nothing                 
@@ -106,7 +106,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
 
   it "more1" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing          
           , FormattedChar 'r' Nothing                 
@@ -137,7 +137,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
 
   it "more2" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing          
           , FormattedChar 'r' Nothing                 
@@ -166,7 +166,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
 
   it "more3" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar 'H' (Just Bold)    
           , FormattedChar 'H' (Just Bold)          
@@ -198,7 +198,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
 
   it "more4" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar 'H' Nothing          
           , FormattedChar 'r' Nothing                 
@@ -240,7 +240,7 @@ formattedEditedTextTests = describe "show edits" do
           ]
 
   it "SimplexLink 1" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar '>' $ Just $ SimplexLink    
               { linkType = XLContact
@@ -274,7 +274,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
 
   it "SimplexLink 2" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar '>' $ Just $ SimplexLink    
               { linkType = XLContact
@@ -308,7 +308,7 @@ formattedEditedTextTests = describe "show edits" do
         ]
 
   it "SimplexLink 3" do
-    findDiffs 
+    diff 
         (LeftSide $ S.fromList
           [ FormattedChar '>' $ Just $ SimplexLink    
               { linkType = XLContact
@@ -341,8 +341,8 @@ formattedEditedTextTests = describe "show edits" do
               }                                                      
         ]
 
-  it "findPlainDiffs 1" do
-    findPlainDiffs 
+  it "plainDiff 1" do
+    plainDiff 
       (LeftSide  "https://api.twitter.com/2/tweets/:id") 
       (RightSide "https://api.twitter.com/3/tweets/:id")
         `shouldBe` S.fromList
@@ -385,8 +385,8 @@ formattedEditedTextTests = describe "show edits" do
             , DiffedPlainChar 'd' UnchangedP
             ]
 
-  it "findPlainDiffs 2" do
-    findPlainDiffs 
+  it "plainDiff 2" do
+    plainDiff 
       (LeftSide  "Hrl~!@lo") 
       (RightSide "Herxy!@zo12")
         `shouldBe` S.fromList

@@ -5,7 +5,7 @@
 {-# HLINT ignore "Use newtype instead of data" #-}
 
 
-module Simplex.Chat.MarkdownEditing 
+module Simplex.Chat.MarkdownDiff
     ( DiffedChar(..)
     , DiffedPlainChar(..)
     , DiffStatus(..)
@@ -14,8 +14,8 @@ module Simplex.Chat.MarkdownEditing
     , FormattedChar(..)
     , LeftSide(..)
     , RightSide(..)
-    , findDiffs
-    , findPlainDiffs
+    , diff
+    , plainDiff
     )
     where
 
@@ -73,10 +73,10 @@ newtype DeleteIndicies = DeleteIndicies (Seq Int) deriving (Show, Eq)
 newtype InsertIndicies = InsertIndicies (Seq Int) deriving (Show, Eq)
 
 
-findPlainDiffs :: LeftSide T.Text -> RightSide T.Text -> Seq DiffedPlainChar
-findPlainDiffs (LeftSide left) (RightSide right) = toPlain <$> diffs
+plainDiff :: LeftSide T.Text -> RightSide T.Text -> Seq DiffedPlainChar
+plainDiff (LeftSide left) (RightSide right) = toPlain <$> formattedDiff
     where
-    diffs = findDiffs (LeftSide $ toFormatted left) (RightSide $ toFormatted right)
+    formattedDiff = diff (LeftSide $ toFormatted left) (RightSide $ toFormatted right)
 
     toPlain :: DiffedChar -> DiffedPlainChar
     toPlain (DiffedChar (FormattedChar c _) diffStatus) = DiffedPlainChar c diffStatusPlain
@@ -90,8 +90,8 @@ findPlainDiffs (LeftSide left) (RightSide right) = toPlain <$> diffs
     toFormatted = fmap (`FormattedChar` Nothing) . S.fromList . T.unpack             
 
 
-findDiffs :: LeftSide (Seq FormattedChar) -> RightSide (Seq FormattedChar) -> Seq DiffedChar
-findDiffs (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchangedChars
+diff :: LeftSide (Seq FormattedChar) -> RightSide (Seq FormattedChar) -> Seq DiffedChar
+diff (LeftSide left) (RightSide right) = addInserts markDeletesAndUnchangedChars
     where
     edits = D.diffTexts (toText left) (toText right)  
     (DeleteIndicies deleteIndicies, InsertIndicies insertIndicies) = indices 

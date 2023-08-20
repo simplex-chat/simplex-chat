@@ -33,7 +33,7 @@ library
       Simplex.Chat.Core
       Simplex.Chat.Help
       Simplex.Chat.Markdown
-      Simplex.Chat.MarkdownEditing
+      Simplex.Chat.MarkdownDiff
       Simplex.Chat.Messages
       Simplex.Chat.Messages.CIContent
       Simplex.Chat.Migrations.M20220101_initial
@@ -390,7 +390,7 @@ test-suite simplex-chat-test
       ChatTests.Profiles
       ChatTests.Utils
       MarkdownTests
-      MarkdownEditingTests
+      MarkdownDiffTests
       MobileTests
       ProtocolTests
       SchemaDump
