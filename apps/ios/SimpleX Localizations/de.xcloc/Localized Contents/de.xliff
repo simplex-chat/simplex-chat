@@ -690,9 +690,9 @@
         <target>App Build: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App icon" xml:space="preserve">
+      <trans-unit id="App icon" xml:space="preserve" approved="no">
         <source>App icon</source>
-        <target>App Icon</target>
+        <target state="translated">App-Icon</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App passcode" xml:space="preserve">
@@ -735,14 +735,14 @@
         <target>Audio- und Videoanrufe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls" xml:space="preserve">
+      <trans-unit id="Audio/video calls" xml:space="preserve" approved="no">
         <source>Audio/video calls</source>
-        <target>Audio/Video Anrufe</target>
+        <target state="translated">Audio-/Video-Anrufe</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve">
+      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve" approved="no">
         <source>Audio/video calls are prohibited.</source>
-        <target>Audio/Video Anrufe sind nicht erlaubt.</target>
+        <target state="translated">Audio-/Video-Anrufe sind nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication cancelled" xml:space="preserve">
@@ -956,9 +956,9 @@
         <target>Der Chat ist beendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat preferences" xml:space="preserve">
+      <trans-unit id="Chat preferences" xml:space="preserve" approved="no">
         <source>Chat preferences</source>
-        <target>Chat Präferenzen</target>
+        <target state="translated">Chat-Präferenzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1161,9 +1161,9 @@
         <target>Kontaktname</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact preferences" xml:space="preserve">
+      <trans-unit id="Contact preferences" xml:space="preserve" approved="no">
         <source>Contact preferences</source>
-        <target>Kontakt Präferenzen</target>
+        <target state="translated">Kontakt-Präferenzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
@@ -1221,9 +1221,9 @@
         <target>Link erzeugen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create one-time invitation link" xml:space="preserve">
+      <trans-unit id="Create one-time invitation link" xml:space="preserve" approved="no">
         <source>Create one-time invitation link</source>
-        <target>Erstellen Sie einen einmaligen Einladungslink</target>
+        <target state="translated">Einmal-Einladungslink erstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create queue" xml:space="preserve">
@@ -1599,14 +1599,14 @@
         <target>Gerät</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
+      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve" approved="no">
         <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
-        <target>Die Geräteauthentifizierung ist deaktiviert. SimpleX Sperre ist abgeschaltet.</target>
+        <target state="translated">Die Geräteauthentifizierung ist deaktiviert. SimpleX-Sperre ist abgeschaltet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
+      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve" approved="no">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
-        <target>Die Geräteauthentifizierung ist deaktiviert. Sie können die SimpleX Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.</target>
+        <target state="translated">Die Geräteauthentifizierung ist deaktiviert. Sie können die SimpleX-Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
@@ -1629,9 +1629,9 @@
         <target>Deaktivieren (vorgenommene Einstellungen bleiben erhalten)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Disable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Disable SimpleX Lock</source>
-        <target>SimpleX Sperre deaktivieren</target>
+        <target state="translated">SimpleX-Sperre deaktivieren</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Disable for all" xml:space="preserve">
@@ -1749,9 +1749,9 @@
         <target>Aktivieren (vorgenommene Einstellungen bleiben erhalten)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Enable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Enable SimpleX Lock</source>
-        <target>SimpleX Sperre aktivieren</target>
+        <target state="translated">SimpleX-Sperre aktivieren</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Enable TCP keep-alive" xml:space="preserve">
@@ -1979,9 +1979,9 @@
         <target>Fehler beim Löschen des Benutzerprofils</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
+      <trans-unit id="Error enabling delivery receipts!" xml:space="preserve" approved="no">
         <source>Error enabling delivery receipts!</source>
-        <target>Fehler beim Aktivieren der Empfangsbestätigungen!</target>
+        <target state="translated">Fehler beim Aktivieren von Empfangsbestätigungen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
@@ -2064,9 +2064,9 @@
         <target>Fehler beim Senden der Nachricht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
+      <trans-unit id="Error setting delivery receipts!" xml:space="preserve" approved="no">
         <source>Error setting delivery receipts!</source>
-        <target>Fehler beim Setzen der Empfangsbestätigungen!</target>
+        <target state="translated">Fehler beim Setzen von Empfangsbestätigungen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -2329,9 +2329,9 @@
         <target>Die Gruppeneinladung ist abgelaufen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve">
+      <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve" approved="no">
         <source>Group invitation is no longer valid, it was removed by sender.</source>
-        <target>Die Gruppeneinladung ist nicht mehr gültig, sie wurde vom Absender entfernt.</target>
+        <target state="translated">Die Gruppeneinladung ist nicht mehr gültig, da sie vom Absender entfernt wurde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve">
@@ -2384,9 +2384,9 @@
         <target>Gruppenmoderation</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group preferences" xml:space="preserve">
+      <trans-unit id="Group preferences" xml:space="preserve" approved="no">
         <source>Group preferences</source>
-        <target>Gruppenpräferenzen</target>
+        <target state="translated">Gruppen-Präferenzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile" xml:space="preserve">
@@ -2574,9 +2574,9 @@
         <target>Inkognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode" xml:space="preserve">
+      <trans-unit id="Incognito mode" xml:space="preserve" approved="no">
         <source>Incognito mode</source>
-        <target>Inkognito Modus</target>
+        <target state="translated">Inkognito-Modus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito mode protects your privacy by using a new random profile for each contact." xml:space="preserve" approved="no">
@@ -3221,9 +3221,9 @@
         <target>Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine **2-Schichten Ende-zu-Ende-Verschlüsselung** gesendet werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
+      <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
-        <target>Gruppenpräferenzen können nur von Gruppen-Eigentümern geändert werden.</target>
+        <target state="translated">Gruppen-Präferenzen können nur von Gruppen-Eigentümern geändert werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
@@ -3321,9 +3321,9 @@
         <target>Das Öffnen des Links über den Browser kann die Privatsphäre und Sicherheit der Verbindung reduzieren. SimpleX-Links, denen nicht vertraut wird, werden Rot sein.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="PING count" xml:space="preserve">
+      <trans-unit id="PING count" xml:space="preserve" approved="no">
         <source>PING count</source>
-        <target>PING Zähler</target>
+        <target state="translated">PING-Zähler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
@@ -3521,9 +3521,9 @@
         <target>Profil-Aktualisierung wird an Ihre Kontakte gesendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
+      <trans-unit id="Prohibit audio/video calls." xml:space="preserve" approved="no">
         <source>Prohibit audio/video calls.</source>
-        <target>Audio/Video Anrufe nicht erlauben.</target>
+        <target state="translated">Audio-/Video-Anrufe nicht erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
@@ -4166,9 +4166,9 @@
         <target>Kontaktname festlegen…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set group preferences" xml:space="preserve">
+      <trans-unit id="Set group preferences" xml:space="preserve" approved="no">
         <source>Set group preferences</source>
-        <target>Gruppenpräferenzen einstellen</target>
+        <target state="translated">Gruppen-Präferenzen einstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set it instead of system authentication." xml:space="preserve">
@@ -4266,9 +4266,9 @@
         <target>Die Sicherheit von SimpleX Chat wurde von Trail of Bits überprüft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock" xml:space="preserve">
+      <trans-unit id="SimpleX Lock" xml:space="preserve" approved="no">
         <source>SimpleX Lock</source>
-        <target>SimpleX Sperre</target>
+        <target state="translated">SimpleX-Sperre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Lock mode" xml:space="preserve">
@@ -4276,14 +4276,14 @@
         <target>SimpleX Sperr-Modus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve">
+      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve" approved="no">
         <source>SimpleX Lock not enabled!</source>
-        <target>SimpleX Sperre ist nicht aktiviert!</target>
+        <target state="translated">SimpleX-Sperre ist nicht aktiviert!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
+      <trans-unit id="SimpleX Lock turned on" xml:space="preserve" approved="no">
         <source>SimpleX Lock turned on</source>
-        <target>SimpleX Sperre aktiviert</target>
+        <target state="translated">SimpleX-Sperre aktiviert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX address" xml:space="preserve">
@@ -4291,9 +4291,9 @@
         <target>SimpleX-Adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX contact address" xml:space="preserve">
+      <trans-unit id="SimpleX contact address" xml:space="preserve" approved="no">
         <source>SimpleX contact address</source>
-        <target>SimpleX Kontaktadressen-Link</target>
+        <target state="translated">SimpleX-Kontaktadressen-Link</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve">
@@ -4311,9 +4311,9 @@
         <target>SimpleX-Links</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
+      <trans-unit id="SimpleX one-time invitation" xml:space="preserve" approved="no">
         <source>SimpleX one-time invitation</source>
-        <target>SimpleX Einmal-Link</target>
+        <target state="translated">SimpleX-Einmal-Einladung</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Skip" xml:space="preserve">
@@ -4645,7 +4645,7 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve" approved="no">
         <source>This group has over %lld members, delivery receipts are not sent.</source>
-        <target state="translated">Diese Gruppe hat über %lld Mitglieder. Es werden keine Empfangsbestätigungen gesendet.</target>
+        <target state="translated">Es werden keine Empfangsbestätigungen gesendet, da diese Gruppe über %lld Mitglieder hat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve">
@@ -4683,10 +4683,10 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Bild- und Sprachdateinamen enthalten UTC, um Informationen zur Zeitzone zu schützen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve" approved="no">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
-        <target>Um Ihre Informationen zu schützen, schalten Sie die SimpleX Sperre ein.
+        <target state="translated">Um Ihre Informationen zu schützen, schalten Sie die SimpleX-Sperre ein.
 Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funktion aktiviert wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4877,9 +4877,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Verwende .onion-Hosts</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
+      <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve" approved="no">
         <source>Use SimpleX Chat servers?</source>
-        <target>Verwenden Sie SimpleX Chat Server?</target>
+        <target state="translated">Verwenden Sie SimpleX-Chat-Server?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
@@ -4922,9 +4922,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Für die Nutzung von .onion-Hosts sind kompatible VPN-Anbieter erforderlich.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
+      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve" approved="no">
         <source>Using SimpleX Chat servers.</source>
-        <target>Verwende SimpleX Chat Server.</target>
+        <target state="translated">Verwendung von SimpleX-Chat-Servern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify connection security" xml:space="preserve">
@@ -5162,9 +5162,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
         <source>You can turn on SimpleX Lock via Settings.</source>
-        <target>Sie können die SimpleX Sperre über die Einstellungen aktivieren.</target>
+        <target state="translated">Sie können die SimpleX-Sperre über die Einstellungen aktivieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -5548,9 +5548,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>vollständig</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connect to SimpleX Chat developers." xml:space="preserve">
+      <trans-unit id="connect to SimpleX Chat developers." xml:space="preserve" approved="no">
         <source>connect to SimpleX Chat developers.</source>
-        <target>Mit den SimpleX Chat Entwicklern verbinden.</target>
+        <target state="translated">Mit den SimpleX Chat-Entwicklern verbinden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connected" xml:space="preserve">
@@ -5578,9 +5578,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Verbindung (erstellt)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting (introduction invitation)" xml:space="preserve">
+      <trans-unit id="connecting (introduction invitation)" xml:space="preserve" approved="no">
         <source>connecting (introduction invitation)</source>
-        <target>Verbindung (eingeladen)</target>
+        <target state="translated">Verbinde (nach einer Einladung)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting call" xml:space="preserve">
@@ -6203,9 +6203,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>SimpleX NSE</target>
         <note>Bundle name</note>
       </trans-unit>
-      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
+      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve" approved="no">
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
-        <target>Copyright © 2022 SimpleX Chat. All rights reserved.</target>
+        <target state="translated">Copyright © 2023 SimpleX Chat. All rights reserved.</target>
         <note>Copyright (human-readable)</note>
       </trans-unit>
     </body>
