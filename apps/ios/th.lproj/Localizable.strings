@@ -1,0 +1,3582 @@
+/* No comment provided by engineer. */
+"\n" = "\n";
+
+/* No comment provided by engineer. */
+" " = " ";
+
+/* No comment provided by engineer. */
+"  " = "  ";
+
+/* No comment provided by engineer. */
+"   " = "   ";
+
+/* No comment provided by engineer. */
+" (" = " (";
+
+/* No comment provided by engineer. */
+" (can be copied)" = " (สามารถคัดลอกได้)";
+
+/* No comment provided by engineer. */
+"_italic_" = "\\_ตัวเอียง_";
+
+/* No comment provided by engineer. */
+"- more stable message delivery.\n- a bit better groups.\n- and more!" = "- การส่งข้อความมีเสถียรภาพมากขึ้น\n- กลุ่มที่ดีขึ้นเล็กน้อย\n- และอื่น ๆ!";
+
+/* No comment provided by engineer. */
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- ข้อความเสียงนานสุด 5 นาที\n- เวลาที่กำหนดเองที่จะหายไป\n- ประวัติการแก้ไข";
+
+/* No comment provided by engineer. */
+", " = ", ";
+
+/* No comment provided by engineer. */
+": " = ": ";
+
+/* No comment provided by engineer. */
+"!1 colored!" = "!1 มีสี!";
+
+/* No comment provided by engineer. */
+"." = ".";
+
+/* No comment provided by engineer. */
+"(" = "(";
+
+/* No comment provided by engineer. */
+")" = ")";
+
+/* No comment provided by engineer. */
+"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[มีส่วนร่วม](https://github.com/simplex-chat/simplex-chat#contribute)";
+
+/* No comment provided by engineer. */
+"[Send us email](mailto:chat@simplex.chat)" = "[ส่งอีเมลถึงเรา](mailto:chat@simplex.chat)";
+
+/* No comment provided by engineer. */
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[ติดดาวบน GitHub](https://github.com/simplex-chat/simplex-chat)";
+
+/* No comment provided by engineer. */
+"**Add new contact**: to create your one-time QR Code for your contact." = "**เพิ่มผู้ติดต่อใหม่**: เพื่อสร้างคิวอาร์โค้ดแบบใช้ครั้งเดียวหรือลิงก์สำหรับผู้ติดต่อของคุณ";
+
+/* No comment provided by engineer. */
+"**Create link / QR code** for your contact to use." = "**สร้างลิงค์ / คิวอาร์โค้ด** เพื่อให้ผู้ติดต่อของคุณใช้";
+
+/* No comment provided by engineer. */
+"**e2e encrypted** audio call" = "การโทรเสียงแบบ **encrypted จากต้นจนจบ**";
+
+/* No comment provided by engineer. */
+"**e2e encrypted** video call" = "**encrypted จากต้นจนจบ** การสนทนาทางวิดีโอ";
+
+/* No comment provided by engineer. */
+"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**เป็นส่วนตัวมากขึ้น**: ตรวจสอบข้อความใหม่ทุกๆ 20 นาที โทเค็นอุปกรณ์แชร์กับเซิร์ฟเวอร์ SimpleX Chat แต่ไม่ระบุจำนวนผู้ติดต่อหรือข้อความที่คุณมี";
+
+/* No comment provided by engineer. */
+"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**ส่วนตัวที่สุด**: ไม่ใช้เซิร์ฟเวอร์การแจ้งเตือนของ SimpleX Chat ตรวจสอบข้อความเป็นระยะในพื้นหลัง (ขึ้นอยู่กับความถี่ที่คุณใช้แอป)";
+
+/* No comment provided by engineer. */
+"**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**แปะลิงก์ที่ได้รับ** หรือเปิดในเบราว์เซอร์แล้วแตะ **เปิดในแอปมือถือ**";
+
+/* No comment provided by engineer. */
+"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**โปรดทราบ**: คุณจะไม่สามารถกู้คืนหรือเปลี่ยนรหัสผ่านได้หากคุณทำรหัสผ่านหาย";
+
+/* No comment provided by engineer. */
+"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**แนะนำ**: โทเค็นอุปกรณ์และการแจ้งเตือนจะถูกส่งไปยังเซิร์ฟเวอร์การแจ้งเตือนของ SimpleX Chat แต่ไม่ใช่เนื้อหาข้อความ ขนาด หรือผู้ที่ส่ง";
+
+/* No comment provided by engineer. */
+"**Scan QR code**: to connect to your contact in person or via video call." = "**สแกนคิวอาร์โค้ด**: เพื่อเชื่อมต่อกับผู้ติดต่อของคุณด้วยตนเองหรือผ่านการสนทนาทางวิดีโอ";
+
+/* No comment provided by engineer. */
+"**Warning**: Instant push notifications require passphrase saved in Keychain." = "**คำเตือน**: การแจ้งเตือนแบบพุชทันทีจำเป็นต้องบันทึกรหัสผ่านไว้ใน Keychain";
+
+/* No comment provided by engineer. */
+"*bold*" = "\\*ตัวหนา*";
+
+/* No comment provided by engineer. */
+"#secret#" = "#ความลับ#";
+
+/* No comment provided by engineer. */
+"%@" = "%@";
+
+/* No comment provided by engineer. */
+"%@ (current)" = "%@ (ปัจจุบัน)";
+
+/* copied message info */
+"%@ (current):" = "%@ (ปัจจุบัน):";
+
+/* No comment provided by engineer. */
+"%@ / %@" = "%@ / %@";
+
+/* No comment provided by engineer. */
+"%@ %@" = "%@ %@";
+
+/* copied message info, <sender> at <time> */
+"%@ at %@:" = "%1$@ ที่ %2$@:";
+
+/* notification title */
+"%@ is connected!" = "%@ เชื่อมต่อสำเร็จ!";
+
+/* No comment provided by engineer. */
+"%@ is not verified" = "%@ ไม่ได้รับการยืนยัน";
+
+/* No comment provided by engineer. */
+"%@ is verified" = "%@ ได้รับการตรวจสอบแล้ว";
+
+/* No comment provided by engineer. */
+"%@ servers" = "%@ เซิร์ฟเวอร์";
+
+/* notification title */
+"%@ wants to connect!" = "%@ อยากเชื่อมต่อ!";
+
+/* copied message info */
+"%@:" = "%@:";
+
+/* time interval */
+"%d days" = "%d วัน";
+
+/* time interval */
+"%d hours" = "%d ชั่วโมง";
+
+/* time interval */
+"%d min" = "%d นาที";
+
+/* time interval */
+"%d months" = "%d เดือน";
+
+/* time interval */
+"%d sec" = "%d วินาที";
+
+/* integrity error chat item */
+"%d skipped message(s)" = "%d ข้อความที่ถูกข้าม";
+
+/* time interval */
+"%d weeks" = "%d สัปดาห์";
+
+/* No comment provided by engineer. */
+"%lld" = "%lld";
+
+/* No comment provided by engineer. */
+"%lld %@" = "%lld %@";
+
+/* No comment provided by engineer. */
+"%lld contact(s) selected" = "% ผู้ติดต่อ LLD ที่เลือกไว้";
+
+/* No comment provided by engineer. */
+"%lld file(s) with total size of %@" = "%lld ไฟล์ที่มีขนาดรวม %@";
+
+/* No comment provided by engineer. */
+"%lld members" = "%lld สมาชิก";
+
+/* No comment provided by engineer. */
+"%lld minutes" = "%lld นาที";
+
+/* No comment provided by engineer. */
+"%lld second(s)" = "%lld วินาที";
+
+/* No comment provided by engineer. */
+"%lld seconds" = "%lld วินาที";
+
+/* No comment provided by engineer. */
+"%lldd" = "%lldd";
+
+/* No comment provided by engineer. */
+"%lldh" = "%lldh";
+
+/* No comment provided by engineer. */
+"%lldk" = "%lldk";
+
+/* No comment provided by engineer. */
+"%lldm" = "%lldm";
+
+/* No comment provided by engineer. */
+"%lldmth" = "%lldmth";
+
+/* No comment provided by engineer. */
+"%llds" = "%llds";
+
+/* No comment provided by engineer. */
+"%lldw" = "%lldw";
+
+/* No comment provided by engineer. */
+"%u messages failed to decrypt." = "การ decrypt %u ข้อความล้มเหลว";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "%u ข้อความที่ถูกข้าม";
+
+/* No comment provided by engineer. */
+"`a + b`" = "\\`a + b`";
+
+/* email text */
+"<p>Hi!</p>\n<p><a href=\"%@\">Connect to me via SimpleX Chat</a></p>" = "<p>สวัสดี!</p>\n<p><a href=\"%@\">เชื่อมต่อกับฉันผ่าน SimpleX Chat</a></p>";
+
+/* No comment provided by engineer. */
+"~strike~" = "\\~ตี~";
+
+/* No comment provided by engineer. */
+"0s" = "0s";
+
+/* time interval */
+"1 day" = "1 วัน";
+
+/* time interval */
+"1 hour" = "1 ชั่วโมง";
+
+/* No comment provided by engineer. */
+"1 minute" = "1 นาที";
+
+/* time interval */
+"1 month" = "1 เดือน";
+
+/* time interval */
+"1 week" = "1 สัปดาห์";
+
+/* No comment provided by engineer. */
+"1-time link" = "ลิงก์สำหรับใช้ 1 ครั้ง";
+
+/* No comment provided by engineer. */
+"5 minutes" = "5 นาที";
+
+/* No comment provided by engineer. */
+"6" = "6";
+
+/* No comment provided by engineer. */
+"30 seconds" = "30 วินาที";
+
+/* No comment provided by engineer. */
+"A few more things" = "อีกสองสามอย่าง";
+
+/* notification title */
+"A new contact" = "ผู้ติดต่อใหม่";
+
+/* No comment provided by engineer. */
+"A separate TCP connection will be used **for each chat profile you have in the app**." = "การเชื่อมต่อ TCP แบบแยกต่างหากจะถูกใช้ **สําหรับแต่ละโปรไฟล์การแชทที่คุณมีในแอป**.";
+
+/* No comment provided by engineer. */
+"A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "การเชื่อมต่อ TCP แบบแยกต่างหากจะถูกใช้ **สำหรับผู้ติดต่อแต่ละคนและสมาชิกกลุ่ม**.\n**โปรดทราบ**: หากคุณมีการเชื่อมต่อจำนวนมาก แบตเตอรี่และปริมาณการใช้ข้อมูลของคุณอาจสูงขึ้นอย่างมาก และการเชื่อมต่อบางอย่างอาจล้มเหลว";
+
+/* No comment provided by engineer. */
+"Abort" = "ยกเลิก";
+
+/* No comment provided by engineer. */
+"Abort changing address" = "ยกเลิกการเปลี่ยนที่อยู่";
+
+/* No comment provided by engineer. */
+"Abort changing address?" = "ยกเลิกการเปลี่ยนที่อยู่?";
+
+/* No comment provided by engineer. */
+"About SimpleX" = "เกี่ยวกับ SimpleX";
+
+/* No comment provided by engineer. */
+"About SimpleX address" = "เกี่ยวกับที่อยู่ SimpleX";
+
+/* No comment provided by engineer. */
+"About SimpleX Chat" = "เกี่ยวกับ SimpleX Chat";
+
+/* No comment provided by engineer. */
+"above, then choose:" = "ด้านบน จากนั้นเลือก:";
+
+/* No comment provided by engineer. */
+"Accent color" = "สีเน้น";
+
+/* accept contact request via notification
+   accept incoming call via notification */
+"Accept" = "รับ";
+
+/* notification body */
+"Accept contact request from %@?" = "รับการขอติดต่อจาก %@?";
+
+/* accept contact request via notification */
+"Accept incognito" = "ยอมรับโหมดไม่ระบุตัวตน";
+
+/* call status */
+"accepted call" = "รับสายแล้ว";
+
+/* No comment provided by engineer. */
+"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "เพิ่มที่อยู่ลงในโปรไฟล์ของคุณ เพื่อให้ผู้ติดต่อของคุณสามารถแชร์กับผู้อื่นได้ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ";
+
+/* No comment provided by engineer. */
+"Add preset servers" = "เพิ่มเซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า";
+
+/* No comment provided by engineer. */
+"Add profile" = "เพิ่มโปรไฟล์";
+
+/* No comment provided by engineer. */
+"Add server…" = "เพิ่มเซิร์ฟเวอร์…";
+
+/* No comment provided by engineer. */
+"Add servers by scanning QR codes." = "เพิ่มเซิร์ฟเวอร์โดยการสแกนรหัสคิวอาร์โค้ด";
+
+/* No comment provided by engineer. */
+"Add to another device" = "เพิ่มเข้าไปในอุปกรณ์อื่น";
+
+/* No comment provided by engineer. */
+"Add welcome message" = "เพิ่มข้อความต้อนรับ";
+
+/* No comment provided by engineer. */
+"Address" = "ที่อยู่";
+
+/* No comment provided by engineer. */
+"Address change will be aborted. Old receiving address will be used." = "การเปลี่ยนแปลงที่อยู่จะถูกยกเลิก จะใช้ที่อยู่เก่าของผู้รับ";
+
+/* member role */
+"admin" = "ผู้ดูแลระบบ";
+
+/* No comment provided by engineer. */
+"Admins can create the links to join groups." = "ผู้ดูแลระบบสามารถสร้างลิงก์เพื่อเข้าร่วมกลุ่มต่างๆได้";
+
+/* No comment provided by engineer. */
+"Advanced network settings" = "การตั้งค่าระบบเครือข่ายขั้นสูง";
+
+/* chat item text */
+"agreeing encryption for %@…" = "ยอมรับ encryption สำหรับ %@…";
+
+/* chat item text */
+"agreeing encryption…" = "เห็นด้วยกับการ encryption…";
+
+/* No comment provided by engineer. */
+"All app data is deleted." = "ข้อมูลแอปทั้งหมดถูกลบแล้ว.";
+
+/* No comment provided by engineer. */
+"All chats and messages will be deleted - this cannot be undone!" = "แชทและข้อความทั้งหมดจะถูกลบ - การดำเนินการนี้ไม่สามารถยกเลิกได้!";
+
+/* No comment provided by engineer. */
+"All data is erased when it is entered." = "ข้อมูลทั้งหมดจะถูกลบเมื่อถูกป้อน";
+
+/* No comment provided by engineer. */
+"All group members will remain connected." = "สมาชิกในกลุ่มทุกคนจะยังคงเชื่อมต่ออยู่.";
+
+/* No comment provided by engineer. */
+"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "ข้อความทั้งหมดจะถูกลบ - ไม่สามารถยกเลิกได้! ข้อความจะถูกลบสำหรับคุณเท่านั้น.";
+
+/* No comment provided by engineer. */
+"All your contacts will remain connected." = "ผู้ติดต่อทั้งหมดของคุณจะยังคงเชื่อมต่ออยู่.";
+
+/* No comment provided by engineer. */
+"All your contacts will remain connected. Profile update will be sent to your contacts." = "ผู้ติดต่อทั้งหมดของคุณจะยังคงเชื่อมต่ออยู่. ผู้ติดต่อทั้งหมดของคุณจะยังคงเชื่อมต่ออยู่ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ.";
+
+/* No comment provided by engineer. */
+"Allow" = "อนุญาต";
+
+/* No comment provided by engineer. */
+"Allow calls only if your contact allows them." = "อนุญาตการโทรเฉพาะเมื่อผู้ติดต่อของคุณอนุญาตเท่านั้น.";
+
+/* No comment provided by engineer. */
+"Allow disappearing messages only if your contact allows it to you." = "อนุญาตให้ข้อความที่หายไปเฉพาะในกรณีที่ผู้ติดต่อของคุณอนุญาตเท่านั้น.";
+
+/* No comment provided by engineer. */
+"Allow irreversible message deletion only if your contact allows it to you." = "อนุญาตให้ลบข้อความแบบถาวรเฉพาะในกรณีที่ผู้ติดต่อของคุณอนุญาตให้คุณเท่านั้น";
+
+/* No comment provided by engineer. */
+"Allow message reactions only if your contact allows them." = "อนุญาตการแสดงปฏิกิริยาต่อข้อความเฉพาะเมื่อผู้ติดต่อของคุณอนุญาตเท่านั้น";
+
+/* No comment provided by engineer. */
+"Allow message reactions." = "อนุญาตการแสดงปฏิกิริยาต่อข้อความ";
+
+/* No comment provided by engineer. */
+"Allow sending direct messages to members." = "อนุญาตการส่งข้อความโดยตรงไปยังสมาชิก";
+
+/* No comment provided by engineer. */
+"Allow sending disappearing messages." = "อนุญาตให้ส่งข้อความที่จะหายไปหลังปิดแชท (disappearing message)";
+
+/* No comment provided by engineer. */
+"Allow to irreversibly delete sent messages." = "อนุญาตให้ลบข้อความที่ส่งไปแล้วอย่างถาวร";
+
+/* No comment provided by engineer. */
+"Allow to send files and media." = "อนุญาตให้ส่งไฟล์และสื่อ";
+
+/* No comment provided by engineer. */
+"Allow to send voice messages." = "อนุญาตให้ส่งข้อความเสียง";
+
+/* No comment provided by engineer. */
+"Allow voice messages only if your contact allows them." = "อนุญาตข้อความเสียงเฉพาะเมื่อผู้ติดต่อของคุณอนุญาตเท่านั้น";
+
+/* No comment provided by engineer. */
+"Allow voice messages?" = "อนุญาตข้อความเสียงหรือไม่?";
+
+/* No comment provided by engineer. */
+"Allow your contacts adding message reactions." = "อนุญาตให้ผู้ติดต่อของคุณเพิ่มการแสดงปฏิกิริยาต่อข้อความ";
+
+/* No comment provided by engineer. */
+"Allow your contacts to call you." = "อนุญาตให้ผู้ติดต่อของคุณโทรหาคุณ";
+
+/* No comment provided by engineer. */
+"Allow your contacts to irreversibly delete sent messages." = "อนุญาตให้ผู้ติดต่อของคุณลบข้อความที่ส่งแล้วอย่างถาวร";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send disappearing messages." = "อนุญาตให้ผู้ติดต่อของคุณส่งข้อความที่จะหายไปหลังปิดแชท (disappearing messages)";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send voice messages." = "อนุญาตให้ผู้ติดต่อของคุณส่งข้อความเสียง";
+
+/* No comment provided by engineer. */
+"Already connected?" = "เชื่อมต่อสำเร็จแล้ว?";
+
+/* pref value */
+"always" = "เสมอ";
+
+/* No comment provided by engineer. */
+"Always use relay" = "ใช้รีเลย์เสมอ";
+
+/* No comment provided by engineer. */
+"An empty chat profile with the provided name is created, and the app opens as usual." = "โปรไฟล์แชทที่ว่างเปล่าพร้อมชื่อที่ให้ไว้ได้ถูกสร้างขึ้นและแอปจะเปิดตามปกติ";
+
+/* No comment provided by engineer. */
+"Answer call" = "รับสาย";
+
+/* No comment provided by engineer. */
+"App build: %@" = "รุ่นแอป: %@";
+
+/* No comment provided by engineer. */
+"App icon" = "ไอคอนแอป";
+
+/* No comment provided by engineer. */
+"App passcode" = "รหัสผ่านแอป";
+
+/* No comment provided by engineer. */
+"App passcode is replaced with self-destruct passcode." = "รหัสผ่านแอปจะถูกแทนที่ด้วยรหัสผ่านที่ทำลายตัวเอง";
+
+/* No comment provided by engineer. */
+"App version" = "เวอร์ชันแอป";
+
+/* No comment provided by engineer. */
+"App version: v%@" = "เวอร์ชันแอป: v%@";
+
+/* No comment provided by engineer. */
+"Appearance" = "รูปร่างลักษณะ";
+
+/* No comment provided by engineer. */
+"Attach" = "แนบ";
+
+/* No comment provided by engineer. */
+"Audio & video calls" = "การโทรด้วยเสียงและวิดีโอ";
+
+/* No comment provided by engineer. */
+"Audio and video calls" = "การโทรด้วยเสียงและวิดีโอ";
+
+/* No comment provided by engineer. */
+"audio call (not e2e encrypted)" = "การโทรด้วยเสียง (ไม่ได้ encrypt จากต้นจนจบ)";
+
+/* chat feature */
+"Audio/video calls" = "การโทรด้วยเสียง/วิดีโอ";
+
+/* No comment provided by engineer. */
+"Audio/video calls are prohibited." = "การโทรด้วยเสียง/วิดีโอถูกห้าม";
+
+/* PIN entry */
+"Authentication cancelled" = "การยืนยันถูกยกเลิกแล้ว";
+
+/* No comment provided by engineer. */
+"Authentication failed" = "การยืนยันล้มเหลว";
+
+/* No comment provided by engineer. */
+"Authentication is required before the call is connected, but you may miss calls." = "การยืนยันตัวตนเป็นที่จำเป็นก่อนเชื่อมต่อสาย แต่คุณอาจไม่ได้รับสาย";
+
+/* No comment provided by engineer. */
+"Authentication unavailable" = "การยืนยันไม่พร้อมใช้งาน";
+
+/* No comment provided by engineer. */
+"Auto-accept" = "ยอมรับอัตโนมัติ";
+
+/* No comment provided by engineer. */
+"Auto-accept contact requests" = "ตอบรับคำขอเป็นเพื่อนโดยอัตโนมัติ";
+
+/* No comment provided by engineer. */
+"Auto-accept images" = "ยอมรับภาพอัตโนมัติ";
+
+/* No comment provided by engineer. */
+"Back" = "กลับ";
+
+/* integrity error chat item */
+"bad message hash" = "แฮชข้อความไม่ดี";
+
+/* No comment provided by engineer. */
+"Bad message hash" = "แฮชข้อความไม่ดี";
+
+/* integrity error chat item */
+"bad message ID" = "ID ข้อความที่ไม่ดี";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "ID ข้อความที่ไม่ดี";
+
+/* No comment provided by engineer. */
+"Better messages" = "ข้อความที่ดีขึ้น";
+
+/* No comment provided by engineer. */
+"bold" = "ตัวหนา";
+
+/* No comment provided by engineer. */
+"Both you and your contact can add message reactions." = "ทั้งคุณและผู้ติดต่อของคุณสามารถเพิ่มปฏิกิริยาของข้อความได้";
+
+/* No comment provided by engineer. */
+"Both you and your contact can irreversibly delete sent messages." = "ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้";
+
+/* No comment provided by engineer. */
+"Both you and your contact can make calls." = "ทั้งคุณและผู้ติดต่อของคุณสามารถโทรออกได้";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send disappearing messages." = "ทั้งคุณและผู้ติดต่อของคุณสามารถส่งข้อความที่หายไปได้";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send voice messages." = "ทั้งคุณและผู้ติดต่อของคุณสามารถส่งข้อความเสียงได้";
+
+/* No comment provided by engineer. */
+"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "ตามโปรไฟล์แชท (ค่าเริ่มต้น) หรือ [โดยการเชื่อมต่อ](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (เบต้า)";
+
+/* No comment provided by engineer. */
+"Call already ended!" = "สิ้นสุดการโทรแล้ว!";
+
+/* call status */
+"call error" = "การโทรผิดพลาด";
+
+/* call status */
+"call in progress" = "กําลังโทร";
+
+/* call status */
+"calling…" = "กำลังโทร…";
+
+/* No comment provided by engineer. */
+"Calls" = "โทร";
+
+/* No comment provided by engineer. */
+"Can't delete user profile!" = "ไม่สามารถลบโปรไฟล์ผู้ใช้ได้!";
+
+/* No comment provided by engineer. */
+"Can't invite contact!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
+
+/* No comment provided by engineer. */
+"Can't invite contacts!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
+
+/* No comment provided by engineer. */
+"Cancel" = "ยกเลิก";
+
+/* feature offered item */
+"cancelled %@" = "ยกเลิก %@";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "ไม่สามารถเข้าถึง keychain เพื่อบันทึกรหัสผ่านฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Cannot receive file" = "ไม่สามารถรับไฟล์ได้";
+
+/* No comment provided by engineer. */
+"Change" = "เปลี่ยน";
+
+/* No comment provided by engineer. */
+"Change database passphrase?" = "เปลี่ยนรหัสผ่านฐานข้อมูล?";
+
+/* authentication reason */
+"Change lock mode" = "เปลี่ยนโหมดล็อค";
+
+/* No comment provided by engineer. */
+"Change member role?" = "เปลี่ยนบทบาทของสมาชิก?";
+
+/* authentication reason */
+"Change passcode" = "เปลี่ยนรหัสผ่าน";
+
+/* No comment provided by engineer. */
+"Change receiving address" = "เปลี่ยนที่อยู่ผู้รับ";
+
+/* No comment provided by engineer. */
+"Change receiving address?" = "เปลี่ยนที่อยู่ผู้รับ?";
+
+/* No comment provided by engineer. */
+"Change role" = "เปลี่ยนบทบาท";
+
+/* authentication reason */
+"Change self-destruct mode" = "เปลี่ยนโหมดทําลายตัวเอง";
+
+/* authentication reason
+   set passcode view */
+"Change self-destruct passcode" = "เปลี่ยนรหัสผ่านแบบทำลายตัวเอง";
+
+/* chat item text */
+"changed address for you" = "เปลี่ยนที่อยู่สําหรับคุณแล้ว";
+
+/* rcv group event chat item */
+"changed role of %@ to %@" = "เปลี่ยนบทบาทของ %1$@ เป็น %2$@ แล้ว";
+
+/* rcv group event chat item */
+"changed your role to %@" = "เปลี่ยนบทบาทของคุณเป็น %@";
+
+/* chat item text */
+"changing address for %@…" = "เปลี่ยนที่อยู่สำหรับ %@…";
+
+/* chat item text */
+"changing address…" = "กำลังเปลี่ยนที่อยู่…";
+
+/* No comment provided by engineer. */
+"Chat archive" = "ที่เก็บแชทถาวร";
+
+/* No comment provided by engineer. */
+"Chat console" = "คอนโซลแชท";
+
+/* No comment provided by engineer. */
+"Chat database" = "ฐานข้อมูลแชท";
+
+/* No comment provided by engineer. */
+"Chat database deleted" = "ลบฐานข้อมูลแชทแล้ว";
+
+/* No comment provided by engineer. */
+"Chat database imported" = "นำฐานข้อมูลแชทเข้าแล้ว";
+
+/* No comment provided by engineer. */
+"Chat is running" = "แชทกำลังทำงานอยู่";
+
+/* No comment provided by engineer. */
+"Chat is stopped" = "การแชทหยุดทํางานแล้ว";
+
+/* No comment provided by engineer. */
+"Chat preferences" = "ค่ากําหนดในการแชท";
+
+/* No comment provided by engineer. */
+"Chats" = "แชท";
+
+/* No comment provided by engineer. */
+"Check server address and try again." = "ตรวจสอบที่อยู่เซิร์ฟเวอร์แล้วลองอีกครั้ง";
+
+/* No comment provided by engineer. */
+"Chinese and Spanish interface" = "อินเทอร์เฟซภาษาจีนและสเปน";
+
+/* No comment provided by engineer. */
+"Choose file" = "เลือกไฟล์";
+
+/* No comment provided by engineer. */
+"Choose from library" = "เลือกจากอัลบั้ม";
+
+/* No comment provided by engineer. */
+"Clear" = "ลบ";
+
+/* No comment provided by engineer. */
+"Clear conversation" = "ลบการสนทนา";
+
+/* No comment provided by engineer. */
+"Clear conversation?" = "ลบการสนทนา?";
+
+/* No comment provided by engineer. */
+"Clear verification" = "ล้างการยืนยัน";
+
+/* No comment provided by engineer. */
+"colored" = "มีสี";
+
+/* No comment provided by engineer. */
+"Colors" = "สี";
+
+/* server test step */
+"Compare file" = "เปรียบเทียบไฟล์";
+
+/* No comment provided by engineer. */
+"Compare security codes with your contacts." = "เปรียบเทียบรหัสความปลอดภัยกับผู้ติดต่อของคุณ";
+
+/* No comment provided by engineer. */
+"complete" = "สมบูรณ์";
+
+/* No comment provided by engineer. */
+"Configure ICE servers" = "กำหนดค่าเซิร์ฟเวอร์ ICE";
+
+/* No comment provided by engineer. */
+"Confirm" = "ยืนยัน";
+
+/* No comment provided by engineer. */
+"Confirm database upgrades" = "ยืนยันการอัพเกรดฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Confirm new passphrase…" = "ยืนยันรหัสผ่านใหม่…";
+
+/* No comment provided by engineer. */
+"Confirm Passcode" = "ยืนยันรหัสผ่าน";
+
+/* No comment provided by engineer. */
+"Confirm password" = "ยืนยันรหัสผ่าน";
+
+/* server test step */
+"Connect" = "เชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"connect to SimpleX Chat developers." = "เชื่อมต่อกับนักพัฒนา SimpleX Chat";
+
+/* No comment provided by engineer. */
+"Connect via group link?" = "เชื่อมต่อผ่านลิงค์กลุ่ม?";
+
+/* No comment provided by engineer. */
+"Connect via link" = "เชื่อมต่อผ่านลิงก์";
+
+/* No comment provided by engineer. */
+"Connect via link / QR code" = "เชื่อมต่อผ่านลิงค์ / คิวอาร์โค้ด";
+
+/* No comment provided by engineer. */
+"connected" = "เชื่อมต่อสำเร็จ";
+
+/* No comment provided by engineer. */
+"connecting" = "กำลังเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"connecting (accepted)" = "กำลังเชื่อมต่อ (ยอมรับแล้ว)";
+
+/* No comment provided by engineer. */
+"connecting (announced)" = "กำลังเชื่อมต่อ (ประกาศแล้ว)";
+
+/* No comment provided by engineer. */
+"connecting (introduced)" = "กำลังเชื่อมต่อ (แนะนํา)";
+
+/* No comment provided by engineer. */
+"connecting (introduction invitation)" = "กำลังเชื่อมต่อ (คําเชิญแนะนํา)";
+
+/* call status */
+"connecting call" = "กําลังเชื่อมต่อสาย…";
+
+/* No comment provided by engineer. */
+"Connecting server…" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์…";
+
+/* No comment provided by engineer. */
+"Connecting server… (error: %@)" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์... (ข้อผิดพลาด: %@)";
+
+/* chat list item title */
+"connecting…" = "กำลังเชื่อมต่อ…";
+
+/* No comment provided by engineer. */
+"Connection" = "การเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"Connection error" = "การเชื่อมต่อผิดพลาด";
+
+/* No comment provided by engineer. */
+"Connection error (AUTH)" = "การเชื่อมต่อผิดพลาด (AUTH)";
+
+/* chat list item title (it should not be shown */
+"connection established" = "สร้างการเชื่อมต่อแล้ว";
+
+/* No comment provided by engineer. */
+"Connection request sent!" = "ส่งคําขอเชื่อมต่อแล้ว!";
+
+/* No comment provided by engineer. */
+"Connection timeout" = "หมดเวลาการเชื่อมต่อ";
+
+/* connection information */
+"connection:%@" = "การเชื่อมต่อ:%@";
+
+/* No comment provided by engineer. */
+"Contact allows" = "ผู้ติดต่ออนุญาต";
+
+/* No comment provided by engineer. */
+"Contact already exists" = "ผู้ติดต่อรายนี้มีอยู่แล้ว";
+
+/* No comment provided by engineer. */
+"Contact and all messages will be deleted - this cannot be undone!" = "ผู้ติดต่อและข้อความทั้งหมดจะถูกลบ - ไม่สามารถยกเลิกได้!";
+
+/* No comment provided by engineer. */
+"contact has e2e encryption" = "ผู้ติดต่อมีการ encrypt จากต้นจนจบ";
+
+/* No comment provided by engineer. */
+"contact has no e2e encryption" = "ผู้ติดต่อไม่มีการ encrypt จากต้นจนจบ";
+
+/* notification */
+"Contact hidden:" = "ผู้ติดต่อถูกซ่อน:";
+
+/* notification */
+"Contact is connected" = "เชื่อมต่อกับผู้ติดต่อแล้ว";
+
+/* No comment provided by engineer. */
+"Contact is not connected yet!" = "ผู้ติดต่อยังไม่ได้เชื่อมต่อ!";
+
+/* No comment provided by engineer. */
+"Contact name" = "ชื่อผู้ติดต่อ";
+
+/* No comment provided by engineer. */
+"Contact preferences" = "การกําหนดลักษณะการติดต่อ";
+
+/* No comment provided by engineer. */
+"Contacts" = "ติดต่อ";
+
+/* No comment provided by engineer. */
+"Contacts can mark messages for deletion; you will be able to view them." = "ผู้ติดต่อสามารถทําเครื่องหมายข้อความเพื่อลบได้ คุณจะสามารถดูได้";
+
+/* No comment provided by engineer. */
+"Continue" = "ดำเนินการต่อ";
+
+/* chat item action */
+"Copy" = "คัดลอก";
+
+/* No comment provided by engineer. */
+"Core version: v%@" = "รุ่นหลัก: v%@";
+
+/* No comment provided by engineer. */
+"Create" = "สร้าง";
+
+/* No comment provided by engineer. */
+"Create an address to let people connect with you." = "สร้างที่อยู่เพื่อให้ผู้อื่นเชื่อมต่อกับคุณ";
+
+/* server test step */
+"Create file" = "สร้างไฟล์";
+
+/* No comment provided by engineer. */
+"Create group link" = "สร้างลิงค์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Create link" = "สร้างลิงค์";
+
+/* No comment provided by engineer. */
+"Create one-time invitation link" = "สร้างลิงก์เชิญแบบใช้ครั้งเดียว";
+
+/* server test step */
+"Create queue" = "สร้างคิว";
+
+/* No comment provided by engineer. */
+"Create secret group" = "สร้างกลุ่มลับ";
+
+/* No comment provided by engineer. */
+"Create SimpleX address" = "สร้างที่อยู่ SimpleX";
+
+/* No comment provided by engineer. */
+"Create your profile" = "สร้างโปรไฟล์ของคุณ";
+
+/* No comment provided by engineer. */
+"Created on %@" = "สร้างเมื่อ %@";
+
+/* No comment provided by engineer. */
+"creator" = "ผู้สร้าง";
+
+/* No comment provided by engineer. */
+"Current Passcode" = "รหัสผ่านปัจจุบัน";
+
+/* No comment provided by engineer. */
+"Current passphrase…" = "รหัสผ่านปัจจุบัน…";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "ขนาดไฟล์ที่รองรับสูงสุดในปัจจุบันคือ %@";
+
+/* dropdown time picker choice */
+"custom" = "กำหนดเอง";
+
+/* No comment provided by engineer. */
+"Custom time" = "เวลาที่กําหนดเอง";
+
+/* No comment provided by engineer. */
+"Dark" = "มืด";
+
+/* No comment provided by engineer. */
+"Database downgrade" = "ดาวน์เกรดฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "ฐานข้อมูลถูก encrypt แล้ว!";
+
+/* No comment provided by engineer. */
+"Database encryption passphrase will be updated and stored in the keychain.\n" = "รหัสผ่านแบบ encrypt ที่ใช้ในการเข้าฐานข้อมูลจะได้รับการอัปเดตและจัดเก็บไว้ใน keychain\n";
+
+/* No comment provided by engineer. */
+"Database encryption passphrase will be updated.\n" = "รหัสผ่าน encryption ของฐานข้อมูลจะได้รับการอัปเดต\n";
+
+/* No comment provided by engineer. */
+"Database error" = "ฐานข้อมูลผิดพลาด";
+
+/* No comment provided by engineer. */
+"Database ID" = "ID ฐานข้อมูล";
+
+/* copied message info */
+"Database ID: %d" = "ID ฐานข้อมูล: %d";
+
+/* No comment provided by engineer. */
+"Database IDs and Transport isolation option." = "ID ฐานข้อมูลและตัวเลือกการแยกการส่งผ่าน";
+
+/* No comment provided by engineer. */
+"Database is encrypted using a random passphrase, you can change it." = "ฐานข้อมูลถูก encrypt โดยใช้รหัสผ่านแบบสุ่ม คุณสามารถเปลี่ยนได้";
+
+/* No comment provided by engineer. */
+"Database is encrypted using a random passphrase. Please change it before exporting." = "ฐานข้อมูลถูก encrypt โดยใช้รหัสผ่านแบบสุ่ม โปรดเปลี่ยนก่อนส่งออก";
+
+/* No comment provided by engineer. */
+"Database passphrase" = "รหัสผ่านของฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Database passphrase & export" = "รหัสผ่านฐานข้อมูล & ส่งออก";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "รหัสผ่านของฐานข้อมูลแตกต่างจากที่บันทึกไว้ใน keychain";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "ต้องใช้รหัสผ่านของฐานข้อมูลในการเปิดแชท";
+
+/* No comment provided by engineer. */
+"Database upgrade" = "อัพเกรดฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"database version is newer than the app, but no down migration for: %@" = "เวอร์ชันฐานข้อมูลใหม่กว่าแอป แต่ไม่มีการย้ายข้อมูลลงสำหรับ: %@";
+
+/* No comment provided by engineer. */
+"Database will be encrypted and the passphrase stored in the keychain.\n" = "ฐานข้อมูลจะถูก encrypt และรหัสผ่านจะถูกจัดเก็บไว้ใน keychain\n";
+
+/* No comment provided by engineer. */
+"Database will be encrypted.\n" = "ฐานข้อมูลจะถูก encrypt\n";
+
+/* No comment provided by engineer. */
+"Database will be migrated when the app restarts" = "ระบบจะย้ายฐานข้อมูลเมื่อแอปรีสตาร์ท";
+
+/* time unit */
+"days" = "วัน";
+
+/* No comment provided by engineer. */
+"Decentralized" = "กระจายอำนาจแล้ว";
+
+/* message decrypt error item */
+"Decryption error" = "ข้อผิดพลาดในการ decrypt";
+
+/* pref value */
+"default (%@)" = "ค่าเริ่มต้น (%@)";
+
+/* No comment provided by engineer. */
+"default (no)" = "ค่าเริ่มต้น (ไม่)";
+
+/* No comment provided by engineer. */
+"default (yes)" = "ค่าเริ่มต้น (ใช่)";
+
+/* chat item action */
+"Delete" = "ลบ";
+
+/* No comment provided by engineer. */
+"Delete address" = "ลบที่อยู่";
+
+/* No comment provided by engineer. */
+"Delete address?" = "ลบที่อยู่?";
+
+/* No comment provided by engineer. */
+"Delete after" = "ลบหลังจาก";
+
+/* No comment provided by engineer. */
+"Delete all files" = "ลบไฟล์ทั้งหมด";
+
+/* No comment provided by engineer. */
+"Delete archive" = "ลบที่เก็บถาวร";
+
+/* No comment provided by engineer. */
+"Delete chat archive?" = "ลบที่เก็บแชทถาวร?";
+
+/* No comment provided by engineer. */
+"Delete chat profile" = "ลบโปรไฟล์แชท";
+
+/* No comment provided by engineer. */
+"Delete chat profile?" = "ลบโปรไฟล์แชทไหม?";
+
+/* No comment provided by engineer. */
+"Delete connection" = "ลบการเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"Delete contact" = "ลบผู้ติดต่อ";
+
+/* No comment provided by engineer. */
+"Delete Contact" = "ลบผู้ติดต่อ";
+
+/* No comment provided by engineer. */
+"Delete contact?" = "ลบผู้ติดต่อ?";
+
+/* No comment provided by engineer. */
+"Delete database" = "ลบฐานข้อมูล";
+
+/* server test step */
+"Delete file" = "ลบไฟล์";
+
+/* No comment provided by engineer. */
+"Delete files and media?" = "ลบไฟล์และสื่อ?";
+
+/* No comment provided by engineer. */
+"Delete files for all chat profiles" = "ลบไฟล์สําหรับโปรไฟล์แชททั้งหมด";
+
+/* chat feature */
+"Delete for everyone" = "ลบสำหรับทุกคน";
+
+/* No comment provided by engineer. */
+"Delete for me" = "ลบให้ฉัน";
+
+/* No comment provided by engineer. */
+"Delete group" = "ลบกลุ่ม";
+
+/* No comment provided by engineer. */
+"Delete group?" = "ลบกลุ่ม?";
+
+/* No comment provided by engineer. */
+"Delete invitation" = "ลบคำเชิญ";
+
+/* No comment provided by engineer. */
+"Delete link" = "ลบลิงค์";
+
+/* No comment provided by engineer. */
+"Delete link?" = "ลบลิงค์ ไหม?";
+
+/* No comment provided by engineer. */
+"Delete member message?" = "ลบข้อความสมาชิก?";
+
+/* No comment provided by engineer. */
+"Delete message?" = "ลบข้อความ?";
+
+/* No comment provided by engineer. */
+"Delete messages" = "ลบข้อความ";
+
+/* No comment provided by engineer. */
+"Delete messages after" = "ลบข้อความหลังจาก";
+
+/* No comment provided by engineer. */
+"Delete old database" = "ลบฐานข้อมูลเก่า";
+
+/* No comment provided by engineer. */
+"Delete old database?" = "ลบฐานข้อมูลเก่า?";
+
+/* No comment provided by engineer. */
+"Delete pending connection" = "ลบการเชื่อมต่อที่รอดำเนินการ";
+
+/* No comment provided by engineer. */
+"Delete pending connection?" = "ลบการเชื่อมต่อที่รอดำเนินการหรือไม่?";
+
+/* No comment provided by engineer. */
+"Delete profile" = "ลบโปรไฟล์";
+
+/* server test step */
+"Delete queue" = "ลบคิว";
+
+/* No comment provided by engineer. */
+"Delete user profile?" = "ลบโปรไฟล์ผู้ใช้?";
+
+/* deleted chat item */
+"deleted" = "ลบแล้ว";
+
+/* No comment provided by engineer. */
+"Deleted at" = "ลบที่";
+
+/* copied message info */
+"Deleted at: %@" = "ลบที่: %@";
+
+/* rcv group event chat item */
+"deleted group" = "กลุ่มที่ถูกลบ";
+
+/* No comment provided by engineer. */
+"Delivery receipts are disabled!" = "ใบตอบรับการจัดส่งถูกปิดใช้งาน!";
+
+/* No comment provided by engineer. */
+"Delivery receipts!" = "ใบตอบรับการจัดส่ง!";
+
+/* No comment provided by engineer. */
+"Description" = "คำอธิบาย";
+
+/* No comment provided by engineer. */
+"Develop" = "พัฒนา";
+
+/* No comment provided by engineer. */
+"Developer tools" = "เครื่องมือสำหรับนักพัฒนา";
+
+/* No comment provided by engineer. */
+"Device" = "อุปกรณ์";
+
+/* No comment provided by engineer. */
+"Device authentication is disabled. Turning off SimpleX Lock." = "การตรวจสอบสิทธิ์อุปกรณ์ถูกปิดใช้งาน กำลังปิด SimpleX Lock";
+
+/* No comment provided by engineer. */
+"Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "การตรวจสอบอุปกรณ์ไม่ได้ถูกเปิดใช้งาน คุณสามารถเปิด SimpleX Lock ผ่านการตั้งค่าได้ เมื่อคุณเปิดใช้งานการตรวจสอบอุปกรณ์แล้ว";
+
+/* No comment provided by engineer. */
+"different migration in the app/database: %@ / %@" = "การโยกย้ายที่แตกต่างกันในแอป/ฐานข้อมูล: %@ / %@";
+
+/* No comment provided by engineer. */
+"Different names, avatars and transport isolation." = "ชื่ออวตารและการแยกการขนส่งที่แตกต่างกัน";
+
+/* connection level description */
+"direct" = "โดยตรง";
+
+/* chat feature */
+"Direct messages" = "ข้อความโดยตรง";
+
+/* No comment provided by engineer. */
+"Direct messages between members are prohibited in this group." = "ข้อความโดยตรงระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้";
+
+/* No comment provided by engineer. */
+"Disable (keep overrides)" = "ปิดใช้งาน (เก็บการแทนที่)";
+
+/* No comment provided by engineer. */
+"Disable for all" = "ปิดการใช้งานสำหรับทุกคน";
+
+/* authentication reason */
+"Disable SimpleX Lock" = "ปิดการใช้งาน SimpleX Lock";
+
+/* No comment provided by engineer. */
+"Disappearing message" = "ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message)";
+
+/* chat feature */
+"Disappearing messages" = "ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message)";
+
+/* No comment provided by engineer. */
+"Disappearing messages are prohibited in this chat." = "ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message) เป็นสิ่งต้องห้ามในแชทนี้";
+
+/* No comment provided by engineer. */
+"Disappearing messages are prohibited in this group." = "ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message) เป็นสิ่งต้องห้ามในกลุ่มนี้";
+
+/* No comment provided by engineer. */
+"Disappears at" = "หายไปที่";
+
+/* copied message info */
+"Disappears at: %@" = "หายไปที่: %@";
+
+/* server test step */
+"Disconnect" = "ตัดการเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"Display name" = "ชื่อที่แสดง";
+
+/* No comment provided by engineer. */
+"Display name:" = "ชื่อที่แสดง:";
+
+/* No comment provided by engineer. */
+"Do it later" = "ทำในภายหลัง";
+
+/* No comment provided by engineer. */
+"Do NOT use SimpleX for emergency calls." = "อย่าใช้ SimpleX สําหรับการโทรฉุกเฉิน";
+
+/* No comment provided by engineer. */
+"Don't create address" = "อย่าสร้างที่อยู่";
+
+/* No comment provided by engineer. */
+"Don't enable" = "อย่าเปิดใช้งาน";
+
+/* No comment provided by engineer. */
+"Don't show again" = "ไม่ต้องแสดงอีก";
+
+/* No comment provided by engineer. */
+"Downgrade and open chat" = "ปรับลดรุ่นและเปิดแชท";
+
+/* server test step */
+"Download file" = "ดาวน์โหลดไฟล์";
+
+/* No comment provided by engineer. */
+"Duplicate display name!" = "ชื่อที่แสดงซ้ำ!";
+
+/* integrity error chat item */
+"duplicate message" = "ข้อความที่ซ้ำกัน";
+
+/* No comment provided by engineer. */
+"Duration" = "ระยะเวลา";
+
+/* No comment provided by engineer. */
+"e2e encrypted" = "encrypted จากต้นจนจบ";
+
+/* chat item action */
+"Edit" = "แก้ไข";
+
+/* No comment provided by engineer. */
+"Edit group profile" = "แก้ไขโปรไฟล์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Enable" = "เปิดใช้งาน";
+
+/* No comment provided by engineer. */
+"Enable (keep overrides)" = "เปิดใช้งาน (เก็บการแทนที่)";
+
+/* No comment provided by engineer. */
+"Enable automatic message deletion?" = "เปิดใช้งานการลบข้อความอัตโนมัติ?";
+
+/* No comment provided by engineer. */
+"Enable for all" = "เปิดใช้งานสําหรับทุกคน";
+
+/* No comment provided by engineer. */
+"Enable instant notifications?" = "เปิดใช้งานการแจ้งเตือนทันที?";
+
+/* No comment provided by engineer. */
+"Enable lock" = "เปิดใช้งานการล็อค";
+
+/* No comment provided by engineer. */
+"Enable notifications" = "เปิดใช้งานการแจ้งเตือน";
+
+/* No comment provided by engineer. */
+"Enable periodic notifications?" = "เปิดใช้การแจ้งเตือนเป็นระยะๆ ไหม?";
+
+/* No comment provided by engineer. */
+"Enable self-destruct" = "เปิดใช้งานการทำลายตัวเอง";
+
+/* set passcode view */
+"Enable self-destruct passcode" = "เปิดใช้งานรหัสผ่านแบบทําลายตัวเอง";
+
+/* authentication reason */
+"Enable SimpleX Lock" = "เปิดใช้งาน SimpleX Lock";
+
+/* No comment provided by engineer. */
+"Enable TCP keep-alive" = "เปิดใช้งาน TCP Keep-alive";
+
+/* enabled status */
+"enabled" = "เปิดใช้งาน";
+
+/* enabled status */
+"enabled for contact" = "ได้เปิดใช้งานสำหรับการติดต่อแล้ว";
+
+/* enabled status */
+"enabled for you" = "เปิดใช้งานสําหรับคุณแล้ว";
+
+/* No comment provided by engineer. */
+"Encrypt" = "Encrypt";
+
+/* No comment provided by engineer. */
+"Encrypt database?" = "Encrypt ฐานข้อมูล?";
+
+/* No comment provided by engineer. */
+"Encrypted database" = "Encrypt ฐานข้อมูลเรียบร้อยแล้ว";
+
+/* notification */
+"Encrypted message or another event" = "ข้อความที่ encrypt หรือเหตุการณ์อื่น";
+
+/* notification */
+"Encrypted message: database error" = "ข้อความที่ encrypt: ความผิดพลาดในฐานข้อมูล";
+
+/* notification */
+"Encrypted message: database migration error" = "ข้อความที่ encrypt: ข้อผิดพลาดในการย้ายฐานข้อมูล";
+
+/* notification */
+"Encrypted message: keychain error" = "ข้อความที่ encrypt: ข้อผิดพลาดของ keychain";
+
+/* notification */
+"Encrypted message: no passphrase" = "ข้อความที่ encrypt: ไม่มีรหัสผ่าน";
+
+/* notification */
+"Encrypted message: unexpected error" = "ข้อความที่ encrypt: ข้อผิดพลาดที่ไม่คาดคิด";
+
+/* chat item text */
+"encryption agreed" = "ตกลง encryption";
+
+/* chat item text */
+"encryption agreed for %@" = "ตกลง encryption สําหรับ % @";
+
+/* chat item text */
+"encryption ok" = "encryptionใช้ได้";
+
+/* chat item text */
+"encryption ok for %@" = "encryptionใช้ได้สําหรับ %@";
+
+/* chat item text */
+"encryption re-negotiation allowed" = "อนุญาตให้มีการเจรจา encryption อีกครั้ง";
+
+/* chat item text */
+"encryption re-negotiation allowed for %@" = "อนุญาตให้มีการเจรจา encryption อีกครั้งสําหรับ %@";
+
+/* chat item text */
+"encryption re-negotiation required" = "จำเป็นต้องมีการเจรจา encryption อีกครั้ง";
+
+/* chat item text */
+"encryption re-negotiation required for %@" = "จำเป็นต้องมีการเจรจา encryption อีกครั้งสําหรับ %@";
+
+/* No comment provided by engineer. */
+"ended" = "สิ้นสุดลงแล้ว";
+
+/* call status */
+"ended call %@" = "สิ้นสุดการโทร %@";
+
+/* No comment provided by engineer. */
+"Enter correct passphrase." = "ใส่รหัสผ่านที่ถูกต้อง";
+
+/* No comment provided by engineer. */
+"Enter Passcode" = "ใส่รหัสผ่าน";
+
+/* No comment provided by engineer. */
+"Enter passphrase…" = "ใส่รหัสผ่าน";
+
+/* No comment provided by engineer. */
+"Enter password above to show!" = "ใส่รหัสผ่านด้านบนเพื่อแสดง!";
+
+/* No comment provided by engineer. */
+"Enter server manually" = "ใส่เซิร์ฟเวอร์ด้วยตนเอง";
+
+/* placeholder */
+"Enter welcome message…" = "ใส่ข้อความต้อนรับ…";
+
+/* placeholder */
+"Enter welcome message… (optional)" = "ใส่ข้อความต้อนรับ… (ไม่บังคับ)";
+
+/* No comment provided by engineer. */
+"error" = "ผิดพลาด";
+
+/* No comment provided by engineer. */
+"Error" = "ผิดพลาด";
+
+/* No comment provided by engineer. */
+"Error aborting address change" = "เกิดข้อผิดพลาดในการยกเลิกการเปลี่ยนที่อยู่";
+
+/* No comment provided by engineer. */
+"Error accepting contact request" = "เกิดข้อผิดพลาดในการรับคำขอติดต่อ";
+
+/* No comment provided by engineer. */
+"Error accessing database file" = "เกิดข้อผิดพลาดในการเข้าถึงไฟล์ฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Error adding member(s)" = "เกิดข้อผิดพลาดในการเพิ่มสมาชิก";
+
+/* No comment provided by engineer. */
+"Error changing address" = "เกิดข้อผิดพลาดในการเปลี่ยนที่อยู่";
+
+/* No comment provided by engineer. */
+"Error changing role" = "เกิดข้อผิดพลาดในการเปลี่ยนบทบาท";
+
+/* No comment provided by engineer. */
+"Error changing setting" = "เกิดข้อผิดพลาดในการเปลี่ยนการตั้งค่า";
+
+/* No comment provided by engineer. */
+"Error creating address" = "เกิดข้อผิดพลาดในการสร้างที่อยู่";
+
+/* No comment provided by engineer. */
+"Error creating group" = "เกิดข้อผิดพลาดในการสร้างกลุ่ม";
+
+/* No comment provided by engineer. */
+"Error creating group link" = "เกิดข้อผิดพลาดในการสร้างลิงก์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Error creating profile!" = "เกิดข้อผิดพลาดในการสร้างโปรไฟล์!";
+
+/* No comment provided by engineer. */
+"Error deleting chat database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูลแชท";
+
+/* No comment provided by engineer. */
+"Error deleting chat!" = "เกิดข้อผิดพลาดในการลบแชท!";
+
+/* No comment provided by engineer. */
+"Error deleting connection" = "เกิดข้อผิดพลาดในการลบการเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"Error deleting contact" = "เกิดข้อผิดพลาดในการลบผู้ติดต่อ";
+
+/* No comment provided by engineer. */
+"Error deleting database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Error deleting old database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูลเก่า";
+
+/* No comment provided by engineer. */
+"Error deleting token" = "เกิดข้อผิดพลาดในการลบโทเค็น";
+
+/* No comment provided by engineer. */
+"Error deleting user profile" = "เกิดข้อผิดพลาดในการลบโปรไฟล์ผู้ใช้";
+
+/* No comment provided by engineer. */
+"Error enabling delivery receipts!" = "เกิดข้อผิดพลาดในการเปิดใช้ใบเสร็จการจัดส่ง!";
+
+/* No comment provided by engineer. */
+"Error enabling notifications" = "เกิดข้อผิดพลาดในการเปิดใช้งานการแจ้งเตือน";
+
+/* No comment provided by engineer. */
+"Error encrypting database" = "เกิดข้อผิดพลาดในการ encrypt ฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Error exporting chat database" = "เกิดข้อผิดพลาดในการส่งออกฐานข้อมูลแชท";
+
+/* No comment provided by engineer. */
+"Error importing chat database" = "เกิดข้อผิดพลาดในการนำเข้าฐานข้อมูลแชท";
+
+/* No comment provided by engineer. */
+"Error joining group" = "เกิดข้อผิดพลาดในการเข้าร่วมกลุ่ม";
+
+/* No comment provided by engineer. */
+"Error loading %@ servers" = "โหลดเซิร์ฟเวอร์ %@ ผิดพลาด";
+
+/* No comment provided by engineer. */
+"Error receiving file" = "เกิดข้อผิดพลาดในการรับไฟล์";
+
+/* No comment provided by engineer. */
+"Error removing member" = "เกิดข้อผิดพลาดในการลบสมาชิก";
+
+/* No comment provided by engineer. */
+"Error saving %@ servers" = "เกิดข้อผิดพลาดในการบันทึกเซิร์ฟเวอร์ %@";
+
+/* No comment provided by engineer. */
+"Error saving group profile" = "เกิดข้อผิดพลาดในการบันทึกโปรไฟล์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Error saving ICE servers" = "เกิดข้อผิดพลาดในการบันทึกเซิร์ฟเวอร์ ICE";
+
+/* No comment provided by engineer. */
+"Error saving passcode" = "เกิดข้อผิดพลาดในการบันทึกรหัสผ่าน";
+
+/* No comment provided by engineer. */
+"Error saving passphrase to keychain" = "เกิดข้อผิดพลาดในการบันทึกรหัสผ่านไปยัง keychain";
+
+/* No comment provided by engineer. */
+"Error saving user password" = "เกิดข้อผิดพลาดในการบันทึกรหัสผ่านผู้ใช้";
+
+/* No comment provided by engineer. */
+"Error sending email" = "เกิดข้อผิดพลาดในการส่งอีเมล";
+
+/* No comment provided by engineer. */
+"Error sending message" = "เกิดข้อผิดพลาดในการส่งข้อความ";
+
+/* No comment provided by engineer. */
+"Error setting delivery receipts!" = "เกิดข้อผิดพลาดในการตั้งค่าใบตอบรับการจัดส่ง!";
+
+/* No comment provided by engineer. */
+"Error starting chat" = "เกิดข้อผิดพลาดในการเริ่มแชท";
+
+/* No comment provided by engineer. */
+"Error stopping chat" = "เกิดข้อผิดพลาดในการหยุดแชท";
+
+/* No comment provided by engineer. */
+"Error switching profile!" = "เกิดข้อผิดพลาดในการเปลี่ยนโปรไฟล์!";
+
+/* No comment provided by engineer. */
+"Error synchronizing connection" = "เกิดข้อผิดพลาดในการซิงโครไนซ์การเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"Error updating group link" = "เกิดข้อผิดพลาดในการอัปเดตลิงก์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Error updating message" = "เกิดข้อผิดพลาดในการอัปเดตข้อความ";
+
+/* No comment provided by engineer. */
+"Error updating settings" = "เกิดข้อผิดพลาดในการอัปเดตการตั้งค่า";
+
+/* No comment provided by engineer. */
+"Error updating user privacy" = "เกิดข้อผิดพลาดในการอัปเดตข้อมูลส่วนตัวของผู้ใช้";
+
+/* No comment provided by engineer. */
+"Error: " = "ผิดพลาด: ";
+
+/* No comment provided by engineer. */
+"Error: %@" = "ข้อผิดพลาด: % @";
+
+/* No comment provided by engineer. */
+"Error: no database file" = "เกิดข้อผิดพลาด: ไม่มีแฟ้มฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Error: URL is invalid" = "เกิดข้อผิดพลาด: URL ไม่ถูกต้อง";
+
+/* No comment provided by engineer. */
+"Even when disabled in the conversation." = "แม้ในขณะที่ปิดใช้งานในการสนทนา";
+
+/* No comment provided by engineer. */
+"Exit without saving" = "ออกโดยไม่บันทึก";
+
+/* No comment provided by engineer. */
+"Export database" = "ส่งออกฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Export error:" = "ข้อผิดพลาดในการส่งออก:";
+
+/* No comment provided by engineer. */
+"Exported database archive." = "ที่เก็บถาวรฐานข้อมูลที่ส่งออก";
+
+/* No comment provided by engineer. */
+"Exporting database archive…" = "กำลังส่งออกที่เก็บถาวรฐานข้อมูล…";
+
+/* No comment provided by engineer. */
+"Failed to remove passphrase" = "ไม่สามารถลบรหัสผ่านได้";
+
+/* No comment provided by engineer. */
+"Fast and no wait until the sender is online!" = "รวดเร็วและไม่ต้องรอจนกว่าผู้ส่งจะออนไลน์!";
+
+/* No comment provided by engineer. */
+"Favorite" = "ที่ชอบ";
+
+/* No comment provided by engineer. */
+"File will be deleted from servers." = "ไฟล์จะถูกลบออกจากเซิร์ฟเวอร์";
+
+/* No comment provided by engineer. */
+"File will be received when your contact completes uploading it." = "จะได้รับไฟล์เมื่อผู้ติดต่อของคุณอัปโหลดเสร็จ";
+
+/* No comment provided by engineer. */
+"File will be received when your contact is online, please wait or check later!" = "จะได้รับไฟล์เมื่อผู้ติดต่อของคุณออนไลน์ โปรดรอหรือตรวจสอบในภายหลัง!";
+
+/* No comment provided by engineer. */
+"File: %@" = "ไฟล์: % @";
+
+/* No comment provided by engineer. */
+"Files & media" = "ไฟล์และสื่อ";
+
+/* chat feature */
+"Files and media" = "ไฟล์และสื่อ";
+
+/* No comment provided by engineer. */
+"Files and media are prohibited in this group." = "ไฟล์และสื่อเป็นสิ่งต้องห้ามในกลุ่มนี้";
+
+/* No comment provided by engineer. */
+"Files and media prohibited!" = "ไฟล์และสื่อต้องห้าม!";
+
+/* No comment provided by engineer. */
+"Filter unread and favorite chats." = "กรองแชทที่ยังไม่อ่านและแชทโปรด";
+
+/* No comment provided by engineer. */
+"Finally, we have them! 🚀" = "ในที่สุดเราก็มีแล้ว! 🚀";
+
+/* No comment provided by engineer. */
+"Find chats faster" = "ค้นหาแชทได้เร็วขึ้น";
+
+/* No comment provided by engineer. */
+"Fix" = "แก้ไข";
+
+/* No comment provided by engineer. */
+"Fix connection" = "แก้ไขการเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"Fix connection?" = "แก้ไขการเชื่อมต่อ?";
+
+/* No comment provided by engineer. */
+"Fix encryption after restoring backups." = "แก้ไข encryption หลังจากกู้คืนข้อมูลสำรอง";
+
+/* No comment provided by engineer. */
+"Fix not supported by contact" = "การแก้ไขไม่รองรับโดยผู้ติดต่อ";
+
+/* No comment provided by engineer. */
+"Fix not supported by group member" = "การแก้ไขไม่สนับสนุนโดยสมาชิกกลุ่ม";
+
+/* No comment provided by engineer. */
+"For console" = "สำหรับคอนโซล";
+
+/* No comment provided by engineer. */
+"French interface" = "อินเทอร์เฟซภาษาฝรั่งเศส";
+
+/* No comment provided by engineer. */
+"Full link" = "ลิงค์เต็ม";
+
+/* No comment provided by engineer. */
+"Full name (optional)" = "ชื่อเต็ม (ไม่บังคับ)";
+
+/* No comment provided by engineer. */
+"Full name:" = "ชื่อเต็ม:";
+
+/* No comment provided by engineer. */
+"Fully re-implemented - work in background!" = "ดำเนินการใหม่อย่างสมบูรณ์ - ทำงานในพื้นหลัง!";
+
+/* No comment provided by engineer. */
+"Further reduced battery usage" = "ลดการใช้แบตเตอรี่เพิ่มเติม";
+
+/* No comment provided by engineer. */
+"GIFs and stickers" = "GIFs และสติกเกอร์";
+
+/* No comment provided by engineer. */
+"Group" = "กลุ่ม";
+
+/* No comment provided by engineer. */
+"group deleted" = "ลบกลุ่มแล้ว";
+
+/* No comment provided by engineer. */
+"Group display name" = "ชื่อกลุ่มที่แสดง";
+
+/* No comment provided by engineer. */
+"Group full name (optional)" = "ชื่อเต็มกลุ่ม (ไม่บังคับ)";
+
+/* No comment provided by engineer. */
+"Group image" = "ภาพกลุ่ม";
+
+/* No comment provided by engineer. */
+"Group invitation" = "คําเชิญเข้าร่วมกลุ่ม";
+
+/* No comment provided by engineer. */
+"Group invitation expired" = "คำเชิญเข้าร่วมกลุ่มหมดอายุแล้ว";
+
+/* No comment provided by engineer. */
+"Group invitation is no longer valid, it was removed by sender." = "คำเชิญเข้าร่วมกลุ่มใช้ไม่ถูกต้องอีกต่อไป คำเชิญถูกลบโดยผู้ส่ง";
+
+/* No comment provided by engineer. */
+"Group link" = "ลิงค์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Group links" = "ลิงค์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Group members can add message reactions." = "สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้";
+
+/* No comment provided by engineer. */
+"Group members can irreversibly delete sent messages." = "สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร";
+
+/* No comment provided by engineer. */
+"Group members can send direct messages." = "สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้";
+
+/* No comment provided by engineer. */
+"Group members can send disappearing messages." = "สมาชิกกลุ่มสามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้";
+
+/* No comment provided by engineer. */
+"Group members can send files and media." = "สมาชิกกลุ่มสามารถส่งไฟล์และสื่อ";
+
+/* No comment provided by engineer. */
+"Group members can send voice messages." = "สมาชิกกลุ่มสามารถส่งข้อความเสียง";
+
+/* notification */
+"Group message:" = "ข้อความกลุ่ม:";
+
+/* No comment provided by engineer. */
+"Group moderation" = "การกลั่นกรองกลุ่ม";
+
+/* No comment provided by engineer. */
+"Group preferences" = "ค่ากําหนดลักษณะกลุ่ม";
+
+/* No comment provided by engineer. */
+"Group profile" = "โปรไฟล์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Group profile is stored on members' devices, not on the servers." = "โปรไฟล์กลุ่มถูกจัดเก็บไว้ในอุปกรณ์ของสมาชิก ไม่ใช่บนเซิร์ฟเวอร์";
+
+/* snd group event chat item */
+"group profile updated" = "อัปเดตโปรไฟล์กลุ่มแล้ว";
+
+/* No comment provided by engineer. */
+"Group welcome message" = "ข้อความต้อนรับกลุ่ม";
+
+/* No comment provided by engineer. */
+"Group will be deleted for all members - this cannot be undone!" = "กลุ่มจะถูกลบสำหรับสมาชิกทั้งหมด - ไม่สามารถยกเลิกได้!";
+
+/* No comment provided by engineer. */
+"Group will be deleted for you - this cannot be undone!" = "กลุ่มจะถูกลบสำหรับคุณ - ไม่สามารถยกเลิกได้!";
+
+/* No comment provided by engineer. */
+"Help" = "ความช่วยเหลือ";
+
+/* No comment provided by engineer. */
+"Hidden" = "ซ่อนอยู่";
+
+/* No comment provided by engineer. */
+"Hidden chat profiles" = "โปรไฟล์การแชทที่ซ่อนอยู่";
+
+/* No comment provided by engineer. */
+"Hidden profile password" = "รหัสผ่านโปรไฟล์ที่ซ่อนอยู่";
+
+/* chat item action */
+"Hide" = "ซ่อน";
+
+/* No comment provided by engineer. */
+"Hide app screen in the recent apps." = "ซ่อนหน้าจอแอพในแอพล่าสุด";
+
+/* No comment provided by engineer. */
+"Hide profile" = "ซ่อนโปรไฟล์";
+
+/* No comment provided by engineer. */
+"Hide:" = "ซ่อน:";
+
+/* No comment provided by engineer. */
+"History" = "ประวัติ";
+
+/* time unit */
+"hours" = "ชั่วโมง";
+
+/* No comment provided by engineer. */
+"How it works" = "มันทำงานอย่างไร";
+
+/* No comment provided by engineer. */
+"How SimpleX works" = "วิธีการ SimpleX ทํางานอย่างไร";
+
+/* No comment provided by engineer. */
+"How to" = "วิธี";
+
+/* No comment provided by engineer. */
+"How to use it" = "วิธีการใช้งาน";
+
+/* No comment provided by engineer. */
+"How to use your servers" = "วิธีใช้เซิร์ฟเวอร์ของคุณ";
+
+/* No comment provided by engineer. */
+"ICE servers (one per line)" = "เซิร์ฟเวอร์ ICE (หนึ่งเครื่องต่อสาย)";
+
+/* No comment provided by engineer. */
+"If you can't meet in person, show QR code in a video call, or share the link." = "หากคุณไม่สามารถพบกันในชีวิตจริงได้ ให้แสดงคิวอาร์โค้ดในวิดีโอคอล หรือแชร์ลิงก์";
+
+/* No comment provided by engineer. */
+"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "หากคุณไม่สามารถพบปะด้วยตนเอง คุณสามารถ **สแกนคิวอาร์โค้ดผ่านการสนทนาทางวิดีโอ** หรือผู้ติดต่อของคุณสามารถแชร์ลิงก์เชิญได้";
+
+/* No comment provided by engineer. */
+"If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "หากคุณใส่รหัสผ่านนี้เมื่อเปิดแอป ข้อมูลแอปทั้งหมดจะถูกลบอย่างถาวร!";
+
+/* No comment provided by engineer. */
+"If you enter your self-destruct passcode while opening the app:" = "หากคุณใส่รหัสผ่านทำลายตัวเองขณะเปิดแอป:";
+
+/* No comment provided by engineer. */
+"If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "หากคุณจำเป็นต้องใช้แชทตอนนี้ ให้แตะ **ทำในภายหลัง** ด้านล่าง (ระบบจะเสนอให้คุณย้ายฐานข้อมูลเมื่อคุณรีสตาร์ทแอป)";
+
+/* No comment provided by engineer. */
+"Ignore" = "ไม่สนใจ";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact completes uploading it." = "จะได้รับภาพเมื่อผู้ติดต่อของคุณอัปโหลดเสร็จสิ้น";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact is online, please wait or check later!" = "จะได้รับรูปภาพเมื่อผู้ติดต่อของคุณออนไลน์ โปรดรอหรือตรวจสอบในภายหลัง!";
+
+/* No comment provided by engineer. */
+"Immediately" = "โดยทันที";
+
+/* No comment provided by engineer. */
+"Immune to spam and abuse" = "มีภูมิคุ้มกันต่อสแปมและการละเมิด";
+
+/* No comment provided by engineer. */
+"Import" = "นำเข้า";
+
+/* No comment provided by engineer. */
+"Import chat database?" = "นำเข้าฐานข้อมูลแชท?";
+
+/* No comment provided by engineer. */
+"Import database" = "นำเข้าฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Improved privacy and security" = "ปรับปรุงความเป็นส่วนตัวและความปลอดภัยแล้ว";
+
+/* No comment provided by engineer. */
+"Improved server configuration" = "ปรับปรุงการกําหนดค่าเซิร์ฟเวอร์แล้ว";
+
+/* No comment provided by engineer. */
+"In reply to" = "ในการตอบกลับถึง";
+
+/* No comment provided by engineer. */
+"Incognito" = "ไม่ระบุตัวตน";
+
+/* No comment provided by engineer. */
+"Incognito mode" = "โหมดไม่ระบุตัวตน";
+
+/* chat list item description */
+"incognito via contact address link" = "ไม่ระบุตัวตนผ่านลิงค์ที่อยู่ติดต่อ";
+
+/* chat list item description */
+"incognito via group link" = "ไม่ระบุตัวตนผ่านลิงก์กลุ่ม";
+
+/* chat list item description */
+"incognito via one-time link" = "ไม่ระบุตัวตนผ่านลิงก์แบบใช้ครั้งเดียว";
+
+/* notification */
+"Incoming audio call" = "สายเรียกเข้า";
+
+/* notification */
+"Incoming call" = "สายเรียกเข้า";
+
+/* notification */
+"Incoming video call" = "สายวิดีโอเข้ามา";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "เวอร์ชันฐานข้อมูลที่เข้ากันไม่ได้";
+
+/* PIN entry */
+"Incorrect passcode" = "รหัสผ่านไม่ถูกต้อง";
+
+/* No comment provided by engineer. */
+"Incorrect security code!" = "รหัสความปลอดภัยไม่ถูกต้อง!";
+
+/* connection level description */
+"indirect (%d)" = "ทางอ้อม (%d)";
+
+/* chat item action */
+"Info" = "ข้อมูล";
+
+/* No comment provided by engineer. */
+"Initial role" = "บทบาทเริ่มต้น";
+
+/* No comment provided by engineer. */
+"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "ติดตั้ง [SimpleX Chat สำหรับเทอร์มินัล](https://github.com/simplex-chat/simplex-chat)";
+
+/* No comment provided by engineer. */
+"Instant push notifications will be hidden!\n" = "การแจ้งเตือนโดยทันทีจะถูกซ่อน!\n";
+
+/* No comment provided by engineer. */
+"Instantly" = "ทันที";
+
+/* No comment provided by engineer. */
+"Interface" = "อินเตอร์เฟซ";
+
+/* invalid chat data */
+"invalid chat" = "แชทไม่ถูกต้อง";
+
+/* No comment provided by engineer. */
+"invalid chat data" = "ข้อมูลแชทไม่ถูกต้อง";
+
+/* No comment provided by engineer. */
+"Invalid connection link" = "ลิงค์เชื่อมต่อไม่ถูกต้อง";
+
+/* invalid chat item */
+"invalid data" = "ข้อมูลไม่ถูกต้อง";
+
+/* No comment provided by engineer. */
+"Invalid server address!" = "ที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง!";
+
+/* No comment provided by engineer. */
+"Invitation expired!" = "คำเชิญหมดอายุแล้ว!";
+
+/* group name */
+"invitation to group %@" = "คำเชิญเข้าร่วมกลุ่ม %@";
+
+/* No comment provided by engineer. */
+"Invite friends" = "เชิญเพื่อนๆ";
+
+/* No comment provided by engineer. */
+"Invite members" = "เชิญสมาชิก";
+
+/* No comment provided by engineer. */
+"Invite to group" = "เชิญเข้าร่วมกลุ่ม";
+
+/* No comment provided by engineer. */
+"invited" = "เชิญ";
+
+/* rcv group event chat item */
+"invited %@" = "เชิญ %@";
+
+/* chat list item title */
+"invited to connect" = "ได้รับเชิญให้เชื่อมต่อ";
+
+/* rcv group event chat item */
+"invited via your group link" = "ถูกเชิญผ่านลิงค์กลุ่มของคุณ";
+
+/* No comment provided by engineer. */
+"iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "iOS Keychain ใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัย - อนุญาตให้รับการแจ้งเตือนแบบทันที";
+
+/* No comment provided by engineer. */
+"iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "iOS Keychain จะใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัยหลังจากที่คุณรีสตาร์ทแอปหรือเปลี่ยนรหัสผ่าน ซึ่งจะช่วยให้รับการแจ้งเตือนแบบทันทีได้";
+
+/* No comment provided by engineer. */
+"Irreversible message deletion" = "การลบข้อความแบบแก้ไขไม่ได้";
+
+/* No comment provided by engineer. */
+"Irreversible message deletion is prohibited in this chat." = "ไม่สามารถลบข้อความแบบแก้ไขไม่ได้ในแชทนี้";
+
+/* No comment provided by engineer. */
+"Irreversible message deletion is prohibited in this group." = "การลบข้อความแบบแก้ไขไม่ได้เป็นสิ่งที่ห้ามในกลุ่มนี้";
+
+/* No comment provided by engineer. */
+"It allows having many anonymous connections without any shared data between them in a single chat profile." = "อนุญาตให้มีการเชื่อมต่อที่ไม่ระบุตัวตนจำนวนมากโดยไม่มีข้อมูลที่ใช้ร่วมกันระหว่างกันในโปรไฟล์การแชทเดียว";
+
+/* No comment provided by engineer. */
+"It can happen when you or your connection used the old database backup." = "สามารถเกิดขึ้นได้เมื่อคุณหรือการเชื่อมต่อของคุณใช้การสํารองข้อมูลฐานข้อมูลเก่า";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "มันสามารถเกิดขึ้นได้เมื่อ:\n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 30 วัน\n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า\n3. การเชื่อมต่อถูกบุกรุก";
+
+/* No comment provided by engineer. */
+"It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "ดูเหมือนว่าคุณได้เชื่อมต่อผ่านลิงก์นี้แล้ว หากไม่เป็นเช่นนั้น แสดงว่ามีข้อผิดพลาด (%@).";
+
+/* No comment provided by engineer. */
+"Italian interface" = "อินเทอร์เฟซภาษาอิตาลี";
+
+/* No comment provided by engineer. */
+"italic" = "ตัวเอียง";
+
+/* No comment provided by engineer. */
+"Japanese interface" = "อินเทอร์เฟซภาษาญี่ปุ่น";
+
+/* No comment provided by engineer. */
+"Join" = "เข้าร่วม";
+
+/* No comment provided by engineer. */
+"join as %@" = "เข้าร่วมเป็น %@";
+
+/* No comment provided by engineer. */
+"Join group" = "เข้าร่วมกลุ่ม";
+
+/* No comment provided by engineer. */
+"Join incognito" = "เข้าร่วมแบบไม่ระบุตัวตน";
+
+/* No comment provided by engineer. */
+"Joining group" = "กำลังจะเข้าร่วมกลุ่ม";
+
+/* No comment provided by engineer. */
+"Keep your connections" = "รักษาการเชื่อมต่อของคุณ";
+
+/* No comment provided by engineer. */
+"Keychain error" = "ข้อผิดพลาดของ Keychain";
+
+/* No comment provided by engineer. */
+"KeyChain error" = "ข้อผิดพลาดของ Keychain";
+
+/* No comment provided by engineer. */
+"Large file!" = "ไฟล์ขนาดใหญ่!";
+
+/* No comment provided by engineer. */
+"Learn more" = "ศึกษาเพิ่มเติม";
+
+/* No comment provided by engineer. */
+"Leave" = "ออกจาก";
+
+/* No comment provided by engineer. */
+"Leave group" = "ออกจากกลุ่ม";
+
+/* No comment provided by engineer. */
+"Leave group?" = "ออกจากกลุ่ม?";
+
+/* rcv group event chat item */
+"left" = "ออกแล้ว";
+
+/* email subject */
+"Let's talk in SimpleX Chat" = "มาคุยกันใน SimpleX Chat";
+
+/* No comment provided by engineer. */
+"Light" = "สว่าง";
+
+/* No comment provided by engineer. */
+"Limitations" = "ข้อจำกัด";
+
+/* No comment provided by engineer. */
+"LIVE" = "สด";
+
+/* No comment provided by engineer. */
+"Live message!" = "ข้อความสด!";
+
+/* No comment provided by engineer. */
+"Live messages" = "ข้อความสด";
+
+/* No comment provided by engineer. */
+"Local name" = "ชื่อภายในเครื่องเท่านั้น";
+
+/* No comment provided by engineer. */
+"Local profile data only" = "ข้อมูลโปรไฟล์ภายในเครื่องเท่านั้น";
+
+/* No comment provided by engineer. */
+"Lock after" = "ล็อคหลังจาก";
+
+/* No comment provided by engineer. */
+"Lock mode" = "โหมดล็อค";
+
+/* No comment provided by engineer. */
+"Make a private connection" = "สร้างการเชื่อมต่อแบบส่วนตัว";
+
+/* No comment provided by engineer. */
+"Make one message disappear" = "ทำให้ข้อความหายไปหนึ่งข้อความ";
+
+/* No comment provided by engineer. */
+"Make profile private!" = "ทำให้โปรไฟล์เป็นส่วนตัว!";
+
+/* No comment provided by engineer. */
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "ตรวจสอบให้แน่ใจว่าที่อยู่เซิร์ฟเวอร์ %@ อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน (%@)";
+
+/* No comment provided by engineer. */
+"Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "ตรวจสอบให้แน่ใจว่าที่อยู่เซิร์ฟเวอร์ WebRTC ICE อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน";
+
+/* No comment provided by engineer. */
+"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "หลายคนถามว่า: *หาก SimpleX ไม่มีตัวระบุผู้ใช้ จะส่งข้อความได้อย่างไร?*";
+
+/* No comment provided by engineer. */
+"Mark deleted for everyone" = "ทำเครื่องหมายว่าลบแล้วสำหรับทุกคน";
+
+/* No comment provided by engineer. */
+"Mark read" = "ทำเครื่องหมายอ่านแล้ว";
+
+/* No comment provided by engineer. */
+"Mark verified" = "ทําเครื่องหมายว่ายืนยันแล้ว";
+
+/* No comment provided by engineer. */
+"Markdown in messages" = "Markdown ในข้อความ";
+
+/* marked deleted chat item preview text */
+"marked deleted" = "ทำเครื่องหมายว่าลบแล้ว";
+
+/* No comment provided by engineer. */
+"Max 30 seconds, received instantly." = "สูงสุด 30 วินาที รับทันที";
+
+/* member role */
+"member" = "สมาชิก";
+
+/* No comment provided by engineer. */
+"Member" = "สมาชิก";
+
+/* rcv group event chat item */
+"member connected" = "เชื่อมต่อสำเร็จ";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". All group members will be notified." = "บทบาทของสมาชิกจะถูกเปลี่ยนเป็น \"%@\" สมาชิกกลุ่มทั้งหมดจะได้รับแจ้ง";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". The member will receive a new invitation." = "บทบาทของสมาชิกจะถูกเปลี่ยนเป็น \"%@\" สมาชิกจะได้รับคำเชิญใหม่";
+
+/* No comment provided by engineer. */
+"Member will be removed from group - this cannot be undone!" = "สมาชิกจะถูกลบออกจากกลุ่ม - ไม่สามารถยกเลิกได้!";
+
+/* item status text */
+"Message delivery error" = "ข้อผิดพลาดในการส่งข้อความ";
+
+/* No comment provided by engineer. */
+"Message delivery receipts!" = "ใบเสร็จการส่งข้อความ!";
+
+/* No comment provided by engineer. */
+"Message draft" = "ร่างข้อความ";
+
+/* chat feature */
+"Message reactions" = "ปฏิกิริยาของข้อความ";
+
+/* No comment provided by engineer. */
+"Message reactions are prohibited in this chat." = "ห้ามแสดงปฏิกิริยาบนข้อความในแชทนี้";
+
+/* No comment provided by engineer. */
+"Message reactions are prohibited in this group." = "ปฏิกิริยาบนข้อความเป็นสิ่งต้องห้ามในกลุ่มนี้";
+
+/* notification */
+"message received" = "ข้อความที่ได้รับ";
+
+/* No comment provided by engineer. */
+"Message text" = "ข้อความ";
+
+/* No comment provided by engineer. */
+"Messages" = "ข้อความ";
+
+/* No comment provided by engineer. */
+"Messages & files" = "ข้อความและไฟล์";
+
+/* No comment provided by engineer. */
+"Migrating database archive…" = "กำลังย้ายข้อมูลที่เก็บถาวรของฐานข้อมูล…";
+
+/* No comment provided by engineer. */
+"Migration error:" = "ข้อผิดพลาดในการย้ายข้อมูล:";
+
+/* No comment provided by engineer. */
+"Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." = "การย้ายข้อมูลล้มเหลว แตะ **ข้าม** ด้านล่างเพื่อใช้ฐานข้อมูลปัจจุบันต่อไป โปรดรายงานปัญหาให้นักพัฒนาแอปทราบผ่านทางแชทหรืออีเมล [chat@simplex.chat](mailto:chat@simplex.chat)";
+
+/* No comment provided by engineer. */
+"Migration is completed" = "การโยกย้ายเสร็จสมบูรณ์";
+
+/* No comment provided by engineer. */
+"Migrations: %@" = "การย้ายข้อมูล: %@";
+
+/* time unit */
+"minutes" = "นาที";
+
+/* call status */
+"missed call" = "สายที่ไม่ได้รับ";
+
+/* chat item action */
+"Moderate" = "กลั่นกรอง";
+
+/* moderated chat item */
+"moderated" = "กลั่นกรองแล้ว";
+
+/* No comment provided by engineer. */
+"Moderated at" = "กลั่นกรองที่";
+
+/* copied message info */
+"Moderated at: %@" = "กลั่นกรองที่: %@";
+
+/* No comment provided by engineer. */
+"moderated by %@" = "กลั่นกรองโดย %@";
+
+/* time unit */
+"months" = "เดือน";
+
+/* No comment provided by engineer. */
+"More improvements are coming soon!" = "การปรับปรุงเพิ่มเติมกำลังจะมาเร็ว ๆ นี้!";
+
+/* No comment provided by engineer. */
+"Most likely this contact has deleted the connection with you." = "เป็นไปได้มากว่าผู้ติดต่อนี้ได้ลบการเชื่อมต่อกับคุณ";
+
+/* No comment provided by engineer. */
+"Multiple chat profiles" = "โปรไฟล์การแชทหลายรายการ";
+
+/* No comment provided by engineer. */
+"Mute" = "ปิดเสียง";
+
+/* No comment provided by engineer. */
+"Muted when inactive!" = "ปิดเสียงเมื่อไม่ได้ใช้งาน!";
+
+/* No comment provided by engineer. */
+"Name" = "ชื่อ";
+
+/* No comment provided by engineer. */
+"Network & servers" = "เครือข่ายและเซิร์ฟเวอร์";
+
+/* No comment provided by engineer. */
+"Network settings" = "การตั้งค่าเครือข่าย";
+
+/* No comment provided by engineer. */
+"Network status" = "สถานะเครือข่าย";
+
+/* No comment provided by engineer. */
+"never" = "ไม่เคย";
+
+/* notification */
+"New contact request" = "คำขอติดต่อใหม่";
+
+/* notification */
+"New contact:" = "คำขอติดต่อใหม่:";
+
+/* No comment provided by engineer. */
+"New database archive" = "ฐานข้อมูลใหม่สำหรับการเก็บถาวร";
+
+/* No comment provided by engineer. */
+"New display name" = "ชื่อที่แสดงใหม่";
+
+/* No comment provided by engineer. */
+"New in %@" = "ใหม่ใน %@";
+
+/* No comment provided by engineer. */
+"New member role" = "บทบาทของสมาชิกใหม่";
+
+/* notification */
+"new message" = "ข้อความใหม่";
+
+/* notification */
+"New message" = "ข้อความใหม่";
+
+/* No comment provided by engineer. */
+"New Passcode" = "รหัสผ่านใหม่";
+
+/* No comment provided by engineer. */
+"New passphrase…" = "รหัสผ่านใหม่…";
+
+/* pref value */
+"no" = "ไม่";
+
+/* No comment provided by engineer. */
+"No" = "เลขที่";
+
+/* Authentication unavailable */
+"No app password" = "ไม่มีรหัสผ่านสำหรับแอป";
+
+/* No comment provided by engineer. */
+"No contacts selected" = "ไม่ได้เลือกผู้ติดต่อ";
+
+/* No comment provided by engineer. */
+"No contacts to add" = "ไม่มีรายชื่อที่จะเพิ่ม";
+
+/* No comment provided by engineer. */
+"No device token!" = "ไม่มีโทเค็นอุปกรณ์!";
+
+/* No comment provided by engineer. */
+"no e2e encryption" = "ไม่มีการ encrypt จากต้นจนจบ";
+
+/* No comment provided by engineer. */
+"No filtered chats" = "ไม่มีการกรองการแชท";
+
+/* No comment provided by engineer. */
+"No group!" = "ไม่พบกลุ่ม!";
+
+/* No comment provided by engineer. */
+"No history" = "ไม่มีประวัติ";
+
+/* No comment provided by engineer. */
+"No permission to record voice message" = "ไม่อนุญาตให้บันทึกข้อความเสียง";
+
+/* No comment provided by engineer. */
+"No received or sent files" = "ไม่มีไฟล์ที่ได้รับหรือส่ง";
+
+/* copied message info in history */
+"no text" = "ไม่มีข้อความ";
+
+/* No comment provided by engineer. */
+"Notifications" = "การแจ้งเตือน";
+
+/* No comment provided by engineer. */
+"Notifications are disabled!" = "ปิดการแจ้งเตือน!";
+
+/* No comment provided by engineer. */
+"Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)" = "ขณะนี้ผู้ดูแลระบบสามารถ:\n- ลบข้อความของสมาชิก\n- ปิดการใช้งานสมาชิก (บทบาท \"ผู้สังเกตการณ์\")";
+
+/* member role */
+"observer" = "ผู้สังเกตการณ์";
+
+/* enabled status
+   group pref value */
+"off" = "ปิด";
+
+/* No comment provided by engineer. */
+"Off" = "ปิด";
+
+/* No comment provided by engineer. */
+"Off (Local)" = "ปิด (ในเครื่อง)";
+
+/* feature offered item */
+"offered %@" = "เสนอแล้ว %@";
+
+/* feature offered item */
+"offered %@: %@" = "เสนอแล้ว %1$@: %2$@";
+
+/* No comment provided by engineer. */
+"Ok" = "ตกลง";
+
+/* No comment provided by engineer. */
+"Old database" = "ฐานข้อมูลเก่า";
+
+/* No comment provided by engineer. */
+"Old database archive" = "คลังฐานข้อมูลเก่า";
+
+/* group pref value */
+"on" = "เปิด";
+
+/* No comment provided by engineer. */
+"One-time invitation link" = "ลิงก์คำเชิญแบบใช้ครั้งเดียว";
+
+/* No comment provided by engineer. */
+"Onion hosts will be required for connection. Requires enabling VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"Onion hosts will be used when available. Requires enabling VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"Onion hosts will not be used." = "โฮสต์หัวหอมจะไม่ถูกใช้";
+
+/* No comment provided by engineer. */
+"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "เฉพาะอุปกรณ์ไคลเอนต์เท่านั้นที่จัดเก็บโปรไฟล์ผู้ใช้ ผู้ติดต่อ กลุ่ม และข้อความที่ส่งด้วย **การเข้ารหัส encrypt แบบ 2 ชั้น**";
+
+/* No comment provided by engineer. */
+"Only group owners can change group preferences." = "เฉพาะเจ้าของกลุ่มเท่านั้นที่สามารถเปลี่ยนค่ากําหนดลักษณะกลุ่มได้";
+
+/* No comment provided by engineer. */
+"Only group owners can enable files and media." = "เฉพาะเจ้าของกลุ่มเท่านั้นที่สามารถเปิดใช้งานไฟล์และสื่อได้";
+
+/* No comment provided by engineer. */
+"Only group owners can enable voice messages." = "เฉพาะเจ้าของกลุ่มเท่านั้นที่สามารถเปิดใช้งานข้อความเสียงได้";
+
+/* No comment provided by engineer. */
+"Only you can add message reactions." = "มีเพียงคุณเท่านั้นที่สามารถแสดงปฏิกิริยาต่อข้อความได้";
+
+/* No comment provided by engineer. */
+"Only you can irreversibly delete messages (your contact can mark them for deletion)." = "มีเพียงคุณเท่านั้นที่สามารถลบข้อความแบบย้อนกลับไม่ได้ (ผู้ติดต่อของคุณสามารถทำเครื่องหมายเพื่อลบได้)";
+
+/* No comment provided by engineer. */
+"Only you can make calls." = "มีเพียงคุณเท่านั้นที่โทรออกได้";
+
+/* No comment provided by engineer. */
+"Only you can send disappearing messages." = "มีเพียงคุณเท่านั้นที่สามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้";
+
+/* No comment provided by engineer. */
+"Only you can send voice messages." = "มีเพียงคุณเท่านั้นที่สามารถส่งข้อความเสียงได้";
+
+/* No comment provided by engineer. */
+"Only your contact can add message reactions." = "เฉพาะผู้ติดต่อของคุณเท่านั้นที่สามารถเพิ่มการโต้ตอบข้อความได้";
+
+/* No comment provided by engineer. */
+"Only your contact can irreversibly delete messages (you can mark them for deletion)." = "เฉพาะผู้ติดต่อของคุณเท่านั้นที่สามารถลบข้อความแบบย้อนกลับไม่ได้ (คุณสามารถทำเครื่องหมายเพื่อลบได้)";
+
+/* No comment provided by engineer. */
+"Only your contact can make calls." = "ผู้ติดต่อของคุณเท่านั้นที่สามารถโทรออกได้";
+
+/* No comment provided by engineer. */
+"Only your contact can send disappearing messages." = "เฉพาะผู้ติดต่อของคุณเท่านั้นที่สามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้";
+
+/* No comment provided by engineer. */
+"Only your contact can send voice messages." = "ผู้ติดต่อของคุณเท่านั้นที่สามารถส่งข้อความเสียงได้";
+
+/* No comment provided by engineer. */
+"Open chat" = "เปิดแชท";
+
+/* authentication reason */
+"Open chat console" = "เปิดคอนโซลการแชท";
+
+/* No comment provided by engineer. */
+"Open Settings" = "เปิดการตั้งค่า";
+
+/* authentication reason */
+"Open user profiles" = "เปิดโปรไฟล์ผู้ใช้";
+
+/* No comment provided by engineer. */
+"Open-source protocol and code – anybody can run the servers." = "โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้";
+
+/* No comment provided by engineer. */
+"Opening database…" = "กำลังเปิดฐานข้อมูล…";
+
+/* No comment provided by engineer. */
+"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "การเปิดลิงก์ในเบราว์เซอร์อาจลดความเป็นส่วนตัวและความปลอดภัยของการเชื่อมต่อ ลิงก์ SimpleX ที่ไม่น่าเชื่อถือจะเป็นสีแดง";
+
+/* No comment provided by engineer. */
+"or chat with the developers" = "หรือแชทกับนักพัฒนาแอป";
+
+/* member role */
+"owner" = "เจ้าของ";
+
+/* No comment provided by engineer. */
+"Passcode" = "รหัสผ่าน";
+
+/* No comment provided by engineer. */
+"Passcode changed!" = "เปลี่ยนรหัสผ่านแล้ว!";
+
+/* No comment provided by engineer. */
+"Passcode entry" = "การใส่รหัสผ่าน";
+
+/* No comment provided by engineer. */
+"Passcode not changed!" = "รหัสผ่านไม่เปลี่ยน!";
+
+/* No comment provided by engineer. */
+"Passcode set!" = "ตั้งรหัสผ่านเรียบร้อยแล้ว!";
+
+/* No comment provided by engineer. */
+"Password to show" = "รหัสผ่านที่จะแสดง";
+
+/* No comment provided by engineer. */
+"Paste" = "แปะ";
+
+/* No comment provided by engineer. */
+"Paste image" = "แปะภาพ";
+
+/* No comment provided by engineer. */
+"Paste received link" = "แปะลิงก์ที่ได้รับ";
+
+/* No comment provided by engineer. */
+"peer-to-peer" = "เพื่อนต่อเพื่อน";
+
+/* No comment provided by engineer. */
+"People can connect to you only via the links you share." = "ผู้คนสามารถเชื่อมต่อกับคุณผ่านลิงก์ที่คุณแบ่งปันเท่านั้น";
+
+/* No comment provided by engineer. */
+"Periodically" = "เป็นระยะๆ";
+
+/* message decrypt error item */
+"Permanent decryption error" = "ข้อผิดพลาดในการถอดรหัสอย่างถาวร";
+
+/* No comment provided by engineer. */
+"PING count" = "จํานวน PING";
+
+/* No comment provided by engineer. */
+"PING interval" = "ช่วงเวลา PING";
+
+/* No comment provided by engineer. */
+"Please ask your contact to enable sending voice messages." = "โปรดขอให้ผู้ติดต่อของคุณเปิดใช้งานการส่งข้อความเสียง";
+
+/* No comment provided by engineer. */
+"Please check that you used the correct link or ask your contact to send you another one." = "โปรดตรวจสอบว่าคุณใช้ลิงก์ที่ถูกต้องหรือขอให้ผู้ติดต่อของคุณส่งลิงก์ใหม่ให้คุณ";
+
+/* No comment provided by engineer. */
+"Please check your network connection with %@ and try again." = "โปรดตรวจสอบการเชื่อมต่อเครือข่ายของคุณกับ %@ แล้วลองอีกครั้ง";
+
+/* No comment provided by engineer. */
+"Please check yours and your contact preferences." = "โปรดตรวจสอบความต้องการของคุณและการตั้งค่าผู้ติดต่อ";
+
+/* No comment provided by engineer. */
+"Please contact group admin." = "โปรดติดต่อผู้ดูแลกลุ่ม";
+
+/* No comment provided by engineer. */
+"Please enter correct current passphrase." = "โปรดใส่รหัสผ่านปัจจุบันที่ถูกต้อง";
+
+/* No comment provided by engineer. */
+"Please enter the previous password after restoring database backup. This action can not be undone." = "โปรดใส่รหัสผ่านก่อนหน้านี้หลังจากกู้คืนข้อมูลสํารองฐานข้อมูล การกระทํานี้ไม่สามารถยกเลิกได้";
+
+/* No comment provided by engineer. */
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "โปรดจำหรือเก็บไว้อย่างปลอดภัย - ไม่มีทางกู้คืนรหัสผ่านที่หายไปได้!";
+
+/* No comment provided by engineer. */
+"Please report it to the developers." = "โปรดรายงานไปยังผู้พัฒนาแอป";
+
+/* No comment provided by engineer. */
+"Please restart the app and migrate the database to enable push notifications." = "โปรดรีสตาร์ทแอปและย้ายฐานข้อมูลเพื่อเปิดใช้งานการแจ้งเตือนแบบทันที";
+
+/* No comment provided by engineer. */
+"Please store passphrase securely, you will NOT be able to access chat if you lose it." = "โปรดเก็บรหัสผ่านไว้อย่างปลอดภัย คุณจะไม่สามารถเข้าถึงแชทได้หากทำหาย";
+
+/* No comment provided by engineer. */
+"Please store passphrase securely, you will NOT be able to change it if you lose it." = "โปรดจัดเก็บรหัสผ่านอย่างปลอดภัย คุณจะไม่สามารถเปลี่ยนรหัสผ่านได้หากคุณทำรหัสผ่านหาย";
+
+/* No comment provided by engineer. */
+"Polish interface" = "อินเตอร์เฟซภาษาโปแลนด์";
+
+/* server test error */
+"Possibly, certificate fingerprint in server address is incorrect" = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
+
+/* No comment provided by engineer. */
+"Preserve the last message draft, with attachments." = "เก็บข้อความที่ร่างไว้ล่าสุดพร้อมไฟล์แนบ";
+
+/* No comment provided by engineer. */
+"Preset server" = "เซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า";
+
+/* No comment provided by engineer. */
+"Preset server address" = "ที่อยู่เซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า";
+
+/* No comment provided by engineer. */
+"Preview" = "ดูตัวอย่าง";
+
+/* No comment provided by engineer. */
+"Privacy & security" = "ความเป็นส่วนตัวและความปลอดภัย";
+
+/* No comment provided by engineer. */
+"Privacy redefined" = "นิยามความเป็นส่วนตัวใหม่";
+
+/* No comment provided by engineer. */
+"Private filenames" = "ชื่อไฟล์ส่วนตัว";
+
+/* No comment provided by engineer. */
+"Profile and server connections" = "การเชื่อมต่อโปรไฟล์และเซิร์ฟเวอร์";
+
+/* No comment provided by engineer. */
+"Profile image" = "รูปโปรไฟล์";
+
+/* No comment provided by engineer. */
+"Profile password" = "รหัสผ่านโปรไฟล์";
+
+/* No comment provided by engineer. */
+"Profile update will be sent to your contacts." = "การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ";
+
+/* No comment provided by engineer. */
+"Prohibit audio/video calls." = "ห้ามการโทรด้วยเสียง/วิดีโอ";
+
+/* No comment provided by engineer. */
+"Prohibit irreversible message deletion." = "ห้ามการลบข้อความที่ย้อนกลับไม่ได้";
+
+/* No comment provided by engineer. */
+"Prohibit message reactions." = "ห้ามแสดงปฏิกิริยาต่อข้อความ";
+
+/* No comment provided by engineer. */
+"Prohibit messages reactions." = "ห้ามแสดงปฏิกิริยาต่อข้อความ";
+
+/* No comment provided by engineer. */
+"Prohibit sending direct messages to members." = "ห้ามส่งข้อความโดยตรงถึงสมาชิก";
+
+/* No comment provided by engineer. */
+"Prohibit sending disappearing messages." = "ห้ามส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages)";
+
+/* No comment provided by engineer. */
+"Prohibit sending files and media." = "ห้ามส่งไฟล์และสื่อ";
+
+/* No comment provided by engineer. */
+"Prohibit sending voice messages." = "ห้ามส่งข้อความเสียง";
+
+/* No comment provided by engineer. */
+"Protect app screen" = "ปกป้องหน้าจอแอป";
+
+/* No comment provided by engineer. */
+"Protect your chat profiles with a password!" = "ปกป้องโปรไฟล์การแชทของคุณด้วยรหัสผ่าน!";
+
+/* No comment provided by engineer. */
+"Protocol timeout" = "หมดเวลาโปรโตคอล";
+
+/* No comment provided by engineer. */
+"Protocol timeout per KB" = "การหมดเวลาของโปรโตคอลต่อ KB";
+
+/* No comment provided by engineer. */
+"Push notifications" = "การแจ้งเตือนแบบทันที";
+
+/* No comment provided by engineer. */
+"Rate the app" = "ให้คะแนนแอป";
+
+/* chat item menu */
+"React…" = "ตอบสนอง…";
+
+/* No comment provided by engineer. */
+"Read" = "อ่าน";
+
+/* No comment provided by engineer. */
+"Read more" = "อ่านเพิ่มเติม";
+
+/* No comment provided by engineer. */
+"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "อ่านเพิ่มเติมใน[คู่มือผู้ใช้](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)";
+
+/* No comment provided by engineer. */
+"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "อ่านเพิ่มเติมใน[คู่มือผู้ใช้](https://simplex.chat/docs/guide/readme.html#connect-to-friends)";
+
+/* No comment provided by engineer. */
+"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "อ่านเพิ่มเติมใน[พื้นที่เก็บข้อมูล GitHub](https://github.com/simplex-chat/simplex-chat#readme)";
+
+/* No comment provided by engineer. */
+"Read more in our GitHub repository." = "อ่านเพิ่มเติมในที่เก็บ GitHub ของเรา";
+
+/* No comment provided by engineer. */
+"received answer…" = "ได้รับคำตอบ…";
+
+/* No comment provided by engineer. */
+"Received at" = "ได้รับเมื่อ";
+
+/* copied message info */
+"Received at: %@" = "ได้รับเมื่อ: %@";
+
+/* No comment provided by engineer. */
+"received confirmation…" = "ได้รับการยืนยัน…";
+
+/* notification */
+"Received file event" = "ได้รับไฟล์";
+
+/* message info title */
+"Received message" = "ได้รับข้อความ";
+
+/* No comment provided by engineer. */
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "ที่อยู่ผู้รับจะถูกเปลี่ยนเป็นเซิร์ฟเวอร์อื่น การเปลี่ยนแปลงที่อยู่จะเสร็จสมบูรณ์หลังจากที่ผู้ส่งออนไลน์";
+
+/* No comment provided by engineer. */
+"Receiving file will be stopped." = "การรับไฟล์จะหยุดลง";
+
+/* No comment provided by engineer. */
+"Receiving via" = "กำลังรับผ่าน";
+
+/* No comment provided by engineer. */
+"Recipients see updates as you type them." = "ผู้รับจะเห็นการอัปเดตเมื่อคุณพิมพ์";
+
+/* No comment provided by engineer. */
+"Reconnect all connected servers to force message delivery. It uses additional traffic." = "เชื่อมต่อเซิร์ฟเวอร์ที่เชื่อมต่อทั้งหมดอีกครั้งเพื่อบังคับให้ส่งข้อความ มันใช้การจราจรเพิ่มเติม";
+
+/* No comment provided by engineer. */
+"Reconnect servers?" = "เชื่อมต่อเซิร์ฟเวอร์อีกครั้งหรือไม่?";
+
+/* No comment provided by engineer. */
+"Record updated at" = "บันทึกถูกอัปเดตเมื่อ";
+
+/* copied message info */
+"Record updated at: %@" = "บันทึกถูกอัปเดตเมื่อ: %@";
+
+/* No comment provided by engineer. */
+"Reduced battery usage" = "ลดการใช้แบตเตอรี่";
+
+/* reject incoming call via notification */
+"Reject" = "ปฏิเสธ";
+
+/* No comment provided by engineer. */
+"Reject contact request" = "ปฏิเสธคำขอติดต่อ";
+
+/* call status */
+"rejected call" = "สายถูกปฏิเสธ";
+
+/* No comment provided by engineer. */
+"Relay server is only used if necessary. Another party can observe your IP address." = "ใช้เซิร์ฟเวอร์รีเลย์ในกรณีที่จำเป็นเท่านั้น บุคคลอื่นสามารถสังเกตที่อยู่ IP ของคุณได้";
+
+/* No comment provided by engineer. */
+"Relay server protects your IP address, but it can observe the duration of the call." = "เซิร์ฟเวอร์รีเลย์ปกป้องที่อยู่ IP ของคุณ แต่สามารถสังเกตระยะเวลาของการโทรได้";
+
+/* No comment provided by engineer. */
+"Remove" = "ลบ";
+
+/* No comment provided by engineer. */
+"Remove member" = "ลบสมาชิกออก";
+
+/* No comment provided by engineer. */
+"Remove member?" = "ลบสมาชิกออก?";
+
+/* No comment provided by engineer. */
+"Remove passphrase from keychain?" = "ลบรหัสผ่านออกจาก keychain หรือไม่?";
+
+/* No comment provided by engineer. */
+"removed" = "ถูกลบแล้ว";
+
+/* rcv group event chat item */
+"removed %@" = "ถูกลบแล้ว %@";
+
+/* rcv group event chat item */
+"removed you" = "ลบคุณออกแล้ว";
+
+/* No comment provided by engineer. */
+"Renegotiate" = "เจรจาใหม่";
+
+/* No comment provided by engineer. */
+"Renegotiate encryption" = "เจรจา encryption อีกครั้ง";
+
+/* No comment provided by engineer. */
+"Renegotiate encryption?" = "เจรจา enryption ใหม่หรือไม่?";
+
+/* chat item action */
+"Reply" = "ตอบ";
+
+/* No comment provided by engineer. */
+"Required" = "ที่จำเป็น";
+
+/* No comment provided by engineer. */
+"Reset" = "รีเซ็ต";
+
+/* No comment provided by engineer. */
+"Reset colors" = "รีเซ็ตสี";
+
+/* No comment provided by engineer. */
+"Reset to defaults" = "รีเซ็ตเป็นค่าเริ่มต้น";
+
+/* No comment provided by engineer. */
+"Restart the app to create a new chat profile" = "รีสตาร์ทแอปเพื่อสร้างโปรไฟล์แชทใหม่";
+
+/* No comment provided by engineer. */
+"Restart the app to use imported chat database" = "รีสตาร์ทแอปเพื่อใช้ฐานข้อมูลการแชทที่นำเข้า";
+
+/* No comment provided by engineer. */
+"Restore" = "คืนค่า";
+
+/* No comment provided by engineer. */
+"Restore database backup" = "คืนค่าการสำรองฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Restore database backup?" = "คืนค่าฐานข้อมูลสำรองไหม?";
+
+/* No comment provided by engineer. */
+"Restore database error" = "กู้คืนข้อผิดพลาดของฐานข้อมูล";
+
+/* chat item action */
+"Reveal" = "เปิดเผย";
+
+/* No comment provided by engineer. */
+"Revert" = "เปลี่ยนกลับ";
+
+/* No comment provided by engineer. */
+"Revoke" = "ถอน";
+
+/* cancel file action */
+"Revoke file" = "ถอนไฟล์";
+
+/* No comment provided by engineer. */
+"Revoke file?" = "ถอนไฟล์?";
+
+/* No comment provided by engineer. */
+"Role" = "บทบาท";
+
+/* No comment provided by engineer. */
+"Run chat" = "เรียกใช้แชท";
+
+/* chat item action */
+"Save" = "บันทึก";
+
+/* No comment provided by engineer. */
+"Save (and notify contacts)" = "บันทึก (และแจ้งผู้ติดต่อ)";
+
+/* No comment provided by engineer. */
+"Save and notify contact" = "บันทึกและแจ้งผู้ติดต่อ";
+
+/* No comment provided by engineer. */
+"Save and notify group members" = "บันทึกและแจ้งให้สมาชิกในกลุ่มทราบ";
+
+/* No comment provided by engineer. */
+"Save and update group profile" = "บันทึกและอัปเดตโปรไฟล์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Save archive" = "บันทึกไฟล์เก็บถาวร";
+
+/* No comment provided by engineer. */
+"Save auto-accept settings" = "บันทึกการตั้งค่าการยอมรับอัตโนมัติ";
+
+/* No comment provided by engineer. */
+"Save group profile" = "บันทึกโปรไฟล์กลุ่ม";
+
+/* No comment provided by engineer. */
+"Save passphrase and open chat" = "บันทึกรหัสผ่านและเปิดแชท";
+
+/* No comment provided by engineer. */
+"Save passphrase in Keychain" = "บันทึกข้อความรหัสผ่านใน Keychain";
+
+/* No comment provided by engineer. */
+"Save preferences?" = "บันทึกการตั้งค่า?";
+
+/* No comment provided by engineer. */
+"Save profile password" = "บันทึกรหัสผ่านโปรไฟล์";
+
+/* No comment provided by engineer. */
+"Save servers" = "บันทึกเซิร์ฟเวอร์";
+
+/* No comment provided by engineer. */
+"Save servers?" = "บันทึกเซิร์ฟเวอร์?";
+
+/* No comment provided by engineer. */
+"Save settings?" = "บันทึกการตั้งค่า?";
+
+/* No comment provided by engineer. */
+"Save welcome message?" = "บันทึกข้อความต้อนรับ?";
+
+/* No comment provided by engineer. */
+"Saved WebRTC ICE servers will be removed" = "เซิร์ฟเวอร์ WebRTC ICE ที่บันทึกไว้จะถูกลบออก";
+
+/* No comment provided by engineer. */
+"Scan code" = "สแกนรหัส";
+
+/* No comment provided by engineer. */
+"Scan QR code" = "สแกนคิวอาร์โค้ด";
+
+/* No comment provided by engineer. */
+"Scan security code from your contact's app." = "สแกนรหัสความปลอดภัยจากแอปของผู้ติดต่อของคุณ";
+
+/* No comment provided by engineer. */
+"Scan server QR code" = "สแกนคิวอาร์โค้ดของเซิร์ฟเวอร์";
+
+/* No comment provided by engineer. */
+"Search" = "ค้นหา";
+
+/* network option */
+"sec" = "วินาที";
+
+/* time unit */
+"seconds" = "วินาที";
+
+/* No comment provided by engineer. */
+"secret" = "ความลับ";
+
+/* server test step */
+"Secure queue" = "คิวที่ปลอดภัย";
+
+/* No comment provided by engineer. */
+"Security assessment" = "การประเมินความปลอดภัย";
+
+/* No comment provided by engineer. */
+"Security code" = "รหัสความปลอดภัย";
+
+/* chat item text */
+"security code changed" = "เปลี่ยนรหัสความปลอดภัยแล้ว";
+
+/* No comment provided by engineer. */
+"Select" = "เลือก";
+
+/* No comment provided by engineer. */
+"Self-destruct" = "ทําลายตัวเอง";
+
+/* No comment provided by engineer. */
+"Self-destruct passcode" = "รหัสผ่านแบบทําลายตัวเอง";
+
+/* No comment provided by engineer. */
+"Self-destruct passcode changed!" = "รหัสผ่านแบบทําลายตัวเองเปลี่ยนไป!";
+
+/* No comment provided by engineer. */
+"Self-destruct passcode enabled!" = "เปิดใช้งานรหัสผ่านแบบทําลายตัวเองแล้ว!";
+
+/* No comment provided by engineer. */
+"Send" = "ส่ง";
+
+/* No comment provided by engineer. */
+"Send a live message - it will update for the recipient(s) as you type it" = "ส่งข้อความสด - มันจะอัปเดตสําหรับผู้รับในขณะที่คุณพิมพ์";
+
+/* No comment provided by engineer. */
+"Send delivery receipts to" = "ส่งใบเสร็จรับการจัดส่งข้อความไปที่";
+
+/* No comment provided by engineer. */
+"Send direct message" = "ส่งข้อความโดยตรง";
+
+/* No comment provided by engineer. */
+"Send disappearing message" = "ส่งข้อความแบบที่หายไป";
+
+/* No comment provided by engineer. */
+"Send link previews" = "ส่งตัวอย่างลิงก์";
+
+/* No comment provided by engineer. */
+"Send live message" = "ส่งข้อความสด";
+
+/* No comment provided by engineer. */
+"Send notifications" = "ส่งการแจ้งเตือน";
+
+/* No comment provided by engineer. */
+"Send notifications:" = "ส่งการแจ้งเตือน:";
+
+/* No comment provided by engineer. */
+"Send questions and ideas" = "ส่งคําถามและความคิด";
+
+/* No comment provided by engineer. */
+"Send receipts" = "ส่งใบเสร็จ";
+
+/* No comment provided by engineer. */
+"Send them from gallery or custom keyboards." = "ส่งจากแกลเลอรีหรือแป้นพิมพ์แบบกำหนดเอง";
+
+/* No comment provided by engineer. */
+"Sender cancelled file transfer." = "ผู้ส่งยกเลิกการโอนไฟล์";
+
+/* No comment provided by engineer. */
+"Sender may have deleted the connection request." = "ผู้ส่งอาจลบคําขอการเชื่อมต่อแล้ว";
+
+/* No comment provided by engineer. */
+"Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "การส่งใบเสร็จรับการจัดส่งข้อความจะถูกเปิดในโปรไฟล์แชทที่มองเห็นได้ทั้งหมด";
+
+/* No comment provided by engineer. */
+"Sending delivery receipts will be enabled for all contacts." = "การส่งใบเสร็จรับการจัดส่งข้อความจะถูกเปิด";
+
+/* No comment provided by engineer. */
+"Sending file will be stopped." = "การส่งไฟล์จะหยุดลง";
+
+/* No comment provided by engineer. */
+"Sending receipts is disabled for %lld contacts" = "การส่งใบเสร็จถูกปิดใช้งานสำหรับผู้ติดต่อ %lld";
+
+/* No comment provided by engineer. */
+"Sending receipts is enabled for %lld contacts" = "การส่งใบเสร็จถูกเปิดใช้งานสำหรับผู้ติดต่อ %lld";
+
+/* No comment provided by engineer. */
+"Sending via" = "ส่งผ่าน";
+
+/* No comment provided by engineer. */
+"Sent at" = "ส่งเมื่อ";
+
+/* copied message info */
+"Sent at: %@" = "ส่งเมื่อ: %@";
+
+/* notification */
+"Sent file event" = "เหตุการณ์ไฟล์ที่ส่ง";
+
+/* message info title */
+"Sent message" = "ข้อความที่ส่งแล้ว";
+
+/* No comment provided by engineer. */
+"Sent messages will be deleted after set time." = "ข้อความที่ส่งจะถูกลบหลังเกินเวลาที่กําหนด";
+
+/* server test error */
+"Server requires authorization to create queues, check password" = "เซิร์ฟเวอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน";
+
+/* server test error */
+"Server requires authorization to upload, check password" = "เซิร์ฟเวอร์ต้องการการอนุญาตในการอัปโหลด โปรดตรวจสอบรหัสผ่าน";
+
+/* No comment provided by engineer. */
+"Server test failed!" = "การทดสอบเซิร์ฟเวอร์ล้มเหลว!";
+
+/* No comment provided by engineer. */
+"Servers" = "เซิร์ฟเวอร์";
+
+/* No comment provided by engineer. */
+"Set 1 day" = "ตั้ง 1 วัน";
+
+/* No comment provided by engineer. */
+"Set contact name…" = "ตั้งชื่อผู้ติดต่อ…";
+
+/* No comment provided by engineer. */
+"Set group preferences" = "ตั้งค่าการกําหนดลักษณะกลุ่ม";
+
+/* No comment provided by engineer. */
+"Set it instead of system authentication." = "ตั้งแทนการรับรองความถูกต้องของระบบ";
+
+/* No comment provided by engineer. */
+"Set passcode" = "ตั้งรหัสผ่าน";
+
+/* No comment provided by engineer. */
+"Set passphrase to export" = "ตั้งรหัสผ่านเพื่อส่งออก";
+
+/* No comment provided by engineer. */
+"Set the message shown to new members!" = "ตั้งข้อความที่แสดงต่อสมาชิกใหม่!";
+
+/* No comment provided by engineer. */
+"Set timeouts for proxy/VPN" = "ตั้งค่าการหมดเวลาสำหรับพร็อกซี/VPN";
+
+/* No comment provided by engineer. */
+"Settings" = "การตั้งค่า";
+
+/* chat item action */
+"Share" = "แชร์";
+
+/* No comment provided by engineer. */
+"Share 1-time link" = "แชร์ลิงก์แบบใช้ครั้งเดียว";
+
+/* No comment provided by engineer. */
+"Share address" = "แชร์ที่อยู่";
+
+/* No comment provided by engineer. */
+"Share address with contacts?" = "แชร์ที่อยู่กับผู้ติดต่อ?";
+
+/* No comment provided by engineer. */
+"Share link" = "แชร์ลิงก์";
+
+/* No comment provided by engineer. */
+"Share one-time invitation link" = "แชร์ลิงก์เชิญแบบใช้ครั้งเดียว";
+
+/* No comment provided by engineer. */
+"Share with contacts" = "แชร์กับผู้ติดต่อ";
+
+/* No comment provided by engineer. */
+"Show calls in phone history" = "แสดงการโทรในประวัติการโทร";
+
+/* No comment provided by engineer. */
+"Show developer options" = "แสดงตัวเลือกสําหรับนักพัฒนาซอฟต์แวร์";
+
+/* No comment provided by engineer. */
+"Show preview" = "แสดงตัวอย่าง";
+
+/* No comment provided by engineer. */
+"Show:" = "แสดง:";
+
+/* No comment provided by engineer. */
+"SimpleX address" = "ที่อยู่ SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX Address" = "ที่อยู่ SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX Chat security was audited by Trail of Bits." = "ความปลอดภัยของ SimpleX Chat ได้รับการตรวจสอบโดย Trail of Bits";
+
+/* simplex link type */
+"SimpleX contact address" = "ที่อยู่ติดต่อ SimpleX";
+
+/* notification */
+"SimpleX encrypted message or connection event" = "ข้อความ encrypt ของ SimpleX หรือเหตุการณ์การเชื่อมต่อ";
+
+/* simplex link type */
+"SimpleX group link" = "ลิงค์กลุ่ม SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX links" = "ลิงก์ SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX Lock" = "ล็อค SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX Lock mode" = "โหมดล็อค SimpleX";
+
+/* No comment provided by engineer. */
+"SimpleX Lock not enabled!" = "ไม่ได้เปิดใช้งาน SimpleX Lock!";
+
+/* No comment provided by engineer. */
+"SimpleX Lock turned on" = "SimpleX Lock เปิดอยู่";
+
+/* simplex link type */
+"SimpleX one-time invitation" = "คำเชิญ SimpleX แบบครั้งเดียว";
+
+/* No comment provided by engineer. */
+"Skip" = "ข้าม";
+
+/* No comment provided by engineer. */
+"Skipped messages" = "ข้อความที่ข้ามไป";
+
+/* No comment provided by engineer. */
+"SMP servers" = "เซิร์ฟเวอร์ SMP";
+
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "ข้อผิดพลาดที่ไม่ร้ายแรงบางอย่างเกิดขึ้นระหว่างการนำเข้า - คุณอาจดูรายละเอียดเพิ่มเติมได้ที่คอนโซล Chat";
+
+/* notification title */
+"Somebody" = "ใครบางคน";
+
+/* No comment provided by engineer. */
+"Start a new chat" = "เริ่มแชทใหม่";
+
+/* No comment provided by engineer. */
+"Start chat" = "เริ่มแชท";
+
+/* No comment provided by engineer. */
+"Start migration" = "เริ่มการย้ายข้อมูล";
+
+/* No comment provided by engineer. */
+"starting…" = "กำลังเริ่มต้น…";
+
+/* No comment provided by engineer. */
+"Stop" = "หยุด";
+
+/* No comment provided by engineer. */
+"Stop chat to enable database actions" = "หยุดการแชทเพื่อเปิดใช้งานการดำเนินการกับฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "หยุดแชทเพื่อส่งออก นำเข้า หรือลบฐานข้อมูลแชท คุณจะไม่สามารถรับและส่งข้อความได้ในขณะที่การแชทหยุดลง";
+
+/* No comment provided by engineer. */
+"Stop chat?" = "หยุดแชท?";
+
+/* cancel file action */
+"Stop file" = "หยุดไฟล์";
+
+/* No comment provided by engineer. */
+"Stop receiving file?" = "หยุดรับไฟล์?";
+
+/* No comment provided by engineer. */
+"Stop sending file?" = "หยุดส่งไฟล์ไหม?";
+
+/* No comment provided by engineer. */
+"Stop sharing" = "หยุดแชร์";
+
+/* No comment provided by engineer. */
+"Stop sharing address?" = "หยุดแชร์ที่อยู่ไหม?";
+
+/* authentication reason */
+"Stop SimpleX" = "หยุด SimpleX";
+
+/* No comment provided by engineer. */
+"strike" = "ตี";
+
+/* No comment provided by engineer. */
+"Submit" = "ส่ง";
+
+/* No comment provided by engineer. */
+"Support SimpleX Chat" = "สนับสนุน SimpleX แชท";
+
+/* No comment provided by engineer. */
+"System" = "ระบบ";
+
+/* No comment provided by engineer. */
+"System authentication" = "การรับรองความถูกต้องของระบบ";
+
+/* No comment provided by engineer. */
+"Take picture" = "ถ่ายภาพ";
+
+/* No comment provided by engineer. */
+"Tap button " = "แตะปุ่ม ";
+
+/* No comment provided by engineer. */
+"Tap to activate profile." = "แตะเพื่อเปิดใช้งานโปรไฟล์";
+
+/* No comment provided by engineer. */
+"Tap to join" = "แตะเพื่อเข้าร่วม";
+
+/* No comment provided by engineer. */
+"Tap to join incognito" = "แตะเพื่อเข้าร่วมโหมดไม่ระบุตัวตน";
+
+/* No comment provided by engineer. */
+"Tap to start a new chat" = "แตะเพื่อเริ่มแชทใหม่";
+
+/* No comment provided by engineer. */
+"TCP connection timeout" = "หมดเวลาการเชื่อมต่อ TCP";
+
+/* No comment provided by engineer. */
+"TCP_KEEPCNT" = "TCP_KEEPCNT";
+
+/* No comment provided by engineer. */
+"TCP_KEEPIDLE" = "TCP_KEEPIDLE";
+
+/* No comment provided by engineer. */
+"TCP_KEEPINTVL" = "TCP_KEEPINTVL";
+
+/* server test failure */
+"Test failed at step %@." = "การทดสอบล้มเหลวในขั้นตอน %@";
+
+/* No comment provided by engineer. */
+"Test server" = "เซิร์ฟเวอร์ทดสอบ";
+
+/* No comment provided by engineer. */
+"Test servers" = "เซิร์ฟเวอร์ทดสอบ";
+
+/* No comment provided by engineer. */
+"Tests failed!" = "การทดสอบล้มเหลว!";
+
+/* No comment provided by engineer. */
+"Thank you for installing SimpleX Chat!" = "ขอบคุณสำหรับการติดตั้ง SimpleX Chat!";
+
+/* No comment provided by engineer. */
+"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "ขอบคุณผู้ใช้ – [มีส่วนร่วมผ่าน Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
+
+/* No comment provided by engineer. */
+"Thanks to the users – contribute via Weblate!" = "ขอบคุณผู้ใช้ – มีส่วนร่วมผ่าน Weblate!";
+
+/* No comment provided by engineer. */
+"The 1st platform without any user identifiers – private by design." = "แพลตฟอร์มแรกที่ไม่มีตัวระบุผู้ใช้ - ถูกออกแบบให้เป็นส่วนตัว";
+
+/* No comment provided by engineer. */
+"The app can notify you when you receive messages or contact requests - please open settings to enable." = "แอปสามารถแจ้งให้คุณทราบเมื่อคุณได้รับข้อความหรือคำขอติดต่อ - โปรดเปิดการตั้งค่าเพื่อเปิดใช้งาน";
+
+/* No comment provided by engineer. */
+"The attempt to change database passphrase was not completed." = "ความพยายามในการเปลี่ยนรหัสผ่านของฐานข้อมูลไม่เสร็จสมบูรณ์";
+
+/* No comment provided by engineer. */
+"The connection you accepted will be cancelled!" = "การเชื่อมต่อที่คุณยอมรับจะถูกยกเลิก!";
+
+/* No comment provided by engineer. */
+"The contact you shared this link with will NOT be able to connect!" = "ผู้ติดต่อที่คุณแชร์ลิงก์นี้ด้วยจะไม่สามารถเชื่อมต่อได้!";
+
+/* No comment provided by engineer. */
+"The created archive is available via app Settings / Database / Old database archive." = "ไฟล์เก็บที่สร้างขึ้นมีอยู่ในการตั้งค่าแอพ / ฐานข้อมูล / คลังฐานข้อมูลเก่า";
+
+/* No comment provided by engineer. */
+"The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "encryption กำลังทำงานและไม่จำเป็นต้องใช้ข้อตกลง encryption ใหม่ อาจทำให้การเชื่อมต่อผิดพลาดได้!";
+
+/* No comment provided by engineer. */
+"The group is fully decentralized – it is visible only to the members." = "กลุ่มมีการกระจายอำนาจอย่างเต็มที่ – มองเห็นได้เฉพาะสมาชิกเท่านั้น";
+
+/* No comment provided by engineer. */
+"The hash of the previous message is different." = "แฮชของข้อความก่อนหน้านี้แตกต่างกัน";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "ID ของข้อความถัดไปไม่ถูกต้อง\n(น้อยกว่าหรือเท่ากับข้อความก่อนหน้า)\nอาจเกิดขึ้นได้เนื่องจากข้อบกพร่องบางอย่างหรือเมื่อการเชื่อมต่อถูกบุกรุก";
+
+/* No comment provided by engineer. */
+"The message will be deleted for all members." = "ข้อความจะถูกลบสำหรับสมาชิกทั้งหมด";
+
+/* No comment provided by engineer. */
+"The message will be marked as moderated for all members." = "ข้อความจะถูกทำเครื่องหมายว่ากลั่นกรองสำหรับสมาชิกทุกคน";
+
+/* No comment provided by engineer. */
+"The next generation of private messaging" = "การส่งข้อความส่วนตัวรุ่นต่อไป";
+
+/* No comment provided by engineer. */
+"The old database was not removed during the migration, it can be deleted." = "ฐานข้อมูลเก่าไม่ได้ถูกลบในระหว่างการย้ายข้อมูล แต่สามารถลบได้";
+
+/* No comment provided by engineer. */
+"The profile is only shared with your contacts." = "โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น";
+
+/* No comment provided by engineer. */
+"The second tick we missed! ✅" = "ขีดที่สองที่เราพลาด! ✅";
+
+/* No comment provided by engineer. */
+"The sender will NOT be notified" = "ผู้ส่งจะไม่ได้รับแจ้ง";
+
+/* No comment provided by engineer. */
+"The servers for new connections of your current chat profile **%@**." = "เซิร์ฟเวอร์สำหรับการเชื่อมต่อใหม่ของโปรไฟล์การแชทปัจจุบันของคุณ **%@**";
+
+/* No comment provided by engineer. */
+"Theme" = "ธีม";
+
+/* No comment provided by engineer. */
+"There should be at least one user profile." = "ควรมีโปรไฟล์ผู้ใช้อย่างน้อยหนึ่งโปรไฟล์";
+
+/* No comment provided by engineer. */
+"There should be at least one visible user profile." = "ควรมีอย่างน้อยหนึ่งโปรไฟล์ผู้ใช้ที่มองเห็นได้";
+
+/* No comment provided by engineer. */
+"These settings are for your current profile **%@**." = "การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ **%@**";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "การดำเนินการนี้ไม่สามารถยกเลิกได้ ไฟล์และสื่อที่ได้รับและส่งทั้งหมดจะถูกลบ รูปภาพความละเอียดต่ำจะยังคงอยู่";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "การดำเนินการนี้ไม่สามารถเลิกทำได้ - ข้อความที่ส่งและรับก่อนหน้าที่เลือกไว้จะถูกลบ อาจใช้เวลาหลายนาที";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "การดำเนินการนี้ไม่สามารถยกเลิกได้ - โปรไฟล์ ผู้ติดต่อ ข้อความ และไฟล์ของคุณจะสูญหายไปอย่างถาวร";
+
+/* notification title */
+"this contact" = "ผู้ติดต่อนี้";
+
+/* No comment provided by engineer. */
+"This group no longer exists." = "ไม่มีกลุ่มนี้แล้ว";
+
+/* No comment provided by engineer. */
+"This setting applies to messages in your current chat profile **%@**." = "การตั้งค่านี้ใช้กับข้อความในโปรไฟล์แชทปัจจุบันของคุณ **%@**";
+
+/* No comment provided by engineer. */
+"To ask any questions and to receive updates:" = "หากต้องการถามคำถามและรับการอัปเดต:";
+
+/* No comment provided by engineer. */
+"To connect, your contact can scan QR code or use the link in the app." = "เพื่อการเชื่อมต่อ ผู้ติดต่อของคุณสามารถสแกนคิวอาร์โค้ดหรือใช้ลิงก์ในแอป";
+
+/* No comment provided by engineer. */
+"To make a new connection" = "เพื่อสร้างการเชื่อมต่อใหม่";
+
+/* No comment provided by engineer. */
+"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "เพื่อปกป้องความเป็นส่วนตัว แทนที่จะใช้ ID ผู้ใช้เหมือนที่แพลตฟอร์มอื่นๆใช้ SimpleX มีตัวระบุสำหรับคิวข้อความ โดยแยกจากกันสำหรับผู้ติดต่อแต่ละราย";
+
+/* No comment provided by engineer. */
+"To protect timezone, image/voice files use UTC." = "ไฟล์ภาพ/เสียงใช้ UTC เพื่อป้องกันเขตเวลา";
+
+/* No comment provided by engineer. */
+"To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "เพื่อปกป้องข้อมูลของคุณ ให้เปิด SimpleX Lock\nคุณจะได้รับแจ้งให้ยืนยันตัวตนให้เสร็จสมบูรณ์ก่อนที่จะเปิดใช้งานคุณลักษณะนี้";
+
+/* No comment provided by engineer. */
+"To record voice message please grant permission to use Microphone." = "ในการบันทึกข้อความเสียง โปรดให้สิทธิ์ในการใช้ไมโครโฟน";
+
+/* No comment provided by engineer. */
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "หากต้องการเปิดเผยโปรไฟล์ที่ซ่อนอยู่ของคุณ ให้ป้อนรหัสผ่านแบบเต็มในช่องค้นหาในหน้า **โปรไฟล์แชทของคุณ**";
+
+/* No comment provided by engineer. */
+"To support instant push notifications the chat database has to be migrated." = "เพื่อรองรับการแจ้งเตือนแบบทันที ฐานข้อมูลการแชทจะต้องได้รับการโยกย้าย";
+
+/* No comment provided by engineer. */
+"To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "ในการตรวจสอบการเข้ารหัสแบบ encrypt จากต้นจนจบ กับผู้ติดต่อของคุณ ให้เปรียบเทียบ (หรือสแกน) รหัสบนอุปกรณ์ของคุณ";
+
+/* No comment provided by engineer. */
+"Transport isolation" = "การแยกการขนส่ง";
+
+/* No comment provided by engineer. */
+"Trying to connect to the server used to receive messages from this contact (error: %@)." = "กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: %@)";
+
+/* No comment provided by engineer. */
+"Trying to connect to the server used to receive messages from this contact." = "พยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้";
+
+/* No comment provided by engineer. */
+"Turn off" = "ปิด";
+
+/* No comment provided by engineer. */
+"Turn off notifications?" = "ปิดการแจ้งเตือนไหม?";
+
+/* No comment provided by engineer. */
+"Turn on" = "เปิด";
+
+/* No comment provided by engineer. */
+"Unable to record voice message" = "ไม่สามารถบันทึกข้อความเสียง";
+
+/* item status description */
+"Unexpected error: %@" = "ข้อผิดพลาดที่ไม่คาดคิด: %@";
+
+/* No comment provided by engineer. */
+"Unexpected migration state" = "สถานะการย้ายข้อมูลที่ไม่คาดคิด";
+
+/* No comment provided by engineer. */
+"Unfav." = "เลิกชอบ";
+
+/* No comment provided by engineer. */
+"Unhide" = "ยกเลิกการซ่อน";
+
+/* No comment provided by engineer. */
+"Unhide chat profile" = "ยกเลิกการซ่อนโปรไฟล์การแชท";
+
+/* No comment provided by engineer. */
+"Unhide profile" = "เลิกซ่อนโปรไฟล์";
+
+/* No comment provided by engineer. */
+"Unit" = "หน่วย";
+
+/* connection info */
+"unknown" = "ไม่ทราบ";
+
+/* callkit banner */
+"Unknown caller" = "ผู้โทรที่ไม่รู้จัก";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "ข้อผิดพลาดของฐานข้อมูลที่ไม่รู้จัก: %@";
+
+/* No comment provided by engineer. */
+"Unknown error" = "ข้อผิดพลาดที่ไม่รู้จัก";
+
+/* No comment provided by engineer. */
+"Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "ยกเว้นกรณีที่คุณใช้อินเทอร์เฟซการโทรของ iOS ให้เปิดใช้งานโหมดห้ามรบกวนเพื่อหลีกเลี่ยงการรบกวน";
+
+/* No comment provided by engineer. */
+"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "เว้นแต่ผู้ติดต่อของคุณลบการเชื่อมต่อหรือลิงก์นี้ถูกใช้ไปแล้ว อาจเป็นข้อผิดพลาด โปรดรายงาน\nในการเชื่อมต่อ โปรดขอให้ผู้ติดต่อของคุณสร้างลิงก์การเชื่อมต่ออื่น และตรวจสอบว่าคุณมีการเชื่อมต่อเครือข่ายที่เสถียร";
+
+/* No comment provided by engineer. */
+"Unlock" = "ปลดล็อค";
+
+/* authentication reason */
+"Unlock app" = "ปลดล็อคแอป";
+
+/* No comment provided by engineer. */
+"Unmute" = "เปิดเสียง";
+
+/* No comment provided by engineer. */
+"Unread" = "เปลี่ยนเป็นยังไม่ได้อ่าน";
+
+/* No comment provided by engineer. */
+"Update" = "อัปเดต";
+
+/* No comment provided by engineer. */
+"Update .onion hosts setting?" = "อัปเดตการตั้งค่าโฮสต์ .onion ไหม?";
+
+/* No comment provided by engineer. */
+"Update database passphrase" = "อัปเดตรหัสผ่านของฐานข้อมูล";
+
+/* No comment provided by engineer. */
+"Update network settings?" = "อัปเดตการตั้งค่าเครือข่ายไหม?";
+
+/* No comment provided by engineer. */
+"Update transport isolation mode?" = "อัปเดตโหมดการแยกการขนส่งไหม?";
+
+/* rcv group event chat item */
+"updated group profile" = "อัปเดตโปรไฟล์กลุ่มแล้ว";
+
+/* No comment provided by engineer. */
+"Updating settings will re-connect the client to all servers." = "การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง";
+
+/* No comment provided by engineer. */
+"Updating this setting will re-connect the client to all servers." = "การอัปเดตการตั้งค่านี้จะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง";
+
+/* No comment provided by engineer. */
+"Upgrade and open chat" = "อัปเกรดและเปิดการแชท";
+
+/* server test step */
+"Upload file" = "อัปโหลดไฟล์";
+
+/* No comment provided by engineer. */
+"Use .onion hosts" = "ใช้โฮสต์ .onion";
+
+/* No comment provided by engineer. */
+"Use chat" = "ใช้แชท";
+
+/* No comment provided by engineer. */
+"Use for new connections" = "ใช้สำหรับการเชื่อมต่อใหม่";
+
+/* No comment provided by engineer. */
+"Use iOS call interface" = "ใช้อินเทอร์เฟซการโทร iOS";
+
+/* No comment provided by engineer. */
+"Use server" = "ใช้เซิร์ฟเวอร์";
+
+/* No comment provided by engineer. */
+"Use SimpleX Chat servers?" = "ใช้เซิร์ฟเวอร์ SimpleX Chat ไหม?";
+
+/* No comment provided by engineer. */
+"User profile" = "โปรไฟล์ผู้ใช้";
+
+/* No comment provided by engineer. */
+"Using .onion hosts requires compatible VPN provider." = "การใช้โฮสต์ .onion ต้องการผู้ให้บริการ VPN ที่เข้ากันได้";
+
+/* No comment provided by engineer. */
+"Using SimpleX Chat servers." = "กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่";
+
+/* No comment provided by engineer. */
+"v%@ (%@)" = "v%@ (%@)";
+
+/* No comment provided by engineer. */
+"Verify connection security" = "ตรวจสอบความปลอดภัยในการเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"Verify security code" = "ตรวจสอบรหัสความปลอดภัย";
+
+/* No comment provided by engineer. */
+"Via browser" = "ผ่านเบราว์เซอร์";
+
+/* chat list item description */
+"via contact address link" = "ผ่านลิงค์ที่อยู่ติดต่อ";
+
+/* chat list item description */
+"via group link" = "ผ่านลิงค์กลุ่ม";
+
+/* chat list item description */
+"via one-time link" = "ผ่านลิงค์แบบใช้ครั้งเดียว";
+
+/* No comment provided by engineer. */
+"via relay" = "ผ่านรีเลย์";
+
+/* No comment provided by engineer. */
+"Video call" = "การสนทนาทางวิดีโอ";
+
+/* No comment provided by engineer. */
+"video call (not e2e encrypted)" = "การสนทนาทางวิดีโอ (ไม่ได้ encrypt จากต้นจนจบ)";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact completes uploading it." = "จะได้รับวิดีโอเมื่อผู้ติดต่อของคุณอัปโหลดเสร็จ";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact is online, please wait or check later!" = "จะได้รับวิดีโอเมื่อผู้ติดต่อของคุณออนไลน์ โปรดรอหรือตรวจสอบในภายหลัง!";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "วิดีโอและไฟล์สูงสุด 1gb";
+
+/* No comment provided by engineer. */
+"View security code" = "ดูรหัสความปลอดภัย";
+
+/* No comment provided by engineer. */
+"Voice message…" = "ข้อความเสียง…";
+
+/* chat feature */
+"Voice messages" = "ข้อความเสียง";
+
+/* No comment provided by engineer. */
+"Voice messages are prohibited in this chat." = "ห้ามส่งข้อความเสียงในแชทนี้";
+
+/* No comment provided by engineer. */
+"Voice messages are prohibited in this group." = "ข้อความเสียงเป็นสิ่งต้องห้ามในกลุ่มนี้";
+
+/* No comment provided by engineer. */
+"Voice messages prohibited!" = "ห้ามข้อความเสียง!";
+
+/* No comment provided by engineer. */
+"waiting for answer…" = "รอคำตอบ…";
+
+/* No comment provided by engineer. */
+"waiting for confirmation…" = "รอการยืนยัน…";
+
+/* No comment provided by engineer. */
+"Waiting for file" = "กำลังรอไฟล์";
+
+/* No comment provided by engineer. */
+"Waiting for image" = "กําลังรอภาพ";
+
+/* No comment provided by engineer. */
+"Waiting for video" = "กําลังรอวิดีโอ";
+
+/* No comment provided by engineer. */
+"wants to connect to you!" = "ต้องการเชื่อมต่อกับคุณ!";
+
+/* No comment provided by engineer. */
+"Warning: you may lose some data!" = "คำเตือน: คุณอาจสูญเสียข้อมูลบางส่วน!";
+
+/* No comment provided by engineer. */
+"WebRTC ICE servers" = "เซิร์ฟเวอร์ WebRTC ICE";
+
+/* time unit */
+"weeks" = "สัปดาห์";
+
+/* No comment provided by engineer. */
+"Welcome %@!" = "ยินดีต้อนรับ %@!";
+
+/* No comment provided by engineer. */
+"Welcome message" = "ข้อความต้อนรับ";
+
+/* No comment provided by engineer. */
+"What's new" = "มีอะไรใหม่";
+
+/* No comment provided by engineer. */
+"When available" = "เมื่อพร้อมใช้งาน";
+
+/* No comment provided by engineer. */
+"When people request to connect, you can accept or reject it." = "เมื่อมีคนขอเชื่อมต่อ คุณสามารถยอมรับหรือปฏิเสธได้";
+
+/* No comment provided by engineer. */
+"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "เมื่อคุณแชร์โปรไฟล์ที่ไม่ระบุตัวตนกับใครสักคน โปรไฟล์นี้จะใช้สำหรับกลุ่มที่พวกเขาเชิญคุณ";
+
+/* No comment provided by engineer. */
+"With optional welcome message." = "พร้อมข้อความต้อนรับที่ไม่บังคับ";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "รหัสผ่านฐานข้อมูลไม่ถูกต้อง";
+
+/* No comment provided by engineer. */
+"Wrong passphrase!" = "รหัสผ่านผิด!";
+
+/* No comment provided by engineer. */
+"XFTP servers" = "เซิร์ฟเวอร์ XFTP";
+
+/* pref value */
+"yes" = "ใช่";
+
+/* No comment provided by engineer. */
+"You" = "คุณ";
+
+/* No comment provided by engineer. */
+"You accepted connection" = "คุณยอมรับการเชื่อมต่อ";
+
+/* No comment provided by engineer. */
+"You allow" = "คุณอนุญาต";
+
+/* No comment provided by engineer. */
+"You already have a chat profile with the same display name. Please choose another name." = "คุณมีโปรไฟล์แชทที่ใช้ชื่อแสดงเดียวกันอยู่แล้ว กรุณาเลือกชื่ออื่น";
+
+/* No comment provided by engineer. */
+"You are already connected to %@." = "คุณได้เชื่อมต่อกับ %@ แล้ว";
+
+/* No comment provided by engineer. */
+"You are connected to the server used to receive messages from this contact." = "คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้";
+
+/* No comment provided by engineer. */
+"you are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";
+
+/* No comment provided by engineer. */
+"You are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";
+
+/* No comment provided by engineer. */
+"you are observer" = "คุณเป็นผู้สังเกตการณ์";
+
+/* No comment provided by engineer. */
+"You can accept calls from lock screen, without device and app authentication." = "คุณสามารถรับสายจากหน้าจอล็อกโดยไม่ต้องมีการตรวจสอบสิทธิ์อุปกรณ์และแอป";
+
+/* No comment provided by engineer. */
+"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "คุณสามารถเชื่อมต่อได้โดยคลิกที่ลิงค์ หากเปิดในเบราว์เซอร์ ให้คลิกปุ่ม **เปิดในแอปมือถือ**";
+
+/* No comment provided by engineer. */
+"You can create it later" = "คุณสามารถสร้างได้ในภายหลัง";
+
+/* No comment provided by engineer. */
+"You can enable later via Settings" = "คุณสามารถเปิดใช้งานในภายหลังผ่านการตั้งค่า";
+
+/* No comment provided by engineer. */
+"You can enable them later via app Privacy & Security settings." = "คุณสามารถเปิดใช้งานได้ในภายหลังผ่านการตั้งค่าความเป็นส่วนตัวและความปลอดภัยของแอป";
+
+/* No comment provided by engineer. */
+"You can hide or mute a user profile - swipe it to the right." = "คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - ปัดไปทางขวา";
+
+/* notification body */
+"You can now send messages to %@" = "ตอนนี้คุณสามารถส่งข้อความถึง %@";
+
+/* No comment provided by engineer. */
+"You can set lock screen notification preview via settings." = "คุณสามารถตั้งค่าแสดงตัวอย่างการแจ้งเตือนบนหน้าจอล็อคผ่านการตั้งค่า";
+
+/* No comment provided by engineer. */
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "คุณสามารถแชร์ลิงก์หรือคิวอาร์โค้ดได้ ทุกคนจะสามารถเข้าร่วมกลุ่มได้ คุณจะไม่สูญเสียสมาชิกของกลุ่มหากคุณลบในภายหลัง";
+
+/* No comment provided by engineer. */
+"You can share this address with your contacts to let them connect with **%@**." = "คุณสามารถแบ่งปันที่อยู่นี้กับผู้ติดต่อของคุณเพื่อให้พวกเขาเชื่อมต่อกับ **%@**";
+
+/* No comment provided by engineer. */
+"You can share your address as a link or QR code - anybody can connect to you." = "คุณสามารถแชร์ที่อยู่ของคุณเป็นลิงก์หรือรหัสคิวอาร์ - ใคร ๆ ก็สามารถเชื่อมต่อกับคุณได้";
+
+/* No comment provided by engineer. */
+"You can start chat via app Settings / Database or by restarting the app" = "คุณสามารถเริ่มแชทผ่านการตั้งค่าแอป / ฐานข้อมูล หรือโดยการรีสตาร์ทแอป";
+
+/* No comment provided by engineer. */
+"You can turn on SimpleX Lock via Settings." = "คุณสามารถเปิด SimpleX Lock ผ่านการตั้งค่า";
+
+/* No comment provided by engineer. */
+"You can use markdown to format messages:" = "คุณสามารถใช้มาร์กดาวน์เพื่อจัดรูปแบบข้อความ:";
+
+/* No comment provided by engineer. */
+"You can't send messages!" = "คุณไม่สามารถส่งข้อความได้!";
+
+/* chat item text */
+"you changed address" = "คุณเปลี่ยนที่อยู่แล้ว";
+
+/* chat item text */
+"you changed address for %@" = "คุณเปลี่ยนที่อยู่สำหรับ %@";
+
+/* snd group event chat item */
+"you changed role for yourself to %@" = "คุณเปลี่ยนบทบาทสำหรับตัวคุณเองเป็น %@";
+
+/* snd group event chat item */
+"you changed role of %@ to %@" = "คุณเปลี่ยนบทบาทของ %1$@ เป็น %2$@";
+
+/* No comment provided by engineer. */
+"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "คุณควบคุมผ่านเซิร์ฟเวอร์ **เพื่อรับ** ข้อความผู้ติดต่อของคุณ - เซิร์ฟเวอร์ที่คุณใช้เพื่อส่งข้อความถึงพวกเขา";
+
+/* No comment provided by engineer. */
+"You could not be verified; please try again." = "เราไม่สามารถตรวจสอบคุณได้ กรุณาลองอีกครั้ง.";
+
+/* No comment provided by engineer. */
+"You have no chats" = "คุณไม่มีการแชท";
+
+/* No comment provided by engineer. */
+"You have to enter passphrase every time the app starts - it is not stored on the device." = "คุณต้องใส่รหัสผ่านทุกครั้งที่เริ่มแอป - รหัสผ่านไม่ได้จัดเก็บไว้ในอุปกรณ์";
+
+/* No comment provided by engineer. */
+"You joined this group" = "คุณเข้าร่วมกลุ่มนี้แล้ว";
+
+/* No comment provided by engineer. */
+"You joined this group. Connecting to inviting group member." = "คุณเข้าร่วมกลุ่มนี้แล้ว กำลังเชื่อมต่อเพื่อเชิญสมาชิกกลุ่ม";
+
+/* snd group event chat item */
+"you left" = "คุณออกไปแล้ว";
+
+/* No comment provided by engineer. */
+"You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "คุณต้องใช้ฐานข้อมูลแชทเวอร์ชันล่าสุดบนอุปกรณ์เครื่องเดียวเท่านั้น มิฉะนั้น คุณอาจหยุดได้รับข้อความจากผู้ติดต่อบางคน";
+
+/* No comment provided by engineer. */
+"You need to allow your contact to send voice messages to be able to send them." = "คุณต้องอนุญาตให้ผู้ติดต่อของคุณส่งข้อความเสียงจึงจะสามารถส่งได้";
+
+/* No comment provided by engineer. */
+"You rejected group invitation" = "คุณปฏิเสธคำเชิญเข้าร่วมกลุ่ม";
+
+/* snd group event chat item */
+"you removed %@" = "คุณลบ %@";
+
+/* No comment provided by engineer. */
+"You sent group invitation" = "คุณส่งคำเชิญเข้าร่วมกลุ่มแล้ว";
+
+/* chat list item description */
+"you shared one-time link" = "คุณแชร์ลิงก์แบบใช้ครั้งเดียวแล้ว";
+
+/* chat list item description */
+"you shared one-time link incognito" = "คุณแชร์ลิงก์แบบใช้ครั้งเดียวโดยไม่ระบุตัวตนแล้ว";
+
+/* No comment provided by engineer. */
+"You will be connected to group when the group host's device is online, please wait or check later!" = "คุณจะเชื่อมต่อกับกลุ่มเมื่ออุปกรณ์โฮสต์ของกลุ่มออนไลน์อยู่ โปรดรอหรือตรวจสอบภายหลัง!";
+
+/* No comment provided by engineer. */
+"You will be connected when your connection request is accepted, please wait or check later!" = "คุณจะเชื่อมต่อเมื่อคำขอเชื่อมต่อของคุณได้รับการยอมรับ โปรดรอหรือตรวจสอบในภายหลัง!";
+
+/* No comment provided by engineer. */
+"You will be connected when your contact's device is online, please wait or check later!" = "คุณจะเชื่อมต่อเมื่ออุปกรณ์ของผู้ติดต่อของคุณออนไลน์อยู่ โปรดรอหรือตรวจสอบภายหลัง!";
+
+/* No comment provided by engineer. */
+"You will be required to authenticate when you start or resume the app after 30 seconds in background." = "คุณจะต้องตรวจสอบสิทธิ์เมื่อคุณเริ่มหรือกลับมาใช้แอปพลิเคชันอีกครั้งหลังจากผ่านไป 30 วินาทีในพื้นหลัง";
+
+/* No comment provided by engineer. */
+"You will join a group this link refers to and connect to its group members." = "คุณจะเข้าร่วมกลุ่มที่ลิงก์นี้อ้างถึงและเชื่อมต่อกับสมาชิกในกลุ่ม";
+
+/* No comment provided by engineer. */
+"You will still receive calls and notifications from muted profiles when they are active." = "คุณจะยังได้รับสายเรียกเข้าและการแจ้งเตือนจากโปรไฟล์ที่ปิดเสียงเมื่อโปรไฟล์ของเขามีการใช้งาน";
+
+/* No comment provided by engineer. */
+"You will stop receiving messages from this group. Chat history will be preserved." = "คุณจะหยุดได้รับข้อความจากกลุ่มนี้ ประวัติการแชทจะถูกรักษาไว้";
+
+/* No comment provided by engineer. */
+"You won't lose your contacts if you later delete your address." = "คุณจะไม่สูญเสียรายชื่อผู้ติดต่อของคุณหากคุณลบที่อยู่ในภายหลัง";
+
+/* No comment provided by engineer. */
+"you: " = "คุณ: ";
+
+/* No comment provided by engineer. */
+"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "คุณกำลังพยายามเชิญผู้ติดต่อที่คุณแบ่งปันโปรไฟล์ที่ไม่ระบุตัวตนไปยังกลุ่มที่คุณใช้โปรไฟล์หลักของคุณ";
+
+/* No comment provided by engineer. */
+"You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "คุณกำลังใช้โปรไฟล์ที่ไม่ระบุตัวตนสำหรับกลุ่มนี้ - ไม่อนุญาตให้เชิญผู้ติดต่อเพื่อป้องกันการแชร์โปรไฟล์หลักของคุณ";
+
+/* No comment provided by engineer. */
+"Your %@ servers" = "เซิร์ฟเวอร์ %@ ของคุณ";
+
+/* No comment provided by engineer. */
+"Your calls" = "การโทรของคุณ";
+
+/* No comment provided by engineer. */
+"Your chat database" = "ฐานข้อมูลการแชทของคุณ";
+
+/* No comment provided by engineer. */
+"Your chat database is not encrypted - set passphrase to encrypt it." = "ฐานข้อมูลการแชทของคุณไม่ได้ถูก encrypt - ตั้งรหัสผ่านเพื่อ encrypt";
+
+/* No comment provided by engineer. */
+"Your chat profile will be sent to group members" = "โปรไฟล์การแชทของคุณจะถูกส่งไปยังสมาชิกในกลุ่ม";
+
+/* No comment provided by engineer. */
+"Your chat profiles" = "โปรไฟล์แชทของคุณ";
+
+/* No comment provided by engineer. */
+"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "ผู้ติดต่อของคุณจะต้องออนไลน์เพื่อให้การเชื่อมต่อเสร็จสมบูรณ์\nคุณสามารถยกเลิกการเชื่อมต่อนี้และลบผู้ติดต่อออก (และลองใหม่ในภายหลังด้วยลิงก์ใหม่)";
+
+/* No comment provided by engineer. */
+"Your contact sent a file that is larger than currently supported maximum size (%@)." = "ผู้ติดต่อของคุณส่งไฟล์ที่ใหญ่กว่าขนาดสูงสุดที่รองรับในปัจจุบัน (%@)";
+
+/* No comment provided by engineer. */
+"Your contacts can allow full message deletion." = "ผู้ติดต่อของคุณสามารถอนุญาตให้ลบข้อความทั้งหมดได้";
+
+/* No comment provided by engineer. */
+"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "ผู้ติดต่อของคุณใน SimpleX จะเห็น\nคุณสามารถเปลี่ยนได้ในการตั้งค่า";
+
+/* No comment provided by engineer. */
+"Your contacts will remain connected." = "ผู้ติดต่อของคุณจะยังคงเชื่อมต่ออยู่";
+
+/* No comment provided by engineer. */
+"Your current chat database will be DELETED and REPLACED with the imported one." = "ฐานข้อมูลแชทปัจจุบันของคุณจะถูกลบและแทนที่ด้วยฐานข้อมูลที่นำเข้า";
+
+/* No comment provided by engineer. */
+"Your current profile" = "โปรไฟล์ปัจจุบันของคุณ";
+
+/* No comment provided by engineer. */
+"Your ICE servers" = "เซิร์ฟเวอร์ ICE ของคุณ";
+
+/* No comment provided by engineer. */
+"Your preferences" = "การตั้งค่าของคุณ";
+
+/* No comment provided by engineer. */
+"Your privacy" = "ความเป็นส่วนตัวของคุณ";
+
+/* No comment provided by engineer. */
+"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น\nเซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
+
+/* No comment provided by engineer. */
+"Your profile, contacts and delivered messages are stored on your device." = "โปรไฟล์ รายชื่อผู้ติดต่อ และข้อความที่ส่งของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณ";
+
+/* No comment provided by engineer. */
+"Your random profile" = "โปรไฟล์แบบสุ่มของคุณ";
+
+/* No comment provided by engineer. */
+"Your server" = "เซิร์ฟเวอร์ของคุณ";
+
+/* No comment provided by engineer. */
+"Your server address" = "ที่อยู่เซิร์ฟเวอร์ของคุณ";
+
+/* No comment provided by engineer. */
+"Your settings" = "การตั้งค่าของคุณ";
+
+/* No comment provided by engineer. */
+"Your SimpleX address" = "ที่อยู่ SimpleX ของคุณ";
+
+/* No comment provided by engineer. */
+"Your SMP servers" = "เซิร์ฟเวอร์ SMP ของคุณ";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "เซิร์ฟเวอร์ XFTP ของคุณ";
+
