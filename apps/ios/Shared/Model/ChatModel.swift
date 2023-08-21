@@ -31,8 +31,8 @@ actor TerminalItems {
     }
 
     func addCommand(_ start: Date, _ cmd: ChatCommand, _ resp: ChatResponse) async {
-        addTermItem(&terminalItems, .cmd(start, cmd))
-        addTermItem(&terminalItems, .resp(.now, resp))
+        await add(.cmd(start, cmd))
+        await add(.resp(.now, resp))
     }
 }
 
