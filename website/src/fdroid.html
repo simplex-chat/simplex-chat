@@ -9,14 +9,14 @@ templateEngineOverride: njk
     <div class="container text-black dark:text-white">
         <h2 class="primary-header text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold gradient-text mb-20">SimpleX Chat via F-Droid</h2>
 
-        <div class="flex flex-col lg:flex-row gap-16 lg:gap-24">
+        <div class="flex flex-col lg:flex-row gap-16 lg:gap-28">
 
-            <div class="w-full lg:w-2/3">
+            <div class="w-full lg:w-3/5">
                 <h3 class="text-grey-black dark:text-white text-[24px] lg:text-[32px] font-bold mb-2">SimpleX Chat repo</h3>
-                <div class="flex flex-col-reverse sm:flex-row gap-2">
+                <div class="flex flex-col-reverse sm:flex-row gap-4">
                     <div>
                         <p class="mb-2 text-lg font-medium mt-6">Stable and beta versions built by the developers</p>
-                        <p>To add it to your F-Droid client, scan the QR code or use this URL:</p>
+                        <p>To add it to your F-Droid client, <span class="hidden sm:inline">scan the QR code or</span> use this URL:</p>
                         <a class="mb-2 break-words text-primary-light dark:text-primary-dark block text-left rtl:text-right text-[14px] xl:text-[16px] leading-[34px] underline-offset-2"
                             href="https://app.simplex.chat/fdroid/repo?fingerprint=9F358FF284D1F71656A2BFAF0E005DEAE6AA14143720E089F11FF2DDCFEB01BA">
                             <code>https://app.simplex.chat/fdroid/repo</code>
@@ -29,13 +29,13 @@ templateEngineOverride: njk
                         </p>
                     </div>
 
-                    <a class="inline-block max-w-[280px] md:max-w-[220px] lg:max-w-[200px] self-center sm:self-start" href="/img/new/fdroid-qrcode.png" title="QR: test">
+                    <div class="hidden sm:block max-w-[280px] md:max-w-[220px] lg:max-w-[240px]">
                         <img alt="QR: test" src="/img/new/fdroid-qrcode.png">
-                    </a>
+                    </div>
                 </div>
             </div>
 
-            <div class="w-full lg:w-1/3">
+            <div class="w-full lg:w-2/5">
                 <h3 class="text-grey-black dark:text-white text-[24px] lg:text-[32px] font-bold mb-6">F-Droid.org repo</h3>
                 <a class="inline-block" href="https://f-droid.org/en/packages/chat.simplex.app/" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
                 <p class="mb-2 text-lg font-medium mt-6">Stable versions built by F-Droid.org</p>
