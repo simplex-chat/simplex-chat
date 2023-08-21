@@ -390,10 +390,13 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
       TextIconSpaced(extraPadding)
     }
     if (text != null) {
-      Text(text, Modifier.weight(1f), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground)
+      val padding = with(LocalDensity.current) { 6.sp.toDp() }
+      Text(text, Modifier.weight(1f).padding(vertical = padding), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground)
       Spacer(Modifier.width(DEFAULT_PADDING))
     }
-    content()
+    Row(Modifier.widthIn(max = (windowWidth() - DEFAULT_PADDING * 2) / 2)) {
+      content()
+    }
   }
 }
 
