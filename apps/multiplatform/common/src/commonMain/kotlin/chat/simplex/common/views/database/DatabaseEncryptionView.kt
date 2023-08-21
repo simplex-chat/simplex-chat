@@ -24,6 +24,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
@@ -224,14 +225,14 @@ fun DatabaseEncryptionLayout(
           if (initialRandomDBPassphrase.value) {
             SectionTextFooter(generalGetString(MR.strings.encrypted_with_random_passphrase))
           } else {
-            SectionTextFooter(generalGetString(MR.strings.impossible_to_recover_passphrase))
+            SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))
           }
         } else {
           SectionTextFooter(generalGetString(MR.strings.keychain_allows_to_receive_ntfs))
         }
       } else {
         SectionTextFooter(generalGetString(MR.strings.you_have_to_enter_passphrase_every_time))
-        SectionTextFooter(generalGetString(MR.strings.impossible_to_recover_passphrase))
+        SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))
       }
     }
     SectionBottomSpacer()

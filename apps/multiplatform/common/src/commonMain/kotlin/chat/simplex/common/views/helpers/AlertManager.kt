@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
@@ -215,7 +216,7 @@ private fun alertText(text: String?): (@Composable () -> Unit)? {
   } else {
     ({
       Text(
-        text,
+        escapedHtmlToAnnotatedString(text, LocalDensity.current),
         Modifier.fillMaxWidth(),
         textAlign = TextAlign.Center,
         fontSize = 16.sp,
