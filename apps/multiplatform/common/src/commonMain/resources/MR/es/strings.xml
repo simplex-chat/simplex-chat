@@ -578,7 +578,7 @@
     <string name="leave_group_question">¿Salir del grupo\?</string>
     <string name="group_member_role_owner">propietario</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">El miembro será expulsado del grupo. ¡No podrá deshacerse!</string>
-    <string name="only_group_owners_can_enable_voice">Sólo los propietarios pueden activar los mensajes de voz.</string>
+    <string name="only_group_owners_can_enable_voice">Sólo los propietarios del grupo pueden activar los mensajes de voz.</string>
     <string name="icon_descr_more_button">Más</string>
     <string name="mark_code_verified">Marcar como verificado</string>
     <string name="smp_servers_invalid_address">¡Dirección de servidor no válida!</string>
@@ -949,7 +949,7 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Dejarás de recibir mensajes de este grupo. El historial del chat se conservará.</string>
     <string name="view_security_code">Mostrar código de seguridad</string>
     <string name="you_need_to_allow_to_send_voice">Para poder enviar mensajes de voz antes debes permitir que tu contacto pueda enviarlos.</string>
-    <string name="voice_messages_prohibited">¡Mensajes de voz prohibidos!</string>
+    <string name="voice_messages_prohibited">¡Mensajes de voz no permitidos!</string>
     <string name="group_main_profile_sent">Tu perfil será enviado a los miembros del grupo</string>
     <string name="icon_descr_address">Dirección SimpleX</string>
     <string name="image_descr_simplex_logo">Logo SimpleX</string>
@@ -1277,7 +1277,7 @@
     <string name="group_members_can_send_files">Los miembros del grupo pueden enviar archivos y multimedia.</string>
     <string name="allow_to_send_files">Se permite enviar archivos y multimedia</string>
     <string name="favorite_chat">Favorito</string>
-    <string name="only_owners_can_enable_files_and_media">Sólo los propietarios pueden activar archivos y multimedia.</string>
+    <string name="only_owners_can_enable_files_and_media">Sólo los propietarios del grupo pueden activar los archivos y multimedia.</string>
     <string name="network_option_protocol_timeout_per_kb">Timeout de protocolo por KB</string>
     <string name="snd_conn_event_ratchet_sync_allowed">renegociación de cifrado permitida para %s</string>
     <string name="conn_event_ratchet_sync_agreed">cifrado acordado</string>
