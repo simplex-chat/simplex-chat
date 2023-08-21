@@ -4406,9 +4406,9 @@
         <target>Stop met het delen van adres?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Submit" xml:space="preserve">
+      <trans-unit id="Submit" xml:space="preserve" approved="no">
         <source>Submit</source>
-        <target>Indienen</target>
+        <target state="translated">Indienen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
