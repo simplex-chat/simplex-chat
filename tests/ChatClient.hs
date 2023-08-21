@@ -270,7 +270,7 @@ testChatOpts2 = testChatCfgOpts2 testCfg
 testChatCfgOpts2 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChatCfgOpts2 cfg opts p1 p2 test = testChatN cfg opts [p1, p2] test_
   where
-    test_ :: [TestCC] -> IO ()
+    test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2] = test tc1 tc2
     test_ _ = error "expected 2 chat clients"
 
@@ -283,14 +283,14 @@ testChatCfg3 cfg = testChatCfgOpts3 cfg testOpts
 testChatCfgOpts3 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChatCfgOpts3 cfg opts p1 p2 p3 test = testChatN cfg opts [p1, p2, p3] test_
   where
-    test_ :: [TestCC] -> IO ()
+    test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2, tc3] = test tc1 tc2 tc3
     test_ _ = error "expected 3 chat clients"
 
 testChat4 :: HasCallStack => Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat4 p1 p2 p3 p4 test = testChatN testCfg testOpts [p1, p2, p3, p4] test_
   where
-    test_ :: [TestCC] -> IO ()
+    test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4
     test_ _ = error "expected 4 chat clients"
 
