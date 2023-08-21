@@ -84,7 +84,7 @@
     <string name="periodic_notifications">Notifications périodiques</string>
     <string name="periodic_notifications_disabled">Les notifications périodiques sont désactivées !</string>
     <string name="enter_passphrase_notification_title">Une phrase secrète est nécessaire</string>
-    <string name="turn_off_battery_optimization">Pour l\'utiliser, veuillez <b>autoriser SimpleX à fonctionner en arrière-plan</b> dans la fenêtre de dialogue suivante. Sinon, les notifications seront désactivées.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Pour l\'utiliser, veuillez <b>autoriser SimpleX à fonctionner en arrière-plan</b> dans la fenêtre de dialogue suivante. Sinon, les notifications seront désactivées.]]></string>
     <string name="error_smp_test_server_auth">Le serveur requiert une autorisation pour créer des files d\'attente, vérifiez le mot de passe</string>
     <string name="periodic_notifications_desc">L\'application récupère périodiquement les nouveaux messages - elle utilise un peu votre batterie chaque jour. L\'application n\'utilise pas les notifications push - les données de votre appareil ne sont pas envoyées aux serveurs.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Pour protéger votre vie privée, au lieu des notifications push, l\'application possède un <b>SimpleX service de fond</b> - il utilise quelques pour cent de la batterie par jour.]]></string>
@@ -1360,7 +1360,7 @@
     <string name="turn_off_battery_optimization_button">Autoriser</string>
     <string name="connect__a_new_random_profile_will_be_shared">Un nouveau profil aléatoire sera partagé.</string>
     <string name="disable_notifications_button">Désactiver les notifications</string>
-    <string name="system_restricted_background_warn">Pour activer les notifications, veuillez choisir <b>Utilisation de la batterie de l\'app</b> / <b>Sans restriction</b> dans les paramètres de l\'app.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Pour activer les notifications, veuillez choisir <b>Utilisation de la batterie de l\'app</b> / <b>Sans restriction</b> dans les paramètres de l\'app.]]></string>
     <string name="connect__your_profile_will_be_shared">Votre profil %1$s sera partagé.</string>
     <string name="connect_via_link_incognito">Se connecter incognito</string>
     <string name="system_restricted_background_in_call_title">Pas d\'appels en arrière-plan</string>
@@ -1368,7 +1368,7 @@
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Collez le lien que vous avez reçu pour vous connecter à votre contact…</string>
     <string name="system_restricted_background_desc">SimpleX ne peut pas fonctionner en arrière-plan. Vous ne recevrez les notifications que lorsque l\'application sera en cours d\'exécution.</string>
     <string name="system_restricted_background_in_call_desc">L\'application peut se fermer après 1 minute en arrière-plan.</string>
-    <string name="system_restricted_background_in_call_warn">Pour faire des appels en arrière-plan, veuillez choisir <b>Utilisation de la batterie de l\'app</b> / <b>Sans restriction</b> dans les paramètres de l\'app.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Pour faire des appels en arrière-plan, veuillez choisir <b>Utilisation de la batterie de l\'app</b> / <b>Sans restriction</b> dans les paramètres de l\'app.]]></string>
     <string name="connect_use_current_profile">Utiliser le profil actuel</string>
     <string name="connect_use_new_incognito_profile">Utiliser un nouveau profil incognito</string>
     <string name="privacy_message_draft">Brouillon de message</string>

@@ -212,7 +212,7 @@
 \nPer connetterti, chiedi al tuo contatto di creare un altro link di connessione e controlla di avere una connessione di rete stabile.</string>
     <string name="error_smp_test_certificate">Probabilmente l\'impronta del certificato nell\'indirizzo del server è sbagliata</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Per rispettare la tua privacy, invece delle notifiche push l\'app ha un <b>servizio SimpleX in secondo piano</b>; usa una piccola percentuale di batteria al giorno.]]></string>
-    <string name="turn_off_battery_optimization">Per usarlo, <b>consenti a SimpleX di funzionare in secondo piano</b> nella prossima schermata. Altrimenti le notifiche saranno disattivate.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Per usarlo, <b>consenti a SimpleX di funzionare in secondo piano</b> nella prossima schermata. Altrimenti le notifiche saranno disattivate.]]></string>
     <string name="simplex_service_notification_title">Servizio SimpleX Chat</string>
     <string name="notifications_mode_service_desc">Servizio in secondo piano sempre attivo. Le notifiche verranno mostrate appena i messaggi saranno disponibili.</string>
     <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
@@ -1369,8 +1369,8 @@
     <string name="disable_notifications_button">Disattiva le notifiche</string>
     <string name="system_restricted_background_in_call_title">Nessuna chiamata in secondo piano</string>
     <string name="system_restricted_background_desc">SimpleX non può funzionare in secondo piano. Riceverai le notifiche solo quando l\'app è aperta.</string>
-    <string name="system_restricted_background_warn">Per attivare le notifiche, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.</string>
-    <string name="system_restricted_background_in_call_warn">Per effettuare chiamate in secondo piano, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Per attivare le notifiche, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Per effettuare chiamate in secondo piano, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
     <string name="rcv_group_event_2_members_connected">%s e %s sono connessi</string>
     <string name="rcv_group_event_n_members_connected">%s, %s e altri %d membri sono connessi</string>
     <string name="rcv_group_event_3_members_connected">%s, %s e %s sono connessi</string>

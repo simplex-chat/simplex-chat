@@ -538,7 +538,7 @@
     <string name="onboarding_notifications_mode_service">فوري</string>
     <string name="host_verb">المضيف</string>
     <string name="hide_notification">إخفاء</string>
-    <string name="turn_off_battery_optimization">من أجل استخدامها، <b>يرجى السماح لSimpleX للتشغيل في الخلفية</b> في مربع الحوار التالي. وإلا، سيتم تعطيل الإخطارات.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[من أجل استخدامها، <b>يرجى السماح لSimpleX للتشغيل في الخلفية</b> في مربع الحوار التالي. وإلا، سيتم تعطيل الإخطارات.]]></string>
     <string name="in_reply_to">ردًا على</string>
     <string name="icon_descr_instant_notifications">إشعارات فورية</string>
     <string name="enter_one_ICE_server_per_line">خوادم ICE (واحد لكل سطر)</string>
@@ -1365,8 +1365,8 @@
     <string name="system_restricted_background_in_call_desc">قد يغلق التطبيق بعد دقيقة واحدة في الخلفية.</string>
     <string name="turn_off_battery_optimization_button">سماح</string>
     <string name="system_restricted_background_in_call_title">لا مكالمات في الخلفية</string>
-    <string name="system_restricted_background_warn">لتمكين الإشعارات، يرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.</string>
-    <string name="system_restricted_background_in_call_warn">لإجراء مكالمات في الخلفية، يرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.</string>
+    <string name="system_restricted_background_warn"><![CDATA[لتمكين الإشعارات، يرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[لإجراء مكالمات في الخلفية، يرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.]]></string>
     <string name="connect_use_new_incognito_profile">استخدم ملف تعريف متخفي جديد</string>
     <string name="you_invited_a_contact">أنت دعوت جهة اتصال</string>
     <string name="privacy_message_draft">مسودة الرسالة</string>

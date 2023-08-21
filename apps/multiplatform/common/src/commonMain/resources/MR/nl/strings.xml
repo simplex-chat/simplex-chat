@@ -435,7 +435,7 @@
     <string name="how_it_works">Hoe het werkt</string>
     <string name="callstatus_missed">gemiste oproep</string>
     <string name="how_simplex_works">Hoe SimpleX werkt</string>
-    <string name="many_people_asked_how_can_it_deliver">Veel mensen vroegen: <i>als SimpleX geen gebruikers-ID\'s heeft, hoe kan het dan berichten bezorgen\?</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Veel mensen vroegen: <i>als SimpleX geen gebruikers-ID\'s heeft, hoe kan het dan berichten bezorgen\?</i>]]></string>
     <string name="incoming_audio_call">Inkomende audio oproep</string>
     <string name="incoming_video_call">Inkomend video gesprek</string>
     <string name="ignore">Negeren</string>
@@ -469,7 +469,7 @@
     <string name="v4_5_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
     <string name="button_add_members">Nodig leden uit</string>
     <string name="notification_display_mode_hidden_desc">Verberg contact en bericht</string>
-    <string name="turn_off_battery_optimization">Om het te gebruiken, kunt u Simplex in het volgende dialoogvenster \u0020<b>op de achtergrond uitvoeren</b>. Anders worden de meldingen uitgeschakeld.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Om het te gebruiken, kunt u Simplex in het volgende dialoogvenster \u0020<b>op de achtergrond uitvoeren</b>. Anders worden de meldingen uitgeschakeld.]]></string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Als u ervoor kiest om te weigeren, wordt de afzender NIET op de hoogte gesteld.</string>
     <string name="onboarding_notifications_mode_service">Onmiddellijk</string>
     <string name="rcv_group_event_member_added">heeft %1$s uitgenodigd</string>
@@ -1364,11 +1364,11 @@
     <string name="system_restricted_background_in_call_title">Geen achtergrondgesprekken</string>
     <string name="system_restricted_background_desc">SimpleX kan niet op de achtergrond draaien. Je krijgt alleen de berichten als de app open is.</string>
     <string name="system_restricted_background_in_call_desc">De app is misschien afgesloten na 1 minuut achtergrond.</string>
-    <string name="system_restricted_background_in_call_warn">Kies de <b>app -batterijgebruik</b> / <b>onbeperkt</b> in de app -instellingen om met gesloten app te bellen.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Kies de <b>app -batterijgebruik</b> / <b>onbeperkt</b> in de app -instellingen om met gesloten app te bellen.]]></string>
     <string name="connect__your_profile_will_be_shared">Uw profiel %1$s wordt gedeeld.</string>
     <string name="connect_via_member_address_alert_desc">Verzoek voor het verbinden wordt naar dit groepslid verzonden.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Plak de link die je hebt ontvangen om verbinding te maken met je contact…</string>
-    <string name="system_restricted_background_warn">Als u meldingen wilt inschakelen, kiest u <b> App-batterijgebruik</b> /<b> Onbeperkt</b> in de app-instellingen.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Als u meldingen wilt inschakelen, kiest u <b> App-batterijgebruik</b> /<b> Onbeperkt</b> in de app-instellingen.]]></string>
     <string name="connect_use_new_incognito_profile">Gebruik een nieuw incognito -profiel</string>
     <string name="privacy_message_draft">Concept bericht</string>
     <string name="rcv_group_event_n_members_connected">%s, %s en %d andere leden verbonden</string>

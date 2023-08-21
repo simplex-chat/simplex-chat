@@ -90,7 +90,7 @@
     <string name="service_notifications_disabled">Мгновенные уведомления выключены!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Чтобы защитить Ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис SimpleX</b>, который потребляет несколько процентов батареи в день.]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Он может быть выключен через Настройки</b> – Вы продолжите получать уведомления о сообщениях пока приложение запущено.]]></string>
-    <string name="turn_off_battery_optimization">Для использования этой функции, <b>разрешите SimpleX выполняться в фоне</b> в следующем диалоге. Иначе уведомления будут выключены.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Для использования этой функции, <b>разрешите SimpleX выполняться в фоне</b> в следующем диалоге. Иначе уведомления будут выключены.]]></string>
     <string name="turning_off_service_and_periodic">Оптимизация батареи включена, поэтому сервис уведомлений выключен. Вы можете снова включить его через Настройки.</string>
     <string name="periodic_notifications">Периодические уведомления</string>
     <string name="periodic_notifications_disabled">Периодические уведомления выключены!</string>
@@ -1454,8 +1454,8 @@
     <string name="receipts_groups_override_disabled">Отчёты о доставке выключены для %d групп</string>
     <string name="rcv_group_event_2_members_connected">%s и %s соединены</string>
     <string name="privacy_message_draft">Черновик сообщения</string>
-    <string name="system_restricted_background_warn">Чтобы включить нотификации, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Чтобы включить нотификации, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
     <string name="connect_use_current_profile">Использовать активный профиль</string>
     <string name="connect_use_new_incognito_profile">Использовать новый Инкогнито профиль</string>
-    <string name="system_restricted_background_in_call_warn">Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
 </resources>

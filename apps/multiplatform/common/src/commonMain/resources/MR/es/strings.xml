@@ -440,7 +440,7 @@
     <string name="how_it_works">Cómo funciona</string>
     <string name="delete_message_cannot_be_undone_warning">El mensaje se eliminará. ¡No podrá deshacerse!</string>
     <string name="incognito_info_protects">El modo incógnito protege tu privacidad creando un perfil aleatorio por cada contacto.</string>
-    <string name="turn_off_battery_optimization">Para usar SimpleX, por favor <b>permite que SimpleX se ejecute en segundo plano</b> en el siguiente cuadro de diálogo. De lo contrario las notificaciones se desactivarán.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Para usar SimpleX, por favor <b>permite que SimpleX se ejecute en segundo plano</b> en el siguiente cuadro de diálogo. De lo contrario las notificaciones se desactivarán.]]></string>
     <string name="install_simplex_chat_for_terminal">Instalar terminal para SimpleX Chat</string>
     <string name="group_invitation_item_description">invitación al grupo %1$s</string>
     <string name="rcv_group_event_member_added">ha invitado a %1$s</string>
@@ -1368,8 +1368,8 @@
     <string name="system_restricted_background_in_call_title">Sin llamadas en segundo plano.</string>
     <string name="system_restricted_background_desc">SimpleX no puede funcionar en segundo plano. Sólo recibirás notificaciones con la aplicación abierta.</string>
     <string name="system_restricted_background_in_call_desc">La aplicación podría cerrarse después de un minuto en segundo plano.</string>
-    <string name="system_restricted_background_warn">Para activar las notificaciones, por favor selecciona <b>Uso de batería de la aplicación</b> / <b>No restringido</b> en las configuraciónes de la aplicación.</string>
-    <string name="system_restricted_background_in_call_warn">Para realizar llamadas en segundo plano, por favor selecciona <b>Uso de batería de la aplicación</b> / <b>No restringido</b> en las configuraciónes de la aplicación.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Para activar las notificaciones, por favor selecciona <b>Uso de batería de la aplicación</b> / <b>No restringido</b> en las configuraciónes de la aplicación.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Para realizar llamadas en segundo plano, por favor selecciona <b>Uso de batería de la aplicación</b> / <b>No restringido</b> en las configuraciónes de la aplicación.]]></string>
     <string name="connect_use_current_profile">Usar perfil actual</string>
     <string name="connect_use_new_incognito_profile">Usar nuevo perfil incógnito</string>
     <string name="privacy_show_last_messages">Mostrar último mensaje</string>

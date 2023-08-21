@@ -532,7 +532,7 @@
     <string name="description_via_group_link_incognito">זהות נסתרת באמצעות קישור קבוצה</string>
     <string name="description_via_one_time_link_incognito">זהות נסתרת באמצעות קישור חד־פעמי</string>
     <string name="invalid_connection_link">קישור חיבור לא תקין</string>
-    <string name="turn_off_battery_optimization">בשביל להשתמש בזה, אנא <b>אפשרו ל-SimpleX לפעול ברקע</b> בתיבת הדו-שיח הבאה. אחרת, ההתראות יושבתו.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[בשביל להשתמש בזה, אנא <b>אפשרו ל-SimpleX לפעול ברקע</b> בתיבת הדו-שיח הבאה. אחרת, ההתראות יושבתו.]]></string>
     <string name="service_notifications_disabled">התראות מיידיות מושבתות!</string>
     <string name="icon_descr_add_members">הזמן חברי קבוצה</string>
     <string name="group_member_status_invited">הוזמן</string>
@@ -1373,8 +1373,8 @@
     <string name="rcv_group_event_3_members_connected">%s, %s ו-%s מחוברים</string>
     <string name="in_developing_desc">מאפיין זה אינו נתמך עדיין. נסה את המהדורה הבאה.</string>
     <string name="receipts_section_groups">קבוצות קטנות (מקסימום 20)</string>
-    <string name="system_restricted_background_warn">כדי להפעיל התראות, בחר <b>שימוש בסוללה באפליקציה</b> / <b>ללא הגבלה</b> בהגדרות האפליקציה.</string>
-    <string name="system_restricted_background_in_call_warn">כדי לבצע שיחות ברקע, בחר <b>שימוש בסוללה באפליקציה</b> / <b>ללא הגבלה</b> בהגדרות האפליקציה.</string>
+    <string name="system_restricted_background_warn"><![CDATA[כדי להפעיל התראות, בחר <b>שימוש בסוללה באפליקציה</b> / <b>ללא הגבלה</b> בהגדרות האפליקציה.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[כדי לבצע שיחות ברקע, בחר <b>שימוש בסוללה באפליקציה</b> / <b>ללא הגבלה</b> בהגדרות האפליקציה.]]></string>
     <string name="connect_via_member_address_alert_title">להתחבר ישירות\?</string>
     <string name="connect_via_member_address_alert_desc">בקשת חיבור תישלח לחבר קבוצה זה.</string>
 </resources>

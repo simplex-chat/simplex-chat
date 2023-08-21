@@ -823,7 +823,7 @@
     <string name="smp_server_test_secure_queue">Безпечна черга</string>
     <string name="smp_server_test_delete_queue">Видалити чергу</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Будь ласка, переконайтеся, що ви використали правильне посилання, або попросіть свого контакта надіслати вам інше.</string>
-    <string name="turn_off_battery_optimization">Щоб використовувати його, <b>дозвольте SimpleX працювати у фоновому режимі</b> у наступному діалоговому вікні. \u0020В іншому випадку сповіщення буде вимкнено.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Щоб використовувати його, <b>дозвольте SimpleX працювати у фоновому режимі</b> у наступному діалоговому вікні. \u0020В іншому випадку сповіщення буде вимкнено.]]></string>
     <string name="icon_descr_instant_notifications">Миттєві сповіщення</string>
     <string name="notification_preview_somebody">Контакт приховано:</string>
     <string name="notification_preview_new_message">нове повідомлення</string>
@@ -1362,8 +1362,8 @@
     <string name="receipts_groups_override_disabled">Відправлення підтвердження доставки вимкнено для груп %d</string>
     <string name="rcv_group_event_3_members_connected">%s, %s і %s підключено</string>
     <string name="receipts_section_description_1">Їх можна перевизначити в налаштуваннях контактів і груп.</string>
-    <string name="system_restricted_background_warn">Щоб увімкнути сповіщення, виберіть <b>Використання акумулятора програми</b> / <b>Необмежено</b> в налаштуваннях програми.</string>
-    <string name="system_restricted_background_in_call_warn">Щоб здійснювати дзвінки у фоновому режимі, виберіть <b>Використання акумулятора програми</b> / <b>Без обмежень</b> у налаштуваннях програми.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Щоб увімкнути сповіщення, виберіть <b>Використання акумулятора програми</b> / <b>Необмежено</b> в налаштуваннях програми.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Щоб здійснювати дзвінки у фоновому режимі, виберіть <b>Використання акумулятора програми</b> / <b>Без обмежень</b> у налаштуваннях програми.]]></string>
     <string name="connect_use_new_incognito_profile">Використовуйте новий профіль інкогніто</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Ви можете увімкнути їх пізніше в налаштуваннях конфіденційності та безпеки програми.</string>
     <string name="rcv_group_event_n_members_connected">%s, %s та %d інших учасників під\'єднано</string>

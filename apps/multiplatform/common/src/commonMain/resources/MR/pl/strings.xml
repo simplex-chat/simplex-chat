@@ -972,7 +972,7 @@
     <string name="import_database_question">Zaimportować bazę danych czatu\?</string>
     <string name="incognito_info_protects">Tryb incognito chroni Twoją prywatność używając nowego losowego profilu dla każdego kontaktu.</string>
     <string name="conn_level_desc_indirect">pośrednie (%1$s)</string>
-    <string name="turn_off_battery_optimization">Aby z niej skorzystać, należy <b>pozwolić SimpleX na działanie tle</b> w następnym oknie dialogowym. W przeciwnym razie powiadomienia zostaną wyłączone.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Aby z niej skorzystać, należy <b>pozwolić SimpleX na działanie tle</b> w następnym oknie dialogowym. W przeciwnym razie powiadomienia zostaną wyłączone.]]></string>
     <string name="install_simplex_chat_for_terminal">Zainstaluj SimpleX Chat na terminal</string>
     <string name="invalid_migration_confirmation">Nieprawidłowe potwierdzenie migracji</string>
     <string name="group_invitation_item_description">zaproszenie do grupy %1$s</string>
@@ -1368,8 +1368,8 @@
     <string name="connect__your_profile_will_be_shared">Twój profil %1$s zostanie udostępniony.</string>
     <string name="connect_via_link_incognito">Połącz incognito</string>
     <string name="system_restricted_background_in_call_desc">Aplikacja może zostać zamknięta po 1 minucie w tle.</string>
-    <string name="system_restricted_background_warn">Aby włączyć powiadomienia, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.</string>
-    <string name="system_restricted_background_in_call_warn">Aby robić połączenia w tle, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Aby włączyć powiadomienia, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Aby robić połączenia w tle, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.]]></string>
     <string name="connect_use_new_incognito_profile">Użyj nowego profilu incognito</string>
     <string name="privacy_show_last_messages">Pokaż ostatnie wiadomości</string>
     <string name="privacy_message_draft">Wersja robocza wiadomości</string>
