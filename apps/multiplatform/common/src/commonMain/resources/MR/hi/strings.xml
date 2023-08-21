@@ -253,7 +253,6 @@
     <string name="v4_2_auto_accept_contact_requests">संपर्क अनुरोधों को स्वत: स्वीकार करें</string>
     <string name="integrity_msg_bad_hash">खराब संदेश हैश</string>
     <string name="allow_voice_messages_only_if">ध्वनि संदेशों को केवल तभी अनुमति दें यदि आपका संपर्क उन्हें अनुमति देता है।</string>
-    <string name="incognito_random_profile_from_contact_description">जिस संपर्क से आपने यह लिंक प्राप्त किया है, उसे एक यादृच्छिक प्रोफ़ाइल भेजी जाएगी</string>
     <string name="callstatus_calling">कॉल कर रहा है…</string>
     <string name="feature_cancelled_item">रद्द %s</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">आपके लिए पता बदल दिया</string>
@@ -262,7 +261,6 @@
     <string name="ttl_month">%d महीना</string>
     <string name="ttl_months">%d महीने</string>
     <string name="settings_developer_tools">डेवलपर उपकरण</string>
-    <string name="incognito_random_profile_description">आपके संपर्क को एक यादृच्छिक प्रोफ़ाइल भेजी जाएगी</string>
     <string name="snd_conn_event_switch_queue_phase_changing">पता बदल रहा है…</string>
     <string name="button_add_welcome_message">स्वागत संदेश जोड़ें</string>
     <string name="allow_your_contacts_irreversibly_delete">अपने संपर्कों को भेजे गए संदेशों को अपरिवर्तनीय रूप से हटाने की अनुमति दें।</string>
