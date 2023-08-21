@@ -1518,7 +1518,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await chatItemSimpleUpdate(user, aChatItem)
         Task { cleanupFile(aChatItem) }
     case let .callInvitation(invitation):
-        m.callInvitations[invitation.contact.id] = invitation
+        await MainActor.run {
+            m.callInvitations[invitation.contact.id] = invitation
+        }
         activateCall(invitation)
     case let .callOffer(_, contact, callType, offer, sharedKey, _):
         await withCall(contact) { call in
