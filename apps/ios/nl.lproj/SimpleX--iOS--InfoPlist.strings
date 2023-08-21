@@ -5,7 +5,7 @@
 "NSCameraUsageDescription" = "SimpleX heeft camera toegang nodig om QR-codes te scannen om verbinding te maken met andere gebruikers en voor video gesprekken.";
 
 /* Privacy - Face ID Usage Description */
-"NSFaceIDUsageDescription" = "SimpleX gebruikt Face ID voor lokale authenticatie";
+"NSFaceIDUsageDescription" = "SimpleX gebruikt Face-ID voor lokale authenticatie";
 
 /* Privacy - Microphone Usage Description */
 "NSMicrophoneUsageDescription" = "SimpleX heeft microfoon toegang nodig voor audio en video oproepen en om spraak berichten op te nemen.";

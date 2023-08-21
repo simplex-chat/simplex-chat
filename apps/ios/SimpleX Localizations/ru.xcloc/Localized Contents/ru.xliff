@@ -42,19 +42,19 @@
         <target>!1 цвет!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="# %@" xml:space="preserve" approved="no">
+      <trans-unit id="# %@" xml:space="preserve">
         <source># %@</source>
-        <target state="translated"># %@</target>
+        <target># %@</target>
         <note>copied message info title, # &lt;title&gt;</note>
       </trans-unit>
-      <trans-unit id="## History" xml:space="preserve" approved="no">
+      <trans-unit id="## History" xml:space="preserve">
         <source>## History</source>
-        <target state="translated">## История</target>
+        <target>## История</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="## In reply to" xml:space="preserve" approved="no">
+      <trans-unit id="## In reply to" xml:space="preserve">
         <source>## In reply to</source>
-        <target state="translated">## В ответ на</target>
+        <target>## В ответ на</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="#secret#" xml:space="preserve">
@@ -87,9 +87,9 @@
         <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ and %@ connected" xml:space="preserve" approved="no">
+      <trans-unit id="%@ and %@ connected" xml:space="preserve">
         <source>%@ and %@ connected</source>
-        <target state="translated">%@ и %@ соединены</target>
+        <target>%@ и %@ соединены</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ at %@:" xml:space="preserve">
@@ -122,9 +122,9 @@
         <target>%@ хочет соединиться!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve" approved="no">
+      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
         <source>%@, %@ and %lld other members connected</source>
-        <target state="translated">%@, %@ и %lld других членов соединены</target>
+        <target>%@, %@ и %lld других членов соединены</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@:" xml:space="preserve">
@@ -422,9 +422,9 @@
         <target>Новый контакт</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="A new random profile will be shared." xml:space="preserve" approved="no">
+      <trans-unit id="A new random profile will be shared." xml:space="preserve">
         <source>A new random profile will be shared.</source>
-        <target state="translated">Будет отправлен новый случайный профиль.</target>
+        <target>Будет отправлен новый случайный профиль.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
@@ -1066,14 +1066,14 @@
         <target>Соединиться</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Connect directly" xml:space="preserve" approved="no">
+      <trans-unit id="Connect directly" xml:space="preserve">
         <source>Connect directly</source>
-        <target state="translated">Соединиться напрямую</target>
+        <target>Соединиться напрямую</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect incognito" xml:space="preserve" approved="no">
+      <trans-unit id="Connect incognito" xml:space="preserve">
         <source>Connect incognito</source>
-        <target state="translated">Соединиться Инкогнито</target>
+        <target>Соединиться Инкогнито</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via contact link" xml:space="preserve">
@@ -1574,9 +1574,9 @@
         <target>Удалено: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Delivery" xml:space="preserve" approved="no">
+      <trans-unit id="Delivery" xml:space="preserve">
         <source>Delivery</source>
-        <target state="translated">Доставка</target>
+        <target>Доставка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
@@ -2589,9 +2589,9 @@
         <target>Режим Инкогнито</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode protects your privacy by using a new random profile for each contact." xml:space="preserve" approved="no">
+      <trans-unit id="Incognito mode protects your privacy by using a new random profile for each contact." xml:space="preserve">
         <source>Incognito mode protects your privacy by using a new random profile for each contact.</source>
-        <target state="translated">Режим Инкогнито защищает Вашу конфиденциальность — для каждого контакта создается новый случайный профиль.</target>
+        <target>Режим Инкогнито защищает Вашу конфиденциальность — для каждого контакта создается новый случайный профиль.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming audio call" xml:space="preserve">
@@ -2666,9 +2666,9 @@
         <target>Ошибка в адресе сервера!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid status" xml:space="preserve" approved="no">
+      <trans-unit id="Invalid status" xml:space="preserve">
         <source>Invalid status</source>
-        <target state="translated">Неверный статус</target>
+        <target>Неверный статус</target>
         <note>item status text</note>
       </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve">
@@ -3017,9 +3017,9 @@
         <target>Дополнительные улучшения скоро!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Most likely this connection is deleted." xml:space="preserve" approved="no">
+      <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
         <source>Most likely this connection is deleted.</source>
-        <target state="translated">Скорее всего, соединение удалено.</target>
+        <target>Скорее всего, соединение удалено.</target>
         <note>item status description</note>
       </trans-unit>
       <trans-unit id="Most likely this contact has deleted the connection with you." xml:space="preserve">
@@ -3127,9 +3127,9 @@
         <target>Нет контактов для добавления</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No delivery information" xml:space="preserve" approved="no">
+      <trans-unit id="No delivery information" xml:space="preserve">
         <source>No delivery information</source>
-        <target state="translated">Нет информации от доставке</target>
+        <target>Нет информации от доставке</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No device token!" xml:space="preserve">
@@ -3636,9 +3636,9 @@
         <target>Узнайте больше из нашего [GitHub репозитория](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Receipts are disabled" xml:space="preserve" approved="no">
+      <trans-unit id="Receipts are disabled" xml:space="preserve">
         <source>Receipts are disabled</source>
-        <target state="translated">Отчёты о доставке выключены</target>
+        <target>Отчёты о доставке выключены</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received at" xml:space="preserve">
@@ -4101,9 +4101,9 @@
         <target>Отправка отчётов о доставке выключена для %lld контактов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending receipts is disabled for %lld groups" xml:space="preserve" approved="no">
+      <trans-unit id="Sending receipts is disabled for %lld groups" xml:space="preserve">
         <source>Sending receipts is disabled for %lld groups</source>
-        <target state="translated">Отчёты о доставке выключены для %lld групп</target>
+        <target>Отчёты о доставке выключены для %lld групп</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve">
@@ -4111,9 +4111,9 @@
         <target>Отправка отчётов о доставке включена для %lld контактов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending receipts is enabled for %lld groups" xml:space="preserve" approved="no">
+      <trans-unit id="Sending receipts is enabled for %lld groups" xml:space="preserve">
         <source>Sending receipts is enabled for %lld groups</source>
-        <target state="translated">Отчёты о доставке включены для %lld групп</target>
+        <target>Отчёты о доставке включены для %lld групп</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -4256,9 +4256,9 @@
         <target>Показать опции для девелоперов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show last messages" xml:space="preserve" approved="no">
+      <trans-unit id="Show last messages" xml:space="preserve">
         <source>Show last messages</source>
-        <target state="translated">Показывать последние сообщения</target>
+        <target>Показывать последние сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -4341,9 +4341,9 @@
         <target>Пропущенные сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Small groups (max 20)" xml:space="preserve" approved="no">
+      <trans-unit id="Small groups (max 20)" xml:space="preserve">
         <source>Small groups (max 20)</source>
-        <target state="translated">Маленькие группы (до 20)</target>
+        <target>Маленькие группы (до 20)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
@@ -4658,9 +4658,9 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Это действие нельзя отменить — Ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve" approved="no">
+      <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
         <source>This group has over %lld members, delivery receipts are not sent.</source>
-        <target state="translated">В группе более %lld членов, отчёты о доставке выключены.</target>
+        <target>В группе более %lld членов, отчёты о доставке выключены.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve">
@@ -4902,9 +4902,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Использовать чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use current profile" xml:space="preserve" approved="no">
+      <trans-unit id="Use current profile" xml:space="preserve">
         <source>Use current profile</source>
-        <target state="translated">Использовать активный профиль</target>
+        <target>Использовать активный профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use for new connections" xml:space="preserve">
@@ -4917,9 +4917,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Использовать интерфейс iOS для звонков</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use new incognito profile" xml:space="preserve" approved="no">
+      <trans-unit id="Use new incognito profile" xml:space="preserve">
         <source>Use new incognito profile</source>
-        <target state="translated">Использовать новый Инкогнито профиль</target>
+        <target>Использовать новый Инкогнито профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -5396,9 +5396,9 @@ You can change it in Settings.</source>
         <target>Конфиденциальность</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile **%@** will be shared." xml:space="preserve" approved="no">
+      <trans-unit id="Your profile **%@** will be shared." xml:space="preserve">
         <source>Your profile **%@** will be shared.</source>
-        <target state="translated">Будет отправлен Ваш профиль **%@**.</target>
+        <target>Будет отправлен Ваш профиль **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
@@ -5683,9 +5683,9 @@ SimpleX серверы не могут получить доступ к Ваше
         <target>прямое</target>
         <note>connection level description</note>
       </trans-unit>
-      <trans-unit id="disabled" xml:space="preserve" approved="no">
+      <trans-unit id="disabled" xml:space="preserve">
         <source>disabled</source>
-        <target state="translated">выключено</target>
+        <target>выключено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="duplicate message" xml:space="preserve">
@@ -5768,9 +5768,9 @@ SimpleX серверы не могут получить доступ к Ваше
         <target>ошибка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="event happened" xml:space="preserve" approved="no">
+      <trans-unit id="event happened" xml:space="preserve">
         <source>event happened</source>
-        <target state="translated">событие произошло</target>
+        <target>событие произошло</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">

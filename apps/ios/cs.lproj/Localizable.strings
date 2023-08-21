@@ -245,6 +245,9 @@
 "A new contact" = "Nový kontakt";
 
 /* No comment provided by engineer. */
+"A new random profile will be shared." = "Nový náhodný profil bude sdílen.";
+
+/* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "Samostatné připojení TCP bude použito **pro každý chat profil, který máte v aplikaci**.";
 
 /* No comment provided by engineer. */
