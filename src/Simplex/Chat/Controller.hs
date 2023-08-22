@@ -508,7 +508,7 @@ data ChatResponse
   | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileError {user :: User, chatItem :: AChatItem}
-  | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, successes :: Int, failures :: Int}
+  | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, updateSummary :: UserProfileUpdateSummary}
   | CRUserProfileImage {user :: User, profile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
@@ -707,6 +707,16 @@ data PendingSubStatus = PendingSubStatus
 instance ToJSON PendingSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data UserProfileUpdateSummary = UserProfileUpdateSummary
+  { notChanged :: Int,
+    updateSuccesses :: Int,
+    updateFailures :: Int,
+    changedContacts :: [Contact]
+  }
+  deriving (Show, Generic)
+
+instance ToJSON UserProfileUpdateSummary where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ComposedMessage = ComposedMessage
   { filePath :: Maybe FilePath,

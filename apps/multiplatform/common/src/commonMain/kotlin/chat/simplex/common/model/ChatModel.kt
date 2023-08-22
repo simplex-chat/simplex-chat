@@ -407,18 +407,18 @@ object ChatModel {
     )
   }
 
-  fun increaseUnreadCounter(user: User) {
+  fun increaseUnreadCounter(user: UserLike) {
     changeUnreadCounter(user, 1)
   }
 
-  fun decreaseUnreadCounter(user: User, by: Int = 1) {
+  fun decreaseUnreadCounter(user: UserLike, by: Int = 1) {
     changeUnreadCounter(user, -by)
   }
 
-  private fun changeUnreadCounter(user: User, by: Int) {
+  private fun changeUnreadCounter(user: UserLike, by: Int) {
     val i = users.indexOfFirst { it.user.userId == user.userId }
     if (i != -1) {
-      users[i] = UserInfo(user, users[i].unreadCount + by)
+      users[i] = UserInfo(users[i].user, users[i].unreadCount + by)
     }
   }
 
@@ -500,25 +500,23 @@ enum class ChatType(val type: String) {
 
 @Serializable
 data class User(
-  val userId: Long,
+  override val userId: Long,
   val userContactId: Long,
   val localDisplayName: String,
   val profile: LocalProfile,
   val fullPreferences: FullChatPreferences,
-  val activeUser: Boolean,
-  val showNtfs: Boolean,
+  override val activeUser: Boolean,
+  override val showNtfs: Boolean,
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
   val viewPwdHash: UserPwdHash?
-): NamedChat {
+): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
   override val image: String? get() = profile.image
   override val localAlias: String = ""
 
   val hidden: Boolean = viewPwdHash != null
-
-  val showNotifications: Boolean = activeUser || showNtfs
 
   val addressShared: Boolean = profile.contactLink != null
 
@@ -536,6 +534,22 @@ data class User(
       viewPwdHash = null,
     )
   }
+}
+
+@Serializable
+data class UserRef(
+  override val userId: Long,
+  val localDisplayName: String,
+  override val activeUser: Boolean,
+  override val showNtfs: Boolean
+): UserLike {}
+
+interface UserLike {
+  val userId: Long
+  val activeUser: Boolean
+  val showNtfs: Boolean
+
+  val showNotifications: Boolean get() = activeUser || showNtfs
 }
 
 @Serializable

@@ -29,7 +29,7 @@
     <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВЕ</string>
     <string name="abort_switch_receiving_address_question">Откажи смяна на адрес\?</string>
     <string name="abort_switch_receiving_address_confirm">Откажи</string>
-    <string name="abort_switch_receiving_address_desc">Промяната на адреса ще бъде прекъсната. Ще се използва стар адрес за получаване.</string>
+    <string name="abort_switch_receiving_address_desc">Промяната на адреса ще бъде прекъсната. Ще се използва старият адрес за получаване.</string>
     <string name="accept_contact_button">Приеми</string>
     <string name="accept_contact_incognito_button">Приеми инкогнито</string>
     <string name="about_simplex_chat">За SimpleX Chat</string>
@@ -84,7 +84,6 @@
     <string name="empty_chat_profile_is_created">Създаен беше празен профил за чат с предоставеното име и приложението се отвари както обикновено.</string>
     <string name="notifications_mode_off_desc">Приложението може да получава известия само когато работи, няма да се стартира услуга във фонов режим</string>
     <string name="settings_section_title_icon">ИКОНА НА ПРИЛОЖЕНИЕТО</string>
-    <string name="incognito_random_profile_from_contact_description">Произволен профил ще бъде изпратен до контакта, от който сте получили тази връзка</string>
     <string name="la_authenticate">Идентифицирай</string>
     <string name="turning_off_service_and_periodic">Оптимизацията на батерията е активна, изключват се фоновата услуга и периодичните заявки за нови съобщения. Можете да ги активирате отново през настройките.</string>
     <string name="network_session_mode_user_description"><![CDATA[Ще се използва отделна TCP връзка (и идентификационни данни за SOCKS) <b>за всеки чат профил, който имате в приложението</b>.]]></string>
@@ -187,7 +186,6 @@
     <string name="rcv_conn_event_switch_queue_phase_completed">променен е адреса за вас</string>
     <string name="change_verb">Промени</string>
     <string name="change_member_role_question">Промяна на груповата роля\?</string>
-    <string name="incognito_random_profile_description">На вашия контакт ще бъде изпратен произволен профил</string>
     <string name="you_will_still_receive_calls_and_ntfs">Все още ще получавате обаждания и известия от заглушени профили, когато са активни.</string>
     <string name="cant_delete_user_profile">Потребителският профил не може да се изтрие!</string>
     <string name="allow_disappearing_messages_only_if">Позволи изчезващи съобщения само ако вашият контакт ги разрешава.</string>
@@ -354,7 +352,7 @@
     <string name="group_member_status_creator">създател</string>
     <string name="create_group_link">Създай групов линк</string>
     <string name="button_create_group_link">Създай линк</string>
-    <string name="num_contacts_selected">%d избран(и) контакт(а).</string>
+    <string name="num_contacts_selected">%d избран(и) контакт(а)</string>
     <string name="delete_group_question">Изтрий група\?</string>
     <string name="delete_link">Изтрий линк</string>
     <string name="delete_link_question">Изтрий линк\?</string>
@@ -460,7 +458,7 @@
     <string name="receipts_contacts_override_enabled">Изпращането на потвърждениe е активирано за %d контакта</string>
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="receipts_contacts_disable_keep_overrides">Деактивиране (запазване на промените)</string>
-    <string name="total_files_count_and_size">%d файл(а) с общ размер %s</string>
+    <string name="total_files_count_and_size">%d файл(а) с общ размер от %s</string>
     <string name="encrypt_database">Криптирай</string>
     <string name="enter_passphrase">Въведи парола…</string>
     <string name="upgrade_and_open_chat">Актуализирай и отвори чата</string>
@@ -751,11 +749,10 @@
     <string name="rcv_group_event_invited_via_your_group_link">поканен чрез вашия групов линк</string>
     <string name="group_member_status_invited">поканен</string>
     <string name="conn_level_desc_indirect">индиректна (%1$s)</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Тук не се поддържа режим \"инкогнито\" – основният ви профил ще бъде изпратен на членовете на групата</string>
     <string name="user_unhide">Покажи</string>
     <string name="you_can_hide_or_mute_user_profile">Можете да скриете или заглушите потребителски профил - задръжте върху него за менюто.</string>
     <string name="incognito">Инкогнито</string>
-    <string name="incognito_info_protects">Режимът инкогнито защитава поверителността на името и изображението на вашия основен профил — за всеки нов контакт се създава нов произволен профил.</string>
+    <string name="incognito_info_protects">Режимът инкогнито защитава вашата поверителност, като използва нов произволен профил за всеки контакт.</string>
     <string name="incognito_info_allows">Позволява да имате много анонимни връзки без споделени данни между тях в един чат профил .</string>
     <string name="v4_5_italian_interface">Италиански интерфейс</string>
     <string name="description_via_contact_address_link_incognito">инкогнито чрез линк с адрес за контакт</string>
@@ -766,7 +763,7 @@
     <string name="invalid_message_format">невалиден формат на съобщението</string>
     <string name="invalid_connection_link">Невалиден линк за връзка</string>
     <string name="notification_display_mode_hidden_desc">Скриване на контакт и съобщение</string>
-    <string name="turn_off_battery_optimization"><![CDATA[За да го използвате, моля, <b>деактивирайте оптимизирането на батерията</b> за SimpleX в следващия диалогов прозорец. В противен случай известията ще бъдат деактивирани.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[За да го използвате, моля, <b>разрешете на SimpleX да работи във фонов режим</b> в следващия диалогов прозорец. В противен случай известията ще бъдат деактивирани.]]></string>
     <string name="icon_descr_instant_notifications">Незабавни известия</string>
     <string name="service_notifications">Незабавни известия!</string>
     <string name="service_notifications_disabled">Незабавните известия са деактивирани!</string>
@@ -859,7 +856,6 @@
     <string name="info_row_updated_at">Записът е актуализиран на</string>
     <string name="learn_more">Научете повече</string>
     <string name="paste_button">Постави</string>
-    <string name="paste_connection_link_below_to_connect">Поставете линка, който сте получили в полето по-долу, за да се свържете с вашия контакт.</string>
     <string name="smp_servers_preset_server">Предварително зададен сървър</string>
     <string name="smp_servers_preset_address">Предварително зададен адрес на сървъра</string>
     <string name="onboarding_notifications_mode_title">Поверителени известия</string>
@@ -1091,16 +1087,6 @@
     <string name="send_receipts_disabled_alert_msg">Тази група има над %1$d членове, потвърждениeто за доставка няма да се изпраща.</string>
     <string name="conn_stats_section_title_servers">СЪРВЪРИ</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
-    <string name="item_status_snd_error_text">Грешка при изпращане на съобщение</string>
-    <string name="item_status_snd_error_auth_desc">Грешка при доставката на съобщението. Най-вероятно този получател е изтрил връзката си с вас.</string>
-    <string name="item_status_snd_rcvd_desc">Съобщението е получено от получателя.</string>
-    <string name="item_status_snd_sent_desc">Съобщението е изпратено до релето на получателя.</string>
-    <string name="item_status_rcv_read_text">Съобщението е прочетено</string>
-    <string name="item_status_rcv_new_text">Съобщението е получено</string>
-    <string name="item_status_snd_sent_text">Съобщението е изпратено</string>
-    <string name="item_status_snd_new_text">Изпращане на съобщение</string>
-    <string name="item_status_snd_new_desc">Изпращането на съобщение е в ход или предстои.</string>
-    <string name="item_status_snd_rcvd_text">Изпратеното съобщение е получено</string>
     <string name="delivery">Доставка</string>
     <string name="receipts_groups_enable_keep_overrides">Активиране (запазване на груповите промени)</string>
     <string name="send_receipts_disabled">деактивирано</string>
@@ -1109,7 +1095,6 @@
     <string name="send_receipts_disabled_alert_title">Потвърждениeто за доставка е деактивирано</string>
     <string name="receipts_groups_override_disabled">Изпращането на потвърждениe за доставка е деактивирано за %d групи</string>
     <string name="receipts_groups_title_enable">Aктивиране на потвърждениeто за доставка за групи\?</string>
-    <string name="item_status_rcv_new_desc">Ново съобщение от този подател.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Можете да стартирате чата през Настройки на приложението / Базата данни или като рестартирате приложението.</string>
     <string name="revoke_file__confirm">Отзови</string>
     <string name="revoke_file__action">Отзови файл</string>
@@ -1186,7 +1171,6 @@
     <string name="tap_to_activate_profile">Докосни за активиране на профил.</string>
     <string name="should_be_at_least_one_profile">Трябва да има поне един потребителски профил.</string>
     <string name="should_be_at_least_one_visible_profile">Трябва да има поне един видим потребителски профил.</string>
-    <string name="incognito_info_find">За да намерите профила, използван за инкогнито връзка, докоснете името на контакта или групата в горната част на чата.</string>
     <string name="language_system">Системен</string>
     <string name="color_title">Заглавие</string>
     <string name="to_share_with_your_contact">(за споделяне с вашия контакт)</string>
@@ -1274,7 +1258,6 @@
     <string name="snd_conn_event_switch_queue_phase_completed">променихте адреса</string>
     <string name="you_can_share_this_address_with_your_contacts">Можете да споделите този адрес с вашите контакти, за да им позволите да се свържат с %s.</string>
     <string name="unfavorite_chat">Премахни от любимите</string>
-    <string name="you_invited_your_contact">Вие поканихте своя контакт</string>
     <string name="settings_section_title_you">ВИЕ</string>
     <string name="your_chat_database">Вашата чат база данни</string>
     <string name="icon_descr_waiting_for_image">Изчаква се получаването на изображението</string>
@@ -1294,7 +1277,6 @@
     <string name="personal_welcome">Добре дошли %1$s!</string>
     <string name="you_have_no_chats">Нямате чатове</string>
     <string name="observer_cant_send_message_title">Не може да изпращате съобщения!</string>
-    <string name="your_profile_will_be_sent">Вашият чат профил ще бъде изпратен до вашия контакт</string>
     <string name="smp_servers_your_server">Вашият сървър</string>
     <string name="smp_servers_use_server">Използвай сървър</string>
     <string name="smp_servers_your_server_address">Вашият адрес на сървъра</string>
@@ -1307,14 +1289,12 @@
     <string name="your_preferences">Вашите настройки</string>
     <string name="whats_new">Какво е ново</string>
     <string name="v4_3_irreversible_message_deletion_desc">Вашите контакти могат да позволят пълното изтриване на съобщението.</string>
-    <string name="item_status_rcv_read_desc">Това получено съобщение е прочетено.</string>
     <string name="update_database_passphrase">Актуализирай паролата на базата данни</string>
     <string name="snd_group_event_changed_role_for_yourself">променихте ролята си на %s</string>
     <string name="snd_group_event_user_left">вие напуснахте</string>
     <string name="snd_group_event_changed_member_role">променихте ролята на %s на %s</string>
     <string name="snd_group_event_member_deleted">премахнахте %1$s</string>
     <string name="incognito_random_profile">Вашият случаен профил</string>
-    <string name="item_status_snd_error_unexpected_desc">Неочаквана грешка при доставка на съобщение: %1$s</string>
     <string name="user_unmute">Уведомявай</string>
     <string name="you_can_share_your_address">Можете да споделите адреса си като линк или QR код - всеки може да се свърже с вас.</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">променихте адреса за %s</string>
@@ -1371,4 +1351,26 @@
     <string name="v5_1_better_messages_descr">- гласови съобщения до 5 минути.
 \n- персонализирано време за изчезване.
 \n- история на редактиране.</string>
+    <string name="connect_via_link_incognito">Свързване инкогнито</string>
+    <string name="turn_off_system_restriction_button">Отвори настройките на приложението</string>
+    <string name="turn_off_battery_optimization_button">Позволи</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Нов произволен профил ще бъде споделен.</string>
+    <string name="disable_notifications_button">Деактивирай известията</string>
+    <string name="system_restricted_background_in_call_title">Без фонови разговори</string>
+    <string name="connect_via_member_address_alert_title">Свързване директно\?</string>
+    <string name="connect_use_current_profile">Използвай текущия профил</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Поставете линка, който сте получили, за да се свържете с вашия контакт…</string>
+    <string name="connect__your_profile_will_be_shared">Вашият профил %1$s ще бъде споделен.</string>
+    <string name="system_restricted_background_desc">SimpleX не може да работи във фонов режим. Ще получавате известията само когато приложението работи.</string>
+    <string name="system_restricted_background_in_call_desc">Приложението може да се затвори след 1 минута във фонов режим.</string>
+    <string name="system_restricted_background_warn"><![CDATA[За да активирате известията, моля, изберете <b>Използване на батерията на приложението</b> / <b>Неограничено</b> в системните настройки на приложението.]]></string>
+    <string name="connect_use_new_incognito_profile">Използвай нов инкогнито профил</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[За да извършвате разговори във фонов режим, моля, изберете <b>Използване на батерията на приложението</b> / <b>Неограничено</b> в системните настройки на приложението.]]></string>
+    <string name="you_invited_a_contact">Вие поканихте контакта</string>
+    <string name="connect_via_member_address_alert_desc">Заявката за свързване ще бъде изпратена до този член на групата.</string>
+    <string name="rcv_group_event_2_members_connected">%s и %s са свързани</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s и %d други членове са свързани</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s и %s са свързани</string>
+    <string name="privacy_message_draft">Чернова на съобщение</string>
+    <string name="privacy_show_last_messages">Показване на последните съобщения</string>
 </resources>

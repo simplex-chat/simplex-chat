@@ -163,7 +163,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
   CRRcvFileCancelled u _ ft -> ttyUser u $ receivingFile_ "cancelled" ft
-  CRUserProfileUpdated u p p' s f -> ttyUser u $ viewUserProfileUpdated p p' s f
+  CRUserProfileUpdated u p p' summary -> ttyUser u $ viewUserProfileUpdated p p' summary
   CRUserProfileImage u p -> ttyUser u $ viewUserProfileImage p
   CRContactPrefsUpdated {user = u, fromContact, toContact} -> ttyUser u $ viewUserContactPrefsUpdated u fromContact toContact
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
@@ -1051,10 +1051,11 @@ viewSwitchPhase = \case
   SPSecured -> "secured new address"
   SPCompleted -> "changed address"
 
-viewUserProfileUpdated :: Profile -> Profile -> Int -> Int -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} s f =
+viewUserProfileUpdated :: Profile -> Profile -> UserProfileUpdateSummary -> [StyledString]
+viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} summary =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
+    UserProfileUpdateSummary {updateSuccesses = s, updateFailures = f} = summary
     profileUpdated
       | n == n' && fullName == fullName' && image == image' && contactLink == contactLink' = []
       | n == n' && fullName == fullName' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]

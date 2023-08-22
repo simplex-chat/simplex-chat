@@ -94,6 +94,7 @@ android {
         "pl",
         "pt-rBR",
         "ru",
+        "th",
         "zh-rCN"
     )
     //    }

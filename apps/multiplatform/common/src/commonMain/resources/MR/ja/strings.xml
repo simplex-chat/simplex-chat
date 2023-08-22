@@ -68,8 +68,6 @@
     <string name="answer_call">通話に応答</string>
     <string name="settings_section_title_icon">アプリのアイコン</string>
     <string name="full_backup">アプリデータのバックアップ</string>
-    <string name="incognito_random_profile_from_contact_description">このリンクの送信元にランダムなプロフィール(ダミー)が送られます。</string>
-    <string name="incognito_random_profile_description">連絡先にランダムなプロフィール(ダミー)が送られます。</string>
     <string name="audio_call_no_encryption">音声通話 (エンドツーエンド暗号化なし）</string>
     <string name="icon_descr_asked_to_receive">画像受信を依頼しました。</string>
     <string name="auth_unavailable">認証不可能</string>
@@ -196,7 +194,6 @@
     <string name="v4_3_improved_server_configuration">サーバ設定の向上</string>
     <string name="v4_3_improved_privacy_and_security">プライバシーとセキュリティ強化</string>
     <string name="settings_section_title_incognito">シークレットモード</string>
-    <string name="group_unsupported_incognito_main_profile_sent">ここではシークレットモードが無効です。メインのプロフィールがグループのメンバーに送られます。</string>
     <string name="new_in_version">%s バージョンアップで新しい</string>
     <string name="new_passphrase">新しい暗証フレーズ</string>
     <string name="chat_item_ttl_none">一度も</string>
@@ -313,7 +310,6 @@
     <string name="invalid_contact_link">無効なリンク！</string>
     <string name="invalid_QR_code">無効なQRコード</string>
     <string name="icon_descr_more_button">つづき</string>
-    <string name="paste_connection_link_below_to_connect">連絡相手から頂いたリンクを以下の入力欄に貼り付けて繋がります。</string>
     <string name="incorrect_code">誤ったセキュリティコード！</string>
     <string name="paste_button">貼り付け</string>
     <string name="chat_console">チャットのコンソール</string>
@@ -727,7 +723,6 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">あなたのチャットプロフィールが
 \n連絡相手に送られます。</string>
     <string name="share_invitation_link">ワンタイムリンクを送る</string>
-    <string name="your_profile_will_be_sent">あなたのチャットプロフィールが連絡相手に送られます。</string>
     <string name="scan_code">コードを読み込む</string>
     <string name="scan_code_from_contacts_app">連絡相手のアプリからセキュリティコードを読み込む</string>
     <string name="chat_lock">SimpleXロック</string>
@@ -933,7 +928,6 @@
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">連絡先が繋がりリクエストを承認したら、接続されます。後でチェックするか、しばらくお待ちください。</string>
     <string name="switch_receiving_address">受信アドレスを変える</string>
     <string name="incognito_random_profile">あなたのランダム・プロフィール</string>
-    <string name="incognito_info_find">シークレットモード接続のプロフィールを確認するには、チャットの上部の連絡先、またはグループ名をタップします。</string>
     <string name="v4_3_voice_messages">音声メッセージ</string>
     <string name="settings_section_title_socks">SOCKSプロキシ</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">データベースのエキスポート、読み込み、削除するにはチャットを閉じてからです。チャットを閉じると送受信ができなくなります。</string>

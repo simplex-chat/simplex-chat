@@ -212,6 +212,7 @@ object AppearanceScope {
       "pl" to "Polski",
       "pt-BR" to "Português (Brasil)",
       "ru" to "Русский",
+      "th" to "ภาษาไทย",
       "zh-CN" to "简体中文"
     )
     val values by remember(ChatController.appPrefs.appLanguage.state.value) { mutableStateOf(supportedLanguages.map { it.key to it.value }) }
