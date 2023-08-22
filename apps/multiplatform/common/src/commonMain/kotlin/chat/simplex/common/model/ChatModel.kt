@@ -933,6 +933,14 @@ data class LocalProfile(
 }
 
 @Serializable
+data class UserProfileUpdateSummary(
+  val notChanged: Int,
+  val updateSuccesses: Int,
+  val updateFailures: Int,
+  val changedContacts: List<Contact>
+)
+
+@Serializable
 class Group (
   val groupInfo: GroupInfo,
   var members: List<GroupMember>

@@ -910,11 +910,11 @@ object ChatController {
     return null
   }
 
-  suspend fun apiUpdateProfile(profile: Profile): Profile? {
+  suspend fun apiUpdateProfile(profile: Profile): Pair<Profile, List<Contact>>? {
     val userId = kotlin.runCatching { currentUserId("apiUpdateProfile") }.getOrElse { return null }
     val r = sendCmd(CC.ApiUpdateProfile(userId, profile))
-    if (r is CR.UserProfileNoChange) return profile
-    if (r is CR.UserProfileUpdated) return r.toProfile
+    if (r is CR.UserProfileNoChange) return profile to emptyList()
+    if (r is CR.UserProfileUpdated) return r.toProfile to r.updateSummary.changedContacts
     Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -3247,7 +3247,7 @@ sealed class CR {
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: User, val contact: Contact): CR()
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: User, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
-  @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile): CR()
+  @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
   @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User, val updatedUser: User): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: User, val toContact: Contact): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val user: User, val toConnection: PendingContactConnection): CR()

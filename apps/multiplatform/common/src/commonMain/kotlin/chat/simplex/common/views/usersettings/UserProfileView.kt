@@ -39,9 +39,11 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
       close,
       saveProfile = { displayName, fullName, image ->
         withApi {
-          val newProfile = chatModel.controller.apiUpdateProfile(profile.copy(displayName = displayName, fullName = fullName, image = image))
-          if (newProfile != null) {
+          val updated = chatModel.controller.apiUpdateProfile(profile.copy(displayName = displayName, fullName = fullName, image = image))
+          if (updated != null) {
+            val (newProfile, updatedContacts) = updated
             chatModel.updateCurrentUser(newProfile)
+            updatedContacts.forEach(chatModel::updateContact)
             profile = newProfile
           }
           close()
