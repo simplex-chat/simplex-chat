@@ -286,8 +286,6 @@ private sealed class DropdownSelection {
     // https://youtrack.jetbrains.com/issue/KT-31239
     when (this) {
       is DropdownValue -> (this as? DropdownValue).hashCode()
-      is Custom -> 0
-    // this one produce StackoverflowError
-    // (this as? Custom).hashCode()
+      is Custom -> (this as? Custom).hashCode()
     }
 }
