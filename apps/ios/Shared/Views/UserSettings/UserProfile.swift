@@ -144,10 +144,9 @@ struct UserProfile: View {
     func saveProfile() {
         Task {
             do {
-                if let (newProfile, updatedContacts) = try await apiUpdateProfile(profile: profile) {
+                if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
                     DispatchQueue.main.async {
                         chatModel.updateCurrentUser(newProfile)
-                        updatedContacts.forEach(chatModel.updateContact)
                         profile = newProfile
                     }
                 }
