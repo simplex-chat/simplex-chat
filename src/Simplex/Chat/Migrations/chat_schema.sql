@@ -31,7 +31,9 @@ CREATE TABLE users(
   agent_user_id INTEGER CHECK(agent_user_id NOT NULL),
   view_pwd_hash BLOB,
   view_pwd_salt BLOB,
-  show_ntfs INTEGER NOT NULL DEFAULT 1, -- 1 for active user
+  show_ntfs INTEGER NOT NULL DEFAULT 1,
+  send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
+  send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -65,6 +67,7 @@ CREATE TABLE contacts(
   chat_ts TEXT,
   deleted INTEGER NOT NULL DEFAULT 0,
   favorite INTEGER NOT NULL DEFAULT 0,
+  send_rcpts INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -137,7 +140,8 @@ CREATE TABLE groups(
   host_conn_custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   chat_ts TEXT,
-  favorite INTEGER NOT NULL DEFAULT 0, -- received
+  favorite INTEGER NOT NULL DEFAULT 0,
+  send_rcpts INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -492,6 +496,14 @@ CREATE TABLE chat_item_moderations(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE TABLE group_snd_item_statuses(
+  group_snd_item_status_id INTEGER PRIMARY KEY,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  group_snd_item_status TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -682,4 +694,14 @@ CREATE INDEX idx_chat_item_moderations_group ON chat_item_moderations(
   group_id,
   item_member_id,
   shared_msg_id
+);
+CREATE INDEX idx_group_snd_item_statuses_chat_item_id ON group_snd_item_statuses(
+  chat_item_id
+);
+CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statuses(
+  group_member_id
+);
+CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
+  user_id,
+  item_status
 );

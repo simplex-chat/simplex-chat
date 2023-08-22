@@ -9,6 +9,7 @@
 
 module Simplex.Chat.Store.Profiles
   ( AutoAccept (..),
+    UserMsgReceiptSettings (..),
     UserContactLink (..),
     createUserRecord,
     createUserRecordAt,
@@ -27,6 +28,9 @@ module Simplex.Chat.Store.Profiles
     getUserFileInfo,
     deleteUserRecord,
     updateUserPrivacy,
+    updateAllContactReceipts,
+    updateUserContactReceipts,
+    updateUserGroupReceipts,
     updateUserProfile,
     setUserProfileContactLink,
     getUserContactProfiles,
@@ -62,7 +66,6 @@ import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
-import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
 import Simplex.Chat.Call
@@ -71,8 +74,10 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..))
@@ -86,10 +91,13 @@ createUserRecordAt :: DB.Connection -> AgentUserId -> Profile -> Bool -> UTCTime
 createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, preferences = userPreferences} activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
+    let showNtfs = True
+        sendRcptsContacts = True
+        sendRcptsSmallGroups = True
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, created_at, updated_at) VALUES (?,?,?,0,?,?,?)"
-      (auId, displayName, activeUser, True, currentTs, currentTs)
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,0,?,?,?,?,?)"
+      (auId, displayName, activeUser, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, currentTs, currentTs)
     userId <- insertedRowId db
     DB.execute
       db
@@ -106,7 +114,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences, True) :. (Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -212,6 +220,23 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
     (hashSalt viewPwdHash :. (showNtfs, userId))
   where
     hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
+
+updateAllContactReceipts :: DB.Connection -> Bool -> IO ()
+updateAllContactReceipts db onOff =
+  DB.execute
+    db
+    "UPDATE users SET send_rcpts_contacts = ?, send_rcpts_small_groups = ? WHERE view_pwd_hash IS NULL"
+    (onOff, onOff)
+
+updateUserContactReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
+updateUserContactReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
+  DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE user_id = ?" (enable, userId)
+  when clearOverrides $ DB.execute_ db "UPDATE contacts SET send_rcpts = NULL"
+
+updateUserGroupReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
+updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
+  DB.execute db "UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?" (enable, userId)
+  when clearOverrides $ DB.execute_ db "UPDATE groups SET send_rcpts = NULL"
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
@@ -357,6 +382,12 @@ deleteUserAddress db user@User {userId} = do
   void $ setUserProfileContactLink db user Nothing
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
+data UserMsgReceiptSettings = UserMsgReceiptSettings
+  { enable :: Bool,
+    clearOverrides :: Bool
+  }
+  deriving (Show)
+
 data UserContactLink = UserContactLink
   { connReqContact :: ConnReqContact,
     autoAccept :: Maybe AutoAccept
@@ -366,14 +397,14 @@ data UserContactLink = UserContactLink
 instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
 
 data AutoAccept = AutoAccept
-  { acceptIncognito :: Bool,
+  { acceptIncognito :: IncognitoEnabled,
     autoReply :: Maybe MsgContent
   }
   deriving (Show, Generic)
 
 instance ToJSON AutoAccept where toEncoding = J.genericToEncoding J.defaultOptions
 
-toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
+toUserContactLink :: (ConnReqContact, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
 toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
   UserContactLink connReq $
     if autoAccept then Just AutoAccept {acceptIncognito, autoReply} else Nothing
@@ -420,9 +451,6 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
     ucl = case autoAccept of
       Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
       _ -> (False, False, Nothing)
-
-
-
 
 getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> IO [ServerCfg p]
 getProtocolServers db User {userId} =

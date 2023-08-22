@@ -236,16 +236,19 @@
 "A new contact" = "新联系人";
 
 /* No comment provided by engineer. */
-"A random profile will be sent to the contact that you received this link from" = "一个随机个人资料将被发送至给予您链接的联系人那里";
-
-/* No comment provided by engineer. */
-"A random profile will be sent to your contact" = "一个随机资料将发送给您的联系人";
-
-/* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "一个单独的 TCP 连接将被用于**您在应用程序中的每个聊天资料**。";
 
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "每个联系人和群成员将使用一个独立的 TCP 连接。\n请注意：如果您有许多连接，将会消耗更多的电量和流量，并且某些连接可能会失败。";
+
+/* No comment provided by engineer. */
+"Abort" = "中止";
+
+/* No comment provided by engineer. */
+"Abort changing address" = "中止地址更改";
+
+/* No comment provided by engineer. */
+"Abort changing address?" = "中止地址更改？";
 
 /* No comment provided by engineer. */
 "About SimpleX" = "关于SimpleX";
@@ -267,12 +270,12 @@
 "Accept" = "接受";
 
 /* No comment provided by engineer. */
-"Accept contact" = "接受联系人";
+"Accept connection request?" = "接受联系人";
 
 /* notification body */
 "Accept contact request from %@?" = "接受来自 %@ 的联系人请求？";
 
-/* No comment provided by engineer. */
+/* accept contact request via notification */
 "Accept incognito" = "接受隐身聊天";
 
 /* call status */
@@ -301,6 +304,9 @@
 
 /* No comment provided by engineer. */
 "Address" = "地址";
+
+/* No comment provided by engineer. */
+"Address change will be aborted. Old receiving address will be used." = "将中止地址更改。将使用旧接收地址。";
 
 /* member role */
 "admin" = "管理员";
@@ -358,6 +364,9 @@
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages." = "允许不可撤回地删除已发送消息。";
+
+/* No comment provided by engineer. */
+"Allow to send files and media." = "允许发送文件和媒体。";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "允许发送语音消息。";
@@ -426,7 +435,7 @@
 "Audio & video calls" = "语音和视频通话";
 
 /* No comment provided by engineer. */
-"Audio and video calls" = "音视频通话";
+"Audio and video calls" = "语音和视频通话";
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "语音通话（非端到端加密）";
@@ -573,12 +582,6 @@
 /* rcv group event chat item */
 "changed your role to %@" = "更改您的角色为 %@";
 
-/* chat item text */
-"changing address for %@..." = "更改 %@... 的地址中";
-
-/* chat item text */
-"changing address..." = "更改地址中……";
-
 /* No comment provided by engineer. */
 "Chat archive" = "聊天档案";
 
@@ -670,7 +673,7 @@
 "connect to SimpleX Chat developers." = "连接到 SimpleX Chat 开发者。";
 
 /* No comment provided by engineer. */
-"Connect via contact link?" = "通过联系人链接进行连接？";
+"Connect via contact link" = "通过联系人链接进行连接？";
 
 /* No comment provided by engineer. */
 "Connect via group link?" = "通过群组链接连接？";
@@ -682,7 +685,7 @@
 "Connect via link / QR code" = "通过群组链接/二维码连接";
 
 /* No comment provided by engineer. */
-"Connect via one-time link?" = "通过一次性链接连接？";
+"Connect via one-time link" = "通过一次性链接连接？";
 
 /* No comment provided by engineer. */
 "connected" = "已连接";
@@ -725,9 +728,6 @@
 
 /* chat list item title (it should not be shown */
 "connection established" = "连接已建立";
-
-/* No comment provided by engineer. */
-"Connection request" = "连接请求";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "已发送连接请求！";
@@ -897,7 +897,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "分散式";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "解密错误";
 
 /* pref value */
@@ -1219,6 +1219,9 @@
 "Error" = "错误";
 
 /* No comment provided by engineer. */
+"Error aborting address change" = "中止地址更改错误";
+
+/* No comment provided by engineer. */
 "Error accepting contact request" = "接受联系人请求错误";
 
 /* No comment provided by engineer. */
@@ -1366,13 +1369,16 @@
 "Exported database archive." = "导出数据库归档。";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "导出数据库档案中……";
+"Exporting database archive…" = "导出数据库档案中…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "移除密码失败";
 
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "快速且无需等待发件人在线！";
+
+/* No comment provided by engineer. */
+"Favorite" = "最喜欢";
 
 /* No comment provided by engineer. */
 "File will be deleted from servers." = "文件将从服务器中删除。";
@@ -1388,6 +1394,15 @@
 
 /* No comment provided by engineer. */
 "Files & media" = "文件和媒体";
+
+/* chat feature */
+"Files and media" = "文件和媒体";
+
+/* No comment provided by engineer. */
+"Files and media are prohibited in this group." = "此群组中禁止文件和媒体。";
+
+/* No comment provided by engineer. */
+"Files and media prohibited!" = "禁止文件和媒体！";
 
 /* No comment provided by engineer. */
 "Finally, we have them! 🚀" = "终于我们有它们了！ 🚀";
@@ -1459,6 +1474,9 @@
 "Group members can send disappearing messages." = "群组成员可以发送限时消息。";
 
 /* No comment provided by engineer. */
+"Group members can send files and media." = "群组成员可以发送文件和媒体。";
+
+/* No comment provided by engineer. */
 "Group members can send voice messages." = "群组成员可以发送语音消息。";
 
 /* notification */
@@ -1512,7 +1530,7 @@
 /* No comment provided by engineer. */
 "Hide:" = "隐藏：";
 
-/* copied message info */
+/* No comment provided by engineer. */
 "History" = "历史记录";
 
 /* time unit */
@@ -1586,12 +1604,6 @@
 
 /* No comment provided by engineer. */
 "Incognito mode" = "隐身模式";
-
-/* No comment provided by engineer. */
-"Incognito mode is not supported here - your main profile will be sent to group members" = "此处不支持隐身模式——您的主要个人资料将发送给群组成员";
-
-/* No comment provided by engineer. */
-"Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." = "隐身模式可以保护你的主要个人资料名称和图像的隐私——对于每个新的联系人，都会创建一个新的随机个人资料。";
 
 /* chat list item description */
 "incognito via contact address link" = "通过联系人地址链接隐身聊天";
@@ -1732,7 +1744,7 @@
 "Join incognito" = "加入隐身聊天";
 
 /* No comment provided by engineer. */
-"Joining group" = "加入群组";
+"Joining group" = "加入群组中";
 
 /* No comment provided by engineer. */
 "Keychain error" = "钥匙串错误";
@@ -1839,7 +1851,7 @@
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "成员将被移出群组——此操作无法撤消！";
 
-/* No comment provided by engineer. */
+/* item status text */
 "Message delivery error" = "消息传递错误";
 
 /* No comment provided by engineer. */
@@ -1867,7 +1879,7 @@
 "Messages & files" = "消息";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "迁移数据库档案中……";
+"Migrating database archive…" = "迁移数据库档案中…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "迁移错误：";
@@ -1987,6 +1999,9 @@
 "no e2e encryption" = "无端到端加密";
 
 /* No comment provided by engineer. */
+"No filtered chats" = "无过滤聊天";
+
+/* No comment provided by engineer. */
 "No group!" = "未找到群组！";
 
 /* No comment provided by engineer. */
@@ -2055,6 +2070,9 @@
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "只有群主可以改变群组偏好设置。";
+
+/* No comment provided by engineer. */
+"Only group owners can enable files and media." = "只有组主可以启用文件和媒体。";
 
 /* No comment provided by engineer. */
 "Only group owners can enable voice messages." = "只有群主可以启用语音信息。";
@@ -2143,8 +2161,8 @@
 /* No comment provided by engineer. */
 "Paste received link" = "粘贴收到的链接";
 
-/* No comment provided by engineer. */
-"Paste the link you received into the box below to connect with your contact." = "将您收到的链接粘贴到下面的框中以与您的联系人联系。";
+/* placeholder */
+"Paste the link you received to connect with your contact." = "将您收到的链接粘贴到下面的框中以与您的联系人联系。";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "点对点";
@@ -2258,6 +2276,9 @@
 "Prohibit sending disappearing messages." = "禁止发送限时消息。";
 
 /* No comment provided by engineer. */
+"Prohibit sending files and media." = "禁止发送文件和媒体。";
+
+/* No comment provided by engineer. */
 "Prohibit sending voice messages." = "禁止发送语音消息。";
 
 /* No comment provided by engineer. */
@@ -2274,9 +2295,6 @@
 
 /* No comment provided by engineer. */
 "Rate the app" = "评价此应用程序";
-
-/* chat item menu */
-"React..." = "回应……";
 
 /* No comment provided by engineer. */
 "Read" = "已读";
@@ -2315,6 +2333,9 @@
 "Received message" = "收到的信息";
 
 /* No comment provided by engineer. */
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "接收地址将变更到不同的服务器。地址更改将在发件人上线后完成。";
+
+/* No comment provided by engineer. */
 "Receiving file will be stopped." = "即将停止接收文件。";
 
 /* No comment provided by engineer. */
@@ -2336,7 +2357,7 @@
 "Reject" = "拒绝";
 
 /* No comment provided by engineer. */
-"Reject contact (sender NOT notified)" = "拒绝联系人（发送者不会被通知)";
+"Reject (sender NOT notified)" = "拒绝联系人（发送者不会被通知)";
 
 /* No comment provided by engineer. */
 "Reject contact request" = "拒绝联系人请求";
@@ -2882,9 +2903,6 @@
 "this contact" = "这个联系人";
 
 /* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "此错误对于此连接是永久性的，请重新连接。";
-
-/* No comment provided by engineer. */
 "This group no longer exists." = "该群组已不存在。";
 
 /* No comment provided by engineer. */
@@ -2895,9 +2913,6 @@
 
 /* No comment provided by engineer. */
 "To connect, your contact can scan QR code or use the link in the app." = "您的联系人可以扫描二维码或使用应用程序中的链接来建立连接。";
-
-/* No comment provided by engineer. */
-"To find the profile used for an incognito connection, tap the contact or group name on top of the chat." = "要查找用于隐身聊天连接的资料，点击聊天顶部的联系人或群组名。";
 
 /* No comment provided by engineer. */
 "To make a new connection" = "建立新连接";
@@ -2944,11 +2959,14 @@
 /* No comment provided by engineer. */
 "Unable to record voice message" = "无法录制语音消息";
 
-/* No comment provided by engineer. */
+/* item status description */
 "Unexpected error: %@" = "意外错误： ％@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "未预料的迁移状态";
+
+/* No comment provided by engineer. */
+"Unfav." = "取消最喜欢";
 
 /* No comment provided by engineer. */
 "Unhide" = "取消隐藏";
@@ -3257,7 +3275,7 @@
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "您必须在每次应用程序启动时输入密码——它不存储在设备上。";
 
 /* No comment provided by engineer. */
-"You invited your contact" = "您邀请了您的联系人";
+"You invited a contact" = "您邀请了您的联系人";
 
 /* No comment provided by engineer. */
 "You joined this group" = "您已加入此群组";
@@ -3338,9 +3356,6 @@
 "Your chat profile will be sent to group members" = "您的聊天资料将被发送给群组成员";
 
 /* No comment provided by engineer. */
-"Your chat profile will be sent to your contact" = "您的聊天资料将被发送给您的联系人";
-
-/* No comment provided by engineer. */
 "Your chat profiles" = "您的聊天资料";
 
 /* No comment provided by engineer. */
@@ -3375,9 +3390,6 @@
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "您的资料存储在您的设备上并仅与您的联系人共享。\nSimpleX 服务器无法看到您的资料。";
-
-/* No comment provided by engineer. */
-"Your profile will be sent to the contact that you received this link from" = "您的个人资料将发送给您收到此链接的联系人";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "您的资料、联系人和发送的消息存储在您的设备上。";

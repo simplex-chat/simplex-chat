@@ -76,7 +76,7 @@ class NotificationService: UNNotificationServiceExtension {
     var badgeCount: Int = 0
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
-        logger.debug("NotificationService.didReceive")
+        logger.debug("DEBUGGING: NotificationService.didReceive")
         if let ntf = request.content.mutableCopy() as? UNMutableNotificationContent {
             setBestAttemptNtf(ntf)
         }
@@ -127,7 +127,7 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
                     setBestAttemptNtf(
-                        ntfMsgInfo.user.showNotifications
+                        ntfMsgInfo.ntfsEnabled
                         ? .nse(notification: createConnectionEventNtf(ntfMsgInfo.user, connEntity))
                         : .empty
                     )
@@ -149,7 +149,7 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     override func serviceExtensionTimeWillExpire() {
-        logger.debug("NotificationService.serviceExtensionTimeWillExpire")
+        logger.debug("DEBUGGING: NotificationService.serviceExtensionTimeWillExpire")
         deliverBestAttemptNtf()
     }
 
@@ -219,7 +219,6 @@ func startChat() -> DBMigrationResult? {
             let justStarted = try apiStartChat()
             chatStarted = true
             if justStarted {
-                try apiSetIncognito(incognito: incognitoGroupDefault.get())
                 chatLastStartGroupDefault.set(Date.now)
                 Task { await receiveMessages() }
             }
@@ -275,7 +274,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
             cItem = autoReceiveFile(file) ?? cItem
         }
         let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(notification: createMessageReceivedNtf(user, cInfo, cItem)) : .empty
-        return cItem.showMutableNotification ? (aChatItem.chatId, ntf) : nil
+        return cItem.showNotification ? (aChatItem.chatId, ntf) : nil
     case let .rcvFileSndCancelled(_, aChatItem, _):
         cleanupFile(aChatItem)
         return nil
@@ -352,12 +351,6 @@ func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
     throw r
 }
 
-func apiSetIncognito(incognito: Bool) throws {
-    let r = sendSimpleXCmd(.setIncognito(incognito: incognito))
-    if case .cmdOk = r { return }
-    throw r
-}
-
 func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     guard apiGetActiveUser() != nil else {
         logger.debug("no active user")
@@ -408,4 +401,8 @@ struct NtfMessages {
     var connEntity: ConnectionEntity?
     var msgTs: Date?
     var ntfMessages: [NtfMsgInfo]
+
+    var ntfsEnabled: Bool {
+        user.showNotifications && (connEntity?.ntfsEnabled ?? false)
+    }
 }

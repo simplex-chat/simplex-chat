@@ -44,7 +44,6 @@ struct ComposeState {
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
-    var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
     init(
@@ -234,13 +233,14 @@ struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
-    @FocusState.Binding var keyboardVisible: Bool
+    @Binding var keyboardVisible: Bool
 
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
     @State var pendingLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showChooseSource = false
     @State private var showMediaPicker = false
     @State private var showTakePhoto = false
@@ -254,6 +254,8 @@ struct ComposeView: View {
     // fails to stop on ComposeVoiceView.playbackMode().onDisappear,
     // this is a workaround to fire an explicit event in certain cases
     @State private var stopPlayback: Bool = false
+
+    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -309,7 +311,10 @@ struct ComposeView: View {
                         allowVoiceMessagesToContact: allowVoiceMessagesToContact,
                         timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
-                        keyboardVisible: $keyboardVisible
+                        keyboardVisible: $keyboardVisible,
+                        sendButtonColor: chat.chatInfo.incognito
+                            ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
+                            : .accentColor
                     )
                     .padding(.trailing, 12)
                     .background(.background)
@@ -442,7 +447,15 @@ struct ComposeView: View {
             } else if (composeState.inProgress) {
                 clearCurrentDraft()
             } else if !composeState.empty  {
-                saveCurrentDraft()
+                if case .recording = composeState.voiceMessageRecordingState {
+                    finishVoiceMessageRecording()
+                    if let fileName = composeState.voiceMessageRecordingFileName {
+                        chatModel.filesToDelete.insert(getAppFilePath(fileName))
+                    }
+                }
+                if saveLastDraft {
+                    saveCurrentDraft()
+                }
             } else {
                 cancelCurrentVoiceRecording()
                 clearCurrentDraft()
@@ -655,27 +668,28 @@ struct ComposeView: View {
         return sent
 
         func sending() async {
-            await MainActor.run { composeState.disabled = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if composeState.disabled { composeState.inProgress = true }
-            }
+            await MainActor.run { composeState.inProgress = true }
         }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
             if let oldMsgContent = ei.content.msgContent {
                 do {
                     let mc = updateMsgContent(oldMsgContent)
-                    let chatItem = try await apiUpdateChatItem(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        itemId: ei.id,
-                        msg: mc,
-                        live: live
-                    )
-                    await MainActor.run {
-                        _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                    if mc != oldMsgContent || (ei.meta.itemLive ?? false) {
+                        let chatItem = try await apiUpdateChatItem(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            itemId: ei.id,
+                            msg: mc,
+                            live: live
+                        )
+                        await MainActor.run {
+                            _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                        }
+                        return chatItem
+                    } else {
+                        return nil
                     }
-                    return chatItem
                 } catch {
                     logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
                     AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
@@ -848,7 +862,6 @@ struct ComposeView: View {
 
     private func clearState(live: Bool = false) {
         if live {
-            composeState.disabled = false
             composeState.inProgress = false
         } else {
             composeState = ComposeState()
@@ -861,12 +874,6 @@ struct ComposeView: View {
     }
 
     private func saveCurrentDraft() {
-        if case .recording = composeState.voiceMessageRecordingState {
-            finishVoiceMessageRecording()
-            if let fileName = composeState.voiceMessageRecordingFileName {
-                chatModel.filesToDelete.insert(getAppFilePath(fileName))
-            }
-        }
         chatModel.draft = composeState
         chatModel.draftChatId = chat.id
     }
@@ -943,19 +950,18 @@ struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
         @State var composeState = ComposeState(message: "hello")
-        @FocusState var keyboardVisible: Bool
 
         return Group {
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
         }

@@ -18,14 +18,32 @@ struct TerminalView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State var composeState: ComposeState = ComposeState()
-    @FocusState private var keyboardVisible: Bool
+    @State private var keyboardVisible = false
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
     @State private var scrolled = false
+    @State private var showing = false
 
     var body: some View {
         if authorized {
             terminalView()
+                .onAppear {
+                    if showing { return }
+                    showing = true
+                    Task {
+                        let items = await TerminalItems.shared.items()
+                        await MainActor.run {
+                            chatModel.terminalItems = items
+                            chatModel.showingTerminal = true
+                        }
+                    }
+                }
+                .onDisappear {
+                    if terminalItem == nil {
+                        chatModel.showingTerminal = false
+                        chatModel.terminalItems = []
+                    }
+                }
         } else {
             Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
             .onAppear(perform: runAuth)
@@ -118,9 +136,8 @@ struct TerminalView: View {
         let cmd = ChatCommand.string(composeState.message)
         if composeState.message.starts(with: "/sql") && (!prefPerformLA || !developerTools) {
             let resp = ChatResponse.chatCmdError(user_: nil, chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
-            DispatchQueue.main.async {
-                ChatModel.shared.addTerminalItem(.cmd(.now, cmd))
-                ChatModel.shared.addTerminalItem(.resp(.now, resp))
+            Task {
+                await TerminalItems.shared.addCommand(.now, cmd, resp)
             }
         } else {
             DispatchQueue.global().async {

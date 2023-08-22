@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
 import Simplex.Messaging.Encoding.String
 import System.Directory (doesFileExist)
@@ -47,9 +48,15 @@ xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' d t = do
+xit'' = ifCI xit it
+
+xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
+xdescribe'' = ifCI xdescribe describe
+
+ifCI :: HasCallStack => (HasCallStack => String -> a -> SpecWith b) -> (HasCallStack => String -> a -> SpecWith b) -> String -> a -> SpecWith b
+ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
-  (if ci == Just "true" then xit else it) d t
+  (if ci == Just "true" then xrun else run) d t
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
@@ -307,6 +314,12 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
 (cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
 
+(⩗) :: HasCallStack => TestCC -> String -> Expectation
+cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
+
+(%) :: HasCallStack => TestCC -> String -> Expectation
+cc % line = (dropTime . dropPartialReceipt <$> getTermLine cc) `shouldReturn` line
+
 (</) :: HasCallStack => TestCC -> Expectation
 (</) = (<// 500000)
 
@@ -340,6 +353,31 @@ dropTime_ :: String -> Maybe String
 dropTime_ msg = case splitAt 6 msg of
   ([m, m', ':', s, s', ' '], text) ->
     if all isDigit [m, m', s, s'] then Just text else Nothing
+  _ -> Nothing
+
+dropStrPrefix :: HasCallStack => String -> String -> String
+dropStrPrefix pfx s = 
+  let (p, rest) = splitAt (length pfx) s
+   in if p == pfx then rest else error $ "no prefix " <> pfx <> " in string : " <> s
+
+dropReceipt :: HasCallStack => String -> String
+dropReceipt msg = fromMaybe err $ dropReceipt_ msg
+  where
+    err = error $ "invalid receipt: " <> msg
+
+dropReceipt_ :: String -> Maybe String
+dropReceipt_ msg = case splitAt 2 msg of
+  ("⩗ ", text) -> Just text
+  _ -> Nothing
+
+dropPartialReceipt :: HasCallStack => String -> String
+dropPartialReceipt msg = fromMaybe err $ dropPartialReceipt_ msg
+  where
+    err = error $ "invalid partial receipt: " <> msg
+
+dropPartialReceipt_ :: String -> Maybe String
+dropPartialReceipt_ msg = case splitAt 2 msg of
+  ("% ", text) -> Just text
   _ -> Nothing
 
 getInvitation :: HasCallStack => TestCC -> IO String
@@ -432,6 +470,7 @@ createGroup3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
 createGroup3 gName cc1 cc2 cc3 = do
   createGroup2 gName cc1 cc2
   connectUsers cc1 cc3
+  name1 <- userName cc1
   name3 <- userName cc3
   sName2 <- showName cc2
   sName3 <- showName cc3
@@ -443,19 +482,23 @@ createGroup3 gName cc1 cc2 cc3 = do
         cc3 <## ("#" <> gName <> ": you joined the group")
         cc3 <## ("#" <> gName <> ": member " <> sName2 <> " is connected"),
       do
-        cc2 <## ("#" <> gName <> ": alice added " <> sName3 <> " to the group (connecting...)")
+        cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName3 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
     ]
 
 addMember :: HasCallStack => String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
-addMember gName inviting invitee role = do
+addMember gName = fullAddMember gName ""
+
+fullAddMember :: HasCallStack => String -> String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
+fullAddMember gName fullName inviting invitee role = do
   name1 <- userName inviting
   memName <- userName invitee
   inviting ##> ("/a " <> gName <> " " <> memName <> " " <> B.unpack (strEncode role))
+  let fullName' = if null fullName || fullName == gName then "" else " (" <> fullName <> ")"
   concurrentlyN_
     [ inviting <## ("invitation to join the group #" <> gName <> " sent to " <> memName),
       do
-        invitee <## ("#" <> gName <> ": " <> name1 <> " invites you to join the group as " <> B.unpack (strEncode role))
+        invitee <## ("#" <> gName <> fullName' <> ": " <> name1 <> " invites you to join the group as " <> B.unpack (strEncode role))
         invitee <## ("use /j " <> gName <> " to accept")
     ]
 

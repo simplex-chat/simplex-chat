@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 enum CreateLinkTab {
     case oneTime
@@ -24,6 +25,7 @@ struct CreateLinkView: View {
     @EnvironmentObject var m: ChatModel
     @State var selection: CreateLinkTab
     @State var connReqInvitation: String = ""
+    @State var contactConnection: PendingContactConnection? = nil
     @State private var creatingConnReq = false
     var viaNavLink = false
 
@@ -39,7 +41,7 @@ struct CreateLinkView: View {
 
     private func createLinkView() -> some View {
         TabView(selection: $selection) {
-            AddContactView(connReqInvitation: connReqInvitation)
+            AddContactView(contactConnection: $contactConnection, connReqInvitation: connReqInvitation)
                 .tabItem {
                     Label(
                         connReqInvitation == ""
@@ -56,7 +58,7 @@ struct CreateLinkView: View {
                 .tag(CreateLinkTab.longTerm)
         }
         .onChange(of: selection) { _ in
-            if case .oneTime = selection, connReqInvitation == "" && !creatingConnReq {
+            if case .oneTime = selection, connReqInvitation == "", contactConnection == nil && !creatingConnReq {
                 createInvitation()
             }
         }
@@ -69,12 +71,14 @@ struct CreateLinkView: View {
     private func createInvitation() {
         creatingConnReq = true
         Task {
-            let connReq = await apiAddContact()
-            await MainActor.run {
-                if let connReq = connReq {
+            if let (connReq, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
+                await MainActor.run {
                     connReqInvitation = connReq
+                    contactConnection = pcc
                     m.connReqInv = connReq
-                } else {
+                }
+            } else {
+                await MainActor.run {
                     creatingConnReq = false
                 }
             }

@@ -13,17 +13,47 @@ struct CIMetaView: View {
     @EnvironmentObject var chat: Chat
     var chatItem: ChatItem
     var metaColor = Color.secondary
+    var paleMetaColor = Color(UIColor.tertiaryLabel)
 
     var body: some View {
         if chatItem.isDeletedContent {
             chatItem.timestampText.font(.caption).foregroundColor(metaColor)
         } else {
-            ciMetaText(chatItem.meta, chatTTL: chat.chatInfo.timedMessagesTTL, color: metaColor)
+            let meta = chatItem.meta
+            let ttl = chat.chatInfo.timedMessagesTTL
+            switch meta.itemStatus {
+            case let .sndSent(sndProgress):
+                switch sndProgress {
+                case .complete: ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .sent)
+                case .partial: ciMetaText(meta, chatTTL: ttl, color: paleMetaColor, sent: .sent)
+                }
+            case let .sndRcvd(_, sndProgress):
+                switch sndProgress {
+                case .complete:
+                    ZStack {
+                        ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd1)
+                        ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd2)
+                    }
+                case .partial:
+                    ZStack {
+                        ciMetaText(meta, chatTTL: ttl, color: paleMetaColor, sent: .rcvd1)
+                        ciMetaText(meta, chatTTL: ttl, color: paleMetaColor, sent: .rcvd2)
+                    }
+                }
+            default:
+                ciMetaText(meta, chatTTL: ttl, color: metaColor)
+            }
         }
     }
 }
 
-func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparent: Bool = false) -> Text {
+enum SentCheckmark {
+    case sent
+    case rcvd1
+    case rcvd2
+}
+
+func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparent: Bool = false, sent: SentCheckmark? = nil) -> Text {
     var r = Text("")
     if meta.itemEdited {
         r = r + statusIconText("pencil", color)
@@ -37,7 +67,16 @@ func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparen
         r = r + Text(" ")
     }
     if let (icon, statusColor) = meta.statusIcon(color) {
-        r = r + statusIconText(icon, transparent ? .clear : statusColor) + Text(" ")
+        let t = Text(Image(systemName: icon)).font(.caption2)
+        let gap = Text("  ").kerning(-1.25)
+        let t1 = t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67))
+        switch sent {
+        case nil: r = r + t1
+        case .sent: r = r + t1 + gap
+        case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67)) + gap
+        case .rcvd2: r = r + gap + t1
+        }
+        r = r + Text(" ")
     } else if !meta.disappearing {
         r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
     }
@@ -51,8 +90,12 @@ private func statusIconText(_ icon: String, _ color: Color) -> Text {
 struct CIMetaView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent))
-            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, itemEdited: true))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent(sndProgress: .complete)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent(sndProgress: .partial)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndRcvd(msgRcptStatus: .ok, sndProgress: .complete)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndRcvd(msgRcptStatus: .ok, sndProgress: .partial)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndRcvd(msgRcptStatus: .badMsgHash, sndProgress: .complete)))
+            CIMetaView(chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent(sndProgress: .complete), itemEdited: true))
             CIMetaView(chatItem: ChatItem.getDeletedContentSample())
         }
         .previewLayout(.fixed(width: 360, height: 100))

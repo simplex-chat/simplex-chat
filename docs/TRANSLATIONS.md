@@ -21,7 +21,19 @@ This document is created to speed up this process, and share some important "got
 
 3. We can also add you to the group of translators for any questions and updates - please connect to the developers via chat (when you just install the app or later, via "Send questions and ideas" in the app settings).
 
-## Translation progress
+## Translation process
+
+It's easier to translate Android app first, and then iOS app, as Android app strings are set up as a glossary for iOS.
+
+The steps are:
+
+1. [You translate Android app](#translating-android-app) in Weblate.
+2. [We review and release Android app translations](#releasing-android-app-translations).
+3. You review translations in the app and correct any mistakes.
+4. [You translate iOS app in Weblate](#translating-ios-app)
+5. We review and release iOS app translations.
+
+### Translating Android app
 
 1. Please start from [Android app](https://hosted.weblate.org/projects/simplex-chat/android/), both when you do the most time-consuming initial translation, and add any strings later. Firstly, iOS strings can be a bit delayed from appearing in Weblate, as it requires a manual step from us before they are visible. Secondary, Android app is set up as a glossary for iOS app, and 2/3 of all strings require just to clicks to transfer them from Android to iOS (it still takes some time, Weblate doesn't automate it, unfortunately).
 
@@ -35,9 +47,24 @@ This document is created to speed up this process, and share some important "got
 
 5. Once all strings in Android app are translated, please review it to ensure consistent style and language, so that the same words are consistently used for similar user actions, same as in English. Sometimes, you will have to use different words in cases when English has just one, please try to use these choices consistently in similar contexts, to make it easier for the end users.
 
-6. When you translate [iOS app](https://hosted.weblate.org/projects/simplex-chat/ios/), a large part of the strings are exactly the same - they can be copied over in one click in glossary section. The visual hint that it can be done is that the whole source string is highlighted in yellow. Many other strings are very similar, they only differ in interpolation syntax or how bold font is used - they require minimal editing. There are some strings that are unique to iOS platform - they need to be translated separately.
+Please also review reverse translations using Chrome browser and *Translate to English* feature in the _Browse_ mode of weblate - this is what we will be reviewing before translations are released. Fix any mistakes, and please add comments in cases when a sufficiently different translations are justified - it will make review much faster.
 
-7. Once you have done all translations, please review reverse translations using Chrome and Translate to English feature - this is what we will be reviewing before translations are released. Fix any mistakes, and please add comments in cases when a sufficiently different translations are justified - it will make review much faster.
+### Releasing Android app translations
+
+Once Android app is translated, please let us know.
+
+We will then:
+  - review all the translations and suggest any corrections - it also takes a bit of time :)
+  - merge them to the source code - while we do it weblate will be locked for changes.
+  - create beta releases of both iOS and Android apps - we can also add you to the internal tester groups, so you can install the apps before anybody else.
+  - release it to our beta users - it's more than a thousand people who use our beta versions.
+  - release the app and include the new language in the announcement.
+
+### Translating iOS app
+
+1. When you translate [iOS app](https://hosted.weblate.org/projects/simplex-chat/ios/), a large part of the strings are exactly the same - they can be copied over in one click in glossary section. The visual hint that it can be done is that the whole source string is highlighted in yellow. Many other strings are very similar, they only differ in interpolation syntax or how bold font is used - they require minimal editing. There are some strings that are unique to iOS platform - they need to be translated separately
+
+2. Please review iOS translations in the same way as Android and let us know when it's ready for review - we will repeat the same process for iOS app.
 
 Thanks a lot! This is a huge effort and a huge help for SimpleX Network to grow.
 
@@ -55,24 +82,9 @@ Thanks a lot! This is a huge effort and a huge help for SimpleX Network to grow.
 
 5. "Moderate" / "moderated". These words means "to delete message of another member" and "deleted by admin" respectively. This feature is used when a member sends the message that is not appropriate for the group. Many languages have similar words.
 
-## Once translation is completed
-
-Once both Android and iOS apps are translated, please let us know.
-
-We will then:
-  - review all the translations and suggest any corrections - it also takes a bit of time :)
-  - merge them to the source code - while we do it weblate will be locked for changes.
-  - create beta releases of both iOS and Android apps - we can also add you to the internal tester groups, so you can install the apps before anybody else.
-  - release it to our beta users - it's more than a thousand people who use our beta versions.
-  - release the app and include the new language in the announcement.
-
-*Please note*: we aim to keep app functions consistent between Android and iOS platforms, when possible, so we will release and announce a new language once both platforms have been translated. It doesn't mean you have to do it, but we will have to wait until somebody else translates the second platform. But if you start from Android, iOS usually takes 3-4x less time to add.
-
-We can make an exception and release the language for Android only in case there are a lot of users in your country installed the app (Google Play Store and Apple App Store share these statistics with us).
-
 ## How we review the translations
 
-To validate the correctness of the translations we review reverse translations by browsing Weblate pages in Google Chrome browser in "Translate to English" mode. E.g., to review the German translations of Android interface somebody from our team scrolled through [these 49 pages](https://hosted.weblate.org/browse/simplex-chat/android/de/).
+To validate the correctness of the translations we review reverse translations by browsing Weblate pages in Google Chrome browser in "Translate to English" mode. E.g., to review the German translations of Android interface somebody from our team scrolled through [these 68 pages](https://hosted.weblate.org/browse/simplex-chat/android/de/).
 
 We are not looking for reverse translation being exactly the same as the original, it is rarely the case, only that it is generally correct.
 

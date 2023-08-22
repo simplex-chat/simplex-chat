@@ -57,6 +57,37 @@ private func serverHost(_ s: String) -> String {
     }
 }
 
+enum SendReceipts: Identifiable, Hashable {
+    case yes
+    case no
+    case userDefault(Bool)
+
+    var id: Self { self }
+
+    var text: LocalizedStringKey {
+        switch self {
+        case .yes: return "yes"
+        case .no: return "no"
+        case let .userDefault(on): return on ? "default (yes)" : "default (no)"
+        }
+    }
+
+    func bool() -> Bool? {
+        switch self {
+        case .yes: return true
+        case .no: return false
+        case .userDefault: return nil
+        }
+    }
+
+    static func fromBool(_ enable: Bool?, userDefault def: Bool) -> SendReceipts {
+        if let enable = enable {
+            return enable ? .yes : .no
+        }
+        return .userDefault(def)
+    }
+}
+
 struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -68,6 +99,8 @@ struct ChatInfoView: View {
     @Binding var connectionCode: String?
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
+    @State private var sendReceipts = SendReceipts.userDefault(true)
+    @State private var sendReceiptsUserDefault = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
@@ -76,6 +109,7 @@ struct ChatInfoView: View {
         case networkStatusAlert
         case switchAddressAlert
         case abortSwitchAddressAlert
+        case syncConnectionForceAlert
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
@@ -85,6 +119,7 @@ struct ChatInfoView: View {
             case .networkStatusAlert: return "networkStatusAlert"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
+            case .syncConnectionForceAlert: return "syncConnectionForceAlert"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -108,13 +143,26 @@ struct ChatInfoView: View {
 
                 if let customUserProfile = customUserProfile {
                     Section("Incognito") {
-                        infoRow("Your random profile", customUserProfile.chatViewName)
+                        HStack {
+                            Text("Your random profile")
+                            Spacer()
+                            Text(customUserProfile.chatViewName)
+                                .foregroundStyle(.indigo)
+                        }
                     }
                 }
 
                 Section {
                     if let code = connectionCode { verifyCodeButton(code) }
                     contactPreferencesButton()
+                    sendReceiptsOption()
+                    if let connStats = connectionStats,
+                       connStats.ratchetSyncAllowed {
+                        synchronizeConnectionButton()
+                    }
+//                    } else if developerTools {
+//                        synchronizeConnectionButtonForce()
+//                    }
                 }
 
                 if let contactLink = contact.contactLink {
@@ -141,12 +189,18 @@ struct ChatInfoView: View {
                         Button("Change receiving address") {
                             alert = .switchAddressAlert
                         }
-                        .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil })
-                        if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
+                        .disabled(
+                            connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
+                            || connStats.ratchetSyncSendProhibited
+                        )
+                        if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
                             Button("Abort changing address") {
                                 alert = .abortSwitchAddressAlert
                             }
-                            .disabled(connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch })
+                            .disabled(
+                                connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                || connStats.ratchetSyncSendProhibited
+                            )
                         }
                         smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
                         smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
@@ -168,6 +222,12 @@ struct ChatInfoView: View {
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            if let currentUser = chatModel.currentUser {
+                sendReceiptsUserDefault = currentUser.sendRcptsContacts
+            }
+            sendReceipts = SendReceipts.fromBool(contact.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
+        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteContactAlert: return deleteContactAlert()
@@ -175,6 +235,7 @@ struct ChatInfoView: View {
             case .networkStatusAlert: return networkStatusAlert()
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
+            case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
@@ -187,20 +248,30 @@ struct ChatInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            HStack {
-                if contact.verified {
-                    Image(systemName: "checkmark.shield")
+            if contact.verified {
+                (
+                    Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(.secondary)
-                }
+                        .font(.title2)
+                    + Text(" ")
+                    + Text(contact.profile.displayName)
+                        .font(.largeTitle)
+                )
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.bottom, 2)
+            } else {
                 Text(contact.profile.displayName)
                     .font(.largeTitle)
-                    .lineLimit(1)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
                     .padding(.bottom, 2)
             }
             if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName {
                 Text(cInfo.fullName)
                     .font(.title2)
-                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -277,6 +348,44 @@ struct ChatInfoView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Contact preferences", systemImage: "switch.2")
+        }
+    }
+
+    private func sendReceiptsOption() -> some View {
+        Picker(selection: $sendReceipts) {
+            ForEach([.yes, .no, .userDefault(sendReceiptsUserDefault)]) { (opt: SendReceipts) in
+                Text(opt.text)
+            }
+        } label: {
+            Label("Send receipts", systemImage: "checkmark.message")
+        }
+        .frame(height: 36)
+        .onChange(of: sendReceipts) { _ in
+            setSendReceipts()
+        }
+    }
+
+    private func setSendReceipts() {
+        var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
+        chatSettings.sendRcpts = sendReceipts.bool()
+        updateChatSettings(chat, chatSettings: chatSettings)
+    }
+
+    private func synchronizeConnectionButton() -> some View {
+        Button {
+            syncContactConnection(force: false)
+        } label: {
+            Label("Fix connection", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
+                .foregroundColor(.orange)
+        }
+    }
+
+    private func synchronizeConnectionButtonForce() -> some View {
+        Button {
+            alert = .syncConnectionForceAlert
+        } label: {
+            Label("Renegotiate encryption", systemImage: "exclamationmark.triangle")
+                .foregroundColor(.red)
         }
     }
 
@@ -370,6 +479,10 @@ struct ChatInfoView: View {
             do {
                 let stats = try apiSwitchContact(contactId: contact.apiId)
                 connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateContactConnectionStats(contact, stats)
+                    dismiss()
+                }
             } catch let error {
                 logger.error("switchContactAddress apiSwitchContact error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")
@@ -385,9 +498,31 @@ struct ChatInfoView: View {
             do {
                 let stats = try apiAbortSwitchContact(contact.apiId)
                 connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateContactConnectionStats(contact, stats)
+                }
             } catch let error {
                 logger.error("abortSwitchContactAddress apiAbortSwitchContact error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error aborting address change")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+
+    private func syncContactConnection(force: Bool) {
+        Task {
+            do {
+                let stats = try apiSyncContactRatchet(contact.apiId, force)
+                connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateContactConnectionStats(contact, stats)
+                    dismiss()
+                }
+            } catch let error {
+                logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
                     alert = .error(title: a.title, error: a.message)
                 }
@@ -410,6 +545,15 @@ func abortSwitchAddressAlert(_ abortSwitchAddress: @escaping () -> Void) -> Aler
         title: Text("Abort changing address?"),
         message: Text("Address change will be aborted. Old receiving address will be used."),
         primaryButton: .destructive(Text("Abort"), action: abortSwitchAddress),
+        secondaryButton: .cancel()
+    )
+}
+
+func syncConnectionForceAlert(_ syncConnectionForce: @escaping () -> Void) -> Alert {
+    Alert(
+        title: Text("Renegotiate encryption?"),
+        message: Text("The encryption is working and the new encryption agreement is not required. It may result in connection errors!"),
+        primaryButton: .destructive(Text("Renegotiate"), action: syncConnectionForce),
         secondaryButton: .cancel()
     )
 }

@@ -37,6 +37,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
+import Simplex.Messaging.Transport.Server (defaultTransportServerConfig)
 import Simplex.Messaging.Version
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import System.FilePath ((</>))
@@ -115,6 +116,7 @@ testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
+      showReceipts = False,
       testView = True,
       tbqSize = 16,
       xftpFileConfig = Nothing
@@ -125,7 +127,7 @@ testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = mkVersionRange 1 1,
       smpAgentVRange = mkVersionRange 1 1,
-      smpCfg = (smpCfg testAgentCfg) {smpServerVRange = mkVersionRange 1 1}
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange 1 1}
     }
 
 testCfgV1 :: ChatConfig
@@ -247,6 +249,7 @@ getTermLine cc =
     Just s -> do
       -- remove condition to always echo virtual terminal
       when (printOutput cc) $ do
+      -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
@@ -267,7 +270,7 @@ testChatOpts2 = testChatCfgOpts2 testCfg
 testChatCfgOpts2 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChatCfgOpts2 cfg opts p1 p2 test = testChatN cfg opts [p1, p2] test_
   where
-    test_ :: [TestCC] -> IO ()
+    test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2] = test tc1 tc2
     test_ _ = error "expected 2 chat clients"
 
@@ -280,14 +283,14 @@ testChatCfg3 cfg = testChatCfgOpts3 cfg testOpts
 testChatCfgOpts3 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChatCfgOpts3 cfg opts p1 p2 p3 test = testChatN cfg opts [p1, p2, p3] test_
   where
-    test_ :: [TestCC] -> IO ()
+    test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2, tc3] = test tc1 tc2 tc3
     test_ _ = error "expected 3 chat clients"
 
 testChat4 :: HasCallStack => Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat4 p1 p2 p3 p4 test = testChatN testCfg testOpts [p1, p2, p3, p4] test_
   where
-    test_ :: [TestCC] -> IO ()
+    test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4
     test_ _ = error "expected 4 chat clients"
 
@@ -299,7 +302,7 @@ serverCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
-      serverTbqSize = 1,
+      -- serverTbqSize = 1,
       msgQueueQuota = 16,
       queueIdBytes = 12,
       msgIdBytes = 6,
@@ -318,7 +321,8 @@ serverCfg =
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       smpServerVRange = supportedSMPServerVRange,
-      logTLSErrors = True
+      transportConfig = defaultTransportServerConfig,
+      controlPort = Nothing
     }
 
 withSmpServer :: IO () -> IO ()
@@ -349,7 +353,7 @@ xftpServerConfig =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
-      logTLSErrors = True
+      transportConfig = defaultTransportServerConfig
     }
 
 withXFTPServer :: IO () -> IO ()

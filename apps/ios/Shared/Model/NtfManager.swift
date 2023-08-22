@@ -12,6 +12,7 @@ import UIKit
 import SimpleXChat
 
 let ntfActionAcceptContact = "NTF_ACT_ACCEPT_CONTACT"
+let ntfActionAcceptContactIncognito = "NTF_ACT_ACCEPT_CONTACT_INCOGNITO"
 let ntfActionAcceptCall = "NTF_ACT_ACCEPT_CALL"
 let ntfActionRejectCall = "NTF_ACT_REJECT_CALL"
 
@@ -41,12 +42,13 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
            userId != chatModel.currentUser?.userId {
             changeActiveUser(userId, viewPwd: nil)
         }
-        if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
+        if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
            let chatId = content.userInfo["chatId"] as? String {
+            let incognito = action == ntfActionAcceptContactIncognito
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-                Task { await acceptContactRequest(contactRequest) }
+                Task { await acceptContactRequest(incognito: incognito, contactRequest: contactRequest) }
             } else {
-                chatModel.ntfContactRequest = chatId
+                chatModel.ntfContactRequest = NTFContactRequest(incognito: incognito, chatId: chatId)
             }
         } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
             if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
@@ -134,11 +136,17 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         UNUserNotificationCenter.current().setNotificationCategories([
             UNNotificationCategory(
                 identifier: ntfCategoryContactRequest,
-                actions: [UNNotificationAction(
-                    identifier: ntfActionAcceptContact,
-                    title: NSLocalizedString("Accept", comment: "accept contact request via notification"),
-                    options: .foreground
-                )],
+                actions: [
+                    UNNotificationAction(
+                        identifier: ntfActionAcceptContact,
+                        title: NSLocalizedString("Accept", comment: "accept contact request via notification"),
+                        options: .foreground
+                    ), UNNotificationAction(
+                        identifier: ntfActionAcceptContactIncognito,
+                        title: NSLocalizedString("Accept incognito", comment: "accept contact request via notification"),
+                        options: .foreground
+                    )
+                ],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("New contact request", comment: "notification")
             ),
@@ -203,17 +211,17 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         center.delegate = self
     }
 
-    func notifyContactRequest(_ user: User, _ contactRequest: UserContactRequest) {
+    func notifyContactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest) {
         logger.debug("NtfManager.notifyContactRequest")
         addNotification(createContactRequestNtf(user, contactRequest))
     }
 
-    func notifyContactConnected(_ user: User, _ contact: Contact) {
+    func notifyContactConnected(_ user: any UserLike, _ contact: Contact) {
         logger.debug("NtfManager.notifyContactConnected")
         addNotification(createContactConnectedNtf(user, contact))
     }
 
-    func notifyMessageReceived(_ user: User, _ cInfo: ChatInfo, _ cItem: ChatItem) {
+    func notifyMessageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
         if cInfo.ntfsEnabled {
             addNotification(createMessageReceivedNtf(user, cInfo, cItem))

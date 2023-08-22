@@ -238,6 +238,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/video")
   ty.addPassthroughCopy("src/css")
   ty.addPassthroughCopy("src/js")
+  ty.addPassthroughCopy("src/lottie_file")
   ty.addPassthroughCopy("src/contact/*.js")
   ty.addPassthroughCopy("src/call")
   ty.addPassthroughCopy("src/hero-phone")
@@ -348,7 +349,7 @@ module.exports = function (ty) {
       if (parsed.path.startsWith("../../blog")) {
         parsed.path = parsed.path.replace("../../blog", "/blog")
       }
-      parsed.path = parsed.path.replace(/\.md$/, ".html")
+      parsed.path = parsed.path.replace(/\.md$/, ".html").toLowerCase()
       return uri.serialize(parsed)
     }
   }).use(markdownItAnchor, {

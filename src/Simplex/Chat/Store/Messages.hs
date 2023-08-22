@@ -44,6 +44,7 @@ module Simplex.Chat.Store.Messages
     createChatItemVersion,
     deleteDirectChatItem,
     markDirectChatItemDeleted,
+    updateGroupChatItemStatus,
     updateGroupChatItem,
     deleteGroupChatItem,
     updateGroupChatItemModerated,
@@ -69,6 +70,7 @@ module Simplex.Chat.Store.Messages
     getGroupChatItem,
     getGroupChatItemBySharedMsgId,
     getGroupMemberCIBySharedMsgId,
+    getGroupChatItemByAgentMsgId,
     getGroupMemberChatItemLast,
     getDirectChatItemIdByText,
     getDirectChatItemIdByText',
@@ -87,6 +89,11 @@ module Simplex.Chat.Store.Messages
     createCIModeration,
     getCIModeration,
     deleteCIModeration,
+    createGroupSndStatus,
+    getGroupSndStatus,
+    updateGroupSndStatus,
+    getGroupSndStatuses,
+    getGroupSndStatusCounts,
   )
 where
 
@@ -103,7 +110,6 @@ import Data.Text (Text)
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
-import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
@@ -115,6 +121,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 
@@ -466,7 +473,7 @@ getDirectChatPreviews_ db user@User {userId} = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.favorite,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
@@ -531,7 +538,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, g.favorite, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1325,6 +1332,16 @@ getDirectChatItemIdByText' db User {userId} contactId msg =
       |]
       (userId, contactId, msg <> "%")
 
+updateGroupChatItemStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> GroupId -> ChatItemId -> CIStatus d -> ExceptT StoreError IO (ChatItem 'CTGroup d)
+updateGroupChatItemStatus db user@User {userId} groupId itemId itemStatus = do
+  ci <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
+  currentTs <- liftIO getCurrentTime
+  liftIO $ DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?" (itemStatus, currentTs, userId, groupId, itemId)
+  pure ci {meta = (meta ci) {itemStatus}}
+  where
+    correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
+    correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+
 updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTGroup d)
 updateGroupChatItem db user groupId ci newContent live msgId_ = do
   currentTs <- liftIO getCurrentTime
@@ -1380,7 +1397,7 @@ updateGroupChatItemModerated db User {userId} gInfo@GroupInfo {groupId} (CChatIt
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just currentTs) m)}, formattedText = Nothing})
+  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just currentTs) m), editable = False}, formattedText = Nothing})
 
 markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> Maybe GroupMember -> UTCTime -> IO ()
 markGroupChatItemDeleted db User {userId} GroupInfo {groupId} (CChatItem _ ci) msgId byGroupMember_ deletedTs = do
@@ -1433,6 +1450,11 @@ getGroupMemberCIBySharedMsgId db user@User {userId} groupId memberId sharedMsgId
         |]
         (GCUserMember, userId, groupId, memberId, sharedMsgId)
   getGroupChatItem db user groupId itemId
+
+getGroupChatItemByAgentMsgId :: DB.Connection -> User -> GroupId -> Int64 -> AgentMsgId -> IO (Maybe (CChatItem 'CTGroup))
+getGroupChatItemByAgentMsgId db user groupId connId msgId = do
+  itemId_ <- getChatItemIdByAgentMsgId db connId msgId
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupChatItem db user groupId) itemId_
 
 getGroupChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
@@ -1847,3 +1869,58 @@ deleteCIModeration db GroupInfo {groupId} itemMemberId (Just sharedMsgId) =
     db
     "DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?"
     (groupId, itemMemberId, sharedMsgId)
+
+createGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
+createGroupSndStatus db itemId memberId status =
+  DB.execute
+    db
+    "INSERT INTO group_snd_item_statuses (chat_item_id, group_member_id, group_snd_item_status) VALUES (?,?,?)"
+    (itemId, memberId, status)
+
+getGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> ExceptT StoreError IO (CIStatus 'MDSnd)
+getGroupSndStatus db itemId memberId =
+  ExceptT . firstRow fromOnly (SENoGroupSndStatus itemId memberId) $
+    DB.query
+      db
+      [sql|
+        SELECT group_snd_item_status
+        FROM group_snd_item_statuses
+        WHERE chat_item_id = ? AND group_member_id = ?
+        LIMIT 1
+      |]
+      (itemId, memberId)
+
+updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
+updateGroupSndStatus db itemId memberId status = do
+  currentTs <- liftIO getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_snd_item_statuses
+      SET group_snd_item_status = ?, updated_at = ?
+      WHERE chat_item_id = ? AND group_member_id  = ?
+    |]
+    (status, currentTs, itemId, memberId)
+
+getGroupSndStatuses :: DB.Connection -> ChatItemId -> IO [(GroupMemberId, CIStatus 'MDSnd)]
+getGroupSndStatuses db itemId =
+  DB.query
+    db
+    [sql|
+      SELECT group_member_id, group_snd_item_status
+      FROM group_snd_item_statuses
+      WHERE chat_item_id = ?
+    |]
+    (Only itemId)
+
+getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(CIStatus 'MDSnd, Int)]
+getGroupSndStatusCounts db itemId =
+  DB.query
+    db
+    [sql|
+      SELECT group_snd_item_status, COUNT(1)
+      FROM group_snd_item_statuses
+      WHERE chat_item_id = ?
+      GROUP BY group_snd_item_status
+    |]
+    (Only itemId)

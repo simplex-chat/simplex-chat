@@ -13,7 +13,25 @@ struct ChatItemInfoView: View {
     @Environment(\.colorScheme) var colorScheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
+    @State private var selection: CIInfoTab = .history
+    @State private var alert: CIInfoViewAlert? = nil
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+
+    enum CIInfoTab {
+        case history
+        case quote
+        case delivery
+    }
+
+    enum CIInfoViewAlert: Identifiable {
+        case alert(title: String, text: String)
+
+        var id: String {
+            switch self {
+            case let .alert(title, text): return "alert \(title) \(text)"
+            }
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -25,6 +43,11 @@ struct ChatItemInfoView: View {
                         }
                     }
                 }
+                .alert(item: $alert) { a in
+                    switch(a) {
+                    case let .alert(title, text): return Alert(title: Text(title), message: Text(text))
+                    }
+                }
         }
     }
 
@@ -34,44 +57,92 @@ struct ChatItemInfoView: View {
         : NSLocalizedString("Received message", comment: "message info title")
     }
 
+    private var numTabs: Int {
+        var numTabs = 1
+        if chatItemInfo?.memberDeliveryStatuses != nil {
+            numTabs += 1
+        }
+        if ci.quotedItem != nil {
+            numTabs += 1
+        }
+        return numTabs
+    }
+
     @ViewBuilder private func itemInfoView() -> some View {
+        if numTabs > 1 {
+            TabView(selection: $selection) {
+                if let mdss = chatItemInfo?.memberDeliveryStatuses {
+                    deliveryTab(mdss)
+                        .tabItem {
+                            Label("Delivery", systemImage: "checkmark.message")
+                        }
+                        .tag(CIInfoTab.delivery)
+                }
+                historyTab()
+                    .tabItem {
+                        Label("History", systemImage: "clock")
+                    }
+                    .tag(CIInfoTab.history)
+                if let qi = ci.quotedItem {
+                    quoteTab(qi)
+                        .tabItem {
+                            Label("In reply to", systemImage: "arrowshape.turn.up.left")
+                        }
+                        .tag(CIInfoTab.quote)
+                }
+            }
+            .onAppear {
+                if chatItemInfo?.memberDeliveryStatuses != nil {
+                    selection = .delivery
+                }
+            }
+        } else {
+            historyTab()
+        }
+    }
+
+    @ViewBuilder private func details() -> some View {
         let meta = ci.meta
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title)
+                .font(.largeTitle)
+                .bold()
+                .padding(.bottom)
+
+            infoRow("Sent at", localTimestamp(meta.itemTs))
+            if !ci.chatDir.sent {
+                infoRow("Received at", localTimestamp(meta.createdAt))
+            }
+            switch (meta.itemDeleted) {
+            case let .deleted(deletedTs):
+                if let deletedTs = deletedTs {
+                    infoRow("Deleted at", localTimestamp(deletedTs))
+                }
+            case let .moderated(deletedTs, _):
+                if let deletedTs = deletedTs {
+                    infoRow("Moderated at", localTimestamp(deletedTs))
+                }
+            default: EmptyView()
+            }
+            if let deleteAt = meta.itemTimed?.deleteAt {
+                infoRow("Disappears at", localTimestamp(deleteAt))
+            }
+            if developerTools {
+                infoRow("Database ID", "\(meta.itemId)")
+                infoRow("Record updated at", localTimestamp(meta.updatedAt))
+            }
+        }
+    }
+
+    @ViewBuilder private func historyTab() -> some View {
         GeometryReader { g in
+            let maxWidth = (g.size.width - 32) * 0.84
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text(title)
-                        .font(.largeTitle)
-                        .bold()
-                        .padding(.bottom)
-
-                    let maxWidth = (g.size.width - 32) * 0.84
-                    infoRow("Sent at", localTimestamp(meta.itemTs))
-                    if !ci.chatDir.sent {
-                        infoRow("Received at", localTimestamp(meta.createdAt))
-                    }
-                    switch (meta.itemDeleted) {
-                    case let .deleted(deletedTs):
-                        if let deletedTs = deletedTs {
-                            infoRow("Deleted at", localTimestamp(deletedTs))
-                        }
-                    case let .moderated(deletedTs, _):
-                        if let deletedTs = deletedTs {
-                            infoRow("Moderated at", localTimestamp(deletedTs))
-                        }
-                    default: EmptyView()
-                    }
-                    if let deleteAt = meta.itemTimed?.deleteAt {
-                        infoRow("Disappears at", localTimestamp(deleteAt))
-                    }
-                    if developerTools {
-                        infoRow("Database ID", "\(meta.itemId)")
-                        infoRow("Record updated at", localTimestamp(meta.updatedAt))
-                    }
-
+                    details()
+                    Divider().padding(.vertical)
                     if let chatItemInfo = chatItemInfo,
                        !chatItemInfo.itemVersions.isEmpty {
-                        Divider().padding(.vertical)
-
                         Text("History")
                             .font(.title2)
                             .padding(.bottom, 4)
@@ -81,16 +152,21 @@ struct ChatItemInfoView: View {
                             }
                         }
                     }
+                    else {
+                        Text("No history")
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
+                .padding()
             }
-            .padding()
             .frame(maxHeight: .infinity, alignment: .top)
         }
     }
-    
+
     @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            versionText(itemVersion)
+            textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
                 .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -119,9 +195,9 @@ struct ChatItemInfoView: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
-    @ViewBuilder private func versionText(_ itemVersion: ChatItemVersion) -> some View {
-        if itemVersion.msgContent.text != "" {
-            messageText(itemVersion.msgContent.text, itemVersion.formattedText, nil)
+    @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil) -> some View {
+        if text != "" {
+            messageText(text, formattedText, sender)
         } else {
             Text("no text")
                 .italic()
@@ -129,9 +205,141 @@ struct ChatItemInfoView: View {
         }
     }
 
+    @ViewBuilder private func quoteTab(_ qi: CIQuote) -> some View {
+        GeometryReader { g in
+            let maxWidth = (g.size.width - 32) * 0.84
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    details()
+                    Divider().padding(.vertical)
+                    Text("In reply to")
+                        .font(.title2)
+                        .padding(.bottom, 4)
+                    quotedMsgView(qi, maxWidth)
+                }
+                .padding()
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+        }
+    }
+
+    @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            textBubble(qi.text, qi.formattedText, qi.getSender(nil))
+                .allowsHitTesting(false)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(quotedMsgFrameColor(qi, colorScheme))
+                .cornerRadius(18)
+                .contextMenu {
+                    if qi.text != "" {
+                        Button {
+                            showShareSheet(items: [qi.text])
+                        } label: {
+                            Label("Share", systemImage: "square.and.arrow.up")
+                        }
+                        Button {
+                            UIPasteboard.general.string = qi.text
+                        } label: {
+                            Label("Copy", systemImage: "doc.on.doc")
+                        }
+                    }
+                }
+            Text(localTimestamp(qi.sentAt))
+                .foregroundStyle(.secondary)
+                .font(.caption)
+                .padding(.horizontal, 12)
+        }
+        .frame(maxWidth: maxWidth, alignment: .leading)
+    }
+
+    func quotedMsgFrameColor(_ qi: CIQuote, _ colorScheme: ColorScheme) -> Color {
+        (qi.chatDir?.sent ?? false)
+        ? (colorScheme == .light ? sentColorLight : sentColorDark)
+        : Color(uiColor: .tertiarySystemGroupedBackground)
+    }
+
+    @ViewBuilder private func deliveryTab(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                details()
+                Divider().padding(.vertical)
+                Text("Delivery")
+                    .font(.title2)
+                    .padding(.bottom, 4)
+                memberDeliveryStatusesView(memberDeliveryStatuses)
+            }
+            .padding()
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    @ViewBuilder private func memberDeliveryStatusesView(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            let mss = membersStatuses(memberDeliveryStatuses)
+            if !mss.isEmpty {
+                ForEach(mss, id: \.0.groupMemberId) { memberStatus in
+                    memberDeliveryStatusView(memberStatus.0, memberStatus.1)
+                }
+            } else {
+                Text("No delivery information")
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus)] {
+        memberDeliveryStatuses.compactMap({ mds in
+            if let mem = ChatModel.shared.groupMembers.first(where: { $0.groupMemberId == mds.groupMemberId }) {
+                return (mem, mds.memberDeliveryStatus)
+            } else {
+                return nil
+            }
+        })
+    }
+
+    private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus) -> some View {
+        HStack{
+            ProfileImage(imageStr: member.image)
+                .frame(width: 30, height: 30)
+                .padding(.trailing, 2)
+            Text(member.chatViewName)
+                .lineLimit(1)
+            Spacer()
+            let v = Group {
+                if let (icon, statusColor) = status.statusIcon(Color.secondary) {
+                    switch status {
+                    case .sndRcvd:
+                        ZStack(alignment: .trailing) {
+                            Image(systemName: icon)
+                                .foregroundColor(statusColor.opacity(0.67))
+                                .padding(.trailing, 6)
+                            Image(systemName: icon)
+                                .foregroundColor(statusColor.opacity(0.67))
+                        }
+                    default:
+                        Image(systemName: icon)
+                            .foregroundColor(statusColor)
+                    }
+                } else {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(Color.secondary)
+                }
+            }
+
+            if let (title, text) = status.statusInfo {
+                v.onTapGesture {
+                    alert = .alert(title: title, text: text)
+                }
+            } else {
+                v
+            }
+        }
+    }
+
     private func itemInfoShareText() -> String {
         let meta = ci.meta
-        var shareText: [String] = [title, ""]
+        var shareText: [String] = [String.localizedStringWithFormat(NSLocalizedString("# %@", comment: "copied message info title, # <title>"), title), ""]
         shareText += [String.localizedStringWithFormat(NSLocalizedString("Sent at: %@", comment: "copied message info"), localTimestamp(meta.itemTs))]
         if !ci.chatDir.sent {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Received at: %@", comment: "copied message info"), localTimestamp(meta.createdAt))]
@@ -156,9 +364,27 @@ struct ChatItemInfoView: View {
                 String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt))
             ]
         }
+        if let qi = ci.quotedItem {
+            shareText += ["", NSLocalizedString("## In reply to", comment: "copied message info")]
+            let t = qi.text
+            shareText += [""]
+            if let sender = qi.getSender(nil) {
+                shareText += [String.localizedStringWithFormat(
+                    NSLocalizedString("%@ at %@:", comment: "copied message info, <sender> at <time>"),
+                    sender,
+                    localTimestamp(qi.sentAt)
+                )]
+            } else {
+                shareText += [String.localizedStringWithFormat(
+                    NSLocalizedString("%@:", comment: "copied message info"),
+                    localTimestamp(qi.sentAt)
+                )]
+            }
+            shareText += [t != "" ? t : NSLocalizedString("no text", comment: "copied message info in history")]
+        }
         if let chatItemInfo = chatItemInfo,
            !chatItemInfo.itemVersions.isEmpty {
-            shareText += ["", NSLocalizedString("History", comment: "copied message info")]
+            shareText += ["", NSLocalizedString("## History", comment: "copied message info")]
             for (index, itemVersion) in chatItemInfo.itemVersions.enumerated() {
                 let t = itemVersion.msgContent.text
                 shareText += [

@@ -1,5 +1,8 @@
+import Bots.BroadcastTests
+import Bots.DirectoryTests
 import ChatClient
 import ChatTests
+import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import MarkdownTests
@@ -15,14 +18,16 @@ main :: IO ()
 main = do
   setLogLevel LogError -- LogDebug
   withGlobalLogging logCfg . hspec $ do
+    describe "Schema dump" schemaDumpTest
     describe "SimpleX chat markdown" markdownTests
     describe "SimpleX chat view" viewTests
     describe "SimpleX chat protocol" protocolTests
     describe "WebRTC encryption" webRTCTests
-    describe "Schema dump" schemaDumpTest
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests
+      xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
+      xdescribe'' "SimpleX Directory service bot" directoryServiceTests
   where
     testBracket test = do
       t <- getSystemTime

@@ -44,7 +44,7 @@ nix_setup() {
 
 git_setup() {
   [ "$folder" != "." ] && {
-    git clone --depth=1 "$repo" "$folder"
+    git clone "$repo" "$folder"
   }
 
   # Switch to nix-android branch
@@ -61,6 +61,22 @@ checks() {
           nix_install
         fi
         nix_setup
+        ;;
+      gradle)
+        if ! command -v "$i" > /dev/null 2>&1; then
+          commands_failed="$i $commands_failed"
+        else
+          gradle_ver_local="$(gradle -v | grep Gradle | awk '{print $2}')"
+          gradle_ver_local_compare="$(printf ${gradle_ver_local:-0.0} | awk -F. '{print $1$2}')"
+          gradle_ver_remote="$(grep distributionUrl ${folder}/apps/multiplatform/gradle/wrapper/gradle-wrapper.properties)"
+          gradle_ver_remote="${gradle_ver_remote#*-}"
+          gradle_ver_remote="${gradle_ver_remote%-*}"
+          gradle_ver_remote_compare="$(printf ${gradle_ver_remote} | awk -F. '{print $1$2}')"
+        
+          if [ "$gradle_ver_local_compare" != "$gradle_ver_remote_compare" ]; then
+            commands_failed="$i[installed=${gradle_ver_local},required=${gradle_ver_remote}] $commands_failed"
+          fi
+        fi
         ;;
       *)
         if ! command -v "$i" > /dev/null 2>&1; then
@@ -82,7 +98,8 @@ checks() {
 build() {
   # Build preparations
   sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/multiplatform/android/src/main/AndroidManifest.xml"
-  sed -i.bak '/android {/a lint {abortOnError false}' "$folder/apps/multiplatform/android/build.gradle"
+  sed -i.bak 's/jniLibs.useLegacyPackaging =.*/jniLibs.useLegacyPackaging = true/' "$folder/apps/multiplatform/android/build.gradle.kts"
+  sed -i.bak '/android {/a lint {abortOnError = false}' "$folder/apps/multiplatform/android/build.gradle.kts"
 
   for arch in $arches; do
     android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
@@ -95,7 +112,7 @@ build() {
     android_tmp_folder="${tmp}/android-${arch}"
     android_apk_output="${folder}/apps/multiplatform/android/build/outputs/apk/release/android-${android_arch}-release-unsigned.apk"
     android_apk_output_final="simplex-chat-${android_arch}.apk"
-    libs_folder="$folder/apps/multiplatform/android/src/main/cpp/libs"
+    libs_folder="${folder}/apps/multiplatform/common/src/commonMain/cpp/android/libs"
 
     # Create missing folders
     mkdir -p "$libs_folder/$android_arch"
@@ -107,8 +124,8 @@ build() {
     unzip -o "$android_support_lib_output" -d "$libs_folder/$android_arch"
 
     # Build only one arch
-    sed -i.bak "s/include '.*/include '${android_arch}'/" "$folder/apps/multiplatform/android/build.gradle"
-    gradle -p "$folder/apps/multiplatform/" clean assembleRelease
+    sed -i.bak "s/include(.*/include(\"${android_arch}\")/" "$folder/apps/multiplatform/android/build.gradle.kts"
+    gradle -p "$folder/apps/multiplatform/" clean :android:assembleRelease
 
     mkdir -p "$android_tmp_folder"
     unzip -oqd "$android_tmp_folder" "$android_apk_output"
@@ -138,8 +155,8 @@ main() {
   done
   shift $(( $OPTIND - 1 ))
   commit="$1"; shift 1
-  checks
   git_setup
+  checks
   build
   final
 }

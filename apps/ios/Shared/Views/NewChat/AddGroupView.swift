@@ -36,7 +36,7 @@ struct AddGroupView: View {
                 }
             }
         } else {
-            createGroupView()
+            createGroupView().keyboardPadding()
         }
     }
 
@@ -47,21 +47,13 @@ struct AddGroupView: View {
                 .padding(.vertical, 4)
             Text("The group is fully decentralized – it is visible only to the members.")
                 .padding(.bottom, 4)
-            if (m.incognito) {
-                HStack {
-                    Image(systemName: "info.circle").foregroundColor(.orange).font(.footnote)
-                    Spacer().frame(width: 8)
-                    Text("Incognito mode is not supported here - your main profile will be sent to group members").font(.footnote)
-                }
-                .padding(.bottom)
-            } else {
-                HStack {
-                    Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
-                    Spacer().frame(width: 8)
-                    Text("Your chat profile will be sent to group members").font(.footnote)
-                }
-                .padding(.bottom)
+
+            HStack {
+                Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
+                Spacer().frame(width: 8)
+                Text("Your chat profile will be sent to group members").font(.footnote)
             }
+            .padding(.bottom)
 
             ZStack(alignment: .center) {
                 ZStack(alignment: .topTrailing) {

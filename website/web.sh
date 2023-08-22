@@ -22,6 +22,7 @@ for file in langs/*.json; do
 done
 
 npm install
+cp node_modules/lottie-web/build/player/lottie.min.js src/js
 node merge_translations.js
 node customize_docs_frontmatter.js
 

@@ -104,6 +104,7 @@ struct CreateProfile: View {
             }
         }
         .padding()
+        .keyboardPadding()
     }
 
     func textField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
