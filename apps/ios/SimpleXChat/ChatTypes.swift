@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 
-public struct User: Decodable, NamedChat, Identifiable {
+public struct User: Identifiable, Decodable, UserLike, NamedChat {
     public var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
@@ -50,6 +50,17 @@ public struct User: Decodable, NamedChat, Identifiable {
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false
     )
+}
+
+public struct UserRef: Identifiable, Decodable, UserLike {
+    public var userId: Int64
+    public var localDisplayName: ContactName
+
+    public var id: Int64 { userId }
+}
+
+public protocol UserLike: Identifiable {
+    var userId: Int64  { get }
 }
 
 public struct UserPwdHash: Decodable {
