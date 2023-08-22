@@ -807,7 +807,7 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
-func receiveFile(user: User, fileId: Int64, auto: Bool = false) async {
+func receiveFile(user: any UserLike, fileId: Int64, auto: Bool = false) async {
     if let chatItem = await apiReceiveFile(fileId: fileId, auto: auto) {
         await chatItemSimpleUpdate(user, chatItem)
     }
@@ -1587,11 +1587,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
     }
 }
 
-func active(_ user: User) -> Bool {
-    user.id == ChatModel.shared.currentUser?.id
+func active(_ user: any UserLike) -> Bool {
+    user.userId == ChatModel.shared.currentUser?.id
 }
 
-func chatItemSimpleUpdate(_ user: User, _ aChatItem: AChatItem) async {
+func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let m = ChatModel.shared
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem

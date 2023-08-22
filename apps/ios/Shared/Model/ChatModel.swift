@@ -495,18 +495,18 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func increaseUnreadCounter(user: User) {
+    func increaseUnreadCounter(user: any UserLike) {
         changeUnreadCounter(user: user, by: 1)
         NtfManager.shared.incNtfBadgeCount()
     }
 
-    func decreaseUnreadCounter(user: User, by: Int = 1) {
+    func decreaseUnreadCounter(user: any UserLike, by: Int = 1) {
         changeUnreadCounter(user: user, by: -by)
         NtfManager.shared.decNtfBadgeCount(by: by)
     }
 
-    private func changeUnreadCounter(user: User, by: Int) {
-        if let i = users.firstIndex(where: { $0.user.id == user.id }) {
+    private func changeUnreadCounter(user: any UserLike, by: Int) {
+        if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
             users[i].unreadCount += by
         }
     }
