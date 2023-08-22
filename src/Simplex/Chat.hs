@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -1319,7 +1320,7 @@ processChatCommand = \case
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
     r <- updateProfile_ user p' $ withStore' $ \db -> setUserProfileContactLink db user Nothing
     let user' = case r of
-          CRUserProfileUpdated u' _ _ _ _ -> u'
+          CRUserProfileUpdated u' _ _ _ -> u'
           _ -> user
     pure $ CRUserContactLinkDeleted user'
   DeleteMyAddress -> withUser $ \User {userId} ->
@@ -1848,17 +1849,23 @@ processChatCommand = \case
         asks currentUser >>= atomically . (`writeTVar` Just user')
         withChatLock "updateProfile" . procCmd $ do
           ChatConfig {logLevel} <- asks config
-          (successes, failures) <- foldM (processAndCount user' logLevel) (0, 0) contacts
-          pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' successes failures
+          summary <- foldM (processAndCount user' logLevel) (UserProfileUpdateSummary 0 0 0 []) contacts
+          pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
-        processAndCount user' ll (s, f) ct = (processContact user' ct $> (s + 1, f)) `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
-        processContact user' ct = do
+        processAndCount user' ll (!s@UserProfileUpdateSummary {notChanged, updateSuccesses, updateFailures, changedContacts}) ct = do
           let mergedProfile = userProfileToSend user Nothing $ Just ct
               ct' = updateMergedPreferences user' ct
               mergedProfile' = userProfileToSend user' Nothing $ Just ct'
-          when (mergedProfile' /= mergedProfile) $ do
-            void $ sendDirectContactMessage ct' (XInfo mergedProfile')
-            when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
+          if mergedProfile' == mergedProfile
+            then pure s {notChanged = notChanged + 1}
+            else 
+              let cts' = ct' : changedContacts
+               in (notifyContact mergedProfile' ct' $> s {updateSuccesses = updateSuccesses + 1, changedContacts = cts'})
+                    `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> s {updateFailures = updateFailures + 1, changedContacts = cts'}
+          where 
+            notifyContact mergedProfile' ct' = do
+              void $ sendDirectContactMessage ct' (XInfo mergedProfile')
+              when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated user ct ct
