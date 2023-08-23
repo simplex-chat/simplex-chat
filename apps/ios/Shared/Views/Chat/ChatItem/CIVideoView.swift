@@ -115,11 +115,11 @@ struct CIVideoView: View {
                         player.pause()
                         videoPlaying = false
                     case .paused:
-                        showFullScreenPlayer = !chatItem.chatDir.sent || (chatItem.chatDir.sent && file.fileStatus == CIFileStatus.sndComplete)
+                        showFullScreenPlayer = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete
                     default: ()
                     }
                 }
-                if !videoPlaying && (!chatItem.chatDir.sent || (chatItem.chatDir.sent && file.fileStatus == CIFileStatus.sndComplete)) {
+                if !videoPlaying && (!chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete) {
                     Button {
                         ChatModel.shared.stopPreviousRecPlay = url
                         player.play()
