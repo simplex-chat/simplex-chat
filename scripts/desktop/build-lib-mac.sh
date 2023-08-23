@@ -21,7 +21,20 @@ cd $BUILD_DIR/build
 mkdir deps 2> /dev/null
 
 # It's not included by default for some reason. Compiled lib tries to find system one but it's not always available
-#cp $GHC_LIBS_DIR/rts/libffi.dylib ./deps
+#cp $GHC_LIBS_DIR/libffi.dylib ./deps
+(
+  BUILD=$PWD
+  cp /tmp/libffi-3.4.4/*-apple-darwin*/.libs/libffi.dylib $BUILD/deps || \
+    ( \
+    cd /tmp && \
+    curl "https://gitlab.haskell.org/ghc/libffi-tarballs/-/raw/libffi-3.4.4/libffi-3.4.4.tar.gz?inline=false" -o libffi.tar.gz && \
+    tar -xzvf libffi.tar.gz && \
+    cd "libffi-3.4.4" && \
+    ./configure && \
+    make && \
+    cp *-apple-darwin*/.libs/libffi.dylib $BUILD/deps \
+    )
+)
 
 DYLIBS=`otool -L $LIB | grep @rpath | tail -n +2 | cut -d' ' -f 1 | cut -d'/' -f2`
 RPATHS=`otool -l $LIB | grep "path "| cut -d' ' -f11`
