@@ -2,6 +2,7 @@
 
 OS=mac
 ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
+GHC_VERSION=9.6.2
 
 if [ "$ARCH" == "arm64" ]; then
     ARCH=aarch64
