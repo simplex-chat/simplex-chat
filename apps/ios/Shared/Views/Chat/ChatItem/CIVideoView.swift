@@ -98,6 +98,7 @@ struct CIVideoView: View {
         DispatchQueue.main.async { videoWidth = w }
         return ZStack(alignment: .topTrailing) {
             ZStack(alignment: .center) {
+                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete
                 VideoPlayerView(player: player, url: url, showControls: false)
                 .frame(width: w, height: w * preview.size.height / preview.size.width)
                 .onChange(of: ChatModel.shared.stopPreviousRecPlay) { playingUrl in
@@ -115,17 +116,20 @@ struct CIVideoView: View {
                         player.pause()
                         videoPlaying = false
                     case .paused:
-                        showFullScreenPlayer = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete
+                        if canBePlayed {
+                            showFullScreenPlayer = true
+                        }
                     default: ()
                     }
                 }
-                if !videoPlaying && (!chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete) {
+                if !videoPlaying {
                     Button {
                         ChatModel.shared.stopPreviousRecPlay = url
                         player.play()
                     } label: {
-                        playPauseIcon("play.fill")
+                        playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
                     }
+                    .disabled(!canBePlayed)
                 }
             }
             loadingIndicator()
