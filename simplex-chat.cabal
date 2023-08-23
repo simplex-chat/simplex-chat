@@ -32,7 +32,6 @@ library
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Core
-      Simplex.Chat.File
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
@@ -107,7 +106,6 @@ library
       Simplex.Chat.Migrations.M20230618_favorite_chats
       Simplex.Chat.Migrations.M20230621_chat_item_moderations
       Simplex.Chat.Migrations.M20230705_delivery_receipts
-      Simplex.Chat.Migrations.M20230721_file_encryption
       Simplex.Chat.Migrations.M20230721_group_snd_item_statuses
       Simplex.Chat.Migrations.M20230814_indexes
       Simplex.Chat.Mobile
