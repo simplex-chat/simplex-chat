@@ -22,17 +22,17 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/direct-sqlcipher.git
-    tag: 34309410eb2069b029b8fc1872deb1e0db123294
+    tag: fca2b9ad9062f09a3485f2733088737449ff7192
 
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/sqlcipher-simple.git
-    tag: 5e154a2aeccc33ead6c243ec07195ab673137221
+    tag: a46bd361a19376c5211f1058908fc0ae6bf42446
 
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/aeson.git
-    tag: 3eb66f9a68f103b5f1489382aad89f5712a64db7
+    tag: 68330dce8208173c6acf5f62b23acb500ab5d873
 
 source-repository-package
     type: git
@@ -41,5 +41,10 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://github.com/zw3rk/android-support.git
-    tag: 3c3a5ab0b8b137a072c98d3d0937cbdc96918ddb
+    location: https://github.com/simplex-chat/android-support.git
+    tag: 9aa09f148089d6752ce563b14c2df1895718d806
+
+source-repository-package
+    type: git
+    location: https://github.com/simplex-chat/network-transport.git
+    tag: 0013798272a683e35ca38d2fdaf480942311fba8

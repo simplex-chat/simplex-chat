@@ -10,6 +10,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+
 module Simplex.Chat.Store.Groups
   ( -- * Util methods
     GroupInfoRow,
@@ -87,7 +89,9 @@ module Simplex.Chat.Store.Groups
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Either (rights)
 import Data.Int (Int64)

@@ -8,6 +8,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+
 module Simplex.Chat.Store.Direct
   ( updateContact_,
     updateContactProfile_,
@@ -61,7 +63,9 @@ module Simplex.Chat.Store.Direct
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Data.Either (rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
