@@ -2,7 +2,7 @@
 
 OS=linux
 ARCH=${1:-`uname -a | rev | cut -d' ' -f2 | rev`}
-GHC_VERSION=8.10.7
+GHC_VERSION=9.6.2
 
 BUILD_DIR=dist-newstyle/build/$ARCH-$OS/ghc-${GHC_VERSION}/simplex-chat-*
 

@@ -2,9 +2,12 @@
 
 OS=mac
 ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
+GHC_VERSION=9.6.2
+
 if [ "$ARCH" == "arm64" ]; then
     ARCH=aarch64
 fi
+
 LIB_EXT=dylib
 LIB=libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT
 GHC_LIBS_DIR=$(ghc --print-libdir)
@@ -12,7 +15,7 @@ GHC_LIBS_DIR=$(ghc --print-libdir)
 BUILD_DIR=dist-newstyle/build/$ARCH-*/ghc-*/simplex-chat-*
 
 rm -rf $BUILD_DIR
-cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/rts -optl-lHSrts_thr-ghc8.10.7 -optl-lffi"
+cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/rts -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi"
 
 cd $BUILD_DIR/build
 mkdir deps 2> /dev/null
