@@ -691,12 +691,12 @@ func apiListContacts() throws -> [Contact] {
     throw r
 }
 
-func apiUpdateProfile(profile: Profile) async throws -> Profile? {
+func apiUpdateProfile(profile: Profile) async throws -> (Profile, [Contact])? {
     let userId = try currentUserId("apiUpdateProfile")
     let r = await chatSendCmd(.apiUpdateProfile(userId: userId, profile: profile))
     switch r {
     case .userProfileNoChange: return nil
-    case let .userProfileUpdated(_, _, toProfile): return toProfile
+    case let .userProfileUpdated(_, _, toProfile, updateSummary): return (toProfile, updateSummary.changedContacts)
     default: throw r
     }
 }
@@ -706,7 +706,7 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
     let r = await chatSendCmd(.apiSetProfileAddress(userId: userId, on: on))
     switch r {
     case .userProfileNoChange: return nil
-    case let .userProfileUpdated(user, _, _): return user
+    case let .userProfileUpdated(user, _, _, _): return user
     default: throw r
     }
 }
