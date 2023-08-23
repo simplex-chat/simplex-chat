@@ -176,18 +176,6 @@ public struct UserProfileUpdateSummary: Decodable {
     public var updateSuccesses: Int
     public var updateFailures: Int
     public var changedContacts: [Contact]
-
-    public init(
-        notChanged: Int,
-        updateSuccesses: Int,
-        updateFailures: Int,
-        changedContacts: [Contact]
-    ) {
-        self.notChanged = notChanged
-        self.updateSuccesses = updateSuccesses
-        self.updateFailures = updateFailures
-        self.changedContacts = changedContacts
-    }
 }
 
 public enum ChatType: String {
