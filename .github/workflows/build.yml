@@ -80,7 +80,7 @@ jobs:
       - name: Setup Haskell
         uses: haskell/actions/setup@v2
         with:
-          ghc-version: "8.10.7"
+          ghc-version: "9.6.2"
           cabal-version: "latest"
 
       - name: Cache dependencies
