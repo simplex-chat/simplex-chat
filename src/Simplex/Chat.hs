@@ -1733,6 +1733,7 @@ processChatCommand = \case
       stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
         map B.unpack [host, clientTs, cmd, res, bshow count]
   ResetAgentStats -> withAgent resetAgentStats >> ok_
+  GetAgentSubscriptions -> CRAgentSubscriptions <$> withAgent getAgentSubscriptions
   where
     withChatLock name action = asks chatLock >>= \l -> withLock l name action
     -- below code would make command responses asynchronous where they can be slow
@@ -5262,7 +5263,8 @@ chatCommandP =
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
       "/get stats" $> GetAgentStats,
-      "/reset stats" $> ResetAgentStats
+      "/reset stats" $> ResetAgentStats,
+      "/get subs" $> GetAgentSubscriptions
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
