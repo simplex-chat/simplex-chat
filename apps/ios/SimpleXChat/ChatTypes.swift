@@ -171,6 +171,13 @@ public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
     Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image, contactLink: profile.contactLink, preferences: profile.preferences)
 }
 
+public struct UserProfileUpdateSummary: Decodable {
+    public var notChanged: Int
+    public var updateSuccesses: Int
+    public var updateFailures: Int
+    public var changedContacts: [Contact]
+}
+
 public enum ChatType: String {
     case direct = "@"
     case group = "#"
