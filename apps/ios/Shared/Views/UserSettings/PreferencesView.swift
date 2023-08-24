@@ -71,9 +71,10 @@ struct PreferencesView: View {
             do {
                 var p = fromLocalProfile(profile)
                 p.preferences = fullPreferencesToPreferences(preferences)
-                if let newProfile = try await apiUpdateProfile(profile: p) {
+                if let (newProfile, updatedContacts) = try await apiUpdateProfile(profile: p) {
                     await MainActor.run {
                         chatModel.updateCurrentUser(newProfile, preferences)
+                        updatedContacts.forEach(chatModel.updateContact)
                         currentPreferences = preferences
                     }
                 }

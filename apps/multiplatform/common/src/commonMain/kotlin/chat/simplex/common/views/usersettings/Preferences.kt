@@ -25,9 +25,11 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
   fun savePrefs(afterSave: () -> Unit = {}) {
     withApi {
       val newProfile = user.profile.toProfile().copy(preferences = preferences.toPreferences())
-      val updatedProfile = m.controller.apiUpdateProfile(newProfile)
-      if (updatedProfile != null) {
+      val updated = m.controller.apiUpdateProfile(newProfile)
+      if (updated != null) {
+        val (updatedProfile, updatedContacts) = updated
         m.updateCurrentUser(updatedProfile, preferences)
+        updatedContacts.forEach(m::updateContact)
         currentPreferences = preferences
       }
       afterSave()
