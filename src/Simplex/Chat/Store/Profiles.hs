@@ -7,6 +7,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+
 module Simplex.Chat.Store.Profiles
   ( AutoAccept (..),
     UserMsgReceiptSettings (..),
@@ -54,7 +56,9 @@ module Simplex.Chat.Store.Profiles
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import Data.Functor (($>))
@@ -290,7 +294,7 @@ getUserContactProfiles db User {userId} =
       |]
       (Only userId)
   where
-    toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnReqContact, Maybe Preferences) -> (Profile)
+    toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnReqContact, Maybe Preferences) -> Profile
     toContactProfile (displayName, fullName, image, contactLink, preferences) = Profile {displayName, fullName, image, contactLink, preferences}
 
 createUserContactLink :: DB.Connection -> User -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()

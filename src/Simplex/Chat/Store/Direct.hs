@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -6,6 +7,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Direct
   ( updateContact_,
@@ -60,7 +63,9 @@ module Simplex.Chat.Store.Direct
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Data.Either (rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -424,7 +429,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
         ExceptT $
           maybeM getContactRequestByXContactId xContactId_ >>= \case
             Nothing -> createContactRequest
-            Just cr -> updateContactRequest cr $> Right (contactRequestId (cr :: UserContactRequest))
+            Just cr -> updateContactRequest cr $> Right cr.contactRequestId
       getContactRequest db user cReqId
     createContactRequest :: IO (Either StoreError Int64)
     createContactRequest = do

@@ -12,13 +12,17 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
-import Control.Concurrent.STM (retry, stateTVar)
+import Control.Concurrent.STM (retry)
 import qualified Control.Exception as E
 import Control.Logger.Simple
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -208,8 +212,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   where
     configServers :: DefaultAgentServers
     configServers =
-      let smp' = fromMaybe (smp (defaultServers :: DefaultAgentServers)) (nonEmpty smpServers)
-          xftp' = fromMaybe (xftp (defaultServers :: DefaultAgentServers)) (nonEmpty xftpServers)
+      let smp' = fromMaybe (defaultServers.smp) (nonEmpty smpServers)
+          xftp' = fromMaybe (defaultServers.xftp) (nonEmpty xftpServers)
        in defaultServers {smp = smp', xftp = xftp', netCfg = networkConfig}
     agentServers :: ChatConfig -> IO InitialAgentServers
     agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
@@ -236,9 +240,9 @@ activeAgentServers ChatConfig {defaultServers} p =
     . filter (\ServerCfg {enabled} -> enabled)
 
 cfgServers :: UserProtocol p => SProtocolType p -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p))
-cfgServers = \case
-  SPSMP -> smp
-  SPXFTP -> xftp
+cfgServers p s = case p of
+  SPSMP -> s.smp
+  SPXFTP -> s.xftp
 
 startChatController :: forall m. ChatMonad' m => Bool -> Bool -> Bool -> m (Async ())
 startChatController subConns enableExpireCIs startXFTPWorkers = do
@@ -685,7 +689,9 @@ processChatCommand = \case
             MCVoice {} -> False
             MCUnknown {} -> True
           qText = msgContentText qmc
-          qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
+          getFileName :: CIFile d -> String
+          getFileName CIFile{fileName} = fileName
+          qFileName = maybe qText (T.pack . getFileName) ciFile_
           qTextOrFile = if T.null qText then qFileName else qText
       xftpSndFileTransfer :: User -> FilePath -> Integer -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
       xftpSndFileTransfer user file fileSize n contactOrGroup = do
@@ -896,7 +902,7 @@ processChatCommand = \case
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
       Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
-      let isOwner = memberRole (membership :: GroupMember) == GROwner
+      let isOwner = membership.memberRole == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
@@ -1073,7 +1079,9 @@ processChatCommand = \case
   APIGetNtfMessage nonce encNtfInfo -> withUser $ \_ -> do
     (NotificationInfo {ntfConnId, ntfMsgMeta}, msgs) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
     let ntfMessages = map (\SMP.SMPMsgMeta {msgTs, msgFlags} -> NtfMsgInfo {msgTs = systemToUTCTime msgTs, msgFlags}) msgs
-        msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
+        getMsgTs :: SMP.NMsgMeta -> SystemTime
+        getMsgTs SMP.NMsgMeta{msgTs} = msgTs
+        msgTs' = systemToUTCTime . getMsgTs <$> ntfMsgMeta
         agentConnId = AgentConnId ntfConnId
     user_ <- withStore' (`getUserByAConnId` agentConnId)
     connEntity <-
@@ -1429,7 +1437,7 @@ processChatCommand = \case
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} <- withStore $ \db -> getGroupInvitation db user groupId
     withChatLock "joinGroup" . procCmd $ do
-      agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest . directMessage $ XGrpAcpt (memberId (membership :: GroupMember))
+      agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest . directMessage $ XGrpAcpt membership.memberId
       withStore' $ \db -> do
         createMemberConnection db userId fromMember agentConnId
         updateGroupMemberStatus db userId fromMember GSMemAccepted
@@ -1893,7 +1901,7 @@ processChatCommand = \case
       pure $ CRGroupUpdated user g g' Nothing
     assertUserGroupRole :: GroupInfo -> GroupMemberRole -> m ()
     assertUserGroupRole g@GroupInfo {membership} requiredRole = do
-      when (memberRole (membership :: GroupMember) < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
+      when (membership.memberRole < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
       when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
@@ -1911,7 +1919,7 @@ processChatCommand = \case
       runUpdateGroupProfile user g $ update p
     isReady :: Contact -> Bool
     isReady ct =
-      let s = connStatus $ activeConn (ct :: Contact)
+      let s = connStatus $ ct.activeConn
        in s == ConnReady || s == ConnSndReady
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = do
@@ -3033,7 +3041,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 | sameMemberId memId m -> do
                   -- TODO update member profile
                   -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                  allowAgentConnectionAsync user conn confId $ XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
+                  allowAgentConnectionAsync user conn confId $ XGrpMemInfo (membership.memberId) (fromLocalProfile $ memberProfile membership)
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
@@ -3071,7 +3079,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
             whenGroupNtfs user gInfo $ do
               setActive $ ActiveG gName
-              showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
+              showToast ("#" <> gName) $ "member " <> m.localDisplayName <> " is connected"
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
@@ -3127,7 +3135,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               && currentMemCount <= smallGroupsRcptsMemLimit
         where
           canSend a
-            | memberRole (m :: GroupMember) <= GRObserver = messageError "member is not allowed to send messages"
+            | m.memberRole <= GRObserver = messageError "member is not allowed to send messages"
             | otherwise = a
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId conn msgMeta $
@@ -4259,7 +4267,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Just m' -> pure m'
       withStore' $ \db -> saveMemberInvitation db toMember introInv
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      let msg = XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
+      let msg = XGrpMemInfo membership.memberId (fromLocalProfile $ memberProfile membership)
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user enableNtfs groupConnReq $ directMessage msg
       directConnIds <- joinAgentConnectionAsync user enableNtfs directConnReq $ directMessage msg
@@ -4268,7 +4276,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> MsgMeta -> m ()
     xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg msgMeta
-      | memberId (membership :: GroupMember) == memId =
+      | membership.memberId == memId =
         let gInfo' = gInfo {membership = membership {memberRole = memRole}}
          in changeMemberRole gInfo' membership $ RGEUserRole memRole
       | otherwise = do
@@ -4292,7 +4300,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do
       members <- withStore' $ \db -> getGroupMembers db user gInfo
-      if memberId (membership :: GroupMember) == memId
+      if membership.memberId == memId
         then checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
           -- member records are not deleted to keep history
@@ -4815,7 +4823,7 @@ createSndFeatureItems :: forall m. ChatMonad m => User -> Contact -> Contact -> 
 createSndFeatureItems user ct ct' =
   createFeatureItems user ct ct' CDDirectSnd CISndChatFeature CISndChatPreference getPref
   where
-    getPref = (preference :: ContactUserPref (FeaturePreference f) -> FeaturePreference f) . userPreference
+    getPref u = (userPreference u).preference
 
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
 
@@ -4900,7 +4908,7 @@ getCreateActiveUser st testView = do
             Right user -> pure user
     selectUser :: [User] -> IO User
     selectUser [user] = do
-      withTransaction st (`setActiveUser` userId (user :: User))
+      withTransaction st (`setActiveUser` user.userId)
       pure user
     selectUser users = do
       putStrLn "Select user profile:"
@@ -4915,7 +4923,7 @@ getCreateActiveUser st testView = do
               | n <= 0 || n > length users -> putStrLn "invalid user number" >> loop
               | otherwise -> do
                 let user = users !! (n - 1)
-                withTransaction st (`setActiveUser` userId (user :: User))
+                withTransaction st (`setActiveUser` user.userId)
                 pure user
     userStr :: User -> String
     userStr User {localDisplayName, profile = LocalProfile {fullName}} =

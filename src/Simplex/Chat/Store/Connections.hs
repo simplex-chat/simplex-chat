@@ -4,6 +4,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
   )

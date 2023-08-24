@@ -13,6 +13,7 @@ module Simplex.Chat.Archive
 where
 
 import qualified Codec.Archive.Zip as Z
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Functor (($>))

@@ -6,10 +6,13 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
+
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Messages where
 
@@ -371,7 +374,7 @@ contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessag
   | forUser enabled && forContact enabled = Just ttl
   | otherwise = Nothing
   where
-    TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
+    TimedMessagesPreference {ttl} =  userPreference.preference
 
 groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}

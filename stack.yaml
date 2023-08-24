@@ -49,20 +49,24 @@ extra-deps:
   # - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
   # - ../simplexmq
   - github: simplex-chat/simplexmq
-    commit: 44abb90c63dba63ab5f6d379131e5a7e0f625e98
+    commit: 002f36dde042b8957507ec2ca348a0f4494a4cd6
   - github: kazu-yamamoto/http2
     commit: b5a1b7200cf5bc7044af34ba325284271f6dff25
   # - ../direct-sqlcipher
   - github: simplex-chat/direct-sqlcipher
-    commit: 34309410eb2069b029b8fc1872deb1e0db123294
+    commit: f814ee68b16a9447fbb467ccc8f29bdd3546bfd9
   # - ../sqlcipher-simple
   - github: simplex-chat/sqlcipher-simple
-    commit: 5e154a2aeccc33ead6c243ec07195ab673137221
+    commit: a46bd361a19376c5211f1058908fc0ae6bf42446
   # - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
   - github: simplex-chat/aeson
-    commit: 3eb66f9a68f103b5f1489382aad89f5712a64db7
+    commit: 68330dce8208173c6acf5f62b23acb500ab5d873
   - github: simplex-chat/haskell-terminal
     commit: f708b00009b54890172068f168bf98508ffcd495
+  - github: simplex-chat/android-support
+    commit: 9aa09f148089d6752ce563b14c2df1895718d806
+  - github: simplex-chat/network-transport
+    commit: 0013798272a683e35ca38d2fdaf480942311fba8
 #
 # extra-deps: []
 

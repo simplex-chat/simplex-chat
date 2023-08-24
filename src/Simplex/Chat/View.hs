@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
 module Simplex.Chat.View where
 
@@ -187,7 +188,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
-  CRSubscriptionEnd u acEntity -> ttyUser u [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
+  CRSubscriptionEnd u acEntity -> ttyUser u [sShow ((entityConnection acEntity).connId) <> ": END"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError u c e -> ttyUser u [ttyContact' c <> ": contact error " <> sShow e]
@@ -654,7 +655,9 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
-  let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
+  let getLDN :: Contact -> ContactName
+      getLDN Contact{localDisplayName} = localDisplayName
+      ldn = T.toLower . getLDN
    in map (\ct -> ctIncognito ct <> ttyFullContact ct <> muted' ct <> alias ct) . sortOn ldn
   where
     muted' Contact {chatSettings, localDisplayName = ldn}
@@ -792,7 +795,8 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
     groupMember m = memIncognito m <> ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
-    role m = plain . strEncode $ memberRole (m :: GroupMember)
+    role :: GroupMember -> StyledString
+    role m = plain . strEncode $ m.memberRole
     category m = case memberCategory m of
       GCUserMember -> "you, "
       GCInviteeMember -> "invited, "
@@ -824,9 +828,10 @@ viewContactConnected ct@Contact {localDisplayName} userIncognitoProfile testView
 
 viewGroupsList :: [(GroupInfo, GroupSummary)] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
-viewGroupsList gs = map groupSS $ sortOn ldn_ gs
+viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
   where
-    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName) . fst
+    ldn_ :: GroupInfo -> Text
+    ldn_ g = T.toLower g.localDisplayName
     groupSS (g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
@@ -1363,7 +1368,8 @@ viewFileTransferStatus (FTSnd FileTransferMeta {cancelled} fts@(ft : _), chunksN
       case concatMap recipientsTransferStatus $ groupBy ((==) `on` fs) $ sortOn fs fts of
         [recipientsStatus] -> ["sending " <> sndFile ft <> " " <> recipientsStatus]
         recipientsStatuses -> ("sending " <> sndFile ft <> ": ") : map ("  " <>) recipientsStatuses
-    fs = fileStatus :: SndFileTransfer -> FileStatus
+    fs :: SndFileTransfer -> FileStatus
+    fs SndFileTransfer{fileStatus} = fileStatus
     recipientsTransferStatus [] = []
     recipientsTransferStatus ts@(SndFileTransfer {fileStatus, fileSize, chunkSize} : _) = [sndStatus <> ": " <> listRecipients ts]
       where
@@ -1624,7 +1630,8 @@ viewChatError logLevel = \case
         Just entity@(UserContactConnection conn UserContact {userContactLinkId}) ->
           "[" <> connEntityLabel entity <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
         Nothing -> ""
-      cId conn = sShow (connId (conn :: Connection))
+      cId :: Connection -> StyledString
+      cId conn = sShow conn.connId
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case

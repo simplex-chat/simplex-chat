@@ -67,7 +67,7 @@ if(NOT APPLE)
 else()
 	# Without direct linking it can't find hs_init in linking step
 	add_library( rts SHARED IMPORTED )
-	FILE(GLOB RTSLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/deps/libHSrts_thr-*.${OS_LIB_EXT})
+	FILE(GLOB RTSLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/deps/libHSrts*_thr-*.${OS_LIB_EXT})
 	set_target_properties( rts PROPERTIES IMPORTED_LOCATION ${RTSLIB})
 
 	target_link_libraries(app-lib rts simplex)

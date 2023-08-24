@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -59,7 +60,7 @@ directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", im
 mkDirectoryOpts :: FilePath -> [KnownContact] -> DirectoryOpts
 mkDirectoryOpts tmp superUsers =
   DirectoryOpts
-    { coreOptions = (coreOptions (testOpts :: ChatOpts)) {dbFilePrefix = tmp </> serviceDbPrefix},
+    { coreOptions = testOpts.coreOptions {dbFilePrefix = tmp </> serviceDbPrefix},
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",
       serviceName = "SimpleX-Directory",
