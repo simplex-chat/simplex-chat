@@ -102,7 +102,7 @@ fun saveImage(uri: URI): String? {
 
 fun saveImage(image: ImageBitmap): String? {
   return try {
-    val ext = if (image.hasAlpha) "png" else "jpg"
+    val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
     val fileToSave = generateNewFileName("IMG", ext)
     val file = File(getAppFilePath(fileToSave))
@@ -112,7 +112,7 @@ fun saveImage(image: ImageBitmap): String? {
     output.close()
     fileToSave
   } catch (e: Exception) {
-    Log.e(TAG, "Util.kt saveImage error: ${e.message}")
+    Log.e(TAG, "Util.kt saveImage error: ${e.stackTraceToString()}")
     null
   }
 }

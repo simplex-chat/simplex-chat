@@ -62,7 +62,7 @@ actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
 }
 
 actual fun compressImageStr(bitmap: ImageBitmap): String {
-  val usePng = bitmap.hasAlpha
+  val usePng = bitmap.hasAlpha()
   val ext = if (usePng) "png" else "jpg"
   return "data:image/$ext;base64," + Base64.encodeToString(compressImageData(bitmap, usePng).toByteArray(), Base64.NO_WRAP)
 }
@@ -88,6 +88,8 @@ actual fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSiz
 }
 
 actual fun GrayU8.toImageBitmap(): ImageBitmap = ConvertBitmap.grayToBitmap(this, Bitmap.Config.RGB_565).asImageBitmap()
+
+actual fun ImageBitmap.hasAlpha(): Boolean = hasAlpha
 
 actual fun ImageBitmap.addLogo(): ImageBitmap = asAndroidBitmap().applyCanvas {
   val radius = (width * 0.16f) / 2
