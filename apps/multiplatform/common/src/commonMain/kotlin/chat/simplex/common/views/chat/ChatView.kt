@@ -425,11 +425,12 @@ fun ChatLayout(
   onComposed: () -> Unit,
 ) {
   val scope = rememberCoroutineScope()
+  val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
   Box(
     Modifier
       .fillMaxWidth()
       .desktopOnExternalDrag(
-        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value,
+        enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
         onFiles = { paths ->
           val uris = paths.map { URI.create(it) }
           val groups =  uris.groupBy { isImage(it) }
