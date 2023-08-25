@@ -232,5 +232,19 @@
     "back-to-top": "Torna in cima",
     "guide-dropdown-8": "Impostazioni dell'app",
     "docs-dropdown-7": "Traduci SimpleX Chat",
-    "glossary": "Glossario"
+    "glossary": "Glossario",
+    "releases-to-this-repo-are-done-1-2-days-later": "Le pubblicazioni su questo repo avvengono 1-2 giorni dopo",
+    "export": "esporta",
+    "simplex-and-f-droid-repo-sign-builds-with-different-keys": "I repository di SimpleX Chat e F-Droid.org firmano i pacchetti con chiavi diverse. Per passare da uno all'altro,",
+    "chat-db-and-re-install-app": "il database della chat e reinstalla l'app",
+    "use-this-url": "usa questo URL",
+    "signing-key-fingerprint": "Impronta della chiave di firma (SHA-256)",
+    "f-droid-org-repo": "Repo di F-Droid.org",
+    "stable-versions-built-by-f-droid-org": "Versioni stabili compilate da F-Droid.org",
+    "docs-dropdown-8": "Servizio directory di SimpleX",
+    "simplex-chat-via-f-droid": "SimpleX Chat via F-Droid",
+    "simplex-chat-repo": "Repo di SimpleX Chat",
+    "stable-and-beta-versions-built-by-developers": "Versioni stabili e beta compilate dagli sviluppatori",
+    "to-add-it-to-your-f-droid-client": "Per aggiungerlo al tuo client F-Droid",
+    "scan-the-qr-code-or": "scansiona il codice QR o"
 }
