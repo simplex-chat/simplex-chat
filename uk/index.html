@@ -177,13 +177,13 @@
                             
                                 <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Платформа SimpleX</a></li>
                             
-                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Служба каталогів SimpleX</a></li>
                             
                                 <li><a href="/docs/android.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Доступ до файлів Android</a></li>
                             
                                 <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Доступ до бази даних чату</a></li>
                             
-                                <li><a href="/docs/server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Сервер SMP на хості</a></li>
+                                <li><a href="/docs/server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Хост SMP-сервер</a></li>
                             
                                 <li><a href="/docs/xftp-server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Хост XFTP-сервер</a></li>
                             
@@ -607,7 +607,7 @@ window.addEventListener('scroll',changeHeaderBg);
     Багато користувачів запитували: <em>якщо SimpleX не має ідентифікаторів користувачів, як він може знати, куди доставляти повідомлення?</em>
 </p>
 <p>
-    Для доставки повідомлень замість ідентифікаторів користувачів, які використовують всі інші платформи, SimpleX використовує тимчасові анонімні парні ідентифікатори черг повідомлень, окремі для кожного з ваших з'єднань — немає ніяких довгострокових ідентифікаторів.
+    Для доставки повідомлень замість ідентифікаторів користувачів, які використовуються всіма іншими платформами, SimpleX використовує тимчасові анонімні парні ідентифікатори черг повідомлень, окремі для кожного з ваших з'єднань — немає ніяких довгострокових ідентифікаторів.
 </p>
 <p>
     Ви визначаєте, який сервер(и) використовувати для отримання повідомлень, ваші контакти — сервери, які ви використовуєте для надсилання їм повідомлень. У кожній розмові, швидше за все, будуть використовуватися два різних сервери.
@@ -1420,7 +1420,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Багато комунікаційних платформ вразливі до MITM-атак з боку серверів або мережевих провайдерів.</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Щоб запобігти цьому, додатки SimpleX передають одноразові ключі поза смугою пропускання, коли ви ділитеся адресою у вигляді посилання або QR-коду.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Щоб запобігти цьому, програми SimpleX передають одноразові ключі поза смугою, коли ви надаєте адресу як посилання або QR-код.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Натисніть, щоб закрити</p>
@@ -1436,7 +1436,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">2-рівневе наскрізне шифрування</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Протокол з подвійним храповиком —<br>ОТР-обмін повідомленнями з ідеальною прямою секретністю та можливістю відновлення після злому.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Протокол double-ratchet —<br>OTR messaging з ідеальною конфіденційністю та відновленням зламів.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Криптобокс NaCL у кожній черзі для запобігання кореляції трафіку між чергами повідомлень, якщо TLS скомпрометовано.</p>
                             
@@ -1488,7 +1488,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Змішування повідомлень<br>для зменшення кореляції</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Сервери SimpleX працюють як змішані вузли з низькою затримкою — вхідні та вихідні повідомлення мають різний порядок.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Сервери SimpleX працюють як вузли змішування з низькою затримкою - вхідні та вихідні повідомлення йдуть в різному порядку.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Натисніть, щоб закрити</p>
@@ -1619,7 +1619,7 @@ window.addEventListener('scroll',changeHeaderBg);
         Мережі P2P покладаються на певний варіант <a href="https://en.wikipedia.org/wiki/Distributed_hash_table">DHT</a> для маршрутизації повідомлень. Дизайн DHT має балансувати між гарантією доставки та затримкою. SimpleX має кращу гарантію доставки і меншу затримку, ніж P2P, тому що повідомлення може бути передано через кілька серверів паралельно, використовуючи сервери, обрані одержувачем. У P2P-мережах повідомлення передається через <em>O(log N)</em> вузлів послідовно, використовуючи вузли, обрані алгоритмом.
     </li>
     <li>
-        Дизайн SimpleX, на відміну від більшості P2P-мереж, не має жодних глобальних ідентифікаторів користувачів, навіть тимчасових, а використовує лише тимчасові парні ідентифікатори, що забезпечує кращу анонімність та захист метаданих.
+        Дизайн SimpleX, на відміну від більшості мереж P2P, не має жодних глобальних ідентифікаторів користувачів, навіть тимчасових, а використовує тимчасові ідентифікатори лише парами, забезпечуючи кращу анонімність і захист метаданих.
     </li>
     <li>
         P2P не вирішує <a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack">атаки MITM</a> проблема, і більшість існуючих реалізацій не використовують позасмугові повідомлення для початкового обміну ключами. SimpleX використовує позасмугові повідомлення або, в деяких випадках, уже існуючі безпечні та надійні з’єднання для початкового обміну ключами.
