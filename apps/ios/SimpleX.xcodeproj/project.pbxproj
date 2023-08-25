@@ -776,7 +776,6 @@
 				5CDCAD5128186DE400503DA2 /* SimpleX NSE.entitlements */,
 				5CDCAD472818589900503DA2 /* NotificationService.swift */,
 				5CDCAD492818589900503DA2 /* Info.plist */,
-				5CB0BA892826CB3A00B3292C /* Localizable.strings */,
 				5CB0BA862826CB3A00B3292C /* InfoPlist.strings */,
 			);
 			path = "SimpleX NSE";
@@ -1062,7 +1061,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CB0BA882826CB3A00B3292C /* InfoPlist.strings in Resources */,
-				5CB0BA8B2826CB3A00B3292C /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1300,25 +1298,6 @@
 				5CA3ED502A9422D1005D71E2 /* th */,
 			);
 			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-		5CB0BA892826CB3A00B3292C /* Localizable.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				5CB0BA8A2826CB3A00B3292C /* ru */,
-				5C9CC7B128D1F8F400BEF955 /* en */,
-				5CB2085528DE647400D024EC /* de */,
-				5CBD285629565CAE00EC2CF4 /* fr */,
-				5CA85D0B297218AA0095AF72 /* it */,
-				5C84FE9229A216C800D95B1A /* nl */,
-				5C8B41CA29AF41BC00888272 /* cs */,
-				5C65DAE529C77136003CEE45 /* zh-Hans */,
-				5C65DAEB29CB8867003CEE45 /* es */,
-				5CAB912629E93F9400F34A95 /* pl */,
-				5CAC41192A192D8400C331A2 /* ja */,
-				5CA3ED4E2A942170005D71E2 /* th */,
-			);
-			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 		5CC2C0FA2809BF11000C35E3 /* Localizable.strings */ = {
