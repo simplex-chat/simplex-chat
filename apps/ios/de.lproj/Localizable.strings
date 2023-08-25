@@ -115,6 +115,9 @@
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
 
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ und %@ wurden verbunden";
+
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ an %2$@:";
 
@@ -132,6 +135,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "%@ will sich mit Ihnen verbinden!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ und %lld weitere Mitglieder wurden verbunden";
 
 /* copied message info */
 "%@:" = "%@:";
@@ -1466,6 +1472,9 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Auch wenn sie im Chat deaktiviert sind.";
+
+/* No comment provided by engineer. */
+"event happened" = "event happened";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Beenden ohne Speichern";
@@ -2880,6 +2889,9 @@
 
 /* No comment provided by engineer. */
 "Show developer options" = "Entwickleroptionen anzeigen";
+
+/* No comment provided by engineer. */
+"Show last messages" = "Letzte Nachrichten anzeigen";
 
 /* No comment provided by engineer. */
 "Show preview" = "Vorschau anzeigen";

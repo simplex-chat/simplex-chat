@@ -1098,7 +1098,7 @@
       </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve">
         <source>Connect via one-time link</source>
-        <target>Соединиться через одноразовую ссылку?</target>
+        <target>Соединиться через одноразовую ссылку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -5905,7 +5905,7 @@ SimpleX серверы не могут получить доступ к Ваше
       </trans-unit>
       <trans-unit id="moderated" xml:space="preserve">
         <source>moderated</source>
-        <target>удалено</target>
+        <target>модерировано</target>
         <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="moderated by %@" xml:space="preserve">

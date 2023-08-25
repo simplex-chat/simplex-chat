@@ -425,11 +425,12 @@ fun ChatLayout(
   onComposed: () -> Unit,
 ) {
   val scope = rememberCoroutineScope()
+  val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
   Box(
     Modifier
       .fillMaxWidth()
       .desktopOnExternalDrag(
-        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value,
+        enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
         onFiles = { paths ->
           val uris = paths.map { URI.create(it) }
           val groups =  uris.groupBy { isImage(it) }
@@ -880,7 +881,7 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
       .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
       .collect {
         try {
-          if (listState.firstVisibleItemIndex == 0) {
+          if (listState.firstVisibleItemIndex == 0 || (listState.firstVisibleItemIndex == 1 && listState.layoutInfo.totalItemsCount == chatItems.size)) {
             listState.animateScrollToItem(0)
           } else {
             listState.animateScrollBy(scrollDistance)

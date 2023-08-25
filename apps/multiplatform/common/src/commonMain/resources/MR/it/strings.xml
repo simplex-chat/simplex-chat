@@ -1371,9 +1371,9 @@
     <string name="system_restricted_background_desc">SimpleX non può funzionare in secondo piano. Riceverai le notifiche solo quando l\'app è aperta.</string>
     <string name="system_restricted_background_warn"><![CDATA[Per attivare le notifiche, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Per effettuare chiamate in secondo piano, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
-    <string name="rcv_group_event_2_members_connected">%s e %s sono connessi</string>
+    <string name="rcv_group_event_2_members_connected">%s e %s sono connessi/e</string>
     <string name="rcv_group_event_n_members_connected">%s, %s e altri %d membri sono connessi</string>
-    <string name="rcv_group_event_3_members_connected">%s, %s e %s sono connessi</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s e %s sono connessi/e</string>
     <string name="privacy_message_draft">Bozza</string>
     <string name="privacy_show_last_messages">Mostra gli ultimi messaggi</string>
 </resources>

@@ -551,7 +551,7 @@
     <string name="group_member_role_observer">observador</string>
     <string name="group_member_role_member">miembro</string>
     <string name="group_member_status_removed">expulsado</string>
-    <string name="group_member_status_invited">ha invitado a</string>
+    <string name="group_member_status_invited">ha sido invitado</string>
     <string name="no_contacts_to_add">Sin contactos que añadir</string>
     <string name="new_member_role">Nuevo rol de miembro</string>
     <string name="initial_member_role">Rol inicial</string>
@@ -981,7 +981,7 @@
     <string name="button_welcome_message">Mensaje de bienvenida</string>
     <string name="group_welcome_title">Mensaje de bienvenida</string>
     <string name="should_be_at_least_one_profile">Debe haber al menos un perfil de usuario.</string>
-    <string name="make_profile_private">¡Hacer un perfil privado!</string>
+    <string name="make_profile_private">¡Hacer perfil privado!</string>
     <string name="dont_show_again">No mostrar de nuevo</string>
     <string name="muted_when_inactive">¡Silenciado cuando está inactivo!</string>
     <string name="v4_6_group_moderation">Moderación de grupos</string>
