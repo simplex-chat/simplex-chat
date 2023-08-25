@@ -2859,234 +2859,286 @@
         <source>Moderated at: %@</source>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="More improvements are coming soon!" xml:space="preserve">
+      <trans-unit id="More improvements are coming soon!" xml:space="preserve" approved="no">
         <source>More improvements are coming soon!</source>
+        <target state="translated">Очаквайте скоро още подобрения!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Most likely this contact has deleted the connection with you." xml:space="preserve">
+      <trans-unit id="Most likely this contact has deleted the connection with you." xml:space="preserve" approved="no">
         <source>Most likely this contact has deleted the connection with you.</source>
+        <target state="translated">Най-вероятно този контакт е изтрил връзката с вас.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Multiple chat profiles" xml:space="preserve">
+      <trans-unit id="Multiple chat profiles" xml:space="preserve" approved="no">
         <source>Multiple chat profiles</source>
+        <target state="translated">Множество профили за чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mute" xml:space="preserve">
+      <trans-unit id="Mute" xml:space="preserve" approved="no">
         <source>Mute</source>
+        <target state="translated">Без звук</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Muted when inactive!" xml:space="preserve">
+      <trans-unit id="Muted when inactive!" xml:space="preserve" approved="no">
         <source>Muted when inactive!</source>
+        <target state="translated">Без звук при неактивност!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Name" xml:space="preserve">
+      <trans-unit id="Name" xml:space="preserve" approved="no">
         <source>Name</source>
+        <target state="translated">Име</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network &amp; servers" xml:space="preserve">
+      <trans-unit id="Network &amp; servers" xml:space="preserve" approved="no">
         <source>Network &amp; servers</source>
+        <target state="translated">Мрежа и сървъри</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network settings" xml:space="preserve">
+      <trans-unit id="Network settings" xml:space="preserve" approved="no">
         <source>Network settings</source>
+        <target state="translated">Мрежови настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network status" xml:space="preserve">
+      <trans-unit id="Network status" xml:space="preserve" approved="no">
         <source>Network status</source>
+        <target state="translated">Състояние на мрежата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New Passcode" xml:space="preserve">
+      <trans-unit id="New Passcode" xml:space="preserve" approved="no">
         <source>New Passcode</source>
+        <target state="translated">Нов kод за достъп</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New contact request" xml:space="preserve">
+      <trans-unit id="New contact request" xml:space="preserve" approved="no">
         <source>New contact request</source>
+        <target state="translated">Нова заявка за контакт</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="New contact:" xml:space="preserve">
         <source>New contact:</source>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New database archive" xml:space="preserve">
+      <trans-unit id="New database archive" xml:space="preserve" approved="no">
         <source>New database archive</source>
+        <target state="translated">Нов архив на база данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New display name" xml:space="preserve">
+      <trans-unit id="New display name" xml:space="preserve" approved="no">
         <source>New display name</source>
+        <target state="translated">Ново показвано име</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
         <source>New in %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New member role" xml:space="preserve">
+      <trans-unit id="New member role" xml:space="preserve" approved="no">
         <source>New member role</source>
+        <target state="translated">Нова членска роля</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New message" xml:space="preserve">
+      <trans-unit id="New message" xml:space="preserve" approved="no">
         <source>New message</source>
+        <target state="translated">Ново съобщение</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New passphrase…" xml:space="preserve">
+      <trans-unit id="New passphrase…" xml:space="preserve" approved="no">
         <source>New passphrase…</source>
+        <target state="translated">Нова парола…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No" xml:space="preserve">
+      <trans-unit id="No" xml:space="preserve" approved="no">
         <source>No</source>
+        <target state="translated">Не</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No app password" xml:space="preserve">
         <source>No app password</source>
         <note>Authentication unavailable</note>
       </trans-unit>
-      <trans-unit id="No contacts selected" xml:space="preserve">
+      <trans-unit id="No contacts selected" xml:space="preserve" approved="no">
         <source>No contacts selected</source>
+        <target state="translated">Няма избрани контакти</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No contacts to add" xml:space="preserve">
+      <trans-unit id="No contacts to add" xml:space="preserve" approved="no">
         <source>No contacts to add</source>
+        <target state="translated">Няма контакти за добавяне</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No device token!" xml:space="preserve">
         <source>No device token!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No filtered chats" xml:space="preserve">
+      <trans-unit id="No filtered chats" xml:space="preserve" approved="no">
         <source>No filtered chats</source>
+        <target state="translated">Няма филтрирани чатове</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No group!" xml:space="preserve">
+      <trans-unit id="No group!" xml:space="preserve" approved="no">
         <source>Group not found!</source>
+        <target state="translated">Групата не е намерена!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No history" xml:space="preserve">
+      <trans-unit id="No history" xml:space="preserve" approved="no">
         <source>No history</source>
+        <target state="translated">Няма история</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
         <source>No permission to record voice message</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No received or sent files" xml:space="preserve">
+      <trans-unit id="No received or sent files" xml:space="preserve" approved="no">
         <source>No received or sent files</source>
+        <target state="translated">Няма получени или изпратени файлове</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Notifications" xml:space="preserve">
+      <trans-unit id="Notifications" xml:space="preserve" approved="no">
         <source>Notifications</source>
+        <target state="translated">Известия</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications are disabled!" xml:space="preserve">
         <source>Notifications are disabled!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
+      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve" approved="no">
         <source>Now admins can:
 - delete members' messages.
 - disable members ("observer" role)</source>
+        <target state="translated">Сега администраторите могат:
+- да изтриват съобщения на членове.
+- да деактивират членове (роля "наблюдател")</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Off" xml:space="preserve">
+      <trans-unit id="Off" xml:space="preserve" approved="no">
         <source>Off</source>
+        <target state="translated">Изключено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Off (Local)" xml:space="preserve">
+      <trans-unit id="Off (Local)" xml:space="preserve" approved="no">
         <source>Off (Local)</source>
+        <target state="translated">Изключено (Локално)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ok" xml:space="preserve">
+      <trans-unit id="Ok" xml:space="preserve" approved="no">
         <source>Ok</source>
+        <target state="translated">Ок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database" xml:space="preserve">
+      <trans-unit id="Old database" xml:space="preserve" approved="no">
         <source>Old database</source>
+        <target state="translated">Стара база данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database archive" xml:space="preserve">
+      <trans-unit id="Old database archive" xml:space="preserve" approved="no">
         <source>Old database archive</source>
+        <target state="translated">Стар архив на база данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="One-time invitation link" xml:space="preserve">
+      <trans-unit id="One-time invitation link" xml:space="preserve" approved="no">
         <source>One-time invitation link</source>
+        <target state="translated">Линк за еднократна покана</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be required for connection. Requires enabling VPN.</source>
+        <target state="translated">За свързване ще са необходими Onion хостове. Изисква се активиране на VPN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be used when available. Requires enabling VPN.</source>
+        <target state="translated">Ще се използват Onion хостове, когато са налични. Изисква се активиране на VPN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will not be used." xml:space="preserve">
+      <trans-unit id="Onion hosts will not be used." xml:space="preserve" approved="no">
         <source>Onion hosts will not be used.</source>
+        <target state="translated">Няма се използват Onion хостове.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
         <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
+      <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
+        <target state="translated">Само собствениците на групата могат да променят груповите настройки.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
+      <trans-unit id="Only group owners can enable files and media." xml:space="preserve" approved="no">
         <source>Only group owners can enable files and media.</source>
+        <target state="translated">Само собствениците на групата могат да активират файлове и медията.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can enable voice messages." xml:space="preserve">
+      <trans-unit id="Only group owners can enable voice messages." xml:space="preserve" approved="no">
         <source>Only group owners can enable voice messages.</source>
+        <target state="translated">Само собствениците на групата могат да активират гласови съобщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can add message reactions." xml:space="preserve">
+      <trans-unit id="Only you can add message reactions." xml:space="preserve" approved="no">
         <source>Only you can add message reactions.</source>
+        <target state="translated">Само вие можете да добавяте реакции на съобщенията.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve">
+      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve" approved="no">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion).</source>
+        <target state="translated">Само вие можете необратимо да изтриете съобщения (вашият контакт може да ги маркира за изтриване).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can make calls." xml:space="preserve">
+      <trans-unit id="Only you can make calls." xml:space="preserve" approved="no">
         <source>Only you can make calls.</source>
+        <target state="translated">Само вие можете да извършвате разговори.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Only you can send disappearing messages." xml:space="preserve" approved="no">
         <source>Only you can send disappearing messages.</source>
+        <target state="translated">Само вие можете да изпращате изчезващи съобщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can send voice messages." xml:space="preserve">
+      <trans-unit id="Only you can send voice messages." xml:space="preserve" approved="no">
         <source>Only you can send voice messages.</source>
+        <target state="translated">Само вие можете да изпращате гласови съобщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can add message reactions." xml:space="preserve">
+      <trans-unit id="Only your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Only your contact can add message reactions.</source>
+        <target state="translated">Само вашият контакт може да добавя реакции на съобщенията.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
+      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve" approved="no">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
+        <target state="translated">Само вашият контакт може необратимо да изтрие съобщения (можете да ги маркирате за изтриване).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can make calls." xml:space="preserve">
+      <trans-unit id="Only your contact can make calls." xml:space="preserve" approved="no">
         <source>Only your contact can make calls.</source>
+        <target state="translated">Само вашият контакт може да извършва разговори.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve" approved="no">
         <source>Only your contact can send disappearing messages.</source>
+        <target state="translated">Само вашият контакт може да изпраща изчезващи съобщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
+      <trans-unit id="Only your contact can send voice messages." xml:space="preserve" approved="no">
         <source>Only your contact can send voice messages.</source>
+        <target state="translated">Само вашият контакт може да изпраща гласови съобщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open Settings" xml:space="preserve">
+      <trans-unit id="Open Settings" xml:space="preserve" approved="no">
         <source>Open Settings</source>
+        <target state="translated">Отвори настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open chat" xml:space="preserve">
+      <trans-unit id="Open chat" xml:space="preserve" approved="no">
         <source>Open chat</source>
+        <target state="translated">Отвори чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open chat console" xml:space="preserve">
+      <trans-unit id="Open chat console" xml:space="preserve" approved="no">
         <source>Open chat console</source>
+        <target state="translated">Отвори конзолата</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open user profiles" xml:space="preserve">
@@ -5491,6 +5543,16 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="Message delivery receipts!" xml:space="preserve" approved="no">
         <source>Message delivery receipts!</source>
         <target state="translated">Потвърждениe за доставка на съобщения!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ and %@ connected" xml:space="preserve" approved="no">
+        <source>%@ and %@ connected</source>
+        <target state="translated">%@ и %@ са свързани</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No delivery information" xml:space="preserve" approved="no">
+        <source>No delivery information</source>
+        <target state="translated">Няма информация за доставката</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>

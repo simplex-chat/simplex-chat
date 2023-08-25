@@ -89,6 +89,7 @@
       </trans-unit>
       <trans-unit id="%@ and %@ connected" xml:space="preserve">
         <source>%@ and %@ connected</source>
+        <target>%@ en %@ verbonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ at %@:" xml:space="preserve">
@@ -123,6 +124,7 @@
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
         <source>%@, %@ and %lld other members connected</source>
+        <target>%@, %@ en %lld andere leden hebben verbinding gemaakt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@:" xml:space="preserve">
@@ -4256,6 +4258,7 @@
       </trans-unit>
       <trans-unit id="Show last messages" xml:space="preserve">
         <source>Show last messages</source>
+        <target>Laat laatste berichten zien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -5767,6 +5770,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="event happened" xml:space="preserve">
         <source>event happened</source>
+        <target>gebeurtenis gebeurd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">

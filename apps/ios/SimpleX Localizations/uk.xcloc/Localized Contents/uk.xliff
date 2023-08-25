@@ -6334,6 +6334,26 @@ You can change it in Settings.</source>
         <target state="translated">Ваш профіль **%@** буде опублікований.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve" approved="no">
+        <source>%@, %@ and %lld other members connected</source>
+        <target state="translated">%@, %@ та %lld інші підключені учасники</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ and %@ connected" xml:space="preserve" approved="no">
+        <source>%@ and %@ connected</source>
+        <target state="translated">%@ і %@ підключено</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Show last messages" xml:space="preserve" approved="no">
+        <source>Show last messages</source>
+        <target state="translated">Показати останні повідомлення</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="event happened" xml:space="preserve" approved="no">
+        <source>event happened</source>
+        <target state="translated">відбулася подія</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="uk" datatype="plaintext">

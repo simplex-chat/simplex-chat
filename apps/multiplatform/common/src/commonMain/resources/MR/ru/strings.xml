@@ -314,7 +314,7 @@
     <string name="icon_descr_settings">Настройки</string>
     <string name="image_descr_qr_code">QR код</string>
     <string name="icon_descr_address">SimpleX адрес</string>
-    <string name="icon_descr_help">Помощь</string>
+    <string name="icon_descr_help">помощь</string>
     <string name="icon_descr_simplex_team">SimpleX команда</string>
     <string name="image_descr_simplex_logo">SimpleX логотип</string>
     <string name="icon_descr_email">Email</string>
