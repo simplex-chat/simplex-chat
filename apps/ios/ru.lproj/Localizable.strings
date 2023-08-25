@@ -730,7 +730,7 @@
 "Connect via link / QR code" = "Соединиться через ссылку / QR код";
 
 /* No comment provided by engineer. */
-"Connect via one-time link" = "Соединиться через одноразовую ссылку?";
+"Connect via one-time link" = "Соединиться через одноразовую ссылку";
 
 /* No comment provided by engineer. */
 "connected" = "соединение установлено";
@@ -2065,7 +2065,7 @@
 "Moderate" = "Модерировать";
 
 /* moderated chat item */
-"moderated" = "удалено";
+"moderated" = "модерировано";
 
 /* No comment provided by engineer. */
 "Moderated at" = "Модерировано";

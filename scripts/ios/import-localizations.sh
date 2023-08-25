@@ -2,7 +2,7 @@
 
 set -e
 
-langs=( en cs de es fr it ja nl pl ru zh-Hans )
+langs=( en cs de es fr it ja nl pl ru th zh-Hans )
 
 for lang in "${langs[@]}"; do
   echo "***"

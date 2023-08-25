@@ -50,7 +50,7 @@
 "[Send us email](mailto:chat@simplex.chat)" = "[Contacta vía email](mailto:chat@simplex.chat)";
 
 /* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Estrella en GitHub] (https://github.com/simplex-chat/simplex-chat)";
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Estrella en GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Añadir nuevo contacto**: para crear tu código QR o enlace de un uso para tu contacto.";
@@ -115,6 +115,9 @@
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
 
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ y %@ conectados";
+
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ a las %2$@:";
 
@@ -132,6 +135,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "¡ %@ quiere contactar!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ y %lld miembros más conectados";
 
 /* copied message info */
 "%@:" = "%@:";
@@ -1828,7 +1834,7 @@
 "Invite to group" = "Invitar al grupo";
 
 /* No comment provided by engineer. */
-"invited" = "ha invitado a";
+"invited" = "ha sido invitado";
 
 /* rcv group event chat item */
 "invited %@" = "ha invitado a %@";
@@ -1954,7 +1960,7 @@
 "Make one message disappear" = "Escribir un mensaje temporal";
 
 /* No comment provided by engineer. */
-"Make profile private!" = "¡Hacer un perfil privado!";
+"Make profile private!" = "¡Hacer perfil privado!";
 
 /* No comment provided by engineer. */
 "Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Asegúrate de que las direcciones del servidor %@ tienen el formato correcto, están separadas por líneas y no duplicadas (%@).";
@@ -2880,6 +2886,9 @@
 
 /* No comment provided by engineer. */
 "Show developer options" = "Mostrar opciones de desarrollador";
+
+/* No comment provided by engineer. */
+"Show last messages" = "Mostrar último mensaje";
 
 /* No comment provided by engineer. */
 "Show preview" = "Mostrar vista previa";

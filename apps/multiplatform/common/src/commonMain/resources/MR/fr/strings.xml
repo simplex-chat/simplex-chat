@@ -462,7 +462,7 @@
     <string name="read_more_in_github_with_link"><![CDATA[Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Batterie peu utilisée</b>. Le service de fond vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Batterie plus utilisée </b> ! Le service de fond est toujours en cours d\'exécution - les notifications s\'affichent dès que les messages sont disponibles.]]></string>
-    <string name="integrity_msg_skipped">%1$d message⸱s manqué⸱s</string>
+    <string name="integrity_msg_skipped">%1$d message(s) manqué(s)</string>
     <string name="integrity_msg_bad_id">ID de message incorrecte</string>
     <string name="settings_section_title_settings">PARAMÈTRES</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Cela peut arriver quand :
