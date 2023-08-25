@@ -3,7 +3,6 @@ package chat.simplex.common.platform
 import androidx.compose.ui.graphics.*
 import boofcv.io.image.ConvertBufferedImage
 import boofcv.struct.image.GrayU8
-import chat.simplex.common.views.helpers.hasAlpha
 import chat.simplex.res.MR
 import org.jetbrains.skia.Image
 import java.awt.RenderingHints
@@ -107,6 +106,20 @@ private fun removeAlphaChannel(img: BufferedImage): BufferedImage {
 }
 
 actual fun GrayU8.toImageBitmap(): ImageBitmap = ConvertBufferedImage.extractBuffered(this).toComposeImageBitmap()
+
+actual fun ImageBitmap.hasAlpha(): Boolean {
+  val map = toPixelMap()
+  var y = 0
+  while (y < height) {
+    var x = 0
+    while (x < width) {
+      if (map[x, y].alpha < 1f) return true
+      x++
+    }
+    y++
+  }
+  return false
+}
 
 actual fun ImageBitmap.addLogo(): ImageBitmap {
   val radius = (width * 0.16f).toInt()
