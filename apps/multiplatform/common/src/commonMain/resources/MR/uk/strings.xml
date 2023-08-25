@@ -256,7 +256,7 @@
     <string name="network_use_onion_hosts">Використовуйте хости .onion</string>
     <string name="network_use_onion_hosts_prefer">При наявності</string>
     <string name="network_use_onion_hosts_no">Ні</string>
-    <string name="network_use_onion_hosts_prefer_desc">Використовуватимуться хости-зони, якщо вони доступні.</string>
+    <string name="network_use_onion_hosts_prefer_desc">Onion хости будуть використовуватися за наявності.</string>
     <string name="update_network_session_mode_question">Оновити режим транспортної ізоляції\?</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="create_address">Створити адресу</string>
@@ -644,7 +644,7 @@
     <string name="enter_one_ICE_server_per_line">Сервери ICE (по одному на лінію)</string>
     <string name="error_saving_ICE_servers">Помилка збереження серверів ICE</string>
     <string name="network_use_onion_hosts_required_desc">Для з\'єднання будуть потрібні хости onion.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Буде використано хости onion за наявності.</string>
+    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion хости будуть використовуватися за наявності.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Для з\'єднання будуть потрібні хости onion.</string>
     <string name="show_developer_options">Показати опції розробника</string>
     <string name="developer_options">Ідентифікатори бази даних та опція ізоляції транспорту.</string>
@@ -857,7 +857,7 @@
     <string name="smp_servers_use_server">Використовувати сервер</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Переконайтеся, що адреси серверів WebRTC ICE мають правильний формат, розділені рядками та не дублюються.</string>
     <string name="network_disable_socks_info">Якщо ви підтвердите, сервери обміну повідомленнями зможуть бачити вашу IP-адресу, а ваш провайдер - до яких серверів ви підключаєтеся.</string>
-    <string name="network_use_onion_hosts_no_desc">Оніонні хости не використовуватимуться.</string>
+    <string name="network_use_onion_hosts_no_desc">Onion хости не використовуватимуться.</string>
     <string name="network_session_mode_transport_isolation">Транспортна ізоляція</string>
     <string name="customize_theme_title">Налаштувати тему</string>
     <string name="share_address_with_contacts_question">Поділіться адресою з контактами\?</string>
@@ -962,7 +962,7 @@
     <string name="image_descr_link_preview">посилання для попереднього перегляду зображення</string>
     <string name="icon_descr_cancel_link_preview">скасувати попередній перегляд посилання</string>
     <string name="icon_descr_settings">Налаштування</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Оніонні хости не використовуватимуться.</string>
+    <string name="network_use_onion_hosts_no_desc_in_alert">Onion хости не використовуватимуться.</string>
     <string name="icon_descr_call_progress">Виклик у процесі</string>
     <string name="database_error">Помилка в базі даних</string>
     <string name="restore_database_alert_confirm">Відновити</string>
