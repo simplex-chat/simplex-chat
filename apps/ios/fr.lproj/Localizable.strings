@@ -115,6 +115,9 @@
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
 
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ et %@ sont connecté.es";
+
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ à %2$@ :";
 
@@ -132,6 +135,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "%@ veut se connecter !";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ et %lld autres membres sont connectés";
 
 /* copied message info */
 "%@:" = "%@ :";
@@ -339,7 +345,7 @@
 "Advanced network settings" = "Paramètres réseau avancés";
 
 /* chat item text */
-"agreeing encryption for %@…" = "acceptant le chiffrement pour %@…";
+"agreeing encryption for %@…" = "accord sur le chiffrement pour %@…";
 
 /* chat item text */
 "agreeing encryption…" = "accord sur le chiffrement…";
@@ -1466,6 +1472,9 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Même s'il est désactivé dans la conversation.";
+
+/* No comment provided by engineer. */
+"event happened" = "event happened";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Quitter sans sauvegarder";
@@ -2880,6 +2889,9 @@
 
 /* No comment provided by engineer. */
 "Show developer options" = "Afficher les options pour les développeurs";
+
+/* No comment provided by engineer. */
+"Show last messages" = "Voir les derniers messages";
 
 /* No comment provided by engineer. */
 "Show preview" = "Montrer l'aperçu";

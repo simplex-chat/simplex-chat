@@ -115,6 +115,9 @@
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
 
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ en %@ verbonden";
+
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ bij %2$@:";
 
@@ -132,6 +135,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "%@ wil verbinding maken!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ en %lld andere leden hebben verbinding gemaakt";
 
 /* copied message info */
 "%@:" = "%@:";
@@ -1466,6 +1472,9 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Zelfs wanneer uitgeschakeld in het gesprek.";
+
+/* No comment provided by engineer. */
+"event happened" = "gebeurtenis gebeurd";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Afsluiten zonder opslaan";
@@ -2880,6 +2889,9 @@
 
 /* No comment provided by engineer. */
 "Show developer options" = "Ontwikkelaars opties tonen";
+
+/* No comment provided by engineer. */
+"Show last messages" = "Laat laatste berichten zien";
 
 /* No comment provided by engineer. */
 "Show preview" = "Toon voorbeeld";
