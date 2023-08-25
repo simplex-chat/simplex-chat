@@ -48,7 +48,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import Simplex.Messaging.Agent (AgentClient)
+import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
@@ -406,6 +406,8 @@ data ChatCommand
   | DebugLocks
   | GetAgentStats
   | ResetAgentStats
+  | GetAgentSubs
+  | GetAgentSubsDetails
   deriving (Show)
 
 data ChatResponse
@@ -568,6 +570,8 @@ data ChatResponse
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
+  | CRAgentSubs {activeSubs :: Map Text Int, distinctActiveSubs :: Map Text Int, pendingSubs :: Map Text Int, distinctPendingSubs :: Map Text Int}
+  | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
