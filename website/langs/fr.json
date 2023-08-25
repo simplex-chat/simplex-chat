@@ -233,5 +233,19 @@
     "guide": "Guide",
     "docs-dropdown-4": "Hébergement d'un serveur SMP",
     "on-this-page": "Sur cette page",
-    "glossary": "Glossaire"
+    "glossary": "Glossaire",
+    "releases-to-this-repo-are-done-1-2-days-later": "Les mises à jour de ce dépôt sont faites 1 à 2 jours plus tard",
+    "simplex-and-f-droid-repo-sign-builds-with-different-keys": "Les dépôts SimpleX Chat et F-Droid.org signent les builds avec des clés différentes. Pour changer, veuillez",
+    "chat-db-and-re-install-app": "la base de données des chats et réinstaller l'application",
+    "export": "exporter",
+    "docs-dropdown-8": "Service de répertoire SimpleX",
+    "simplex-chat-via-f-droid": "SimpleX Chat via F-Droid",
+    "simplex-chat-repo": "Dépot SimpleX Chat",
+    "stable-and-beta-versions-built-by-developers": "Versions stables et bêta crées par les développeurs",
+    "to-add-it-to-your-f-droid-client": "Pour l'ajouter à votre client F-Droid",
+    "scan-the-qr-code-or": "scannez le code QR ou",
+    "use-this-url": "utilisez cette URL",
+    "signing-key-fingerprint": "Empreinte de signature numérique (SHA-256)",
+    "f-droid-org-repo": "Dépot F-Droid.org",
+    "stable-versions-built-by-f-droid-org": "Versions stables créées par F-Droid.org"
 }
