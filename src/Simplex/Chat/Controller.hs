@@ -406,7 +406,8 @@ data ChatCommand
   | DebugLocks
   | GetAgentStats
   | ResetAgentStats
-  | GetAgentSubscriptions
+  | GetAgentSubs
+  | GetAgentSubsDetails
   deriving (Show)
 
 data ChatResponse
@@ -569,7 +570,8 @@ data ChatResponse
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
-  | CRAgentSubscriptions {agentSubscriptions :: SubscriptionsInfo}
+  | CRAgentSubs {activeSubs :: Map Text Int, distinctActiveSubs :: Map Text Int, pendingSubs :: Map Text Int, distinctPendingSubs :: Map Text Int}
+  | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}

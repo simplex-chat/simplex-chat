@@ -20,6 +20,7 @@ import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -260,7 +261,15 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
-  CRAgentSubscriptions SubscriptionsInfo {activeSubscriptions, pendingSubscriptions} ->
+  CRAgentSubs {activeSubs, distinctActiveSubs, pendingSubs, distinctPendingSubs} ->
+    [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", distinct active = " <> show (sum distinctActiveSubs) <> ", pending = " <> show (sum pendingSubs) <> ", distinct pending = " <> show (sum distinctPendingSubs)]
+      <> ("active subscriptions:" : listSubs activeSubs)
+      <> ("distinct active subscriptions:" : listSubs distinctActiveSubs)
+      <> ("pending subscriptions:" : listSubs pendingSubs)
+      <> ("distinct pending subscriptions:" : listSubs distinctPendingSubs)
+    where
+      listSubs = map (\(srv, count) -> plain $ srv <> ": " <> tshow count) . M.assocs
+  CRAgentSubsDetails SubscriptionsInfo {activeSubscriptions, pendingSubscriptions} ->
     ("active subscriptions:" : map sShow activeSubscriptions)
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
