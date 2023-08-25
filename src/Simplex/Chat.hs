@@ -30,7 +30,7 @@ import Crypto.Random (drgNew)
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Bifunctor (bimap, first)
+import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -40,12 +40,13 @@ import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, isSuffixOf, partition, sortOn)
+import Data.List (find, foldl', isSuffixOf, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -79,7 +80,7 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), agentClientStore, temporaryAgentError)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -1741,6 +1742,20 @@ processChatCommand = \case
       stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
         map B.unpack [host, clientTs, cmd, res, bshow count]
   ResetAgentStats -> withAgent resetAgentStats >> ok_
+  GetAgentSubs -> summary <$> withAgent getAgentSubscriptions
+    where
+      summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions} =
+        CRAgentSubs {activeSubs, distinctActiveSubs, pendingSubs, distinctPendingSubs}
+        where
+          (activeSubs, distinctActiveSubs) = foldSubs activeSubscriptions
+          (pendingSubs, distinctPendingSubs) = foldSubs pendingSubscriptions
+          foldSubs :: [SubInfo] -> (Map Text Int, Map Text Int)
+          foldSubs = second (M.map S.size) . foldl' acc (M.empty, M.empty)
+          acc (m, m') SubInfo {server, rcvId} =
+            ( M.alter (Just . maybe 1 (+ 1)) server m,
+              M.alter (Just . maybe (S.singleton rcvId) (S.insert rcvId)) server m'
+            )
+  GetAgentSubsDetails -> CRAgentSubsDetails <$> withAgent getAgentSubscriptions
   where
     withChatLock name action = asks chatLock >>= \l -> withLock l name action
     -- below code would make command responses asynchronous where they can be slow
@@ -5270,7 +5285,9 @@ chatCommandP =
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
       "/get stats" $> GetAgentStats,
-      "/reset stats" $> ResetAgentStats
+      "/reset stats" $> ResetAgentStats,
+      "/get subs" $> GetAgentSubs,
+      "/get subs details" $> GetAgentSubsDetails
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)

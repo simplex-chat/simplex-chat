@@ -21,6 +21,7 @@ import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -45,7 +46,7 @@ import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import qualified Simplex.FileTransfer.Protocol as XFTP
-import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..))
+import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
@@ -261,6 +262,17 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
+  CRAgentSubs {activeSubs, distinctActiveSubs, pendingSubs, distinctPendingSubs} ->
+    [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", distinct active = " <> show (sum distinctActiveSubs) <> ", pending = " <> show (sum pendingSubs) <> ", distinct pending = " <> show (sum distinctPendingSubs)]
+      <> ("active subscriptions:" : listSubs activeSubs)
+      <> ("distinct active subscriptions:" : listSubs distinctActiveSubs)
+      <> ("pending subscriptions:" : listSubs pendingSubs)
+      <> ("distinct pending subscriptions:" : listSubs distinctPendingSubs)
+    where
+      listSubs = map (\(srv, count) -> plain $ srv <> ": " <> tshow count) . M.assocs
+  CRAgentSubsDetails SubscriptionsInfo {activeSubscriptions, pendingSubscriptions} ->
+    ("active subscriptions:" : map sShow activeSubscriptions)
+      <> ("pending subscriptions: " : map sShow pendingSubscriptions)
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ "completed deleting rcv queue, agent connection id: " <> sShow acId
