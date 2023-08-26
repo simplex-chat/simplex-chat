@@ -1,6 +1,5 @@
-import org.gradle.initialization.Environment.Properties
 import java.io.File
-import java.io.FileInputStream
+import java.util.*
 
 buildscript {
     val prop = java.util.Properties().apply {
@@ -26,6 +25,17 @@ buildscript {
     extra.set("compression.level", (prop["compression.level"] as String?)?.toIntOrNull() ?: 0)
     // NOTE: If you need a different version of something, provide it in `local.properties`
     // like so: compose.version=123, or gradle.plugin.version=1.2.3, etc
+
+
+    /** Mac signing and notarization */
+    // You can specify `compose.desktop.mac.*` keys and values from the right side of the command in `$HOME/.gradle/gradle.properties`.
+    // This will be project-independent setup without requiring to have `local.properties` file
+    extra.set("desktop.mac.signing.identity", prop["desktop.mac.signing.identity"] ?: extra["compose.desktop.mac.signing.identity"])
+    extra.set("desktop.mac.signing.keychain", prop["desktop.mac.signing.keychain"] ?: extra["compose.desktop.mac.signing.keychain"])
+    extra.set("desktop.mac.notarization.apple_id", prop["desktop.mac.notarization.apple_id"] ?: extra["compose.desktop.mac.notarization.appleID"])
+    extra.set("desktop.mac.notarization.password", prop["desktop.mac.notarization.password"] ?: extra["compose.desktop.mac.notarization.password"])
+    extra.set("desktop.mac.notarization.team_id", prop["desktop.mac.notarization.team_id"] ?: extra["compose.desktop.mac.notarization.ascProvider"])
+
     repositories {
         google()
         mavenCentral()

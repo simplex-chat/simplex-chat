@@ -15,6 +15,7 @@ expect fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOut
 
 expect fun GrayU8.toImageBitmap(): ImageBitmap
 
+expect fun ImageBitmap.hasAlpha(): Boolean
 expect fun ImageBitmap.addLogo(): ImageBitmap
 expect fun ImageBitmap.scale(width: Int, height: Int): ImageBitmap
 

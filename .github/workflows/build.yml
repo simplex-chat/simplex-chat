@@ -167,9 +167,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'macos-latest'
         shell: bash
         run: |
-          scripts/desktop/build-lib-mac.sh
-          cd apps/multiplatform
-          ./gradlew packageDmg
+          scripts/desktop/build-desktop-mac-ci.sh
           echo "::set-output name=package_path::$(echo $PWD/release/main/dmg/SimpleX-*.dmg)"
 
       - name: Linux upload desktop package to release

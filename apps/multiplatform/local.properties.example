@@ -1,0 +1,10 @@
+compression.level=0
+enable_debuggable=true
+application_id.suffix=.debug
+app.name=SimpleX Debug
+
+#desktop.mac.signing.identity=SimpleX Chat Ltd
+#desktop.mac.signing.keychain=/path/to/simplex.keychain
+#desktop.mac.notarization.apple_id=example@example.com
+#desktop.mac.notarization.password=12345678
+#desktop.mac.notarization.team_id=XXXXXXXXXX

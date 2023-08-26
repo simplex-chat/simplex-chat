@@ -65,6 +65,23 @@ compose {
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
+          val identity = rootProject.extra["desktop.mac.signing.identity"] as String?
+          val keychain = rootProject.extra["desktop.mac.signing.keychain"] as String?
+          val appleId = rootProject.extra["desktop.mac.notarization.apple_id"] as String?
+          val password = rootProject.extra["desktop.mac.notarization.password"] as String?
+          val teamId = rootProject.extra["desktop.mac.notarization.team_id"] as String?
+          if (identity != null && keychain != null && appleId != null && password != null) {
+            signing {
+              sign.set(true)
+              this.identity.set(identity)
+              this.keychain.set(keychain)
+            }
+            notarization {
+              this.appleID.set(appleId)
+              this.password.set(password)
+              this.ascProvider.set(teamId)
+            }
+          }
         }
         val os = System.getProperty("os.name", "generic").toLowerCaseAsciiOnly()
         if (os.contains("mac") || os.contains("win")) {
