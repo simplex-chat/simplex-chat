@@ -237,14 +237,10 @@
     "simplex-chat-via-f-droid": "SimpleX Chat via F-Droid",
     "simplex-chat-repo": "SimpleX Chat repo",
     "stable-and-beta-versions-built-by-developers": "Stable and beta versions built by the developers",
-    "to-add-it-to-your-f-droid-client": "To add it to your F-Droid client",
-    "scan-the-qr-code-or": "scan the QR code or",
-    "use-this-url": "use this URL",
+    "f-droid-page-simplex-chat-repo-section-text": "To add it to your F-Droid client, <span class='hide-on-mobile'>scan the QR code or</span> use this URL:",
     "signing-key-fingerprint": "Signing key fingerprint (SHA-256)",
     "f-droid-org-repo": "F-Droid.org repo",
     "stable-versions-built-by-f-droid-org": "Stable versions built by F-Droid.org",
     "releases-to-this-repo-are-done-1-2-days-later": "The releases to this repo are done 1-2 days later",
-    "simplex-and-f-droid-repo-sign-builds-with-different-keys": "SimpleX Chat and F-Droid.org repositories sign builds with the different keys. To switch, please",
-    "export": "export",
-    "chat-db-and-re-install-app": "the chat database and re-install the app"
+    "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat and F-Droid.org repositories sign builds with the different keys. To switch, please <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>export</a> the chat database and re-install the app."
 }
