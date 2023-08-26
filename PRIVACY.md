@@ -131,4 +131,4 @@ You accept our Terms of Service ("Terms") by installing or using any of our apps
 
 **Ending these Terms**. You may end these Terms with SimpleX Chat at any time by deleting SimpleX Chat app(s) from your device and discontinuing use of our Services. The provisions related to Licenses, Disclaimers, Limitation of Liability, Resolving dispute, Availability, Changes to the terms, Enforcing the terms, and Ending these Terms will survive termination of your relationship with SimpleX Chat.
 
-Updated August 17, 2022
+Updated August 17, 2023
