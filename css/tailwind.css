@@ -2355,10 +2355,6 @@ video {
     display: block;
   }
 
-  .sm\:inline {
-    display: inline;
-  }
-
   .sm\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2657,6 +2653,10 @@ video {
     height: 950px;
   }
 
+  .lg\:h-\[calc\(100vh-66px\)\] {
+    height: calc(100vh - 66px);
+  }
+
   .lg\:h-auto {
     height: auto;
   }
@@ -2664,6 +2664,10 @@ video {
   .lg\:h-fit {
     height: -moz-fit-content;
     height: fit-content;
+  }
+
+  .lg\:max-h-\[888px\] {
+    max-height: 888px;
   }
 
   .lg\:w-2\/5 {
