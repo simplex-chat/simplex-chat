@@ -9,6 +9,8 @@ buildscript {
             // No file was created
         }
     }
+    fun ExtraPropertiesExtension.getOrNull(name: String): Any? = if (has(name)) get("name") else null
+
     extra.set("compose.version", prop["compose.version"] ?: extra["compose.version"])
     extra.set("kotlin.version", prop["kotlin.version"] ?: extra["kotlin.version"])
     extra.set("gradle.plugin.version", prop["gradle.plugin.version"] ?: extra["gradle.plugin.version"])
@@ -30,11 +32,11 @@ buildscript {
     /** Mac signing and notarization */
     // You can specify `compose.desktop.mac.*` keys and values from the right side of the command in `$HOME/.gradle/gradle.properties`.
     // This will be project-independent setup without requiring to have `local.properties` file
-    extra.set("desktop.mac.signing.identity", prop["desktop.mac.signing.identity"] ?: extra["compose.desktop.mac.signing.identity"])
-    extra.set("desktop.mac.signing.keychain", prop["desktop.mac.signing.keychain"] ?: extra["compose.desktop.mac.signing.keychain"])
-    extra.set("desktop.mac.notarization.apple_id", prop["desktop.mac.notarization.apple_id"] ?: extra["compose.desktop.mac.notarization.appleID"])
-    extra.set("desktop.mac.notarization.password", prop["desktop.mac.notarization.password"] ?: extra["compose.desktop.mac.notarization.password"])
-    extra.set("desktop.mac.notarization.team_id", prop["desktop.mac.notarization.team_id"] ?: extra["compose.desktop.mac.notarization.ascProvider"])
+    extra.set("desktop.mac.signing.identity", prop["desktop.mac.signing.identity"] ?: extra.getOrNull("compose.desktop.mac.signing.identity"))
+    extra.set("desktop.mac.signing.keychain", prop["desktop.mac.signing.keychain"] ?: extra.getOrNull("compose.desktop.mac.signing.keychain"))
+    extra.set("desktop.mac.notarization.apple_id", prop["desktop.mac.notarization.apple_id"] ?: extra.getOrNull("compose.desktop.mac.notarization.appleID"))
+    extra.set("desktop.mac.notarization.password", prop["desktop.mac.notarization.password"] ?: extra.getOrNull("compose.desktop.mac.notarization.password"))
+    extra.set("desktop.mac.notarization.team_id", prop["desktop.mac.notarization.team_id"] ?: extra.getOrNull("compose.desktop.mac.notarization.ascProvider"))
 
     repositories {
         google()
