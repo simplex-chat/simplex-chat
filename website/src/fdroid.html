@@ -5,7 +5,18 @@ description: "Get the app via F-Droid"
 templateEngineOverride: njk
 ---
 
-<section class="bg-primary-bg-light dark:bg-primary-bg-dark py-[75px] mt-[66px] px-5">
+<style>
+    .hide-on-mobile{
+        display: none;
+    }
+    @media (min-width: 640px) {
+        .hide-on-mobile{
+            display: inline;
+        }
+    }
+</style>
+
+<section class="bg-primary-bg-light dark:bg-primary-bg-dark py-[75px] mt-[66px] px-5 lg:h-[calc(100vh-66px)] lg:max-h-[888px] lg:flex lg:items-center">
     <div class="container text-black dark:text-white">
         <h2 class="primary-header text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold gradient-text mb-20">{{ "simplex-chat-via-f-droid" | i18n({}, lang ) | safe }}</h2>
 
@@ -16,7 +27,7 @@ templateEngineOverride: njk
                 <div class="flex flex-col-reverse sm:flex-row gap-4">
                     <div>
                         <p class="mb-2 text-lg font-medium mt-6">{{ "stable-and-beta-versions-built-by-developers" | i18n({}, lang ) | safe }}</p>
-                        <p>{{ "to-add-it-to-your-f-droid-client" | i18n({}, lang ) | safe }}, <span class="hidden sm:inline">{{ "scan-the-qr-code-or" | i18n({}, lang ) | safe }}</span> {{ "use-this-url" | i18n({}, lang ) | safe }}:</p>
+                        <p>{{ "f-droid-page-simplex-chat-repo-section-text" | i18n({}, lang ) | safe }}</p>
                         <a class="mb-2 break-words text-primary-light dark:text-primary-dark block text-left rtl:text-right text-[14px] xl:text-[16px] leading-[34px] underline-offset-2"
                             href="https://app.simplex.chat/fdroid/repo?fingerprint=9F358FF284D1F71656A2BFAF0E005DEAE6AA14143720E089F11FF2DDCFEB01BA">
                             <code>https://app.simplex.chat/fdroid/repo</code>
@@ -40,7 +51,7 @@ templateEngineOverride: njk
                 <a class="inline-block" href="https://f-droid.org/en/packages/chat.simplex.app/" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
                 <p class="mb-2 text-lg font-medium mt-6">{{ "stable-versions-built-by-f-droid-org" | i18n({}, lang ) | safe }}</p>
                 <p class="mb-2">{{ "releases-to-this-repo-are-done-1-2-days-later" | i18n({}, lang ) | safe }}.</p>
-                <p class="mb-2">{{ "simplex-and-f-droid-repo-sign-builds-with-different-keys" | i18n({}, lang ) | safe }} <a href="/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device">{{ "export" | i18n({}, lang ) | safe }}</a> {{ "chat-db-and-re-install-app" | i18n({}, lang ) | safe }}.</p>
+                <p class="mb-2">{{ "f-droid-page-f-droid-org-repo-section-text" | i18n({}, lang ) | safe }}</p>
             </div>
         </div>
 
