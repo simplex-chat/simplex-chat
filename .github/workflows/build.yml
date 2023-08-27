@@ -167,9 +167,9 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'macos-latest'
         shell: bash
         env:
+          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
           APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
           APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
-          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
         run: |
           scripts/desktop/build-desktop-mac-ci.sh
           echo "::set-output name=package_path::$(echo $PWD/release/main/dmg/SimpleX-*.dmg)"
