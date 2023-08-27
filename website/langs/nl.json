@@ -236,15 +236,11 @@
     "simplex-chat-via-f-droid": "SimpleX Chat via F-Droid",
     "simplex-chat-repo": "SimpleX Chat repo",
     "stable-and-beta-versions-built-by-developers": "Stabiele en bètaversies gebouwd door de ontwikkelaars",
-    "to-add-it-to-your-f-droid-client": "Om het toe te voegen aan uw F-Droid-client",
-    "scan-the-qr-code-or": "scan de QR-code of",
-    "use-this-url": "gebruik deze URL",
+    "f-droid-page-simplex-chat-repo-section-text": "Om het toe te voegen aan uw F-Droid-client <span class='hide-on-mobile'>scan de QR-code of</span> gebruik deze URL:",
     "f-droid-org-repo": "F-Droid.org repo",
     "signing-key-fingerprint": "Signing key fingerprint (SHA-256)",
     "stable-versions-built-by-f-droid-org": "Stabiele versies gebouwd door F-Droid.org",
     "releases-to-this-repo-are-done-1-2-days-later": "De releases voor deze repository vinden 1-2 dagen later plaats",
-    "simplex-and-f-droid-repo-sign-builds-with-different-keys": "SimpleX Chat- en F-Droid.org-repository's ondertekenen builds met de verschillende sleutels. Om over te stappen, alstublieft",
-    "export": "exporteer",
-    "chat-db-and-re-install-app": "de chatdatabase en installeer de app opnieuw",
+    "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat- en F-Droid.org-repository's ondertekenen builds met de verschillende sleutels. Om over te stappen, alstublieft <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exporteer</a> de chatdatabase en installeer de app opnieuw.",
     "docs-dropdown-8": "SimpleX Directory Service"
 }

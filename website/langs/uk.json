@@ -234,8 +234,7 @@
     "guide-dropdown-3": "Таємні групи",
     "glossary": "Глосарій",
     "docs-dropdown-8": "Служба каталогів SimpleX",
-    "to-add-it-to-your-f-droid-client": "Щоб додати його в клієнт F-Droid",
-    "scan-the-qr-code-or": "відскануйте QR-код або",
+    "f-droid-page-simplex-chat-repo-section-text": "Щоб додати його в клієнт F-Droid <span class='hide-on-mobile'>відскануйте QR-код або</span> використовуйте цю URL-адресу:",
     "simplex-chat-via-f-droid": "SimpleX Chat через F-Droid",
     "signing-key-fingerprint": "Відбиток ключа підпису (SHA-256)",
     "stable-versions-built-by-f-droid-org": "Стабільні версії, зібрані на F-Droid.org",
@@ -243,8 +242,5 @@
     "f-droid-org-repo": "Репо F-Droid.org",
     "releases-to-this-repo-are-done-1-2-days-later": "Релізи в це репо відбуваються на 1-2 дні пізніше",
     "stable-and-beta-versions-built-by-developers": "Стабільні та бета-версії, створені розробниками",
-    "use-this-url": "використовуйте цю URL-адресу",
-    "simplex-and-f-droid-repo-sign-builds-with-different-keys": "Репозиторії SimpleX Chat та F-Droid.org підписують збірки з різними ключами. Щоб перемикнутися, будь ласка",
-    "export": "експорт",
-    "chat-db-and-re-install-app": "базу даних чату та перевстановіть додаток"
+    "f-droid-page-f-droid-org-repo-section-text": "Репозиторії SimpleX Chat та F-Droid.org підписують збірки з різними ключами. Щоб перемикнутися, будь ласка <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>експорт</a> базу даних чату та перевстановіть додаток."
 }
