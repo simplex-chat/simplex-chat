@@ -171,7 +171,7 @@ jobs:
           APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
           APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
         run: |
-          scripts/desktop/build-desktop-mac-ci.sh
+          scripts/ci/build-desktop-mac.sh
           echo "::set-output name=package_path::$(echo $PWD/release/main/dmg/SimpleX-*.dmg)"
 
       - name: Linux upload desktop package to release
