@@ -2,7 +2,7 @@
 
 set -e
 
-trap "rm apps/multiplatform/local.properties; rm /tmp/simplex.keychain" EXIT
+trap "rm apps/multiplatform/local.properties || true; rm local.properties || true; rm /tmp/simplex.keychain || true" EXIT
 echo "desktop.mac.signing.identity=SimpleX Chat Ltd" >> apps/multiplatform/local.properties
 echo "desktop.mac.signing.keychain=/tmp/simplex.keychain" >> apps/multiplatform/local.properties
 echo "desktop.mac.notarization.apple_id=$APPLE_SIMPLEX_NOTARIZATION_APPLE_ID" >> apps/multiplatform/local.properties
