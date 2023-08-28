@@ -171,7 +171,7 @@ SimpleX Chat founder
 - [News and updates](#news-and-updates)
 - [Quick installation of a terminal app](#zap-quick-installation-of-a-terminal-app)
 - [SimpleX Platform design](#simplex-platform-design)
-- [Privacy: technical details and limitations](#privacy-technical-details-and-limitations)
+- [Privacy and security: technical details and limitations](#privacy-and-security-technical-details-and-limitations)
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
 - [Disclaimers, Security contact, License](#disclaimers)
@@ -262,7 +262,7 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/stable/p
 
 See [SimpleX Chat Protocol](./docs/protocol/simplex-chat.md) for the format of messages sent between chat clients over [SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md).
 
-## Privacy: technical details and limitations
+## Privacy and security: technical details and limitations
 
 SimpleX Chat is a work in progress – we are releasing improvements as they are ready. You have to decide if the current state is good enough for your usage scenario.
 
@@ -281,12 +281,15 @@ What is already implemented:
 9. To protect your IP address all SimpleX Chat clients support accessing messaging servers via Tor - see [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) for more details.
 10. Local database encryption with passphrase - your contacts, groups and all sent and received messages are stored encrypted. If you used SimpleX Chat before v4.0 you need to enable the encryption via the app settings.
 11. Transport isolation - different TCP connections and Tor circuits are used for traffic of different user profiles, optionally - for different contacts and group member connections.
+12. Manual messaging queue rotations to move conversation to another SMP relay.
 
-We plan to add soon:
+We plan to add:
 
-1. Automatic message queue rotation. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
-2. Local files encryption. Currently the images and files you send and receive are stored in the app unencrypted, you can delete them via `Settings / Database passphrase & export`.
-3. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
+1. Local files encryption. Currently the images and files you send and receive are stored in the app unencrypted, you can delete them via `Settings / Database passphrase & export`. This is currently in progress.
+2. Senders' SMP relays and recipients' XFTP relays to reduce traffic and conceal IP addresses from the relays chosen, and potentially controlled, by another party.
+3. Automatic message queue rotation and redundancy. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
+4. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
+5. Reproducible builds – this is the limitation of the development stack, but we will be investing into solving this problem. Users can still build all applications and services from the source code.
 
 ## For developers
 
