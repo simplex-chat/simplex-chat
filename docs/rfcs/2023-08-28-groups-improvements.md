@@ -68,7 +68,14 @@ Host would have to send introduced members versions, joining member would provid
 
 Instead we could assign "chat protocol version" per group and share it with members as part of group profile, and make a two-stage release when members would first be able to update and get new processing logic, but have it disabled until next release.
 
-After switching to new processing logic old clients wouldn't be able to connect in groups.
+After group switching to new processing logic old clients wouldn't be able to connect in groups.
+
+How should existing groups be switched?
+- Owner user action?
+- Owner client deciding automatically?
+- In case group has multiple owners - which owner(s) can / should decide?
+- Prohibited until all / part of existing members don't update? How to request members to update?
+- Old clients will not be able to process and save group chat version from group profile update.
 
 ### Sending direct messages inside group
 
