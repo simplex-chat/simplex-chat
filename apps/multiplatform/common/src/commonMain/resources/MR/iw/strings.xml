@@ -1257,7 +1257,7 @@
     <string name="your_preferences">ההעדפות שלך</string>
     <string name="you_will_still_receive_calls_and_ntfs">עדיין תקבלו שיחות והתראות מפרופילים מושתקים כאשר הם פעילים.</string>
     <string name="abort_switch_receiving_address_confirm">בטל</string>
-    <string name="abort_switch_receiving_address_question">בטל שינוי כתובת\?</string>
+    <string name="abort_switch_receiving_address_question">האם לבטל שינוי כתובת\?</string>
     <string name="abort_switch_receiving_address_desc">שינוי הכתובת יבוטל. ייעשה שימוש בכתובת הקבלה הישנה.</string>
     <string name="shutdown_alert_desc">ההתראות יפסיקו לפעול עד שתפעיל את האפליקציה מחדש</string>
     <string name="abort_switch_receiving_address">בטל שינוי כתובת</string>
