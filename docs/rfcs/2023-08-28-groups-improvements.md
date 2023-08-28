@@ -38,6 +38,12 @@ How is MemberCode different from MemberId? - MemberId is known to all group memb
 newtype MemberCode = MemberCode {unMemberCode :: ByteString}
 
 XGrpMemInvCode :: MemberId -> MemberCode -> ChatMsgEvent 'Json
+
+-- instead of / in addition to batching message could be
+
+type MemberCodes = Map MemberId MemberCode
+
+XGrpMemInvCodes :: MemberCodes -> ChatMsgEvent 'Json
 ```
 
 Host includes joining member address and code (unique for each introduced member) into XGrpMemFwd messages instead of invitation links:
