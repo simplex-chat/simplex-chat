@@ -1885,8 +1885,8 @@ window.addEventListener("load", function () {
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">Possibility of MITM</td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - secure</td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>4</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - secure <sup>4</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>5</sup></td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
                     </tr>
@@ -1901,15 +1901,15 @@ window.addEventListener("load", function () {
                         <td class="min-w-[210px]">Single or <span data-glossary="tooltip-centralized-network" class="glossary-term">Centralized network</span></td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - decentralized</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - federated <sup>5</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>6</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - federated <sup>6</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>7</sup></td>
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">Central component or other network-wide attack</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - resilient</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>2</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>7</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>8</sup></td>
                     </tr>
                 </tbody>
             </table>
@@ -1923,8 +1923,9 @@ window.addEventListener("load", function () {
                     <li> Usually based on a phone number, in some cases on usernames</li>
                     <li> DNS-based addresses</li>
                     <li> Public key or some other globally unique ID</li>
-                    <li> If operator’s servers are compromised</li>
-                    <li> Does not protect users' metadata</li>
+                    <li> SimpleX relays cannot compromise e2e encryption. Verify security code to mitigate attack on out-of-band channel</li>
+                    <li> If operator’s servers are compromised. Verify security code in Signal and some other apps to mitigate it</li>
+                    <li> Does not protect users' metadata privacy</li>
                     <li> While P2P are distributed, they are not federated - they operate as a single network</li>
                     <li> P2P networks either have a central authority or the whole network can be compromised - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">see here</a></li>
                 </ol>
