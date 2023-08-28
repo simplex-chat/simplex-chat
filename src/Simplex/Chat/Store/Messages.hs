@@ -122,6 +122,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Crypto.File (EncryptedFile (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 
@@ -988,7 +989,9 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
     maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
     maybeCIFile fileStatus =
       case (fileId_, fileName_, fileSize_, fileProtocol_) of
-        (Just fileId, Just fileName, Just fileSize, Just fileProtocol) -> Just CIFile {fileId, fileName, fileSize, filePath, fileStatus, fileProtocol}
+        (Just fileId, Just fileName, Just fileSize, Just fileProtocol) ->
+          let encryptedFile = (`EncryptedFile` Nothing) <$> filePath
+           in Just CIFile {fileId, fileName, fileSize, encryptedFile, fileStatus, fileProtocol}
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
@@ -1041,7 +1044,9 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
     maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
     maybeCIFile fileStatus =
       case (fileId_, fileName_, fileSize_, fileProtocol_) of
-        (Just fileId, Just fileName, Just fileSize, Just fileProtocol) -> Just CIFile {fileId, fileName, fileSize, filePath, fileStatus, fileProtocol}
+        (Just fileId, Just fileName, Just fileSize, Just fileProtocol) ->
+          let encryptedFile = (`EncryptedFile` Nothing) <$> filePath
+           in Just CIFile {fileId, fileName, fileSize, encryptedFile, fileStatus, fileProtocol}
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
     cItem d chatDir ciStatus content file =

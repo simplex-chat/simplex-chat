@@ -96,6 +96,7 @@ import Simplex.Chat.Util (week)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Crypto.File
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
@@ -257,10 +258,10 @@ getSndFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMs
       (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, groupMemberId, recipientDisplayName = n, connId, agentConnId})
         <$> (contactName_ <|> memberName_)
 
-createSndFileTransferXFTP :: DB.Connection -> User -> ContactOrGroup -> FilePath -> FileInvitation -> AgentSndFileId -> Integer -> IO FileTransferMeta
-createSndFileTransferXFTP db User {userId} contactOrGroup filePath FileInvitation {fileName, fileSize} agentSndFileId chunkSize = do
+createSndFileTransferXFTP :: DB.Connection -> User -> ContactOrGroup -> EncryptedFile -> FileInvitation -> AgentSndFileId -> Integer -> IO FileTransferMeta
+createSndFileTransferXFTP db User {userId} contactOrGroup (EncryptedFile filePath _) FileInvitation {fileName, fileSize} agentSndFileId chunkSize = do
   currentTs <- getCurrentTime
-  let xftpSndFile = Just XFTPSndFile {agentSndFileId, privateSndFileDescr = Nothing, agentSndFileDeleted = False}
+  let xftpSndFile = Just XFTPSndFile {agentSndFileId, privateSndFileDescr = Nothing, agentSndFileDeleted = False, encFileArgs = Nothing}
   DB.execute
     db
     "INSERT INTO files (contact_id, group_id, user_id, file_name, file_path, file_size, chunk_size, agent_snd_file_id, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
@@ -479,7 +480,7 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
   currentTs <- liftIO getCurrentTime
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd_
-      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
+      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False, encFileArgs = Nothing}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
   fileId <- liftIO $ do
     DB.execute
@@ -499,7 +500,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
   currentTs <- liftIO getCurrentTime
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd_
-      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
+      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False, encFileArgs = Nothing}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
   fileId <- liftIO $ do
     DB.execute
@@ -629,7 +630,7 @@ getRcvFileTransfer db User {userId} fileId = do
       where
         ft senderDisplayName fileStatus =
           let fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
-              xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted}) <$> rfd_
+              xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted, encFileArgs = Nothing}) <$> rfd_
            in RcvFileTransfer {fileId, xftpRcvFile, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId}
         rfi = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_
         rfi_ = case (filePath_, connId_, agentConnId_) of
@@ -850,7 +851,7 @@ getFileTransferMeta db User {userId} fileId =
   where
     fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe AgentSndFileId, Bool, Maybe Text, Maybe Bool) -> FileTransferMeta
     fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileInline, aSndFileId_, agentSndFileDeleted, privateSndFileDescr, cancelled_) =
-      let xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted}) <$> aSndFileId_
+      let xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted, encFileArgs = Nothing}) <$> aSndFileId_
        in FileTransferMeta {fileId, xftpSndFile, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
 
 getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]

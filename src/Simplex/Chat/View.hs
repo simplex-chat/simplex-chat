@@ -50,6 +50,7 @@ import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (EncryptedFile (..))
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
@@ -327,7 +328,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
               Just CIQuote {chatDir = quoteDir, content} ->
                 Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
             fPath = case file of
-              Just CIFile {filePath = Just fp} -> Just fp
+              Just CIFile {encryptedFile = Just (EncryptedFile fp _)} -> Just fp
               _ -> Nothing
     testViewItem :: CChatItem c -> Maybe GroupMember -> Text
     testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText}}) membership_ =
@@ -1269,8 +1270,8 @@ viewSentBroadcast mc s f ts tz time = prependFirst (highlight' "/feed" <> " (" <
       | otherwise = ""
 
 viewSentFileInvitation :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
-viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts tz = case filePath of
-  Just fPath -> sentWithTime_ ts tz $ ttySentFile fPath
+viewSentFileInvitation to CIFile {fileId, encryptedFile, fileStatus} ts tz = case encryptedFile of
+  Just (EncryptedFile fPath _) -> sentWithTime_ ts tz $ ttySentFile fPath
   _ -> const []
   where
     ttySentFile fPath = ["/f " <> to <> ttyFilePath fPath] <> cancelSending
@@ -1339,11 +1340,11 @@ humanReadableSize size
     gB = mB * 1024
 
 savingFile' :: AChatItem -> [StyledString]
-savingFile' (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIDirectRcv}) =
+savingFile' (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, encryptedFile = Just (EncryptedFile filePath _)}, chatDir = CIDirectRcv}) =
   ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
-savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
+savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, encryptedFile = Just (EncryptedFile filePath _)}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
   ["saving file " <> sShow fileId <> " from " <> ttyContact m <> " to " <> plain filePath]
-savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}}) =
+savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, encryptedFile = Just (EncryptedFile filePath _)}}) =
   ["saving file " <> sShow fileId <> " to " <> plain filePath]
 savingFile' _ = ["saving file"] -- shouldn't happen
 
@@ -1397,7 +1398,7 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSCancelled Nothing -> "cancelled"
 
 viewFileTransferStatusXFTP :: AChatItem -> [StyledString]
-viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, filePath}}) =
+viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, encryptedFile}}) =
   case fileStatus of
     CIFSSndStored -> ["sending " <> fstr <> " just started"]
     CIFSSndTransfer progress total -> ["sending " <> fstr <> " in progress " <> fileProgressXFTP progress total fileSize]
@@ -1407,7 +1408,7 @@ viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId
     CIFSRcvInvitation -> ["receiving " <> fstr <> " not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"]
     CIFSRcvAccepted -> ["receiving " <> fstr <> " just started"]
     CIFSRcvTransfer progress total -> ["receiving " <> fstr <> " progress " <> fileProgressXFTP progress total fileSize]
-    CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\fp -> ", path: " <> plain fp) filePath]
+    CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\(EncryptedFile fp _) -> ", path: " <> plain fp) encryptedFile]
     CIFSRcvCancelled -> ["receiving " <> fstr <> " cancelled"]
     CIFSRcvError -> ["receiving " <> fstr <> " error"]
     CIFSInvalid text -> [fstr <> " invalid status: " <> plain text]
