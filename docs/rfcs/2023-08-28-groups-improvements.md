@@ -22,37 +22,55 @@ Establishing connections in groups is unstable and uses a lot of traffic. There 
 
 Below are proposed changes to group handshake protocol to reduce traffic and improve stability.
 
-Each joining member would create a new temporary per group address for introduced members to connect via.
+Each joining member creates a new temporary per group address for introduced members to connect via. Joining member sends it to host when accepting group invitation.
 
-Host to include transient per member identifier (MemberCode) to send in XGrpMemIntro. Joining member would then use them to verify contact requests from introduced members.
+``` haskell
+XGrpAcptAddress :: MemberId -> ConnReqContact -> ChatMsgEvent 'Json
+```
 
-How is it different from MemberId? - MemberId is known to all group members and is constant per member per group. This identifier would be known only to host and to introduced member (of existing members), so other members wouldn't be able to impersonate one another when requesting connection with joining member. An introduced member can still pass their identifier + joining member address to another member or outside of group, but it is no different to passing currently shared invitation links.
+Host sends group introductions in batches, batching smaller messages first (introductions of members without profile picture).
+
+For each received batch of N introductions joining member creates N transient per member identifiers (MemberCodes) and replies to host with batched XGrpMemInv messages including these identifiers. Joining member would then use them to verify contact requests from introduced members.
+
+How is MemberCode different from MemberId? - MemberId is known to all group members and is constant per member per group. MemberCode would be known only to host and to introduced member (of existing members), so other members wouldn't be able to impersonate one another when requesting connection with joining member. An introduced member can still pass their identifier + joining member address to another member or outside of group, but it is no different to passing currently shared invitation links.
 
 ```haskell
 newtype MemberCode = MemberCode {unMemberCode :: ByteString}
 
-XGrpMemIntro :: MemberInfo -> MemberCode -> ChatMsgEvent 'Json -- Maybe MemberCode or XGrpMemIntroV2 / XGrpMemIntroCode
+XGrpMemInvCode :: MemberId -> MemberCode -> ChatMsgEvent 'Json
 ```
 
-New protocol message containing unique to group address for joinee to send to host instead of sending N XGrpMemInv messages:
+Host includes joining member address and code (unique for each introduced member) into XGrpMemFwd messages instead of invitation links:
 
 ```haskell
-XGrpMemInvAddress :: ConnReqContact -> ChatMsgEvent 'Json
+XGrpMemFwdCode :: MemberInfo -> ConnReqContact -> MemberCode -> ChatMsgEvent 'Json
 ```
 
-Host to include joining member address and code (unique for each introduced member) into XGrpMemFwd messages instead of invitation links:
-
-```haskell
-XGrpMemFwd :: MemberInfo -> ConnReqContact -> MemberCode -> ChatMsgEvent 'Json -- XGrpMemFwdV2 / XGrpMemFwdCode
-```
-
-Introduced members to send contact requests with a new message XGroupMember / XIntroduced (similar to XInfo or XContact, see `processUserContactRequest`):
+Introduced members send contact requests with a new message XGroupMember / XIntroduced (similar to XInfo or XContact, see `processUserContactRequest`):
 
 ```haskell
 XIntroduced :: MemberInfo -> MemberCode -> ChatMsgEvent 'Json
 ```
 
 Joinee verifies profile and code and automatically accepts contact request. They both assign resulting connection to respective group member record, without creating contact.
+
+After (if) all introduced members have connected, joining member deletes per group address. Possibly it can also be deleted after expiration interval.
+
+#### Group links
+
+We can reduce number of steps taken to join group via group link:
+- Do not create direct connection and contact with group link host, instead use the connection resulting from contact request as a group connection, and assign it to a group member record.
+- Host to not send XGrpInv message, joining member to not wait for it, instead joining member would initiate with XGrpAcptAddress after establishing connection via group link.
+
+In addition to their profile, host includes MemberId of joining member into confirmation when accepting group link join request, using new message:
+
+```haskell
+XGroupLinkInfo :: Profile -> MemberId -> ChatMsgEvent 'Json
+```
+
+Joining member initially doesn't know group profile, they create a placeholder group with a new dummy profile (alternatively, we could include at least group display name into group link). After connection is established, host sends XGrpInfo containing group profile to joining member. This can happen in parallel with group handshake started by XGrpAcptAddress.
+
+Group profile could also be included into XGroupLinkInfo if not for the limitation on size if both host's profile and group profile contain pictures.
 
 ![Adding member to the group](../protocol/diagrams/group-improvements.svg)
 
