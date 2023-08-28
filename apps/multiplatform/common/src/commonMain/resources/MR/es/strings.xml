@@ -146,7 +146,7 @@
     <string name="smp_server_test_disconnect">Desconectar</string>
     <string name="notification_preview_mode_contact">Contacto</string>
     <string name="copy_verb">Copiar</string>
-    <string name="create_your_profile">Crear tu perfil</string>
+    <string name="create_your_profile">Crea tu perfil</string>
     <string name="always_use_relay">Usar siempre retransmisor</string>
     <string name="set_password_to_export_desc">La base de datos está cifrada con una contraseña aleatoria. Cámbiala antes de exportar.</string>
     <string name="total_files_count_and_size">%d archivo(s) con tamaño total de %s</string>
@@ -192,7 +192,7 @@
     <string name="delete_address__question">¿Eliminar la dirección\?</string>
     <string name="display_name__field">Nombre mostrado:</string>
     <string name="callstate_connecting">conectando…</string>
-    <string name="decentralized">Descentralizado</string>
+    <string name="decentralized">Descentralizada</string>
     <string name="database_will_be_encrypted">La base de datos será cifrada.</string>
     <string name="delete_chat_archive_question">¿Eliminar archivo del chat\?</string>
     <string name="create_group_link">Crear enlace de grupo</string>
@@ -485,7 +485,7 @@
     <string name="mark_unread">Marcar como no leído</string>
     <string name="invalid_QR_code">Código QR inválido</string>
     <string name="incorrect_code">¡Código de seguridad incorrecto!</string>
-    <string name="markdown_in_messages">Sintaxis markdown en los mensajes</string>
+    <string name="markdown_in_messages">Sintaxis Markdown</string>
     <string name="network_use_onion_hosts_no">No</string>
     <string name="callstatus_missed">llamada perdida</string>
     <string name="import_database_confirmation">Importar</string>
@@ -717,7 +717,7 @@
     <string name="la_notice_title_simplex_lock">Bloqueo SimpleX</string>
     <string name="auth_unlock">Desbloquear</string>
     <string name="this_text_is_available_in_settings">Este texto está disponible en Configuración</string>
-    <string name="switch_receiving_address_desc">La dirección de recepción se cambiará. El cambio se completará cuando el remitente esté en línea.</string>
+    <string name="switch_receiving_address_desc">La dirección de recepción pasará a otro servidor. El cambio se completará cuando el remitente esté en línea.</string>
     <string name="chat_lock">Bloqueo SimpleX</string>
     <string name="using_simplex_chat_servers">Usando servidores SimpleX Chat.</string>
     <string name="network_session_mode_transport_isolation">Aislamiento de transporte</string>
@@ -749,11 +749,11 @@
     <string name="share_invitation_link">Compartir enlace de un uso</string>
     <string name="update_network_session_mode_question">¿Actualizar el modo de aislamiento de transporte\?</string>
     <string name="icon_descr_speaker_on">Altavoz activado</string>
-    <string name="stop_chat_to_enable_database_actions">Para habilitar las acciones sobre la base de datos, previamente debes detener Chat</string>
+    <string name="stop_chat_to_enable_database_actions">Detén SimpleX para habilitar las acciones sobre la base de datos.</string>
     <string name="connection_you_accepted_will_be_cancelled">¡La conexión que has aceptado se cancelará!</string>
     <string name="database_initialization_error_desc">La base de datos no funciona correctamente. Pulsa para saber más</string>
     <string name="moderate_message_will_be_marked_warning">El mensaje será marcado como moderado para todos los miembros.</string>
-    <string name="next_generation_of_private_messaging">La próxima generación de mensajería privada</string>
+    <string name="next_generation_of_private_messaging">La nueva generación de mensajería privada</string>
     <string name="delete_files_and_media_desc">Esta acción no se puede deshacer. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</string>
     <string name="enable_automatic_deletion_message">Esta acción no se puede deshacer. Se eliminarán los mensajes enviados y recibidos anteriores a la selección. Puede tardar varios minutos.</string>
     <string name="messages_section_description">Esta configuración se aplica a los mensajes del perfil actual</string>
@@ -914,7 +914,7 @@
     <string name="your_settings">Configuración</string>
     <string name="your_SMP_servers">Servidores SMP</string>
     <string name="you_control_your_chat">¡Tú controlas tu chat!</string>
-    <string name="your_profile_is_stored_on_your_device">Tu perfil, contactos y mensajes entregados se almacenan en tu dispositivo.</string>
+    <string name="your_profile_is_stored_on_your_device">Tu perfil, contactos y mensajes se almacenan en tu dispositivo.</string>
     <string name="callstate_waiting_for_answer">esperando respuesta…</string>
     <string name="callstate_waiting_for_confirmation">esperando confirmación…</string>
     <string name="onboarding_notifications_mode_off">Cuando la aplicación se está ejecutando</string>
@@ -923,7 +923,7 @@
     <string name="your_ice_servers">Servidores ICE</string>
     <string name="your_privacy">Privacidad</string>
     <string name="settings_section_title_you">MIS DATOS</string>
-    <string name="your_chat_database">Base de datos Chat</string>
+    <string name="your_chat_database">Base de datos</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puedes iniciar el chat en Configuración / Base de datos o reiniciando la aplicación.</string>
     <string name="you_sent_group_invitation">Has enviado una invitación de grupo</string>
     <string name="num_contacts_selected">%d contacto(s) seleccionado(s)</string>
@@ -1126,7 +1126,7 @@
     <string name="learn_more">Más información</string>
     <string name="if_you_cant_meet_in_person">Si no puedes reunirte en persona, **muestra el código QR por videollamada**, o comparte el enlace.</string>
     <string name="scan_qr_to_connect_to_contact">Para conectarse, tu contacto puede escanear el código QR o usar el enlace en la aplicación.</string>
-    <string name="create_simplex_address">Crear dirección SimpleX</string>
+    <string name="create_simplex_address">Crear tu dirección SimpleX</string>
     <string name="auto_accept_contact">Auto aceptar</string>
     <string name="group_welcome_preview">Vista previa</string>
     <string name="opening_database">Abriendo base de datos…</string>
@@ -1144,15 +1144,15 @@
     <string name="export_theme">Exportar tema</string>
     <string name="color_surface">Menús y alertas</string>
     <string name="add_address_to_your_profile">Añade la dirección a tu perfil para que tus contactos puedan compartirla con otros. La actualización del perfil se enviará a tus contactos.</string>
-    <string name="learn_more_about_address">Acerca de dirección SimpleX</string>
+    <string name="learn_more_about_address">Acerca de la dirección SimpleX</string>
     <string name="address_section_title">Dirección</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Todos tus contactos permanecerán conectados. La actualización del perfil se enviará a tus contactos.</string>
     <string name="continue_to_next_step">Continuar</string>
     <string name="dark_theme">Tema oscuro</string>
     <string name="customize_theme_title">Personalizar tema</string>
     <string name="enter_welcome_message_optional">Introduce mensaje de bienvenida… (opcional)</string>
-    <string name="create_address_and_let_people_connect">Crear una dirección para que otras personas se puedan conectar contigo.</string>
-    <string name="dont_create_address">No crear dirección</string>
+    <string name="create_address_and_let_people_connect">Crea una dirección para que otras personas puedan conectar contigo.</string>
+    <string name="dont_create_address">No crear dirección SimpleX</string>
     <string name="email_invite_body">¡Hola!
 \nConecta conmigo a través de SimpleX Chat: %s</string>
     <string name="import_theme">Importar tema</string>
@@ -1170,7 +1170,7 @@
     <string name="stop_sharing">Dejar de compartir</string>
     <string name="stop_sharing_address">¿Dejar de compartir la dirección\?</string>
     <string name="theme_colors_section_title">COLORES DEL TEMA</string>
-    <string name="you_can_create_it_later">Puedes crearlo más tarde</string>
+    <string name="you_can_create_it_later">Puedes crearla más tarde</string>
     <string name="share_address_with_contacts_question">¿Compartir la dirección con los contactos\?</string>
     <string name="share_with_contacts">Compartir con contactos</string>
     <string name="color_title">Título</string>
