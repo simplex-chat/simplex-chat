@@ -1326,4 +1326,10 @@
     <string name="only_owners_can_enable_files_and_media">ファイルやメディアを有効にできるのは、グループオーナーだけです。</string>
     <string name="sync_connection_force_confirm">再ネゴシエート</string>
     <string name="settings_restart_app">再起動</string>
+    <string name="connect_via_link_incognito">シークレットモードで接続</string>
+    <string name="turn_off_battery_optimization_button">許可</string>
+    <string name="connect_via_member_address_alert_title">直接接続しますか\?</string>
+    <string name="connect__a_new_random_profile_will_be_shared">新しいランダムなプロファイルが共有されます。</string>
+    <string name="delivery">送信</string>
+    <string name="in_developing_title">近日公開！</string>
 </resources>
