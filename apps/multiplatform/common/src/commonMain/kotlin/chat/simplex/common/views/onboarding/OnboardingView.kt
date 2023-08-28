@@ -16,6 +16,7 @@ enum class OnboardingStage {
   Step2_CreateProfile,
   Step3_CreateSimpleXAddress,
   Step4_SetNotificationsMode,
+  Step5_SetupDatabasePassphrase,
   OnboardingComplete
 }
 

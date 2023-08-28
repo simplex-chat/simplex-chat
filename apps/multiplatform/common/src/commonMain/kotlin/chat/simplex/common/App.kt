@@ -136,6 +136,7 @@ fun MainScreen() {
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel) {}
       onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel)
       onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
+      onboarding == OnboardingStage.Step5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
     }
     if (appPlatform.isAndroid) {
       ModalManager.fullscreen.showInView()

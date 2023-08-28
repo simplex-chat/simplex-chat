@@ -59,6 +59,8 @@ fun CreateSimpleXAddress(m: ChatModel) {
     nextStep = {
       val next = if (appPlatform.isAndroid) {
         OnboardingStage.Step4_SetNotificationsMode
+      } else if (m.controller.appPrefs.initialRandomDBPassphrase.get()) {
+        OnboardingStage.Step5_SetupDatabasePassphrase
       } else {
         OnboardingStage.OnboardingComplete
       }

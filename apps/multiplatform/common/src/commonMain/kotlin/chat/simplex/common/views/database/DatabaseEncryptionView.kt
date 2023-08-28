@@ -61,46 +61,8 @@ fun DatabaseEncryptionView(m: ChatModel) {
       initialRandomDBPassphrase,
       progressIndicator,
       onConfirmEncrypt = {
-        progressIndicator.value = true
         withApi {
-          try {
-            prefs.encryptionStartedAt.set(Clock.System.now())
-            val error = m.controller.apiStorageEncryption(currentKey.value, newKey.value)
-            prefs.encryptionStartedAt.set(null)
-            val sqliteError = ((error?.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorExport)?.sqliteError
-            when {
-              sqliteError is SQLiteError.ErrorNotADatabase -> {
-                operationEnded(m, progressIndicator) {
-                  AlertManager.shared.showAlertMsg(
-                    generalGetString(MR.strings.wrong_passphrase_title),
-                    generalGetString(MR.strings.enter_correct_current_passphrase)
-                  )
-                }
-              }
-              error != null -> {
-                operationEnded(m, progressIndicator) {
-                  AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_encrypting_database),
-                    "failed to set storage encryption: ${error.responseType} ${error.details}"
-                  )
-                }
-              }
-              else -> {
-                prefs.initialRandomDBPassphrase.set(false)
-                initialRandomDBPassphrase.value = false
-                if (useKeychain.value) {
-                  DatabaseUtils.ksDatabasePassword.set(newKey.value)
-                }
-                resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
-                operationEnded(m, progressIndicator) {
-                  AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_encrypted))
-                }
-              }
-            }
-          } catch (e: Exception) {
-            operationEnded(m, progressIndicator) {
-              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_encrypting_database), e.stackTraceToString())
-            }
-          }
+          encryptDatabase(currentKey, newKey, confirmNewKey, initialRandomDBPassphrase, useKeychain, storedKey, progressIndicator)
         }
       }
     )
@@ -280,7 +242,7 @@ fun changeDatabaseKeyAlert(onConfirm: () -> Unit) {
 }
 
 @Composable
-fun SavePassphraseSetting(
+private fun SavePassphraseSetting(
   useKeychain: Boolean,
   initialRandomDBPassphrase: Boolean,
   storedKey: Boolean,
@@ -440,6 +402,62 @@ fun PassphraseField(
       .collect {
         valid = isValid(state.value.text)
       }
+  }
+}
+
+suspend fun encryptDatabase(
+  currentKey: MutableState<String>,
+  newKey: MutableState<String>,
+  confirmNewKey: MutableState<String>,
+  initialRandomDBPassphrase: MutableState<Boolean>,
+  useKeychain: MutableState<Boolean>,
+  storedKey: MutableState<Boolean>,
+  progressIndicator: MutableState<Boolean>
+): Boolean {
+  val m = ChatModel
+  val prefs = ChatController.appPrefs
+  progressIndicator.value = true
+  return try {
+    prefs.encryptionStartedAt.set(Clock.System.now())
+    val error = m.controller.apiStorageEncryption(currentKey.value, newKey.value)
+    prefs.encryptionStartedAt.set(null)
+    val sqliteError = ((error?.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorExport)?.sqliteError
+    when {
+      sqliteError is SQLiteError.ErrorNotADatabase -> {
+        operationEnded(m, progressIndicator) {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.wrong_passphrase_title),
+            generalGetString(MR.strings.enter_correct_current_passphrase)
+          )
+        }
+        false
+      }
+      error != null -> {
+        operationEnded(m, progressIndicator) {
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_encrypting_database),
+            "failed to set storage encryption: ${error.responseType} ${error.details}"
+          )
+        }
+        false
+      }
+      else -> {
+        prefs.initialRandomDBPassphrase.set(false)
+        initialRandomDBPassphrase.value = false
+        if (useKeychain.value) {
+          DatabaseUtils.ksDatabasePassword.set(newKey.value)
+        }
+        resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
+        operationEnded(m, progressIndicator) {
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_encrypted))
+        }
+        true
+      }
+    }
+  } catch (e: Exception) {
+    operationEnded(m, progressIndicator) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_encrypting_database), e.stackTraceToString())
+    }
+    false
   }
 }
 
