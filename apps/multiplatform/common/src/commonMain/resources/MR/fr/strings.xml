@@ -1316,7 +1316,7 @@
     <string name="receipts_contacts_override_enabled">L\'envoi d\'accusés de réception est activé pour les contacts de %d</string>
     <string name="conn_event_ratchet_sync_started">accord sur le chiffrement…</string>
     <string name="conn_event_ratchet_sync_agreed">chiffrement accepté</string>
-    <string name="conn_event_ratchet_sync_ok">chiffrement ok</string>
+    <string name="conn_event_ratchet_sync_ok">chiffrement OK</string>
     <string name="conn_event_ratchet_sync_allowed">renégociation de chiffrement autorisée</string>
     <string name="conn_event_ratchet_sync_required">renégociation de chiffrement requise</string>
     <string name="snd_conn_event_ratchet_sync_ok">chiffrement ok pour %s</string>
