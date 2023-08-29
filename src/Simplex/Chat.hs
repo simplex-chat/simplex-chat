@@ -2929,7 +2929,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
-          -- TODO don't getViaGroupMember and don't probe if chat protocol compatible version is 2
           withStore' (\db -> getViaGroupMember db user ct) >>= \case
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
@@ -3114,7 +3113,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
-            -- TODO don't getViaGroupContact and don't probe if chat protocol compatible version is 2
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
                 notifyMemberConnected gInfo m Nothing
@@ -3506,7 +3504,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> m ()
     notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} ct_ = do
       memberConnectedChatItem gInfo m
-      -- TODO remove contact from CRConnectedToGroupMember since protocol version 3?
       toView $ CRConnectedToGroupMember user gInfo m ct_
       let g = groupName' gInfo
       whenGroupNtfs user gInfo $ do
@@ -4306,7 +4303,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       -- TODO create group connection with version from MemberInfo
       -- TODO don't join direct connection if IntroInvitation directConnReq is Nothing
-      -- TODO don't join direct connection if chat protocol compatible version is 2?
       groupConnIds <- joinAgentConnectionAsync user enableNtfs groupConnReq dm
       directConnIds <- case directConnReq of
         Just dcr -> Just <$> joinAgentConnectionAsync user enableNtfs dcr dm
