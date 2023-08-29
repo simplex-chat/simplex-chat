@@ -6,8 +6,7 @@ sequenceDiagram
 
   note over A, B: 1. send and accept group invitation
   A ->> B: x.grp.inv<br>invite Bob to group<br>(via contact connection)
-  B ->> A: x.grp.acpt<br>accept invitation<br>(via member connection)
-  B ->> A: establish group member connection
+  B ->> A: x.grp.acpt<br>accept invitation<br>(via member connection)<br>establish group member connection
 
   note over M, B: 2. introduce new member Bob to all existing members
   A ->> M: x.grp.mem.new<br>"announce" Bob<br>to existing members<br>(via member connections)
