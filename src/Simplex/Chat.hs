@@ -2867,7 +2867,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   setConnConnReqInv db user connId cReq
                   getXGrpMemIntroContDirect db user ct
                 forM_ contData $ \(hostConnId, xGrpMemIntroCont) ->
-                  sendXGrpMemInv hostConnId directConnReq xGrpMemIntroCont
+                  sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
@@ -2929,6 +2929,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
+          -- TODO don't getViaGroupMember and don't probe if client version is 3 and compatible version is 2
           withStore' (\db -> getViaGroupMember db user ct) >>= \case
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
@@ -3017,12 +3018,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
               CFCreateConnGrpMemInv -> do
+                -- TODO don't check direct connection if client version is 3 and compatible version is 2
                 contData <- withStore' $ \db -> do
                   setConnConnReqInv db user connId cReq
                   getXGrpMemIntroContGroup db user m
                 forM_ contData $ \(hostConnId, directConnReq) -> do
                   let GroupMember {groupMemberId, memberId} = m
-                  sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
+                  sendXGrpMemInv hostConnId (Just directConnReq) XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
               -- [async agent commands] group link auto-accept continuation on receiving INV
               CFCreateConnGrpInv ->
                 withStore' (\db -> getContactViaMember db user m) >>= \case
@@ -3112,6 +3114,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
+            -- TODO don't getViaGroupContact and don't probe if client version is 3 and compatible version is 2
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
                 notifyMemberConnected gInfo m Nothing
@@ -3503,6 +3506,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> m ()
     notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} ct_ = do
       memberConnectedChatItem gInfo m
+      -- TODO remove contact from CRConnectedToGroupMember since protocol version 3?
       toView $ CRConnectedToGroupMember user gInfo m ct_
       let g = groupName' gInfo
       whenGroupNtfs user gInfo $ do
@@ -4234,7 +4238,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         _ -> pure conn'
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> MsgMeta -> m ()
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole memberProfile) msg msgMeta = do
+    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ memberProfile) msg msgMeta = do
       checkHostRole m memRole
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       unless (sameMemberId memId $ membership gInfo) $
@@ -4247,7 +4251,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             toView $ CRJoinedGroupMemberConnecting user gInfo m newMember
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ _) = do
+    xGrpMemIntro gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memberChatVRange _) = do
       case memberCategory m of
         GCHostMember -> do
           members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -4256,6 +4260,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             else do
               when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
+              -- TODO create group connection with version from MemberInfo
+              -- TODO don't create direct connection if client version is 3 and compatible version is 2
               groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
               directConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
               -- [incognito] direct connection with member has to be established using the same incognito profile [that was known to host and used for group membership]
@@ -4263,7 +4269,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
-    sendXGrpMemInv :: Int64 -> ConnReqInvitation -> XGrpMemIntroCont -> m ()
+    sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> m ()
     sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
       hostConn <- withStore $ \db -> getConnectionById db user hostConnId
       let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
@@ -4284,7 +4290,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
-    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m memInfo@(MemberInfo memId memRole _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m memInfo@(MemberInfo memId memRole memberChatVRange _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
       checkHostRole m memRole
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       toMember <- case find (sameMemberId memId) members of
@@ -4298,8 +4304,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- [incognito] send membership incognito profile, create direct connection as incognito
       dm <- directMessage $ XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
+      -- TODO create group connection with version from MemberInfo
+      -- TODO don't join direct connection if IntroInvitation directConnReq is Nothing
+      -- TODO don't join direct connection if client version is 3 and compatible version is 2?
       groupConnIds <- joinAgentConnectionAsync user enableNtfs groupConnReq dm
-      directConnIds <- joinAgentConnectionAsync user enableNtfs directConnReq dm
+      directConnIds <- case directConnReq of
+        Just dcr -> Just <$> joinAgentConnectionAsync user enableNtfs dcr dm
+        Nothing -> pure Nothing
       let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
       withStore' $ \db -> createIntroToMemberContact db user m toMember groupConnIds directConnIds customUserProfileId
 

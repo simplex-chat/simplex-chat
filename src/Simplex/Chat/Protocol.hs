@@ -107,21 +107,6 @@ data AppMessage (e :: MsgEncoding) where
   AMJson :: AppMessageJson -> AppMessage 'Json
   AMBinary :: AppMessageBinary -> AppMessage 'Binary
 
-newtype ChatVersionRange = ChatVersionRange {versionRange :: VersionRange} deriving (Eq, Show)
-
-instance FromJSON ChatVersionRange where
-  parseJSON j = ChatVersionRange <$> strParseJSON "ChatVersionRange" j
-
-instance ToJSON ChatVersionRange where
-  toJSON (ChatVersionRange vr) = strToJSON vr
-  toEncoding (ChatVersionRange vr) = strToJEncoding vr
-
-toChatVRange :: VersionRange -> ChatVersionRange
-toChatVRange = ChatVersionRange
-
-fromChatVRange :: ChatVersionRange -> VersionRange
-fromChatVRange (ChatVersionRange vr) = vr
-
 -- chat message is sent as JSON with these properties
 data AppMessageJson = AppMessageJson
   { v :: Maybe ChatVersionRange,

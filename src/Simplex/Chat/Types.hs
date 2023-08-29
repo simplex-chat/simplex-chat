@@ -538,24 +538,30 @@ instance ToJSON MemberIdRole where toEncoding = J.genericToEncoding J.defaultOpt
 
 data IntroInvitation = IntroInvitation
   { groupConnReq :: ConnReqInvitation,
-    directConnReq :: ConnReqInvitation
+    directConnReq :: Maybe ConnReqInvitation
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON IntroInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON IntroInvitation where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
     memberRole :: GroupMemberRole,
+    memberChatVRange :: Maybe ChatVersionRange,
     profile :: Profile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON MemberInfo where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MemberInfo where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 memberInfo :: GroupMember -> MemberInfo
-memberInfo GroupMember {memberId, memberRole, memberProfile} =
-  MemberInfo memberId memberRole (fromLocalProfile memberProfile)
+memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
+  let memberChatVRange = toChatVRange . connChatVRange <$> activeConn
+   in MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -1467,3 +1473,18 @@ instance ProtocolTypeI p => ToJSON (ServerCfg p) where
 
 instance ProtocolTypeI p => FromJSON (ServerCfg p) where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+newtype ChatVersionRange = ChatVersionRange {versionRange :: VersionRange} deriving (Eq, Show)
+
+instance FromJSON ChatVersionRange where
+  parseJSON j = ChatVersionRange <$> strParseJSON "ChatVersionRange" j
+
+instance ToJSON ChatVersionRange where
+  toJSON (ChatVersionRange vr) = strToJSON vr
+  toEncoding (ChatVersionRange vr) = strToJEncoding vr
+
+toChatVRange :: VersionRange -> ChatVersionRange
+toChatVRange = ChatVersionRange
+
+fromChatVRange :: ChatVersionRange -> VersionRange
+fromChatVRange (ChatVersionRange vr) = vr

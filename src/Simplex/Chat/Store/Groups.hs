@@ -480,10 +480,11 @@ getUserGroupsWithSummary db user _contactId_ search_ =
 -- the statuses on non-current members should match memberCurrent' function
 getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary
 getGroupSummary db User {userId} groupId = do
-  currentMembers_ <- maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
+  currentMembers_ <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
         SELECT count (m.group_member_id)
         FROM groups g
         JOIN group_members m USING (group_id)
@@ -493,7 +494,7 @@ getGroupSummary db User {userId} groupId = do
           AND m.member_status != ?
           AND m.member_status != ?
       |]
-      (userId, groupId, GSMemRemoved, GSMemLeft, GSMemInvited)
+        (userId, groupId, GSMemRemoved, GSMemLeft, GSMemInvited)
   pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [FullGroupPreferences]
@@ -737,7 +738,7 @@ updateGroupMemberStatusById db userId groupMemberId memStatus = do
 
 -- | add new member with profile
 createNewGroupMember :: DB.Connection -> User -> GroupInfo -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-createNewGroupMember db user@User {userId} gInfo memInfo@(MemberInfo _ _ Profile {displayName, fullName, image, contactLink, preferences}) memCategory memStatus =
+createNewGroupMember db user@User {userId} gInfo memInfo@(MemberInfo _ _ _ Profile {displayName, fullName, image, contactLink, preferences}) memCategory memStatus =
   ExceptT . withLocalDisplayName db userId displayName $ \localDisplayName -> do
     currentTs <- getCurrentTime
     DB.execute
@@ -763,7 +764,7 @@ createNewMember_
   User {userId, userContactId}
   GroupInfo {groupId}
   NewGroupMember
-    { memInfo = MemberInfo memberId memberRole memberProfile,
+    { memInfo = MemberInfo memberId memberRole _ memberProfile,
       memCategory = memberCategory,
       memStatus = memberStatus,
       memInvitedBy = invitedBy,
@@ -907,12 +908,13 @@ getIntroduction_ db reMember toMember = ExceptT $ do
   where
     toIntro :: [(Int64, Maybe ConnReqInvitation, Maybe ConnReqInvitation, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
     toIntro [(introId, groupConnReq, directConnReq, introStatus)] =
-      let introInvitation = IntroInvitation <$> groupConnReq <*> directConnReq
+      let introInvitation = IntroInvitation <$> groupConnReq <*> pure directConnReq
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
     toIntro _ = Left SEIntroNotFound
 
+-- TODO save memberChatVRange on connection
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> (CommandId, ConnId) -> Maybe ProfileId -> ExceptT StoreError IO GroupMember
-createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberProfile) (groupCmdId, groupAgentConnId) (directCmdId, directAgentConnId) customUserProfileId = do
+createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberChatVRange memberProfile) (groupCmdId, groupAgentConnId) (directCmdId, directAgentConnId) customUserProfileId = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- liftIO getCurrentTime
   Connection {connId = directConnId} <- liftIO $ createConnection_ db userId ConnContact Nothing directAgentConnId Nothing memberContactId Nothing customUserProfileId cLevel currentTs
@@ -934,8 +936,11 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
     liftIO $ setCommandConnId db user groupCmdId groupConnId
     pure (member :: GroupMember) {activeConn = Just conn}
 
-createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> (CommandId, ConnId) -> (CommandId, ConnId) -> Maybe ProfileId -> IO ()
-createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} (groupCmdId, groupAgentConnId) (directCmdId, directAgentConnId) customUserProfileId = do
+-- TODO save memberChatVRange on connection
+-- TODO directConnIds is Nothing branch (split into separate functions)
+createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> IO ()
+createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} (groupCmdId, groupAgentConnId) Nothing customUserProfileId = pure ()
+createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} (groupCmdId, groupAgentConnId) (Just (directCmdId, directAgentConnId)) customUserProfileId = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- getCurrentTime
   Connection {connId = groupConnId} <- createMemberConnection_ db userId groupMemberId groupAgentConnId viaContactId cLevel currentTs
