@@ -12,14 +12,14 @@ sequenceDiagram
   note over M, B: 2. introduce new member Bob to all existing members
   A ->> M: x.grp.mem.new<br>"announce" Bob<br>to existing members<br>(via member connections)
   loop batched
-    A ->> B: x.grp.mem.intro * N<br>"introduce" members<br>(via member connection)
+    A ->> B: x.grp.mem.intro * N<br>"introduce" members and<br>their chat protocol versions<br>(via member connection)
     note over B: prepare group member connections
     opt chat protocol compatible version < 2
       note over B: prepare direct connections
     end
     B ->> A: x.grp.mem.inv * N<br>"invitations" to connect<br>for all members<br>(via member connection)
   end
-  A ->> M: x.grp.mem.fwd<br>forward "invitations"<br>to all members<br>(via member connections)
+  A ->> M: x.grp.mem.fwd<br>forward "invitations" and<br>Bob's chat protocol version<br>to all members<br>(via member connections)
 
   note over M, B: 3. establish direct and group member connections
   M ->> B: establish group member connection
