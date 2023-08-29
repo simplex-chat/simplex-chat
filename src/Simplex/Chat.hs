@@ -2929,7 +2929,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
-          -- TODO don't getViaGroupMember and don't probe if client version is 3 and compatible version is 2
+          -- TODO don't getViaGroupMember and don't probe if chat protocol compatible version is 2
           withStore' (\db -> getViaGroupMember db user ct) >>= \case
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
@@ -3018,7 +3018,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
               CFCreateConnGrpMemInv -> do
-                -- TODO don't check direct connection if client version is 3 and compatible version is 2
+                -- TODO don't check direct connection if chat protocol compatible version is 2
                 contData <- withStore' $ \db -> do
                   setConnConnReqInv db user connId cReq
                   getXGrpMemIntroContGroup db user m
@@ -3114,7 +3114,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
-            -- TODO don't getViaGroupContact and don't probe if client version is 3 and compatible version is 2
+            -- TODO don't getViaGroupContact and don't probe if chat protocol compatible version is 2
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
                 notifyMemberConnected gInfo m Nothing
@@ -4261,7 +4261,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
               -- TODO create group connection with version from MemberInfo
-              -- TODO don't create direct connection if client version is 3 and compatible version is 2
+              -- TODO don't create direct connection if chat protocol compatible version is 2
               groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
               directConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
               -- [incognito] direct connection with member has to be established using the same incognito profile [that was known to host and used for group membership]
@@ -4306,7 +4306,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       -- TODO create group connection with version from MemberInfo
       -- TODO don't join direct connection if IntroInvitation directConnReq is Nothing
-      -- TODO don't join direct connection if client version is 3 and compatible version is 2?
+      -- TODO don't join direct connection if chat protocol compatible version is 2?
       groupConnIds <- joinAgentConnectionAsync user enableNtfs groupConnReq dm
       directConnIds <- case directConnReq of
         Just dcr -> Just <$> joinAgentConnectionAsync user enableNtfs dcr dm
