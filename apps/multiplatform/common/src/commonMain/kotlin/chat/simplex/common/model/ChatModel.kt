@@ -80,6 +80,7 @@ object ChatModel {
   }
   val performLA by lazy { mutableStateOf(ChatController.appPrefs.performLA.get()) }
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
+  val showChatPreviews by lazy { mutableStateOf(ChatController.appPrefs.privacyShowChatPreviews.get()) }
 
   // current WebRTC call
   val callManager = CallManager(this)
@@ -406,18 +407,18 @@ object ChatModel {
     )
   }
 
-  fun increaseUnreadCounter(user: User) {
+  fun increaseUnreadCounter(user: UserLike) {
     changeUnreadCounter(user, 1)
   }
 
-  fun decreaseUnreadCounter(user: User, by: Int = 1) {
+  fun decreaseUnreadCounter(user: UserLike, by: Int = 1) {
     changeUnreadCounter(user, -by)
   }
 
-  private fun changeUnreadCounter(user: User, by: Int) {
+  private fun changeUnreadCounter(user: UserLike, by: Int) {
     val i = users.indexOfFirst { it.user.userId == user.userId }
     if (i != -1) {
-      users[i] = UserInfo(user, users[i].unreadCount + by)
+      users[i] = UserInfo(users[i].user, users[i].unreadCount + by)
     }
   }
 
@@ -499,25 +500,23 @@ enum class ChatType(val type: String) {
 
 @Serializable
 data class User(
-  val userId: Long,
+  override val userId: Long,
   val userContactId: Long,
   val localDisplayName: String,
   val profile: LocalProfile,
   val fullPreferences: FullChatPreferences,
-  val activeUser: Boolean,
-  val showNtfs: Boolean,
+  override val activeUser: Boolean,
+  override val showNtfs: Boolean,
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
   val viewPwdHash: UserPwdHash?
-): NamedChat {
+): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
   override val image: String? get() = profile.image
   override val localAlias: String = ""
 
   val hidden: Boolean = viewPwdHash != null
-
-  val showNotifications: Boolean = activeUser || showNtfs
 
   val addressShared: Boolean = profile.contactLink != null
 
@@ -535,6 +534,22 @@ data class User(
       viewPwdHash = null,
     )
   }
+}
+
+@Serializable
+data class UserRef(
+  override val userId: Long,
+  val localDisplayName: String,
+  override val activeUser: Boolean,
+  override val showNtfs: Boolean
+): UserLike {}
+
+interface UserLike {
+  val userId: Long
+  val activeUser: Boolean
+  val showNtfs: Boolean
+
+  val showNotifications: Boolean get() = activeUser || showNtfs
 }
 
 @Serializable
@@ -930,6 +945,14 @@ data class LocalProfile(
     )
   }
 }
+
+@Serializable
+data class UserProfileUpdateSummary(
+  val notChanged: Int,
+  val updateSuccesses: Int,
+  val updateFailures: Int,
+  val changedContacts: List<Contact>
+)
 
 @Serializable
 class Group (
@@ -1385,6 +1408,18 @@ data class ChatItem (
       else -> false
     }
 
+  val memberConnected: GroupMember? get() =
+    when (chatDir) {
+      is CIDirection.GroupRcv -> when (content) {
+        is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
+          is RcvGroupEvent.MemberConnected -> chatDir.groupMember
+          else -> null
+        }
+        else -> null
+      }
+      else -> null
+    }
+
   fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember>? {
     return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
       val m = chatInfo.groupInfo.membership
@@ -1740,26 +1775,15 @@ sealed class CIStatus {
       is CIStatus.Invalid -> MR.images.ic_question_mark to metaColor
     }
 
-  val statusText: String get() = when (this) {
-    is SndNew -> generalGetString(MR.strings.item_status_snd_new_text)
-    is SndSent -> generalGetString(MR.strings.item_status_snd_sent_text)
-    is SndRcvd -> generalGetString(MR.strings.item_status_snd_rcvd_text)
-    is SndErrorAuth -> generalGetString(MR.strings.item_status_snd_error_text)
-    is SndError -> generalGetString(MR.strings.item_status_snd_error_text)
-    is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_text)
-    is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_text)
-    is Invalid -> "Invalid status"
-  }
-
-  val statusDescription: String get() = when (this) {
-    is SndNew -> generalGetString(MR.strings.item_status_snd_new_desc)
-    is SndSent -> generalGetString(MR.strings.item_status_snd_sent_desc)
-    is SndRcvd -> generalGetString(MR.strings.item_status_snd_rcvd_desc)
-    is SndErrorAuth -> generalGetString(MR.strings.item_status_snd_error_auth_desc)
-    is SndError -> String.format(generalGetString(MR.strings.item_status_snd_error_unexpected_desc), this.agentError)
-    is RcvNew -> generalGetString(MR.strings.item_status_rcv_new_desc)
-    is RcvRead -> generalGetString(MR.strings.item_status_rcv_read_desc)
-    is Invalid -> this.text
+  val statusInto: Pair<String, String>? get() = when (this) {
+    is SndNew -> null
+    is SndSent -> null
+    is SndRcvd -> null
+    is SndErrorAuth -> generalGetString(MR.strings.message_delivery_error_title) to generalGetString(MR.strings.message_delivery_error_desc)
+    is SndError -> generalGetString(MR.strings.message_delivery_error_title) to (generalGetString(MR.strings.unknown_error) + ": $agentError")
+    is RcvNew -> null
+    is RcvRead -> null
+    is Invalid -> "Invalid status" to this.text
   }
 }
 
@@ -1847,6 +1871,19 @@ sealed class CIContent: ItemContent {
       is SndModerated -> generalGetString(MR.strings.moderated_description)
       is RcvModerated -> generalGetString(MR.strings.moderated_description)
       is InvalidJSON -> "invalid data"
+    }
+
+  val showMemberName: Boolean get() =
+    when (this) {
+      is RcvMsgContent -> true
+      is RcvDeleted -> true
+      is RcvCall -> true
+      is RcvIntegrityError -> true
+      is RcvDecryptionError -> true
+      is RcvGroupInvitation -> true
+      is RcvModerated -> true
+      is InvalidJSON -> true
+      else -> false
     }
 
   companion object {

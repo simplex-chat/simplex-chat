@@ -1,6 +1,6 @@
 {
-    "simplex-privacy": "SimpleX Privatsphäre",
-    "simplex-network": "SimpleX Netzwerk",
+    "simplex-privacy": "Privatsphäre mit SimpleX",
+    "simplex-network": "SimpleX-Netzwerk",
     "home": "Startseite",
     "developers": "Entwickler",
     "reference": "Referenz",
@@ -9,7 +9,7 @@
     "features": "Funktionen",
     "simplex-private-card-6-point-2": "Um das zu verhindern, werden von SimpleX Einmal-Schlüssel Out-of-Band weitergeleitet, wenn Sie eine Adresse als Link oder QR-Code teilen.",
     "simplex-explained": "SimpleX erklärt",
-    "simplex-explained-tab-2-text": "2. Wie funktioniert es",
+    "simplex-explained-tab-2-text": "2. Wie es funktioniert",
     "simplex-explained-tab-3-text": "3. Was die Server sehen",
     "simplex-explained-tab-1-text": "1. Wie es die Nutzer erleben",
     "simplex-explained-tab-1-p-1": "Sie können Kontakte und Gruppen erstellen und haben Zwei-Wege-Kommunikation wie in jedem anderen Messenger.",
@@ -232,5 +232,15 @@
     "back-to-top": "Zum Anfang",
     "guide-dropdown-3": "Geheime Gruppen",
     "docs-dropdown-7": "SimpleX Chat übersetzen",
-    "glossary": "Glossar"
+    "glossary": "Glossar",
+    "signing-key-fingerprint": "Fingerabdruck des Signaturschlüssels (SHA-256)",
+    "f-droid-org-repo": "F-Droid.org Repository",
+    "stable-versions-built-by-f-droid-org": "Von F-Droid.org erstellte stabile Versionen",
+    "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat- und F-Droid.org-Repositorys signieren ihre Builds mit verschiedenen Schlüsseln. Zum Umschalten bitte <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>die Chat-Datenbank exportieren</a> und die App neu installieren.",
+    "releases-to-this-repo-are-done-1-2-days-later": "Die Versionen für dieses Repository werden 1..2 Tage später erstellt",
+    "docs-dropdown-8": "SimpleX Verzeichnisdienst",
+    "simplex-chat-via-f-droid": "SimpleX Chat per F-Droid",
+    "simplex-chat-repo": "SimpleX Chat Repository",
+    "stable-and-beta-versions-built-by-developers": "Von den Entwicklern erstellte stabile und Beta-Versionen",
+    "f-droid-page-simplex-chat-repo-section-text": "Um es Ihrem F-Droid-Client hinzuzufügen <span class='hide-on-mobile'>scannen Sie den QR-Code oder</span> nutzen Sie diese URL:"
 }

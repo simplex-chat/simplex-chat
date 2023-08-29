@@ -25,6 +25,7 @@ directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
   it "should register group" testDirectoryService
   it "should suspend and resume group" testSuspendResume
+  it "should join found group via link" testJoinGroup
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
@@ -112,6 +113,9 @@ testDirectoryService tmp =
         superUser <# "SimpleX-Directory> The group ID 1 (PSA) is updated."
         approvalRequested superUser welcomeWithLink' (2 :: Int)
         -- putStrLn "*** try approving with the old registration code"
+        bob #> "@SimpleX-Directory /approve 1:PSA 1"
+        bob <# "SimpleX-Directory> > /approve 1:PSA 1"
+        bob <## "      You are not allowed to use this command"
         superUser #> "@SimpleX-Directory /approve 1:PSA 1"
         superUser <# "SimpleX-Directory> > /approve 1:PSA 1"
         superUser <## "      Incorrect approval code"
@@ -138,6 +142,14 @@ testDirectoryService tmp =
         search bob "security" welcomeWithLink'
         cath `connectVia` dsLink
         search cath "privacy" welcomeWithLink'
+        bob #> "@SimpleX-Directory /exec /contacts"
+        bob <# "SimpleX-Directory> > /exec /contacts"
+        bob <## "      You are not allowed to use this command"
+        superUser #> "@SimpleX-Directory /exec /contacts"
+        superUser <# "SimpleX-Directory> > /exec /contacts"
+        superUser <## "      alice (Alice)"
+        superUser <## "bob (Bob)"
+        superUser <## "cath (Catherine)"
   where
     search u s welcome = do
       u #> ("@SimpleX-Directory " <> s)
@@ -152,9 +164,11 @@ testDirectoryService tmp =
       u <## "description changed to:"
       u <## welcome
     approvalRequested su welcome grId = do
-      su <# "SimpleX-Directory> bob submitted the group ID 1: PSA (Privacy, Security & Anonymity)"
+      su <# "SimpleX-Directory> bob submitted the group ID 1:"
+      su <## "PSA (Privacy, Security & Anonymity)"
       su <## "Welcome message:"
       su <## welcome
+      su <## "2 members"
       su <## ""
       su <## "To approve send:"
       su <# ("SimpleX-Directory> /approve 1:PSA " <> show grId)
@@ -176,6 +190,56 @@ testSuspendResume tmp =
       superUser <## "      Group listing resumed!"
       bob <# "SimpleX-Directory> The group ID 1 (privacy) is listed in the directory again!"
       groupFound bob "privacy"
+
+testJoinGroup :: HasCallStack => FilePath -> IO ()
+testJoinGroup tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath ->
+        withNewTestChat tmp "dan" danProfile $ \dan -> do
+          bob `connectVia` dsLink
+          registerGroup superUser bob "privacy" "Privacy"
+          cath `connectVia` dsLink
+          cath #> "@SimpleX-Directory privacy"
+          cath <# "SimpleX-Directory> > privacy"
+          cath <## "      Found 1 group(s)"
+          cath <# "SimpleX-Directory> privacy (Privacy)"
+          cath <## "Welcome message:"
+          welcomeMsg <- getTermLine cath
+          let groupLink = dropStrPrefix "Link to join the group privacy: " welcomeMsg
+          cath <## "2 members"
+          cath ##> ("/c " <> groupLink)
+          cath <## "connection request sent!"
+          cath <## "SimpleX-Directory_1: contact is connected"
+          cath <## "contact SimpleX-Directory_1 is merged into SimpleX-Directory"
+          cath <## "use @SimpleX-Directory <message> to send messages"
+          cath <## "#privacy: you joined the group"
+          cath <# ("#privacy SimpleX-Directory> " <> welcomeMsg)
+          cath <## "#privacy: member bob (Bob) is connected"
+          bob <## "#privacy: SimpleX-Directory added cath (Catherine) to the group (connecting...)"
+          bob <## "#privacy: new member cath is connected"
+          bob ##> "/create link #privacy"
+          bobLink <- getGroupLink bob "privacy" GRMember True
+          dan ##> ("/c " <> bobLink)
+          dan <## "connection request sent!"
+          concurrentlyN_
+            [ do
+                bob <## "dan (Daniel): accepting request to join group #privacy..."
+                bob <## "dan (Daniel): contact is connected"
+                bob <## "dan invited to group #privacy via your group link"
+                bob <## "#privacy: dan joined the group",
+              do
+                dan <## "bob (Bob): contact is connected"
+                dan <## "#privacy: you joined the group"
+                dan <# ("#privacy bob> " <> welcomeMsg)
+                dan <###
+                  [ "#privacy: member SimpleX-Directory is connected",
+                    "#privacy: member cath (Catherine) is connected"
+                  ],
+              do
+                cath <## "#privacy: bob added dan (Daniel) to the group (connecting...)"
+                cath <## "#privacy: new member dan is connected"
+            ]
 
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
@@ -376,7 +440,7 @@ testRegOwnerChangedProfile tmp =
         cath <## "full name changed to: Privacy and Security"
         groupNotFound cath "privacy"
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated."
-        reapproveGroup superUser bob
+        reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
 
 testAnotherOwnerChangedProfile :: HasCallStack => FilePath -> IO ()
@@ -395,7 +459,7 @@ testAnotherOwnerChangedProfile tmp =
         bob <## "It is hidden from the directory until approved."
         groupNotFound cath "privacy"
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated."
-        reapproveGroup superUser bob
+        reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
 
 testRegOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
@@ -428,7 +492,7 @@ testRegOwnerRemovedLink tmp =
         cath <## "bob updated group #privacy:"
         cath <## "description changed to:"
         cath <## welcomeWithLink
-        reapproveGroup superUser bob
+        reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
 
 testAnotherOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
@@ -470,7 +534,7 @@ testAnotherOwnerRemovedLink tmp =
         cath <## "bob updated group #privacy:"
         cath <## "description changed to:"
         cath <## (welcomeWithLink <> " - welcome!")
-        reapproveGroup superUser bob
+        reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
 
 testDuplicateAskConfirmation :: HasCallStack => FilePath -> IO ()
@@ -661,6 +725,9 @@ listGroups superUser bob cath = do
   cath <## "2 members"
   cath <## "Status: suspended because roles changed"
   -- superuser lists all groups
+  bob #> "@SimpleX-Directory /last"
+  bob <# "SimpleX-Directory> > /last"
+  bob <## "      You are not allowed to use this command"
   superUser #> "@SimpleX-Directory /last"
   superUser <# "SimpleX-Directory> > /last"
   superUser <## "      3 registered group(s)"
@@ -693,11 +760,13 @@ listGroups superUser bob cath = do
   superUser <## "2 members"
   superUser <## "Status: suspended because roles changed"
 
-reapproveGroup :: HasCallStack => TestCC -> TestCC -> IO ()
-reapproveGroup superUser bob = do
-  superUser <#. "SimpleX-Directory> bob submitted the group ID 1: privacy ("
+reapproveGroup :: HasCallStack => Int -> TestCC -> TestCC -> IO ()
+reapproveGroup count superUser bob = do
+  superUser <# "SimpleX-Directory> bob submitted the group ID 1:"
+  superUser <##. "privacy ("
   superUser <## "Welcome message:"
   superUser <##. "Link to join the group privacy: "
+  superUser <## (show count <> " members")
   superUser <## ""
   superUser <## "To approve send:"
   superUser <# "SimpleX-Directory> /approve 1:privacy 1"
@@ -804,9 +873,11 @@ updateProfileWithLink u n welcomeWithLink ugId = do
 notifySuperUser :: TestCC -> TestCC -> String -> String -> String -> Int -> IO ()
 notifySuperUser su u n fn welcomeWithLink gId = do
   uName <- userName u
-  su <# ("SimpleX-Directory> " <> uName <> " submitted the group ID " <> show gId <> ": " <> n <> " (" <> fn <> ")")
+  su <# ("SimpleX-Directory> " <> uName <> " submitted the group ID " <> show gId <> ":")
+  su <## (n <> " (" <> fn <> ")")
   su <## "Welcome message:"
   su <## welcomeWithLink
+  su .<## "members"
   su <## ""
   su <## "To approve send:"
   let approve = "/approve " <> show gId <> ":" <> n <> " 1"
@@ -834,6 +905,8 @@ u `connectVia` dsLink = do
   u <## "Send a search string to find groups or /help to learn how to add groups to directory."
   u <## ""
   u <## "For example, send privacy to find groups about privacy."
+  u <## ""
+  u <## "Content and privacy policy: https://simplex.chat/docs/directory.html"
 
 joinGroup :: String -> TestCC -> TestCC -> IO ()
 joinGroup gName member host = do

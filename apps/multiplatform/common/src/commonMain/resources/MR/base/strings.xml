@@ -132,11 +132,19 @@
   <string name="service_notifications_disabled">Instant notifications are disabled!</string>
   <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[To preserve your privacy, instead of push notifications the app has a <b>SimpleX background service</b> – it uses a few percent of the battery per day.]]></string>
   <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>It can be disabled via settings</b> – notifications will still be shown while the app is running.]]></string>
-  <string name="turn_off_battery_optimization"><![CDATA[In order to use it, please <b>disable battery optimization</b> for SimpleX in the next dialog. Otherwise, the notifications will be disabled.]]></string>
+  <string name="turn_off_battery_optimization"><![CDATA[To use it, please <b>allow SimpleX to run in background</b> in the next dialog. Otherwise, the notifications will be disabled.]]></string>
   <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
   <string name="periodic_notifications_desc">The app fetches new messages periodically — it uses a few percent of the battery per day. The app doesn\'t use push notifications — data from your device is not sent to the servers.</string>
+  <string name="turn_off_battery_optimization_button">Allow</string>
+  <string name="turn_off_system_restriction_button">Open app settings</string>
+  <string name="disable_notifications_button">Disable notifications</string>
+  <string name="system_restricted_background_desc">SimpleX can\'t run in background. You will receive the notifications only when the app is running.</string>
+  <string name="system_restricted_background_warn"><![CDATA[To enable notifications, please choose <b>App battery usage</b> / <b>Unrestricted</b> in the app settings.]]></string>
+  <string name="system_restricted_background_in_call_title">No background calls</string>
+  <string name="system_restricted_background_in_call_desc">The app may be closed after 1 minute in background.</string>
+  <string name="system_restricted_background_in_call_warn"><![CDATA[To make calls in background, please choose <b>App battery usage</b> / <b>Unrestricted</b> in the app settings.]]></string>
   <string name="enter_passphrase_notification_title">Passphrase is needed</string>
   <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
   <string name="database_initialization_error_title">Can\'t initialize the database</string>
@@ -226,7 +234,7 @@
   <string name="no_history">No history</string>
   <string name="in_reply_to">In reply to</string>
   <string name="delivery">Delivery</string>
-  <string name="no_info_on_delivery">No info on delivery</string>
+  <string name="no_info_on_delivery">No delivery information</string>
   <string name="delete_verb">Delete</string>
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
@@ -844,6 +852,8 @@
   <string name="protect_app_screen">Protect app screen</string>
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="privacy_show_last_messages">Show last messages</string>
+  <string name="privacy_message_draft">Message draft</string>
   <string name="full_backup">App data backup</string>
   <string name="enable_lock">Enable lock</string>
   <string name="lock_mode">Lock mode</string>
@@ -1094,6 +1104,10 @@
   <string name="snd_group_event_member_deleted">you removed %1$s</string>
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
+
+  <string name="rcv_group_event_2_members_connected">%s and %s connected</string>
+  <string name="rcv_group_event_3_members_connected">%s, %s and %s connected</string>
+  <string name="rcv_group_event_n_members_connected">%s, %s and %d other members connected</string>
 
   <!-- Conn event chat items -->
   <string name="rcv_conn_event_switch_queue_phase_completed">changed address for you</string>
@@ -1544,22 +1558,6 @@
   <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
   <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
   <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
-
-  <!-- CIStatus texts -->
-  <string name="item_status_snd_new_text">Sending message</string>
-  <string name="item_status_snd_sent_text">Message sent</string>
-  <string name="item_status_snd_rcvd_text">Sent message received</string>
-  <string name="item_status_snd_error_text">Error sending message</string>
-  <string name="item_status_rcv_new_text">Message received</string>
-  <string name="item_status_rcv_read_text">Message read</string>
-
-  <string name="item_status_snd_new_desc">Sending message is in progress or pending.</string>
-  <string name="item_status_snd_sent_desc">Message has been sent to the recipient\'s relay.</string>
-  <string name="item_status_snd_rcvd_desc">Message has been received by the recipient.</string>
-  <string name="item_status_snd_error_auth_desc">Message delivery error. Most likely this recipient has deleted the connection with you.</string>
-  <string name="item_status_snd_error_unexpected_desc">Unexpected message delivery error: %1$s</string>
-  <string name="item_status_rcv_new_desc">New message from this sender.</string>
-  <string name="item_status_rcv_read_desc">You\'ve read this received message.</string>
 
   <!-- Under development -->
   <string name="in_developing_title">Coming soon!</string>

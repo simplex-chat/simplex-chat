@@ -82,7 +82,7 @@ testGroupShared alice bob cath checkMessages = do
   alice ##> "/g team"
   alice <## "group #team is created"
   alice <## "to add members use /a team <name> or /create link #team"
-  alice ##> "/a team bob"
+  alice ##> "/a team bob admin"
   concurrentlyN_
     [ alice <## "invitation to join the group #team sent to bob",
       do
@@ -94,7 +94,7 @@ testGroupShared alice bob cath checkMessages = do
     (alice <## "#team: bob joined the group")
     (bob <## "#team: you joined the group")
   when checkMessages $ threadDelay 1000000 -- for deterministic order of messages and "connected" events
-  alice ##> "/a team cath"
+  alice ##> "/a team cath admin"
   concurrentlyN_
     [ alice <## "invitation to join the group #team sent to cath",
       do
@@ -242,14 +242,14 @@ testGroup2 =
       alice ##> "/g club"
       alice <## "group #club is created"
       alice <## "to add members use /a club <name> or /create link #club"
-      alice ##> "/a club bob"
+      alice ##> "/a club bob admin"
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to bob",
           do
             bob <## "#club: alice invites you to join the group as admin"
             bob <## "use /j club to accept"
         ]
-      alice ##> "/a club cath"
+      alice ##> "/a club cath admin"
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to cath",
           do
@@ -274,7 +274,7 @@ testGroup2 =
       concurrentlyN_
         [ bob <## "invitation to join the group #club sent to dan",
           do
-            dan <## "#club: bob invites you to join the group as admin"
+            dan <## "#club: bob invites you to join the group as member"
             dan <## "use /j club to accept"
         ]
       dan ##> "/j club"
@@ -486,7 +486,7 @@ testGroupDeleteWhenInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       bob ##> "/d #team"
@@ -497,7 +497,7 @@ testGroupDeleteWhenInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
 
@@ -513,7 +513,7 @@ testGroupReAddInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       -- alice re-adds bob, he sees it as the same group
@@ -521,7 +521,7 @@ testGroupReAddInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       -- if alice removes bob and then re-adds him, she uses a new connection request
@@ -532,7 +532,7 @@ testGroupReAddInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team_1: alice invites you to join the group as admin"
+            bob <## "#team_1: alice invites you to join the group as member"
             bob <## "use /j team_1 to accept"
         ]
 
@@ -548,7 +548,7 @@ testGroupReAddInvitedChangeRole =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       -- alice re-adds bob, he sees it as the same group
@@ -588,7 +588,7 @@ testGroupDeleteInvitedContact =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       threadDelay 500000
@@ -621,7 +621,7 @@ testDeleteGroupMemberProfileKept =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       bob ##> "/j team"
@@ -640,7 +640,7 @@ testDeleteGroupMemberProfileKept =
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to bob",
           do
-            bob <## "#club: alice invites you to join the group as admin"
+            bob <## "#club: alice invites you to join the group as member"
             bob <## "use /j club to accept"
         ]
       bob ##> "/j club"
@@ -693,7 +693,7 @@ testGroupRemoveAdd =
         ]
       alice ##> "/a team bob"
       alice <## "invitation to join the group #team sent to bob"
-      bob <## "#team_1: alice invites you to join the group as admin"
+      bob <## "#team_1: alice invites you to join the group as member"
       bob <## "use /j team_1 to accept"
       bob ##> "/j team_1"
       concurrentlyN_
@@ -734,7 +734,7 @@ testGroupList =
       concurrentlyN_
         [ alice <## "invitation to join the group #tennis sent to bob",
           do
-            bob <## "#tennis: alice invites you to join the group as admin"
+            bob <## "#tennis: alice invites you to join the group as member"
             bob <## "use /j tennis to accept"
         ]
       -- alice sees both groups
@@ -1177,7 +1177,7 @@ testGroupDeleteUnusedContacts =
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to bob",
           do
-            bob <## "#club: alice invites you to join the group as admin"
+            bob <## "#club: alice invites you to join the group as member"
             bob <## "use /j club to accept"
         ]
       bob ##> "/j club"
@@ -1188,7 +1188,7 @@ testGroupDeleteUnusedContacts =
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to cath",
           do
-            cath <## "#club: alice invites you to join the group as admin"
+            cath <## "#club: alice invites you to join the group as member"
             cath <## "use /j club to accept"
         ]
       cath ##> "/j club"
@@ -1831,7 +1831,7 @@ testGroupLinkIncognitoMembership =
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
       -- alice invites bob
-      alice ##> ("/a team " <> bobIncognito)
+      alice ##> ("/a team " <> bobIncognito <> " admin")
       concurrentlyN_
         [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
           do
@@ -2459,7 +2459,7 @@ testConfigureGroupDeliveryReceipts tmp =
         concurrentlyN_
           [ alice <## "invitation to join the group #club sent to bob",
             do
-              bob <## "#club: alice invites you to join the group as admin"
+              bob <## "#club: alice invites you to join the group as member"
               bob <## "use /j club to accept"
           ]
         bob ##> "/j club"
@@ -2470,7 +2470,7 @@ testConfigureGroupDeliveryReceipts tmp =
         concurrentlyN_
           [ alice <## "invitation to join the group #club sent to cath",
             do
-              cath <## "#club: alice invites you to join the group as admin"
+              cath <## "#club: alice invites you to join the group as member"
               cath <## "use /j club to accept"
           ]
         cath ##> "/j club"

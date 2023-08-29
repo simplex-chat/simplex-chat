@@ -14,7 +14,7 @@ interface RecorderInterface {
   fun stop(): Int
 }
 
-expect class RecorderNative: RecorderInterface
+expect class RecorderNative(): RecorderInterface
 
 interface AudioPlayerInterface {
   fun play(

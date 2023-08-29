@@ -67,7 +67,7 @@ object NtfManager {
     prevNtfs.clear()
   }
 
-  fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
+  fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
     if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
     val previewMode = appPreferences.notificationPreviewMode.get()

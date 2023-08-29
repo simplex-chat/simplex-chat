@@ -10,7 +10,8 @@ import java.awt.image.BufferedImage
 import java.io.*
 import java.net.URI
 import java.util.*
-import javax.imageio.ImageIO
+import javax.imageio.*
+import javax.imageio.stream.MemoryCacheImageOutputStream
 import kotlin.math.sqrt
 
 private fun errorBitmap(): ImageBitmap =
@@ -69,7 +70,7 @@ actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
 }
 
 actual fun compressImageStr(bitmap: ImageBitmap): String {
-  val usePng = bitmap.hasAlpha
+  val usePng = bitmap.hasAlpha()
   val ext = if (usePng) "png" else "jpg"
   return try {
     val encoded  = Base64.getEncoder().encodeToString(compressImageData(bitmap, usePng).toByteArray())
@@ -81,14 +82,44 @@ actual fun compressImageStr(bitmap: ImageBitmap): String {
 }
 
 actual fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOutputStream {
+  val writer = ImageIO.getImageWritersByFormatName(if (usePng) "png" else "jpg").next()
+  val writeParam = writer.defaultWriteParam
+  writeParam.compressionMode = ImageWriteParam.MODE_EXPLICIT
+  writeParam.compressionQuality = 0.85f
   val stream = ByteArrayOutputStream()
-  stream.use { s -> ImageIO.write(bitmap.toAwtImage(), if (usePng) "png" else "jpg", s) }
-  // MAKE REAL COMPRESSION
-  //bitmap.compress(if (!usePng) Bitmap.CompressFormat.JPEG else Bitmap.CompressFormat.PNG, 85, stream)
+  writer.output = MemoryCacheImageOutputStream(stream)
+  val outputImage = IIOImage(if (usePng) bitmap.toAwtImage() else removeAlphaChannel(bitmap.toAwtImage()), null, null)
+  writer.write(null, outputImage, writeParam)
+  writer.dispose()
+  stream.flush()
   return stream
 }
 
+private fun removeAlphaChannel(img: BufferedImage): BufferedImage {
+  if (!img.colorModel.hasAlpha()) return img
+  val target = BufferedImage(img.width, img.height, BufferedImage.TYPE_INT_RGB)
+  val g = target.createGraphics()
+  g.fillRect(0, 0, img.width, img.height)
+  g.drawImage(img, 0, 0, null)
+  g.dispose()
+  return target
+}
+
 actual fun GrayU8.toImageBitmap(): ImageBitmap = ConvertBufferedImage.extractBuffered(this).toComposeImageBitmap()
+
+actual fun ImageBitmap.hasAlpha(): Boolean {
+  val map = toPixelMap()
+  var y = 0
+  while (y < height) {
+    var x = 0
+    while (x < width) {
+      if (map[x, y].alpha < 1f) return true
+      x++
+    }
+    y++
+  }
+  return false
+}
 
 actual fun ImageBitmap.addLogo(): ImageBitmap {
   val radius = (width * 0.16f).toInt()

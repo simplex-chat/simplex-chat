@@ -44,7 +44,6 @@ struct ComposeState {
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
-    var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
     init(
@@ -241,6 +240,7 @@ struct ComposeView: View {
     @State var pendingLinkUrl: URL? = nil
     @State var cancelledLinks: Set<String> = []
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showChooseSource = false
     @State private var showMediaPicker = false
     @State private var showTakePhoto = false
@@ -254,6 +254,8 @@ struct ComposeView: View {
     // fails to stop on ComposeVoiceView.playbackMode().onDisappear,
     // this is a workaround to fire an explicit event in certain cases
     @State private var stopPlayback: Bool = false
+
+    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -309,7 +311,10 @@ struct ComposeView: View {
                         allowVoiceMessagesToContact: allowVoiceMessagesToContact,
                         timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
-                        keyboardVisible: $keyboardVisible
+                        keyboardVisible: $keyboardVisible,
+                        sendButtonColor: chat.chatInfo.incognito
+                            ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
+                            : .accentColor
                     )
                     .padding(.trailing, 12)
                     .background(.background)
@@ -442,7 +447,15 @@ struct ComposeView: View {
             } else if (composeState.inProgress) {
                 clearCurrentDraft()
             } else if !composeState.empty  {
-                saveCurrentDraft()
+                if case .recording = composeState.voiceMessageRecordingState {
+                    finishVoiceMessageRecording()
+                    if let fileName = composeState.voiceMessageRecordingFileName {
+                        chatModel.filesToDelete.insert(getAppFilePath(fileName))
+                    }
+                }
+                if saveLastDraft {
+                    saveCurrentDraft()
+                }
             } else {
                 cancelCurrentVoiceRecording()
                 clearCurrentDraft()
@@ -655,10 +668,7 @@ struct ComposeView: View {
         return sent
 
         func sending() async {
-            await MainActor.run { composeState.disabled = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if composeState.disabled { composeState.inProgress = true }
-            }
+            await MainActor.run { composeState.inProgress = true }
         }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
@@ -852,7 +862,6 @@ struct ComposeView: View {
 
     private func clearState(live: Bool = false) {
         if live {
-            composeState.disabled = false
             composeState.inProgress = false
         } else {
             composeState = ComposeState()
@@ -865,12 +874,6 @@ struct ComposeView: View {
     }
 
     private func saveCurrentDraft() {
-        if case .recording = composeState.voiceMessageRecordingState {
-            finishVoiceMessageRecording()
-            if let fileName = composeState.voiceMessageRecordingFileName {
-                chatModel.filesToDelete.insert(getAppFilePath(fileName))
-            }
-        }
         chatModel.draft = composeState
         chatModel.draftChatId = chat.id
     }

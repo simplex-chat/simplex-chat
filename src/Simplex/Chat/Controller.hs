@@ -48,7 +48,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import Simplex.Messaging.Agent (AgentClient)
+import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
@@ -60,6 +60,7 @@ import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, UserProtocol, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors)
@@ -231,6 +232,7 @@ data ChatCommand
   | APIStorageEncryption DBEncryptionConfig
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
+  | SlowSQLQueries
   | APIGetChats {userId :: UserId, pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
@@ -406,6 +408,8 @@ data ChatCommand
   | DebugLocks
   | GetAgentStats
   | ResetAgentStats
+  | GetAgentSubs
+  | GetAgentSubsDetails
   deriving (Show)
 
 data ChatResponse
@@ -508,7 +512,7 @@ data ChatResponse
   | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileError {user :: User, chatItem :: AChatItem}
-  | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, successes :: Int, failures :: Int}
+  | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, updateSummary :: UserProfileUpdateSummary}
   | CRUserProfileImage {user :: User, profile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
@@ -565,8 +569,11 @@ data ChatResponse
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRSQLResult {rows :: [Text]}
+  | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
+  | CRAgentSubs {activeSubs :: Map Text Int, distinctActiveSubs :: Map Text Int, pendingSubs :: Map Text Int, distinctPendingSubs :: Map Text Int}
+  | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
@@ -707,6 +714,16 @@ instance ToJSON PendingSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data UserProfileUpdateSummary = UserProfileUpdateSummary
+  { notChanged :: Int,
+    updateSuccesses :: Int,
+    updateFailures :: Int,
+    changedContacts :: [Contact]
+  }
+  deriving (Show, Generic)
+
+instance ToJSON UserProfileUpdateSummary where toEncoding = J.genericToEncoding J.defaultOptions
+
 data ComposedMessage = ComposedMessage
   { filePath :: Maybe FilePath,
     quotedItemId :: Maybe ChatItemId,
@@ -802,6 +819,14 @@ data SendFileMode
   = SendFileSMP (Maybe InlineFileMode)
   | SendFileXFTP
   deriving (Show, Generic)
+
+data SlowSQLQuery = SlowSQLQuery
+  { query :: Text,
+    queryStats :: SlowQueryStats
+  }
+  deriving (Show, Generic)
+
+instance ToJSON SlowSQLQuery where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

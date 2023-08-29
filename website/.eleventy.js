@@ -52,7 +52,7 @@ const globalConfig = {
 }
 
 const translationsDirectoryPath = './langs'
-const supportedRoutes = ["blog", "contact", "invitation", "docs", ""]
+const supportedRoutes = ["blog", "contact", "invitation", "docs", "fdroid", ""]
 let supportedLangs = []
 fs.readdir(translationsDirectoryPath, (err, files) => {
   if (err) {
@@ -349,7 +349,7 @@ module.exports = function (ty) {
       if (parsed.path.startsWith("../../blog")) {
         parsed.path = parsed.path.replace("../../blog", "/blog")
       }
-      parsed.path = parsed.path.replace(/\.md$/, ".html")
+      parsed.path = parsed.path.replace(/\.md$/, ".html").toLowerCase()
       return uri.serialize(parsed)
     }
   }).use(markdownItAnchor, {

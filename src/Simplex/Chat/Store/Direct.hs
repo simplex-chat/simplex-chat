@@ -68,13 +68,13 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
-import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId, InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Version
 
 getPendingContactConnection :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO PendingContactConnection
@@ -496,14 +496,16 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId chatV
       currentTs <- liftIO getCurrentTime
       updateProfile currentTs
       if displayName == oldDisplayName
-        then Right <$> DB.execute
-          db
-          [sql|
+        then
+          Right
+            <$> DB.execute
+              db
+              [sql|
             UPDATE contact_requests
             SET agent_invitation_id = ?, chat_vrange_min_version = ?, chat_vrange_max_version = ?, updated_at = ?
             WHERE user_id = ? AND contact_request_id = ?
           |]
-          (invId, minV, maxV, currentTs, userId, cReqId)
+              (invId, minV, maxV, currentTs, userId, cReqId)
         else withLocalDisplayName db userId displayName $ \ldn ->
           Right <$> do
             DB.execute

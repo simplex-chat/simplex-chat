@@ -2,12 +2,14 @@ packages: .
 -- packages: . ../simplexmq
 -- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
+with-compiler: ghc-8.10.7
+
 constraints: zip +disable-bzip2 +disable-zstd
 
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: fdbfe0e8d159f394f6eb0f5168620da8694033cd
+    tag: 4c0b8a31d20870a23e120e243359901d8240f922
 
 source-repository-package
     type: git

@@ -25,7 +25,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query, SQLError, (:.) (..))
-import qualified Database.SQLite.Simple as DB
+import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
 import Simplex.Chat.Messages
@@ -34,6 +34,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util (allFinally)
 import Simplex.Messaging.Version
@@ -108,7 +109,7 @@ checkConstraint err action = ExceptT $ runExceptT action `E.catch` (pure . Left 
 
 handleSQLError :: StoreError -> SQLError -> StoreError
 handleSQLError err e
-  | DB.sqlError e == DB.ErrorConstraint = err
+  | SQL.sqlError e == SQL.ErrorConstraint = err
   | otherwise = SEInternalError $ show e
 
 storeFinally :: ExceptT StoreError IO a -> ExceptT StoreError IO b -> ExceptT StoreError IO a
@@ -328,7 +329,7 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
       E.try (insertName ldn currentTs) >>= \case
         Right () -> action ldn
         Left e
-          | DB.sqlError e == DB.ErrorConstraint -> tryCreateName (ldnSuffix + 1) (attempts - 1)
+          | SQL.sqlError e == SQL.ErrorConstraint -> tryCreateName (ldnSuffix + 1) (attempts - 1)
           | otherwise -> E.throwIO e
       where
         insertName ldn ts =
@@ -354,7 +355,7 @@ createWithRandomBytes size gVar create = tryCreate 3
       liftIO (E.try $ create id') >>= \case
         Right x -> pure x
         Left e
-          | DB.sqlError e == DB.ErrorConstraint -> tryCreate (n - 1)
+          | SQL.sqlError e == SQL.ErrorConstraint -> tryCreate (n - 1)
           | otherwise -> throwError . SEInternalError $ show e
 
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString

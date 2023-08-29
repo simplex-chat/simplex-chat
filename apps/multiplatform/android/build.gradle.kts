@@ -83,6 +83,7 @@ android {
     // Comma separated list of languages that will be included in the apk
     android.defaultConfig.resConfigs(
         "en",
+        "bg",
         "cs",
         "de",
         "es",
@@ -93,6 +94,8 @@ android {
         "pl",
         "pt-rBR",
         "ru",
+        "th",
+        "uk",
         "zh-rCN"
     )
     //    }

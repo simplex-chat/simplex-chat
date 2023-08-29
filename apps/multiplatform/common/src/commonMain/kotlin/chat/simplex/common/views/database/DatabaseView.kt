@@ -78,7 +78,6 @@ fun DatabaseView(
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
-      m.controller.appPrefs.privacyFullBackup,
       appFilesCountAndSize,
       chatItemTTL,
       m.currentUser.value,
@@ -128,7 +127,6 @@ fun DatabaseLayout(
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
-  privacyFullBackup: SharedPreference<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   chatItemTTL: MutableState<ChatItemTTL>,
   currentUser: User?,
@@ -168,6 +166,13 @@ fun DatabaseLayout(
     SectionView(stringResource(MR.strings.run_chat_section)) {
       RunChatSetting(runChat, stopped, startChat, stopChatAlert)
     }
+    SectionTextFooter(
+      if (stopped) {
+        stringResource(MR.strings.you_must_use_the_most_recent_version_of_database)
+      } else {
+        stringResource(MR.strings.stop_chat_to_enable_database_actions)
+      }
+    )
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.chat_database_section)) {
@@ -180,8 +185,6 @@ fun DatabaseLayout(
         iconColor = if (unencrypted) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
       )
-      AppDataBackupPreference(privacyFullBackup, initialRandomDBPassphrase)
-      SectionDividerSpaced(maxBottomPadding = false)
       SettingsActionItem(
         painterResource(MR.images.ic_ios_share),
         stringResource(MR.strings.export_database),
@@ -225,13 +228,6 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
     }
-    SectionTextFooter(
-      if (stopped) {
-        stringResource(MR.strings.you_must_use_the_most_recent_version_of_database)
-      } else {
-        stringResource(MR.strings.stop_chat_to_enable_database_actions)
-      }
-    )
     SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
@@ -255,23 +251,6 @@ fun DatabaseLayout(
       }
     )
     SectionBottomSpacer()
-  }
-}
-
-@Composable
-private fun AppDataBackupPreference(privacyFullBackup: SharedPreference<Boolean>, initialRandomDBPassphrase: SharedPreference<Boolean>) {
-  SettingsPreferenceItem(
-    painterResource(MR.images.ic_backup),
-    iconColor = MaterialTheme.colors.secondary,
-    pref = privacyFullBackup,
-    text = stringResource(MR.strings.full_backup)
-  ) {
-    if (initialRandomDBPassphrase.get()) {
-      exportProhibitedAlert()
-      privacyFullBackup.set(false)
-    } else {
-      privacyFullBackup.set(it)
-    }
   }
 }
 
@@ -683,7 +662,6 @@ fun PreviewDatabaseLayout() {
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },
-      privacyFullBackup = SharedPreference({ true }, {}),
       appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
       chatItemTTL = remember { mutableStateOf(ChatItemTTL.None) },
       currentUser = User.sampleData,

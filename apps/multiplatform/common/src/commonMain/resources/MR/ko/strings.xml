@@ -112,7 +112,6 @@
     <string name="change_member_role_question">그룹 역할을 바꾸시겠습니까\?</string>
     <string name="info_row_connection">연결</string>
     <string name="users_add">프로필 추가</string>
-    <string name="incognito_random_profile_description">대화 상대에게 랜덤 프로필이 전송됩니다.</string>
     <string name="cant_delete_user_profile">사용자 프로필을 삭제할 수 없습니다!</string>
     <string name="chat_preferences_always">항상</string>
     <string name="chat_preferences_contact_allows">대화 상대가 허용함</string>
@@ -161,7 +160,6 @@
     <string name="notifications_mode_off_desc">앱이 실행 중일 때만 알림을 받을 수 있으며, 백그라운드 서비스는 시작되지 않습니다.</string>
     <string name="full_backup">앱 데이터 백업</string>
     <string name="settings_section_title_icon">앱 아이콘</string>
-    <string name="incognito_random_profile_from_contact_description">이 링크를 받은 사람한테 랜덤으로 만들어진 익명 프로필이 전송됩니다.</string>
     <string name="network_session_mode_user_description"><![CDATA[별도로 분리된 TCP 연결(그리고 SOCKS 자격 증명)이 <b>각각의 채팅 프로필</b>에 사용될 겁니다.]]></string>
     <string name="network_session_mode_entity_description">별도로 분리된 TCP 연결(및 SOCKS 자격 증명)이 <b>각각의 대화 상대 및 그룹 구성원</b>에게 사용될 겁니다.
 \n<b>참고</b>: 연결이 많은 경우 배터리 및 트래픽 소비가 높을 수 있고 일부 연결이 실패할 수 있습니다.</string>
@@ -497,7 +495,6 @@
     <string name="group_display_name_field">보여지는 그룹 이름</string>
     <string name="group_full_name_field">그룹 이름 :</string>
     <string name="group_is_decentralized">그룹은 완전히 탈중앙화되어 있으며 구성원만 그룹을 볼 수 있어요.</string>
-    <string name="group_unsupported_incognito_main_profile_sent">여기에서는 시크릿 모드가 지원되지 않아요. 기본 프로필이 그룹 멤버들에게 전송될 거예요.</string>
     <string name="group_main_profile_sent">프로필이 그룹 구성원에게 전송될 거예요.</string>
     <string name="group_profile_is_stored_on_members_devices">그룹 프로필은 서버가 아닌 멤버들의 기기에 저장되어요.</string>
     <string name="group_preferences">그룹 설정</string>
@@ -561,7 +558,6 @@
     <string name="import_database">데이터베이스 가져오기</string>
     <string name="import_database_confirmation">가져오기</string>
     <string name="incognito">익명 모드</string>
-    <string name="incognito_info_find">익명 채팅에 사용되는 프로필을 확인하려면 채팅 상단에 있는 연락처 또는 그룹 이름을 탭하세요.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">대화 상대가 업로드를 완료하면 이미지가 수신될 거예요.</string>
     <string name="image_descr_profile_image">프로필 이미지</string>
     <string name="incognito_info_allows">하나의 프로필로 여러 사람과 연락할 필요 없이 무수히 많은 익명 프로필로 연락할 수 있어요.</string>
@@ -746,7 +742,6 @@
     <string name="protect_app_screen">앱 잠금</string>
     <string name="personal_welcome">%1$s님, 환영합니다!</string>
     <string name="only_stored_on_members_devices">(그룹 구성원에게만 저장됨)</string>
-    <string name="paste_connection_link_below_to_connect">아래 칸에 받은 링크를 붙여넣기하여 대화 상대와 연결해 주세요.</string>
     <string name="rate_the_app">앱 평가하기</string>
     <string name="onboarding_notifications_mode_periodic">주기적</string>
     <string name="onboarding_notifications_mode_service">즉시</string>
@@ -945,4 +940,10 @@
     <string name="v5_0_app_passcode">앱 패스코드</string>
     <string name="search_verb">검색</string>
     <string name="la_mode_off">꺼짐</string>
+    <string name="abort_switch_receiving_address_confirm">중지하기</string>
+    <string name="only_owners_can_enable_files_and_media">그룹 소유자만이 파일이나 미디어를 활성화 할 수 있습니다.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d개의 메시지를 건너뛰었습니다.</string>
+    <string name="waiting_for_image">이미지 기다리는 중</string>
+    <string name="voice_message">음성 메시지</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d개의 메시지의 해독에 실패했습니다.</string>
 </resources>

@@ -94,9 +94,8 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
-    DispatchQueue.main.async {
-        ChatModel.shared.addTerminalItem(.cmd(start, cmd.obfuscated))
-        ChatModel.shared.addTerminalItem(.resp(.now, resp))
+    Task {
+        await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)
     }
     return resp
 }
@@ -321,12 +320,18 @@ func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int6
     let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
     let r: ChatResponse
     if type == .direct {
-        var cItem: ChatItem!
-        let endTask = beginBGTask({ if cItem != nil { chatModel.messageDelivery.removeValue(forKey: cItem.id) } })
+        var cItem: ChatItem? = nil
+        let endTask = beginBGTask({
+            if let cItem = cItem {
+                DispatchQueue.main.async {
+                    chatModel.messageDelivery.removeValue(forKey: cItem.id)
+                }
+            }
+        })
         r = await chatSendCmd(cmd, bgTask: false)
         if case let .newChatItem(_, aChatItem) = r {
             cItem = aChatItem.chatItem
-            chatModel.messageDelivery[cItem.id] = endTask
+            chatModel.messageDelivery[aChatItem.chatItem.id] = endTask
             return cItem
         }
         if let networkErrorAlert = networkErrorAlert(r) {
@@ -686,12 +691,12 @@ func apiListContacts() throws -> [Contact] {
     throw r
 }
 
-func apiUpdateProfile(profile: Profile) async throws -> Profile? {
+func apiUpdateProfile(profile: Profile) async throws -> (Profile, [Contact])? {
     let userId = try currentUserId("apiUpdateProfile")
     let r = await chatSendCmd(.apiUpdateProfile(userId: userId, profile: profile))
     switch r {
     case .userProfileNoChange: return nil
-    case let .userProfileUpdated(_, _, toProfile): return toProfile
+    case let .userProfileUpdated(_, _, toProfile, updateSummary): return (toProfile, updateSummary.changedContacts)
     default: throw r
     }
 }
@@ -701,7 +706,7 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
     let r = await chatSendCmd(.apiSetProfileAddress(userId: userId, on: on))
     switch r {
     case .userProfileNoChange: return nil
-    case let .userProfileUpdated(user, _, _): return user
+    case let .userProfileUpdated(user, _, _, _): return user
     default: throw r
     }
 }
@@ -802,9 +807,9 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
-func receiveFile(user: User, fileId: Int64, auto: Bool = false) async {
+func receiveFile(user: any UserLike, fileId: Int64, auto: Bool = false) async {
     if let chatItem = await apiReceiveFile(fileId: fileId, auto: auto) {
-        DispatchQueue.main.async { chatItemSimpleUpdate(user, chatItem) }
+        await chatItemSimpleUpdate(user, chatItem)
     }
 }
 
@@ -842,7 +847,7 @@ func apiReceiveFile(fileId: Int64, inline: Bool? = nil, auto: Bool = false) asyn
 
 func cancelFile(user: User, fileId: Int64) async {
     if let chatItem = await apiCancelFile(fileId: fileId) {
-        DispatchQueue.main.async { chatItemSimpleUpdate(user, chatItem) }
+        await chatItemSimpleUpdate(user, chatItem)
         cleanupFile(chatItem)
     }
 }
@@ -1244,38 +1249,50 @@ class ChatReceiver {
 }
 
 func processReceivedMsg(_ res: ChatResponse) async {
+    Task {
+        await TerminalItems.shared.add(.resp(.now, res))
+    }
     let m = ChatModel.shared
-    await MainActor.run {
-        m.addTerminalItem(.resp(.now, res))
-        logger.debug("processReceivedMsg: \(res.responseType)")
-        switch res {
-        case let .newContactConnection(user, connection):
-            if active(user) {
+    logger.debug("processReceivedMsg: \(res.responseType)")
+    switch res {
+    case let .newContactConnection(user, connection):
+        if active(user) {
+            await MainActor.run {
                 m.updateContactConnection(connection)
             }
-        case let .contactConnectionDeleted(user, connection):
-            if active(user) {
+        }
+    case let .contactConnectionDeleted(user, connection):
+        if active(user) {
+            await MainActor.run {
                 m.removeChat(connection.id)
             }
-        case let .contactConnected(user, contact, _):
-            if active(user) && contact.directOrUsed {
+        }
+    case let .contactConnected(user, contact, _):
+        if active(user) && contact.directOrUsed {
+            await MainActor.run {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)
             }
-            if contact.directOrUsed {
-                NtfManager.shared.notifyContactConnected(user, contact)
-            }
+        }
+        if contact.directOrUsed {
+            NtfManager.shared.notifyContactConnected(user, contact)
+        }
+        await MainActor.run {
             m.setContactNetworkStatus(contact, .connected)
-        case let .contactConnecting(user, contact):
-            if active(user) && contact.directOrUsed {
+        }
+    case let .contactConnecting(user, contact):
+        if active(user) && contact.directOrUsed {
+            await MainActor.run {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)
             }
-        case let .receivedContactRequest(user, contactRequest):
-            if active(user) {
-                let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
+        }
+    case let .receivedContactRequest(user, contactRequest):
+        if active(user) {
+            let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
+            await MainActor.run {
                 if m.hasChat(contactRequest.id) {
                     m.updateChatInfo(cInfo)
                 } else {
@@ -1285,255 +1302,312 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     ))
                 }
             }
-            NtfManager.shared.notifyContactRequest(user, contactRequest)
-        case let .contactUpdated(user, toContact):
-            if active(user) && m.hasChat(toContact.id) {
+        }
+        NtfManager.shared.notifyContactRequest(user, contactRequest)
+    case let .contactUpdated(user, toContact):
+        if active(user) && m.hasChat(toContact.id) {
+            await MainActor.run {
                 let cInfo = ChatInfo.direct(contact: toContact)
                 m.updateChatInfo(cInfo)
             }
-        case let .contactsMerged(user, intoContact, mergedContact):
-            if active(user) && m.hasChat(mergedContact.id) {
+        }
+    case let .contactsMerged(user, intoContact, mergedContact):
+        if active(user) && m.hasChat(mergedContact.id) {
+            await MainActor.run {
                 if m.chatId == mergedContact.id {
                     m.chatId = intoContact.id
                 }
                 m.removeChat(mergedContact.id)
             }
-        case let .contactsSubscribed(_, contactRefs):
-            updateContactsStatus(contactRefs, status: .connected)
-        case let .contactsDisconnected(_, contactRefs):
-            updateContactsStatus(contactRefs, status: .disconnected)
-        case let .contactSubError(user, contact, chatError):
+        }
+    case let .contactsSubscribed(_, contactRefs):
+        await updateContactsStatus(contactRefs, status: .connected)
+    case let .contactsDisconnected(_, contactRefs):
+        await updateContactsStatus(contactRefs, status: .disconnected)
+    case let .contactSubError(user, contact, chatError):
+        await MainActor.run {
             if active(user) {
                 m.updateContact(contact)
             }
             processContactSubError(contact, chatError)
-        case let .contactSubSummary(user, contactSubscriptions):
+        }
+    case let .contactSubSummary(_, contactSubscriptions):
+        await MainActor.run {
             for sub in contactSubscriptions {
-                if active(user) {
-                    m.updateContact(sub.contact)
-                }
+// no need to update contact here, and it is slow
+//                if active(user) {
+//                    m.updateContact(sub.contact)
+//                }
                 if let err = sub.contactError {
                     processContactSubError(sub.contact, err)
                 } else {
                     m.setContactNetworkStatus(sub.contact, .connected)
                 }
             }
-        case let .newChatItem(user, aChatItem):
-            let cInfo = aChatItem.chatInfo
-            let cItem = aChatItem.chatItem
+        }
+    case let .newChatItem(user, aChatItem):
+        let cInfo = aChatItem.chatInfo
+        let cItem = aChatItem.chatItem
+        await MainActor.run {
             if active(user) {
                 m.addChatItem(cInfo, cItem)
             } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                 m.increaseUnreadCounter(user: user)
             }
-            if let file = cItem.autoReceiveFile() {
-                Task {
-                    await receiveFile(user: user, fileId: file.fileId, auto: true)
-                }
+        }
+        if let file = cItem.autoReceiveFile() {
+            Task {
+                await receiveFile(user: user, fileId: file.fileId, auto: true)
             }
-            if cItem.showNotification {
+        }
+        if cItem.showNotification {
+            NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+        }
+    case let .chatItemStatusUpdated(user, aChatItem):
+        let cInfo = aChatItem.chatInfo
+        let cItem = aChatItem.chatItem
+        if !cItem.isDeletedContent {
+            let added = active(user) ? await MainActor.run { m.upsertChatItem(cInfo, cItem) } : true
+            if added && cItem.showNotification {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
-        case let .chatItemStatusUpdated(user, aChatItem):
-            let cInfo = aChatItem.chatInfo
-            let cItem = aChatItem.chatItem
-            if !cItem.isDeletedContent {
-                let added = active(user) ? m.upsertChatItem(cInfo, cItem) : true
-                if added && cItem.showNotification {
-                    NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-                }
+        }
+        if let endTask = m.messageDelivery[cItem.id] {
+            switch cItem.meta.itemStatus {
+            case .sndSent: endTask()
+            case .sndErrorAuth: endTask()
+            case .sndError: endTask()
+            default: ()
             }
-            if let endTask = m.messageDelivery[cItem.id] {
-                switch cItem.meta.itemStatus {
-                case .sndSent: endTask()
-                case .sndErrorAuth: endTask()
-                case .sndError: endTask()
-                default: ()
-                }
-            }
-        case let .chatItemUpdated(user, aChatItem):
-            chatItemSimpleUpdate(user, aChatItem)
-        case let .chatItemReaction(user, _, r):
-            if active(user) {
+        }
+    case let .chatItemUpdated(user, aChatItem):
+        await chatItemSimpleUpdate(user, aChatItem)
+    case let .chatItemReaction(user, _, r):
+        if active(user) {
+            await MainActor.run {
                 m.updateChatItem(r.chatInfo, r.chatReaction.chatItem)
             }
-        case let .chatItemDeleted(user, deletedChatItem, toChatItem, _):
-            if !active(user) {
-                if toChatItem == nil && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled {
+        }
+    case let .chatItemDeleted(user, deletedChatItem, toChatItem, _):
+        if !active(user) {
+            if toChatItem == nil && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled {
+                await MainActor.run {
                     m.decreaseUnreadCounter(user: user)
                 }
-                return
             }
+            return
+        }
 
+        await MainActor.run {
             if let toChatItem = toChatItem {
                 _ = m.upsertChatItem(toChatItem.chatInfo, toChatItem.chatItem)
             } else {
                 m.removeChatItem(deletedChatItem.chatInfo, deletedChatItem.chatItem)
             }
-        case let .receivedGroupInvitation(user, groupInfo, _, _):
-            if active(user) {
+        }
+    case let .receivedGroupInvitation(user, groupInfo, _, _):
+        if active(user) {
+            await MainActor.run {
                 m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated
                 // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
             }
-        case let .userAcceptedGroupSent(user, groupInfo, hostContact):
-            if !active(user) { return }
+        }
+    case let .userAcceptedGroupSent(user, groupInfo, hostContact):
+        if !active(user) { return }
 
+        await MainActor.run {
             m.updateGroup(groupInfo)
             if let hostContact = hostContact {
                 m.dismissConnReqView(hostContact.activeConn.id)
                 m.removeChat(hostContact.activeConn.id)
             }
-        case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
-            if active(user) {
+        }
+    case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
+        if active(user) {
+            await MainActor.run {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
-        case let .deletedMemberUser(user, groupInfo, _): // TODO update user member
-            if active(user) {
+        }
+    case let .deletedMemberUser(user, groupInfo, _): // TODO update user member
+        if active(user) {
+            await MainActor.run {
                 m.updateGroup(groupInfo)
             }
-        case let .deletedMember(user, groupInfo, _, deletedMember):
-            if active(user) {
+        }
+    case let .deletedMember(user, groupInfo, _, deletedMember):
+        if active(user) {
+            await MainActor.run {
                 _ = m.upsertGroupMember(groupInfo, deletedMember)
             }
-        case let .leftMember(user, groupInfo, member):
-            if active(user) {
+        }
+    case let .leftMember(user, groupInfo, member):
+        if active(user) {
+            await MainActor.run {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
-        case let .groupDeleted(user, groupInfo, _): // TODO update user member
-            if active(user) {
+        }
+    case let .groupDeleted(user, groupInfo, _): // TODO update user member
+        if active(user) {
+            await MainActor.run {
                 m.updateGroup(groupInfo)
             }
-        case let .userJoinedGroup(user, groupInfo):
-            if active(user) {
+        }
+    case let .userJoinedGroup(user, groupInfo):
+        if active(user) {
+            await MainActor.run {
                 m.updateGroup(groupInfo)
             }
-        case let .joinedGroupMember(user, groupInfo, member):
-            if active(user) {
+        }
+    case let .joinedGroupMember(user, groupInfo, member):
+        if active(user) {
+            await MainActor.run {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
-        case let .connectedToGroupMember(user, groupInfo, member, memberContact):
-            if active(user) {
+        }
+    case let .connectedToGroupMember(user, groupInfo, member, memberContact):
+        if active(user) {
+            await MainActor.run {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
-            if let contact = memberContact {
+        }
+        if let contact = memberContact {
+            await MainActor.run {
                 m.setContactNetworkStatus(contact, .connected)
             }
-        case let .groupUpdated(user, toGroup):
-            if active(user) {
+        }
+    case let .groupUpdated(user, toGroup):
+        if active(user) {
+            await MainActor.run {
                 m.updateGroup(toGroup)
             }
-        case let .memberRole(user, groupInfo, _, _, _, _):
-            if active(user) {
+        }
+    case let .memberRole(user, groupInfo, _, _, _, _):
+        if active(user) {
+            await MainActor.run {
                 m.updateGroup(groupInfo)
             }
-        case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
-            chatItemSimpleUpdate(user, aChatItem)
-        case let .rcvFileStart(user, aChatItem):
-            chatItemSimpleUpdate(user, aChatItem)
-        case let .rcvFileComplete(user, aChatItem):
-            chatItemSimpleUpdate(user, aChatItem)
-        case let .rcvFileSndCancelled(user, aChatItem, _):
-            chatItemSimpleUpdate(user, aChatItem)
-            cleanupFile(aChatItem)
-        case let .rcvFileProgressXFTP(user, aChatItem, _, _):
-            chatItemSimpleUpdate(user, aChatItem)
-        case let .rcvFileError(user, aChatItem):
-            chatItemSimpleUpdate(user, aChatItem)
-            cleanupFile(aChatItem)
-        case let .sndFileStart(user, aChatItem, _):
-            chatItemSimpleUpdate(user, aChatItem)
-        case let .sndFileComplete(user, aChatItem, _):
-            chatItemSimpleUpdate(user, aChatItem)
-            cleanupDirectFile(aChatItem)
-        case let .sndFileRcvCancelled(user, aChatItem, _):
-            chatItemSimpleUpdate(user, aChatItem)
-            cleanupDirectFile(aChatItem)
-        case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
-            chatItemSimpleUpdate(user, aChatItem)
-        case let .sndFileCompleteXFTP(user, aChatItem, _):
-            chatItemSimpleUpdate(user, aChatItem)
-            cleanupFile(aChatItem)
-        case let .sndFileError(user, aChatItem):
-            chatItemSimpleUpdate(user, aChatItem)
-            cleanupFile(aChatItem)
-        case let .callInvitation(invitation):
-            m.callInvitations[invitation.contact.id] = invitation
-            activateCall(invitation)
-        case let .callOffer(_, contact, callType, offer, sharedKey, _):
-            withCall(contact) { call in
-                call.callState = .offerReceived
-                call.peerMedia = callType.media
-                call.sharedKey = sharedKey
-                let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
-                let iceServers = getIceServers()
-                logger.debug(".callOffer useRelay \(useRelay)")
-                logger.debug(".callOffer iceServers \(String(describing: iceServers))")
-                m.callCommand = .offer(
-                    offer: offer.rtcSession,
-                    iceCandidates: offer.rtcIceCandidates,
-                    media: callType.media, aesKey: sharedKey,
-                    iceServers: iceServers,
-                    relay: useRelay
-                )
-            }
-        case let .callAnswer(_, contact, answer):
-            withCall(contact) { call in
-                call.callState = .answerReceived
-                m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
-            }
-        case let .callExtraInfo(_, contact, extraInfo):
-            withCall(contact) { _ in
-                m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
-            }
-        case let .callEnded(_, contact):
-            if let invitation = m.callInvitations.removeValue(forKey: contact.id) {
-                CallController.shared.reportCallRemoteEnded(invitation: invitation)
-            }
-            withCall(contact) { call in
-                m.callCommand = .end
-                CallController.shared.reportCallRemoteEnded(call: call)
-            }
-        case .chatSuspended:
-            chatSuspended()
-        case let .contactSwitch(_, contact, switchProgress):
-            m.updateContactConnectionStats(contact, switchProgress.connectionStats)
-        case let .groupMemberSwitch(_, groupInfo, member, switchProgress):
-            m.updateGroupMemberConnectionStats(groupInfo, member, switchProgress.connectionStats)
-        case let .contactRatchetSync(_, contact, ratchetSyncProgress):
-            m.updateContactConnectionStats(contact, ratchetSyncProgress.connectionStats)
-        case let .groupMemberRatchetSync(_, groupInfo, member, ratchetSyncProgress):
-            m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
-        default:
-            logger.debug("unsupported event: \(res.responseType)")
         }
+    case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
+        await chatItemSimpleUpdate(user, aChatItem)
+    case let .rcvFileStart(user, aChatItem):
+        await chatItemSimpleUpdate(user, aChatItem)
+    case let .rcvFileComplete(user, aChatItem):
+        await chatItemSimpleUpdate(user, aChatItem)
+    case let .rcvFileSndCancelled(user, aChatItem, _):
+        await chatItemSimpleUpdate(user, aChatItem)
+        Task { cleanupFile(aChatItem) }
+    case let .rcvFileProgressXFTP(user, aChatItem, _, _):
+        await chatItemSimpleUpdate(user, aChatItem)
+    case let .rcvFileError(user, aChatItem):
+        await chatItemSimpleUpdate(user, aChatItem)
+        Task { cleanupFile(aChatItem) }
+    case let .sndFileStart(user, aChatItem, _):
+        await chatItemSimpleUpdate(user, aChatItem)
+    case let .sndFileComplete(user, aChatItem, _):
+        await chatItemSimpleUpdate(user, aChatItem)
+        Task { cleanupDirectFile(aChatItem) }
+    case let .sndFileRcvCancelled(user, aChatItem, _):
+        await chatItemSimpleUpdate(user, aChatItem)
+        Task { cleanupDirectFile(aChatItem) }
+    case let .sndFileProgressXFTP(user, aChatItem, _, _, _):
+        await chatItemSimpleUpdate(user, aChatItem)
+    case let .sndFileCompleteXFTP(user, aChatItem, _):
+        await chatItemSimpleUpdate(user, aChatItem)
+        Task { cleanupFile(aChatItem) }
+    case let .sndFileError(user, aChatItem):
+        await chatItemSimpleUpdate(user, aChatItem)
+        Task { cleanupFile(aChatItem) }
+    case let .callInvitation(invitation):
+        await MainActor.run {
+            m.callInvitations[invitation.contact.id] = invitation
+        }
+        activateCall(invitation)
+    case let .callOffer(_, contact, callType, offer, sharedKey, _):
+        await withCall(contact) { call in
+            call.callState = .offerReceived
+            call.peerMedia = callType.media
+            call.sharedKey = sharedKey
+            let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
+            let iceServers = getIceServers()
+            logger.debug(".callOffer useRelay \(useRelay)")
+            logger.debug(".callOffer iceServers \(String(describing: iceServers))")
+            m.callCommand = .offer(
+                offer: offer.rtcSession,
+                iceCandidates: offer.rtcIceCandidates,
+                media: callType.media, aesKey: sharedKey,
+                iceServers: iceServers,
+                relay: useRelay
+            )
+        }
+    case let .callAnswer(_, contact, answer):
+        await withCall(contact) { call in
+            call.callState = .answerReceived
+            m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
+        }
+    case let .callExtraInfo(_, contact, extraInfo):
+        await withCall(contact) { _ in
+            m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
+        }
+    case let .callEnded(_, contact):
+        if let invitation = await MainActor.run(body: { m.callInvitations.removeValue(forKey: contact.id) }) {
+            CallController.shared.reportCallRemoteEnded(invitation: invitation)
+        }
+        await withCall(contact) { call in
+            m.callCommand = .end
+            CallController.shared.reportCallRemoteEnded(call: call)
+        }
+    case .chatSuspended:
+        chatSuspended()
+    case let .contactSwitch(_, contact, switchProgress):
+        await MainActor.run {
+            m.updateContactConnectionStats(contact, switchProgress.connectionStats)
+        }
+    case let .groupMemberSwitch(_, groupInfo, member, switchProgress):
+        await MainActor.run {
+            m.updateGroupMemberConnectionStats(groupInfo, member, switchProgress.connectionStats)
+        }
+    case let .contactRatchetSync(_, contact, ratchetSyncProgress):
+        await MainActor.run {
+            m.updateContactConnectionStats(contact, ratchetSyncProgress.connectionStats)
+        }
+    case let .groupMemberRatchetSync(_, groupInfo, member, ratchetSyncProgress):
+        await MainActor.run {
+            m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
+        }
+    default:
+        logger.debug("unsupported event: \(res.responseType)")
+    }
 
-        func withCall(_ contact: Contact, _ perform: (Call) -> Void) {
-            if let call = m.activeCall, call.contact.apiId == contact.apiId {
-                perform(call)
-            } else {
-                logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
-            }
+    func withCall(_ contact: Contact, _ perform: (Call) -> Void) async {
+        if let call = m.activeCall, call.contact.apiId == contact.apiId {
+            await MainActor.run { perform(call) }
+        } else {
+            logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
         }
     }
 }
 
-func active(_ user: User) -> Bool {
-    user.id == ChatModel.shared.currentUser?.id
+func active(_ user: any UserLike) -> Bool {
+    user.userId == ChatModel.shared.currentUser?.id
 }
 
-func chatItemSimpleUpdate(_ user: User, _ aChatItem: AChatItem) {
+func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let m = ChatModel.shared
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
-    if active(user) && m.upsertChatItem(cInfo, cItem) {
-        NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+    if active(user) {
+        if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
+            NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+        }
     }
 }
 
-func updateContactsStatus(_ contactRefs: [ContactRef], status: NetworkStatus) {
+func updateContactsStatus(_ contactRefs: [ContactRef], status: NetworkStatus) async {
     let m = ChatModel.shared
-    for c in contactRefs {
-        m.networkStatuses[c.agentConnId] = status
+    await MainActor.run {
+        for c in contactRefs {
+            m.networkStatuses[c.agentConnId] = status
+        }
     }
 }
 
@@ -1572,7 +1646,9 @@ func activateCall(_ callInvitation: RcvCallInvitation) {
     let m = ChatModel.shared
     CallController.shared.reportNewIncomingCall(invitation: callInvitation) { error in
         if let error = error {
-            m.callInvitations[callInvitation.contact.id]?.callkitUUID = nil
+            DispatchQueue.main.async {
+                m.callInvitations[callInvitation.contact.id]?.callkitUUID = nil
+            }
             logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
         } else {
             logger.debug("reportNewIncomingCall success")

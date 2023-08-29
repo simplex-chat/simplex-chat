@@ -97,6 +97,12 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     modalCount.value = 0
   }
 
+  fun closeModalsExceptFirst() {
+    while (modalCount.value > 1) {
+      closeModal()
+    }
+  }
+
   @OptIn(ExperimentalAnimationApi::class)
   @Composable
   fun showInView() {

@@ -94,7 +94,6 @@ import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), (:.) (..))
-import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Direct
@@ -103,6 +102,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
@@ -244,11 +244,11 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
         LEFT JOIN connections c ON c.connection_id = (
           SELECT max(cc.connection_id)
           FROM connections cc
-          where cc.group_member_id = m.group_member_id
+          where cc.user_id = ? AND cc.group_member_id = m.group_member_id
         )
         WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
-      (groupMemberId, userId, userContactId)
+      (userId, groupMemberId, userId, userContactId)
   where
     toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)
     toGroupAndMember (groupInfoRow :. memberRow :. connRow) =
@@ -533,7 +533,7 @@ groupMemberQuery =
     LEFT JOIN connections c ON c.connection_id = (
       SELECT max(cc.connection_id)
       FROM connections cc
-      where cc.group_member_id = m.group_member_id
+      where cc.user_id = ? AND cc.group_member_id = m.group_member_id
     )
   |]
 
@@ -543,7 +543,7 @@ getGroupMember db user@User {userId} groupId groupMemberId =
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
-      (groupId, groupMemberId, userId)
+      (userId, groupId, groupMemberId, userId)
 
 getGroupMemberById :: DB.Connection -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMemberById db user@User {userId} groupMemberId =
@@ -551,7 +551,7 @@ getGroupMemberById db user@User {userId} groupMemberId =
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ?")
-      (groupMemberId, userId)
+      (userId, groupMemberId, userId)
 
 getGroupMembers :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -559,7 +559,7 @@ getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
-      (groupId, userId, userContactId)
+      (userId, groupId, userId, userContactId)
 
 getGroupMembersForExpiration :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -575,7 +575,7 @@ getGroupMembersForExpiration db user@User {userId, userContactId} GroupInfo {gro
                   )
               |]
       )
-      (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+      (userId, groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
 
 toContactMember :: User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember User {userContactId} (memberRow :. connRow) =
@@ -1003,11 +1003,11 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
         LEFT JOIN connections c ON c.connection_id = (
           SELECT max(cc.connection_id)
           FROM connections cc
-          where cc.group_member_id = m.group_member_id
+          where cc.user_id = ? AND cc.group_member_id = m.group_member_id
         )
         WHERE ct.user_id = ? AND ct.contact_id = ? AND mu.contact_id = ? AND ct.deleted = 0
       |]
-      (userId, contactId, userContactId)
+      (userId, userId, contactId, userContactId)
   where
     toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)
     toGroupAndMember (groupInfoRow :. memberRow :. connRow) =
@@ -1302,11 +1302,11 @@ getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
         LEFT JOIN connections ch ON ch.connection_id = (
           SELECT max(cc.connection_id)
           FROM connections cc
-          where cc.group_member_id = mh.group_member_id
+          where cc.user_id = ? AND cc.group_member_id = mh.group_member_id
         )
         WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = 0 AND mh.member_category = ?
       |]
-      (userId, contactId, GCHostMember)
+      (userId, userId, contactId, GCHostMember)
   where
     toCont :: (Int64, GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation) -> Maybe (Int64, XGrpMemIntroCont)
     toCont (hostConnId, groupId, groupMemberId, memberId, connReq_) = case connReq_ of
@@ -1332,11 +1332,11 @@ getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
         LEFT JOIN connections ch ON ch.connection_id = (
           SELECT max(cc.connection_id)
           FROM connections cc
-          where cc.group_member_id = mh.group_member_id
+          where cc.user_id = ? AND cc.group_member_id = mh.group_member_id
         )
         WHERE m.user_id = ? AND m.group_member_id = ? AND mh.member_category = ? AND ct.deleted = 0
       |]
-      (userId, groupMemberId, GCHostMember)
+      (userId, userId, groupMemberId, GCHostMember)
   where
     toCont :: (Int64, Maybe ConnReqInvitation) -> Maybe (Int64, ConnReqInvitation)
     toCont (hostConnId, connReq_) = case connReq_ of

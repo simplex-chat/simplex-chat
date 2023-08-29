@@ -311,7 +311,6 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
     }
     ModalManager.fullscreen.showInView()
-    ModalManager.fullscreen.showPasscodeInView()
   }
 }
 

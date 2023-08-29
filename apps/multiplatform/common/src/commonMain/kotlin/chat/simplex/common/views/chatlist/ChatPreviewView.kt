@@ -31,6 +31,7 @@ import dev.icerock.moko.resources.ImageResource
 @Composable
 fun ChatPreviewView(
   chat: Chat,
+  showChatPreviews: Boolean,
   chatModelDraft: ComposeState?,
   chatModelDraftChatId: ChatId?,
   currentUserProfileDisplayName: String?,
@@ -140,32 +141,34 @@ fun ChatPreviewView(
   fun chatPreviewText() {
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
-      val (text: CharSequence, inlineTextContent) = when {
-        chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { messageDraft(chatModelDraft) }
-        ci.meta.itemDeleted == null -> ci.text to null
-        else -> generalGetString(MR.strings.marked_deleted_description) to null
-      }
-      val formattedText = when {
-        chatModelDraftChatId == chat.id && chatModelDraft != null -> null
-        ci.meta.itemDeleted == null -> ci.formattedText
-        else -> null
-      }
-      MarkdownText(
-        text,
-        formattedText,
-        sender = when {
+      if (showChatPreviews || (chatModelDraftChatId == chat.id && chatModelDraft != null)) {
+        val (text: CharSequence, inlineTextContent) = when {
+          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { messageDraft(chatModelDraft) }
+          ci.meta.itemDeleted == null -> ci.text to null
+          else -> generalGetString(MR.strings.marked_deleted_description) to null
+        }
+        val formattedText = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> null
-          cInfo is ChatInfo.Group && !ci.chatDir.sent -> ci.memberDisplayName
+          ci.meta.itemDeleted == null -> ci.formattedText
           else -> null
-        },
-        linkMode = linkMode,
-        senderBold = true,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
-        inlineContent = inlineTextContent,
-        modifier = Modifier.fillMaxWidth(),
-      )
+        }
+        MarkdownText(
+          text,
+          formattedText,
+          sender = when {
+            chatModelDraftChatId == chat.id && chatModelDraft != null -> null
+            cInfo is ChatInfo.Group && !ci.chatDir.sent -> ci.memberDisplayName
+            else -> null
+          },
+          linkMode = linkMode,
+          senderBold = true,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis,
+          style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
+          inlineContent = inlineTextContent,
+          modifier = Modifier.fillMaxWidth(),
+        )
+      }
     } else {
       when (cInfo) {
         is ChatInfo.Direct ->
@@ -336,6 +339,6 @@ fun unreadCountStr(n: Int): String {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
+    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
   }
 }

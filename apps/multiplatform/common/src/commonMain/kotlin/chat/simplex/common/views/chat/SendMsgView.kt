@@ -41,6 +41,7 @@ fun SendMsgView(
   allowedVoiceByPrefs: Boolean,
   userIsObserver: Boolean,
   userCanSend: Boolean,
+  sendButtonColor: Color = MaterialTheme.colors.primary,
   allowVoiceToContact: () -> Unit,
   timedMessageAllowed: Boolean = false,
   customDisappearingMessageTimePref: SharedPreference<Int>? = null,
@@ -64,12 +65,22 @@ fun SendMsgView(
 
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
-    val showProgress = cs.inProgress && (cs.preview is ComposePreview.MediaPreview || cs.preview is ComposePreview.FilePreview)
+    var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(composeState.value.inProgress) {
+      progressByTimeout = if (composeState.value.inProgress) {
+        delay(500)
+        composeState.value.inProgress
+      } else {
+        false
+      }
+    }
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage) {
-      sendMessage(null)
+      if (!cs.inProgress) {
+        sendMessage(null)
+      }
     }
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
@@ -98,7 +109,7 @@ fun SendMsgView(
         }
       }
       when {
-        showProgress -> ProgressIndicator()
+        progressByTimeout -> ProgressIndicator()
         showVoiceButton -> {
           Row(verticalAlignment = Alignment.CenterVertically) {
             val stopRecOnNextClick = remember { mutableStateOf(false) }
@@ -184,12 +195,12 @@ fun SendMsgView(
 
           val menuItems = MenuItems()
           if (menuItems.isNotEmpty()) {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown.value = true }
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !disabled, sendMessage) { showDropdown.value = true }
             DefaultDropdownMenu(showDropdown) {
               menuItems.forEach { composable -> composable() }
             }
           } else {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage)
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !disabled, sendMessage)
           }
         }
       }
@@ -439,6 +450,7 @@ private fun SendMsgButton(
   icon: Painter,
   sizeDp: Animatable<Float, AnimationVector1D>,
   alpha: Animatable<Float, AnimationVector1D>,
+  sendButtonColor: Color,
   enabled: Boolean,
   sendMessage: (Int?) -> Unit,
   onLongClick: (() -> Unit)? = null
@@ -466,7 +478,7 @@ private fun SendMsgButton(
         .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
-        .background(if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
+        .background(if (enabled) sendButtonColor else MaterialTheme.colors.secondary)
         .padding(3.dp)
     )
   }

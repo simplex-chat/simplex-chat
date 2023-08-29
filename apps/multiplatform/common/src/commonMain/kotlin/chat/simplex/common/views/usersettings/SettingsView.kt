@@ -43,6 +43,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
       profile = user.profile,
       stopped,
       chatModel.chatDbEncrypted.value == true,
+      remember { chatModel.controller.appPrefs.notificationsMode.state },
       user.displayName,
       setPerformLA = setPerformLA,
       showModal = { modalView -> { ModalManager.start.showModal { modalView(chatModel) } } },
@@ -114,6 +115,7 @@ fun SettingsLayout(
   profile: LocalProfile,
   stopped: Boolean,
   encrypted: Boolean,
+  notificationsMode: State<NotificationsMode>,
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -155,7 +157,7 @@ fun SettingsLayout(
       SectionDividerSpaced()
 
       SectionView(stringResource(MR.strings.settings_section_title_settings)) {
-        SettingsActionItem(painterResource(MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped, extraPadding = true)
+        SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal, showCustomModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
@@ -388,10 +390,13 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
       TextIconSpaced(extraPadding)
     }
     if (text != null) {
-      Text(text, Modifier.weight(1f), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground)
+      val padding = with(LocalDensity.current) { 6.sp.toDp() }
+      Text(text, Modifier.weight(1f).padding(vertical = padding), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground)
       Spacer(Modifier.width(DEFAULT_PADDING))
     }
-    content()
+    Row(Modifier.widthIn(max = (windowWidth() - DEFAULT_PADDING * 2) / 2)) {
+      content()
+    }
   }
 }
 
@@ -464,6 +469,7 @@ fun PreviewSettingsLayout() {
       profile = LocalProfile.sampleData,
       stopped = false,
       encrypted = false,
+      notificationsMode = remember { mutableStateOf(NotificationsMode.OFF) },
       userDisplayName = "Alice",
       setPerformLA = { _ -> },
       showModal = { {} },

@@ -20,7 +20,7 @@ import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {
+fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?) {
   val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
@@ -47,7 +47,6 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Bool
 private fun MarkedDeletedText(text: String) {
   Text(
     buildAnnotatedString {
-      // appendSender(this, if (showMember) ci.memberDisplayName else null, true) // TODO font size
       withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
     },
     style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),

@@ -16,6 +16,8 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.Indigo
+import chat.simplex.common.ui.theme.isSystemInDarkTheme
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -112,7 +114,7 @@ data class ComposeState(
     }
 
   val empty: Boolean
-    get() = message.isEmpty() && preview is ComposePreview.NoPreview
+    get() = message.isEmpty() && preview is ComposePreview.NoPreview && contextItem is ComposeContextItem.NoContextItem
 
   companion object {
     fun saver(): Saver<MutableState<ComposeState>, *> = Saver(
@@ -230,6 +232,7 @@ fun ComposeView(
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
+  val saveLastDraft = chatModel.controller.appPrefs.privacySaveLastDraft.get()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
@@ -240,7 +243,7 @@ fun ComposeView(
     link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
 
   fun parseMessage(msg: String): String? {
-    val parsedMsg = runBlocking { chatModel.controller.apiParseMarkdown(msg) }
+    val parsedMsg = parseToMarkdown(msg)
     val link = parsedMsg?.firstOrNull { ft -> ft.format is Format.Uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text) }
     return link?.text
   }
@@ -281,6 +284,20 @@ fun ComposeView(
     prevLinkUrl.value = null
     pendingLinkUrl.value = null
     cancelledLinks.clear()
+  }
+
+  fun clearPrevDraft(prevChatId: String?) {
+    if (chatModel.draftChatId.value == prevChatId) {
+      chatModel.draft.value = null
+      chatModel.draftChatId.value = null
+    }
+  }
+
+  fun clearCurrentDraft() {
+    if (chatModel.draftChatId.value == chat.id) {
+      chatModel.draft.value = null
+      chatModel.draftChatId.value = null
+    }
   }
 
   fun clearState(live: Boolean = false) {
@@ -378,6 +395,7 @@ fun ComposeView(
       if (liveMessage != null) composeState.value = cs.copy(liveMessage = null)
       sending()
     }
+    clearCurrentDraft()
 
     if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
@@ -705,13 +723,6 @@ fun ComposeView(
           }
       }
 
-      fun clearCurrentDraft() {
-        if (chatModel.draftChatId.value == chat.id) {
-          chatModel.draft.value = null
-          chatModel.draftChatId.value = null
-        }
-      }
-
       LaunchedEffect(rememberUpdatedState(chat.userCanSend).value) {
         if (!chat.userCanSend) {
           clearCurrentDraft()
@@ -719,29 +730,38 @@ fun ComposeView(
         }
       }
 
-      DisposableEffectOnGone {
+      KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
         val cs = composeState.value
         if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
           sendMessage(null)
           resetLinkPreview()
-          clearCurrentDraft()
+          clearPrevDraft(prevChatId)
           deleteUnusedFiles()
-        } else if (composeState.value.inProgress) {
-          clearCurrentDraft()
-        } else if (!composeState.value.empty) {
+        } else if (cs.inProgress) {
+          clearPrevDraft(prevChatId)
+        } else if (!cs.empty) {
           if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
             composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
           }
-          chatModel.draft.value = composeState.value
-          chatModel.draftChatId.value = chat.id
+          if (saveLastDraft) {
+            chatModel.draft.value = composeState.value
+            chatModel.draftChatId.value = prevChatId
+          }
+          composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+        } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
+          composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
         } else {
-          clearCurrentDraft()
+          clearPrevDraft(prevChatId)
           deleteUnusedFiles()
         }
         chatModel.removeLiveDummy()
       }
 
       val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
+      val sendButtonColor =
+        if (chat.chatInfo.incognito)
+          if (isSystemInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
+        else MaterialTheme.colors.primary
       SendMsgView(
         composeState,
         showVoiceRecordIcon = true,
@@ -753,6 +773,7 @@ fun ComposeView(
         allowVoiceToContact = ::allowVoiceToContact,
         userIsObserver = userIsObserver.value,
         userCanSend = userCanSend.value,
+        sendButtonColor = sendButtonColor,
         timedMessageAllowed = timedMessageAllowed,
         customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
         sendMessage = { ttl ->

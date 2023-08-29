@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -25,7 +26,7 @@ import Crypto.Random (drgNew)
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Bifunctor (bimap, first)
+import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -35,12 +36,13 @@ import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, isSuffixOf, partition, sortOn)
+import Data.List (find, foldl', isSuffixOf, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -48,7 +50,7 @@ import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
 import Data.Word (Word32)
-import qualified Database.SQLite.Simple as DB
+import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -74,11 +76,13 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), temporaryAgentError)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
@@ -399,7 +403,7 @@ processChatCommand = \case
     asks currentUser >>= atomically . (`writeTVar` Just user'')
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
-    tryError (withStore (`getUserIdByName` uName)) >>= \case
+    tryChatError (withStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
   SetAllContactReceipts onOff -> withUser $ \_ -> withStore' (`updateAllContactReceipts` onOff) >> ok_
@@ -493,6 +497,18 @@ processChatCommand = \case
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
+  SlowSQLQueries -> do
+    ChatController {chatStore, smpAgent} <- ask
+    chatQueries <- slowQueries chatStore
+    agentQueries <- slowQueries $ agentClientStore smpAgent
+    pure CRSlowSQLQueries {chatQueries, agentQueries}
+    where
+      slowQueries st =
+        liftIO $
+          map (uncurry SlowSQLQuery . first SQL.fromQuery)
+            . sortOn (timeAvg . snd)
+            . M.assocs
+            <$> withConnection st (readTVarIO . DB.slow)
   APIGetChats userId withPCC -> withUserId userId $ \user ->
     CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
@@ -1308,7 +1324,7 @@ processChatCommand = \case
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
     r <- updateProfile_ user p' $ withStore' $ \db -> setUserProfileContactLink db user Nothing
     let user' = case r of
-          CRUserProfileUpdated u' _ _ _ _ -> u'
+          CRUserProfileUpdated u' _ _ _ -> u'
           _ -> user
     pure $ CRUserContactLinkDeleted user'
   DeleteMyAddress -> withUser $ \User {userId} ->
@@ -1710,7 +1726,7 @@ processChatCommand = \case
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)
-    chatMigrations <- map upMigration <$> withStore' Migrations.getCurrent
+    chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
   DebugLocks -> do
@@ -1722,6 +1738,20 @@ processChatCommand = \case
       stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
         map B.unpack [host, clientTs, cmd, res, bshow count]
   ResetAgentStats -> withAgent resetAgentStats >> ok_
+  GetAgentSubs -> summary <$> withAgent getAgentSubscriptions
+    where
+      summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions} =
+        CRAgentSubs {activeSubs, distinctActiveSubs, pendingSubs, distinctPendingSubs}
+        where
+          (activeSubs, distinctActiveSubs) = foldSubs activeSubscriptions
+          (pendingSubs, distinctPendingSubs) = foldSubs pendingSubscriptions
+          foldSubs :: [SubInfo] -> (Map Text Int, Map Text Int)
+          foldSubs = second (M.map S.size) . foldl' acc (M.empty, M.empty)
+          acc (m, m') SubInfo {server, rcvId} =
+            ( M.alter (Just . maybe 1 (+ 1)) server m,
+              M.alter (Just . maybe (S.singleton rcvId) (S.insert rcvId)) server m'
+            )
+  GetAgentSubsDetails -> CRAgentSubsDetails <$> withAgent getAgentSubscriptions
   where
     withChatLock name action = asks chatLock >>= \l -> withLock l name action
     -- below code would make command responses asynchronous where they can be slow
@@ -1839,17 +1869,23 @@ processChatCommand = \case
         asks currentUser >>= atomically . (`writeTVar` Just user')
         withChatLock "updateProfile" . procCmd $ do
           ChatConfig {logLevel} <- asks config
-          (successes, failures) <- foldM (processAndCount user' logLevel) (0, 0) contacts
-          pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' successes failures
+          summary <- foldM (processAndCount user' logLevel) (UserProfileUpdateSummary 0 0 0 []) contacts
+          pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
-        processAndCount user' ll (s, f) ct = (processContact user' ct $> (s + 1, f)) `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> (s, f + 1)
-        processContact user' ct = do
+        processAndCount user' ll (!s@UserProfileUpdateSummary {notChanged, updateSuccesses, updateFailures, changedContacts = cts}) ct = do
           let mergedProfile = userProfileToSend user Nothing $ Just ct
               ct' = updateMergedPreferences user' ct
               mergedProfile' = userProfileToSend user' Nothing $ Just ct'
-          when (mergedProfile' /= mergedProfile) $ do
-            void $ sendDirectContactMessage ct' (XInfo mergedProfile')
-            when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
+          if mergedProfile' == mergedProfile
+            then pure s {notChanged = notChanged + 1}
+            else 
+              let cts' = if mergedPreferences ct == mergedPreferences ct' then  cts else ct' : cts
+               in (notifyContact mergedProfile' ct' $> s {updateSuccesses = updateSuccesses + 1, changedContacts = cts'})
+                    `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> s {updateFailures = updateFailures + 1, changedContacts = cts'}
+          where 
+            notifyContact mergedProfile' ct' = do
+              void $ sendDirectContactMessage ct' (XInfo mergedProfile')
+              when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated user ct ct
@@ -1964,7 +2000,7 @@ processChatCommand = \case
     drgRandomBytes n = asks idsDrg >>= liftIO . (`randomBytes` n)
     privateGetUser :: UserId -> m User
     privateGetUser userId =
-      tryError (withStore (`getUser` userId)) >>= \case
+      tryChatError (withStore (`getUser` userId)) >>= \case
         Left _ -> throwChatError CEUserUnknown
         Right user -> pure user
     validateUserPassword :: User -> User -> Maybe UserPwd -> m ()
@@ -5077,6 +5113,7 @@ chatCommandP =
       "/db decrypt " *> (APIStorageEncryption . (`DBEncryptionConfig` "") <$> dbKeyP),
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
+      "/sql slow" $> SlowSQLQueries,
       "/_get chats " *> (APIGetChats <$> A.decimal <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
@@ -5178,7 +5215,7 @@ chatCommandP =
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),
-      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRAdmin)),
+      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
@@ -5277,7 +5314,9 @@ chatCommandP =
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
       "/get stats" $> GetAgentStats,
-      "/reset stats" $> ResetAgentStats
+      "/reset stats" $> ResetAgentStats,
+      "/get subs" $> GetAgentSubs,
+      "/get subs details" $> GetAgentSubsDetails
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)

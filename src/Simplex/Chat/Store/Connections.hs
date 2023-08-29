@@ -16,7 +16,6 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..))
 import Database.SQLite.Simple ((:.) (..))
-import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
@@ -25,6 +24,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow')
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 
 getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db user@User {userId, userContactId} agentConnId = do

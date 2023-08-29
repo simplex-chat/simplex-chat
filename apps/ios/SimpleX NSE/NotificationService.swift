@@ -127,7 +127,7 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
                     setBestAttemptNtf(
-                        ntfMsgInfo.user.showNotifications
+                        ntfMsgInfo.ntfsEnabled
                         ? .nse(notification: createConnectionEventNtf(ntfMsgInfo.user, connEntity))
                         : .empty
                     )
@@ -401,4 +401,8 @@ struct NtfMessages {
     var connEntity: ConnectionEntity?
     var msgTs: Date?
     var ntfMessages: [NtfMsgInfo]
+
+    var ntfsEnabled: Bool {
+        user.showNotifications && (connEntity?.ntfsEnabled ?? false)
+    }
 }

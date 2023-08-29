@@ -97,7 +97,7 @@ private fun NewChatSheetLayout(
     }
   }
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
-  val maxWidth = with(LocalDensity.current) { screenWidth() * density }
+  val maxWidth = with(LocalDensity.current) { windowWidth() * density }
   Column(
     Modifier
       .fillMaxSize()

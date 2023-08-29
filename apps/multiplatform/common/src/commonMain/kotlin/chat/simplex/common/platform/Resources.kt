@@ -19,14 +19,14 @@ expect fun isInNightMode(): Boolean
 expect val settings: Settings
 expect val settingsThemes: Settings
 
-enum class ScreenOrientation {
+enum class WindowOrientation {
   UNDEFINED, PORTRAIT, LANDSCAPE
 }
 
-expect fun screenOrientation(): ScreenOrientation
+expect fun windowOrientation(): WindowOrientation
 
 @Composable
-expect fun screenWidth(): Dp
+expect fun windowWidth(): Dp
 
 expect fun desktopExpandWindowToWidth(width: Dp)
 

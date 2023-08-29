@@ -17,10 +17,14 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
+import Data.List (sortOn)
 import Data.Maybe (fromMaybe, maybeToList)
+import Data.Ord (Down(..))
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime)
+import Data.Time.LocalTime (getCurrentTimeZone)
 import Directory.Events
 import Directory.Options
 import Directory.Store
@@ -29,10 +33,10 @@ import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
--- import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
+import Simplex.Chat.View (serializeChatResponse)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow, ($>>=), (<$$>))
 import System.Directory (getAppUserDataDirectory)
@@ -61,7 +65,7 @@ welcomeGetOpts = do
   pure opts
 
 directoryService :: DirectoryStore -> DirectoryOpts -> User -> ChatController -> IO ()
-directoryService st DirectoryOpts {superUsers, serviceName, testing} User {userId} cc = do
+directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {userId} cc = do
   initializeBotAddress' (not testing) cc
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
@@ -131,12 +135,13 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} User {userI
         _ -> "Error joining group " <> displayName <> ", please re-send the invitation!"
 
     deContactConnected :: Contact -> IO ()
-    deContactConnected ct = do
+    deContactConnected ct = when (contactDirect ct) $ do
       unless testing $ putStrLn $ T.unpack (localDisplayName' ct) <> " connected"
       sendMessage cc ct $
         "Welcome to " <> serviceName <> " service!\n\
         \Send a search string to find groups or */help* to learn how to add groups to directory.\n\n\
-        \For example, send _privacy_ to find groups about privacy."
+        \For example, send _privacy_ to find groups about privacy.\n\n\
+        \Content and privacy policy: https://simplex.chat/docs/directory.html"
 
     deGroupInvitation :: Contact -> GroupInfo -> GroupMemberRole -> GroupMemberRole -> IO ()
     deGroupInvitation ct g@GroupInfo {groupProfile = GroupProfile {displayName, fullName}} fromMemberRole memberRole = do
@@ -289,8 +294,10 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} User {userI
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
     sendToApprove GroupInfo {groupProfile = p@GroupProfile {displayName, image = image'}} GroupReg {dbGroupId, dbContactId} gaId = do
       ct_ <-  getContact cc dbContactId
-      let text = maybe ("The group ID " <> tshow dbGroupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow dbGroupId <> ": ") ct_
-                  <> groupInfoText p <> "\n\nTo approve send:"
+      gr_ <- getGroupAndSummary cc dbGroupId
+      let membersStr = maybe "" (\(_, s) -> "_" <> tshow (currentMembers s) <> " members_\n") gr_
+          text = maybe ("The group ID " <> tshow dbGroupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow dbGroupId <> ": ") ct_
+                  <> "\n" <> groupInfoText p <> "\n" <> membersStr <> "\nTo approve send:"
           msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
       withSuperUsers $ \cId -> do
         sendComposedMessage' cc cId Nothing msg
@@ -377,7 +384,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} User {userI
       DCHelp ->
         sendMessage cc ct $
           "You must be the owner to add the group to the directory:\n\
-          \1. Invite " <> serviceName <> " bot to your group as *admin*.\n\
+          \1. Invite " <> serviceName <> " bot to your group as *admin* (you can send `/list` to see all groups you submitted).\n\
           \2. " <> serviceName <> " bot will create a public group link for the new members to join even when you are offline.\n\
           \3. You will then need to add this link to the group welcome message.\n\
           \4. Once the link is added, service admins will approve the group (it can take up to 24 hours), and everybody will be able to find it in directory.\n\n\
@@ -389,9 +396,9 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} User {userI
               [] -> sendReply "No groups found"
               gs -> do
                 sendReply $ "Found " <> show (length gs) <> " group(s)" <> if length gs > 10 then ", sending 10." else ""
-                void . forkIO $ forM_ (take 10 gs) $
+                void . forkIO $ forM_ (take 10 $ sortOn (Down . currentMembers . snd) gs) $
                   \(GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
-                    let membersStr = tshow currentMembers <> " members"
+                    let membersStr = "_" <> tshow currentMembers <> " members_"
                         text = groupInfoText p <> "\n" <> membersStr
                         msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
                     sendComposedMessage cc ct Nothing msg
@@ -483,6 +490,11 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} User {userI
               ct_ <- getContact cc dbContactId
               let ownerStr = "Owner: " <> maybe "getContact error" localDisplayName' ct_
               sendGroupInfo ct gr dbGroupId $ Just ownerStr
+        DCExecuteCommand cmdStr ->
+          sendChatCmdStr cc cmdStr >>= \r -> do
+            ts <- getCurrentTime
+            tz <- getCurrentTimeZone
+            sendReply $ serializeChatResponse (Just user) ts tz r
         DCCommandError tag -> sendReply $ "Command error: " <> show tag
       | otherwise = sendReply "You are not allowed to use this command"
       where
@@ -504,7 +516,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} User {userI
       let statusStr = "Status: " <> groupRegStatusText grStatus
       getGroupAndSummary cc dbGroupId >>= \case
         Just (GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
-          let membersStr = tshow currentMembers <> " members"
+          let membersStr = "_" <> tshow currentMembers <> " members_"
               text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] <> maybeToList ownerStr_ <> [membersStr, statusStr]
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
           sendComposedMessage cc ct Nothing msg

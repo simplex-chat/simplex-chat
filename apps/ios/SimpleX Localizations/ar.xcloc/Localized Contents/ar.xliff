@@ -3630,6 +3630,31 @@ SimpleX servers cannot see your profile.</source>
         <source>\~strike~</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ servers" xml:space="preserve" approved="no">
+        <source>%@ servers</source>
+        <target state="translated">%@ الخوادم</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
+        <source>%@ (current)</source>
+        <target state="translated">%@ (الحالي)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ (current):" xml:space="preserve" approved="no">
+        <source>%@ (current):</source>
+        <target state="translated">%@ (الحالي):</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="%@:" xml:space="preserve" approved="no">
+        <source>%@:</source>
+        <target state="needs-translation">%@:</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
+        <source>%1$@ at %2$@:</source>
+        <target state="translated">%1$@ في %2$@:</target>
+        <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="ar" datatype="plaintext">

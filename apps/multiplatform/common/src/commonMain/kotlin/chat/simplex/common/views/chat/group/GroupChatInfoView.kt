@@ -8,8 +8,8 @@ import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,11 +33,12 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String?, GroupMemberRole?>) -> Unit, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val currentUser = chatModel.currentUser.value
@@ -132,7 +133,10 @@ fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatM
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
-          chatModel.chatId.value = null
+          if (chatModel.chatId.value == chatInfo.id) {
+            chatModel.chatId.value = null
+            ModalManager.end.closeModals()
+          }
           ntfManager.cancelNotificationsForChat(chatInfo.id)
           close?.invoke()
         }
@@ -177,79 +181,92 @@ fun GroupChatInfoLayout(
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
 ) {
-  Column(
+  val listState = rememberLazyListState()
+  val scope = rememberCoroutineScope()
+  KeyChangeEffect(chat.id) {
+    scope.launch { listState.scrollToItem(0) }
+  }
+  val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
+  val filteredMembers = remember(members) { derivedStateOf { members.filter { it.chatViewName.lowercase().contains(searchText.value.text.trim()) } } }
+  LazyColumn(
     Modifier
-      .fillMaxWidth()
-      .verticalScroll(rememberScrollState())
+      .fillMaxWidth(),
+    state = listState
   ) {
-    Row(
-      Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.Center
-    ) {
-      GroupChatInfoHeader(chat.chatInfo)
-    }
-    SectionSpacer()
+    item {
+      Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+      ) {
+        GroupChatInfoHeader(chat.chatInfo)
+      }
+      SectionSpacer()
 
-    SectionView {
-      if (groupInfo.canEdit) {
-        EditGroupProfileButton(editGroupProfile)
-      }
-      if (groupInfo.groupProfile.description != null || groupInfo.canEdit) {
-        AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
-      }
-      GroupPreferencesButton(openPreferences)
-      if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
-        SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
-      } else {
-        SendReceiptsOptionDisabled()
-      }
-    }
-    SectionTextFooter(stringResource(MR.strings.only_group_owners_can_change_prefs))
-    SectionDividerSpaced(maxTopPadding = true)
-
-    SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
-      if (groupInfo.canAddMembers) {
-        if (groupLink == null) {
-          CreateGroupLinkButton(manageGroupLink)
+      SectionView {
+        if (groupInfo.canEdit) {
+          EditGroupProfileButton(editGroupProfile)
+        }
+        if (groupInfo.groupProfile.description != null || groupInfo.canEdit) {
+          AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
+        }
+        GroupPreferencesButton(openPreferences)
+        if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
+          SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         } else {
-          GroupLinkButton(manageGroupLink)
-        }
-
-        val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
-        val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-        AddMembersButton(tint, onAddMembersClick)
-      }
-      val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
-      val filteredMembers = remember { derivedStateOf { members.filter { it.chatViewName.lowercase().contains(searchText.value.text.trim()) } } }
-      if (members.size > 8) {
-        SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
-          SearchRowView(searchText)
+          SendReceiptsOptionDisabled()
         }
       }
-      SectionItemView(minHeight = 54.dp) {
-        MemberRow(groupInfo.membership, user = true)
-      }
-      MembersList(filteredMembers.value, showMemberInfo)
-    }
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
-    SectionView {
-      ClearChatButton(clearChat)
-      if (groupInfo.canDelete) {
-        DeleteGroupButton(deleteGroup)
-      }
-      if (groupInfo.membership.memberCurrent) {
-        LeaveGroupButton(leaveGroup)
-      }
-    }
+      SectionTextFooter(stringResource(MR.strings.only_group_owners_can_change_prefs))
+      SectionDividerSpaced(maxTopPadding = true)
 
-    if (developerTools) {
-      SectionDividerSpaced()
-      SectionView(title = stringResource(MR.strings.section_title_for_console)) {
-        InfoRow(stringResource(MR.strings.info_row_local_name), groupInfo.localDisplayName)
-        InfoRow(stringResource(MR.strings.info_row_database_id), groupInfo.apiId.toString())
+      SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
+        if (groupInfo.canAddMembers) {
+          if (groupLink == null) {
+            CreateGroupLinkButton(manageGroupLink)
+          } else {
+            GroupLinkButton(manageGroupLink)
+          }
+          val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
+          val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+          AddMembersButton(tint, onAddMembersClick)
+        }
+        if (members.size > 8) {
+          SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
+            SearchRowView(searchText)
+          }
+        }
+        SectionItemView(minHeight = 54.dp) {
+          MemberRow(groupInfo.membership, user = true)
+        }
       }
     }
-    SectionBottomSpacer()
+    items(filteredMembers.value) { member ->
+      Divider()
+      SectionItemView({ showMemberInfo(member) }, minHeight = 54.dp) {
+        MemberRow(member)
+      }
+    }
+    item {
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionView {
+        ClearChatButton(clearChat)
+        if (groupInfo.canDelete) {
+          DeleteGroupButton(deleteGroup)
+        }
+        if (groupInfo.membership.memberCurrent) {
+          LeaveGroupButton(leaveGroup)
+        }
+      }
+
+      if (developerTools) {
+        SectionDividerSpaced()
+        SectionView(title = stringResource(MR.strings.section_title_for_console)) {
+          InfoRow(stringResource(MR.strings.info_row_local_name), groupInfo.localDisplayName)
+          InfoRow(stringResource(MR.strings.info_row_database_id), groupInfo.apiId.toString())
+        }
+      }
+      SectionBottomSpacer()
+    }
   }
 }
 
@@ -328,18 +345,6 @@ private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick
     iconColor = tint,
     textColor = tint
   )
-}
-
-@Composable
-private fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Unit) {
-  Column {
-    members.forEachIndexed { index, member ->
-      Divider()
-      SectionItemView({ showMemberInfo(member) }, minHeight = 54.dp) {
-        MemberRow(member)
-      }
-    }
-  }
 }
 
 @Composable

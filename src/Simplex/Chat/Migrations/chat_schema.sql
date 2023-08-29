@@ -705,3 +705,7 @@ CREATE INDEX idx_group_snd_item_statuses_chat_item_id ON group_snd_item_statuses
 CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statuses(
   group_member_id
 );
+CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
+  user_id,
+  item_status
+);

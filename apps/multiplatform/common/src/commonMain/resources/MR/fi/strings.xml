@@ -193,7 +193,7 @@
     <string name="icon_descr_cancel_live_message">Peruuta live-viesti</string>
     <string name="configure_ICE_servers">Määritä ICE-palvelimet</string>
     <string name="add_address_to_your_profile">Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">Kaikki kontaktisi pysyvät yhteydessä. Profiilipäivitys lähetetään yhteystietoihisi.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Kaikki kontaktisi pysyvät yhteydessä. Profiilipäivitys lähetetään kontakteillesi.</string>
     <string name="create_simplex_address">Luo SimpleX-osoite</string>
     <string name="accept_call_on_lock_screen">Hyväksy</string>
     <string name="settings_audio_video_calls">Ääni- ja videopuhelut</string>
@@ -237,8 +237,6 @@
     <string name="callstatus_calling">soittaa…</string>
     <string name="delete_chat_profile">Poista keskusteluprofiili</string>
     <string name="delete_profile">Poista profiili</string>
-    <string name="incognito_random_profile_from_contact_description">Satunnainen profiili lähetetään kontaktille, jolta sait tämän linkin</string>
-    <string name="incognito_random_profile_description">Satunnainen profiili lähetetään kontaktillesi</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Sekä sinä että kontaktisi voitte lähettää katoavia viestejä.</string>
     <string name="chat_preferences_contact_allows">Kontakti sallii</string>
     <string name="chat_preferences_default">oletus (%s)</string>
@@ -424,7 +422,6 @@
     <string name="initial_member_role">Alkuperäinen rooli</string>
     <string name="enter_welcome_message">Kirjoita tervetuloviesti…</string>
     <string name="error_saving_group_profile">Virhe ryhmäprofiilin tallentamisessa</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Incognito-tilaa ei tueta tässä - pääprofiilisi lähetetään ryhmän jäsenille</string>
     <string name="import_theme_error">Virhe teeman tuonnissa</string>
     <string name="feature_enabled">käytössä</string>
     <string name="feature_enabled_for_contact">käytössä kontaktille</string>
@@ -967,7 +964,6 @@
     <string name="only_you_can_make_calls">Vain sinä voit soittaa puheluita.</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Varmista, että WebRTC ICE -palvelinosoitteet ovat oikeassa muodossa, rivieroteltuina ja että ne eivät ole päällekkäisiä.</string>
     <string name="network_and_servers">Verkko &amp;; palvelimet</string>
-    <string name="paste_connection_link_below_to_connect">Liitä saamasi linkki alla olevaan kenttään yhteyden muodostamiseksi kontaktiisi.</string>
     <string name="image_descr_qr_code">QR-koodi</string>
     <string name="scan_code">Skannaa koodi</string>
     <string name="callstate_starting">alkaa…</string>
@@ -1175,7 +1171,6 @@
     <string name="alert_message_no_group">Tätä ryhmää ei enää ole olemassa.</string>
     <string name="unhide_chat_profile">Näytä keskusteluprofiili</string>
     <string name="unhide_profile">Näytä profiili</string>
-    <string name="incognito_info_find">Löydät inkognito-yhteydessä käytetyn profiilin napauttamalla kontaktin tai ryhmän nimeä keskustelun yläreunassa.</string>
     <string name="chat_preferences_you_allow">Sallit</string>
     <string name="your_preferences">Asetuksesi</string>
     <string name="video_descr">Video</string>
@@ -1236,7 +1231,6 @@
     <string name="call_connection_via_relay">releellä</string>
     <string name="database_downgrade_warning">Varoitus: saatat menettää joitain tietoja!</string>
     <string name="icon_descr_address">SimpleX Osoite</string>
-    <string name="your_profile_will_be_sent">Keskusteluprofiilisi lähetetään kontakteillesi</string>
     <string name="callstate_waiting_for_answer">odottaa vastaamista…</string>
     <string name="next_generation_of_private_messaging">Seuraavan sukupolven yksityisviestit</string>
     <string name="callstate_waiting_for_confirmation">odottaa vahvistusta…</string>

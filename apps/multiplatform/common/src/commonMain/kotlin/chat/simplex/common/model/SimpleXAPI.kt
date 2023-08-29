@@ -91,8 +91,9 @@ class AppPreferences {
     },
     set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
   )
+  val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
+  val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
-  val privacyFullBackup = mkBoolPreference(SHARED_PREFS_PRIVACY_FULL_BACKUP, false)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -245,6 +246,8 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
+    private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
+    private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
@@ -401,19 +404,15 @@ object ChatController {
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      if (cmd !is CC.ApiParseMarkdown) {
-        chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
-        Log.d(TAG, "sendCmd: ${cmd.cmdType}")
-      }
+      chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
+      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       val json = chatSendCmd(ctrl, c)
       val r = APIResponse.decodeStr(json)
       Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
       if (r.resp is CR.Response || r.resp is CR.Invalid) {
         Log.d(TAG, "sendCmd response json $json")
       }
-      if (r.resp !is CR.ParsedMarkdown) {
-        chatModel.addTerminalItem(TerminalItem.resp(r.resp))
-      }
+      chatModel.addTerminalItem(TerminalItem.resp(r.resp))
       r.resp
     }
   }
@@ -911,11 +910,11 @@ object ChatController {
     return null
   }
 
-  suspend fun apiUpdateProfile(profile: Profile): Profile? {
+  suspend fun apiUpdateProfile(profile: Profile): Pair<Profile, List<Contact>>? {
     val userId = kotlin.runCatching { currentUserId("apiUpdateProfile") }.getOrElse { return null }
     val r = sendCmd(CC.ApiUpdateProfile(userId, profile))
-    if (r is CR.UserProfileNoChange) return profile
-    if (r is CR.UserProfileUpdated) return r.toProfile
+    if (r is CR.UserProfileNoChange) return profile to emptyList()
+    if (r is CR.UserProfileUpdated) return r.toProfile to r.updateSummary.changedContacts
     Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -1290,13 +1289,6 @@ object ChatController {
     }
   }
 
-  suspend fun apiParseMarkdown(text: String): List<FormattedText>? {
-    val r = sendCmd(CC.ApiParseMarkdown(text))
-    if (r is CR.ParsedMarkdown) return r.formattedText
-    Log.e(TAG, "apiParseMarkdown bad response: ${r.responseType} ${r.details}")
-    return null
-  }
-
   private fun networkErrorAlert(r: CR): Boolean {
     return when {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
@@ -1644,7 +1636,7 @@ object ChatController {
     }
   }
 
-  private fun active(user: User): Boolean = user.userId == chatModel.currentUser.value?.userId
+  private fun active(user: UserLike): Boolean = user.userId == chatModel.currentUser.value?.userId
 
   private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
     val call = chatModel.activeCall.value
@@ -1655,7 +1647,7 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(user: User, fileId: Long, auto: Boolean = false) {
+  suspend fun receiveFile(user: UserLike, fileId: Long, auto: Boolean = false) {
     val chatItem = apiReceiveFile(fileId, auto = auto)
     if (chatItem != null) {
       chatItemSimpleUpdate(user, chatItem)
@@ -1669,7 +1661,7 @@ object ChatController {
     }
   }
 
-  private suspend fun chatItemSimpleUpdate(user: User, aChatItem: AChatItem) {
+  private suspend fun chatItemSimpleUpdate(user: UserLike, aChatItem: AChatItem) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
     val notify = { ntfManager.notifyMessageReceived(user, cInfo, cItem) }
@@ -1857,7 +1849,6 @@ sealed class CC {
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
-  class ApiParseMarkdown(val text: String): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
   class ApiCreateMyAddress(val userId: Long): CC()
@@ -1963,7 +1954,6 @@ sealed class CC {
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
-    is ApiParseMarkdown -> "/_parse $text"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
     is ApiCreateMyAddress -> "/_address $userId"
@@ -2058,7 +2048,6 @@ sealed class CC {
     is ApiListContacts -> "apiListContacts"
     is ApiUpdateProfile -> "apiUpdateProfile"
     is ApiSetContactPrefs -> "apiSetContactPrefs"
-    is ApiParseMarkdown -> "apiParseMarkdown"
     is ApiSetContactAlias -> "apiSetContactAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
     is ApiCreateMyAddress -> "apiCreateMyAddress"
@@ -3160,7 +3149,7 @@ class APIResponse(val resp: CR, val corr: String? = null) {
           val type = resp["type"]?.jsonPrimitive?.content ?: "invalid"
           try {
             if (type == "apiChats") {
-              val user: User = json.decodeFromJsonElement(resp["user"]!!.jsonObject)
+              val user: UserRef = json.decodeFromJsonElement(resp["user"]!!.jsonObject)
               val chats: List<Chat> = resp["chats"]!!.jsonArray.map {
                 parseChatData(it)
               }
@@ -3169,7 +3158,7 @@ class APIResponse(val resp: CR, val corr: String? = null) {
                 corr = data["corr"]?.toString()
               )
             } else if (type == "apiChat") {
-              val user: User = json.decodeFromJsonElement(resp["user"]!!.jsonObject)
+              val user: UserRef = json.decodeFromJsonElement(resp["user"]!!.jsonObject)
               val chat = parseChatData(resp["chat"]!!)
               return APIResponse(
                 resp = CR.ApiChat(user, chat),
@@ -3177,9 +3166,16 @@ class APIResponse(val resp: CR, val corr: String? = null) {
               )
             } else if (type == "chatCmdError") {
               val userObject = resp["user_"]?.jsonObject
-              val user = runCatching<User?> { json.decodeFromJsonElement(userObject!!) }.getOrNull()
+              val user = runCatching<UserRef?> { json.decodeFromJsonElement(userObject!!) }.getOrNull()
               return APIResponse(
                 resp = CR.ChatCmdError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))),
+                corr = data["corr"]?.toString()
+              )
+            } else if (type == "chatError") {
+              val userObject = resp["user_"]?.jsonObject
+              val user = runCatching<UserRef?> { json.decodeFromJsonElement(userObject!!) }.getOrNull()
+              return APIResponse(
+                resp = CR.ChatRespError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))),
                 corr = data["corr"]?.toString()
               )
             }
@@ -3225,125 +3221,124 @@ sealed class CR {
   @Serializable @SerialName("chatStarted") class ChatStarted: CR()
   @Serializable @SerialName("chatRunning") class ChatRunning: CR()
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
-  @Serializable @SerialName("apiChats") class ApiChats(val user: User, val chats: List<Chat>): CR()
-  @Serializable @SerialName("apiChat") class ApiChat(val user: User, val chat: Chat): CR()
-  @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: User, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
-  @Serializable @SerialName("userProtoServers") class UserProtoServers(val user: User, val servers: UserProtocolServers): CR()
-  @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: User, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
-  @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: User, val chatItemTTL: Long? = null): CR()
+  @Serializable @SerialName("apiChats") class ApiChats(val user: UserRef, val chats: List<Chat>): CR()
+  @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat): CR()
+  @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
+  @Serializable @SerialName("userProtoServers") class UserProtoServers(val user: UserRef, val servers: UserProtocolServers): CR()
+  @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
+  @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: UserRef, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
-  @Serializable @SerialName("contactInfo") class ContactInfo(val user: User, val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
-  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats? = null): CR()
-  @Serializable @SerialName("contactSwitchStarted") class ContactSwitchStarted(val user: User, val contact: Contact, val connectionStats: ConnectionStats): CR()
-  @Serializable @SerialName("groupMemberSwitchStarted") class GroupMemberSwitchStarted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
-  @Serializable @SerialName("contactSwitchAborted") class ContactSwitchAborted(val user: User, val contact: Contact, val connectionStats: ConnectionStats): CR()
-  @Serializable @SerialName("groupMemberSwitchAborted") class GroupMemberSwitchAborted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
-  @Serializable @SerialName("contactSwitch") class ContactSwitch(val user: User, val contact: Contact, val switchProgress: SwitchProgress): CR()
-  @Serializable @SerialName("groupMemberSwitch") class GroupMemberSwitch(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val switchProgress: SwitchProgress): CR()
-  @Serializable @SerialName("contactRatchetSyncStarted") class ContactRatchetSyncStarted(val user: User, val contact: Contact, val connectionStats: ConnectionStats): CR()
-  @Serializable @SerialName("groupMemberRatchetSyncStarted") class GroupMemberRatchetSyncStarted(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
-  @Serializable @SerialName("contactRatchetSync") class ContactRatchetSync(val user: User, val contact: Contact, val ratchetSyncProgress: RatchetSyncProgress): CR()
-  @Serializable @SerialName("groupMemberRatchetSync") class GroupMemberRatchetSync(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val ratchetSyncProgress: RatchetSyncProgress): CR()
-  @Serializable @SerialName("contactVerificationReset") class ContactVerificationReset(val user: User, val contact: Contact): CR()
-  @Serializable @SerialName("groupMemberVerificationReset") class GroupMemberVerificationReset(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("contactCode") class ContactCode(val user: User, val contact: Contact, val connectionCode: String): CR()
-  @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
-  @Serializable @SerialName("connectionVerified") class ConnectionVerified(val user: User, val verified: Boolean, val expectedCode: String): CR()
-  @Serializable @SerialName("invitation") class Invitation(val user: User, val connReqInvitation: String, val connection: PendingContactConnection): CR()
-  @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: User, val toConnection: PendingContactConnection): CR()
-  @Serializable @SerialName("sentConfirmation") class SentConfirmation(val user: User): CR()
-  @Serializable @SerialName("sentInvitation") class SentInvitation(val user: User): CR()
-  @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: User, val contact: Contact): CR()
-  @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: User, val contact: Contact): CR()
-  @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: User, val contact: Contact): CR()
-  @Serializable @SerialName("chatCleared") class ChatCleared(val user: User, val chatInfo: ChatInfo): CR()
+  @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
+  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats? = null): CR()
+  @Serializable @SerialName("contactSwitchStarted") class ContactSwitchStarted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("groupMemberSwitchStarted") class GroupMemberSwitchStarted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("contactSwitchAborted") class ContactSwitchAborted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("groupMemberSwitchAborted") class GroupMemberSwitchAborted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("contactSwitch") class ContactSwitch(val user: UserRef, val contact: Contact, val switchProgress: SwitchProgress): CR()
+  @Serializable @SerialName("groupMemberSwitch") class GroupMemberSwitch(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val switchProgress: SwitchProgress): CR()
+  @Serializable @SerialName("contactRatchetSyncStarted") class ContactRatchetSyncStarted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("groupMemberRatchetSyncStarted") class GroupMemberRatchetSyncStarted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("contactRatchetSync") class ContactRatchetSync(val user: UserRef, val contact: Contact, val ratchetSyncProgress: RatchetSyncProgress): CR()
+  @Serializable @SerialName("groupMemberRatchetSync") class GroupMemberRatchetSync(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val ratchetSyncProgress: RatchetSyncProgress): CR()
+  @Serializable @SerialName("contactVerificationReset") class ContactVerificationReset(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("groupMemberVerificationReset") class GroupMemberVerificationReset(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("contactCode") class ContactCode(val user: UserRef, val contact: Contact, val connectionCode: String): CR()
+  @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
+  @Serializable @SerialName("connectionVerified") class ConnectionVerified(val user: UserRef, val verified: Boolean, val expectedCode: String): CR()
+  @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connReqInvitation: String, val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
+  @Serializable @SerialName("sentConfirmation") class SentConfirmation(val user: UserRef): CR()
+  @Serializable @SerialName("sentInvitation") class SentInvitation(val user: UserRef): CR()
+  @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("chatCleared") class ChatCleared(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
-  @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile): CR()
+  @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
   @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User, val updatedUser: User): CR()
-  @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: User, val toContact: Contact): CR()
-  @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val user: User, val toConnection: PendingContactConnection): CR()
-  @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val user: User, val fromContact: Contact, val toContact: Contact): CR()
+  @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: UserRef, val toContact: Contact): CR()
+  @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
+  @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val user: UserRef, val fromContact: Contact, val toContact: Contact): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val user: User, val contactLink: UserContactLinkRec): CR()
   @Serializable @SerialName("userContactLinkUpdated") class UserContactLinkUpdated(val user: User, val contactLink: UserContactLinkRec): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val user: User, val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted(val user: User): CR()
-  @Serializable @SerialName("contactConnected") class ContactConnected(val user: User, val contact: Contact, val userCustomProfile: Profile? = null): CR()
-  @Serializable @SerialName("contactConnecting") class ContactConnecting(val user: User, val contact: Contact): CR()
-  @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val user: User, val contactRequest: UserContactRequest): CR()
-  @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: User, val contact: Contact): CR()
-  @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: User): CR()
-  @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: User, val toContact: Contact): CR()
+  @Serializable @SerialName("contactConnected") class ContactConnected(val user: UserRef, val contact: Contact, val userCustomProfile: Profile? = null): CR()
+  @Serializable @SerialName("contactConnecting") class ContactConnecting(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val user: UserRef, val contactRequest: UserContactRequest): CR()
+  @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef): CR()
+  @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("contactsSubscribed") class ContactsSubscribed(val server: String, val contactRefs: List<ContactRef>): CR()
   @Serializable @SerialName("contactsDisconnected") class ContactsDisconnected(val server: String, val contactRefs: List<ContactRef>): CR()
-  @Serializable @SerialName("contactSubError") class ContactSubError(val user: User, val contact: Contact, val chatError: ChatError): CR()
-  @Serializable @SerialName("contactSubSummary") class ContactSubSummary(val user: User, val contactSubscriptions: List<ContactSubStatus>): CR()
-  @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val user: User, val group: GroupInfo): CR()
-  @Serializable @SerialName("memberSubErrors") class MemberSubErrors(val user: User, val memberSubErrors: List<MemberSubError>): CR()
-  @Serializable @SerialName("groupEmpty") class GroupEmpty(val user: User, val group: GroupInfo): CR()
+  @Serializable @SerialName("contactSubError") class ContactSubError(val user: UserRef, val contact: Contact, val chatError: ChatError): CR()
+  @Serializable @SerialName("contactSubSummary") class ContactSubSummary(val user: UserRef, val contactSubscriptions: List<ContactSubStatus>): CR()
+  @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val user: UserRef, val group: GroupInfo): CR()
+  @Serializable @SerialName("memberSubErrors") class MemberSubErrors(val user: UserRef, val memberSubErrors: List<MemberSubError>): CR()
+  @Serializable @SerialName("groupEmpty") class GroupEmpty(val user: UserRef, val group: GroupInfo): CR()
   @Serializable @SerialName("userContactLinkSubscribed") class UserContactLinkSubscribed: CR()
-  @Serializable @SerialName("newChatItem") class NewChatItem(val user: User, val chatItem: AChatItem): CR()
-  @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val user: User, val chatItem: AChatItem): CR()
-  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: User, val chatItem: AChatItem): CR()
-  @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: User, val chatItem: AChatItem): CR()
-  @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: User, val added: Boolean, val reaction: ACIReaction): CR()
-  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val user: User, val deletedChatItem: AChatItem, val toChatItem: AChatItem? = null, val byUser: Boolean): CR()
-  @Serializable @SerialName("contactsList") class ContactsList(val user: User, val contacts: List<Contact>): CR()
+  @Serializable @SerialName("newChatItem") class NewChatItem(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
+  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val user: UserRef, val deletedChatItem: AChatItem, val toChatItem: AChatItem? = null, val byUser: Boolean): CR()
+  @Serializable @SerialName("contactsList") class ContactsList(val user: UserRef, val contacts: List<Contact>): CR()
   // group events
-  @Serializable @SerialName("groupCreated") class GroupCreated(val user: User, val groupInfo: GroupInfo): CR()
-  @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: User, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
-  @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: User, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
-  @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val user: User, val groupInfo: GroupInfo): CR()
-  @Serializable @SerialName("groupMembers") class GroupMembers(val user: User, val group: Group): CR()
-  @Serializable @SerialName("receivedGroupInvitation") class ReceivedGroupInvitation(val user: User, val groupInfo: GroupInfo, val contact: Contact, val memberRole: GroupMemberRole): CR()
-  @Serializable @SerialName("groupDeletedUser") class GroupDeletedUser(val user: User, val groupInfo: GroupInfo): CR()
-  @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val user: User, val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
-  @Serializable @SerialName("memberRole") class MemberRole(val user: User, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
-  @Serializable @SerialName("memberRoleUser") class MemberRoleUser(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
-  @Serializable @SerialName("deletedMemberUser") class DeletedMemberUser(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("deletedMember") class DeletedMember(val user: User, val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember): CR()
-  @Serializable @SerialName("leftMember") class LeftMember(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("groupDeleted") class GroupDeleted(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("contactsMerged") class ContactsMerged(val user: User, val intoContact: Contact, val mergedContact: Contact): CR()
-  @Serializable @SerialName("groupInvitation") class GroupInvitation(val user: User, val groupInfo: GroupInfo): CR() // unused
-  @Serializable @SerialName("userJoinedGroup") class UserJoinedGroup(val user: User, val groupInfo: GroupInfo): CR()
-  @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: User, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
-  @Serializable @SerialName("groupRemoved") class GroupRemoved(val user: User, val groupInfo: GroupInfo): CR() // unused
-  @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: User, val toGroup: GroupInfo): CR()
-  @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: User, val groupInfo: GroupInfo, val connReqContact: String, val memberRole: GroupMemberRole): CR()
-  @Serializable @SerialName("groupLink") class GroupLink(val user: User, val groupInfo: GroupInfo, val connReqContact: String, val memberRole: GroupMemberRole): CR()
-  @Serializable @SerialName("groupLinkDeleted") class GroupLinkDeleted(val user: User, val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
+  @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
+  @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val user: UserRef, val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("groupMembers") class GroupMembers(val user: UserRef, val group: Group): CR()
+  @Serializable @SerialName("receivedGroupInvitation") class ReceivedGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val memberRole: GroupMemberRole): CR()
+  @Serializable @SerialName("groupDeletedUser") class GroupDeletedUser(val user: UserRef, val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
+  @Serializable @SerialName("memberRole") class MemberRole(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
+  @Serializable @SerialName("memberRoleUser") class MemberRoleUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
+  @Serializable @SerialName("deletedMemberUser") class DeletedMemberUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("deletedMember") class DeletedMember(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember): CR()
+  @Serializable @SerialName("leftMember") class LeftMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("groupDeleted") class GroupDeleted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("contactsMerged") class ContactsMerged(val user: UserRef, val intoContact: Contact, val mergedContact: Contact): CR()
+  @Serializable @SerialName("groupInvitation") class GroupInvitation(val user: UserRef, val groupInfo: GroupInfo): CR() // unused
+  @Serializable @SerialName("userJoinedGroup") class UserJoinedGroup(val user: UserRef, val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
+  @Serializable @SerialName("groupRemoved") class GroupRemoved(val user: UserRef, val groupInfo: GroupInfo): CR() // unused
+  @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
+  @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val connReqContact: String, val memberRole: GroupMemberRole): CR()
+  @Serializable @SerialName("groupLink") class GroupLink(val user: UserRef, val groupInfo: GroupInfo, val connReqContact: String, val memberRole: GroupMemberRole): CR()
+  @Serializable @SerialName("groupLinkDeleted") class GroupLinkDeleted(val user: UserRef, val groupInfo: GroupInfo): CR()
   // receiving file events
-  @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val user: User, val chatItem: AChatItem): CR()
-  @Serializable @SerialName("rcvFileAcceptedSndCancelled") class RcvFileAcceptedSndCancelled(val user: User, val rcvFileTransfer: RcvFileTransfer): CR()
-  @Serializable @SerialName("rcvFileStart") class RcvFileStart(val user: User, val chatItem: AChatItem): CR()
-  @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val user: User, val chatItem: AChatItem): CR()
-  @Serializable @SerialName("rcvFileCancelled") class RcvFileCancelled(val user: User, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
-  @Serializable @SerialName("rcvFileSndCancelled") class RcvFileSndCancelled(val user: User, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
-  @Serializable @SerialName("rcvFileProgressXFTP") class RcvFileProgressXFTP(val user: User, val chatItem: AChatItem, val receivedSize: Long, val totalSize: Long): CR()
-  @Serializable @SerialName("rcvFileError") class RcvFileError(val user: User, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileAcceptedSndCancelled") class RcvFileAcceptedSndCancelled(val user: UserRef, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvFileStart") class RcvFileStart(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val user: UserRef, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileCancelled") class RcvFileCancelled(val user: UserRef, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvFileSndCancelled") class RcvFileSndCancelled(val user: UserRef, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvFileProgressXFTP") class RcvFileProgressXFTP(val user: UserRef, val chatItem: AChatItem, val receivedSize: Long, val totalSize: Long): CR()
+  @Serializable @SerialName("rcvFileError") class RcvFileError(val user: UserRef, val chatItem: AChatItem): CR()
   // sending file events
-  @Serializable @SerialName("sndFileStart") class SndFileStart(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
-  @Serializable @SerialName("sndFileComplete") class SndFileComplete(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
-  @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
-  @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val user: User, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
-  @Serializable @SerialName("sndFileProgressXFTP") class SndFileProgressXFTP(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sentSize: Long, val totalSize: Long): CR()
-  @Serializable @SerialName("sndFileCompleteXFTP") class SndFileCompleteXFTP(val user: User, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta): CR()
-  @Serializable @SerialName("sndFileError") class SndFileError(val user: User, val chatItem: AChatItem): CR()
+  @Serializable @SerialName("sndFileStart") class SndFileStart(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
+  @Serializable @SerialName("sndFileComplete") class SndFileComplete(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
+  @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
+  @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
+  @Serializable @SerialName("sndFileProgressXFTP") class SndFileProgressXFTP(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sentSize: Long, val totalSize: Long): CR()
+  @Serializable @SerialName("sndFileCompleteXFTP") class SndFileCompleteXFTP(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta): CR()
+  @Serializable @SerialName("sndFileError") class SndFileError(val user: UserRef, val chatItem: AChatItem): CR()
   // call events
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
-  @Serializable @SerialName("callOffer") class CallOffer(val user: User, val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
-  @Serializable @SerialName("callAnswer") class CallAnswer(val user: User, val contact: Contact, val answer: WebRTCSession): CR()
-  @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val user: User, val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
-  @Serializable @SerialName("callEnded") class CallEnded(val user: User, val contact: Contact): CR()
-  @Serializable @SerialName("newContactConnection") class NewContactConnection(val user: User, val connection: PendingContactConnection): CR()
-  @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: User, val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("callOffer") class CallOffer(val user: UserRef, val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
+  @Serializable @SerialName("callAnswer") class CallAnswer(val user: UserRef, val contact: Contact, val answer: WebRTCSession): CR()
+  @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val user: UserRef, val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
+  @Serializable @SerialName("callEnded") class CallEnded(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("newContactConnection") class NewContactConnection(val user: UserRef, val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: UserRef, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
-  @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
-  @Serializable @SerialName("cmdOk") class CmdOk(val user: User?): CR()
-  @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: User?, val chatError: ChatError): CR()
-  @Serializable @SerialName("chatError") class ChatRespError(val user_: User?, val chatError: ChatError): CR()
+  @Serializable @SerialName("cmdOk") class CmdOk(val user: UserRef?): CR()
+  @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: UserRef?, val chatError: ChatError): CR()
+  @Serializable @SerialName("chatError") class ChatRespError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("archiveImported") class ArchiveImported(val archiveErrors: List<ArchiveError>): CR()
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -3465,7 +3460,6 @@ sealed class CR {
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
     is VersionInfo -> "versionInfo"
-    is ParsedMarkdown -> "apiParsedMarkdown"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -3518,7 +3512,6 @@ sealed class CR {
     is ContactAliasUpdated -> withUser(user, json.encodeToString(toContact))
     is ConnectionAliasUpdated -> withUser(user, json.encodeToString(toConnection))
     is ContactPrefsUpdated -> withUser(user, "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}")
-    is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> withUser(user, contactLink.responseDetails)
     is UserContactLinkUpdated -> withUser(user, contactLink.responseDetails)
     is UserContactLinkCreated -> withUser(user, connReqContact)
@@ -3604,7 +3597,7 @@ sealed class CR {
 
   fun noDetails(): String ="${responseType}: " + generalGetString(MR.strings.no_details)
 
-  private fun withUser(u: User?, s: String): String = if (u != null) "userId: ${u.userId}\n$s" else s
+  private fun withUser(u: UserLike?, s: String): String = if (u != null) "userId: ${u.userId}\n$s" else s
 }
 
 fun chatError(r: CR): ChatErrorType? {

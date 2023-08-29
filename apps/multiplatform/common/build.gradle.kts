@@ -137,3 +137,97 @@ buildConfig {
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
   }
 }
+
+afterEvaluate {
+  tasks.named("generateMRcommonMain") {
+    dependsOn("adjustFormatting")
+  }
+  tasks.create("adjustFormatting") {
+    doLast {
+      val debug = false
+      val stringRegex = Regex(".*<string .*</string>.*")
+      val startStringRegex = Regex("<string [^>]*>")
+      val endStringRegex = Regex("</string>[ ]*")
+      val endTagRegex = Regex("</")
+      val anyHtmlRegex = Regex("[^>]*>.*(<|>).*</string>|[^>]*>.*(&lt;|&gt;).*</string>")
+      val correctHtmlRegex = Regex("[^>]*>.*<b>.*</b>.*</string>|[^>]*>.*<i>.*</i>.*</string>|[^>]*>.*<u>.*</u>.*</string>|[^>]*>.*<font[^>]*>.*</font>.*</string>")
+
+      fun String.removeCDATA(): String =
+        if (contains("<![CDATA")) {
+          replace("<![CDATA[", "").replace("]]></string>", "</string>")
+        } else {
+          this
+        }
+
+      fun String.addCDATA(filepath: String): String {
+        //return this
+        if (anyHtmlRegex.matches(this)) {
+          val countOfStartTag = count { it == '<' }
+          val countOfEndTag = count { it == '>' }
+          if (countOfStartTag != countOfEndTag || countOfStartTag != endTagRegex.findAll(this).count() * 2 || !correctHtmlRegex.matches(this)) {
+            if (debug) {
+              println("Wrong string:")
+              println(this)
+              println("in $filepath")
+              println("   ")
+            } else {
+              throw Exception("Wrong string: $this \nin $filepath")
+            }
+          }
+          val res = replace(startStringRegex) { it.value + "<![CDATA[" }.replace(endStringRegex) { "]]>" + it.value }
+          if (debug) {
+            println("Changed string:")
+            println(this)
+            println(res)
+            println("   ")
+          }
+          return res
+        }
+        if (debug) {
+          println("Correct string:")
+          println(this)
+          println("   ")
+        }
+        return this
+      }
+      val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
+      kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath) }.asFileTree.forEach { file ->
+        val initialLines = ArrayList<String>()
+        val finalLines = ArrayList<String>()
+        file.useLines { lines ->
+          val multiline = ArrayList<String>()
+          lines.forEach { line ->
+            initialLines.add(line)
+            if (stringRegex.matches(line)) {
+              finalLines.add(line.removeCDATA().addCDATA(file.absolutePath))
+            } else if (multiline.isEmpty() && startStringRegex.containsMatchIn(line)) {
+              multiline.add(line)
+            } else if (multiline.isNotEmpty() && endStringRegex.containsMatchIn(line)) {
+              multiline.add(line)
+              finalLines.addAll(multiline.joinToString("\n").removeCDATA().addCDATA(file.absolutePath).split("\n"))
+              multiline.clear()
+            } else if (multiline.isNotEmpty()) {
+              multiline.add(line)
+            } else {
+              finalLines.add(line)
+            }
+          }
+          if (multiline.isNotEmpty()) {
+            throw Exception("Unclosed string tag: ${multiline.joinToString("\n")} \nin ${file.absolutePath}")
+          }
+        }
+
+        if (!debug && finalLines != initialLines) {
+          file.writer().use {
+            finalLines.forEachIndexed { index, line ->
+              it.write(line)
+              if (index != finalLines.lastIndex) {
+                it.write("\n")
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

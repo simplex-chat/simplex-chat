@@ -30,6 +30,8 @@ let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
+let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
+let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"
 let DEFAULT_PRIVACY_PROTECT_SCREEN = "privacyProtectScreen"
 let DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET = "privacyDeliveryReceiptsSet"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
@@ -65,6 +67,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: SimpleXLinkMode.description.rawValue,
+    DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS: true,
+    DEFAULT_PRIVACY_SAVE_LAST_DRAFT: true,
     DEFAULT_PRIVACY_PROTECT_SCREEN: false,
     DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET: false,
     DEFAULT_EXPERIMENTAL_CALLS: false,
@@ -294,6 +298,10 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Your settings")
+        }
+        .onDisappear {
+            chatModel.showingTerminal = false
+            chatModel.terminalItems = []
         }
     }
     

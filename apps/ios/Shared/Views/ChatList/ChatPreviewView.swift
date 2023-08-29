@@ -15,6 +15,8 @@ struct ChatPreviewView: View {
     @Environment(\.colorScheme) var colorScheme
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
 
+    @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
+
     var body: some View {
         let cItem = chat.chatItems.last
         return HStack(spacing: 8) {
@@ -101,7 +103,7 @@ struct ChatPreviewView: View {
             .kerning(-2)
     }
 
-    private func chatPreviewLayout(_ text: Text) -> some View {
+    private func chatPreviewLayout(_ text: Text, draft: Bool = false) -> some View {
         ZStack(alignment: .topTrailing) {
             text
                 .lineLimit(2)
@@ -109,6 +111,8 @@ struct ChatPreviewView: View {
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.leading, 8)
                 .padding(.trailing, 36)
+                .privacySensitive(!showChatPreviews && !draft)
+                .redacted(reason: .privacy)
             let s = chat.chatStats
             if s.unreadCount > 0 || s.unreadChat {
                 unreadCountText(s.unreadCount)
@@ -170,7 +174,7 @@ struct ChatPreviewView: View {
 
     @ViewBuilder private func chatMessagePreview(_ cItem: ChatItem?) -> some View {
         if chatModel.draftChatId == chat.id, let draft = chatModel.draft {
-            chatPreviewLayout(messageDraft(draft))
+            chatPreviewLayout(messageDraft(draft), draft: true)
         } else if let cItem = cItem {
             chatPreviewLayout(itemStatusMark(cItem) + chatItemPreview(cItem))
         } else {

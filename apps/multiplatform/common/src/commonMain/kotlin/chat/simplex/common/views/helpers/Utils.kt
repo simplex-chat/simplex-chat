@@ -102,7 +102,7 @@ fun saveImage(uri: URI): String? {
 
 fun saveImage(image: ImageBitmap): String? {
   return try {
-    val ext = if (image.hasAlpha) "png" else "jpg"
+    val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
     val fileToSave = generateNewFileName("IMG", ext)
     val file = File(getAppFilePath(fileToSave))
@@ -112,7 +112,7 @@ fun saveImage(image: ImageBitmap): String? {
     output.close()
     fileToSave
   } catch (e: Exception) {
-    Log.e(TAG, "Util.kt saveImage error: ${e.message}")
+    Log.e(TAG, "Util.kt saveImage error: ${e.stackTraceToString()}")
     null
   }
 }
@@ -306,10 +306,10 @@ fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {
   DisposableEffect(Unit) {
     always()
-    val orientation = screenOrientation()
+    val orientation = windowOrientation()
     onDispose {
       whenDispose()
-      if (orientation == screenOrientation()) {
+      if (orientation == windowOrientation()) {
         whenGone()
       }
     }
@@ -320,12 +320,53 @@ fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}
 fun DisposableEffectOnRotate(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenRotate: () -> Unit) {
   DisposableEffect(Unit) {
     always()
-    val orientation = screenOrientation()
+    val orientation = windowOrientation()
     onDispose {
       whenDispose()
-      if (orientation != screenOrientation()) {
+      if (orientation != windowOrientation()) {
         whenRotate()
       }
+    }
+  }
+}
+
+/**
+ * Runs the [block] only after initial value of the [key1] changes, not after initial launch
+ * */
+@Composable
+@NonRestartableComposable
+fun <T> KeyChangeEffect(
+  key1: T?,
+  block: suspend CoroutineScope.(prevKey: T?) -> Unit
+) {
+  var prevKey by remember { mutableStateOf(key1) }
+  var anyChange by remember { mutableStateOf(false) }
+  LaunchedEffect(key1) {
+    if (anyChange || key1 != prevKey) {
+      block(prevKey)
+      prevKey = key1
+      anyChange = true
+    }
+  }
+}
+
+/**
+ * Runs the [block] only after initial value of the [key1] or [key2] changes, not after initial launch
+ * */
+@Composable
+@NonRestartableComposable
+fun KeyChangeEffect(
+  key1: Any?,
+  key2: Any?,
+  block: suspend CoroutineScope.() -> Unit
+) {
+  val initialKey = remember { key1 }
+  val initialKey2 = remember { key2 }
+  var anyChange by remember { mutableStateOf(false) }
+  LaunchedEffect(key1) {
+    if (anyChange || key1 != initialKey || key2 != initialKey2) {
+      block()
+      anyChange = true
     }
   }
 }

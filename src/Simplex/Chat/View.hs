@@ -20,6 +20,7 @@ import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -44,9 +45,10 @@ import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import qualified Simplex.FileTransfer.Protocol as XFTP
-import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..))
+import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -163,7 +165,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
   CRRcvFileCancelled u _ ft -> ttyUser u $ receivingFile_ "cancelled" ft
-  CRUserProfileUpdated u p p' s f -> ttyUser u $ viewUserProfileUpdated p p' s f
+  CRUserProfileUpdated u p p' summary -> ttyUser u $ viewUserProfileUpdated p p' summary
   CRUserProfileImage u p -> ttyUser u $ viewUserProfileImage p
   CRContactPrefsUpdated {user = u, fromContact, toContact} -> ttyUser u $ viewUserContactPrefsUpdated u fromContact toContact
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
@@ -248,11 +250,29 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
   CRSQLResult rows -> map plain rows
+  CRSlowSQLQueries {chatQueries, agentQueries} ->
+    let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
+          "count: " <> sShow count
+            <> (" :: max: " <> sShow timeMax <> " ms")
+            <> (" :: avg: " <> sShow timeAvg <> " ms")
+            <> (" :: " <> plain (T.unwords $ T.lines query))
+     in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
   CRDebugLocks {chatLockName, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
+  CRAgentSubs {activeSubs, distinctActiveSubs, pendingSubs, distinctPendingSubs} ->
+    [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", distinct active = " <> show (sum distinctActiveSubs) <> ", pending = " <> show (sum pendingSubs) <> ", distinct pending = " <> show (sum distinctPendingSubs)]
+      <> ("active subscriptions:" : listSubs activeSubs)
+      <> ("distinct active subscriptions:" : listSubs distinctActiveSubs)
+      <> ("pending subscriptions:" : listSubs pendingSubs)
+      <> ("distinct pending subscriptions:" : listSubs distinctPendingSubs)
+    where
+      listSubs = map (\(srv, count) -> plain $ srv <> ": " <> tshow count) . M.assocs
+  CRAgentSubsDetails SubscriptionsInfo {activeSubscriptions, pendingSubscriptions} ->
+    ("active subscriptions:" : map sShow activeSubscriptions)
+      <> ("pending subscriptions: " : map sShow pendingSubscriptions)
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ "completed deleting rcv queue, agent connection id: " <> sShow acId
@@ -1049,10 +1069,11 @@ viewSwitchPhase = \case
   SPSecured -> "secured new address"
   SPCompleted -> "changed address"
 
-viewUserProfileUpdated :: Profile -> Profile -> Int -> Int -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} s f =
+viewUserProfileUpdated :: Profile -> Profile -> UserProfileUpdateSummary -> [StyledString]
+viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} summary =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
+    UserProfileUpdateSummary {updateSuccesses = s, updateFailures = f} = summary
     profileUpdated
       | n == n' && fullName == fullName' && image == image' && contactLink == contactLink' = []
       | n == n' && fullName == fullName' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]

@@ -12,7 +12,6 @@
     <string name="snd_conn_event_switch_queue_phase_changing">mudando endereço…</string>
     <string name="change_role">Mudar função</string>
     <string name="change_verb">Mudar</string>
-    <string name="incognito_random_profile_from_contact_description">Um perfil aleatório será enviado para o contato do qual você recebeu este link</string>
     <string name="both_you_and_your_contacts_can_delete">Você e seu contato podem excluir mensagens enviadas de forma irreversível.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Pode ser desativado nas configurações</b> – as notificações ainda serão exibidas enquanto o aplicativo estiver em execução.]]></string>
     <string name="both_you_and_your_contact_can_send_voice">Você e seu contato podem enviar mensagens de voz.</string>
@@ -63,7 +62,6 @@
     <string name="chat_archive_section">ARQUIVO DE CHAT</string>
     <string name="chat_is_stopped_indication">O chat está parado</string>
     <string name="clear_contacts_selection_button">Limpar</string>
-    <string name="incognito_random_profile_description">Um perfil aleatório será enviado para o seu contato</string>
     <string name="chat_preferences">Preferências de chat</string>
     <string name="network_session_mode_user">perfil de chat</string>
     <string name="icon_descr_audio_off">Áudio desligado</string>
@@ -399,7 +397,6 @@
     <string name="image_descr">Imagem</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Se você recebeu o link de convite SimpleX Chat, você pode abri-lo em seu navegador:</string>
     <string name="image_saved">Imagem salva na galeria</string>
-    <string name="group_unsupported_incognito_main_profile_sent">O modo de navegação anônima não é suportado aqui - seu perfil principal será enviado aos membros do grupo</string>
     <string name="description_via_group_link_incognito">anônimo via link do grupo</string>
     <string name="incoming_video_call">Chamada de vídeo recebida</string>
     <string name="turn_off_battery_optimization"><![CDATA[Para usá-lo, por favor <b>desative a otimização da bateria</b> para SimpleX na próxima caixa de diálogo. Caso contrário, as notificações serão desativadas.]]></string>
@@ -460,7 +457,6 @@
     <string name="feature_offered_item">ofereceu %s</string>
     <string name="icon_descr_address">Endereço SimpleX</string>
     <string name="feature_offered_item_with_param">ofereceu %s: %2s</string>
-    <string name="paste_connection_link_below_to_connect">Cole o link que você recebeu na caixa abaixo para conectar com o seu contato.</string>
     <string name="new_in_version">Novo em %s</string>
     <string name="send_us_an_email">Envie-nos um e-mail</string>
     <string name="smp_servers_scan_qr">Escanear QR code do servidor</string>
@@ -547,7 +543,6 @@
     <string name="update_network_settings_question">Atualizar configurações de conexão\?</string>
     <string name="network_option_ping_count">contagem de PING</string>
     <string name="users_delete_with_connections">Conexões de servidor e perfil</string>
-    <string name="incognito_info_find">Para encontrar o perfil utilizado para uma conexão anônima, toque no contato ou no nome do grupo no topo do chat.</string>
     <string name="your_preferences">Suas preferências</string>
     <string name="set_group_preferences">Definir preferências de grupo</string>
     <string name="only_you_can_delete_messages">Somente você pode excluir irreversivelmente as mensagens (seu contato pode marcá-las para exclusão).</string>
@@ -574,7 +569,6 @@
     <string name="icon_descr_sent_msg_status_sent">enviado</string>
     <string name="icon_descr_sent_msg_status_send_failed">o envio falhou</string>
     <string name="your_chats">Chats</string>
-    <string name="your_profile_will_be_sent">Seu perfil de chat será enviado para seu contato</string>
     <string name="paste_button">Colar</string>
     <string name="one_time_link">Link de convite de uso único</string>
     <string name="chat_with_the_founder">Enviar perguntas e idéias</string>

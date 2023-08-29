@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.intl.Locale
@@ -118,21 +119,21 @@ private fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
     ValueTitleDesc(
       NotificationsMode.OFF,
       generalGetString(MR.strings.notifications_mode_off),
-      generalGetString(MR.strings.notifications_mode_off_desc),
+      AnnotatedString(generalGetString(MR.strings.notifications_mode_off_desc)),
     )
   )
   res.add(
     ValueTitleDesc(
       NotificationsMode.PERIODIC,
       generalGetString(MR.strings.notifications_mode_periodic),
-      generalGetString(MR.strings.notifications_mode_periodic_desc),
+      AnnotatedString(generalGetString(MR.strings.notifications_mode_periodic_desc)),
     )
   )
   res.add(
     ValueTitleDesc(
       NotificationsMode.SERVICE,
       generalGetString(MR.strings.notifications_mode_service),
-      generalGetString(MR.strings.notifications_mode_service_desc),
+      AnnotatedString(generalGetString(MR.strings.notifications_mode_service_desc)),
     )
   )
   return res
@@ -145,21 +146,21 @@ fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
     ValueTitleDesc(
       NotificationPreviewMode.MESSAGE,
       generalGetString(MR.strings.notification_preview_mode_message),
-      generalGetString(MR.strings.notification_preview_mode_message_desc),
+      AnnotatedString(generalGetString(MR.strings.notification_preview_mode_message_desc)),
     )
   )
   res.add(
     ValueTitleDesc(
       NotificationPreviewMode.CONTACT,
       generalGetString(MR.strings.notification_preview_mode_contact),
-      generalGetString(MR.strings.notification_preview_mode_contact_desc),
+      AnnotatedString(generalGetString(MR.strings.notification_preview_mode_contact_desc)),
     )
   )
   res.add(
     ValueTitleDesc(
       NotificationPreviewMode.HIDDEN,
       generalGetString(MR.strings.notification_preview_mode_hidden),
-      generalGetString(MR.strings.notification_display_mode_hidden_desc),
+      AnnotatedString(generalGetString(MR.strings.notification_display_mode_hidden_desc)),
     )
   )
   return res

@@ -13,6 +13,8 @@ struct PrivacySettings: View {
     @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
+    @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
+    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -70,6 +72,18 @@ struct PrivacySettings: View {
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
                     }
+                    settingsRow("message") {
+                        Toggle("Show last messages", isOn: $showChatPreviews)
+                    }
+                    settingsRow("rectangle.and.pencil.and.ellipsis") {
+                        Toggle("Message draft", isOn: $saveLastDraft)
+                    }
+                    .onChange(of: saveLastDraft) { saveDraft in
+                        if !saveDraft {
+                            m.draft = nil
+                            m.draftChatId = nil
+                        }
+                    }
                     settingsRow("link") {
                         Picker("SimpleX links", selection: $simplexLinkMode) {
                             ForEach(SimpleXLinkMode.values) { mode in
@@ -121,7 +135,7 @@ struct PrivacySettings: View {
                     Button(groupReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
                         setSendReceiptsGroups(groupReceipts, clearOverrides: false)
                     }
-                    Button(contactReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
+                    Button(groupReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
                         setSendReceiptsGroups(groupReceipts, clearOverrides: true)
                     }
                     Button("Cancel", role: .cancel) {
@@ -208,7 +222,7 @@ struct PrivacySettings: View {
                     }
                 }
             } catch let error {
-                alert = .error(title: "Error setting contact delivery receipts!", error: "Error: \(responseError(error))")
+                alert = .error(title: "Error setting delivery receipts!", error: "Error: \(responseError(error))")
             }
         }
     }
@@ -256,7 +270,7 @@ struct PrivacySettings: View {
                     }
                 }
             } catch let error {
-                alert = .error(title: "Error setting group delivery receipts!", error: "Error: \(responseError(error))")
+                alert = .error(title: "Error setting delivery receipts!", error: "Error: \(responseError(error))")
             }
         }
     }
