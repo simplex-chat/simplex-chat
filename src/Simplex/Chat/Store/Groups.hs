@@ -485,15 +485,15 @@ getGroupSummary db User {userId} groupId = do
       DB.query
         db
         [sql|
-        SELECT count (m.group_member_id)
-        FROM groups g
-        JOIN group_members m USING (group_id)
-        WHERE g.user_id = ?
-          AND g.group_id = ?
-          AND m.member_status != ?
-          AND m.member_status != ?
-          AND m.member_status != ?
-      |]
+          SELECT count (m.group_member_id)
+          FROM groups g
+          JOIN group_members m USING (group_id)
+          WHERE g.user_id = ?
+            AND g.group_id = ?
+            AND m.member_status != ?
+            AND m.member_status != ?
+            AND m.member_status != ?
+        |]
         (userId, groupId, GSMemRemoved, GSMemLeft, GSMemInvited)
   pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
 
