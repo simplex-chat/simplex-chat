@@ -13,8 +13,9 @@ sequenceDiagram
   A ->> M: x.grp.mem.new<br>"announce" Bob<br>to existing members<br>(via member connections)
   loop batched
     A ->> B: x.grp.mem.intro * N<br>"introduce" members<br>(via member connection)
+    note over B: prepare group member connections
     opt chat protocol compatible version < 2
-      note over B: create direct connections
+      note over B: prepare direct connections
     end
     B ->> A: x.grp.mem.inv * N<br>"invitations" to connect<br>for all members<br>(via member connection)
   end
