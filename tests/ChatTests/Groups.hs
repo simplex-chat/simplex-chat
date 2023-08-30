@@ -101,7 +101,7 @@ chatGroupTests = do
         ( "host " <> vRangeStr vrHost
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
-            <> (if noConns then " : 2 <!> 3" else " : 2 <##> 3")
+            <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
         )
         $ testNoGroupDirectConns vrHost vrMem2 vrMem3 noConns
     testNoDirect4 vrHost vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34 =
@@ -110,9 +110,9 @@ chatGroupTests = do
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
             <> (", 4th mem " <> vRangeStr vrMem4)
-            <> (if noConns23 then " : 2 <!> 3" else " : 2 <##> 3")
-            <> (if noConns24 then " : 2 <!> 4" else " : 2 <##> 4")
-            <> (if noConns34 then " : 3 <!> 4" else " : 3 <##> 4")
+            <> (if noConns23 then " : 2 <!!> 3" else " : 2 <##> 3")
+            <> (if noConns24 then " : 2 <!!> 4" else " : 2 <##> 4")
+            <> (if noConns34 then " : 3 <!!> 4" else " : 3 <##> 4")
         )
         $ testNoGroupDirectConns4Members vrHost vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34
 
