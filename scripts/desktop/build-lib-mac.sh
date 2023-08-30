@@ -75,6 +75,8 @@ function copy_deps() {
 }
 
 copy_deps $LIB
+# Special case
+cp $(ghc --print-libdir)/$ARCH-osx-ghc-$GHC_VERSION/libHSghc-boot-th-$GHC_VERSION-ghc$GHC_VERSION.dylib deps
 rm deps/`basename $LIB`
 
 if [ -e deps/libHSdrct-*.$LIB_EXT ]; then
