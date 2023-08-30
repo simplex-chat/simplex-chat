@@ -237,14 +237,8 @@
     "simplex-chat-via-f-droid": "SimpleX Chat عبر F-Droid",
     "simplex-chat-repo": "مستودع SimpleX Chat",
     "stable-and-beta-versions-built-by-developers": "الإصدارات الثابتة والتجريبية التي أنشأها المطورون",
-    "to-add-it-to-your-f-droid-client": "لإضافته إلى عميل F-Droid الخاص بك",
-    "scan-the-qr-code-or": "مسح رمز QR أو",
-    "use-this-url": "استخدم عنوان URL هذا",
     "signing-key-fingerprint": "توقيع مفتاح البصمة (SHA-256)",
     "f-droid-org-repo": "مستودع F-Droid.org",
     "stable-versions-built-by-f-droid-org": "الإصدارات الثابتة التي تم إنشاؤها بواسطة F-Droid.org",
-    "releases-to-this-repo-are-done-1-2-days-later": "يتم إصدار الإصدارات إلى هذا المستودع بعد يوم أو يومين",
-    "simplex-and-f-droid-repo-sign-builds-with-different-keys": "يتم إنشاء علامة المستودعات SimpleX Chat و F-Droid.org بمفاتيح مختلفة. للتبديل، من فضلك",
-    "export": "تصدير",
-    "chat-db-and-re-install-app": "قاعدة بيانات الدردشة وأعِد تثبيت التطبيق"
+    "releases-to-this-repo-are-done-1-2-days-later": "يتم إصدار الإصدارات إلى هذا المستودع بعد يوم أو يومين"
 }
