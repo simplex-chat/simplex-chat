@@ -347,11 +347,12 @@ data ChatSettings = ChatSettings
 instance ToJSON ChatSettings where toEncoding = J.genericToEncoding J.defaultOptions
 
 defaultChatSettings :: ChatSettings
-defaultChatSettings = ChatSettings
-  { enableNtfs = True,
-    sendRcpts = Nothing,
-    favorite = False
-  }
+defaultChatSettings =
+  ChatSettings
+    { enableNtfs = True,
+      sendRcpts = Nothing,
+      favorite = False
+    }
 
 pattern DisableNtfs :: ChatSettings
 pattern DisableNtfs <- ChatSettings {enableNtfs = False}
@@ -558,10 +559,13 @@ instance ToJSON MemberInfo where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-memberInfo :: GroupMember -> MemberInfo
-memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  let memberChatVRange = toChatVRange . connChatVRange <$> activeConn
-   in MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
+memberInfo :: GroupMember -> Bool -> MemberInfo
+memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} includeVRange =
+  MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
+  where
+    memberChatVRange
+      | includeVRange = toChatVRange . connChatVRange <$> activeConn
+      | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,

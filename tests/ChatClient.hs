@@ -139,7 +139,10 @@ testCfgCreateGroupDirect =
   mkCfgCreateGroupDirect testCfg
 
 mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
-mkCfgCreateGroupDirect cfg = cfg {chatVRange = mkVersionRange 1 (groupNoDirectVersion - 1)}
+mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
+
+groupCreateDirectVRange :: VersionRange
+groupCreateDirectVRange = mkVersionRange 1 (groupNoDirectVersion - 1)
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
@@ -257,7 +260,7 @@ getTermLine cc =
     Just s -> do
       -- remove condition to always echo virtual terminal
       when (printOutput cc) $ do
-      -- when True $ do
+        -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s

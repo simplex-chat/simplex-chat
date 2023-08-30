@@ -3115,12 +3115,15 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               setActive $ ActiveG gName
               showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore' $ \db -> createIntroductions db members m
-            void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
+            -- we could send different XGrpMemNew messages with invited member's chat version range included
+            -- depending on each introduced member's version, but this version range is ignored in XGrpMemNew anyway
+            void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m False
             forM_ intros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
             where
               processIntro intro@GroupMemberIntro {introId} = do
-                void $ sendDirectMessage conn (XGrpMemIntro . memberInfo $ reMember intro) (GroupId groupId)
+                includeVRange <- connSupportsVersion conn vRangeInMemberInfoVersion
+                void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro) includeVRange) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
@@ -4298,7 +4301,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Just reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
+              includeVRange <- case memberConn reMember of
+                Just conn -> connSupportsVersion conn vRangeInMemberInfoVersion
+                Nothing -> pure False
+              void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m includeVRange) introInv) groupId (Just introId) $
                 withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
