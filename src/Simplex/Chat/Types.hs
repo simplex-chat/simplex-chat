@@ -549,7 +549,7 @@ instance ToJSON IntroInvitation where
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
     memberRole :: GroupMemberRole,
-    memberChatVRange :: Maybe ChatVersionRange,
+    v :: Maybe ChatVersionRange,
     profile :: Profile
   }
   deriving (Eq, Show, Generic, FromJSON)
