@@ -67,9 +67,9 @@ versionTestMatrix2 runTest = do
   it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
   it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
 
-versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
-versionTestMatrix3 runTest = do
-  it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
+-- versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
+-- versionTestMatrix3 runTest = do
+--   it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
 
 -- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
 -- it "v1 to v2" $ runTestCfg3 testCfg testCfgV1 testCfgV1 runTest

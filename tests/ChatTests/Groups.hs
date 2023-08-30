@@ -19,7 +19,7 @@ import Test.Hspec
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
   describe "chat groups" $ do
-    describe "add contacts, create group and send/receive messages" testGroup
+    it "add contacts, create group and send/receive messages" testGroup
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
@@ -65,14 +65,14 @@ chatGroupTests = do
     it "should send delivery receipts in group" testSendGroupDeliveryReceipts
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
 
-testGroup :: HasCallStack => SpecWith FilePath
-testGroup = versionTestMatrix3 runTestGroup
-  where
-    runTestGroup alice bob cath = testGroupShared alice bob cath False
+testGroup :: HasCallStack => FilePath -> IO ()
+testGroup =
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+    \alice bob cath -> testGroupShared alice bob cath False
 
 testGroupCheckMessages :: HasCallStack => FilePath -> IO ()
 testGroupCheckMessages =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> testGroupShared alice bob cath True
 
 testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> IO ()
@@ -233,7 +233,7 @@ testGroupShared alice bob cath checkMessages = do
 
 testGroup2 :: HasCallStack => FilePath -> IO ()
 testGroup2 =
-  testChat4 aliceProfile bobProfile cathProfile danProfile $
+  testChatCfg4 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       connectUsers alice bob
       connectUsers alice cath
@@ -679,7 +679,7 @@ testDeleteGroupMemberProfileKept =
 
 testGroupRemoveAdd :: HasCallStack => FilePath -> IO ()
 testGroupRemoveAdd =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       -- remove member
@@ -754,7 +754,7 @@ testGroupList =
 
 testGroupMessageQuotedReply :: HasCallStack => FilePath -> IO ()
 testGroupMessageQuotedReply =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -1232,7 +1232,7 @@ testGroupDeleteUnusedContacts =
       cath <## "alice (Alice)"
       cath `hasContactProfiles` ["alice", "cath"]
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
+    cfg = mkCfgCreateGroupDirect $ testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
     deleteGroup :: HasCallStack => TestCC -> TestCC -> TestCC -> String -> IO ()
     deleteGroup alice bob cath group = do
       alice ##> ("/d #" <> group)
@@ -1321,7 +1321,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
 
 testGroupModerate :: HasCallStack => FilePath -> IO ()
 testGroupModerate =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/mr team cath member"
@@ -1352,7 +1352,7 @@ testGroupModerate =
 
 testGroupModerateFullDelete :: HasCallStack => FilePath -> IO ()
 testGroupModerateFullDelete =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/mr team cath member"
@@ -1390,10 +1390,10 @@ testGroupModerateFullDelete =
 
 testGroupDelayedModeration :: HasCallStack => FilePath -> IO ()
 testGroupDelayedModeration tmp = do
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+    withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
       cath ##> "/j team"
@@ -1407,11 +1407,11 @@ testGroupDelayedModeration tmp = do
       alice ##> "\\\\ #team @cath hi"
       alice <## "message marked deleted by you"
       cath <# "#team cath> [marked deleted by alice] hi"
-    withTestChat tmp "bob" $ \bob -> do
+    withTestChatCfg tmp cfg "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
-      withTestChat tmp "cath" $ \cath -> do
+      withTestChatCfg tmp cfg "cath" $ \cath -> do
         cath <## "2 contacts connected (use /cs for the list)"
         cath <## "#team: connected to server(s)"
         cath <## "#team: member bob (Bob) is connected"
@@ -1424,13 +1424,15 @@ testGroupDelayedModeration tmp = do
         bob ##> "/_get chat #1 count=2"
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "connected"), (0, "hi [marked deleted by alice]")]
+  where
+    cfg = testCfgCreateGroupDirect
 
 testGroupDelayedModerationFullDelete :: HasCallStack => FilePath -> IO ()
 testGroupDelayedModerationFullDelete tmp = do
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+    withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
       cath ##> "/j team"
@@ -1452,14 +1454,14 @@ testGroupDelayedModerationFullDelete tmp = do
       cath <## "alice updated group #team:"
       cath <## "updated group preferences:"
       cath <## "Full deletion: on"
-    withTestChat tmp "bob" $ \bob -> do
+    withTestChatCfg tmp cfg "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
-      withTestChat tmp "cath" $ \cath -> do
+      withTestChatCfg tmp cfg "cath" $ \cath -> do
         cath <## "2 contacts connected (use /cs for the list)"
         cath <## "#team: connected to server(s)"
         cath <## "#team: member bob (Bob) is connected"
@@ -1472,6 +1474,8 @@ testGroupDelayedModerationFullDelete tmp = do
         bob ##> "/_get chat #1 count=3"
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "Full deletion: on"), (0, "connected"), (0, "moderated [deleted by alice]")]
+  where
+    cfg = testCfgCreateGroupDirect
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
@@ -2127,7 +2131,7 @@ testGroupLinkMemberRole =
 
 testGroupLinkLeaveDelete :: HasCallStack => FilePath -> IO ()
 testGroupLinkLeaveDelete =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       connectUsers alice bob
       connectUsers cath bob
@@ -2562,7 +2566,7 @@ testConfigureGroupDeliveryReceipts tmp =
         receipt bob alice cath "team" "25"
         noReceipt bob alice cath "club" "26"
   where
-    cfg = testCfg {showReceipts = True}
+    cfg = mkCfgCreateGroupDirect $ testCfg {showReceipts = True}
     receipt cc1 cc2 cc3 gName msg = do
       name1 <- userName cc1
       cc1 #> ("#" <> gName <> " " <> msg)

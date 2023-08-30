@@ -46,7 +46,7 @@ chatFileTests = do
     it "files folder: sender deleted file during transfer" testFilesFoldersImageSndDelete
     it "files folder: recipient deleted file during transfer" testFilesFoldersImageRcvDelete
     it "send and receive image with text and quote" testSendImageWithTextAndQuote
-    describe "send and receive image to group" testGroupSendImage
+    it "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
   describe "async sending and receiving files" $ do
     -- fails on CI
@@ -724,11 +724,10 @@ testSendImageWithTextAndQuote =
         (alice <## "completed sending file 3 (test.jpg) to bob")
       B.readFile "./tests/tmp/test_1.jpg" `shouldReturn` src
 
-testGroupSendImage :: SpecWith FilePath
-testGroupSendImage = versionTestMatrix3 runTestGroupSendImage
-  where
-    runTestGroupSendImage :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
-    runTestGroupSendImage alice bob cath = do
+testGroupSendImage :: HasCallStack => FilePath -> IO ()
+testGroupSendImage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
       alice ##> "/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
