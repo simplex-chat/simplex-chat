@@ -50,7 +50,7 @@ import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.File (EncryptedFile (..))
+import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
@@ -252,7 +252,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
-          "count: " <> sShow count
+          "count: "
+            <> sShow count
             <> (" :: max: " <> sShow timeMax <> " ms")
             <> (" :: avg: " <> sShow timeAvg <> " ms")
             <> (" :: " <> plain (T.unwords $ T.lines query))
@@ -275,7 +276,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
-    [ "completed deleting rcv queue, agent connection id: " <> sShow acId
+    [ "completed deleting rcv queue, agent connection id: "
+        <> sShow acId
         <> (", server: " <> sShow srv)
         <> (", agent queue id: " <> sShow aqId)
         <> maybe "" (\e -> ", error: " <> sShow e) err_
@@ -328,7 +330,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
               Just CIQuote {chatDir = quoteDir, content} ->
                 Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
             fPath = case file of
-              Just CIFile {encryptedFile = Just (EncryptedFile fp _)} -> Just fp
+              Just CIFile {fileSource = Just (CryptoFile fp _)} -> Just fp
               _ -> Nothing
     testViewItem :: CChatItem c -> Maybe GroupMember -> Text
     testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText}}) membership_ =
@@ -403,7 +405,7 @@ viewChats ts tz = concatMap chatPreview . reverse
           GroupChat g -> ["      " <> ttyToGroup g]
           _ -> []
 
-viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
+viewChatItem :: forall c d. (MsgDirectionI d) => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} doShow ts tz =
   withItemDeleted <$> case chat of
     DirectChat c -> case chatDir of
@@ -510,7 +512,7 @@ viewDeliveryReceipt = \case
   MROk -> "⩗"
   MRBadMsgHash -> ttyError' "⩗!"
 
-viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
+viewItemUpdate :: (MsgDirectionI d) => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}, content, quotedItem} liveItems ts tz = case chat of
   DirectChat c -> case chatDir of
     CIDirectRcv -> case content of
@@ -558,15 +560,15 @@ viewItemDelete chat ci@ChatItem {chatDir, meta, content = deletedContent} toItem
   | timed = [plain ("timed message deleted: " <> T.unpack (ciContentToText deletedContent)) | testView]
   | byUser = [plain $ "message " <> T.unpack (fromMaybe "deleted" deletedText_)] -- deletedText_ Nothing should be impossible here
   | otherwise = case chat of
-    DirectChat c -> case (chatDir, deletedContent) of
-      (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c deletedText_) [] mc ts tz meta
+      DirectChat c -> case (chatDir, deletedContent) of
+        (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c deletedText_) [] mc ts tz meta
+        _ -> prohibited
+      GroupChat g -> case ciMsgContent deletedContent of
+        Just mc ->
+          let m = chatItemMember g ci
+           in viewReceivedMessage (ttyFromGroupDeleted g m deletedText_) [] mc ts tz meta
+        _ -> prohibited
       _ -> prohibited
-    GroupChat g -> case ciMsgContent deletedContent of
-      Just mc ->
-        let m = chatItemMember g ci
-         in viewReceivedMessage (ttyFromGroupDeleted g m deletedText_) [] mc ts tz meta
-      _ -> prohibited
-    _ -> prohibited
   where
     deletedText_ :: Maybe Text
     deletedText_ = case toItem of
@@ -609,7 +611,7 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
-directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
+directQuote :: forall d'. (MsgDirectionI d') => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
 directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =
   quoteText qmc $ if toMsgDirection (msgDirection @d') == quoteMsgDirection quoteDir then ">>" else ">"
 
@@ -698,8 +700,8 @@ connReqContact_ intro cReq =
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
   Just AutoAccept {acceptIncognito, autoReply} ->
-    ("auto_accept on" <> if acceptIncognito then ", incognito" else "") :
-    maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+    ("auto_accept on" <> if acceptIncognito then ", incognito" else "")
+      : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
   _ -> ["auto_accept off"]
 
 groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> [StyledString]
@@ -765,10 +767,10 @@ viewJoinedGroupMember g m =
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g@GroupInfo {membership = membership@GroupMember {memberProfile}} c role =
-  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role) :
-  if memberIncognito membership
-    then ["use " <> highlight ("/j " <> groupName' g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
-    else ["use " <> highlight ("/j " <> groupName' g) <> " to accept"]
+  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role)
+    : if memberIncognito membership
+      then ["use " <> highlight ("/j " <> groupName' g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
+      else ["use " <> highlight ("/j " <> groupName' g) <> " to accept"]
 
 groupPreserved :: GroupInfo -> [StyledString]
 groupPreserved g = ["use " <> highlight ("/d #" <> groupName' g) <> " to delete the group"]
@@ -912,7 +914,7 @@ viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, preset
         then ("no " <> pName <> " servers saved, using presets: ") : viewServers id presetServers
         else viewServers (\ServerCfg {server} -> server) protoServers
 
-protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
+protocolName :: (ProtocolTypeI p) => SProtocolType p -> StyledString
 protocolName = plain . map toUpper . T.unpack . decodeLatin1 . strEncode
 
 viewServerTestResult :: AProtoServerWithAuth -> Maybe ProtocolTestFailure -> [StyledString]
@@ -951,7 +953,8 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}} stats incognitoProfile =
-  ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
+  ["contact ID: " <> sShow contactId]
+    <> viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) l]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
@@ -984,7 +987,7 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
   ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
-viewServers :: ProtocolTypeI p => (a -> ProtoServerWithAuth p) -> NonEmpty a -> [StyledString]
+viewServers :: (ProtocolTypeI p) => (a -> ProtoServerWithAuth p) -> NonEmpty a -> [StyledString]
 viewServers f = map (plain . B.unpack . strEncode . f) . L.toList
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
@@ -1125,7 +1128,7 @@ viewPrefsUpdated ps ps'
       where
         pref pss = getPreference f $ mergePreferences pss Nothing
 
-countactUserPrefText :: FeatureI f => ContactUserPref (FeaturePreference f) -> Text
+countactUserPrefText :: (FeatureI f) => ContactUserPref (FeaturePreference f) -> Text
 countactUserPrefText cup = case cup of
   CUPUser p -> "default (" <> preferenceText p <> ")"
   CUPContact p -> preferenceText p
@@ -1196,14 +1199,14 @@ viewContactUpdated
   Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', contactLink = contactLink'}}
     | n == n' && fullName == fullName' && contactLink == contactLink' = []
     | n == n' && fullName == fullName' =
-      if isNothing contactLink'
-        then [ttyContact n <> " removed contact address"]
-        else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
+        if isNothing contactLink'
+          then [ttyContact n <> " removed contact address"]
+          else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
-      [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
-        "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
-      ]
+        [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
+          "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
+        ]
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
@@ -1228,11 +1231,11 @@ receivedWithTime_ ts tz from quote CIMeta {itemId, itemTs, itemEdited, itemDelet
     live
       | itemEdited || isJust itemDeleted = ""
       | otherwise = case itemLive of
-        Just True
-          | updated -> ttyFrom "[LIVE] "
-          | otherwise -> ttyFrom "[LIVE started]" <> " use " <> highlight' ("/show [on/off/" <> show itemId <> "] ")
-        Just False -> ttyFrom "[LIVE ended] "
-        _ -> ""
+          Just True
+            | updated -> ttyFrom "[LIVE] "
+            | otherwise -> ttyFrom "[LIVE started]" <> " use " <> highlight' ("/show [on/off/" <> show itemId <> "] ")
+          Just False -> ttyFrom "[LIVE ended] "
+          _ -> ""
 
 ttyMsgTime :: CurrentTime -> TimeZone -> UTCTime -> StyledString
 ttyMsgTime now tz time =
@@ -1258,9 +1261,9 @@ viewSentMessage to quote mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive
     live
       | itemEdited || isJust itemDeleted = ""
       | otherwise = case itemLive of
-        Just True -> ttyTo "[LIVE started] "
-        Just False -> ttyTo "[LIVE] "
-        _ -> ""
+          Just True -> ttyTo "[LIVE started] "
+          Just False -> ttyTo "[LIVE] "
+          _ -> ""
 
 viewSentBroadcast :: MsgContent -> Int -> Int -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
 viewSentBroadcast mc s f ts tz time = prependFirst (highlight' "/feed" <> " (" <> sShow s <> failures <> ") " <> ttyMsgTime ts tz time <> " ") (ttyMsgContent mc)
@@ -1270,8 +1273,8 @@ viewSentBroadcast mc s f ts tz time = prependFirst (highlight' "/feed" <> " (" <
       | otherwise = ""
 
 viewSentFileInvitation :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
-viewSentFileInvitation to CIFile {fileId, encryptedFile, fileStatus} ts tz = case encryptedFile of
-  Just (EncryptedFile fPath _) -> sentWithTime_ ts tz $ ttySentFile fPath
+viewSentFileInvitation to CIFile {fileId, fileSource, fileStatus} ts tz = case fileSource of
+  Just (CryptoFile fPath _) -> sentWithTime_ ts tz $ ttySentFile fPath
   _ -> const []
   where
     ttySentFile fPath = ["/f " <> to <> ttyFilePath fPath] <> cancelSending
@@ -1340,11 +1343,11 @@ humanReadableSize size
     gB = mB * 1024
 
 savingFile' :: AChatItem -> [StyledString]
-savingFile' (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, encryptedFile = Just (EncryptedFile filePath _)}, chatDir = CIDirectRcv}) =
+savingFile' (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath _)}, chatDir = CIDirectRcv}) =
   ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
-savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, encryptedFile = Just (EncryptedFile filePath _)}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
+savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath _)}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
   ["saving file " <> sShow fileId <> " from " <> ttyContact m <> " to " <> plain filePath]
-savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, encryptedFile = Just (EncryptedFile filePath _)}}) =
+savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath _)}}) =
   ["saving file " <> sShow fileId <> " to " <> plain filePath]
 savingFile' _ = ["saving file"] -- shouldn't happen
 
@@ -1398,7 +1401,7 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSCancelled Nothing -> "cancelled"
 
 viewFileTransferStatusXFTP :: AChatItem -> [StyledString]
-viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, encryptedFile}}) =
+viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, fileSource}}) =
   case fileStatus of
     CIFSSndStored -> ["sending " <> fstr <> " just started"]
     CIFSSndTransfer progress total -> ["sending " <> fstr <> " in progress " <> fileProgressXFTP progress total fileSize]
@@ -1408,7 +1411,7 @@ viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId
     CIFSRcvInvitation -> ["receiving " <> fstr <> " not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"]
     CIFSRcvAccepted -> ["receiving " <> fstr <> " just started"]
     CIFSRcvTransfer progress total -> ["receiving " <> fstr <> " progress " <> fileProgressXFTP progress total fileSize]
-    CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\(EncryptedFile fp _) -> ", path: " <> plain fp) encryptedFile]
+    CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\(CryptoFile fp _) -> ", path: " <> plain fp) fileSource]
     CIFSRcvCancelled -> ["receiving " <> fstr <> " cancelled"]
     CIFSRcvError -> ["receiving " <> fstr <> " error"]
     CIFSInvalid text -> [fstr <> " invalid status: " <> plain text]
@@ -1771,13 +1774,13 @@ incognitoPrefix = styleIncognito' "i "
 incognitoProfile' :: Profile -> StyledString
 incognitoProfile' Profile {displayName} = styleIncognito displayName
 
-highlight :: StyledFormat a => a -> StyledString
+highlight :: (StyledFormat a) => a -> StyledString
 highlight = styled $ colored Cyan
 
 highlight' :: String -> StyledString
 highlight' = highlight
 
-styleIncognito :: StyledFormat a => a -> StyledString
+styleIncognito :: (StyledFormat a) => a -> StyledString
 styleIncognito = styled $ colored Magenta
 
 styleIncognito' :: String -> StyledString
@@ -1786,7 +1789,7 @@ styleIncognito' = styleIncognito
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
 
-ttyError :: StyledFormat a => a -> StyledString
+ttyError :: (StyledFormat a) => a -> StyledString
 ttyError = styled $ colored Red
 
 ttyError' :: String -> StyledString

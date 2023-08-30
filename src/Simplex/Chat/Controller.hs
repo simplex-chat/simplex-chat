@@ -55,14 +55,14 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.File (EncryptedFile (..))
+import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, UserProtocol, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
-import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors, (<$$>))
@@ -389,8 +389,8 @@ data ChatCommand
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
-  | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
-  | SetFileToReceive FileTransferId
+  | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
+  | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Bool}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile -- UserId (not used in UI)
@@ -633,7 +633,7 @@ instance ToJSON AgentQueueId where
 data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
   deriving (Show, Generic, FromJSON)
 
-data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
+data AProtoServersConfig = forall p. (ProtocolTypeI p) => APSC (SProtocolType p) (ProtoServersConfig p)
 
 deriving instance Show AProtoServersConfig
 
@@ -644,7 +644,7 @@ data UserProtoServers p = UserProtoServers
   }
   deriving (Show, Generic)
 
-instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
+instance (ProtocolTypeI p) => ToJSON (UserProtoServers p) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -725,7 +725,7 @@ data UserProfileUpdateSummary = UserProfileUpdateSummary
 instance ToJSON UserProfileUpdateSummary where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ComposedMessage = ComposedMessage
-  { attachedFile :: Maybe EncryptedFile,
+  { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
     msgContent :: MsgContent
   }
@@ -734,12 +734,13 @@ data ComposedMessage = ComposedMessage
 -- This instance is needed for backward compatibility, can be removed in v6.0
 instance FromJSON ComposedMessage where
   parseJSON (J.Object v) = do
-    attachedFile <- (v .:? "attachedFile") >>= \case
-      Nothing -> (`EncryptedFile` Nothing) <$$> (v .:? "filePath")
-      f -> pure f
+    fileSource <-
+      (v .:? "fileSource") >>= \case
+        Nothing -> (`CryptoFile` Nothing) <$$> (v .:? "filePath")
+        f -> pure f
     quotedItemId <- v .:? "quotedItemId"
     msgContent <- v .: "msgContent"
-    pure ComposedMessage {attachedFile, quotedItemId, msgContent}
+    pure ComposedMessage {fileSource, quotedItemId, msgContent}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
@@ -949,22 +950,22 @@ instance ToJSON SQLiteError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SQLite"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SQLite"
 
-throwDBError :: ChatMonad m => DatabaseError -> m ()
+throwDBError :: (ChatMonad m) => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
 
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
 
-tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
+tryChatError :: (ChatMonad m) => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
 {-# INLINE tryChatError #-}
 
-catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
+catchChatError :: (ChatMonad m) => m a -> (ChatError -> m a) -> m a
 catchChatError = catchAllErrors mkChatError
 {-# INLINE catchChatError #-}
 
-chatFinally :: ChatMonad m => m a -> m b -> m a
+chatFinally :: (ChatMonad m) => m a -> m b -> m a
 chatFinally = allFinally mkChatError
 {-# INLINE chatFinally #-}
 
