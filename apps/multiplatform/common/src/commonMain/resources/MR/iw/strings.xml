@@ -689,7 +689,7 @@
     <string name="old_database_archive">ארכיון מסד נתונים ישן</string>
     <string name="chat_item_ttl_none">לעולם לא</string>
     <string name="no_received_app_files">לא התקבלו או נשלחו קבצים</string>
-    <string name="new_member_role">תפקיד חבר קבוצה</string>
+    <string name="new_member_role">תפקיד חבר קבוצה חדש</string>
     <string name="no_contacts_selected">לא נבחרו אנשי קשר</string>
     <string name="member_info_section_title_member">חבר קבוצה</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">חבר הקבוצה יוסר מהקבוצה – לא ניתן לבטל זאת!</string>
