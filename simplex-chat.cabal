@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -10,7 +10,7 @@ category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
 maintainer:     chat@simplex.chat
-copyright:      2020-23 simplex.chat
+copyright:      2020-22 simplex.chat
 license:        AGPL-3
 license-file:   LICENSE
 build-type:     Simple
@@ -110,6 +110,8 @@ library
       Simplex.Chat.Migrations.M20230814_indexes
       Simplex.Chat.Migrations.M20230827_file_encryption
       Simplex.Chat.Mobile
+      Simplex.Chat.Mobile.File
+      Simplex.Chat.Mobile.Shared
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
