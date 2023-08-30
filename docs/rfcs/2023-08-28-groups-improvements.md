@@ -78,7 +78,7 @@ Joining member initially doesn't know group profile, they create a placeholder g
 
 Group profile could also be included into XGroupLinkInfo if not for the limitation on size if both host's profile and group profile contain pictures.
 
-![Adding member to the group](../protocol/diagrams/group-improvements.svg)
+![Adding member to the group](./diagrams/2023-08-28-groups-improvements.svg)
 
 #### Clients compatibility
 
