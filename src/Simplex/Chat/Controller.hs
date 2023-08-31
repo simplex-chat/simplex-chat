@@ -58,6 +58,7 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore,
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
+import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
@@ -736,7 +737,7 @@ instance FromJSON ComposedMessage where
   parseJSON (J.Object v) = do
     fileSource <-
       (v .:? "fileSource") >>= \case
-        Nothing -> (`CryptoFile` Nothing) <$$> (v .:? "filePath")
+        Nothing -> CF.plain <$$> (v .:? "filePath")
         f -> pure f
     quotedItemId <- v .:? "quotedItemId"
     msgContent <- v .: "msgContent"

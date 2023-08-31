@@ -1723,18 +1723,18 @@ setDirectReaction db ct itemSharedMId sent reaction add msgId reactionTs
     DB.execute
       db
       [sql|
-          INSERT INTO chat_item_reactions
-            (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
-            VALUES (?,?,?,?,?,?)
-        |]
+        INSERT INTO chat_item_reactions
+          (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+          VALUES (?,?,?,?,?,?)
+      |]
       (contactId' ct, itemSharedMId, sent, reaction, msgId, reactionTs)
   | otherwise =
     DB.execute
       db
       [sql|
-          DELETE FROM chat_item_reactions
-          WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
-        |]
+        DELETE FROM chat_item_reactions
+        WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
+      |]
       (contactId' ct, itemSharedMId, sent, reaction)
 
 getGroupReactions :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> IO [MsgReaction]
@@ -1755,18 +1755,18 @@ setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reacti
     DB.execute
       db
       [sql|
-          INSERT INTO chat_item_reactions
-            (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
-            VALUES (?,?,?,?,?,?,?,?)
-        |]
+        INSERT INTO chat_item_reactions
+          (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+          VALUES (?,?,?,?,?,?,?,?)
+      |]
       (groupId, groupMemberId' m, itemMemberId, itemSharedMId, sent, reaction, msgId, reactionTs)
   | otherwise =
     DB.execute
       db
       [sql|
-          DELETE FROM chat_item_reactions
-          WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
-        |]
+        DELETE FROM chat_item_reactions
+        WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
+      |]
       (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]

@@ -64,7 +64,7 @@ cChatReadFile cPath cKey cNonce = do
   let r' = LB.toStrict (J.encode r) <> "\NUL"
   ptr <- mallocBytes $ B.length r' + B.length s
   putByteString ptr r'
-  putByteString (ptr `plusPtr` B.length r') s
+  unless (B.null s) $ putByteString (ptr `plusPtr` B.length r') s
   pure ptr
 
 chatReadFile :: FilePath -> ByteString -> ByteString -> IO (ReadFileResult, ByteString)

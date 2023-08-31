@@ -365,8 +365,7 @@ processChatCommand = \case
         [] -> pure 1
         users -> do
           when (any (\User {localDisplayName = n} -> n == displayName) users) $
-            throwChatError $
-              CEUserExists displayName
+            throwChatError $ CEUserExists displayName
           withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
@@ -390,8 +389,7 @@ processChatCommand = \case
           pure (cfgServers protocol defServers, [])
       storeServers user servers =
         unless (null servers) $
-          withStore $
-            \db -> overwriteProtocolServers db user servers
+          withStore $ \db -> overwriteProtocolServers db user servers
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withStoreCtx' (Just "ListUsers, getUsersInfo") getUsersInfo
@@ -704,7 +702,8 @@ processChatCommand = \case
         -- TODO CRSndFileStart event for XFTP
         chSize <- asks $ fileChunkSize . config
         ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv (AgentSndFileId aFileId) chSize
-        let ciFile = CIFile {fileId, fileName, fileSize, fileSource = Just srcFile, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
+        let fileSource = Just $ CryptoFile filePath cfArgs
+            ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
         case contactOrGroup of
           CGContact Contact {activeConn} -> withStore' $ \db -> createSndFTDescrXFTP db user Nothing activeConn ft fileDescr
           CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
@@ -712,8 +711,7 @@ processChatCommand = \case
               -- we are not sending files to pending members, same as with inline files
               saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
                 when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
-                  withStore' $
-                    \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
+                  withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
               saveMemberFD _ = pure ()
         pure (fInv, ciFile, ft)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
@@ -807,12 +805,9 @@ processChatCommand = \case
       withStore (\db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
         (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
           unless (featureAllowed SCFReactions forUser ct) $
-            throwChatError $
-              CECommandError $
-                "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
+            throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
           unless (ciReactionAllowed ci) $
-            throwChatError $
-              CECommandError "reaction not allowed - chat item has no content"
+            throwChatError $ CECommandError "reaction not allowed - chat item has no content"
           rs <- withStore' $ \db -> getDirectReactions db ct itemSharedMId True
           checkReactionAllowed rs
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct $ XMsgReact itemSharedMId Nothing reaction add
@@ -828,12 +823,9 @@ processChatCommand = \case
       withStore (\db -> (,) <$> getGroup db user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
         (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
           unless (groupFeatureAllowed SGFReactions g) $
-            throwChatError $
-              CECommandError $
-                "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
+            throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
           unless (ciReactionAllowed ci) $
-            throwChatError $
-              CECommandError "reaction not allowed - chat item has no content"
+            throwChatError $ CECommandError "reaction not allowed - chat item has no content"
           let GroupMember {memberId = itemMemberId} = chatItemMember g ci
           rs <- withStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
           checkReactionAllowed rs
@@ -851,12 +843,9 @@ processChatCommand = \case
     where
       checkReactionAllowed rs = do
         when ((reaction `elem` rs) == add) $
-          throwChatError $
-            CECommandError $
-              "reaction already " <> if add then "added" else "removed"
+          throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
         when (add && length rs >= maxMsgReactions) $
-          throwChatError $
-            CECommandError "too many reactions"
+          throwChatError $ CECommandError "too many reactions"
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withStore $ \db -> getUserByContactId db chatId
@@ -2074,8 +2063,7 @@ processChatCommand = \case
 assertDirectAllowed :: (ChatMonad m) => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
   unless (allowedChatEvent || anyDirectOrUsed ct) . unlessM directMessagesAllowed $
-    throwChatError $
-      CEDirectMessagesProhibited dir ct
+    throwChatError $ CEDirectMessagesProhibited dir ct
   where
     directMessagesAllowed = any (groupFeatureAllowed' SGFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
     allowedChatEvent = case event of
@@ -4280,8 +4268,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Just reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
               void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
-                withStore' $
-                  \db -> updateIntroStatus db introId GMIntroInvForwarded
+                withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()

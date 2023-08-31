@@ -560,15 +560,15 @@ viewItemDelete chat ci@ChatItem {chatDir, meta, content = deletedContent} toItem
   | timed = [plain ("timed message deleted: " <> T.unpack (ciContentToText deletedContent)) | testView]
   | byUser = [plain $ "message " <> T.unpack (fromMaybe "deleted" deletedText_)] -- deletedText_ Nothing should be impossible here
   | otherwise = case chat of
-      DirectChat c -> case (chatDir, deletedContent) of
-        (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c deletedText_) [] mc ts tz meta
-        _ -> prohibited
-      GroupChat g -> case ciMsgContent deletedContent of
-        Just mc ->
-          let m = chatItemMember g ci
-           in viewReceivedMessage (ttyFromGroupDeleted g m deletedText_) [] mc ts tz meta
-        _ -> prohibited
+    DirectChat c -> case (chatDir, deletedContent) of
+      (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c deletedText_) [] mc ts tz meta
       _ -> prohibited
+    GroupChat g -> case ciMsgContent deletedContent of
+      Just mc ->
+        let m = chatItemMember g ci
+         in viewReceivedMessage (ttyFromGroupDeleted g m deletedText_) [] mc ts tz meta
+      _ -> prohibited
+    _ -> prohibited
   where
     deletedText_ :: Maybe Text
     deletedText_ = case toItem of
@@ -700,8 +700,8 @@ connReqContact_ intro cReq =
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
   Just AutoAccept {acceptIncognito, autoReply} ->
-    ("auto_accept on" <> if acceptIncognito then ", incognito" else "")
-      : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+    ("auto_accept on" <> if acceptIncognito then ", incognito" else "") :
+    maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
   _ -> ["auto_accept off"]
 
 groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> [StyledString]
@@ -767,10 +767,10 @@ viewJoinedGroupMember g m =
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g@GroupInfo {membership = membership@GroupMember {memberProfile}} c role =
-  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role)
-    : if memberIncognito membership
-      then ["use " <> highlight ("/j " <> groupName' g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
-      else ["use " <> highlight ("/j " <> groupName' g) <> " to accept"]
+  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role) :
+  if memberIncognito membership
+    then ["use " <> highlight ("/j " <> groupName' g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
+    else ["use " <> highlight ("/j " <> groupName' g) <> " to accept"]
 
 groupPreserved :: GroupInfo -> [StyledString]
 groupPreserved g = ["use " <> highlight ("/d #" <> groupName' g) <> " to delete the group"]
@@ -1199,14 +1199,14 @@ viewContactUpdated
   Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', contactLink = contactLink'}}
     | n == n' && fullName == fullName' && contactLink == contactLink' = []
     | n == n' && fullName == fullName' =
-        if isNothing contactLink'
-          then [ttyContact n <> " removed contact address"]
-          else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
+      if isNothing contactLink'
+        then [ttyContact n <> " removed contact address"]
+        else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
-        [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
-          "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
-        ]
+      [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
+        "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
+      ]
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
@@ -1231,11 +1231,11 @@ receivedWithTime_ ts tz from quote CIMeta {itemId, itemTs, itemEdited, itemDelet
     live
       | itemEdited || isJust itemDeleted = ""
       | otherwise = case itemLive of
-          Just True
-            | updated -> ttyFrom "[LIVE] "
-            | otherwise -> ttyFrom "[LIVE started]" <> " use " <> highlight' ("/show [on/off/" <> show itemId <> "] ")
-          Just False -> ttyFrom "[LIVE ended] "
-          _ -> ""
+        Just True
+          | updated -> ttyFrom "[LIVE] "
+          | otherwise -> ttyFrom "[LIVE started]" <> " use " <> highlight' ("/show [on/off/" <> show itemId <> "] ")
+        Just False -> ttyFrom "[LIVE ended] "
+        _ -> ""
 
 ttyMsgTime :: CurrentTime -> TimeZone -> UTCTime -> StyledString
 ttyMsgTime now tz time =
@@ -1261,9 +1261,9 @@ viewSentMessage to quote mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLive
     live
       | itemEdited || isJust itemDeleted = ""
       | otherwise = case itemLive of
-          Just True -> ttyTo "[LIVE started] "
-          Just False -> ttyTo "[LIVE] "
-          _ -> ""
+        Just True -> ttyTo "[LIVE started] "
+        Just False -> ttyTo "[LIVE] "
+        _ -> ""
 
 viewSentBroadcast :: MsgContent -> Int -> Int -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
 viewSentBroadcast mc s f ts tz time = prependFirst (highlight' "/feed" <> " (" <> sShow s <> failures <> ") " <> ttyMsgTime ts tz time <> " ") (ttyMsgContent mc)

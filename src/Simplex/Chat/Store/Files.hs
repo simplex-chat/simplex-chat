@@ -103,7 +103,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
-  cutoffTs <- addUTCTime (-week) <$> getCurrentTime
+  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -126,7 +126,7 @@ getLiveSndFileTransfers db User {userId} = do
 
 getLiveRcvFileTransfers :: DB.Connection -> User -> IO [RcvFileTransfer]
 getLiveRcvFileTransfers db user@User {userId} = do
-  cutoffTs <- addUTCTime (-week) <$> getCurrentTime
+  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -708,7 +708,7 @@ setFileCryptoArgs_ db fileId (CFArgs key nonce) currentTs =
 
 getRcvFilesToReceive :: DB.Connection -> User -> IO [RcvFileTransfer]
 getRcvFilesToReceive db user@User {userId} = do
-  cutoffTs <- addUTCTime (-(2 * nominalDay)) <$> getCurrentTime
+  cutoffTs <- addUTCTime (- (2 * nominalDay)) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -752,20 +752,20 @@ createRcvFileChunk db RcvFileTransfer {fileId, fileInvitation = FileInvitation {
       pure $ case map fromOnly ns of
         []
           | chunkNo == 1 ->
-              if chunkSize >= fileSize
-                then RcvChunkFinal
-                else RcvChunkOk
+            if chunkSize >= fileSize
+              then RcvChunkFinal
+              else RcvChunkOk
           | otherwise -> RcvChunkError
         n : _
           | chunkNo == n -> RcvChunkDuplicate
           | chunkNo == n + 1 ->
-              let prevSize = n * chunkSize
-               in if prevSize >= fileSize
-                    then RcvChunkError
-                    else
-                      if prevSize + chunkSize >= fileSize
-                        then RcvChunkFinal
-                        else RcvChunkOk
+            let prevSize = n * chunkSize
+             in if prevSize >= fileSize
+                  then RcvChunkError
+                  else
+                    if prevSize + chunkSize >= fileSize
+                      then RcvChunkFinal
+                      else RcvChunkOk
           | otherwise -> RcvChunkError
 
 updatedRcvFileChunkStored :: DB.Connection -> RcvFileTransfer -> Integer -> IO ()
