@@ -51,13 +51,12 @@ fun SetupDatabasePassphrase(m: ChatModel) {
     progressIndicator,
     onConfirmEncrypt = {
       withApi {
-        prefs.storeDBPassphrase.set(saveInPreferences.value)
         // Stop chat before doing anything
         m.controller.apiStopChat()
         m.chatRunning.value = false
+        prefs.storeDBPassphrase.set(false)
 
         val success = encryptDatabase(currentKey, newKey, confirmNewKey, mutableStateOf(true), saveInPreferences, mutableStateOf(true), progressIndicator)
-        initialRandomDBPassphrase.value = true
         if (success) {
           nextStep()
         } else {
@@ -106,10 +105,6 @@ private fun SetupDatabasePassphraseLayout(
     Spacer(Modifier.weight(1f))
 
     Column(Modifier.width(600.dp)) {
-      SavePassphraseSetting(saveInPreferences.value, progressIndicator.value) { checked ->
-        saveInPreferences.value = checked
-      }
-
       PassphraseField(
         newKey,
         generalGetString(MR.strings.new_passphrase),
@@ -121,17 +116,7 @@ private fun SetupDatabasePassphraseLayout(
       val onClickUpdate = {
         // Don't do things concurrently. Shouldn't be here concurrently, just in case
         if (!progressIndicator.value) {
-          if (currentKey.value == "") {
-            if (saveInPreferences.value)
-              encryptDatabaseSavedAlert(onConfirmEncrypt)
-            else
-              encryptDatabaseAlert(onConfirmEncrypt)
-          } else {
-            if (saveInPreferences.value)
-              changeDatabaseKeySavedAlert(onConfirmEncrypt)
-            else
-              changeDatabaseKeyAlert(onConfirmEncrypt)
-          }
+          encryptDatabaseAlert(onConfirmEncrypt)
         }
       }
       val disabled = currentKey.value == newKey.value ||
@@ -153,17 +138,12 @@ private fun SetupDatabasePassphraseLayout(
       )
 
       SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
-        Text(generalGetString(MR.strings.update_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+        Text(generalGetString(MR.strings.set_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }
 
       Column {
-        if (saveInPreferences.value) {
-          SectionTextFooter(generalGetString(MR.strings.preferences_is_storing_in_clear_text))
-          SectionTextFooter(generalGetString(MR.strings.encrypted_with_random_passphrase))
-        } else {
-          SectionTextFooter(generalGetString(MR.strings.you_have_to_enter_passphrase_every_time))
-          SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))
-        }
+        SectionTextFooter(generalGetString(MR.strings.you_have_to_enter_passphrase_every_time))
+        SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))
       }
     }
 
@@ -175,38 +155,9 @@ private fun SetupDatabasePassphraseLayout(
 }
 
 @Composable
-private fun SavePassphraseSetting(
-  saveInPreferences: Boolean,
-  progressIndicator: Boolean,
-  minHeight: Dp = TextFieldDefaults.MinHeight,
-  onCheckedChange: (Boolean) -> Unit,
-) {
-  SectionItemView(minHeight = minHeight) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(
-        if (saveInPreferences) painterResource(MR.images.ic_vpn_key_filled) else painterResource(MR.images.ic_vpn_key_off_filled),
-        stringResource(MR.strings.save_passphrase_in_preferences),
-        tint = if (!saveInPreferences) SimplexGreen else MaterialTheme.colors.secondary
-      )
-      Spacer(Modifier.padding(horizontal = 4.dp))
-      Text(
-        stringResource(MR.strings.save_passphrase_in_preferences),
-        Modifier.padding(end = 24.dp),
-        color = Color.Unspecified
-      )
-      Spacer(Modifier.fillMaxWidth().weight(1f))
-      DefaultSwitch(
-        checked = saveInPreferences,
-        onCheckedChange = onCheckedChange,
-        enabled = !progressIndicator
-      )
-    }
-  }
-}
-
-@Composable
 private fun SkipButton(onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.dont_change_passphrase), painterResource(MR.images.ic_chevron_right), color = MaterialTheme.colors.error, click = onClick)
+  SimpleButtonIconEnded(stringResource(MR.strings.use_random_passphrase), painterResource(MR.images.ic_chevron_right), color =
+  WarningOrange, click = onClick)
   TextBelowButton(stringResource(MR.strings.you_can_change_it_later))
 }
 

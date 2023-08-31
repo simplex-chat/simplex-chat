@@ -30,6 +30,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.Clock
@@ -105,17 +106,11 @@ fun DatabaseEncryptionLayout(
         if (checked) {
           setUseKeychain(true, useKeychain, prefs)
         } else if (storedKey.value) {
-          AlertManager.shared.showAlertDialog(
-            title = generalGetString(MR.strings.remove_passphrase_from_keychain),
-            text = generalGetString(MR.strings.notifications_will_be_hidden) + "\n" + storeSecurelyDanger(),
-            confirmText = generalGetString(MR.strings.remove_passphrase),
-            onConfirm = {
-              DatabaseUtils.ksDatabasePassword.remove()
-              setUseKeychain(false, useKeychain, prefs)
-              storedKey.value = false
-            },
-            destructive = true,
-          )
+          removePassphraseAlert {
+            DatabaseUtils.ksDatabasePassword.remove()
+            setUseKeychain(false, useKeychain, prefs)
+            storedKey.value = false
+          }
         } else {
           setUseKeychain(false, useKeychain, prefs)
         }
@@ -179,37 +174,13 @@ fun DatabaseEncryptionLayout(
     }
 
     Column {
-      if (chatDbEncrypted == false) {
-        SectionTextFooter(generalGetString(MR.strings.database_is_not_encrypted))
-      } else if (useKeychain.value) {
-        if (storedKey.value) {
-          SectionTextFooter(generalGetString(MR.strings.keychain_is_storing_securely))
-          if (initialRandomDBPassphrase.value) {
-            SectionTextFooter(generalGetString(MR.strings.encrypted_with_random_passphrase))
-          } else {
-            SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))
-          }
-        } else {
-          SectionTextFooter(generalGetString(MR.strings.keychain_allows_to_receive_ntfs))
-        }
-      } else {
-        SectionTextFooter(generalGetString(MR.strings.you_have_to_enter_passphrase_every_time))
-        SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))
-      }
+      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted, storedKey, initialRandomDBPassphrase)
     }
     SectionBottomSpacer()
   }
 }
 
-fun encryptDatabaseSavedAlert(onConfirm: () -> Unit) {
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.encrypt_database_question),
-    text = generalGetString(MR.strings.database_will_be_encrypted_and_passphrase_stored) + "\n" + storeSecurelySaved(),
-    confirmText = generalGetString(MR.strings.encrypt_database),
-    onConfirm = onConfirm,
-    destructive = true,
-  )
-}
+expect fun encryptDatabaseSavedAlert(onConfirm: () -> Unit)
 
 fun encryptDatabaseAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
@@ -221,15 +192,7 @@ fun encryptDatabaseAlert(onConfirm: () -> Unit) {
   )
 }
 
-fun changeDatabaseKeySavedAlert(onConfirm: () -> Unit) {
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.change_database_passphrase_question),
-    text = generalGetString(MR.strings.database_encryption_will_be_updated) + "\n" + storeSecurelySaved(),
-    confirmText = generalGetString(MR.strings.update_database),
-    onConfirm = onConfirm,
-    destructive = false,
-  )
-}
+expect fun changeDatabaseKeySavedAlert(onConfirm: () -> Unit)
 
 fun changeDatabaseKeyAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
@@ -241,37 +204,25 @@ fun changeDatabaseKeyAlert(onConfirm: () -> Unit) {
   )
 }
 
+expect fun removePassphraseAlert(onConfirm: () -> Unit)
+
 @Composable
-private fun SavePassphraseSetting(
+expect fun SavePassphraseSetting(
   useKeychain: Boolean,
   initialRandomDBPassphrase: Boolean,
   storedKey: Boolean,
   progressIndicator: Boolean,
   minHeight: Dp = TextFieldDefaults.MinHeight,
   onCheckedChange: (Boolean) -> Unit,
-) {
-  SectionItemView(minHeight = minHeight) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(
-        if (storedKey) painterResource(MR.images.ic_vpn_key_filled) else painterResource(MR.images.ic_vpn_key_off_filled),
-        stringResource(MR.strings.save_passphrase_in_keychain),
-        tint = if (storedKey) SimplexGreen else MaterialTheme.colors.secondary
-      )
-      Spacer(Modifier.padding(horizontal = 4.dp))
-      Text(
-        stringResource(MR.strings.save_passphrase_in_keychain),
-        Modifier.padding(end = 24.dp),
-        color = Color.Unspecified
-      )
-      Spacer(Modifier.fillMaxWidth().weight(1f))
-      DefaultSwitch(
-        checked = useKeychain,
-        onCheckedChange = onCheckedChange,
-        enabled = !initialRandomDBPassphrase && !progressIndicator
-      )
-    }
-  }
-}
+)
+
+@Composable
+expect fun DatabaseEncryptionFooter(
+  useKeychain: MutableState<Boolean>,
+  chatDbEncrypted: Boolean?,
+  storedKey: MutableState<Boolean>,
+  initialRandomDBPassphrase: MutableState<Boolean>,
+)
 
 fun resetFormAfterEncryption(
   m: ChatModel,
