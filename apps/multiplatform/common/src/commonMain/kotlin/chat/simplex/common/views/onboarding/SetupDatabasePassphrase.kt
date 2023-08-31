@@ -54,10 +54,11 @@ fun SetupDatabasePassphrase(m: ChatModel) {
         stopChatAsync(m)
         prefs.storeDBPassphrase.set(false)
 
+        val newKeyValue = newKey.value
         val success = encryptDatabase(currentKey, newKey, confirmNewKey, mutableStateOf(true), saveInPreferences, mutableStateOf(true), progressIndicator)
         if (success) {
           nextStep()
-          startChat(newKey.value)
+          startChat(newKeyValue)
         } else {
           // Rollback in case of it is finished with error in order to allow to repeat the process again
           prefs.storeDBPassphrase.set(true)
