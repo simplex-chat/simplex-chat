@@ -771,8 +771,6 @@
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>
-  <string name="preferences_is_storing_in_clear_text">Passphrase is stored in clear text.</string>
-  <string name="save_passphrase_in_preferences">Save passphrase in clear text</string>
   <string name="you_can_change_it_later">You can change it later</string>
   <string name="use_random_passphrase">Use random passphrase</string>
 

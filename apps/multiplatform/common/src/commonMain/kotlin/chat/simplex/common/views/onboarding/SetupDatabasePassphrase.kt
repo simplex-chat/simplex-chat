@@ -44,7 +44,6 @@ fun SetupDatabasePassphrase(m: ChatModel) {
     m.onboardingStage.value = next
   }
   SetupDatabasePassphraseLayout(
-    saveInPreferences,
     currentKey,
     newKey,
     confirmNewKey,
@@ -88,7 +87,6 @@ fun SetupDatabasePassphrase(m: ChatModel) {
 
 @Composable
 private fun SetupDatabasePassphraseLayout(
-  saveInPreferences: MutableState<Boolean>,
   currentKey: MutableState<String>,
   newKey: MutableState<String>,
   confirmNewKey: MutableState<String>,
