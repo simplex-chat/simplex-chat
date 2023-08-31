@@ -67,9 +67,10 @@ fun SimpleButtonIconEnded(
   text: String,
   icon: Painter,
   color: Color = MaterialTheme.colors.primary,
+  disabled: Boolean = false,
   click: () -> Unit
 ) {
-  SimpleButtonFrame(click) {
+  SimpleButtonFrame(click, disabled = disabled) {
     Text(text, style = MaterialTheme.typography.caption, color = color)
     Icon(
       icon, text, tint = color,

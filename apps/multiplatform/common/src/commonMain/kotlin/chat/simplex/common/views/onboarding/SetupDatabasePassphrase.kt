@@ -51,13 +51,13 @@ fun SetupDatabasePassphrase(m: ChatModel) {
     onConfirmEncrypt = {
       withApi {
         // Stop chat before doing anything
-        m.controller.apiStopChat()
-        m.chatRunning.value = false
+        stopChatAsync(m)
         prefs.storeDBPassphrase.set(false)
 
         val success = encryptDatabase(currentKey, newKey, confirmNewKey, mutableStateOf(true), saveInPreferences, mutableStateOf(true), progressIndicator)
         if (success) {
           nextStep()
+          startChat(newKey.value)
         } else {
           // Rollback in case of it is finished with error in order to allow to repeat the process again
           prefs.storeDBPassphrase.set(true)
@@ -135,8 +135,8 @@ private fun SetupDatabasePassphraseLayout(
         }),
       )
 
-      SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
-        Text(generalGetString(MR.strings.set_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Box(Modifier.align(Alignment.CenterHorizontally).padding(vertical = DEFAULT_PADDING)) {
+        SetPassphraseButton(disabled, onClickUpdate)
       }
 
       Column {
@@ -150,6 +150,17 @@ private fun SetupDatabasePassphraseLayout(
 
     SectionBottomSpacer()
   }
+}
+
+@Composable
+private fun SetPassphraseButton(disabled: Boolean, onClick: () -> Unit) {
+  SimpleButtonIconEnded(
+    stringResource(MR.strings.set_database_passphrase),
+    painterResource(MR.images.ic_check),
+    color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+    disabled = disabled,
+    click = onClick
+  )
 }
 
 @Composable
@@ -184,5 +195,14 @@ private fun ProgressIndicator() {
       color = MaterialTheme.colors.secondary,
       strokeWidth = 3.dp
     )
+  }
+}
+
+private fun startChat(key: String) {
+  val m = ChatModel
+  withBGApi {
+    initChatController(key)
+    m.chatDbChanged.value = false
+    m.chatRunning.value = true
   }
 }
