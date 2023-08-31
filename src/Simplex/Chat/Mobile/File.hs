@@ -3,8 +3,12 @@
 {-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Mobile.File
-  ( cChatReadFile,
-    cChatWriteFile,
+  ( cChatWriteFile,
+    cChatReadFile,
+    WriteFileResult (..),
+    ReadFileResult (..),
+    chatWriteFile,
+    chatReadFile,
   )
 where
 

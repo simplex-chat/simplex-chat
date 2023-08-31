@@ -50,7 +50,7 @@ import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.File (CryptoFile (..))
+import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
@@ -161,7 +161,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRRcvFileDescrReady _ _ -> []
   CRRcvFileDescrNotReady _ _ -> []
   CRRcvFileProgressXFTP {} -> []
-  CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
+  CRRcvFileAccepted u ci -> ttyUser u $ savingFile' testView ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
   CRRcvFileCancelled u _ ft -> ttyUser u $ receivingFile_ "cancelled" ft
@@ -1342,14 +1342,20 @@ humanReadableSize size
     mB = kB * 1024
     gB = mB * 1024
 
-savingFile' :: AChatItem -> [StyledString]
-savingFile' (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath _)}, chatDir = CIDirectRcv}) =
-  ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
-savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath _)}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
-  ["saving file " <> sShow fileId <> " from " <> ttyContact m <> " to " <> plain filePath]
-savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath _)}}) =
-  ["saving file " <> sShow fileId <> " to " <> plain filePath]
-savingFile' _ = ["saving file"] -- shouldn't happen
+savingFile' :: Bool -> AChatItem -> [StyledString]
+savingFile' testView (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath cfArgs_)}, chatDir}) =
+  let from = case (chat, chatDir) of
+        (DirectChat Contact {localDisplayName = c}, CIDirectRcv) -> " from " <> ttyContact c
+        (_, CIGroupRcv GroupMember {localDisplayName = m}) -> " from " <> ttyContact m
+        _ -> ""
+   in ["saving file " <> sShow fileId <> from <> " to " <> plain filePath] <> cfArgsStr
+  where
+    cfArgsStr = case cfArgs_ of
+      Just cfArgs@(CFArgs key nonce)
+        | testView -> [plain $ LB.unpack $ J.encode cfArgs]
+        | otherwise -> [plain $ "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce]
+      _ -> []
+savingFile' _ _ = ["saving file"] -- shouldn't happen
 
 receivingFile_' :: StyledString -> AChatItem -> [StyledString]
 receivingFile_' status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =

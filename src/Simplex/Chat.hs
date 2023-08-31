@@ -557,14 +557,15 @@ processChatCommand = \case
           pure $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
       where
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
-        setupSndFileTransfer ct = forM file_ $ \file@(CryptoFile filePath _) -> do
+        setupSndFileTransfer ct = forM file_ $ \file -> do
           (fileSize, fileMode) <- checkSndFile mc file 1
           case fileMode of
-            SendFileSMP fileInline -> smpSndFileTransfer filePath fileSize fileInline
+            SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
             SendFileXFTP -> xftpSndFileTransfer user file fileSize 1 $ CGContact ct
           where
-            smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
-            smpSndFileTransfer file fileSize fileInline = do
+            smpSndFileTransfer :: CryptoFile -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+            smpSndFileTransfer (CryptoFile _ (Just _)) _ _ = throwChatError $ CEFileInternal "locally encrypted files can't be sent via SMP" -- can only happen if XFTP is disabled
+            smpSndFileTransfer (CryptoFile file Nothing) fileSize fileInline = do
               (agentConnId_, fileConnReq) <-
                 if isJust fileInline
                   then pure (Nothing, Nothing)
@@ -621,14 +622,15 @@ processChatCommand = \case
             pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
         notAllowedError f = pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText f))
         setupSndFileTransfer :: Group -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
-        setupSndFileTransfer g@(Group gInfo _) n = forM file_ $ \file@(CryptoFile filePath _) -> do
+        setupSndFileTransfer g@(Group gInfo _) n = forM file_ $ \file -> do
           (fileSize, fileMode) <- checkSndFile mc file $ fromIntegral n
           case fileMode of
-            SendFileSMP fileInline -> smpSndFileTransfer filePath fileSize fileInline
+            SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
             SendFileXFTP -> xftpSndFileTransfer user file fileSize n $ CGGroup g
           where
-            smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
-            smpSndFileTransfer file fileSize fileInline = do
+            smpSndFileTransfer :: CryptoFile -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+            smpSndFileTransfer (CryptoFile _ (Just _)) _ _ = throwChatError $ CEFileInternal "locally encrypted files can't be sent via SMP" -- can only happen if XFTP is disabled
+            smpSndFileTransfer (CryptoFile file Nothing) fileSize fileInline = do
               let fileName = takeFileName file
                   fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescr = Nothing}
                   fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer 0 1 else CIFSSndStored
@@ -1839,17 +1841,18 @@ processChatCommand = \case
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
     checkSndFile :: MsgContent -> CryptoFile -> Integer -> m (Integer, SendFileMode)
-    checkSndFile mc (CryptoFile f _) n = do
+    checkSndFile mc (CryptoFile f cfArgs) n = do
       fsFilePath <- toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       ChatConfig {fileChunkSize, inlineFiles} <- asks config
       xftpCfg <- readTVarIO =<< asks userXFTPFileConfig
-      fileSize <- getFileSize fsFilePath
+      fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
       when (fromInteger fileSize > maxFileSize) $ throwChatError $ CEFileSize f
       let chunks = - ((- fileSize) `div` fileChunkSize)
           fileInline = inlineFileMode mc inlineFiles chunks n
           fileMode = case xftpCfg of
             Just cfg
+              | isJust cfArgs -> SendFileXFTP
               | fileInline == Just IFMSent || fileSize < minFileSize cfg || n <= 0 -> SendFileSMP fileInline
               | otherwise -> SendFileXFTP
             _ -> SendFileSMP fileInline
