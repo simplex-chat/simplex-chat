@@ -62,6 +62,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
         } else {
           // Rollback in case of it is finished with error in order to allow to repeat the process again
           prefs.storeDBPassphrase.set(true)
+          startChat(null)
         }
       }
     },
@@ -199,7 +200,7 @@ private fun ProgressIndicator() {
   }
 }
 
-private fun startChat(key: String) {
+private fun startChat(key: String?) {
   val m = ChatModel
   withBGApi {
     initChatController(key)
