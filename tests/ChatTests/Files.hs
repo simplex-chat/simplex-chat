@@ -78,7 +78,7 @@ chatFileTests = do
     it "should accept file automatically with CLI option" testAutoAcceptFile
     it "should prohibit file transfers in groups based on preference" testProhibitFiles
 
-runTestFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
+runTestFileTransfer :: (HasCallStack) => TestCC -> TestCC -> IO ()
 runTestFileTransfer alice bob = do
   connectUsers alice bob
   startFileTransfer' alice bob "test.pdf" "266.0 KiB / 272376 bytes"
@@ -95,7 +95,7 @@ runTestFileTransfer alice bob = do
   dest <- B.readFile "./tests/tmp/test.pdf"
   dest `shouldBe` src
 
-testInlineFileTransfer :: HasCallStack => FilePath -> IO ()
+testInlineFileTransfer :: (HasCallStack) => FilePath -> IO ()
 testInlineFileTransfer =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
@@ -120,7 +120,7 @@ testInlineFileTransfer =
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
 
-testAcceptInlineFileSndCancelDuringTransfer :: HasCallStack => FilePath -> IO ()
+testAcceptInlineFileSndCancelDuringTransfer :: (HasCallStack) => FilePath -> IO ()
 testAcceptInlineFileSndCancelDuringTransfer =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
@@ -148,7 +148,7 @@ testAcceptInlineFileSndCancelDuringTransfer =
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, receiveChunks = 50}}
 
-testSmallInlineFileTransfer :: HasCallStack => FilePath -> IO ()
+testSmallInlineFileTransfer :: (HasCallStack) => FilePath -> IO ()
 testSmallInlineFileTransfer =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
@@ -171,7 +171,7 @@ testSmallInlineFileTransfer =
     dest <- B.readFile "./tests/tmp/logo.jpg"
     dest `shouldBe` src
 
-testSmallInlineFileIgnored :: HasCallStack => FilePath -> IO ()
+testSmallInlineFileIgnored :: (HasCallStack) => FilePath -> IO ()
 testSmallInlineFileIgnored tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice ->
     withNewTestChatOpts tmp testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
@@ -193,7 +193,7 @@ testSmallInlineFileIgnored tmp = do
       bob ##> "/fr 1"
       bob <## "file is already being received: logo.jpg"
 
-testReceiveInline :: HasCallStack => FilePath -> IO ()
+testReceiveInline :: (HasCallStack) => FilePath -> IO ()
 testReceiveInline =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
@@ -213,7 +213,7 @@ testReceiveInline =
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 10, receiveChunks = 5}}
 
-runTestSmallFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
+runTestSmallFileTransfer :: (HasCallStack) => TestCC -> TestCC -> IO ()
 runTestSmallFileTransfer alice bob = do
   connectUsers alice bob
   alice #> "/f @bob ./tests/fixtures/test.txt"
@@ -234,7 +234,7 @@ runTestSmallFileTransfer alice bob = do
   dest <- B.readFile "./tests/tmp/test.txt"
   dest `shouldBe` src
 
-runTestFileSndCancelBeforeTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
+runTestFileSndCancelBeforeTransfer :: (HasCallStack) => TestCC -> TestCC -> IO ()
 runTestFileSndCancelBeforeTransfer alice bob = do
   connectUsers alice bob
   alice #> "/f @bob ./tests/fixtures/test.txt"
@@ -257,7 +257,7 @@ runTestFileSndCancelBeforeTransfer alice bob = do
   bob ##> "/fr 1 ./tests/tmp"
   bob <## "file cancelled: test.txt"
 
-testFileSndCancelDuringTransfer :: HasCallStack => FilePath -> IO ()
+testFileSndCancelDuringTransfer :: (HasCallStack) => FilePath -> IO ()
 testFileSndCancelDuringTransfer =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -277,7 +277,7 @@ testFileSndCancelDuringTransfer =
         ]
       checkPartialTransfer "test_1MB.pdf"
 
-testFileRcvCancel :: HasCallStack => FilePath -> IO ()
+testFileRcvCancel :: (HasCallStack) => FilePath -> IO ()
 testFileRcvCancel =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -300,7 +300,7 @@ testFileRcvCancel =
         ]
       checkPartialTransfer "test.jpg"
 
-runTestGroupFileTransfer :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
+runTestGroupFileTransfer :: (HasCallStack) => TestCC -> TestCC -> TestCC -> IO ()
 runTestGroupFileTransfer alice bob cath = do
   createGroup3 "team" alice bob cath
   alice #> "/f #team ./tests/fixtures/test.jpg"
@@ -345,7 +345,7 @@ runTestGroupFileTransfer alice bob cath = do
   dest1 `shouldBe` src
   dest2 `shouldBe` src
 
-testInlineGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testInlineGroupFileTransfer :: (HasCallStack) => FilePath -> IO ()
 testInlineGroupFileTransfer =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -386,7 +386,7 @@ testInlineGroupFileTransfer =
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, totalSendChunks = 100, receiveChunks = 100}}
 
-testSmallInlineGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testSmallInlineGroupFileTransfer :: (HasCallStack) => FilePath -> IO ()
 testSmallInlineGroupFileTransfer =
   testChatCfg3 testCfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -425,7 +425,7 @@ testSmallInlineGroupFileTransfer =
       dest1 `shouldBe` src
       dest2 `shouldBe` src
 
-testSmallInlineGroupFileIgnored :: HasCallStack => FilePath -> IO ()
+testSmallInlineGroupFileIgnored :: (HasCallStack) => FilePath -> IO ()
 testSmallInlineGroupFileIgnored tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice ->
     withNewTestChatOpts tmp testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
@@ -464,7 +464,7 @@ testSmallInlineGroupFileIgnored tmp = do
               cath <## "file is already being received: logo.jpg"
           ]
 
-runTestGroupFileSndCancelBeforeTransfer :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
+runTestGroupFileSndCancelBeforeTransfer :: (HasCallStack) => TestCC -> TestCC -> TestCC -> IO ()
 runTestGroupFileSndCancelBeforeTransfer alice bob cath = do
   createGroup3 "team" alice bob cath
   alice #> "/f #team ./tests/fixtures/test.txt"
@@ -491,7 +491,7 @@ runTestGroupFileSndCancelBeforeTransfer alice bob cath = do
   bob ##> "/fr 1 ./tests/tmp"
   bob <## "file cancelled: test.txt"
 
-runTestMessageWithFile :: HasCallStack => TestCC -> TestCC -> IO ()
+runTestMessageWithFile :: (HasCallStack) => TestCC -> TestCC -> IO ()
 runTestMessageWithFile alice bob = do
   connectUsers alice bob
   alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
@@ -515,7 +515,7 @@ runTestMessageWithFile alice bob = do
   alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
   bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
 
-testSendImage :: HasCallStack => FilePath -> IO ()
+testSendImage :: (HasCallStack) => FilePath -> IO ()
 testSendImage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -544,7 +544,7 @@ testSendImage =
       fileExists <- doesFileExist "./tests/tmp/test.jpg"
       fileExists `shouldBe` True
 
-testSenderMarkItemDeletedTransfer :: HasCallStack => FilePath -> IO ()
+testSenderMarkItemDeletedTransfer :: (HasCallStack) => FilePath -> IO ()
 testSenderMarkItemDeletedTransfer =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -574,7 +574,7 @@ testSenderMarkItemDeletedTransfer =
 
       checkPartialTransfer "test_1MB.pdf"
 
-testFilesFoldersSendImage :: HasCallStack => FilePath -> IO ()
+testFilesFoldersSendImage :: (HasCallStack) => FilePath -> IO ()
 testFilesFoldersSendImage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -604,7 +604,7 @@ testFilesFoldersSendImage =
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
 
-testFilesFoldersImageSndDelete :: HasCallStack => FilePath -> IO ()
+testFilesFoldersImageSndDelete :: (HasCallStack) => FilePath -> IO ()
 testFilesFoldersImageSndDelete =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -633,7 +633,7 @@ testFilesFoldersImageSndDelete =
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
 
-testFilesFoldersImageRcvDelete :: HasCallStack => FilePath -> IO ()
+testFilesFoldersImageRcvDelete :: (HasCallStack) => FilePath -> IO ()
 testFilesFoldersImageRcvDelete =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -660,7 +660,7 @@ testFilesFoldersImageRcvDelete =
         alice <## "sending file 1 (test.jpg) cancelled: bob"
         alice <## "file transfer cancelled"
 
-testSendImageWithTextAndQuote :: HasCallStack => FilePath -> IO ()
+testSendImageWithTextAndQuote :: (HasCallStack) => FilePath -> IO ()
 testSendImageWithTextAndQuote =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -733,7 +733,7 @@ testSendImageWithTextAndQuote =
 testGroupSendImage :: SpecWith FilePath
 testGroupSendImage = versionTestMatrix3 runTestGroupSendImage
   where
-    runTestGroupSendImage :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
+    runTestGroupSendImage :: (HasCallStack) => TestCC -> TestCC -> TestCC -> IO ()
     runTestGroupSendImage alice bob cath = do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -777,7 +777,7 @@ testGroupSendImage = versionTestMatrix3 runTestGroupSendImage
       bob #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
       cath #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg")])
 
-testGroupSendImageWithTextAndQuote :: HasCallStack => FilePath -> IO ()
+testGroupSendImageWithTextAndQuote :: (HasCallStack) => FilePath -> IO ()
 testGroupSendImageWithTextAndQuote =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -838,7 +838,7 @@ testGroupSendImageWithTextAndQuote =
       cath #$> ("/_get chat #1 count=2", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
       cath @@@ [("#team", "hey bob"), ("@alice", "received invitation to join group team as admin")]
 
-testAsyncFileTransferSenderRestarts :: HasCallStack => FilePath -> IO ()
+testAsyncFileTransferSenderRestarts :: (HasCallStack) => FilePath -> IO ()
 testAsyncFileTransferSenderRestarts tmp = do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -852,7 +852,7 @@ testAsyncFileTransferSenderRestarts tmp = do
       dest <- B.readFile "./tests/tmp/test_1MB.pdf"
       dest `shouldBe` src
 
-testAsyncFileTransferReceiverRestarts :: HasCallStack => FilePath -> IO ()
+testAsyncFileTransferReceiverRestarts :: (HasCallStack) => FilePath -> IO ()
 testAsyncFileTransferReceiverRestarts tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
@@ -866,7 +866,7 @@ testAsyncFileTransferReceiverRestarts tmp = do
       dest <- B.readFile "./tests/tmp/test_1MB.pdf"
       dest `shouldBe` src
 
-testAsyncFileTransfer :: HasCallStack => FilePath -> IO ()
+testAsyncFileTransfer :: (HasCallStack) => FilePath -> IO ()
 testAsyncFileTransfer tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice ->
     withNewTestChat tmp "bob" bobProfile $ \bob ->
@@ -896,7 +896,7 @@ testAsyncFileTransfer tmp = do
   dest <- B.readFile "./tests/tmp/test.jpg"
   dest `shouldBe` src
 
-testAsyncFileTransferV1 :: HasCallStack => FilePath -> IO ()
+testAsyncFileTransferV1 :: (HasCallStack) => FilePath -> IO ()
 testAsyncFileTransferV1 tmp = do
   withNewTestChatV1 tmp "alice" aliceProfile $ \alice ->
     withNewTestChatV1 tmp "bob" bobProfile $ \bob ->
@@ -926,7 +926,7 @@ testAsyncFileTransferV1 tmp = do
   dest <- B.readFile "./tests/tmp/test.jpg"
   dest `shouldBe` src
 
-testAsyncGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testAsyncGroupFileTransfer :: (HasCallStack) => FilePath -> IO ()
 testAsyncGroupFileTransfer tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice ->
     withNewTestChat tmp "bob" bobProfile $ \bob ->
@@ -987,7 +987,7 @@ testXFTPRoundFDCount = do
   roundedFDCount 128 `shouldBe` 128
   roundedFDCount 500 `shouldBe` 512
 
-testXFTPFileTransfer :: HasCallStack => FilePath -> IO ()
+testXFTPFileTransfer :: (HasCallStack) => FilePath -> IO ()
 testXFTPFileTransfer =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -1019,7 +1019,7 @@ testXFTPFileTransfer =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPFileTransferEncrypted :: HasCallStack => FilePath -> IO ()
+testXFTPFileTransferEncrypted :: (HasCallStack) => FilePath -> IO ()
 testXFTPFileTransferEncrypted =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     src <- B.readFile "./tests/fixtures/test.pdf"
@@ -1048,7 +1048,7 @@ testXFTPFileTransferEncrypted =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPAcceptAfterUpload :: HasCallStack => FilePath -> IO ()
+testXFTPAcceptAfterUpload :: (HasCallStack) => FilePath -> IO ()
 testXFTPAcceptAfterUpload =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -1076,7 +1076,7 @@ testXFTPAcceptAfterUpload =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testXFTPGroupFileTransfer :: (HasCallStack) => FilePath -> IO ()
 testXFTPGroupFileTransfer =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     withXFTPServer $ do
@@ -1117,7 +1117,7 @@ testXFTPGroupFileTransfer =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPDeleteUploadedFile :: HasCallStack => FilePath -> IO ()
+testXFTPDeleteUploadedFile :: (HasCallStack) => FilePath -> IO ()
 testXFTPDeleteUploadedFile =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -1141,7 +1141,7 @@ testXFTPDeleteUploadedFile =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPDeleteUploadedFileGroup :: HasCallStack => FilePath -> IO ()
+testXFTPDeleteUploadedFileGroup :: (HasCallStack) => FilePath -> IO ()
 testXFTPDeleteUploadedFileGroup =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     withXFTPServer $ do
@@ -1196,7 +1196,7 @@ testXFTPDeleteUploadedFileGroup =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPWithChangedConfig :: HasCallStack => FilePath -> IO ()
+testXFTPWithChangedConfig :: (HasCallStack) => FilePath -> IO ()
 testXFTPWithChangedConfig =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -1229,7 +1229,7 @@ testXFTPWithChangedConfig =
   where
     cfg = testCfg {tempDir = Just "./tests/tmp"}
 
-testXFTPWithRelativePaths :: HasCallStack => FilePath -> IO ()
+testXFTPWithRelativePaths :: (HasCallStack) => FilePath -> IO ()
 testXFTPWithRelativePaths =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -1272,7 +1272,7 @@ testXFTPWithRelativePaths =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}}
 
-testXFTPContinueRcv :: HasCallStack => FilePath -> IO ()
+testXFTPContinueRcv :: (HasCallStack) => FilePath -> IO ()
 testXFTPContinueRcv tmp = do
   withXFTPServer $ do
     withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
@@ -1311,7 +1311,7 @@ testXFTPContinueRcv tmp = do
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPMarkToReceive :: HasCallStack => FilePath -> IO ()
+testXFTPMarkToReceive :: (HasCallStack) => FilePath -> IO ()
 testXFTPMarkToReceive = do
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -1345,7 +1345,7 @@ testXFTPMarkToReceive = do
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}}
 
-testXFTPRcvError :: HasCallStack => FilePath -> IO ()
+testXFTPRcvError :: (HasCallStack) => FilePath -> IO ()
 testXFTPRcvError tmp = do
   withXFTPServer $ do
     withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
@@ -1375,7 +1375,7 @@ testXFTPRcvError tmp = do
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testXFTPCancelRcvRepeat :: HasCallStack => FilePath -> IO ()
+testXFTPCancelRcvRepeat :: (HasCallStack) => FilePath -> IO ()
 testXFTPCancelRcvRepeat =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -1424,7 +1424,7 @@ testXFTPCancelRcvRepeat =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
-testAutoAcceptFile :: HasCallStack => FilePath -> IO ()
+testAutoAcceptFile :: (HasCallStack) => FilePath -> IO ()
 testAutoAcceptFile =
   testChatCfgOpts2 cfg opts aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
     connectUsers alice bob
@@ -1450,7 +1450,7 @@ testAutoAcceptFile =
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
     opts = (testOpts :: ChatOpts) {autoAcceptFileSize = 200000}
 
-testProhibitFiles :: HasCallStack => FilePath -> IO ()
+testProhibitFiles :: (HasCallStack) => FilePath -> IO ()
 testProhibitFiles =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> withXFTPServer $ do
     createGroup3 "team" alice bob cath
@@ -1477,19 +1477,19 @@ testProhibitFiles =
 xftpCLI :: [String] -> IO [String]
 xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
 
-startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
+startFileTransfer :: (HasCallStack) => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =
   startFileTransfer' alice bob "test.jpg" "136.5 KiB / 139737 bytes"
 
-startFileTransfer' :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
+startFileTransfer' :: (HasCallStack) => TestCC -> TestCC -> String -> String -> IO ()
 startFileTransfer' cc1 cc2 fName fSize = startFileTransferWithDest' cc1 cc2 fName fSize $ Just "./tests/tmp"
 
-checkPartialTransfer :: HasCallStack => String -> IO ()
+checkPartialTransfer :: (HasCallStack) => String -> IO ()
 checkPartialTransfer fileName = do
   src <- B.readFile $ "./tests/fixtures/" <> fileName
   dest <- B.readFile $ "./tests/tmp/" <> fileName
   B.unpack src `shouldStartWith` B.unpack dest
   B.length src > B.length dest `shouldBe` True
 
-waitFileExists :: HasCallStack => FilePath -> IO ()
+waitFileExists :: (HasCallStack) => FilePath -> IO ()
 waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
