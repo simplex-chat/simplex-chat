@@ -252,8 +252,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
-          "count: "
-            <> sShow count
+          ("count: " <> sShow count)
             <> (" :: max: " <> sShow timeMax <> " ms")
             <> (" :: avg: " <> sShow timeAvg <> " ms")
             <> (" :: " <> plain (T.unwords $ T.lines query))
@@ -276,8 +275,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
-    [ "completed deleting rcv queue, agent connection id: "
-        <> sShow acId
+    [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)
         <> (", server: " <> sShow srv)
         <> (", agent queue id: " <> sShow aqId)
         <> maybe "" (\e -> ", error: " <> sShow e) err_
