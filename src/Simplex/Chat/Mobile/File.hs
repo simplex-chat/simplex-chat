@@ -2,10 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Simplex.Chat.Mobile.File (
-  cChatReadFile,
-  cChatWriteFile,
-) where
+module Simplex.Chat.Mobile.File
+  ( cChatReadFile,
+    cChatWriteFile,
+  )
+where
 
 import Control.Monad.Except
 import Data.Aeson (ToJSON)
@@ -20,9 +21,9 @@ import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
 import GHC.Generics (Generic)
+import Simplex.Chat.Mobile.Shared
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Chat.Mobile.Shared
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 
@@ -44,8 +45,8 @@ chatWriteFile :: FilePath -> ByteString -> IO WriteFileResult
 chatWriteFile path s = do
   cfArgs <- CF.randomArgs
   let file = CryptoFile path $ Just cfArgs
-  either (WFError . show) (\_ -> WFResult cfArgs) <$>
-    runExceptT (CF.writeFile file $ LB.fromStrict s)
+  either (WFError . show) (\_ -> WFResult cfArgs)
+    <$> runExceptT (CF.writeFile file $ LB.fromStrict s)
 
 data ReadFileResult
   = RFResult {fileSize :: Int64}
