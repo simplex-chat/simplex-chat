@@ -4273,19 +4273,19 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             else do
               when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-              groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
+              groupConnIds <- createConn
               directConnIds <- case memberChatVRange of
-                Nothing -> Just <$> createDirectConn
+                Nothing -> Just <$> createConn
                 Just mcvr ->
                   ifM
                     (connVRangeSupportsVersion (fromChatVRange mcvr) groupNoDirectVersion)
                     (pure Nothing)
-                    (Just <$> createDirectConn)
+                    (Just <$> createConn)
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
-        createDirectConn = createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
+        createConn = createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
 
     sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> m ()
     sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
