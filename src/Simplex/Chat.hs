@@ -1431,12 +1431,11 @@ processChatCommand = \case
             Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
-    ( ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}},
-      Contact {activeConn = Connection {connChatVRange}}
-      ) <- withStore $ \db -> do
+    (invitation, ct) <- withStore $ \db -> do
       invitation@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
-      ct <- getContactViaMember db user fromMember
-      pure (invitation, ct)
+      (,) invitation <$> getContactViaMember db user fromMember
+    let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
+        Contact {activeConn = Connection {connChatVRange}} = ct
     withChatLock "joinGroup" . procCmd $ do
       dm <- directMessage $ XGrpAcpt (memberId (membership :: GroupMember))
       agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm
@@ -3021,23 +3020,25 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           case cReq of
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
-              CFCreateConnGrpMemInv -> do
-                let GroupMember {groupMemberId, memberId} = m
+              CFCreateConnGrpMemInv ->
                 ifM
                   (connSupportsVersion conn groupNoDirectVersion)
-                  ( do
-                      hostConnId <- withStore $ \db -> do
-                        liftIO $ setConnConnReqInv db user connId cReq
-                        getHostConnId db user groupId
-                      sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
-                  )
-                  ( do
-                      contData <- withStore' $ \db -> do
-                        setConnConnReqInv db user connId cReq
-                        getXGrpMemIntroContGroup db user m
-                      forM_ contData $ \(hostConnId, directConnReq) ->
-                        sendXGrpMemInv hostConnId (Just directConnReq) XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
-                  )
+                  sendWithoutDirectCReq
+                  sendWithDirectCReq
+                where
+                  sendWithoutDirectCReq = do
+                    let GroupMember {groupMemberId, memberId} = m
+                    hostConnId <- withStore $ \db -> do
+                      liftIO $ setConnConnReqInv db user connId cReq
+                      getHostConnId db user groupId
+                    sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
+                  sendWithDirectCReq = do
+                    let GroupMember {groupMemberId, memberId} = m
+                    contData <- withStore' $ \db -> do
+                      setConnConnReqInv db user connId cReq
+                      getXGrpMemIntroContGroup db user m
+                    forM_ contData $ \(hostConnId, directConnReq) ->
+                      sendXGrpMemInv hostConnId (Just directConnReq) XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
               -- [async agent commands] group link auto-accept continuation on receiving INV
               CFCreateConnGrpInv -> do
                 ct <- withStore $ \db -> getContactViaMember db user m
@@ -4273,17 +4274,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
               groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
-              directConnIds <- case memberChatVRange of
-                Nothing -> Just <$> createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
-                Just mcvr ->
-                  ifM
-                    (connVRangeSupportsVersion (fromChatVRange mcvr) groupNoDirectVersion)
-                    (pure Nothing)
-                    (Just <$> createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation)
-              -- [incognito] direct connection with member has to be established using the same incognito profile [that was known to host and used for group membership]
+              directConnIds <- join <$> forM memberChatVRange createDirectConn
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
+      where
+        createDirectConn mcvr =
+          ifM
+            (connVRangeSupportsVersion (fromChatVRange mcvr) groupNoDirectVersion)
+            (Just <$> createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation)
+            (pure Nothing)
 
     sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> m ()
     sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
@@ -4301,9 +4301,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Just reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              includeVRange <- case memberConn reMember of
-                Just conn -> connSupportsVersion conn vRangeInMemberInfoVersion
-                Nothing -> pure False
+              includeVRange <- fromMaybe False <$> forM (memberConn reMember) (`connSupportsVersion` vRangeInMemberInfoVersion)
               void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m includeVRange) introInv) groupId (Just introId) $
                 withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"

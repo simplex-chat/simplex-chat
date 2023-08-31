@@ -54,9 +54,11 @@ currentChatVersion = 2
 supportedChatVRange :: VersionRange
 supportedChatVRange = mkVersionRange 1 currentChatVersion
 
+-- version that starts support for skipping establishing direct connections in a group
 groupNoDirectVersion :: Version
 groupNoDirectVersion = 2
 
+-- version that starts support for sending/receiving a group member's chat version range in MemberInfo
 vRangeInMemberInfoVersion :: Version
 vRangeInMemberInfoVersion = 2
 
