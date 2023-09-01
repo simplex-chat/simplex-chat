@@ -108,6 +108,7 @@ library
       Simplex.Chat.Migrations.M20230705_delivery_receipts
       Simplex.Chat.Migrations.M20230721_group_snd_item_statuses
       Simplex.Chat.Migrations.M20230814_indexes
+      Simplex.Chat.Migrations.M20230831_item_direct_group_member_id
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Options

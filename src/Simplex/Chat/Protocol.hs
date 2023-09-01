@@ -44,7 +44,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ConnectionEntity
@@ -146,11 +146,19 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+data MessageScope = MSDirect | MSGroup
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON MessageScope where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MS"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MS"
+
 data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
     sent :: Bool,
-    memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
+    memberId :: Maybe MemberId, -- must be present in all group message references, both referencing sent and received
+    msgScope :: Maybe MessageScope
   }
   deriving (Eq, Show, Generic)
 
@@ -431,7 +439,13 @@ msgContentTag = \case
   MCFile {} -> MCFile_
   MCUnknown {tag} -> MCUnknown_ tag
 
-data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
+data ExtMsgContent = ExtMsgContent
+  { content :: MsgContent,
+    file :: Maybe FileInvitation,
+    ttl :: Maybe Int,
+    live :: Maybe Bool,
+    scope :: Maybe MessageScope
+  }
   deriving (Eq, Show)
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
@@ -440,10 +454,10 @@ parseMsgContainer v =
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
     <|> MCSimple <$> mc
   where
-    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
+    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live" <*> v .:? "scope"
 
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc file Nothing Nothing
+extMsgContent mc file = ExtMsgContent mc file Nothing Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -487,7 +501,7 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    msgContent (ExtMsgContent c file ttl live) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= c]
+    msgContent (ExtMsgContent c file ttl live scope) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) ["content" .= c]
 
 instance ToJSON MsgContent where
   toJSON = \case
@@ -804,7 +818,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
       XMsgUpdate msgId' content ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
-      XMsgReact msgId' memberId reaction add -> o $ ("memberId" .=? memberId) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]        
+      XMsgReact msgId' memberId reaction add -> o $ ("memberId" .=? memberId) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]

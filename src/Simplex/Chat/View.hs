@@ -376,7 +376,7 @@ viewUsersList = mapMaybe userInfo . sortOn ldn
 muted :: ChatInfo c -> CIDirection c d -> Bool
 muted chat chatDir = case (chat, chatDir) of
   (DirectChat Contact {chatSettings = DisableNtfs}, CIDirectRcv) -> True
-  (GroupChat GroupInfo {chatSettings = DisableNtfs}, CIGroupRcv _) -> True
+  (GroupChat GroupInfo {chatSettings = DisableNtfs}, CIGroupRcv _ _) -> True
   _ -> False
 
 viewGroupSubscribed :: GroupInfo -> [StyledString]
@@ -421,14 +421,15 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
           from = ttyFromContact c
       where
         quote = maybe [] (directQuote chatDir) quotedItem
+    -- TODO group-direct: show direct member / scope
     GroupChat g -> case chatDir of
-      CIGroupSnd -> case content of
+      CIGroupSnd directMember -> case content of
         CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to quote mc
         CISndGroupInvitation {} -> showSndItemProhibited to
         _ -> showSndItem to
         where
           to = ttyToGroup g
-      CIGroupRcv m -> case content of
+      CIGroupRcv m messageScope -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
         CIRcvGroupInvitation {} -> showRcvItemProhibited from
@@ -526,15 +527,16 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
         to = if itemEdited then ttyToContactEdited' c else ttyToContact' c
     where
       quote = maybe [] (directQuote chatDir) quotedItem
+  -- TODO group-direct: show direct member / scope
   GroupChat g -> case chatDir of
-    CIGroupRcv m -> case content of
+    CIGroupRcv m messageScope -> case content of
       CIRcvMsgContent mc
         | itemLive == Just True && not liveItems -> []
         | otherwise -> viewReceivedUpdatedMessage from quote mc ts tz meta
       _ -> []
       where
         from = if itemEdited then ttyFromGroupEdited g m else ttyFromGroup g m
-    CIGroupSnd -> case content of
+    CIGroupSnd directMember -> case content of
       CISndMsgContent mc -> hideLive meta $ viewSentMessage to quote mc ts tz meta
       _ -> []
       where
@@ -582,14 +584,15 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       where
         from = ttyFromContact c
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
-    (GroupChat g, CIGroupRcv m) -> case ciMsgContent content of
+    -- TODO group-direct: show direct member / scope
+    (GroupChat g, CIGroupRcv m messageScope) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
       _ -> []
       where
         from = ttyFromGroup g m
         reactionMsg mc = quoteText mc . ttyQuotedMember . Just $ sentByMember' g itemDir
     (_, CIDirectSnd) -> [sentText]
-    (_, CIGroupSnd) -> [sentText]
+    (_, CIGroupSnd directMember) -> [sentText]
   where
     view from msg
       | showReactions = viewReceivedReaction from msg reactionText ts tz sentAt
@@ -617,13 +620,13 @@ groupQuote g CIQuote {content = qmc, chatDir = quoteDir} = quoteText qmc . ttyQu
 
 sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
 sentByMember GroupInfo {membership} = \case
-  CIQGroupSnd -> Just membership
-  CIQGroupRcv m -> m
+  CIQGroupSnd _ -> Just membership
+  CIQGroupRcv m _ -> m
 
 sentByMember' :: GroupInfo -> CIDirection 'CTGroup d -> GroupMember
 sentByMember' GroupInfo {membership} = \case
-  CIGroupSnd -> membership
-  CIGroupRcv m -> m
+  CIGroupSnd _ -> membership
+  CIGroupRcv m _ -> m
 
 quoteText :: MsgContent -> StyledString -> [StyledString]
 quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
@@ -1309,7 +1312,8 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 uploadingFile :: StyledString -> AChatItem -> [StyledString]
 uploadingFile status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
   [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) =
+-- TODO group-direct: show direct member
+uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd directMember}) =
   [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
 uploadingFile status _ = [status <> " uploading file"] -- shouldn't happen
 
@@ -1341,7 +1345,8 @@ humanReadableSize size
 savingFile' :: AChatItem -> [StyledString]
 savingFile' (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIDirectRcv}) =
   ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
-savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
+-- TODO group-direct: show direct scope
+savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIGroupRcv GroupMember {localDisplayName = m} messageScope}) =
   ["saving file " <> sShow fileId <> " from " <> ttyContact m <> " to " <> plain filePath]
 savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}}) =
   ["saving file " <> sShow fileId <> " to " <> plain filePath]
@@ -1350,7 +1355,8 @@ savingFile' _ = ["saving file"] -- shouldn't happen
 receivingFile_' :: StyledString -> AChatItem -> [StyledString]
 receivingFile_' status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =
   [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact c]
-receivingFile_' status (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
+-- TODO group-direct: show direct scope
+receivingFile_' status (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupRcv GroupMember {localDisplayName = m} messageScope}) =
   [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact m]
 receivingFile_' status _ = [status <> " receiving file"] -- shouldn't happen
 
