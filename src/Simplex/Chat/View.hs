@@ -403,7 +403,7 @@ viewChats ts tz = concatMap chatPreview . reverse
           GroupChat g -> ["      " <> ttyToGroup g]
           _ -> []
 
-viewChatItem :: forall c d. (MsgDirectionI d) => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
+viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} doShow ts tz =
   withItemDeleted <$> case chat of
     DirectChat c -> case chatDir of
@@ -510,7 +510,7 @@ viewDeliveryReceipt = \case
   MROk -> "⩗"
   MRBadMsgHash -> ttyError' "⩗!"
 
-viewItemUpdate :: (MsgDirectionI d) => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
+viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}, content, quotedItem} liveItems ts tz = case chat of
   DirectChat c -> case chatDir of
     CIDirectRcv -> case content of
@@ -609,7 +609,7 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
-directQuote :: forall d'. (MsgDirectionI d') => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
+directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
 directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =
   quoteText qmc $ if toMsgDirection (msgDirection @d') == quoteMsgDirection quoteDir then ">>" else ">"
 
@@ -912,7 +912,7 @@ viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, preset
         then ("no " <> pName <> " servers saved, using presets: ") : viewServers id presetServers
         else viewServers (\ServerCfg {server} -> server) protoServers
 
-protocolName :: (ProtocolTypeI p) => SProtocolType p -> StyledString
+protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
 protocolName = plain . map toUpper . T.unpack . decodeLatin1 . strEncode
 
 viewServerTestResult :: AProtoServerWithAuth -> Maybe ProtocolTestFailure -> [StyledString]
@@ -985,7 +985,7 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
   ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
-viewServers :: (ProtocolTypeI p) => (a -> ProtoServerWithAuth p) -> NonEmpty a -> [StyledString]
+viewServers :: ProtocolTypeI p => (a -> ProtoServerWithAuth p) -> NonEmpty a -> [StyledString]
 viewServers f = map (plain . B.unpack . strEncode . f) . L.toList
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
@@ -1126,7 +1126,7 @@ viewPrefsUpdated ps ps'
       where
         pref pss = getPreference f $ mergePreferences pss Nothing
 
-countactUserPrefText :: (FeatureI f) => ContactUserPref (FeaturePreference f) -> Text
+countactUserPrefText :: FeatureI f => ContactUserPref (FeaturePreference f) -> Text
 countactUserPrefText cup = case cup of
   CUPUser p -> "default (" <> preferenceText p <> ")"
   CUPContact p -> preferenceText p
@@ -1778,13 +1778,13 @@ incognitoPrefix = styleIncognito' "i "
 incognitoProfile' :: Profile -> StyledString
 incognitoProfile' Profile {displayName} = styleIncognito displayName
 
-highlight :: (StyledFormat a) => a -> StyledString
+highlight :: StyledFormat a => a -> StyledString
 highlight = styled $ colored Cyan
 
 highlight' :: String -> StyledString
 highlight' = highlight
 
-styleIncognito :: (StyledFormat a) => a -> StyledString
+styleIncognito :: StyledFormat a => a -> StyledString
 styleIncognito = styled $ colored Magenta
 
 styleIncognito' :: String -> StyledString
@@ -1793,7 +1793,7 @@ styleIncognito' = styleIncognito
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
 
-ttyError :: (StyledFormat a) => a -> StyledString
+ttyError :: StyledFormat a => a -> StyledString
 ttyError = styled $ colored Red
 
 ttyError' :: String -> StyledString

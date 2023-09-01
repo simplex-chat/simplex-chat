@@ -634,7 +634,7 @@ instance ToJSON AgentQueueId where
 data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
   deriving (Show, Generic, FromJSON)
 
-data AProtoServersConfig = forall p. (ProtocolTypeI p) => APSC (SProtocolType p) (ProtoServersConfig p)
+data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
 
 deriving instance Show AProtoServersConfig
 
@@ -645,7 +645,7 @@ data UserProtoServers p = UserProtoServers
   }
   deriving (Show, Generic)
 
-instance (ProtocolTypeI p) => ToJSON (UserProtoServers p) where
+instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -951,22 +951,22 @@ instance ToJSON SQLiteError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SQLite"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SQLite"
 
-throwDBError :: (ChatMonad m) => DatabaseError -> m ()
+throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
 
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
 
-tryChatError :: (ChatMonad m) => m a -> m (Either ChatError a)
+tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
 {-# INLINE tryChatError #-}
 
-catchChatError :: (ChatMonad m) => m a -> (ChatError -> m a) -> m a
+catchChatError :: ChatMonad m => m a -> (ChatError -> m a) -> m a
 catchChatError = catchAllErrors mkChatError
 {-# INLINE catchChatError #-}
 
-chatFinally :: (ChatMonad m) => m a -> m b -> m a
+chatFinally :: ChatMonad m => m a -> m b -> m a
 chatFinally = allFinally mkChatError
 {-# INLINE chatFinally #-}
 

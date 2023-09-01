@@ -342,12 +342,12 @@ getXFTPRcvFileDBId db aRcvFileId =
   ExceptT . firstRow fromOnly (SERcvFileNotFoundXFTP aRcvFileId) $
     DB.query db "SELECT file_id FROM rcv_files WHERE agent_rcv_file_id = ?" (Only aRcvFileId)
 
-updateFileCancelled :: (MsgDirectionI d) => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
+updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateFileCancelled db User {userId} fileId ciFileStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE files SET cancelled = 1, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?" (ciFileStatus, currentTs, userId, fileId)
 
-updateCIFileStatus :: (MsgDirectionI d) => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
+updateCIFileStatus :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateCIFileStatus db User {userId} fileId ciFileStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE files SET ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?" (ciFileStatus, currentTs, userId, fileId)
@@ -874,7 +874,7 @@ getContactFileInfo db User {userId} Contact {contactId} =
   map toFileInfo
     <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.contact_id = ?") (userId, contactId)
 
-updateDirectCIFileStatus :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
+updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db user fileId fileStatus = do
   aci@(AChatItem cType d cInfo ci) <- getChatItemByFileId db user fileId
   case (cType, testEquality d $ msgDirection @d) of
