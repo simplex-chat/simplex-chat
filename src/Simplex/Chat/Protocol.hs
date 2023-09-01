@@ -54,6 +54,14 @@ currentChatVersion = 2
 supportedChatVRange :: VersionRange
 supportedChatVRange = mkVersionRange 1 currentChatVersion
 
+-- version that starts support for skipping establishing direct connections in a group
+groupNoDirectVersion :: Version
+groupNoDirectVersion = 2
+
+-- version that starts support for sending/receiving a group member's chat version range in MemberInfo
+vRangeInMemberInfoVersion :: Version
+vRangeInMemberInfoVersion = 2
+
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
@@ -106,18 +114,6 @@ checkEncoding x = case testEquality (encoding @e) (encoding @e') of
 data AppMessage (e :: MsgEncoding) where
   AMJson :: AppMessageJson -> AppMessage 'Json
   AMBinary :: AppMessageBinary -> AppMessage 'Binary
-
-newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRange} deriving (Eq, Show)
-
-chatInitialVRange :: VersionRange
-chatInitialVRange = versionToRange 1
-
-instance FromJSON ChatVersionRange where
-  parseJSON v = ChatVersionRange <$> strParseJSON "ChatVersionRange" v
-
-instance ToJSON ChatVersionRange where
-  toJSON (ChatVersionRange vr) = strToJSON vr
-  toEncoding (ChatVersionRange vr) = strToJEncoding vr
 
 -- chat message is sent as JSON with these properties
 data AppMessageJson = AppMessageJson
