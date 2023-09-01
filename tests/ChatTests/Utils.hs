@@ -18,11 +18,13 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
+import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
@@ -356,7 +358,7 @@ dropTime_ msg = case splitAt 6 msg of
   _ -> Nothing
 
 dropStrPrefix :: HasCallStack => String -> String -> String
-dropStrPrefix pfx s = 
+dropStrPrefix pfx s =
   let (p, rest) = splitAt (length pfx) s
    in if p == pfx then rest else error $ "no prefix " <> pfx <> " in string : " <> s
 
@@ -523,3 +525,10 @@ startFileTransferWithDest' cc1 cc2 fileName fileSize fileDest_ = do
   concurrently_
     (cc2 <## ("started receiving file 1 (" <> fileName <> ") from " <> name1))
     (cc1 <## ("started sending file 1 (" <> fileName <> ") to " <> name2))
+
+currentChatVRangeInfo :: String
+currentChatVRangeInfo =
+  "chat protocol version range: " <> vRangeStr supportedChatVRange
+
+vRangeStr :: VersionRange -> String
+vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"

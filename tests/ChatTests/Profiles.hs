@@ -214,6 +214,7 @@ testProfileLink =
       cc <## ("contact address: " <> cLink)
       cc <## "you've shared main profile with this contact"
       cc <## "connection not verified, use /code command to see security code"
+      cc <## currentChatVRangeInfo
     checkAliceNoProfileLink cc = do
       cc ##> "/info alice"
       cc <## "contact ID: 2"
@@ -221,6 +222,7 @@ testProfileLink =
       cc <##. "sending messages via"
       cc <## "you've shared main profile with this contact"
       cc <## "connection not verified, use /code command to see security code"
+      cc <## currentChatVRangeInfo
 
 testUserContactLinkAutoAccept :: HasCallStack => FilePath -> IO ()
 testUserContactLinkAutoAccept =

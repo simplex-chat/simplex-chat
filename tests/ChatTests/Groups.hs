@@ -2289,8 +2289,7 @@ testGroupSyncRatchetCodeReset tmp =
       alice <# "#team bob> hey"
       -- connection not verified
       bob ##> "/i #team alice"
-      aliceInfo bob
-      bob <## "connection not verified, use /code command to see security code"
+      aliceInfo bob False
       -- verify connection
       alice ##> "/code #team bob"
       bCode <- getTermLine alice
@@ -2298,8 +2297,7 @@ testGroupSyncRatchetCodeReset tmp =
       bob <## "connection verified"
       -- connection verified
       bob ##> "/i #team alice"
-      aliceInfo bob
-      bob <## "connection verified"
+      aliceInfo bob True
     setupDesynchronizedRatchet tmp alice
     withTestChat tmp "bob_old" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2317,20 +2315,25 @@ testGroupSyncRatchetCodeReset tmp =
 
       -- connection not verified
       bob ##> "/i #team alice"
-      aliceInfo bob
-      bob <## "connection not verified, use /code command to see security code"
+      aliceInfo bob False
 
       alice #> "#team hello again"
       bob <# "#team alice> hello again"
       bob #> "#team received!"
       alice <# "#team bob> received!"
   where
-    aliceInfo :: HasCallStack => TestCC -> IO ()
-    aliceInfo bob = do
+    aliceInfo :: HasCallStack => TestCC -> Bool -> IO ()
+    aliceInfo bob verified = do
       bob <## "group ID: 1"
       bob <## "member ID: 1"
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
+      bob <## connVerified
+      bob <## currentChatVRangeInfo
+      where
+        connVerified
+          | verified = "connection verified"
+          | otherwise = "connection not verified, use /code command to see security code"
 
 testSetGroupMessageReactions :: HasCallStack => FilePath -> IO ()
 testSetGroupMessageReactions =

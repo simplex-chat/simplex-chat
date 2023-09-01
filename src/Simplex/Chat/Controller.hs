@@ -64,6 +64,7 @@ import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors)
+import Simplex.Messaging.Version
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
@@ -72,7 +73,7 @@ versionNumber :: String
 versionNumber = showVersion SC.version
 
 versionString :: String -> String
-versionString version = "SimpleX Chat v" <> version
+versionString ver = "SimpleX Chat v" <> ver
 
 updateStr :: String
 updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
@@ -101,6 +102,7 @@ coreVersionInfo simplexmqCommit =
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
+    chatVRange :: VersionRange,
     confirmMigrations :: MigrationConfirmation,
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
