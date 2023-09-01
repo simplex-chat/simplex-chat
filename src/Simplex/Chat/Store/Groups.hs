@@ -144,7 +144,7 @@ createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName}
       "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, memberRole, True, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId Nothing Nothing Nothing Nothing 0 currentTs
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs
 
 getGroupLinkConnection :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO Connection
 getGroupLinkConnection db User {userId} groupInfo@GroupInfo {groupId} =
@@ -619,7 +619,7 @@ createNewContactMember db gVar User {userId, userContactId} groupId Contact {con
   createWithRandomId gVar $ \memId -> do
     createdAt <- liftIO getCurrentTime
     member@GroupMember {groupMemberId} <- createMember_ (MemberId memId) createdAt
-    void $ createMemberConnection_ db userId groupMemberId agentConnId (Just connChatVRange) Nothing 0 createdAt
+    void $ createMemberConnection_ db userId groupMemberId agentConnId connChatVRange Nothing 0 createdAt
     pure member
   where
     createMember_ memberId createdAt = do
@@ -660,7 +660,7 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Co
     createdAt <- liftIO getCurrentTime
     insertMember_ (MemberId memId) createdAt
     groupMemberId <- liftIO $ insertedRowId db
-    Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId (Just connChatVRange) Nothing 0 createdAt
+    Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId connChatVRange Nothing 0 createdAt
     setCommandConnId db user cmdId connId
   where
     insertMember_ memberId createdAt =
@@ -716,12 +716,12 @@ getMemberInvitation db User {userId} groupMemberId =
 createMemberConnection :: DB.Connection -> UserId -> GroupMember -> ConnId -> VersionRange -> IO ()
 createMemberConnection db userId GroupMember {groupMemberId} agentConnId connChatVRange = do
   currentTs <- getCurrentTime
-  void $ createMemberConnection_ db userId groupMemberId agentConnId (Just connChatVRange) Nothing 0 currentTs
+  void $ createMemberConnection_ db userId groupMemberId agentConnId connChatVRange Nothing 0 currentTs
 
 createMemberConnectionAsync :: DB.Connection -> User -> GroupMemberId -> (CommandId, ConnId) -> VersionRange -> IO ()
 createMemberConnectionAsync db user@User {userId} groupMemberId (cmdId, agentConnId) connChatVRange = do
   currentTs <- getCurrentTime
-  Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId (Just connChatVRange) Nothing 0 currentTs
+  Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId connChatVRange Nothing 0 currentTs
   setCommandConnId db user cmdId connId
 
 updateGroupMemberStatus :: DB.Connection -> UserId -> GroupMember -> GroupMemberStatus -> IO ()
@@ -922,7 +922,7 @@ getIntroduction_ db reMember toMember = ExceptT $ do
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> ExceptT StoreError IO GroupMember
 createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberChatVRange memberProfile) (groupCmdId, groupAgentConnId) directConnIds customUserProfileId = do
-  let mcvr = fromChatVRange <$> memberChatVRange
+  let mcvr = maybe chatInitialVRange fromChatVRange memberChatVRange
       cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- liftIO getCurrentTime
   newMember <- case directConnIds of
@@ -940,7 +940,7 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
     liftIO $ setCommandConnId db user groupCmdId groupConnId
     pure (member :: GroupMember) {activeConn = Just conn}
 
-createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> Maybe VersionRange -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> IO ()
+createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionRange -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> IO ()
 createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} mcvr (groupCmdId, groupAgentConnId) directConnIds customUserProfileId = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- getCurrentTime
@@ -977,8 +977,8 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
         |]
         [":contact_id" := contactId, ":updated_at" := ts, ":group_member_id" := groupMemberId]
 
-createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> Maybe VersionRange -> Maybe Int64 -> Int -> UTCTime -> IO Connection
-createMemberConnection_ db userId groupMemberId agentConnId connChatVRange_ viaContact = createConnection_ db userId ConnMember (Just groupMemberId) agentConnId connChatVRange_ viaContact Nothing Nothing
+createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> VersionRange -> Maybe Int64 -> Int -> UTCTime -> IO Connection
+createMemberConnection_ db userId groupMemberId agentConnId connChatVRange viaContact = createConnection_ db userId ConnMember (Just groupMemberId) agentConnId connChatVRange viaContact Nothing Nothing
 
 getViaGroupMember :: DB.Connection -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))
 getViaGroupMember db User {userId, userContactId} Contact {contactId} =

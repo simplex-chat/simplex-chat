@@ -564,7 +564,7 @@ memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} include
   MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
   where
     memberChatVRange
-      | includeVRange = toChatVRange . connChatVRange <$> activeConn
+      | includeVRange = ChatVersionRange . connChatVRange <$> activeConn
       | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
@@ -1478,17 +1478,14 @@ instance ProtocolTypeI p => ToJSON (ServerCfg p) where
 instance ProtocolTypeI p => FromJSON (ServerCfg p) where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
-newtype ChatVersionRange = ChatVersionRange {versionRange :: VersionRange} deriving (Eq, Show)
+newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRange} deriving (Eq, Show)
+
+chatInitialVRange :: VersionRange
+chatInitialVRange = versionToRange 1
 
 instance FromJSON ChatVersionRange where
-  parseJSON j = ChatVersionRange <$> strParseJSON "ChatVersionRange" j
+  parseJSON v = ChatVersionRange <$> strParseJSON "ChatVersionRange" v
 
 instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
-
-toChatVRange :: VersionRange -> ChatVersionRange
-toChatVRange = ChatVersionRange
-
-fromChatVRange :: ChatVersionRange -> VersionRange
-fromChatVRange (ChatVersionRange vr) = vr
