@@ -13,7 +13,6 @@
 module Simplex.Chat.Store.Messages
   ( getContactConnIds_,
     getDirectChatReactions_,
-    toDirectChatItem,
 
     -- * Message and chat item functions
     deleteContactCIs,
@@ -122,6 +121,8 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 
@@ -483,7 +484,7 @@ getDirectChatPreviews_ db user@User {userId} = do
           -- ChatItem
           i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
           -- CIFile
-          f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status, f.protocol,
+          f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
           -- DirectQuote
           ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
         FROM contacts ct
@@ -548,7 +549,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           -- ChatItem
           i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
           -- CIFile
-          f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status, f.protocol,
+          f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
           -- Maybe GroupMember - sender
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
           m.member_status, m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
@@ -669,7 +670,7 @@ getDirectChatItemsLast db User {userId} contactId count search = ExceptT $ do
           -- ChatItem
           i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
           -- CIFile
-          f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status, f.protocol,
+          f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
           -- DirectQuote
           ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
         FROM chat_items i
@@ -698,7 +699,7 @@ getDirectChatAfter_ db User {userId} ct@Contact {contactId} afterChatItemId coun
               -- ChatItem
               i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
               -- CIFile
-              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status, f.protocol,
+              f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
               -- DirectQuote
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
@@ -728,7 +729,7 @@ getDirectChatBefore_ db User {userId} ct@Contact {contactId} beforeChatItemId co
               -- ChatItem
               i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
               -- CIFile
-              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status, f.protocol,
+              f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
               -- DirectQuote
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
@@ -950,7 +951,7 @@ type ChatStatsRow = (Int, ChatItemId, Bool)
 toChatStats :: ChatStatsRow -> ChatStats
 toChatStats (unreadCount, minUnreadItemId, unreadChat) = ChatStats {unreadCount, minUnreadItemId, unreadChat}
 
-type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath, Maybe ACIFileStatus, Maybe FileProtocol)
+type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe ACIFileStatus, Maybe FileProtocol)
 
 type ChatItemModeRow = (Maybe Int, Maybe UTCTime, Maybe Bool)
 
@@ -971,7 +972,7 @@ toQuote (quotedItemId, quotedSharedMsgId, quotedSentAt, quotedMsgContent, _) dir
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toDirectChatItem :: UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTDirect)
-toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_, fileProtocol_)) :. quoteRow) =
+toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. quoteRow) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
@@ -988,7 +989,10 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
     maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
     maybeCIFile fileStatus =
       case (fileId_, fileName_, fileSize_, fileProtocol_) of
-        (Just fileId, Just fileName, Just fileSize, Just fileProtocol) -> Just CIFile {fileId, fileName, fileSize, filePath, fileStatus, fileProtocol}
+        (Just fileId, Just fileName, Just fileSize, Just fileProtocol) ->
+          let cfArgs = CFArgs <$> fileKey <*> fileNonce
+              fileSource = (`CryptoFile` cfArgs) <$> filePath
+           in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol}
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
@@ -1021,7 +1025,7 @@ toGroupQuote qr@(_, _, _, _, quotedSent) quotedMember_ = toQuote qr $ direction 
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toGroupChatItem :: UTCTime -> Int64 -> ChatItemRow :. MaybeGroupMemberRow :. GroupQuoteRow :. MaybeGroupMemberRow -> Either StoreError (CChatItem 'CTGroup)
-toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_, fileProtocol_)) :. memberRow_ :. (quoteRow :. quotedMemberRow_) :. deletedByGroupMemberRow_) = do
+toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. memberRow_ :. (quoteRow :. quotedMemberRow_) :. deletedByGroupMemberRow_) = do
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     member_ = toMaybeGroupMember userContactId memberRow_
@@ -1041,7 +1045,10 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
     maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
     maybeCIFile fileStatus =
       case (fileId_, fileName_, fileSize_, fileProtocol_) of
-        (Just fileId, Just fileName, Just fileSize, Just fileProtocol) -> Just CIFile {fileId, fileName, fileSize, filePath, fileStatus, fileProtocol}
+        (Just fileId, Just fileName, Just fileSize, Just fileProtocol) ->
+          let cfArgs = CFArgs <$> fileKey <*> fileNonce
+              fileSource = (`CryptoFile` cfArgs) <$> filePath
+           in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol}
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
     cItem d chatDir ciStatus content file =
@@ -1141,7 +1148,7 @@ updateDirectChatItemStatus db user@User {userId} contactId itemId itemStatus = d
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-updateDirectChatItem :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
+updateDirectChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
 updateDirectChatItem db user contactId itemId newContent live msgId_ = do
   ci <- liftEither . correctDir =<< getDirectChatItem db user contactId itemId
   liftIO $ updateDirectChatItem' db user contactId ci newContent live msgId_
@@ -1149,7 +1156,7 @@ updateDirectChatItem db user contactId itemId newContent live msgId_ = do
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-updateDirectChatItem' :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> ChatItem 'CTDirect d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTDirect d)
+updateDirectChatItem' :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTDirect d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTDirect d)
 updateDirectChatItem' db User {userId} contactId ci newContent live msgId_ = do
   currentTs <- liftIO getCurrentTime
   let ci' = updatedChatItem ci newContent live currentTs
@@ -1294,7 +1301,7 @@ getDirectChatItem db User {userId} contactId itemId = ExceptT $ do
             -- ChatItem
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status, f.protocol,
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
             -- DirectQuote
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
           FROM chat_items i
@@ -1469,7 +1476,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             -- ChatItem
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status, f.protocol,
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
             -- GroupMember
             m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
             m.member_status, m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
