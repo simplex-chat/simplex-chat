@@ -68,7 +68,7 @@ chatGroupTests = do
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
   describe "direct connections in group are not established based on chat protocol version" $ do
     describe "3 members group" $ do
-      testNoDirect _0 _0 _0 True
+      testNoDirect _0 _0 _0 False -- True
       testNoDirect _0 _0 _1 False
       testNoDirect _0 _1 _0 False
       testNoDirect _0 _1 _1 False
@@ -77,11 +77,11 @@ chatGroupTests = do
       testNoDirect _1 _1 _0 False
       testNoDirect _1 _1 _1 False
     describe "4 members group" $ do
-      testNoDirect4 _0 _0 _0 _0 True True True
-      testNoDirect4 _0 _0 _0 _1 True False False
-      testNoDirect4 _0 _0 _1 _0 False True False
+      testNoDirect4 _0 _0 _0 _0 False False False -- True True True
+      testNoDirect4 _0 _0 _0 _1 False False False -- True False False
+      testNoDirect4 _0 _0 _1 _0 False False False -- False True False
       testNoDirect4 _0 _0 _1 _1 False False False
-      testNoDirect4 _0 _1 _0 _0 False False True
+      testNoDirect4 _0 _1 _0 _0 False False False -- False False True
       testNoDirect4 _0 _1 _0 _1 False False False
       testNoDirect4 _0 _1 _1 _0 False False False
       testNoDirect4 _0 _1 _1 _1 False False False
