@@ -2215,8 +2215,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
   case (xftpRcvFile, fileConnReq) of
     -- direct file protocol
     (Nothing, Just connReq) -> do
-      dm <- directMessage $ XFileAcpt fName
-      connIds <- joinAgentConnectionAsync user True connReq dm
+      connIds <- joinAgentConnectionAsync user True connReq =<< directMessage (XFileAcpt fName)
       filePath <- getRcvFilePath fileId filePath_ fName True
       withStoreCtx (Just "acceptFileReceive, acceptRcvFileTransfer") $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
     -- XFTP
@@ -3388,7 +3387,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> Maybe VersionRange -> Profile -> Maybe XContactId -> m ()
+        profileContactRequest :: InvitationId -> VersionRange -> Profile -> Maybe XContactId -> m ()
         profileContactRequest invId chatVRange p xContactId_ = do
           withStore (\db -> createOrUpdateContactRequest db user userContactLinkId invId chatVRange p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
@@ -3887,8 +3886,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         then unless cancelled $ case fileConnReq_ of
           -- receiving via a separate connection
           Just fileConnReq -> do
-            dm <- directMessage XOk
-            connIds <- joinAgentConnectionAsync user True fileConnReq dm
+            connIds <- joinAgentConnectionAsync user True fileConnReq =<< directMessage XOk
             withStore' $ \db -> createSndDirectFTConnection db user fileId connIds
           -- receiving inline
           _ -> do
@@ -3985,8 +3983,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           (Just fileConnReq, _) -> do
             -- receiving via a separate connection
             -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-            dm <- directMessage XOk
-            connIds <- joinAgentConnectionAsync user True fileConnReq dm
+            connIds <- joinAgentConnectionAsync user True fileConnReq =<< directMessage XOk
             withStore' $ \db -> createSndGroupFileTransferConnection db user fileId connIds m
           (_, Just conn) -> do
             -- receiving inline
@@ -4018,8 +4015,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = membership@GroupMember {groupMemberId, memberId}}, hostId) <- withStore $ \db -> createGroupInvitation db user ct inv customUserProfileId
       if sameGroupLinkId groupLinkId groupLinkId'
         then do
-          dm <- directMessage $ XGrpAcpt memberId
-          connIds <- joinAgentConnectionAsync user True connRequest dm
+          connIds <- joinAgentConnectionAsync user True connRequest =<< directMessage (XGrpAcpt memberId)
           withStore' $ \db -> do
             createMemberConnectionAsync db user hostId connIds
             updateGroupMemberStatusById db userId hostId GSMemAccepted
@@ -4441,9 +4437,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
         _ -> pure ()
 
-updateConnChatVRange :: ChatMonad m => Connection -> Maybe VersionRange -> m Connection
-updateConnChatVRange conn Nothing = pure conn
-updateConnChatVRange conn@Connection {connId, connChatVRange} (Just msgChatVRange)
+updateConnChatVRange :: ChatMonad m => Connection -> VersionRange -> m Connection
+updateConnChatVRange conn@Connection {connId, connChatVRange} msgChatVRange
   | msgChatVRange /= connChatVRange = do
     withStore' $ \db -> setConnChatVRange db connId msgChatVRange
     pure conn {connChatVRange = msgChatVRange}
@@ -4649,13 +4644,13 @@ createSndMessage chatMsgEvent connOrGroupId = do
   gVar <- asks idsDrg
   ChatConfig {chatVRange} <- asks config
   withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
-    let msgBody = strEncode ChatMessage {chatVRange = Just chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+    let msgBody = strEncode ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
      in NewMessage {chatMsgEvent, msgBody}
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
   ChatConfig {chatVRange} <- asks config
-  pure $ strEncode ChatMessage {chatVRange = Just chatVRange, msgId = Nothing, chatMsgEvent}
+  pure $ strEncode ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do

@@ -302,7 +302,7 @@ createUserContactLink db User {userId} agentConnId cReq =
       "INSERT INTO user_contact_links (user_id, conn_req_contact, created_at, updated_at) VALUES (?,?,?,?)"
       (userId, cReq, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId Nothing Nothing Nothing Nothing 0 currentTs
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs
 
 getUserAddressConnections :: DB.Connection -> User -> ExceptT StoreError IO [Connection]
 getUserAddressConnections db User {userId} = do
