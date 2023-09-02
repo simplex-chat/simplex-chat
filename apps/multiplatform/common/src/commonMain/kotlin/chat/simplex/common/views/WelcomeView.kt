@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.Profile
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.navigationBarsWithImePadding
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -118,19 +119,17 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
 
 fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, close: () -> Unit) {
   withApi {
-    val user = chatModel.controller.apiCreateActiveUser(
+    chatModel.controller.apiCreateActiveUser(
       Profile(displayName, fullName, null)
     ) ?: return@withApi
-    chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
-      chatModel.controller.startChat(user)
-      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
-      chatModel.onboardingStage.value = OnboardingStage.Step3_CreateSimpleXAddress
+      chatModel.onboardingStage.value = if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get()) {
+        OnboardingStage.Step2_5_SetupDatabasePassphrase
+      } else {
+        chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+        OnboardingStage.Step3_CreateSimpleXAddress
+      }
     } else {
-      val users = chatModel.controller.listUsers()
-      chatModel.users.clear()
-      chatModel.users.addAll(users)
-      chatModel.controller.getUserChatData()
       // the next two lines are only needed for failure case when because of the database error the app gets stuck on on-boarding screen,
       // this will get it unstuck.
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)

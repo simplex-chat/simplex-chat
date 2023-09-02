@@ -43,7 +43,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
   val newKey = rememberSaveable { mutableStateOf("") }
   val confirmNewKey = rememberSaveable { mutableStateOf("") }
   fun nextStep() {
-    val next = OnboardingStage.OnboardingComplete
+    val next = OnboardingStage.Step3_CreateSimpleXAddress
     m.controller.appPrefs.onboardingStage.set(next)
     m.onboardingStage.value = next
   }
@@ -54,8 +54,6 @@ fun SetupDatabasePassphrase(m: ChatModel) {
     progressIndicator,
     onConfirmEncrypt = {
       withApi {
-        // Stop chat before doing anything
-        stopChatAsync(m)
         prefs.storeDBPassphrase.set(false)
 
         val newKeyValue = newKey.value
@@ -66,7 +64,6 @@ fun SetupDatabasePassphrase(m: ChatModel) {
         } else {
           // Rollback in case of it is finished with error in order to allow to repeat the process again
           prefs.storeDBPassphrase.set(true)
-          startChat(null)
         }
       }
     },

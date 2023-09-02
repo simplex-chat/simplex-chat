@@ -14,8 +14,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.UserContactLinkRec
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -28,6 +27,10 @@ fun CreateSimpleXAddress(m: ChatModel) {
   val userAddress = remember { m.userAddress }
   val clipboard = LocalClipboardManager.current
   val uriHandler = LocalUriHandler.current
+
+  LaunchedEffect(Unit) {
+    prepareChatBeforeAddressCreation()
+  }
 
   CreateSimpleXAddressLayout(
     userAddress.value,
@@ -59,8 +62,6 @@ fun CreateSimpleXAddress(m: ChatModel) {
     nextStep = {
       val next = if (appPlatform.isAndroid) {
         OnboardingStage.Step4_SetNotificationsMode
-      } else if (m.controller.appPrefs.initialRandomDBPassphrase.get()) {
-        OnboardingStage.Step5_SetupDatabasePassphrase
       } else {
         OnboardingStage.OnboardingComplete
       }
@@ -172,5 +173,21 @@ private fun ProgressIndicator() {
       color = MaterialTheme.colors.secondary,
       strokeWidth = 3.dp
     )
+  }
+}
+
+private fun prepareChatBeforeAddressCreation() {
+  if (chatModel.users.isNotEmpty()) return
+  withApi {
+    val user = chatModel.controller.apiGetActiveUser() ?: return@withApi
+    chatModel.currentUser.value = user
+    if (chatModel.users.isEmpty()) {
+      chatModel.controller.startChat(user)
+    } else {
+      val users = chatModel.controller.listUsers()
+      chatModel.users.clear()
+      chatModel.users.addAll(users)
+      chatModel.controller.getUserChatData()
+    }
   }
 }
