@@ -19,7 +19,7 @@ Avataksesi keskustelutietokannan asetukset:
 
 ### Tietokannan tunnuslause
 
-<img src="../../blog/images/20220928-passphrase.png" width="330">
+<img src="../../../../blog/images/20220928-passphrase.png" width="330">
 
 Oletusarvoisesti tietokannan tunnuslause on satunnainen, sen on asetettava manuaalisesti voidaksesi viedä sen.
 
@@ -41,6 +41,6 @@ Tässä voit poistaa keskustelutietokantasi. VAROITUS: Johtaa kaikkien SimpleX C
 
 ## Poista tiedostot ja media
 
-<img src="../../blog/images/20220928-files-media.png" width="330">
+<img src="../../../../blog/images/20220928-files-media.png" width="330">
 
 Voit poistaa kaikki lähetetyt ja vastaanotetut sovellukseen tallennetut tiedostot ja median tällä asetuksella poistamatta viestejä.
