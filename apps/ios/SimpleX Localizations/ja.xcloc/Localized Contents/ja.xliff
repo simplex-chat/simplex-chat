@@ -1633,8 +1633,9 @@
         <target>このグループではメンバー間のダイレクトメッセージが使用禁止です。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable (keep overrides)" xml:space="preserve">
+      <trans-unit id="Disable (keep overrides)" xml:space="preserve" approved="no">
         <source>Disable (keep overrides)</source>
+        <target state="translated">無効にする（設定の優先を維持）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -1752,8 +1753,9 @@
         <target>有効</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable (keep overrides)" xml:space="preserve">
+      <trans-unit id="Enable (keep overrides)" xml:space="preserve" approved="no">
         <source>Enable (keep overrides)</source>
+        <target state="translated">有効にする（設定の優先を維持）</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -2136,8 +2138,9 @@
         <target>エラー: データベースが存在しません</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Even when disabled in the conversation." xml:space="preserve">
+      <trans-unit id="Even when disabled in the conversation." xml:space="preserve" approved="no">
         <source>Even when disabled in the conversation.</source>
+        <target state="translated">会話中に無効になっている場合でも。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Exit without saving" xml:space="preserve">
