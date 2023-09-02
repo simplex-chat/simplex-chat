@@ -28,7 +28,7 @@ iOS:lla voit myös liittää kuvia leikepöydältä.
 
 ### Ääniviestien lähettäminen 
 
-<img src="../../blog/images/20221206-voice.png" width="288">
+<img src="../../../../blog/images/20221206-voice.png" width="288">
 
 - Napauta 🎤 (mikrofoni) -painiketta viestisyöttökentän oikealla puolella.
 - Salli SimpleX Chatin tallentaa ääntä, jos sitä pyydetään. Sinun on napautettava mikrofonipainiketta uudelleen, jos näin käy.
@@ -42,7 +42,7 @@ Voit myös painaa mikrofonipainiketta pitkään ääniviestin tallentamiseksi. T
 
 ### Katoavien viestien käyttäminen
 
-<img src="../../blog/images/20230103-disappearing2.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230103-disappearing1.png" width="288">
+<img src="../../../../blog/images/20230103-disappearing2.png" width="288"> &nbsp;&nbsp; <img src="../../../../blog/images/20230103-disappearing1.png" width="288">
 
 - Napauta keskustelun nimeä.
 - Kytke liukukytkin kohdassa "Katoavat viestit".
@@ -52,7 +52,7 @@ Voit myös painaa mikrofonipainiketta pitkään ääniviestin tallentamiseksi. T
 
 ### "Live"-viestien lähettäminen 
 
-<img src="../../blog/images/20230103-live.png" width="288">
+<img src="../../../../blog/images/20230103-live.png" width="288">
 
 Voit käyttää "live"-viestejä, jotta vastaanottajat näkevät viestit sitä mukaa kun kirjoitat ne, ilman että sinun tarvitsee napauttaa "Lähetä"-painiketta ennen valmistumista. Se voi olla hyödyllistä seuraavissa tilanteissa:
 
@@ -67,23 +67,23 @@ Lähettääksesi "live"-viestin:
 
 ### Tarrojen ja animoitujen viestien lähettäminen
 
-<img src="../../blog/images/20230103-stickers1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230103-stickers2.png" width="303">
+<img src="../../../../blog/images/20230103-stickers1.png" width="288"> &nbsp;&nbsp; <img src="../../../../blog/images/20230103-stickers2.png" width="303">
 
 Vaikka itse sovelluksessa ei ole tarroja ja GIF-animaatioita, voit lähettää niitä kolmannen osapuolen (kuten [GIPHY](https://apps.apple.com/us/app/giphy-the-gif-search-engine/id974748812) iOS:lla) tai natiivien (Android 13+) näppäimistöjen avulla. 
 
 ### Viestiluonnokset
 
-<img src="../../blog/images/20230204-draft1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230204-draft2.png" width="288">
+<img src="../../../../blog/images/20230204-draft1.png" width="288"> &nbsp;&nbsp; <img src="../../../../blog/images/20230204-draft2.png" width="288">
 
 Viestit säilyvät keskustelussa, kunnes ne on lähetetty, vaikka poistuisit keskustelusta.
 
 Yksityisyyden ja yksinkertaisuuden vuoksi päätimme sallia vain yhden viestiluonnoksen, joka säilytetään vain, kunnes sovellus pysäytetään.
 
-Lue lisää [tästä julkaisusta](../../blog/20230204-simplex-chat-v4-5-käyttäjän-keskusteluprofiilit.md#message-draft).
+Lue lisää [tästä julkaisusta](../../../../blog/20230204-simplex-chat-v4-5-user-chat-profiles.md#message-draft).
 
 ## Viestien poistaminen 
 
-<img src="../../blog/images/20221206-deleted1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-deleted2.png" width="288">
+<img src="../../../../blog/images/20221206-deleted1.png" width="288"> &nbsp;&nbsp; <img src="../../../../blog/images/20221206-deleted2.png" width="288">
 
 Poistaaksesi viestin, paina viestiä pitkään ja valitse "Poista".
 
@@ -93,7 +93,7 @@ Jos olet itse lähettänyt tämän viestin viimeisten 24 tunnin aikana, sinulle 
 
 - `poista minulta` - tämä poistaa viestin vain paikallisesti.
 
-Lue syistä miksi [emme salli täydellistä poistoa oletuksena](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#irreversible-message-deletion). 
+Lue syistä miksi [emme salli täydellistä poistoa oletuksena](../../../../blog/20221206-simplex-chat-v4.3-voice-messages.md#irreversible-message-deletion). 
 
 ## Viestien moderointi ryhmissä
 
@@ -101,4 +101,4 @@ Ryhmän ylläpitäjät voivat poistaa jäsenten sopimattomat viestit ryhmästä.
 
 Poistaaksesi toisen jäsenen viestin, paina viestiä pitkään ja valitse "Moderoin".
 
-Lue lisää [ryhmän moderoinnista](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#community-moderation).
+Lue lisää [ryhmän moderoinnista](../../../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#community-moderation).
