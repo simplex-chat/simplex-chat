@@ -8,7 +8,7 @@ Salaiset ryhmät ovat nimettömiä ja yksityisiä, ne on suunniteltu vaikeiksi s
 
 ## Ryhmän luominen
 
-<img src="../../blog/images/20220808-group1.png" width="330"> <img src="../../blog/images/20220808-group2.png" width="330"> <img src="../../blog/images/20220808-group3.png" width="330"> 
+<img src="../../../../blog/images/20220808-group1.png" width="330"> <img src="../../../../blog/images/20220808-group2.png" width="330"> <img src="../../../../blog/images/20220808-group3.png" width="330"> 
 
 - Napauta painiketta näytön alaoikealla.
 - Napauta "Luo salainen ryhmä".
@@ -28,13 +28,13 @@ Tässä voit valita, haluatko sallia katoavat viestit, suoraviestit, poistamisen
 
 ## Ryhmään liittyminen
 
-<img src="../../blog/images/20220723-group-invite.png" width="330">
+<img src="../../../../blog/images/20220723-group-invite.png" width="330">
 
 Kun saat kutsun liittyä ryhmään, voit hyväksyä sen sekä keskustelusta kontaktisi kanssa että keskusteluista.
 
 ## Ryhmästä poistuminen
 
-<img src="../../blog/images/20220723-group-leave.png" width="330">
+<img src="../../../../blog/images/20220723-group-leave.png" width="330">
 
 Paina pitkään (Androidilla) tai pyyhkäise (iOS:lla) ryhmää keskustelulistassa poistuaksesi ryhmästä.
 
@@ -55,7 +55,7 @@ Avaa ryhmä ja napauta ryhmän nimeä nähdäksesi jäsenluettelon, siellä voit
 
 ## Linkki ryhmään liittymiseen
 
-<img src="../../blog/images/20221108-group1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-group2.png" width="288">
+<img src="../../../../blog/images/20221108-group1.png" width="288"> &nbsp;&nbsp; <img src="../../../../blog/images/20221108-group2.png" width="288">
 
 Jos olet ryhmän omistaja tai ylläpitäjä, voit luoda linkin, jota kuka tahansa voi käyttää liittyäkseen ryhmään, mikä tekee ryhmästä julkisemman.
 
