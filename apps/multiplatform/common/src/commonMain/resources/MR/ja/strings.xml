@@ -485,7 +485,7 @@
     <string name="smp_server_test_create_queue">サーバの待ち行列を作成する</string>
     <string name="smp_server_test_delete_queue">待ち行列を削除</string>
     <string name="smp_server_test_disconnect">切断</string>
-    <string name="turn_off_battery_optimization"><![CDATA[利用するには次の画面にてSimpleXに対する <b>電気省電力の設定をオフ</b> for SimpleX してください。そうしないと通知が無効になります。]]></string>
+    <string name="turn_off_battery_optimization">利用するには次の画面にてSimpleXに対する <b>SimpleX のバックグラウンドでの実行を許可</b> してください。そうしないと通知が無効になります。</string>
     <string name="database_initialization_error_title">データベースを起動できません。</string>
     <string name="settings_notification_preview_title">通知のプレビュー</string>
     <string name="simplex_service_notification_text">メッセージ受信中…</string>
@@ -588,7 +588,7 @@
     <string name="error_removing_member">メンバー除名にエラー発生</string>
     <string name="conn_level_desc_indirect">関節 (%1$s)</string>
     <string name="incognito">シークレットモード</string>
-    <string name="incognito_info_protects">シークレットモードとは、メインのプロフィールとプロフィール画像を守るために、新しい連絡先を追加する時に、その連絡先に対してランダムなプロフィールが作成されるという対策です。</string>
+    <string name="incognito_info_protects">シークレット モードでは、連絡先ごとに新しいランダムなプロファイルを使用してプライバシーを保護します。</string>
     <string name="chat_preferences_no">いいえ</string>
     <string name="chat_preferences_on">オン</string>
     <string name="direct_messages">ダイレクトメッセージ</string>
@@ -1308,7 +1308,7 @@
     <string name="fix_connection_not_supported_by_contact">連絡先による修正はサポートされていません</string>
     <string name="fix_connection_not_supported_by_group_member">グループメンバーによる修正はサポートされていません</string>
     <string name="receipts_section_contacts">連絡先</string>
-    <string name="receipts_section_description_1">これらは連絡先の設定が優先します</string>
+    <string name="receipts_section_description_1">これらは連絡先とグループの設定が優先されます。</string>
     <string name="receipts_section_description">これらの設定は現在のプロファイル用です</string>
     <string name="receipts_contacts_title_enable">既読通知を有効にしますか？</string>
     <string name="sender_at_ts">%s : %s</string>
@@ -1366,4 +1366,13 @@
     <string name="rcv_group_event_n_members_connected">%s, %s および %d 人の他のメンバーが接続しています。</string>
     <string name="rcv_group_event_3_members_connected">%s, %s と %s は接続中</string>
     <string name="in_developing_desc">この機能はまだサポートされていません。次のリリースをお試しください。</string>
+    <string name="receipts_contacts_enable_keep_overrides">有効にする（設定の優先を維持）</string>
+    <string name="v5_2_message_delivery_receipts">メッセージの既読通知！</string>
+    <string name="delivery_receipts_title">既読の通知！</string>
+    <string name="settings_section_title_delivery_receipts">既読の通知の送信先</string>
+    <string name="receipts_groups_disable_keep_overrides">無効にする（グループの設定の優先を維持）</string>
+    <string name="receipts_groups_enable_keep_overrides">有効にする（グループの設定の優先を維持）</string>
+    <string name="delivery_receipts_are_disabled">既読の通知は無効です！</string>
+    <string name="receipts_contacts_disable_keep_overrides">無効にする（設定の優先を維持）</string>
+    <string name="v5_2_disappear_one_message_descr">会話中に無効になっている場合でも。</string>
 </resources>
