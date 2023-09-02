@@ -34,7 +34,7 @@ cTransformMedia f cKey cFrame cFrameLen = do
   frame <- getByteString cFrame cFrameLen
   runExceptT (f key frame >>= liftIO . putFrame) >>= newCAString . fromLeft ""
   where
-    putFrame s = when (B.length s < fromIntegral cFrameLen) $ putByteString cFrame s
+    putFrame s = when (B.length s <= fromIntegral cFrameLen) $ putByteString cFrame s
 {-# INLINE cTransformMedia #-}
 
 chatEncryptMedia :: ByteString -> ByteString -> ExceptT String IO ByteString
