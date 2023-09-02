@@ -1,22 +1,37 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module MobileTests where
 
 import ChatTests.Utils
 import Control.Monad.Except
+import Crypto.Random (getRandomBytes)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BS
+import Data.Word (Word8)
+import Foreign.C
+import Foreign.Marshal.Alloc (mallocBytes)
+import Foreign.Ptr
 import Simplex.Chat.Mobile
+import Simplex.Chat.Mobile.Shared
+import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String
 import System.FilePath ((</>))
 import Test.Hspec
 
-mobileTests :: SpecWith FilePath
+mobileTests :: HasCallStack => SpecWith FilePath
 mobileTests = do
   describe "mobile API" $ do
     it "start new chat without user" testChatApiNoUser
     it "start new chat with existing user" testChatApi
+    fit "should encrypt/decrypt WebRTC frames" testMediaApi
+    fit "should encrypt/decrypt WebRTC frames via C API" testMediaCApi
 
 noActiveUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -113,3 +128,36 @@ testChatApi tmp = do
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
+
+testMediaApi :: HasCallStack => FilePath -> IO ()
+testMediaApi _ = do
+  key :: ByteString <- getRandomBytes 32
+  frame <- getRandomBytes 100
+  let keyStr = strEncode key
+      reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
+      frame' = frame <> reserved
+  Right encrypted <- runExceptT $ chatEncryptMedia keyStr frame'
+  encrypted `shouldNotBe` frame'
+  B.length encrypted `shouldBe` B.length frame'
+  runExceptT (chatDecryptMedia keyStr encrypted) `shouldReturn` Right frame'
+
+testMediaCApi :: HasCallStack => FilePath -> IO ()
+testMediaCApi _ = do
+  key :: ByteString <- getRandomBytes 32
+  frame <- getRandomBytes 100
+  let keyStr = strEncode key
+      reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
+      frame' = frame <> reserved
+  encrypted <- test cChatEncryptMedia keyStr frame'
+  encrypted `shouldNotBe` frame'
+  test cChatDecryptMedia keyStr encrypted `shouldReturn` frame'
+  where
+    test :: HasCallStack => (CString -> Ptr Word8 -> CInt -> IO CString) -> ByteString -> ByteString -> IO ByteString
+    test f keyStr frame = do
+      let len = B.length frame
+          cLen = fromIntegral len
+      ptr <- mallocBytes len
+      putByteString ptr frame
+      cKeyStr <- newCString $ BS.unpack keyStr
+      (f cKeyStr ptr cLen >>= peekCString) `shouldReturn` ""
+      getByteString ptr cLen
