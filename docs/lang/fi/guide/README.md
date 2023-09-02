@@ -33,11 +33,11 @@ Tämä profiili on paikallinen laitteellesi, sitä ei tallenneta minnekään muu
 
 Kun olet luonut keskusteluprofiilin, sovellus kysyy, minkä ilmoitustilan haluat valita.
 
-<img src="../../blog/images/20220711-notifications.png" width="330">
+<img src="../../../../blog/images/20220711-notifications.png" width="330">
 
 Lue niiden kuvaus, koska iOS:lla on kyse käytännöllisyyden ja yksityisyyden välisestä kompromissista, jossa välitön ilmoitus jakaa enemmän metatietoja palvelimille, ja Androidilla kyse on ilmoitusten viiveen ja akun keston välisestä kompromissista.
 
-Voit lukea lisää eroista, miten [ilmoitukset toimivat Androidilla ja iOS:lla](../../blog/20220404-simplex-chat-instant-notifications.md).
+Voit lukea lisää eroista, miten [ilmoitukset toimivat Androidilla ja iOS:lla](../../../../blog/20220404-simplex-chat-instant-notifications.md).
 
 ### Ota yhteyttä kehittäjiin
 
@@ -45,12 +45,12 @@ Kun aloitat sovelluksen käytön, voit napauttaa "keskustele kehittäjien kanssa
 
 Tämä painike katoaa, kun muodostat ensimmäisen yhteyden. Ottaaksesi kehittäjiin yhteyttä myöhemmin:
 
-- [Avaa sovelluksen asetukset](./app-settings.fi.md#sovelluksen-asetusten-avaaminen).
+- [Avaa sovelluksen asetukset](./app-settings.md#sovelluksen-asetusten-avaaminen).
 - Napauta "Lähetä kysymyksiä ja ideoita".
 
 ### Liity joihinkin käyttäjäryhmiin
 
-GitHub-sivullamme on linkkejä liittyä useisiin [käyttäjäryhmiin](../../README.md#join-user-groups) - liity ryhmiin esittääksesi kysymyksiä ja keskustellaksesi ideoista.
+GitHub-sivullamme on linkkejä liittyä useisiin [käyttäjäryhmiin](../../../../README.md#join-user-groups) - liity ryhmiin esittääksesi kysymyksiä ja keskustellaksesi ideoista.
 
 Voit myös löytää joitakin muita käyttäjien ylläpitämiä ryhmiä verkon kautta etsimällä.
 
