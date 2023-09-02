@@ -367,15 +367,15 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     return nil
 }
 
-func apiReceiveFile(fileId: Int64, inline: Bool? = nil) -> AChatItem? {
-    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, inline: inline))
+func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil) -> AChatItem? {
+    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, encrypted: encrypted, inline: inline))
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
 }
 
-func apiSetFileToReceive(fileId: Int64) {
-    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId))
+func apiSetFileToReceive(fileId: Int64, encrypted: Bool) {
+    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId, encrypted: encrypted))
     if case .cmdOk = r { return }
     logger.error("setFileToReceive error: \(responseError(r))")
 }
@@ -383,9 +383,10 @@ func apiSetFileToReceive(fileId: Int64) {
 func autoReceiveFile(_ file: CIFile) -> ChatItem? {
     switch file.fileProtocol {
     case .smp:
-        return apiReceiveFile(fileId: file.fileId)?.chatItem
+        return apiReceiveFile(fileId: file.fileId, encrypted: false)?.chatItem
     case .xftp:
-        apiSetFileToReceive(fileId: file.fileId)
+        // TODO encrypt images and voice
+        apiSetFileToReceive(fileId: file.fileId, encrypted: false)
         return nil
     }
 }

@@ -36,7 +36,8 @@ struct CIImageView: View {
                             case .rcvInvitation:
                                 Task {
                                     if let user = ChatModel.shared.currentUser {
-                                        await receiveFile(user: user, fileId: file.fileId)
+                                        // TODO encrypt local images
+                                        await receiveFile(user: user, fileId: file.fileId, encrypted: false)
                                     }
                                     // TODO image accepted alert?
                                 }

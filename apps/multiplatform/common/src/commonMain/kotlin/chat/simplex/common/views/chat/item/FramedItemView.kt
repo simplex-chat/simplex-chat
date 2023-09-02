@@ -36,7 +36,7 @@ fun FramedItemView(
   imageProvider: (() -> ImageGalleryProvider)? = null,
   linkMode: SimplexLinkMode,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
 ) {

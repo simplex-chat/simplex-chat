@@ -2690,12 +2690,18 @@ public struct CIFile: Decodable {
     public var fileId: Int64
     public var fileName: String
     public var fileSize: Int64
-    public var filePath: String?
+    public var fileSource: CryptoFile?
     public var fileStatus: CIFileStatus
     public var fileProtocol: FileProtocol
 
     public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
-        CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus, fileProtocol: .xftp)
+        let f: CryptoFile?
+        if let filePath = filePath {
+            f = CryptoFile.plain(filePath)
+        } else {
+            f = nil
+        }
+        return CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, fileSource: f, fileStatus: fileStatus, fileProtocol: .xftp)
     }
 
     public var loaded: Bool {
@@ -2740,6 +2746,20 @@ public struct CIFile: Decodable {
             }
         }
     }
+}
+
+public struct CryptoFile: Codable {
+    public var filePath: String
+    public var cryptoArgs: CryptoFileArgs?
+
+    public static func plain(_ f: String) -> CryptoFile {
+        CryptoFile(filePath: f, cryptoArgs: nil)
+    }
+}
+
+public struct CryptoFileArgs: Codable {
+    public var fileKey: String
+    public var fileNonce: String
 }
 
 public struct CancelAction {

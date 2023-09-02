@@ -2025,7 +2025,7 @@ class CIFile(
   val fileId: Long,
   val fileName: String,
   val fileSize: Long,
-  val filePath: String? = null,
+  val fileSource: CryptoFile? = null,
   val fileStatus: CIFileStatus,
   val fileProtocol: FileProtocol
 ) {
@@ -2073,9 +2073,22 @@ class CIFile(
       filePath: String? = "test.txt",
       fileStatus: CIFileStatus = CIFileStatus.RcvComplete
     ): CIFile =
-      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
+      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, fileSource = if (filePath == null) null else CryptoFile.plain(filePath), fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
   }
 }
+
+@Serializable
+class CryptoFile(
+  val filePath: String,
+  val cryptoArgs: CryptoFileArgs?
+) {
+  companion object {
+    fun plain(f: String): CryptoFile = CryptoFile(f, null)
+  }
+}
+
+@Serializable
+class  CryptoFileArgs(val fileKey: String, val fileNonce: String)
 
 class CancelAction(
   val uiActionId: StringResource,

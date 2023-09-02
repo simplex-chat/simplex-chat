@@ -219,7 +219,8 @@ struct VoiceMessagePlayer: View {
         Button {
             Task {
                 if let user = ChatModel.shared.currentUser {
-                    await receiveFile(user: user, fileId: recordingFile.fileId)
+                    // TODO encrypt voice
+                    await receiveFile(user: user, fileId: recordingFile.fileId, encrypted: false)
                 }
             }
         } label: {

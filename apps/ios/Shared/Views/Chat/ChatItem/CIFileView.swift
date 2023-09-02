@@ -84,7 +84,7 @@ struct CIFileView: View {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
                         if let user = ChatModel.shared.currentUser {
-                            await receiveFile(user: user, fileId: file.fileId)
+                            await receiveFile(user: user, fileId: file.fileId, encrypted: false)
                         }
                     }
                 } else {

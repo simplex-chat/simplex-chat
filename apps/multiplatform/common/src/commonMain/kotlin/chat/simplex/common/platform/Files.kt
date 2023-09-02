@@ -60,8 +60,9 @@ fun getAppFilePath(fileName: String): String {
 }
 
 fun getLoadedFilePath(file: CIFile?): String? {
-  return if (file?.filePath != null && file.loaded) {
-    val filePath = getAppFilePath(file.filePath)
+  val f = file?.fileSource?.filePath
+  return if (f != null && file.loaded) {
+    val filePath = getAppFilePath(f)
     if (File(filePath).exists()) filePath else null
   } else {
     null

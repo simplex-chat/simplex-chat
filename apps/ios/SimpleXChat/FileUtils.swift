@@ -173,11 +173,12 @@ public func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
-public func saveFile(_ data: Data, _ fileName: String) -> String? {
+public func saveFile(_ data: Data, _ fileName: String, encrypted: Bool) -> CryptoFile? {
     let filePath = getAppFilePath(fileName)
     do {
         try data.write(to: filePath)
-        return fileName
+        // TODO encrypt files based on "encrypted" parameter
+        return CryptoFile.plain(fileName)
     } catch {
         logger.error("FileUtils.saveFile error: \(error.localizedDescription)")
         return nil
@@ -210,7 +211,7 @@ public func cleanupFile(_ aChatItem: AChatItem) {
     let cItem = aChatItem.chatItem
     let mc = cItem.content.msgContent
     if case .file = mc,
-       let fileName = cItem.file?.filePath {
+       let fileName = cItem.file?.fileSource?.filePath {
         removeFile(fileName)
     }
 }

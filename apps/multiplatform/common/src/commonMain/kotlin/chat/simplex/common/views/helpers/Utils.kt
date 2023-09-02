@@ -95,12 +95,13 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
   return null
 }
 
-fun saveImage(uri: URI): String? {
+fun saveImage(uri: URI): CryptoFile? {
   val bitmap = getBitmapFromUri(uri) ?: return null
   return saveImage(bitmap)
 }
 
-fun saveImage(image: ImageBitmap): String? {
+fun saveImage(image: ImageBitmap): CryptoFile? {
+  // TODO encrypt image
   return try {
     val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
@@ -110,14 +111,15 @@ fun saveImage(image: ImageBitmap): String? {
     dataResized.writeTo(output)
     output.flush()
     output.close()
-    fileToSave
+    CryptoFile.plain(fileToSave)
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveImage error: ${e.stackTraceToString()}")
     null
   }
 }
 
-fun saveAnimImage(uri: URI): String? {
+fun saveAnimImage(uri: URI): CryptoFile? {
+  // TODO encrypt image
   return try {
     val filename = getFileName(uri)?.lowercase()
     var ext = when {
@@ -135,7 +137,7 @@ fun saveAnimImage(uri: URI): String? {
         input?.copyTo(output)
       }
     }
-    fileToSave
+    CryptoFile.plain(fileToSave)
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveAnimImage error: ${e.message}")
     null
@@ -144,15 +146,16 @@ fun saveAnimImage(uri: URI): String? {
 
 expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean): File?
 
-fun saveFileFromUri(uri: URI): String? {
+fun saveFileFromUri(uri: URI, encrypted: Boolean): CryptoFile? {
   return try {
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
+    // TODO encrypt file if "encrypted" is true
     if (inputStream != null && fileToSave != null) {
       val destFileName = uniqueCombine(fileToSave)
       val destFile = File(getAppFilePath(destFileName))
       Files.copy(inputStream, destFile.toPath())
-      destFileName
+      CryptoFile.plain(destFileName)
     } else {
       Log.e(TAG, "Util.kt saveFileFromUri null inputStream")
       null
