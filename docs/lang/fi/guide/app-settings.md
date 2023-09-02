@@ -19,7 +19,7 @@ Tämä osio on nimeltään **"Sinä"** sovelluksen asetuksissa.
 
 Napauta avatartasi/nimeäsi päivittääksesi nykyisen profiilin nimet ja kuvan.
 
-Näyttönimessä ei saa olla välilyöntejä ja on suositeltavaa käyttää latinalaisia merkkejä ja numeroita, jotta näiden nimien kirjoittaminen on helpompaa niille käyttäjille, jotka käyttävät [SimpleX Chattia terminaalissa](../CLI.md) (CLI).
+Näyttönimessä ei saa olla välilyöntejä ja on suositeltavaa käyttää latinalaisia merkkejä ja numeroita, jotta näiden nimien kirjoittaminen on helpompaa niille käyttäjille, jotka käyttävät [SimpleX Chattia terminaalissa](../../../CLI.md) (CLI).
 
 **Huomautus**: Kun tallennat profiilisi, päivitys lähetetään kaikille kontakteillesi (lukuun ottamatta kontakteja, joiden kanssa olet jakanut incognito-profiilit). Jos sinulla on paljon kontakteja, tämä voi kestää useita sekunteja.
 
