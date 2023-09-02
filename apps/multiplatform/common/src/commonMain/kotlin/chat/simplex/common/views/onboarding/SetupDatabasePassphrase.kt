@@ -14,7 +14,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -27,6 +30,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 
 @Composable
 fun SetupDatabasePassphrase(m: ChatModel) {
@@ -105,10 +109,26 @@ private fun SetupDatabasePassphraseLayout(
     Spacer(Modifier.weight(1f))
 
     Column(Modifier.width(600.dp)) {
+      val focusRequester = remember { FocusRequester() }
+      val focusManager = LocalFocusManager.current
+      LaunchedEffect(Unit) {
+        delay(100L)
+        focusRequester.requestFocus()
+      }
       PassphraseField(
         newKey,
         generalGetString(MR.strings.new_passphrase),
-        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+        modifier = Modifier
+          .padding(horizontal = DEFAULT_PADDING)
+          .focusRequester(focusRequester)
+          .onPreviewKeyEvent {
+            if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+              focusManager.moveFocus(FocusDirection.Down)
+              true
+            } else {
+              false
+            }
+          },
         showStrength = true,
         isValid = ::validKey,
         keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
@@ -129,7 +149,16 @@ private fun SetupDatabasePassphraseLayout(
       PassphraseField(
         confirmNewKey,
         generalGetString(MR.strings.confirm_new_passphrase),
-        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+        modifier = Modifier
+          .padding(horizontal = DEFAULT_PADDING)
+          .onPreviewKeyEvent {
+            if (!disabled && it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+              onClickUpdate()
+              true
+            } else {
+              false
+            }
+          },
         isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
         keyboardActions = KeyboardActions(onDone = {
           if (!disabled) onClickUpdate()
