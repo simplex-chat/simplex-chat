@@ -96,7 +96,13 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
       val createModifier: Modifier
       val createColor: Color
       if (enabled) {
-        createModifier = Modifier.clickable { createProfile(chatModel, displayName.value, fullName.value, close) }.padding(8.dp)
+        createModifier = Modifier.clickable {
+          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+            createProfileInProfiles(chatModel, displayName.value, fullName.value, close)
+          } else {
+            createProfileOnboarding(chatModel, displayName.value, fullName.value, close)
+          }
+        }.padding(8.dp)
         createColor = MaterialTheme.colors.primary
       } else {
         createModifier = Modifier.padding(8.dp)
@@ -117,13 +123,33 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
-fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, close: () -> Unit) {
+fun createProfileInProfiles(chatModel: ChatModel, displayName: String, fullName: String, close: () -> Unit) {
+  withApi {
+    val user = chatModel.controller.apiCreateActiveUser(
+      Profile(displayName, fullName, null)
+    ) ?: return@withApi
+    chatModel.currentUser.value = user
+    if (chatModel.users.isEmpty()) {
+      chatModel.controller.startChat(user)
+      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+    } else {
+      val users = chatModel.controller.listUsers()
+      chatModel.users.clear()
+      chatModel.users.addAll(users)
+      chatModel.controller.getUserChatData()
+      close()
+    }
+  }
+}
+
+fun createProfileOnboarding(chatModel: ChatModel, displayName: String, fullName: String, close: () -> Unit) {
   withApi {
     chatModel.controller.apiCreateActiveUser(
       Profile(displayName, fullName, null)
     ) ?: return@withApi
+    val onboardingStage = chatModel.controller.appPrefs.onboardingStage
     if (chatModel.users.isEmpty()) {
-      chatModel.controller.appPrefs.onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get()) {
+      onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get()) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
         OnboardingStage.Step3_CreateSimpleXAddress
@@ -131,7 +157,7 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
     } else {
       // the next two lines are only needed for failure case when because of the database error the app gets stuck on on-boarding screen,
       // this will get it unstuck.
-      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
+      onboardingStage.set(OnboardingStage.OnboardingComplete)
       close()
     }
   }
