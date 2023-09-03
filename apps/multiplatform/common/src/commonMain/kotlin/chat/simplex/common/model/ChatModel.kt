@@ -38,7 +38,7 @@ import kotlin.time.*
 @Stable
 object ChatModel {
   val controller: ChatController = ChatController
-  val onboardingStage = mutableStateOf<OnboardingStage?>(null)
+  //val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val setDeliveryReceipts = mutableStateOf(false)
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()

@@ -32,8 +32,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.*
 
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
@@ -64,7 +63,7 @@ fun MainScreen() {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && showAdvertiseLAAlert
-      && chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete
+      && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
       && chatModel.chats.isNotEmpty()
       && chatModel.activeCallInvitation.value == null
     ) {
@@ -102,7 +101,10 @@ fun MainScreen() {
   }
 
   Box {
-    val onboarding = chatModel.onboardingStage.value
+    var onboarding by remember { mutableStateOf(chatModel.controller.appPrefs.onboardingStage.get()) }
+    LaunchedEffect(Unit) {
+      snapshotFlow { chatModel.controller.appPrefs.onboardingStage.state.value }.distinctUntilChanged().collect { onboarding = it }
+    }
     val userCreated = chatModel.userCreated.value
     var showInitializationView by remember { mutableStateOf(false) }
     when {
@@ -112,7 +114,7 @@ fun MainScreen() {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
         }
       }
-      onboarding == null || userCreated == null -> SplashView()
+      remember { chatModel.chatDbEncrypted }.value == null || userCreated == null -> SplashView()
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
         Box {
           showAdvertiseLAAlert = true

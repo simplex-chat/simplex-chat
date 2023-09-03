@@ -41,7 +41,7 @@ fun SetNotificationsMode(m: ChatModel) {
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
     Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), contentAlignment = Alignment.Center) {
-      OnboardingActionButton(MR.strings.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage, false) {
+      OnboardingActionButton(MR.strings.use_chat, OnboardingStage.OnboardingComplete, false) {
         changeNotificationsMode(currentMode.value, m)
       }
     }

@@ -66,7 +66,6 @@ fun CreateSimpleXAddress(m: ChatModel) {
         OnboardingStage.OnboardingComplete
       }
       m.controller.appPrefs.onboardingStage.set(next)
-      m.onboardingStage.value = next
     },
   )
 

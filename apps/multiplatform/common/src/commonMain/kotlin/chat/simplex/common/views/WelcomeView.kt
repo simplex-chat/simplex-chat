@@ -89,7 +89,7 @@ fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
           icon = painterResource(MR.images.ic_arrow_back_ios_new),
           textDecoration = TextDecoration.None,
           fontWeight = FontWeight.Medium
-        ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
+        ) { chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) }
       }
       Spacer(Modifier.fillMaxWidth().weight(1f))
       val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
@@ -123,17 +123,15 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
       Profile(displayName, fullName, null)
     ) ?: return@withApi
     if (chatModel.users.isEmpty()) {
-      chatModel.onboardingStage.value = if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get()) {
+      chatModel.controller.appPrefs.onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get()) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
-        chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
         OnboardingStage.Step3_CreateSimpleXAddress
-      }
+      })
     } else {
       // the next two lines are only needed for failure case when because of the database error the app gets stuck on on-boarding screen,
       // this will get it unstuck.
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
-      chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
       close()
     }
   }
