@@ -19,7 +19,6 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Lazy.Char8 as LB'
-import Data.Int (Int64)
 import Data.Word (Word8)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
@@ -53,7 +52,7 @@ chatWriteFile path s = do
     <$> runExceptT (CF.writeFile file $ LB.fromStrict s)
 
 data ReadFileResult
-  = RFResult {fileSize :: Int64}
+  = RFResult {fileSize :: Int}
   | RFError {readError :: String}
   deriving (Generic)
 
@@ -65,7 +64,7 @@ cChatReadFile cPath cKey cNonce = do
   key <- B.packCString cKey
   nonce <- B.packCString cNonce
   (r, s) <- chatReadFile path key nonce
-  let r' = LB.toStrict (J.encode r) <> "\NUL"
+  let r' = LB.toStrict $ J.encode r <> "\NUL"
   ptr <- mallocBytes $ B.length r' + B.length s
   putByteString ptr r'
   unless (B.null s) $ putByteString (ptr `plusPtr` B.length r') s
@@ -73,8 +72,9 @@ cChatReadFile cPath cKey cNonce = do
 
 chatReadFile :: FilePath -> ByteString -> ByteString -> IO (ReadFileResult, ByteString)
 chatReadFile path keyStr nonceStr = do
-  either ((,"") . RFError) (\s -> (RFResult $ LB.length s, LB.toStrict s)) <$> runExceptT readFile_
+  either ((,"") . RFError) result <$> runExceptT readFile_
   where
+    result s = let s' = LB.toStrict s in (RFResult $ B.length s', s')
     readFile_ :: ExceptT String IO LB.ByteString
     readFile_ = do
       key <- liftEither $ strDecode keyStr
