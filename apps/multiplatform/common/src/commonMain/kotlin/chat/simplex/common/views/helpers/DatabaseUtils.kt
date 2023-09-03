@@ -54,6 +54,12 @@ object DatabaseUtils {
       } else {
         dbKey = ksDatabasePassword.get() ?: ""
       }
+    } else if (appPlatform.isDesktop && !hasDatabase(dataDir.absolutePath)) {
+      // In case of database was deleted by hand
+      dbKey = randomDatabasePassword()
+      ksDatabasePassword.set(dbKey)
+      appPreferences.initialRandomDBPassphrase.set(true)
+      appPreferences.storeDBPassphrase.set(true)
     }
     return dbKey
   }
