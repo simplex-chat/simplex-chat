@@ -414,7 +414,7 @@
     <string name="initial_member_role">Função inicial</string>
     <string name="snd_group_event_group_profile_updated">perfil do grupo atualizado</string>
     <string name="group_member_status_group_deleted">Grupo excluído</string>
-    <string name="incognito_info_protects">O modo de navegação anônima protege a privacidade do nome e da imagem do seu perfil principal — para cada novo contato, um novo perfil aleatório é criado.</string>
+    <string name="incognito_info_protects">O modo Incognito protege sua privacidade usando um novo perfil aleatório para cada contato.</string>
     <string name="group_members_can_delete">Os membros do grupo podem excluir mensagens enviadas de forma irreversível.</string>
     <string name="ttl_w">%dsemana</string>
     <string name="v4_3_improved_server_configuration">Configuração de servidor aprimorada</string>
@@ -631,7 +631,7 @@
     <string name="images_limit_desc">Apenas 10 imagens podem ser enviadas ao mesmo tempo</string>
     <string name="notifications">Notificações</string>
     <string name="text_field_set_contact_placeholder">Definir nome do contato…</string>
-    <string name="switch_receiving_address_desc">Esse recurso é experimental! Ele só funcionará se o outro cliente tiver a versão 4.2 instalada. Você deve ver a mensagem na conversa assim que a alteração de endereço for concluída – verifique se você ainda pode receber mensagens desse contato (ou membro do grupo).</string>
+    <string name="switch_receiving_address_desc">O endereço de recebimento será alterado para um servidor diferente. A mudança de endereço terminará após o remetente entrar on-line.</string>
     <string name="send_verb">Enviar</string>
     <string name="reset_verb">Redefinir</string>
     <string name="live_message">Mensagem ao vivo!</string>
@@ -1327,4 +1327,28 @@
     <string name="enable_receipts_all">Ativar</string>
     <string name="sending_delivery_receipts_will_be_enabled">Enviar confirmações de entrega serão ativadas para todos os contatos.</string>
     <string name="error_enabling_delivery_receipts">Ocorreu um erro ao ativar as confirmações de entrega!</string>
+    <string name="choose_file_title">Escolher arquivo</string>
+    <string name="connect_via_link_incognito">Conectar incógnito</string>
+    <string name="turn_off_battery_optimization_button">Permitir</string>
+    <string name="disable_notifications_button">Desativar notificações</string>
+    <string name="system_restricted_background_in_call_title">Sem chamadas de fundo</string>
+    <string name="turn_off_system_restriction_button">Abrir configurações do aplicativo</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Um novo perfil aleatório será compartilhado.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Cole o link que você recebeu para se conectar com seu contato..</string>
+    <string name="receipts_groups_title_disable">Desativar recibos para grupos\?</string>
+    <string name="receipts_groups_title_enable">Ativar recibos para grupos\?</string>
+    <string name="receipts_groups_override_disabled">Recibos de entrega estão desativados para %d grupos</string>
+    <string name="receipts_groups_enable_for_all">Ativar para todos os grupos</string>
+    <string name="receipts_groups_enable_keep_overrides">Ativar (manter sobreposições do grupo)</string>
+    <string name="receipts_groups_disable_keep_overrides">Desativar (manter sobreposições do grupo)</string>
+    <string name="receipts_groups_disable_for_all">Desativar para todos os grupos</string>
+    <string name="in_developing_title">Em breve!</string>
+    <string name="delivery">Entrega</string>
+    <string name="no_info_on_delivery">Nenhuma informação de entrega</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Enviar recibos de entrega será ativado para todos os contatos em todos os perfis de chat visíveis.</string>
+    <string name="rcv_group_event_2_members_connected">%s e %s conectados</string>
+    <string name="connect_via_member_address_alert_title">Conectar diretamente\?</string>
+    <string name="no_selected_chat">Sem chat selecionado</string>
+    <string name="privacy_message_draft">Rascunho de mensagem</string>
+    <string name="send_receipts_disabled">desativado</string>
 </resources>
