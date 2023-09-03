@@ -57,8 +57,8 @@ fun SetupDatabasePassphrase(m: ChatModel) {
         val newKeyValue = newKey.value
         val success = encryptDatabase(currentKey, newKey, confirmNewKey, mutableStateOf(true), saveInPreferences, mutableStateOf(true), progressIndicator)
         if (success) {
-          nextStep()
           startChat(newKeyValue)
+          nextStep()
         } else {
           // Rollback in case of it is finished with error in order to allow to repeat the process again
           prefs.storeDBPassphrase.set(true)
@@ -172,7 +172,7 @@ private fun SetupDatabasePassphraseLayout(
     }
 
     Spacer(Modifier.weight(1f))
-    SkipButton(nextStep)
+    SkipButton(progressIndicator.value, nextStep)
 
     SectionBottomSpacer()
   }
@@ -190,9 +190,9 @@ private fun SetPassphraseButton(disabled: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SkipButton(onClick: () -> Unit) {
+private fun SkipButton(disabled: Boolean, onClick: () -> Unit) {
   SimpleButtonIconEnded(stringResource(MR.strings.use_random_passphrase), painterResource(MR.images.ic_chevron_right), color =
-  WarningOrange, click = onClick)
+  if (disabled) MaterialTheme.colors.secondary else WarningOrange, disabled = disabled, click = onClick)
   TextBelowButton(stringResource(MR.strings.you_can_change_it_later))
 }
 
@@ -224,11 +224,9 @@ private fun ProgressIndicator() {
   }
 }
 
-private fun startChat(key: String?) {
+private suspend fun startChat(key: String?) {
   val m = ChatModel
-  withBGApi {
-    initChatController(key)
-    m.chatDbChanged.value = false
-    m.chatRunning.value = true
-  }
+  initChatController(key)
+  m.chatDbChanged.value = false
+  m.chatRunning.value = true
 }
