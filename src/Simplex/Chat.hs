@@ -194,6 +194,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   inputQ <- newTBQueueIO tbqSize
   outputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
+  subscriptionMode <- newTVarIO SMSubscribe
   chatLock <- newEmptyTMVarIO
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
@@ -207,7 +208,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -246,6 +247,9 @@ cfgServers = \case
 startChatController :: forall m. ChatMonad' m => Bool -> Bool -> Bool -> m (Async ())
 startChatController subConns enableExpireCIs startXFTPWorkers = do
   asks smpAgent >>= resumeAgentClient
+  unless subConns $ do
+    subMode <- asks subscriptionMode
+    atomically $ writeTVar subMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStoreCtx' (Just "startChatController, getUsers") getUsers)
   restoreCalls
   s <- asks agentAsync
@@ -255,7 +259,7 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
       a1 <- async $ race_ notificationSubscriber agentSubscriber
       a2 <-
         if subConns
-          then Just <$> async (subscribeUsers users)
+          then Just <$> async (subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       when startXFTPWorkers $ do
@@ -283,14 +287,14 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
           startExpireCIThread user
           setExpireCIFlag user True
 
-subscribeUsers :: forall m. ChatMonad' m => [User] -> m ()
-subscribeUsers users = do
+subscribeUsers :: forall m. ChatMonad' m => Bool -> [User] -> m ()
+subscribeUsers onlyNeeded users = do
   let (us, us') = partition activeUser users
   subscribe us
   subscribe us'
   where
     subscribe :: [User] -> m ()
-    subscribe = mapM_ $ runExceptT . subscribeUserConnections Agent.subscribeConnections
+    subscribe = mapM_ $ runExceptT . subscribeUserConnections onlyNeeded Agent.subscribeConnections
 
 startFilesToReceive :: forall m. ChatMonad' m => [User] -> m ()
 startFilesToReceive users = do
@@ -464,15 +468,18 @@ processChatCommand = \case
   APIActivateChat -> withUser $ \_ -> do
     restoreCalls
     withAgent foregroundAgent
-    -- TODO(subMode): subscribe to connections registered while in bg
-    withStoreCtx' (Just "APIActivateChat, getUsers") getUsers >>= void . forkIO . startFilesToReceive
+    users <- withStoreCtx' (Just "APIActivateChat, getUsers") getUsers
+    asks subscriptionMode >>= readTVarIO >>= \case
+      SMOnlyCreate -> void . forkIO $ subscribeUsers True users
+      SMSubscribe -> pure () -- Subscriptions are automatic, nothing to do
+    void . forkIO $ startFilesToReceive users
     setAllExpireCIFlags True
     ok_
   APISuspendChat t -> do
     setAllExpireCIFlags False
     withAgent (`suspendAgent` t)
     ok_
-  ResubscribeAllConnections -> withStoreCtx' (Just "ResubscribeAllConnections, getUsers") getUsers >>= subscribeUsers >> ok_
+  ResubscribeAllConnections -> withStoreCtx' (Just "ResubscribeAllConnections, getUsers") getUsers >>= subscribeUsers False >> ok_
   -- has to be called before StartChat
   SetTempFolder tf -> do
     createDirectoryIfMissing True tf
@@ -2412,10 +2419,10 @@ agentSubscriber = do
         str :: StrEncoding a => a -> String
         str = B.unpack . strEncode
 
-type AgentBatchSubscribe m = AgentClient -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
+type AgentBatchSubscribe m = AgentClient -> Bool -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
 
-subscribeUserConnections :: forall m. ChatMonad m => AgentBatchSubscribe m -> User -> m ()
-subscribeUserConnections agentBatchSubscribe user@User {userId} = do
+subscribeUserConnections :: forall m. ChatMonad m => Bool -> AgentBatchSubscribe m -> User -> m ()
+subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   -- get user connections
   ce <- asks $ subscriptionEvents . config
   (ctConns, cts) <- getContactConns
@@ -2425,7 +2432,7 @@ subscribeUserConnections agentBatchSubscribe user@User {userId} = do
   (rftConns, rfts) <- getRcvFileTransferConns
   (pcConns, pcs) <- getPendingContactConns
   -- subscribe using batched commands
-  rs <- withAgent (`agentBatchSubscribe` concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns])
+  rs <- withAgent $ \a -> agentBatchSubscribe a onlyNeeded (concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns])
   -- send connection events to view
   contactSubsToView rs cts ce
   contactLinkSubsToView rs ucs
