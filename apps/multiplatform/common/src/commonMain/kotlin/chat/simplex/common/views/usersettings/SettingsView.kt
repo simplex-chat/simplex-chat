@@ -393,9 +393,13 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
       val padding = with(LocalDensity.current) { 6.sp.toDp() }
       Text(text, Modifier.weight(1f).padding(vertical = padding), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground)
       Spacer(Modifier.width(DEFAULT_PADDING))
-    }
-    Row(Modifier.widthIn(max = (windowWidth() - DEFAULT_PADDING * 2) / 2)) {
-      content()
+      Row(Modifier.widthIn(max = (windowWidth() - DEFAULT_PADDING * 2) / 2)) {
+        content()
+      }
+    } else {
+      Row {
+        content()
+      }
     }
   }
 }
