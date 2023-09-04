@@ -20,6 +20,7 @@ import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
+import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
@@ -262,17 +263,18 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
-  CRAgentSubs {activeSubs, distinctActiveSubs, pendingSubs, distinctPendingSubs} ->
-    [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", distinct active = " <> show (sum distinctActiveSubs) <> ", pending = " <> show (sum pendingSubs) <> ", distinct pending = " <> show (sum distinctPendingSubs)]
+  CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
+    [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
       <> ("active subscriptions:" : listSubs activeSubs)
-      <> ("distinct active subscriptions:" : listSubs distinctActiveSubs)
       <> ("pending subscriptions:" : listSubs pendingSubs)
-      <> ("distinct pending subscriptions:" : listSubs distinctPendingSubs)
+      <> ("removed subscriptions:" : listSubs removedSubs)
     where
-      listSubs = map (\(srv, count) -> plain $ srv <> ": " <> tshow count) . M.assocs
-  CRAgentSubsDetails SubscriptionsInfo {activeSubscriptions, pendingSubscriptions} ->
+      listSubs :: Show a => Map Text a -> [StyledString]
+      listSubs = map (\(srv, info) -> plain $ srv <> ": " <> tshow info) . M.assocs
+  CRAgentSubsDetails SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} ->
     ("active subscriptions:" : map sShow activeSubscriptions)
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
+      <> ("removed subscriptions: " : map sShow removedSubscriptions)
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)
