@@ -662,6 +662,7 @@ processChatCommand = \case
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId, msgScope = Nothing}
                 qmc = quoteContent origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
+            liftIO $ print $ "APISendMessage msgRef" <> show msgRef
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live) Nothing), Just quotedItem)
           where
             quoteData :: ChatItem c d -> GroupMember -> m (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
@@ -1586,11 +1587,13 @@ processChatCommand = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGetGroupLink groupId
   -- TODO group-direct: send only to directMemberName member; no need to read groupId twice (getSendRef)
-  SendGroupMessageQuote gName directMemberName cName quotedMsg msg -> withUser $ \user -> do
+  SendGroupMessageQuote gName cName directMemberName quotedMsg msg -> withUser $ \user -> do
+    liftIO $ print $ "SendGroupMessageQuote gName " <> show gName <> " cName " <> show cName <> " directMemberName " <> show directMemberName
     let sendName = SNGroup gName directMemberName
     sendRef <- getSendRef user sendName
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
+    liftIO $ print $ "SendGroupMessageQuote sendRef " <> show sendRef <> " quotedItemId " <> show quotedItemId
     let mc = MCText msg
     processChatCommand . APISendMessage sendRef False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   LastChats count_ -> withUser' $ \user -> do
@@ -5237,9 +5240,7 @@ chatCommandP =
       "/set link role #" *> (GroupLinkMemberRole <$> displayName <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayName),
       "/show link #" *> (ShowGroupLink <$> displayName),
-      -- TODO group-direct: replace @ with >@ for contactName_ (second parser), use @ for direct member name
-      (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <*> pure Nothing <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
-      (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <*> pure Nothing <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
+      (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <*> optional (" >@" *> displayName) <*> optional (" @" *> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
@@ -5345,7 +5346,6 @@ chatCommandP =
       c -> c
     refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
-    directMemberIdMessageP = " directMemberId=" *> (Just <$> A.decimal) <|> pure Nothing
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
     receiptSettings = do
       enable <- onOffP

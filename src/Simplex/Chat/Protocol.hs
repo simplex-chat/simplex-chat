@@ -146,8 +146,11 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data MessageScope = MSDirect | MSGroup
-  deriving (Eq, Show, Generic, FromJSON)
+data MessageScope = MSGroup | MSPrivate
+  deriving (Eq, Show, Generic)
+
+instance FromJSON MessageScope where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MS"
 
 instance ToJSON MessageScope where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "MS"

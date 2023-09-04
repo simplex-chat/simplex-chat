@@ -375,7 +375,7 @@ data ChatCommand
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
-  | SendGroupMessageQuote {groupName :: GroupName, directMemberName :: Maybe ContactName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
+  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, directMemberName :: Maybe ContactName, quotedMsg :: Text, message :: Text}
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)

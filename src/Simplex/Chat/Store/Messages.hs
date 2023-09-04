@@ -395,15 +395,17 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
   case chatDirection of
     CDDirectRcv Contact {contactId} -> getDirectChatItemQuote_ contactId (not sent)
     CDGroupRcv GroupInfo {groupId, membership = GroupMember {memberId = userMemberId}} sender@GroupMember {memberId = senderMemberId} directMember ->
-      case (memberId, msgScope) of
-        (Just mId, Just ms)
-          | mId == userMemberId -> (`ciQuote` CIQGroupSnd ms) <$> getUserGroupChatItemId_ groupId
-          | mId == senderMemberId -> (`ciQuote` CIQGroupRcv (Just sender) ms) <$> getGroupChatItemId_ groupId mId
-          | otherwise -> getGroupChatItemQuote_ groupId mId ms
+      case memberId of
+        Just mId
+          | mId == userMemberId -> (`ciQuote` CIQGroupSnd messageScope) <$> getUserGroupChatItemId_ groupId
+          | mId == senderMemberId -> (`ciQuote` CIQGroupRcv (Just sender) messageScope) <$> getGroupChatItemId_ groupId mId
+          | otherwise -> getGroupChatItemQuote_ groupId mId
         _ -> pure . ciQuote Nothing $ CIQGroupRcv Nothing MSGroup
   where
     ciQuote :: Maybe ChatItemId -> CIQDirection c -> CIQuote c
     ciQuote itemId dir = CIQuote dir itemId msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
+    messageScope :: MessageScope
+    messageScope = fromMaybe MSGroup msgScope
     getDirectChatItemQuote_ :: Int64 -> Bool -> IO (CIQuote 'CTDirect)
     getDirectChatItemQuote_ contactId userSent = do
       fmap ciQuoteDirect . maybeFirstRow fromOnly $
@@ -428,8 +430,8 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
           db
           "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id = ?"
           (userId, groupId, msgId, MDRcv, mId)
-    getGroupChatItemQuote_ :: Int64 -> MemberId -> MessageScope -> IO (CIQuote 'CTGroup)
-    getGroupChatItemQuote_ groupId mId ms = do
+    getGroupChatItemQuote_ :: Int64 -> MemberId -> IO (CIQuote 'CTGroup)
+    getGroupChatItemQuote_ groupId mId = do
       ciQuoteGroup
         <$> DB.queryNamed
           db
@@ -450,8 +452,8 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
           [":user_id" := userId, ":group_id" := groupId, ":member_id" := mId, ":msg_id" := msgId]
       where
         ciQuoteGroup :: [Only (Maybe ChatItemId) :. GroupMemberRow] -> CIQuote 'CTGroup
-        ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing ms
-        ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId $ CIQGroupRcv (Just $ toGroupMember userContactId memberRow) ms
+        ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing messageScope
+        ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId $ CIQGroupRcv (Just $ toGroupMember userContactId memberRow) messageScope
 
 getChatPreviews :: DB.Connection -> User -> Bool -> IO [AChat]
 getChatPreviews db user withPCC = do

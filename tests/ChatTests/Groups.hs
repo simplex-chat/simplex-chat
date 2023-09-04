@@ -763,7 +763,7 @@ testGroupMessageQuotedReply =
         (bob <# "#team alice> hello! how are you?")
         (cath <# "#team alice> hello! how are you?")
       threadDelay 1000000
-      bob `send` "> #team @alice (hello) hello, all good, you?"
+      bob `send` "> #team >@alice (hello) hello, all good, you?"
       bob <# "#team > alice hello! how are you?"
       bob <## "      hello, all good, you?"
       concurrently_
@@ -778,7 +778,7 @@ testGroupMessageQuotedReply =
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hello! how are you?"), Nothing), ((1, "hello, all good, you?"), Just (0, "hello! how are you?"))])
       alice #$> ("/_get chat #1 count=2", chat', [((1, "hello! how are you?"), Nothing), ((0, "hello, all good, you?"), Just (1, "hello! how are you?"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello! how are you?"), Nothing), ((0, "hello, all good, you?"), Just (0, "hello! how are you?"))])
-      bob `send` "> #team bob (hello, all good) will tell more"
+      bob `send` "> #team >@bob (hello, all good) will tell more"
       bob <# "#team > bob hello, all good, you?"
       bob <## "      will tell more"
       concurrently_
@@ -794,7 +794,7 @@ testGroupMessageQuotedReply =
       alice #$> ("/_get chat #1 count=1", chat', [((0, "will tell more"), Just (0, "hello, all good, you?"))])
       cath #$> ("/_get chat #1 count=1", chat', [((0, "will tell more"), Just (0, "hello, all good, you?"))])
       threadDelay 1000000
-      cath `send` "> #team bob (hello) hi there!"
+      cath `send` "> #team >@bob (hello) hi there!"
       cath <# "#team > bob hello, all good, you?"
       cath <## "      hi there!"
       concurrently_
@@ -850,7 +850,7 @@ testGroupMessageUpdate =
 
       threadDelay 1000000
       -- alice, bob: msg id 6, cath: msg id 5
-      bob `send` "> #team @alice (hey) hi alice"
+      bob `send` "> #team >@alice (hey) hi alice"
       bob <# "#team > alice hey 👋"
       bob <## "      hi alice"
       concurrently_
@@ -877,7 +877,7 @@ testGroupMessageUpdate =
       alice #$> ("/_update item #1 " <> msgItemId2 <> " text updating bob's message", id, "cannot update this item")
 
       threadDelay 1000000
-      cath `send` "> #team @alice (greetings) greetings!"
+      cath `send` "> #team >@alice (greetings) greetings!"
       cath <# "#team > alice greetings 🤝"
       cath <## "      greetings!"
       concurrently_
@@ -990,7 +990,7 @@ testGroupMessageDelete =
 
       threadDelay 1000000
       -- alice: msg id 5, bob: msg id 6, cath: msg id 5
-      bob `send` "> #team @alice (hello) hi alic"
+      bob `send` "> #team >@alice (hello) hi alic"
       bob <# "#team > alice hello!"
       bob <## "      hi alic"
       concurrently_
