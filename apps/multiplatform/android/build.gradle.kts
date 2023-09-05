@@ -83,12 +83,15 @@ android {
     // Comma separated list of languages that will be included in the apk
     android.defaultConfig.resConfigs(
         "en",
+        "ar",
         "bg",
         "cs",
         "de",
         "es",
+        "fi",
         "fr",
         "it",
+        "iw",
         "ja",
         "nl",
         "pl",

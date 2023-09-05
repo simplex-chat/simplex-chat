@@ -244,7 +244,7 @@
       </trans-unit>
       <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
         <source>%u messages failed to decrypt.</source>
-        <target>%u-berichten kunnen niet worden gedecodeerd.</target>
+        <target>%u berichten kunnen niet worden ontsleuteld.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%u messages skipped." xml:space="preserve">
@@ -2713,7 +2713,7 @@
       </trans-unit>
       <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target>Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.</target>
+        <target>Het kan gebeuren wanneer u of de ander een oude databaseback-up gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
@@ -4919,7 +4919,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
         <source>Use new incognito profile</source>
-        <target>Gebruik een nieuw incognito -profiel</target>
+        <target>Gebruik een nieuw incognitoprofiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
