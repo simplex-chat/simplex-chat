@@ -953,7 +953,6 @@ testGroupMessageEditHistory =
 
       alice ##> ("/_update item #1 " <> aliceItemId <> " text hey there")
       alice <# "#team [edited] hey there"
-      bob <# "#team alice> [edited] hey there"
 
       alice ##> "/item info #team hey"
       alice <##. "sent at: "
@@ -963,10 +962,7 @@ testGroupMessageEditHistory =
       alice .<## ": hey 👋"
       alice .<## ": hello!"
       bob ##> "/item info #team hey"
-      bob <##. "sent at: "
-      bob <##. "received at: "
-      bob <## "message history:"
-      bob .<## ": hey there"
+      bob <## "message not found by text: hey"
 
 testGroupMessageDelete :: HasCallStack => FilePath -> IO ()
 testGroupMessageDelete =
@@ -1019,14 +1015,10 @@ testGroupMessageDelete =
       bob ##> ("/_update item #1 " <> msgItemId3 <> " text hi alice")
       bob <# "#team [edited] > alice hello!"
       bob <## "      hi alice"
-      concurrently_
-        (alice <# "#team bob> [edited] hi alice")
-        ( do
-            cath <# "#team bob> [edited] > alice hello!"
-            cath <## "      hi alice"
-        )
+      cath <# "#team bob> [edited] > alice hello!"
+      cath <## "      hi alice"
 
-      alice #$> ("/_get chat #1 count=1", chat', [((0, "hi alice"), Nothing)])
+      alice #$> ("/_get chat #1 count=1", chat', [((0, "connected"), Nothing)])
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
 

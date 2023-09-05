@@ -173,6 +173,17 @@ jsonCIDirection = \case
   CIGroupSnd dm -> JCIGroupSnd dm
   CIGroupRcv m ms -> JCIGroupRcv m ms
 
+ciDirDirectMember :: CIDirection 'CTGroup d -> Maybe GroupMember
+ciDirDirectMember = \case
+  CIGroupSnd dm -> dm
+  CIGroupRcv _ MSGroup -> Nothing
+  CIGroupRcv m MSPrivate -> Just m
+
+directMemberToMsgScope :: Maybe GroupMember -> MessageScope
+directMemberToMsgScope = \case
+  Nothing -> MSGroup
+  Just _ -> MSPrivate
+
 data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
   deriving (Show, Generic)
 
