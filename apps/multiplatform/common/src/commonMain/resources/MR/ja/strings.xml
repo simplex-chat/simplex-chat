@@ -1366,4 +1366,14 @@
     <string name="receipts_groups_enable_keep_overrides">有効にする（グループの設定の優先を維持）</string>
     <string name="receipts_contacts_disable_keep_overrides">無効にする（設定の優先を維持）</string>
     <string name="v5_2_disappear_one_message_descr">会話中に無効になっている場合でも。</string>
+    <string name="v5_2_message_delivery_receipts">Message delivery receipts!</string>
+    <string name="delivery_receipts_title">Delivery receipts!</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</string>
+    <string name="message_delivery_error_title">Message delivery error</string>
+    <string name="send_receipts_disabled_alert_title">Receipts are disabled</string>
+    <string name="settings_section_title_delivery_receipts">SEND DELIVERY RECEIPTS TO</string>
+    <string name="sending_delivery_receipts_will_be_enabled">Sending delivery receipts will be enabled for all contacts.</string>
+    <string name="send_receipts_disabled_alert_msg">This group has over %1$d members, delivery receipts are not sent.</string>
+    <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
+    <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
 </resources>
