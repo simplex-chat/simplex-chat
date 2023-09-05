@@ -771,7 +771,7 @@
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>
-  <string name="you_can_change_it_later">You can change it later</string>
+  <string name="you_can_change_it_later">Random passphrase is stored in settings as plaintext.\nYou can change it later.</string>
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- MakeConnection -->
@@ -1006,11 +1006,11 @@
   <string name="enter_correct_current_passphrase">Please enter correct current passphrase.</string>
   <string name="database_is_not_encrypted">Your chat database is not encrypted - set passphrase to protect it.</string>
   <string name="keychain_is_storing_securely">Android Keystore is used to securely store passphrase - it allows notification service to work.</string>
-  <string name="settings_is_storing_in_clear_text">Settings are used to store passphrase - it\'s stored in clear text.</string>
+  <string name="settings_is_storing_in_clear_text">The passphrase is stored in settings as plaintext.</string>
   <string name="encrypted_with_random_passphrase">Database is encrypted using a random passphrase, you can change it.</string>
   <string name="impossible_to_recover_passphrase"><![CDATA[<b>Please note</b>: you will NOT be able to recover or change passphrase if you lose it.]]></string>
   <string name="keychain_allows_to_receive_ntfs">Android Keystore will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving notifications.</string>
-  <string name="passphrase_will_be_saved_in_settings">Settings are used to store passphrase - it will allow to not enter the passphrase after each restart at the cost of storing it in insecure way.</string>
+  <string name="passphrase_will_be_saved_in_settings">The passphrase will be stored in settings as plaintext after you change it or restart the app.</string>
   <string name="you_have_to_enter_passphrase_every_time">You have to enter passphrase every time the app starts - it is not stored on the device.</string>
   <string name="encrypt_database_question">Encrypt database?</string>
   <string name="change_database_passphrase_question">Change database passphrase?</string>

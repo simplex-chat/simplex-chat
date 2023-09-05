@@ -183,6 +183,7 @@ private fun SetPassphraseButton(disabled: Boolean, onClick: () -> Unit) {
   SimpleButtonIconEnded(
     stringResource(MR.strings.set_database_passphrase),
     painterResource(MR.images.ic_check),
+    style = MaterialTheme.typography.h2,
     color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
     disabled = disabled,
     click = onClick
@@ -193,17 +194,13 @@ private fun SetPassphraseButton(disabled: Boolean, onClick: () -> Unit) {
 private fun SkipButton(disabled: Boolean, onClick: () -> Unit) {
   SimpleButtonIconEnded(stringResource(MR.strings.use_random_passphrase), painterResource(MR.images.ic_chevron_right), color =
   if (disabled) MaterialTheme.colors.secondary else WarningOrange, disabled = disabled, click = onClick)
-  TextBelowButton(stringResource(MR.strings.you_can_change_it_later))
-}
-
-@Composable
-private fun TextBelowButton(text: String) {
   Text(
-    text,
+    stringResource(MR.strings.you_can_change_it_later),
     Modifier
       .fillMaxWidth()
       .padding(horizontal = DEFAULT_PADDING * 3),
     style = MaterialTheme.typography.subtitle1,
+    color = MaterialTheme.colors.secondary,
     textAlign = TextAlign.Center,
   )
 }
