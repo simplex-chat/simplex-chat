@@ -35,6 +35,8 @@ import GHC.Generics (Generic)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
+import Simplex.Chat.Mobile.File
+import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
 import Simplex.Chat.Store
@@ -68,6 +70,10 @@ foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CStrin
 foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
 foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
+
+foreign export ccall "chat_write_file" cChatWriteFile :: CString -> Ptr Word8 -> CInt -> IO CJSONString
+
+foreign export ccall "chat_read_file" cChatReadFile :: CString -> CString -> CString -> IO (Ptr Word8)
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
@@ -150,8 +156,6 @@ defaultMobileConfig =
     { confirmMigrations = MCYesUp,
       logLevel = CLLError
     }
-
-type CJSONString = CString
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers

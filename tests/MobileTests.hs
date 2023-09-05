@@ -1,22 +1,46 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module MobileTests where
 
 import ChatTests.Utils
 import Control.Monad.Except
+import Crypto.Random (getRandomBytes)
+import Data.Aeson (FromJSON (..))
+import qualified Data.Aeson as J
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Word (Word8)
+import Foreign.C
+import Foreign.Marshal.Alloc (mallocBytes)
+import Foreign.Ptr
 import Simplex.Chat.Mobile
+import Simplex.Chat.Mobile.File
+import Simplex.Chat.Mobile.Shared
+import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
+import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.FilePath ((</>))
 import Test.Hspec
 
-mobileTests :: SpecWith FilePath
+mobileTests :: HasCallStack => SpecWith FilePath
 mobileTests = do
   describe "mobile API" $ do
     it "start new chat without user" testChatApiNoUser
     it "start new chat with existing user" testChatApi
+    it "should encrypt/decrypt WebRTC frames" testMediaApi
+    it "should encrypt/decrypt WebRTC frames via C API" testMediaCApi
+    it "should read/write encrypted files via C API" testFileCApi
 
 noActiveUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -113,3 +137,65 @@ testChatApi tmp = do
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
+
+testMediaApi :: HasCallStack => FilePath -> IO ()
+testMediaApi _ = do
+  key :: ByteString <- getRandomBytes 32
+  frame <- getRandomBytes 100
+  let keyStr = strEncode key
+      reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
+      frame' = frame <> reserved
+  Right encrypted <- runExceptT $ chatEncryptMedia keyStr frame'
+  encrypted `shouldNotBe` frame'
+  B.length encrypted `shouldBe` B.length frame'
+  runExceptT (chatDecryptMedia keyStr encrypted) `shouldReturn` Right frame'
+
+testMediaCApi :: HasCallStack => FilePath -> IO ()
+testMediaCApi _ = do
+  key :: ByteString <- getRandomBytes 32
+  frame <- getRandomBytes 100
+  let keyStr = strEncode key
+      reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
+      frame' = frame <> reserved
+  encrypted <- test cChatEncryptMedia keyStr frame'
+  encrypted `shouldNotBe` frame'
+  test cChatDecryptMedia keyStr encrypted `shouldReturn` frame'
+  where
+    test :: HasCallStack => (CString -> Ptr Word8 -> CInt -> IO CString) -> ByteString -> ByteString -> IO ByteString
+    test f keyStr frame = do
+      let len = B.length frame
+          cLen = fromIntegral len
+      ptr <- mallocBytes len
+      putByteString ptr frame
+      cKeyStr <- newCAString $ BS.unpack keyStr
+      (f cKeyStr ptr cLen >>= peekCAString) `shouldReturn` ""
+      getByteString ptr cLen
+
+instance FromJSON WriteFileResult where parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "WF"
+
+instance FromJSON ReadFileResult where parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RF"
+
+testFileCApi :: FilePath -> IO ()
+testFileCApi tmp = do
+  src <- B.readFile "./tests/fixtures/test.pdf"
+  cPath <- newCAString $ tmp </> "test.pdf"
+  let len = B.length src
+      cLen = fromIntegral len
+  ptr <- mallocBytes $ B.length src
+  putByteString ptr src
+  r <- peekCAString =<< cChatWriteFile cPath ptr cLen
+  Just (WFResult (CFArgs key nonce)) <- jDecode r
+  cKey <- encodedCString key
+  cNonce <- encodedCString nonce
+  ptr' <- cChatReadFile cPath cKey cNonce
+  -- the returned pointer contains NUL-terminated JSON string of ReadFileResult followed by the file contents
+  r' <- peekCAString $ castPtr ptr'
+  Just (RFResult sz) <- jDecode r'
+  contents <- getByteString (ptr' `plusPtr` (length r' + 1)) $ fromIntegral sz
+  contents `shouldBe` src
+  sz `shouldBe` len
+  where
+    jDecode :: FromJSON a => String -> IO (Maybe a)
+    jDecode = pure . J.decode . LB.pack
+    encodedCString :: StrEncoding a => a -> IO CString
+    encodedCString = newCAString . BS.unpack . strEncode

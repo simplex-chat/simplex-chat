@@ -37,6 +37,8 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
+import Simplex.Messaging.Crypto.File (CryptoFile (..))
+import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
@@ -459,7 +461,7 @@ data CIFile (d :: MsgDirection) = CIFile
   { fileId :: Int64,
     fileName :: String,
     fileSize :: Integer,
-    filePath :: Maybe FilePath, -- local file path
+    fileSource :: Maybe CryptoFile, -- local file path with optional key and nonce
     fileStatus :: CIFileStatus d,
     fileProtocol :: FileProtocol
   }
@@ -630,6 +632,14 @@ data CIFileInfo = CIFileInfo
     filePath :: Maybe FilePath
   }
   deriving (Show)
+
+mkCIFileInfo :: MsgDirectionI d => CIFile d -> CIFileInfo
+mkCIFileInfo CIFile {fileId, fileStatus, fileSource} =
+  CIFileInfo
+    { fileId,
+      fileStatus = Just $ AFS msgDirection fileStatus,
+      filePath = CF.filePath <$> fileSource
+    }
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd

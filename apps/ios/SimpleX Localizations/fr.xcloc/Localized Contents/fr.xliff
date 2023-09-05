@@ -5725,7 +5725,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="encryption ok" xml:space="preserve">
         <source>encryption ok</source>
-        <target>chiffrement ok</target>
+        <target>chiffrement OK</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption ok for %@" xml:space="preserve">
