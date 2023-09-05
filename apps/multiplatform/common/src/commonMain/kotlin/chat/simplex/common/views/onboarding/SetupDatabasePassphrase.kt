@@ -54,7 +54,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
       withApi {
         if (m.chatRunning.value == true) {
           // Stop chat if it's started before doing anything
-          stopChatAsync(m)
+          stopChatAsync(m, m.chatRunning)
         }
         prefs.storeDBPassphrase.set(false)
 

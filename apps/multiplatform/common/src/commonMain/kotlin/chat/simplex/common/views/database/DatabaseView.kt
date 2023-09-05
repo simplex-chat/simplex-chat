@@ -60,9 +60,6 @@ fun DatabaseView(
       importArchiveAlert(m, to, appFilesCountAndSize, progressIndicator)
     }
   }
-  LaunchedEffect(m.chatRunning) {
-    runChat.value = m.chatRunning.value ?: true
-  }
   val chatItemTTL = remember { mutableStateOf(m.chatItemTTL.value) }
   Box(
     Modifier.fillMaxSize(),
@@ -347,7 +344,6 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastSta
       } else {
         m.controller.apiStartChat()
         runChat.value = true
-        m.chatRunning.value = true
       }
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)
@@ -404,8 +400,7 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
 private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
   withApi {
     try {
-      runChat.value = false
-      stopChatAsync(m)
+      stopChatAsync(m, runChat)
       platform.androidChatStopped()
     } catch (e: Error) {
       runChat.value = true
@@ -414,9 +409,9 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
   }
 }
 
-suspend fun stopChatAsync(m: ChatModel) {
+suspend fun stopChatAsync(m: ChatModel, runChat: MutableState<Boolean?>) {
   m.controller.apiStopChat()
-  m.chatRunning.value = false
+  runChat.value = false
 }
 
 suspend fun deleteChatAsync(m: ChatModel) {
