@@ -38,7 +38,7 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
 private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (LAResult) -> Unit) {
   withBGApi {
     try {
-      stopChatAsync(m, m.chatRunning)
+      stopChatAsync(m)
       deleteChatAsync(m)
       ksAppPassword.set(password)
       ksSelfDestructPassword.remove()

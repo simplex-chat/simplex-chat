@@ -39,7 +39,6 @@ fun DatabaseView(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val progressIndicator = remember { mutableStateOf(false) }
-  val runChat = remember { m.chatRunning }
   val prefs = m.controller.appPrefs
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
   val chatArchiveName = remember { mutableStateOf(prefs.chatArchiveName.get()) }
@@ -66,7 +65,7 @@ fun DatabaseView(
   ) {
     DatabaseLayout(
       progressIndicator.value,
-      runChat.value != false,
+      remember { m.chatRunning }.value != false,
       m.chatDbChanged.value,
       useKeychain.value,
       m.chatDbEncrypted.value,
@@ -80,8 +79,8 @@ fun DatabaseView(
       chatItemTTL,
       m.currentUser.value,
       m.users,
-      startChat = { startChat(m, runChat, chatLastStart, m.chatDbChanged) },
-      stopChatAlert = { stopChatAlert(m, runChat) },
+      startChat = { startChat(m, chatLastStart, m.chatDbChanged) },
+      stopChatAlert = { stopChatAlert(m) },
       exportArchive = { exportArchive(m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
       deleteAppFilesAndMedia = { deleteFilesAndMediaAlert(appFilesCountAndSize) },
@@ -326,7 +325,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) MR.strings.old_database_archive else MR.strings.new_database_archive)
 }
 
-private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
+private fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
   withApi {
     try {
       if (chatDbChanged.value) {
@@ -343,26 +342,26 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean?>, chatLastSta
         return@withApi
       } else {
         m.controller.apiStartChat()
-        runChat.value = true
+        m.chatRunning.value = true
       }
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)
       chatLastStart.value = ts
       platform.androidChatStartedAfterBeingOff()
     } catch (e: Error) {
-      runChat.value = false
+      m.chatRunning.value = false
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
     }
   }
 }
 
-private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean?>) {
+private fun stopChatAlert(m: ChatModel) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.stop_chat_question),
     text = generalGetString(MR.strings.stop_chat_to_export_import_or_delete_chat_database),
     confirmText = generalGetString(MR.strings.stop_chat_confirmation),
-    onConfirm = { authStopChat(m, runChat) },
-    onDismiss = { runChat.value = true }
+    onConfirm = { authStopChat(m) },
+    onDismiss = { m.chatRunning.value = true }
   )
 }
 
@@ -373,7 +372,7 @@ private fun exportProhibitedAlert() {
   )
 }
 
-private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
+private fun authStopChat(m: ChatModel) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
       generalGetString(MR.strings.auth_stop_chat),
@@ -381,37 +380,37 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
       completed = { laResult ->
         when (laResult) {
           LAResult.Success, is LAResult.Unavailable -> {
-            stopChat(m, runChat)
+            stopChat(m)
           }
           is LAResult.Error -> {
-            runChat.value = true
+            m.chatRunning.value = true
           }
           is LAResult.Failed -> {
-            runChat.value = true
+            m.chatRunning.value = true
           }
         }
       }
     )
   } else {
-    stopChat(m, runChat)
+    stopChat(m)
   }
 }
 
-private fun stopChat(m: ChatModel, runChat: MutableState<Boolean?>) {
+private fun stopChat(m: ChatModel) {
   withApi {
     try {
-      stopChatAsync(m, runChat)
+      stopChatAsync(m)
       platform.androidChatStopped()
     } catch (e: Error) {
-      runChat.value = true
+      m.chatRunning.value = true
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_stopping_chat), e.toString())
     }
   }
 }
 
-suspend fun stopChatAsync(m: ChatModel, runChat: MutableState<Boolean?>) {
+suspend fun stopChatAsync(m: ChatModel) {
   m.controller.apiStopChat()
-  runChat.value = false
+  m.chatRunning.value = false
 }
 
 suspend fun deleteChatAsync(m: ChatModel) {
