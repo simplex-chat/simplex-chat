@@ -75,6 +75,7 @@ fun DatabaseView(
       m.chatDbEncrypted.value,
       m.controller.appPrefs.storeDBPassphrase.state.value,
       m.controller.appPrefs.initialRandomDBPassphrase,
+      m.controller.appPrefs.developerTools.state.value,
       importArchiveLauncher,
       chatArchiveName,
       chatArchiveTime,
@@ -125,6 +126,7 @@ fun DatabaseLayout(
   chatDbEncrypted: Boolean?,
   passphraseSaved: Boolean,
   initialRandomDBPassphrase: SharedPreference<Boolean>,
+  developerTools: Boolean,
   importArchiveLauncher: FileChooserLauncher,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
@@ -187,6 +189,14 @@ fun DatabaseLayout(
         iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
       )
+      if (appPlatform.isDesktop && developerTools) {
+        SettingsActionItem(
+          painterResource(MR.images.ic_folder_open),
+          stringResource(MR.strings.open_database_folder),
+          ::desktopOpenDatabaseDir,
+          disabled = operationsDisabled
+        )
+      }
       SettingsActionItem(
         painterResource(MR.images.ic_ios_share),
         stringResource(MR.strings.export_database),
@@ -218,14 +228,6 @@ fun DatabaseLayout(
           painterResource(MR.images.ic_inventory_2),
           title,
           click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
-          disabled = operationsDisabled
-        )
-      }
-      if (appPlatform.isDesktop) {
-        SettingsActionItem(
-          painterResource(MR.images.ic_folder_open),
-          stringResource(MR.strings.open_database_folder),
-          ::desktopOpenDatabaseDir,
           disabled = operationsDisabled
         )
       }
@@ -669,6 +671,7 @@ fun PreviewDatabaseLayout() {
       chatDbEncrypted = false,
       passphraseSaved = false,
       initialRandomDBPassphrase = SharedPreference({ true }, {}),
+      developerTools = true,
       importArchiveLauncher = rememberFileChooserLauncher(true) {},
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
