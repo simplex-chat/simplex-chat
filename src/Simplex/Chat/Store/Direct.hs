@@ -498,10 +498,10 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
             <$> DB.execute
               db
               [sql|
-            UPDATE contact_requests
-            SET agent_invitation_id = ?, chat_vrange_min_version = ?, chat_vrange_max_version = ?, updated_at = ?
-            WHERE user_id = ? AND contact_request_id = ?
-          |]
+                UPDATE contact_requests
+                SET agent_invitation_id = ?, chat_vrange_min_version = ?, chat_vrange_max_version = ?, updated_at = ?
+                WHERE user_id = ? AND contact_request_id = ?
+              |]
               (invId, minV, maxV, currentTs, userId, cReqId)
         else withLocalDisplayName db userId displayName $ \ldn ->
           Right <$> do

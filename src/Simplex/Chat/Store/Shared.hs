@@ -51,6 +51,7 @@ data StoreError
   | SEUserNotFoundByContactRequestId {contactRequestId :: Int64}
   | SEContactNotFound {contactId :: ContactId}
   | SEContactNotFoundByName {contactName :: ContactName}
+  | SEContactNotFoundByMemberId {groupMemberId :: GroupMemberId}
   | SEContactNotReady {contactName :: ContactName}
   | SEDuplicateContactLink
   | SEUserContactLinkNotFound
@@ -78,6 +79,7 @@ data StoreError
   | SERcvFileNotFoundXFTP {agentRcvFileId :: AgentRcvFileId}
   | SEConnectionNotFound {agentConnId :: AgentConnId}
   | SEConnectionNotFoundById {connId :: Int64}
+  | SEConnectionNotFoundByMemberId {groupMemberId :: GroupMemberId}
   | SEPendingConnectionNotFound {connId :: Int64}
   | SEIntroNotFound
   | SEUniqueID
