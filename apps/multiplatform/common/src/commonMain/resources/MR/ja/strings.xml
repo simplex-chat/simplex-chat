@@ -1257,9 +1257,9 @@
     <string name="choose_file_title">ファイルを選択</string>
     <string name="unfavorite_chat">お気に入りを解除</string>
     <string name="favorite_chat">お気に入り</string>
-    <string name="receipts_contacts_override_enabled">連絡先 %d に対して既読の通知が有効です</string>
+    <string name="receipts_contacts_override_enabled">Sending receipts is enabled for %d contacts</string>
     <string name="receipts_contacts_enable_for_all">すべて有効</string>
-    <string name="receipts_contacts_override_disabled">連絡先 %d に対して既読の通知が無効です</string>
+    <string name="receipts_contacts_override_disabled">Sending receipts is disabled for %d contacts</string>
     <string name="receipts_contacts_disable_for_all">すべて無効</string>
     <string name="settings_shutdown">終了</string>
     <string name="conn_event_ratchet_sync_started">暗号化に同意しています…</string>
@@ -1341,8 +1341,8 @@
     <string name="connect__your_profile_will_be_shared">あなたのプロフィール %1$s が共有されます。</string>
     <string name="receipts_groups_title_enable">Enable receipts for groups\?</string>
     <string name="receipts_groups_title_disable">Disable receipts for groups\?</string>
-    <string name="receipts_groups_override_enabled">%dグループの既読の通知が有効です</string>
-    <string name="receipts_groups_override_disabled">%dグループの既読の通知が無効です</string>
+    <string name="receipts_groups_override_enabled">Sending receipts is enabled for %d groups</string>
+    <string name="receipts_groups_override_disabled">Sending receipts is disabled for %d groups</string>
     <string name="send_receipts_disabled">無効</string>
     <string name="system_restricted_background_in_call_title">バックグラウンド通話なし</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">受信したリンクを貼り付け、連絡先に接続する。</string>
@@ -1357,7 +1357,7 @@
     <string name="receipts_groups_disable_for_all">すべてのグループで無効にする</string>
     <string name="privacy_message_draft">メッセージの下書き</string>
     <string name="privacy_show_last_messages">最新のメッセージを表示</string>
-    <string name="send_receipts">既読の通知</string>
+    <string name="send_receipts">Send receipts</string>
     <string name="rcv_group_event_n_members_connected">%s, %s および %d 人の他のメンバーが接続しています。</string>
     <string name="rcv_group_event_3_members_connected">%s, %s と %s は接続中</string>
     <string name="in_developing_desc">この機能はまだサポートされていません。次のリリースをお試しください。</string>
