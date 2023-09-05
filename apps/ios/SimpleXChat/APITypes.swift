@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 
-let jsonDecoder = getJSONDecoder()
+public let jsonDecoder = getJSONDecoder()
 let jsonEncoder = getJSONEncoder()
 
 public enum ChatCommand {
@@ -240,7 +240,7 @@ public enum ChatCommand {
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
             case let .receiveFile(fileId, encrypted, inline):
-                let s = "/freceive \(fileId) encrypt=\(encrypted)" 
+                let s = "/freceive \(fileId) encrypt=\(onOff(encrypted))"
                 if let inline = inline {
                     return s + " inline=\(onOff(inline))"
                 }

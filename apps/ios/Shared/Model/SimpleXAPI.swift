@@ -1358,7 +1358,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if let file = cItem.autoReceiveFile() {
             Task {
                 // TODO encrypt images and voice
-                await receiveFile(user: user, fileId: file.fileId, encrypted: false, auto: true)
+                let encrypted = cItem.content.msgContent?.isImage ?? false
+                await receiveFile(user: user, fileId: file.fileId, encrypted: encrypted, auto: true)
             }
         }
         if cItem.showNotification {

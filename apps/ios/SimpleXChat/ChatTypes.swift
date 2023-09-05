@@ -2112,6 +2112,11 @@ public struct ChatItem: Identifiable, Decodable {
         return nil
     }
 
+    public var encryptedFile: Bool? {
+        guard let fileSource = file?.fileSource else { return nil }
+        return fileSource.cryptoArgs != nil
+    }
+
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {

@@ -25,3 +25,5 @@ extern char *chat_parse_server(char *str);
 extern char *chat_password_hash(char *pwd, char *salt);
 extern char *chat_encrypt_media(char *key, char *frame, int len);
 extern char *chat_decrypt_media(char *key, char *frame, int len);
+extern char *chat_write_file(char *path, char *data, int len);
+extern char *chat_read_file(char *path, char *key, char *nonce);

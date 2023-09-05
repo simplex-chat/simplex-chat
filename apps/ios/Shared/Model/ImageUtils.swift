@@ -28,20 +28,31 @@ func getLoadedFileName(_ file: CIFile?) -> String? {
 }
 
 func getLoadedImage(_ file: CIFile?) -> UIImage? {
-    let loadedFilePath = getLoadedFilePath(file)
-    // TODO encrypt: load encrypted image
-    if let loadedFilePath = loadedFilePath, let fileName = file?.fileSource?.filePath {
+    if let fileSource = file?.fileSource,
+        let fileName = getLoadedFileName(file) {
         let filePath = getAppFilePath(fileName)
         do {
-            let data = try Data(contentsOf: filePath)
+            let data = try getFileData(filePath, fileSource.cryptoArgs)
             let img = UIImage(data: data)
-            try img?.setGifFromData(data, levelOfIntegrity: 1.0)
-            return img
+            do {
+                try img?.setGifFromData(data, levelOfIntegrity: 1.0)
+                return img
+            } catch {
+                return UIImage(data: data)
+            }
         } catch {
-            return UIImage(contentsOfFile: loadedFilePath)
+            return nil
         }
     }
     return nil
+}
+
+func getFileData(_ path: URL, _ cfArgs: CryptoFileArgs?) throws -> Data {
+    if let cfArgs = cfArgs {
+        return try readCryptoFile(path: path.path, cryptoArgs: cfArgs)
+    } else {
+        return try Data(contentsOf: path)
+    }
 }
 
 func getLoadedVideo(_ file: CIFile?) -> URL? {
