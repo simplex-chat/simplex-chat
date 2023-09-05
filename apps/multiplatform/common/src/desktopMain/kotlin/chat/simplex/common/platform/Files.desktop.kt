@@ -2,6 +2,7 @@ package chat.simplex.common.platform
 
 import androidx.compose.runtime.*
 import chat.simplex.common.*
+import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import java.awt.Desktop
@@ -22,7 +23,15 @@ actual val databaseExportDir: File = tmpDir
 
 actual fun desktopOpenDatabaseDir() {
   if (Desktop.isDesktopSupported()) {
-    Desktop.getDesktop().open(dataDir);
+    try {
+      Desktop.getDesktop().open(dataDir);
+    } catch (e: IOException) {
+      Log.e(TAG, e.stackTraceToString())
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.unknown_error),
+        text = e.stackTraceToString()
+      )
+    }
   }
 }
 
