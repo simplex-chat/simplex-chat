@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -66,11 +67,13 @@ fun SimpleButton(
 fun SimpleButtonIconEnded(
   text: String,
   icon: Painter,
+  style: TextStyle = MaterialTheme.typography.caption,
   color: Color = MaterialTheme.colors.primary,
+  disabled: Boolean = false,
   click: () -> Unit
 ) {
-  SimpleButtonFrame(click) {
-    Text(text, style = MaterialTheme.typography.caption, color = color)
+  SimpleButtonFrame(click, disabled = disabled) {
+    Text(text, style = style, color = color)
     Icon(
       icon, text, tint = color,
       modifier = Modifier.padding(start = 8.dp)
