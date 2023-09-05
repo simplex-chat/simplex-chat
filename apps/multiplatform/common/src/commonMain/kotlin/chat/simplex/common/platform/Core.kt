@@ -50,17 +50,16 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     if (user == null) {
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
-      chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
       chatModel.currentUser.value = null
       chatModel.users.clear()
     } else {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
-      chatModel.onboardingStage.value = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
+      appPreferences.onboardingStage.set(if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
         OnboardingStage.Step3_CreateSimpleXAddress
       } else {
         savedOnboardingStage
-      }
-      if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete && !chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.get()) {
+      })
+      if (appPreferences.onboardingStage.get() == OnboardingStage.OnboardingComplete && !chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.get()) {
         chatModel.setDeliveryReceipts.value = true
       }
       chatController.startChat(user)

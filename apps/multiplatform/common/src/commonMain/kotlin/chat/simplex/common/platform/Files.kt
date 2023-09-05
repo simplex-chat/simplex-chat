@@ -23,6 +23,8 @@ expect val agentDatabaseFileName: String
 * */
 expect val databaseExportDir: File
 
+expect fun desktopOpenDatabaseDir()
+
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
   try {
     to.outputStream().use { stream ->

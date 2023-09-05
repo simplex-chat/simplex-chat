@@ -24,7 +24,7 @@
     <string name="member_role_will_be_changed_with_notification">سيتم تغيير الدور إلى \"%s\". سيتم إبلاغ كل فرد في المجموعة.</string>
     <string name="member_role_will_be_changed_with_invitation">سيتم تغيير الدور إلى \"%s\". سيتلقى العضو دعوة جديدة.</string>
     <string name="smp_servers_per_user">خوادم الاتصالات الجديدة لملف تعريف الدردشة الحالي الخاص بك</string>
-    <string name="switch_receiving_address_desc">هذه الميزة تجريبية! ستعمل فقط إذا كان لدى العميل الآخر الإصدار 4.2 مثبتًا. يجب أن ترى الرسالة في المحادثة بمجرد اكتمال تغيير العنوان - يرجى التحقق من أنه لا يزال بإمكانك تلقي الرسائل من جهة الاتصال هذه (أو عضو المجموعة).</string>
+    <string name="switch_receiving_address_desc">سيتم تغيير عنوان الاستلام إلى خادم مختلف. سيتم إكمال تغيير العنوان بعد اتصال المرسل بالإنترنت.</string>
     <string name="this_link_is_not_a_valid_connection_link">هذا الارتباط ليس ارتباط اتصال صالح!</string>
     <string name="allow_verb">يسمح</string>
     <string name="smp_servers_preset_add">أضف خوادم محددة مسبقًا</string>

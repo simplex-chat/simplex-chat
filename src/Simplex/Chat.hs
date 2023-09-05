@@ -25,7 +25,7 @@ import Crypto.Random (drgNew)
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Bifunctor (bimap, first, second)
+import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -41,7 +41,6 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -1757,17 +1756,17 @@ processChatCommand = \case
   ResetAgentStats -> withAgent resetAgentStats >> ok_
   GetAgentSubs -> summary <$> withAgent getAgentSubscriptions
     where
-      summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions} =
-        CRAgentSubs {activeSubs, distinctActiveSubs, pendingSubs, distinctPendingSubs}
+      summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} =
+        CRAgentSubs
+          { activeSubs = foldl' countSubs M.empty activeSubscriptions,
+            pendingSubs = foldl' countSubs M.empty pendingSubscriptions,
+            removedSubs = foldl' accSubErrors M.empty removedSubscriptions
+          }
         where
-          (activeSubs, distinctActiveSubs) = foldSubs activeSubscriptions
-          (pendingSubs, distinctPendingSubs) = foldSubs pendingSubscriptions
-          foldSubs :: [SubInfo] -> (Map Text Int, Map Text Int)
-          foldSubs = second (M.map S.size) . foldl' acc (M.empty, M.empty)
-          acc (m, m') SubInfo {server, rcvId} =
-            ( M.alter (Just . maybe 1 (+ 1)) server m,
-              M.alter (Just . maybe (S.singleton rcvId) (S.insert rcvId)) server m'
-            )
+          countSubs m SubInfo {server} = M.alter (Just . maybe 1 (+ 1)) server m
+          accSubErrors m = \case
+            SubInfo {server, subError = Just e} -> M.alter (Just . maybe [e] (e :)) server m
+            _ -> m
   GetAgentSubsDetails -> CRAgentSubsDetails <$> withAgent getAgentSubscriptions
   where
     withChatLock name action = asks chatLock >>= \l -> withLock l name action

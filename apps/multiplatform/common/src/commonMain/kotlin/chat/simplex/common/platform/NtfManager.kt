@@ -100,7 +100,7 @@ abstract class NtfManager {
     if (chatModel.chatRunning.value == null) {
       val step = 50L
       for (i in 0..(timeout / step)) {
-        if (chatModel.chatRunning.value == true || chatModel.onboardingStage.value == OnboardingStage.Step1_SimpleXInfo) {
+        if (chatModel.chatRunning.value == true || chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.Step1_SimpleXInfo) {
           break
         }
         delay(step)

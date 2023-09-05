@@ -43,6 +43,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
       profile = user.profile,
       stopped,
       chatModel.chatDbEncrypted.value == true,
+      remember { chatModel.controller.appPrefs.storeDBPassphrase.state }.value,
       remember { chatModel.controller.appPrefs.notificationsMode.state },
       user.displayName,
       setPerformLA = setPerformLA,
@@ -115,6 +116,7 @@ fun SettingsLayout(
   profile: LocalProfile,
   stopped: Boolean,
   encrypted: Boolean,
+  passphraseSaved: Boolean,
   notificationsMode: State<NotificationsMode>,
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
@@ -162,7 +164,7 @@ fun SettingsLayout(
         SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, extraPadding = true)
         SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it, showSettingsModal) }, extraPadding = true)
-        DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
+        DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionDividerSpaced()
 
@@ -207,7 +209,7 @@ expect fun SettingsSectionApp(
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 )
 
-@Composable private fun DatabaseItem(encrypted: Boolean, openDatabaseView: () -> Unit, stopped: Boolean) {
+@Composable private fun DatabaseItem(encrypted: Boolean, saved: Boolean, openDatabaseView: () -> Unit, stopped: Boolean) {
   SectionItemViewWithIcon(openDatabaseView) {
     Row(
       Modifier.fillMaxWidth(),
@@ -217,7 +219,7 @@ expect fun SettingsSectionApp(
         Icon(
           painterResource(MR.images.ic_database),
           contentDescription = stringResource(MR.strings.database_passphrase_and_export),
-          tint = if (encrypted) MaterialTheme.colors.secondary else WarningOrange,
+          tint = if (encrypted && (appPlatform.isAndroid || !saved)) MaterialTheme.colors.secondary else WarningOrange,
         )
         TextIconSpaced(true)
         Text(stringResource(MR.strings.database_passphrase_and_export))
@@ -393,9 +395,13 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
       val padding = with(LocalDensity.current) { 6.sp.toDp() }
       Text(text, Modifier.weight(1f).padding(vertical = padding), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground)
       Spacer(Modifier.width(DEFAULT_PADDING))
-    }
-    Row(Modifier.widthIn(max = (windowWidth() - DEFAULT_PADDING * 2) / 2)) {
-      content()
+      Row(Modifier.widthIn(max = (windowWidth() - DEFAULT_PADDING * 2) / 2)) {
+        content()
+      }
+    } else {
+      Row {
+        content()
+      }
     }
   }
 }
@@ -469,6 +475,7 @@ fun PreviewSettingsLayout() {
       profile = LocalProfile.sampleData,
       stopped = false,
       encrypted = false,
+      passphraseSaved = false,
       notificationsMode = remember { mutableStateOf(NotificationsMode.OFF) },
       userDisplayName = "Alice",
       setPerformLA = { _ -> },

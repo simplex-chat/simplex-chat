@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
@@ -25,7 +24,7 @@ import dev.icerock.moko.resources.StringResource
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   SimpleXInfoLayout(
     user = chatModel.currentUser.value,
-    onboardingStage = if (onboarding) chatModel.onboardingStage else null,
+    onboardingStage = if (onboarding) chatModel.controller.appPrefs.onboardingStage else null,
     showModal = { modalView -> { if (onboarding) ModalManager.fullscreen.showModal { modalView(chatModel) } else ModalManager.start.showModal { modalView(chatModel) } } },
   )
 }
@@ -33,7 +32,7 @@ fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
 @Composable
 fun SimpleXInfoLayout(
   user: User?,
-  onboardingStage: MutableState<OnboardingStage?>?,
+  onboardingStage: SharedPreference<OnboardingStage>?,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   Column(
@@ -100,11 +99,11 @@ private fun InfoRow(icon: Painter, titleId: StringResource, textId: StringResour
 }
 
 @Composable
-fun OnboardingActionButton(user: User?, onboardingStage: MutableState<OnboardingStage?>, onclick: (() -> Unit)? = null) {
+fun OnboardingActionButton(user: User?, onboardingStage: SharedPreference<OnboardingStage>, onclick: (() -> Unit)? = null) {
   if (user == null) {
-    OnboardingActionButton(MR.strings.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage, true, onclick)
+    OnboardingActionButton(MR.strings.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, true, onclick)
   } else {
-    OnboardingActionButton(MR.strings.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, onboardingStage, true, onclick)
+    OnboardingActionButton(MR.strings.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, true, onclick)
   }
 }
 
@@ -112,7 +111,6 @@ fun OnboardingActionButton(user: User?, onboardingStage: MutableState<Onboarding
 fun OnboardingActionButton(
   labelId: StringResource,
   onboarding: OnboardingStage?,
-  onboardingStage: MutableState<OnboardingStage?>,
   border: Boolean,
   onclick: (() -> Unit)?
 ) {
@@ -129,7 +127,6 @@ fun OnboardingActionButton(
 
   SimpleButtonFrame(click = {
     onclick?.invoke()
-    onboardingStage.value = onboarding
     if (onboarding != null) {
       ChatController.appPrefs.onboardingStage.set(onboarding)
     }

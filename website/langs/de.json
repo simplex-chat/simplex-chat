@@ -170,7 +170,7 @@
     "no-federated": "Nein - föderiert",
     "comparison-section-list-point-2": "DNS-basierte Adressen",
     "comparison-section-list-point-3": "Öffentlicher Schlüssel oder eine andere weltweit eindeutige ID",
-    "comparison-section-list-point-4": "Wenn die Server des Betreibers kompromittiert werden",
+    "comparison-section-list-point-4": "Wenn die Server des Betreibers kompromittiert werden. In Signal und weiteren Apps kann der Securitycode überprüft werden, um dies zu entschärfen",
     "comparison-section-list-point-6": "P2P sind zwar verteilt, aber nicht föderiert - sie arbeiten als ein einziges Netzwerk",
     "comparison-section-list-point-7": "P2P-Netzwerke haben entweder eine zentrale Verwaltung oder das gesamte Netzwerk kann kompromittiert werden",
     "see-here": "Siehe hier",
@@ -194,7 +194,7 @@
     "comparison-section-list-point-1": "Normalerweise auf der Grundlage einer Telefonnummer, in einigen Fällen auf der Grundlage von Benutzernamen",
     "comparison-point-5-text": "Zentrale Komponente oder andere Netzwerk-weite Angriffe",
     "no-decentralized": "Nein - dezentralisiert",
-    "comparison-section-list-point-5": "Metadaten des Nutzers werden nicht geschützt",
+    "comparison-section-list-point-5": "Die Privatsphäre-Metadaten des Nutzers werden nicht geschützt",
     "simplex-network-overlay-card-1-li-1": "P2P-Netzwerke vertrauen auf Varianten von <a href='https://en.wikipedia.org/wiki/Distributed_hash_table'>DHT</a>, um Nachrichten zu routen. DHT-Designs müssen zwischen Zustellungsgarantie und Latenz ausgleichen. Verglichen mit P2P bietet SimpleX sowohl eine bessere Zustellungsgarantie, als auch eine niedrigere Latenz, weil eine Nachricht redundant und parallel über mehrere Server gesendet werden kann, wobei die durch den Empfänger ausgewählten Server genutzt werden. In P2P-Netzwerken werden Nachrichten sequentiell über <em>O(log N)</em> Knoten gesendet, wobei die Knoten durch einen Algorithmus ausgewählt werden.",
     "simplex-unique-overlay-card-3-p-4": "Zwischen dem gesendeten und empfangenen Serververkehr gibt es keine gemeinsamen Kennungen oder Chiffriertexte &mdash; sodass ein Beobachter nicht ohne weiteres feststellen kann, wer mit wem kommuniziert, selbst wenn TLS kompromittiert wurde.",
     "simplex-unique-overlay-card-4-p-3": "Wenn Sie darüber nachdenken, für die SimpleX-Plattform entwickeln zu wollen, z.B. einen Chatbot für SimpleX-App-Nutzer oder die Integration der SimpleX-Chat-Bibliothek in Ihre mobilen Apps, <a href='https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D' target='_blank'>kontaktieren Sie uns bitte</a> für eine weitere Beratung und Unterstützung.",
@@ -242,5 +242,6 @@
     "simplex-chat-via-f-droid": "SimpleX Chat per F-Droid",
     "simplex-chat-repo": "SimpleX Chat Repository",
     "stable-and-beta-versions-built-by-developers": "Von den Entwicklern erstellte stabile und Beta-Versionen",
-    "f-droid-page-simplex-chat-repo-section-text": "Um es Ihrem F-Droid-Client hinzuzufügen <span class='hide-on-mobile'>scannen Sie den QR-Code oder</span> nutzen Sie diese URL:"
+    "f-droid-page-simplex-chat-repo-section-text": "Um es Ihrem F-Droid-Client hinzuzufügen <span class='hide-on-mobile'>scannen Sie den QR-Code oder</span> nutzen Sie diese URL:",
+    "comparison-section-list-point-4a": "SimpleX-Relais können die E2E-Verschlüsselung nicht kompromittieren. Überprüfen Sie den Sicherheitscode, um einen möglichen Angriff auf den Out-of-Band-Kanal zu entschärfen"
 }
