@@ -1,9 +1,7 @@
 package chat.simplex.common.views.database
 
 import SectionBottomSpacer
-import SectionItemView
 import SectionItemViewSpaceBetween
-import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,13 +22,11 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.model.*
-import chat.simplex.common.platform.appPlatform
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.Clock
@@ -40,7 +36,7 @@ import kotlin.math.log2
 fun DatabaseEncryptionView(m: ChatModel) {
   val progressIndicator = remember { mutableStateOf(false) }
   val prefs = m.controller.appPrefs
-  val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
+  val useKeychain = remember { prefs.storeDBPassphrase.state }
   val initialRandomDBPassphrase = remember { mutableStateOf(prefs.initialRandomDBPassphrase.get()) }
   val storedKey = remember { val key = DatabaseUtils.ksDatabasePassword.get(); mutableStateOf(key != null && key != "") }
   // Do not do rememberSaveable on current key to prevent saving it on disk in clear text
@@ -63,7 +59,15 @@ fun DatabaseEncryptionView(m: ChatModel) {
       progressIndicator,
       onConfirmEncrypt = {
         withApi {
-          encryptDatabase(currentKey, newKey, confirmNewKey, initialRandomDBPassphrase, useKeychain, storedKey, progressIndicator)
+          val disableStoring = appPlatform.isDesktop && initialRandomDBPassphrase.value
+          if (disableStoring) {
+            prefs.storeDBPassphrase.set(false)
+          }
+          val success = encryptDatabase(currentKey, newKey, confirmNewKey, initialRandomDBPassphrase, useKeychain, storedKey, progressIndicator)
+          if (!success && disableStoring) {
+            // Rollback in case of it is finished with error in order to allow to repeat the process again
+            prefs.storeDBPassphrase.set(true)
+          }
         }
       }
     )
@@ -86,7 +90,7 @@ fun DatabaseEncryptionView(m: ChatModel) {
 
 @Composable
 fun DatabaseEncryptionLayout(
-  useKeychain: MutableState<Boolean>,
+  useKeychain: State<Boolean>,
   prefs: AppPreferences,
   chatDbEncrypted: Boolean?,
   currentKey: MutableState<String>,
@@ -104,15 +108,15 @@ fun DatabaseEncryptionLayout(
     SectionView(null) {
       SavePassphraseSetting(useKeychain.value, initialRandomDBPassphrase.value, storedKey.value, progressIndicator.value) { checked ->
         if (checked) {
-          setUseKeychain(true, useKeychain, prefs)
+          setUseKeychain(true, prefs)
         } else if (storedKey.value) {
           removePassphraseAlert {
             DatabaseUtils.ksDatabasePassword.remove()
-            setUseKeychain(false, useKeychain, prefs)
+            setUseKeychain(false, prefs)
             storedKey.value = false
           }
         } else {
-          setUseKeychain(false, useKeychain, prefs)
+          setUseKeychain(false, prefs)
         }
       }
 
@@ -135,15 +139,16 @@ fun DatabaseEncryptionLayout(
         keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
       )
       val onClickUpdate = {
+        val disableStoring = appPlatform.isDesktop && initialRandomDBPassphrase.value
         // Don't do things concurrently. Shouldn't be here concurrently, just in case
         if (!progressIndicator.value) {
           if (currentKey.value == "") {
-            if (useKeychain.value)
+            if (useKeychain.value && !disableStoring)
               encryptDatabaseSavedAlert(onConfirmEncrypt)
             else
               encryptDatabaseAlert(onConfirmEncrypt)
           } else {
-            if (useKeychain.value)
+            if (useKeychain.value && !disableStoring)
               changeDatabaseKeySavedAlert(onConfirmEncrypt)
             else
               changeDatabaseKeyAlert(onConfirmEncrypt)
@@ -218,7 +223,7 @@ expect fun SavePassphraseSetting(
 
 @Composable
 expect fun DatabaseEncryptionFooter(
-  useKeychain: MutableState<Boolean>,
+  useKeychain: State<Boolean>,
   chatDbEncrypted: Boolean?,
   storedKey: MutableState<Boolean>,
   initialRandomDBPassphrase: MutableState<Boolean>,
@@ -242,8 +247,7 @@ fun resetFormAfterEncryption(
   storedKey.value = stored
 }
 
-fun setUseKeychain(value: Boolean, useKeychain: MutableState<Boolean>, prefs: AppPreferences) {
-  useKeychain.value = value
+fun setUseKeychain(value: Boolean, prefs: AppPreferences) {
   prefs.storeDBPassphrase.set(value)
 }
 
@@ -361,7 +365,7 @@ suspend fun encryptDatabase(
   newKey: MutableState<String>,
   confirmNewKey: MutableState<String>,
   initialRandomDBPassphrase: MutableState<Boolean>,
-  useKeychain: MutableState<Boolean>,
+  useKeychain: State<Boolean>,
   storedKey: MutableState<Boolean>,
   progressIndicator: MutableState<Boolean>
 ): Boolean {
