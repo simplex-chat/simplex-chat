@@ -4063,7 +4063,7 @@
       </trans-unit>
       <trans-unit id="Send receipts" xml:space="preserve" approved="no">
         <source>Send receipts</source>
-        <target state="translated">既読の通知</target>
+        <target state="needs-translation">Send receipts</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -4098,22 +4098,22 @@
       </trans-unit>
       <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve" approved="no">
         <source>Sending receipts is disabled for %lld contacts</source>
-        <target state="translated">%lld 個の連絡先で既読の通知が無効です</target>
+        <target state="needs-translation">Sending receipts is disabled for %lld contacts</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is disabled for %lld groups" xml:space="preserve" approved="no">
         <source>Sending receipts is disabled for %lld groups</source>
-        <target state="translated">%lld 個のグループで既読の通知が無効です</target>
+        <target state="needs-translation">Sending receipts is disabled for %lld groups</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve" approved="no">
         <source>Sending receipts is enabled for %lld contacts</source>
-        <target state="translated">%lld 個の連絡先で既読の通知が有効です</target>
+        <target state="needs-translation">Sending receipts is enabled for %lld contacts</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld groups" xml:space="preserve" approved="no">
         <source>Sending receipts is enabled for %lld groups</source>
-        <target state="translated">%lld 個のグループで既読の通知が有効です</target>
+        <target state="needs-translation">Sending receipts is enabled for %lld groups</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
