@@ -961,6 +961,14 @@ type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
 
+chatReadVar :: ChatMonad' m => (ChatController -> TVar a) -> m a
+chatReadVar f = asks f >>= readTVarIO
+{-# INLINE chatReadVar #-}
+
+chatWriteVar :: ChatMonad' m => (ChatController -> TVar a) -> a -> m ()
+chatWriteVar f value = asks f >>= \var -> atomically (writeTVar var value)
+{-# INLINE chatWriteVar #-}
+
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
 {-# INLINE tryChatError #-}
