@@ -281,7 +281,7 @@
 "About SimpleX" = "Acerca de SimpleX";
 
 /* No comment provided by engineer. */
-"About SimpleX address" = "Acerca de dirección SimpleX";
+"About SimpleX address" = "Acerca de la dirección SimpleX";
 
 /* No comment provided by engineer. */
 "About SimpleX Chat" = "Sobre SimpleX Chat";
@@ -832,7 +832,7 @@
 "Create" = "Crear";
 
 /* No comment provided by engineer. */
-"Create an address to let people connect with you." = "Crear una dirección para que otras personas se puedan conectar contigo.";
+"Create an address to let people connect with you." = "Crea una dirección para que otras personas puedan conectar contigo.";
 
 /* server test step */
 "Create file" = "Crear archivo";
@@ -853,10 +853,10 @@
 "Create secret group" = "Crea grupo secreto";
 
 /* No comment provided by engineer. */
-"Create SimpleX address" = "Crear dirección SimpleX";
+"Create SimpleX address" = "Crear tu dirección SimpleX";
 
 /* No comment provided by engineer. */
-"Create your profile" = "Crear tu perfil";
+"Create your profile" = "Crea tu perfil";
 
 /* No comment provided by engineer. */
 "Created on %@" = "Creado en %@";
@@ -943,7 +943,7 @@
 "days" = "días";
 
 /* No comment provided by engineer. */
-"Decentralized" = "Descentralizado";
+"Decentralized" = "Descentralizada";
 
 /* message decrypt error item */
 "Decryption error" = "Error descifrado";
@@ -1162,7 +1162,7 @@
 "Do NOT use SimpleX for emergency calls." = "NO uses SimpleX para llamadas de emergencia.";
 
 /* No comment provided by engineer. */
-"Don't create address" = "No crear dirección";
+"Don't create address" = "No crear dirección SimpleX";
 
 /* No comment provided by engineer. */
 "Don't enable" = "No activar";
@@ -1981,7 +1981,7 @@
 "Mark verified" = "Marcar como verificado";
 
 /* No comment provided by engineer. */
-"Markdown in messages" = "Sintaxis markdown en los mensajes";
+"Markdown in messages" = "Sintaxis Markdown";
 
 /* marked deleted chat item preview text */
 "marked deleted" = "marcado eliminado";
@@ -2510,7 +2510,7 @@
 "Received message" = "Mensaje entrante";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "La dirección de recepción se cambiará. El cambio se completará cuando el remitente esté en línea.";
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "La dirección de recepción pasará a otro servidor. El cambio se completará cuando el remitente esté en línea.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Se detendrá la recepción del archivo.";
@@ -2966,7 +2966,7 @@
 "Stop" = "Detener";
 
 /* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Para habilitar las acciones sobre la base de datos, previamente debes detener Chat";
+"Stop chat to enable database actions" = "Detén SimpleX para habilitar las acciones sobre la base de datos";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Para poder exportar, importar o eliminar la base de datos primero debes detener Chat. Durante el tiempo que esté detenido no podrás recibir ni enviar mensajes.";
@@ -3095,7 +3095,7 @@
 "The message will be marked as moderated for all members." = "El mensaje será marcado como moderado para todos los miembros.";
 
 /* No comment provided by engineer. */
-"The next generation of private messaging" = "La próxima generación de mensajería privada";
+"The next generation of private messaging" = "La nueva generación de mensajería privada";
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "La base de datos antigua no se eliminó durante la migración, puede eliminarse.";
@@ -3464,7 +3464,7 @@
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "También puedes conectarte haciendo clic en el enlace. Si se abre en el navegador, haz clic en el botón **Abrir en aplicación móvil**.";
 
 /* No comment provided by engineer. */
-"You can create it later" = "Puedes crearlo más tarde";
+"You can create it later" = "Puedes crearla más tarde";
 
 /* No comment provided by engineer. */
 "You can enable later via Settings" = "Puedes activar más tarde en Configuración";
@@ -3599,7 +3599,7 @@
 "Your calls" = "Llamadas";
 
 /* No comment provided by engineer. */
-"Your chat database" = "Base de datos Chat";
+"Your chat database" = "Base de datos";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "La base de datos no está cifrada - establece una contraseña para cifrarla.";
@@ -3647,7 +3647,7 @@
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos.\nLos servidores de SimpleX no pueden ver tu perfil.";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Tu perfil, contactos y mensajes entregados se almacenan en tu dispositivo.";
+"Your profile, contacts and delivered messages are stored on your device." = "Tu perfil, contactos y mensajes se almacenan en tu dispositivo.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Tu perfil aleatorio";

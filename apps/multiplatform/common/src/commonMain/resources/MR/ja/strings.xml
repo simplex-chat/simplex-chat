@@ -484,7 +484,7 @@
     <string name="smp_server_test_create_queue">サーバの待ち行列を作成する</string>
     <string name="smp_server_test_delete_queue">待ち行列を削除</string>
     <string name="smp_server_test_disconnect">切断</string>
-    <string name="turn_off_battery_optimization">利用するには次の画面にてSimpleXに対する <b>SimpleX のバックグラウンドでの実行を許可</b> してください。そうしないと通知が無効になります。</string>
+    <string name="turn_off_battery_optimization"><![CDATA[利用するには次の画面にてSimpleXに対する <b>SimpleX のバックグラウンドでの実行を許可</b> してください。そうしないと通知が無効になります。]]></string>
     <string name="database_initialization_error_title">データベースを起動できません。</string>
     <string name="settings_notification_preview_title">通知のプレビュー</string>
     <string name="simplex_service_notification_text">メッセージ受信中…</string>
@@ -1335,9 +1335,9 @@
     <string name="connect_use_new_incognito_profile">新しいシークレットプロファイルを使用する</string>
     <string name="turn_off_system_restriction_button">アプリの設定を開く</string>
     <string name="disable_notifications_button">通知を無効にする</string>
-    <string name="system_restricted_background_warn">通知を有効にするには、アプリの設定で<b>アプリのバッテリー使用量</b> / <b>制限なし</b> を選択してください。</string>
+    <string name="system_restricted_background_warn"><![CDATA[通知を有効にするには、アプリの設定で<b>アプリのバッテリー使用量</b> / <b>制限なし</b> を選択してください。]]></string>
     <string name="system_restricted_background_in_call_desc">アプリはバックグラウンドで1分経過すると終了します。</string>
-    <string name="system_restricted_background_in_call_warn">バックグラウンドで通話を行うには、アプリの設定で<b>アプリのバッテリー使用量</b> / <b>制限なし</b> を選択してください。</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[バックグラウンドで通話を行うには、アプリの設定で<b>アプリのバッテリー使用量</b> / <b>制限なし</b> を選択してください。]]></string>
     <string name="connect__your_profile_will_be_shared">あなたのプロフィール %1$s が共有されます。</string>
     <string name="receipts_groups_title_enable">Enable receipts for groups\?</string>
     <string name="receipts_groups_title_disable">Disable receipts for groups\?</string>

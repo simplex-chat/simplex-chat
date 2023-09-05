@@ -551,7 +551,7 @@
     <string name="icon_descr_help">apua</string>
     <string name="incorrect_code">Väärä turvakoodi!</string>
     <string name="error_sending_message">Virhe viestin lähettämisessä</string>
-    <string name="turn_off_battery_optimization">Käyttääksesi sitä, <b> salli SimpleX:n toimia taustalla </b> seuraavassa ikkunassa. Muutoin ilmoitukset poistetaan käytöstä.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Käyttääksesi sitä, <b> salli SimpleX:n toimia taustalla </b> seuraavassa ikkunassa. Muutoin ilmoitukset poistetaan käytöstä.]]></string>
     <string name="notification_preview_mode_hidden">Piilotettu</string>
     <string name="la_immediately">Heti</string>
     <string name="la_enter_app_passcode">Syötä pääsykoodi</string>
@@ -1279,10 +1279,10 @@
     <string name="disable_notifications_button">Poista ilmoitukset käytöstä</string>
     <string name="turn_off_system_restriction_button">Avaa asetukset</string>
     <string name="system_restricted_background_desc">SimpleX ei toimi tausta-ajossa. Saat ilmoitukset ainostaan, kun sovellus on käynnissä.</string>
-    <string name="system_restricted_background_warn">Ilmoitusten sallimiseksi valitse <b> Sovelluksen akun käyttö </b> / <b> rajoittamaton </b> sovellusasetuksista.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Ilmoitusten sallimiseksi valitse <b> Sovelluksen akun käyttö </b> / <b> rajoittamaton </b> sovellusasetuksista.]]></string>
     <string name="system_restricted_background_in_call_title">Ei taustapuheluita</string>
     <string name="system_restricted_background_in_call_desc">Sovellus voi sulkeutua 1 minuutin jälkeen tausta-ajossa.</string>
-    <string name="system_restricted_background_in_call_warn">Puheluiden soittamiseksi taustalla, valitse <b>Sovelluksen akun käyttö </b> / <b> rajoittamaton </b> sovellusasetuksista.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Puheluiden soittamiseksi taustalla, valitse <b>Sovelluksen akun käyttö </b> / <b> rajoittamaton </b> sovellusasetuksista.]]></string>
     <string name="in_reply_to">Vastauksena</string>
     <string name="abort_switch_receiving_address_question">Keskeytä osoitteenvaihto\?</string>
     <string name="favorite_chat">Suosikki</string>
