@@ -221,6 +221,14 @@ fun DatabaseLayout(
           disabled = operationsDisabled
         )
       }
+      if (appPlatform.isDesktop) {
+        SettingsActionItem(
+          painterResource(MR.images.ic_folder_open),
+          stringResource(MR.strings.open_database_folder),
+          ::desktopOpenDatabaseDir,
+          disabled = operationsDisabled
+        )
+      }
       SettingsActionItem(
         painterResource(MR.images.ic_delete_forever),
         stringResource(MR.strings.delete_database),

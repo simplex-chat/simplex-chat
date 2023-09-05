@@ -944,6 +944,7 @@
   <string name="import_database">Import database</string>
   <string name="new_database_archive">New database archive</string>
   <string name="old_database_archive">Old database archive</string>
+  <string name="open_database_folder">Open database folder</string>
   <string name="delete_database">Delete database</string>
   <string name="error_starting_chat">Error starting chat</string>
   <string name="stop_chat_question">Stop chat?</string>

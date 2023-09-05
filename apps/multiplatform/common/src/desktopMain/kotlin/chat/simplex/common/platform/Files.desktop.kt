@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import chat.simplex.common.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
+import java.awt.Desktop
 import java.io.*
 import java.net.URI
 
@@ -18,6 +19,12 @@ actual val chatDatabaseFileName: String = "simplex_v1_chat.db"
 actual val agentDatabaseFileName: String = "simplex_v1_agent.db"
 
 actual val databaseExportDir: File = tmpDir
+
+actual fun desktopOpenDatabaseDir() {
+  if (Desktop.isDesktopSupported()) {
+    Desktop.getDesktop().open(dataDir);
+  }
+}
 
 @Composable
 actual fun rememberFileChooserLauncher(getContent: Boolean, rememberedValue: Any?, onResult: (URI?) -> Unit): FileChooserLauncher =
