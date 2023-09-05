@@ -1303,13 +1303,13 @@
     <string name="v5_2_fix_encryption_descr">バックアップの復元後に暗号化を修正します。</string>
     <string name="snd_conn_event_ratchet_sync_started">暗号化に同意しています： %s</string>
     <string name="conn_event_ratchet_sync_agreed">暗号化に同意しました</string>
-    <string name="receipts_contacts_title_disable">既読通知を無効にしますか？</string>
+    <string name="receipts_contacts_title_disable">Disable receipts\?</string>
     <string name="fix_connection_not_supported_by_contact">連絡先による修正はサポートされていません</string>
     <string name="fix_connection_not_supported_by_group_member">グループメンバーによる修正はサポートされていません</string>
     <string name="receipts_section_contacts">連絡先</string>
     <string name="receipts_section_description_1">これらは連絡先とグループの設定が優先されます。</string>
     <string name="receipts_section_description">これらの設定は現在のプロファイル用です</string>
-    <string name="receipts_contacts_title_enable">既読通知を有効にしますか？</string>
+    <string name="receipts_contacts_title_enable">Enable receipts\?</string>
     <string name="sender_at_ts">%s : %s</string>
     <string name="fix_connection">接続を修正</string>
     <string name="files_and_media">ファイルとメディア</string>
@@ -1339,8 +1339,8 @@
     <string name="system_restricted_background_in_call_desc">アプリはバックグラウンドで1分経過すると終了します。</string>
     <string name="system_restricted_background_in_call_warn">バックグラウンドで通話を行うには、アプリの設定で<b>アプリのバッテリー使用量</b> / <b>制限なし</b> を選択してください。</string>
     <string name="connect__your_profile_will_be_shared">あなたのプロフィール %1$s が共有されます。</string>
-    <string name="receipts_groups_title_enable">グループの既読通知を有効にする</string>
-    <string name="receipts_groups_title_disable">グループの既読通知を無効にする</string>
+    <string name="receipts_groups_title_enable">Enable receipts for groups\?</string>
+    <string name="receipts_groups_title_disable">Disable receipts for groups\?</string>
     <string name="receipts_groups_override_enabled">%dグループの既読の通知が有効です</string>
     <string name="receipts_groups_override_disabled">%dグループの既読の通知が無効です</string>
     <string name="send_receipts_disabled">無効</string>
