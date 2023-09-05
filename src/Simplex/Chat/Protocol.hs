@@ -58,10 +58,6 @@ supportedChatVRange = mkVersionRange 1 currentChatVersion
 groupNoDirectVersion :: Version
 groupNoDirectVersion = 2
 
--- version that starts support for sending/receiving a group member's chat version range in MemberInfo
-vRangeInMemberInfoVersion :: Version
-vRangeInMemberInfoVersion = 2
-
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}

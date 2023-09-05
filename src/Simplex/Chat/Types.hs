@@ -559,13 +559,11 @@ instance ToJSON MemberInfo where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-memberInfo :: GroupMember -> Bool -> MemberInfo
-memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} includeVRange =
+memberInfo :: GroupMember -> MemberInfo
+memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
   MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
   where
-    memberChatVRange
-      | includeVRange = ChatVersionRange . connChatVRange <$> activeConn
-      | otherwise = Nothing
+    memberChatVRange = ChatVersionRange . connChatVRange <$> activeConn
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,

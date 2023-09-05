@@ -1432,8 +1432,8 @@ processChatCommand = \case
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     (invitation, ct) <- withStore $ \db -> do
-      invitation@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
-      (,) invitation <$> getContactViaMember db user fromMember
+      inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
+      (inv,) <$> getContactViaMember db user fromMember
     let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
         Contact {activeConn = Connection {connChatVRange}} = ct
     withChatLock "joinGroup" . procCmd $ do
@@ -3021,7 +3021,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
               CFCreateConnGrpMemInv ->
                 ifM
-                  (connSupportsVersion conn groupNoDirectVersion)
+                  (featureVersionSupported (connChatVRange conn) groupNoDirectVersion)
                   sendWithoutDirectCReq
                   sendWithDirectCReq
                 where
@@ -3115,15 +3115,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               setActive $ ActiveG gName
               showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore' $ \db -> createIntroductions db members m
-            -- we could send different XGrpMemNew messages with invited member's chat version range included
-            -- depending on each introduced member's version, but this version range is ignored in XGrpMemNew anyway
-            void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m False
+            void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
             where
               processIntro intro@GroupMemberIntro {introId} = do
-                includeVRange <- connSupportsVersion conn vRangeInMemberInfoVersion
-                void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro) includeVRange) (GroupId groupId)
+                void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
@@ -4274,7 +4271,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 Nothing -> Just <$> createConn
                 Just mcvr ->
                   ifM
-                    (connVRangeSupportsVersion (fromChatVRange mcvr) groupNoDirectVersion)
+                    (featureVersionSupported (fromChatVRange mcvr) groupNoDirectVersion)
                     (pure Nothing)
                     (Just <$> createConn)
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
@@ -4299,8 +4296,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Just reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              includeVRange <- fromMaybe False <$> forM (memberConn reMember) (`connSupportsVersion` vRangeInMemberInfoVersion)
-              void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m includeVRange) introInv) groupId (Just introId) $
+              void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
                 withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
@@ -4470,13 +4466,10 @@ updateConnChatVRange conn@Connection {connId, connChatVRange} msgChatVRange
     pure conn {connChatVRange = msgChatVRange}
   | otherwise = pure conn
 
-connSupportsVersion :: ChatMonad' m => Connection -> Version -> m Bool
-connSupportsVersion Connection {connChatVRange} = connVRangeSupportsVersion connChatVRange
-
-connVRangeSupportsVersion :: ChatMonad' m => VersionRange -> Version -> m Bool
-connVRangeSupportsVersion connChatVRange v = do
+featureVersionSupported :: ChatMonad' m => VersionRange -> Version -> m Bool
+featureVersionSupported peerVRange v = do
   ChatConfig {chatVRange} <- asks config
-  case chatVRange `compatibleVersion` connChatVRange of
+  case chatVRange `compatibleVersion` peerVRange of
     Just (Compatible v') -> pure $ v' >= v
     Nothing -> pure False
 

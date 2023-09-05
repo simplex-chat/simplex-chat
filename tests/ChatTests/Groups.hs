@@ -68,45 +68,35 @@ chatGroupTests = do
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
   describe "direct connections in group are not established based on chat protocol version" $ do
     describe "3 members group" $ do
-      testNoDirect _0 _0 _0 True
-      testNoDirect _0 _0 _1 False
-      testNoDirect _0 _1 _0 False
-      testNoDirect _0 _1 _1 False
-      testNoDirect _1 _0 _0 False
-      testNoDirect _1 _0 _1 False
-      testNoDirect _1 _1 _0 False
-      testNoDirect _1 _1 _1 False
+      testNoDirect _0 _0 True
+      testNoDirect _0 _1 False
+      testNoDirect _1 _0 False
+      testNoDirect _1 _1 False
     describe "4 members group" $ do
-      testNoDirect4 _0 _0 _0 _0 True True True
-      testNoDirect4 _0 _0 _0 _1 True False False
-      testNoDirect4 _0 _0 _1 _0 False True False
-      testNoDirect4 _0 _0 _1 _1 False False False
-      testNoDirect4 _0 _1 _0 _0 False False True
-      testNoDirect4 _0 _1 _0 _1 False False False
-      testNoDirect4 _0 _1 _1 _0 False False False
-      testNoDirect4 _0 _1 _1 _1 False False False
-      testNoDirect4 _1 _0 _0 _0 False False False
-      testNoDirect4 _1 _0 _0 _1 False False False
-      testNoDirect4 _1 _0 _1 _0 False False False
-      testNoDirect4 _1 _0 _1 _1 False False False
-      testNoDirect4 _1 _1 _0 _0 False False False
-      testNoDirect4 _1 _1 _0 _1 False False False
-      testNoDirect4 _1 _1 _1 _0 False False False
-      testNoDirect4 _1 _1 _1 _1 False False False
+      testNoDirect4 _0 _0 _0 True True True
+      testNoDirect4 _0 _0 _1 True False False
+      testNoDirect4 _0 _1 _0 False True False
+      testNoDirect4 _0 _1 _1 False False False
+      testNoDirect4 _1 _0 _0 False False True
+      testNoDirect4 _1 _0 _1 False False False
+      testNoDirect4 _1 _1 _0 False False False
+      testNoDirect4 _1 _1 _1 False False False
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
-    testNoDirect vrHost vrMem2 vrMem3 noConns =
+    -- having host configured with older version doesn't have effect in tests
+    -- because host uses current code and sends version in MemberInfo
+    testNoDirect vrMem2 vrMem3 noConns =
       it
-        ( "host " <> vRangeStr vrHost
+        ( "host " <> vRangeStr supportedChatVRange
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
             <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
         )
-        $ testNoGroupDirectConns vrHost vrMem2 vrMem3 noConns
-    testNoDirect4 vrHost vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34 =
+        $ testNoGroupDirectConns supportedChatVRange vrMem2 vrMem3 noConns
+    testNoDirect4 vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34 =
       it
-        ( "host " <> vRangeStr vrHost
+        ( "host " <> vRangeStr supportedChatVRange
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
             <> (", 4th mem " <> vRangeStr vrMem4)
@@ -114,7 +104,7 @@ chatGroupTests = do
             <> (if noConns24 then " : 2 <!!> 4" else " : 2 <##> 4")
             <> (if noConns34 then " : 3 <!!> 4" else " : 3 <##> 4")
         )
-        $ testNoGroupDirectConns4Members vrHost vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34
+        $ testNoGroupDirectConns4Members supportedChatVRange vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34
 
 testGroup :: HasCallStack => FilePath -> IO ()
 testGroup =
