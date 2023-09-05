@@ -167,7 +167,7 @@
     <string name="icon_descr_call_ended">通話が終了しました。</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[直接会えない時は、 <b>ビデオ通話中にQRコードを見せてもらうか</b>、招待リンクを送ってもらえば相手に繋がります。]]></string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">メンバーをグループから除名する (※元に戻せません※)！</string>
-    <string name="message_delivery_error_title">メッセージ送信エラー</string>
+    <string name="message_delivery_error_title"></string>
     <string name="call_on_lock_screen">通話をロック画面に表示</string>
     <string name="icon_descr_cancel_link_preview">リンクのプレビューを中止</string>
     <string name="icon_descr_cancel_live_message">ライブメッセージを中止</string>
@@ -1315,7 +1315,7 @@
     <string name="fix_connection">接続を修正</string>
     <string name="files_and_media">ファイルとメディア</string>
     <string name="you_can_enable_delivery_receipts_later_alert">あとでアプリのプライバシーとセキュリティの設定から有効にすることができます。</string>
-    <string name="error_enabling_delivery_receipts">既読通知の有効化でエラーが発生しました！</string>
+    <string name="error_enabling_delivery_receipts"></string>
     <string name="item_info_no_text">テキストなし</string>
     <string name="error_synchronizing_connection">接続の同期エラー</string>
     <string name="no_history">履歴はありません</string>
@@ -1333,7 +1333,7 @@
     <string name="delivery">送信</string>
     <string name="in_developing_title">近日公開！</string>
     <string name="v5_2_disappear_one_message">メッセージを1つ消す</string>
-    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">既読の通知は、表示されているすべてのチャットプロファイルのすべての連絡先に対して有効になります。</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles"></string>
     <string name="connect_use_current_profile">現在のプロファイルを使用する</string>
     <string name="connect_use_new_incognito_profile">新しいシークレットプロファイルを使用する</string>
     <string name="turn_off_system_restriction_button">アプリの設定を開く</string>
@@ -1346,7 +1346,7 @@
     <string name="receipts_groups_title_disable">グループの既読通知を無効にする</string>
     <string name="receipts_groups_override_enabled">%dグループの既読の通知が有効です</string>
     <string name="receipts_groups_override_disabled">%dグループの既読の通知が無効です</string>
-    <string name="sending_delivery_receipts_will_be_enabled">既読の通知は、すべての連絡先に対して有効になります。</string>
+    <string name="sending_delivery_receipts_will_be_enabled"></string>
     <string name="send_receipts_disabled">無効</string>
     <string name="system_restricted_background_in_call_title">バックグラウンド通話なし</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">受信したリンクを貼り付け、連絡先に接続する。</string>
@@ -1357,7 +1357,7 @@
     <string name="receipts_section_groups">小グループ（最大20名）</string>
     <string name="receipts_groups_enable_for_all">すべてのグループで有効にする</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
-    <string name="send_receipts_disabled_alert_msg">このグループには %1$d 人を超えるメンバーがいます。既読は通知されません。</string>
+    <string name="send_receipts_disabled_alert_msg"></string>
     <string name="connect_via_member_address_alert_desc">接続リクエストはこのグループ メンバーに送信されます。</string>
     <string name="receipts_groups_disable_for_all">すべてのグループで無効にする</string>
     <string name="privacy_message_draft">メッセージの下書き</string>
@@ -1367,12 +1367,12 @@
     <string name="rcv_group_event_3_members_connected">%s, %s と %s は接続中</string>
     <string name="in_developing_desc">この機能はまだサポートされていません。次のリリースをお試しください。</string>
     <string name="receipts_contacts_enable_keep_overrides">有効にする（設定の優先を維持）</string>
-    <string name="v5_2_message_delivery_receipts">メッセージの既読通知！</string>
-    <string name="delivery_receipts_title">既読の通知！</string>
-    <string name="settings_section_title_delivery_receipts">既読の通知の送信先</string>
+    <string name="v5_2_message_delivery_receipts"></string>
+    <string name="delivery_receipts_title"></string>
+    <string name="settings_section_title_delivery_receipts"></string>
     <string name="receipts_groups_disable_keep_overrides">無効にする（グループの設定の優先を維持）</string>
     <string name="receipts_groups_enable_keep_overrides">有効にする（グループの設定の優先を維持）</string>
-    <string name="delivery_receipts_are_disabled">既読の通知は無効です！</string>
+    <string name="delivery_receipts_are_disabled"></string>
     <string name="receipts_contacts_disable_keep_overrides">無効にする（設定の優先を維持）</string>
     <string name="v5_2_disappear_one_message_descr">会話中に無効になっている場合でも。</string>
 </resources>
