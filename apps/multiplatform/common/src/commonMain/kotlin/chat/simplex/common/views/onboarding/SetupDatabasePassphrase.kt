@@ -52,6 +52,10 @@ fun SetupDatabasePassphrase(m: ChatModel) {
     progressIndicator,
     onConfirmEncrypt = {
       withApi {
+        if (m.chatRunning.value == true) {
+          // Stop chat if it's started before doing anything
+          stopChatAsync(m)
+        }
         prefs.storeDBPassphrase.set(false)
 
         val newKeyValue = newKey.value
