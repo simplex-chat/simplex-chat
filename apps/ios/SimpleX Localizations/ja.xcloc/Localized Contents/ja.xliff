@@ -1575,17 +1575,17 @@
       </trans-unit>
       <trans-unit id="Delivery" xml:space="preserve" approved="no">
         <source>Delivery</source>
-        <target state="translated">送信</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery receipts are disabled!" xml:space="preserve" approved="no">
         <source>Delivery receipts are disabled!</source>
-        <target state="translated">既読の通知が無効です！</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
         <source>Delivery receipts!</source>
-        <target state="translated">既読の通知！</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1990,7 +1990,7 @@
       </trans-unit>
       <trans-unit id="Error enabling delivery receipts!" xml:space="preserve" approved="no">
         <source>Error enabling delivery receipts!</source>
-        <target state="translated">既読通知の有効化でエラーが発生しました！</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
@@ -2075,7 +2075,7 @@
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve" approved="no">
         <source>Error setting delivery receipts!</source>
-        <target state="translated">既読通知の設定でエラーが発生しました！</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -2933,7 +2933,7 @@
       </trans-unit>
       <trans-unit id="Message delivery receipts!" xml:space="preserve" approved="no">
         <source>Message delivery receipts!</source>
-        <target state="translated">メッセージの既読通知！</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
@@ -4021,7 +4021,7 @@
       </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve" approved="no">
         <source>Send delivery receipts to</source>
-        <target state="translated">既読の通知先</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
@@ -4081,12 +4081,12 @@
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve" approved="no">
         <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
-        <target state="translated">既読の通知は、表示されているすべてのチャットプロファイルのすべての連絡先に対して有効になります。</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve" approved="no">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
-        <target state="translated">既読の通知は、すべての連絡先に対して有効になります。</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
@@ -4658,7 +4658,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve" approved="no">
         <source>This group has over %lld members, delivery receipts are not sent.</source>
-        <target state="translated">このグループには %lld 人を超えるメンバーがいるので既読は通知されません。</target>
+        <target state="new"></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve">
