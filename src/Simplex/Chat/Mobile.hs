@@ -75,6 +75,10 @@ foreign export ccall "chat_write_file" cChatWriteFile :: CString -> Ptr Word8 ->
 
 foreign export ccall "chat_read_file" cChatReadFile :: CString -> CString -> CString -> IO (Ptr Word8)
 
+foreign export ccall "chat_encrypt_file" cChatEncryptFile :: CString -> CString -> IO CJSONString
+
+foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
+
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 cChatMigrateInit fp key conf ctrl = do
