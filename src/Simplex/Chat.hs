@@ -1966,12 +1966,16 @@ processChatCommand = \case
       createGroupFeatureChangedItems user cd CISndGroupFeature g g'
       pure $ CRGroupUpdated user g g' Nothing
     assertGroupSendAllowed :: GroupInfo -> Maybe GroupMember -> m ()
-    assertGroupSendAllowed gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}} (Just GroupMember {memberRole = directMemberRole})
-      | userRole >= GRAdmin || directMemberRole >= GRAdmin = assertUserMembershipStatus gInfo
-      | not (groupFeatureAllowed SGFDirectMessages gInfo) = throwChatError $ CECommandError "direct messages not allowed"
-      | otherwise = assertUserGroupRole gInfo GRAuthor
-    assertGroupSendAllowed gInfo Nothing =
-      assertUserGroupRole gInfo GRAuthor
+    assertGroupSendAllowed
+      gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}}
+      (Just GroupMember {memberRole = directMemberRole, activeConn = Just Connection {peerChatVRange}}) = do
+        unless (isCompatibleRange peerChatVRange groupPrivateMessagesVRange) $ throwChatError CEPeerChatVRangeIncompatible
+        if
+            | userRole >= GRAdmin || directMemberRole >= GRAdmin -> assertUserMembershipStatus gInfo
+            | not (groupFeatureAllowed SGFDirectMessages gInfo) -> throwChatError $ CECommandError "direct messages not allowed"
+            | otherwise -> assertUserGroupRole gInfo GRAuthor
+    assertGroupSendAllowed _ (Just GroupMember {activeConn = Nothing}) = throwChatError CEGroupMemberNotActive
+    assertGroupSendAllowed gInfo Nothing = assertUserGroupRole gInfo GRAuthor
     assertUserGroupRole :: GroupInfo -> GroupMemberRole -> m ()
     assertUserGroupRole g@GroupInfo {membership} requiredRole = do
       when (memberRole (membership :: GroupMember) < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole

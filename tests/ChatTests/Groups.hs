@@ -81,6 +81,8 @@ chatGroupTests = do
       testNoDirect4 _1 _0 _1 False False False -- False False True
       testNoDirect4 _1 _1 _0 False False False
       testNoDirect4 _1 _1 _1 False False False
+  describe "group direct messages" $ do
+    it "should send delivery receipts in group" testGroupSendDirectMessages
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -2678,3 +2680,64 @@ testNoGroupDirectConns4Members hostVRange mem2VRange mem3VRange mem4VRange noCon
       cc1 <## ("no contact " <> name2)
       cc2 ##> ("@" <> name1 <> " hi")
       cc2 <## ("no contact " <> name1)
+
+testGroupSendDirectMessages :: HasCallStack => FilePath -> IO ()
+testGroupSendDirectMessages =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup3 "team" alice bob cath
+    connectUsers alice dan
+    addMember "team" alice dan GRMember
+    dan ##> "/j team"
+    concurrentlyN_
+      [ alice <## "#team: dan joined the group",
+        do
+          dan <## "#team: you joined the group"
+          dan
+            <### [ "#team: member bob (Bob) is connected",
+                   "#team: member cath (Catherine) is connected"
+                 ],
+        aliceAddedDan bob,
+        aliceAddedDan cath
+      ]
+    threadDelay 1000000
+
+    alice #> "#team hi"
+    bob <# "#team alice> hi"
+    cath <# "#team alice> hi"
+    dan <# "#team alice> hi"
+    threadDelay 1000000
+
+    alice `send` "#team @bob hi bob"
+    alice <# "#team @bob (private) hi bob"
+    bob <# "#team alice (private)> hi bob"
+    threadDelay 1000000
+
+    bob `send` "#team @alice hi alice"
+    bob <# "#team @alice (private) hi alice"
+    alice <# "#team bob (private)> hi alice"
+    threadDelay 1000000
+
+    dan #> "#team hello"
+    alice <# "#team dan> hello"
+    bob <# "#team dan> hello"
+    cath <# "#team dan> hello"
+    threadDelay 1000000
+
+    bob `send` "#team @cath hi cath"
+    bob <# "#team @cath (private) hi cath"
+    cath <# "#team bob (private)> hi cath"
+    threadDelay 1000000
+
+    cath `send` "#team @bob hello bob"
+    cath <# "#team @bob (private) hello bob"
+    bob <# "#team cath (private)> hello bob"
+
+    alice #$> ("/_get chat #1 count=5", chat, [(0, "connected"), (1, "hi"), (1, "hi bob"), (0, "hi alice"), (0, "hello")])
+    bob #$> ("/_get chat #1 count=7", chat, [(0, "connected"), (0, "hi"), (0, "hi bob"), (1, "hi alice"), (0, "hello"), (1, "hi cath"), (0, "hello bob")])
+    cath #$> ("/_get chat #1 count=5", chat, [(0, "connected"), (0, "hi"), (0, "hello"), (0, "hi cath"), (1, "hello bob")])
+    dan #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "hi"), (1, "hello")])
+  where
+    aliceAddedDan :: HasCallStack => TestCC -> IO ()
+    aliceAddedDan cc = do
+      cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
+      cc <## "#team: new member dan is connected"
