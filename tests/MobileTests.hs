@@ -27,7 +27,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
+import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..), getFileContentsSize)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.FilePath ((</>))
@@ -41,6 +41,7 @@ mobileTests = do
     it "should encrypt/decrypt WebRTC frames" testMediaApi
     it "should encrypt/decrypt WebRTC frames via C API" testMediaCApi
     it "should read/write encrypted files via C API" testFileCApi
+    it "should encrypt/decrypt files via C API" testFileEncryptionCApi
 
 noActiveUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -194,8 +195,25 @@ testFileCApi tmp = do
   contents <- getByteString (ptr' `plusPtr` (length r' + 1)) $ fromIntegral sz
   contents `shouldBe` src
   sz `shouldBe` len
-  where
-    jDecode :: FromJSON a => String -> IO (Maybe a)
-    jDecode = pure . J.decode . LB.pack
-    encodedCString :: StrEncoding a => a -> IO CString
-    encodedCString = newCAString . BS.unpack . strEncode
+
+testFileEncryptionCApi :: FilePath -> IO ()
+testFileEncryptionCApi tmp = do
+  src <- B.readFile "./tests/fixtures/test.pdf"
+  cFromPath <- newCAString "./tests/fixtures/test.pdf"
+  let toPath = tmp </> "test.encrypted.pdf"
+  cToPath <- newCAString toPath
+  r <- peekCAString =<< cChatEncryptFile cFromPath cToPath
+  Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
+  getFileContentsSize (CryptoFile toPath $ Just cfArgs) `shouldReturn` fromIntegral (B.length src)
+  cKey <- encodedCString key
+  cNonce <- encodedCString nonce
+  let toPath' = tmp </> "test.decrypted.pdf"
+  cToPath' <- newCAString toPath'
+  "" <- peekCAString =<< cChatDecryptFile cToPath cKey cNonce cToPath'
+  B.readFile toPath' `shouldReturn` src
+
+jDecode :: FromJSON a => String -> IO (Maybe a)
+jDecode = pure . J.decode . LB.pack
+
+encodedCString :: StrEncoding a => a -> IO CString
+encodedCString = newCAString . BS.unpack . strEncode
