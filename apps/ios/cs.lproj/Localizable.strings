@@ -88,6 +88,15 @@
 /* No comment provided by engineer. */
 "*bold*" = "\\*tučně*";
 
+/* copied message info title, # <title> */
+"# %@" = "# %@";
+
+/* copied message info */
+"## History" = "## Historie";
+
+/* copied message info */
+"## In reply to" = "## Odpovídáno";
+
 /* No comment provided by engineer. */
 "#secret#" = "#tajný#";
 
@@ -106,6 +115,9 @@
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
 
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ a %@ připojen";
+
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ na %2$@:";
 
@@ -123,6 +135,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ a %lld ostatní členové připojeni";
 
 /* copied message info */
 "%@:" = "%@:";
@@ -282,7 +297,7 @@
 "Accept" = "Přijmout";
 
 /* No comment provided by engineer. */
-"Accept connection request?" = "Přijmout kontakt";
+"Accept connection request?" = "Přijmout kontakt?";
 
 /* notification body */
 "Accept contact request from %@?" = "Přijmout žádost o kontakt od %@?";
@@ -694,10 +709,16 @@
 "Connect" = "Připojit";
 
 /* No comment provided by engineer. */
+"Connect directly" = "Připojit přímo";
+
+/* No comment provided by engineer. */
+"Connect incognito" = "Spojit se inkognito";
+
+/* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "připojit se k vývojářům SimpleX Chat.";
 
 /* No comment provided by engineer. */
-"Connect via contact link" = "Připojit se přes kontaktní odkaz?";
+"Connect via contact link" = "Připojit se přes odkaz";
 
 /* No comment provided by engineer. */
 "Connect via group link?" = "Připojit se přes odkaz skupiny?";
@@ -709,7 +730,7 @@
 "Connect via link / QR code" = "Připojit se prostřednictvím odkazu / QR kódu";
 
 /* No comment provided by engineer. */
-"Connect via one-time link" = "Připojit se jednorázovým odkazem?";
+"Connect via one-time link" = "Připojit se jednorázovým odkazem";
 
 /* No comment provided by engineer. */
 "connected" = "připojeno";
@@ -1052,6 +1073,9 @@
 
 /* rcv group event chat item */
 "deleted group" = "odstraněna skupina";
+
+/* No comment provided by engineer. */
+"Delivery" = "Doručenka";
 
 /* No comment provided by engineer. */
 "Delivery receipts are disabled!" = "Potvrzení o doručení jsou vypnuté!";
@@ -1722,6 +1746,9 @@
 /* No comment provided by engineer. */
 "Incognito mode" = "Režim inkognito";
 
+/* No comment provided by engineer. */
+"Incognito mode protects your privacy by using a new random profile for each contact." = "Režim inkognito chrání vaše soukromí používáním nového náhodného profilu pro každý kontakt.";
+
 /* chat list item description */
 "incognito via contact address link" = "inkognito přes odkaz na kontaktní adresu";
 
@@ -1784,6 +1811,9 @@
 
 /* No comment provided by engineer. */
 "Invalid server address!" = "Neplatná adresa serveru!";
+
+/* item status text */
+"Invalid status" = "Neplatný status";
 
 /* No comment provided by engineer. */
 "Invitation expired!" = "Platnost pozvánky vypršela!";
@@ -1858,10 +1888,10 @@
 "Join group" = "Připojit ke skupině";
 
 /* No comment provided by engineer. */
-"Join incognito" = "Připojte se inkognito";
+"Join incognito" = "Připojit se inkognito";
 
 /* No comment provided by engineer. */
-"Joining group" = "Připojení ke skupině";
+"Joining group" = "Připojování ke skupině";
 
 /* No comment provided by engineer. */
 "Keep your connections" = "Zachovat vaše připojení";
@@ -2045,6 +2075,9 @@
 
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Další vylepšení se chystají již brzy!";
+
+/* item status description */
+"Most likely this connection is deleted." = "Pravděpodobně je toto spojení smazáno.";
 
 /* No comment provided by engineer. */
 "Most likely this contact has deleted the connection with you." = "Tento kontakt s největší pravděpodobností smazal spojení s vámi.";
@@ -3071,7 +3104,7 @@
 "These settings are for your current profile **%@**." = "Toto nastavení je pro váš aktuální profil **%@**.";
 
 /* No comment provided by engineer. */
-"They can be overridden in contact and group settings." = "Mohou být přepsány v nastavení kontaktů";
+"They can be overridden in contact and group settings." = "Mohou být přepsány v nastavení kontaktů.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Tuto akci nelze vrátit zpět - všechny přijaté a odeslané soubory a média budou smazány. Obrázky s nízkým rozlišením zůstanou zachovány.";

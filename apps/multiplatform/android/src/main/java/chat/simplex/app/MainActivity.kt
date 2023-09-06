@@ -141,7 +141,12 @@ fun processExternalIntent(intent: Intent?) {
       when {
         intent.type == "text/plain" -> {
           val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-          if (text != null) {
+          val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+          if (uri != null) {
+            // Shared file that contains plain text, like `*.log` file
+            chatModel.sharedContent.value = SharedContent.File(text ?: "", uri.toURI())
+          } else if (text != null) {
+            // Shared just a text
             chatModel.sharedContent.value = SharedContent.Text(text)
           }
         }

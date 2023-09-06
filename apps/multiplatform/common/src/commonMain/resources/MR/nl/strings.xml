@@ -1086,13 +1086,13 @@
     <string name="decryption_error">Decodering fout</string>
     <string name="alert_text_msg_bad_hash">De hash van het vorige bericht is anders.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d berichten overgeslagen.</string>
-    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of de ander een oude databaseback-up gebruikt.</string>
     <string name="alert_text_fragment_please_report_to_developers">Meld het alsjeblieft aan de ontwikkelaars.</string>
     <string name="alert_title_msg_bad_hash">Onjuiste bericht hash</string>
     <string name="alert_title_msg_bad_id">Onjuiste bericht-ID</string>
     <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
 \nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d-berichten konden niet worden ontsleuteld.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d berichten konden niet worden ontsleuteld.</string>
     <string name="no_spaces">Geen spaties!</string>
     <string name="stop_rcv_file__message">Het ontvangen van het bestand wordt gestopt.</string>
     <string name="revoke_file__confirm">Intrekken</string>
@@ -1369,7 +1369,7 @@
     <string name="connect_via_member_address_alert_desc">Verzoek voor het verbinden wordt naar dit groepslid verzonden.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Plak de link die je hebt ontvangen om verbinding te maken met je contact…</string>
     <string name="system_restricted_background_warn"><![CDATA[Als u meldingen wilt inschakelen, kiest u <b> App-batterijgebruik</b> /<b> Onbeperkt</b> in de app-instellingen.]]></string>
-    <string name="connect_use_new_incognito_profile">Gebruik een nieuw incognito -profiel</string>
+    <string name="connect_use_new_incognito_profile">Gebruik een nieuw incognito profiel</string>
     <string name="privacy_message_draft">Concept bericht</string>
     <string name="rcv_group_event_n_members_connected">%s, %s en %d andere leden verbonden</string>
     <string name="privacy_show_last_messages">Laat laatste berichten zien</string>

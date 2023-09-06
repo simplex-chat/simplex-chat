@@ -12,6 +12,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.AppPreferences
@@ -252,6 +255,11 @@ private fun mtrErrorDescription(err: MTRError): String =
 
 @Composable
 private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onClick: (() -> Unit)? = null) {
+  val focusRequester = remember { FocusRequester() }
+  LaunchedEffect(Unit) {
+    delay(100L)
+    focusRequester.requestFocus()
+  }
   PassphraseField(
     text,
     generalGetString(MR.strings.enter_passphrase),
@@ -259,7 +267,15 @@ private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onCli
     keyboardActions = KeyboardActions(onDone = if (enabled) {
       { onClick?.invoke() }
     } else null
-    )
+    ),
+    modifier = Modifier.focusRequester(focusRequester).onPreviewKeyEvent {
+      if (onClick != null && it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+        onClick()
+        true
+      } else {
+        false
+      }
+    }
   )
 }
 
