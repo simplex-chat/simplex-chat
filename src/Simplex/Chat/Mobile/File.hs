@@ -109,7 +109,7 @@ chatEncryptFile fromPath toPath =
       pure cfArgs
     encryptChunks r w = do
       ch <- liftIO $ LB.hGet r chunkSize
-      liftIO $ CF.hPut w ch
+      unless (LB.null ch) $ liftIO $ CF.hPut w ch
       unless (LB.length ch < chunkSize) $ encryptChunks r w
 
 cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
