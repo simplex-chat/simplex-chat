@@ -1441,12 +1441,12 @@ processChatCommand = \case
       inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
       (inv,) <$> getContactViaMember db user fromMember
     let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
-        Contact {activeConn = Connection {connChatVRange}} = ct
+        Contact {activeConn = Connection {peerChatVRange}} = ct
     withChatLock "joinGroup" . procCmd $ do
       dm <- directMessage $ XGrpAcpt (memberId (membership :: GroupMember))
       agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm
       withStore' $ \db -> do
-        createMemberConnection db userId fromMember agentConnId connChatVRange
+        createMemberConnection db userId fromMember agentConnId peerChatVRange
         updateGroupMemberStatus db userId fromMember GSMemAccepted
         updateGroupMemberStatus db userId membership GSMemAccepted
       updateCIGroupInvitationStatus user
@@ -2850,7 +2850,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg connEntity conn@Connection {connId, connChatVRange, viaUserContactLink, groupLinkId, customUserProfileId, connectionCode} = \case
+    processDirectMessage agentMsg connEntity conn@Connection {connId, peerChatVRange, viaUserContactLink, groupLinkId, customUserProfileId, connectionCode} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
@@ -2931,7 +2931,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-          conn' <- updateConnChatVRange conn chatVRange
+          conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
               -- TODO check member ID
@@ -2941,7 +2941,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> messageError "CONF from member must have x.grp.mem.info"
         INFO connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-          _conn' <- updateConnChatVRange conn chatVRange
+          _conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
               -- TODO check member ID
@@ -2973,7 +2973,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     forM_ groupId_ $ \groupId -> do
                       gVar <- asks idsDrg
                       groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation
-                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds connChatVRange
+                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds peerChatVRange
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
@@ -3042,7 +3042,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
               CFCreateConnGrpMemInv ->
                 ifM
-                  (featureVersionSupported (connChatVRange conn) groupNoDirectVersion)
+                  (featureVersionSupported (peerChatVRange conn) groupNoDirectVersion)
                   sendWithoutDirectCReq
                   sendWithDirectCReq
                 where
@@ -3078,7 +3078,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-        conn' <- updateConnChatVRange conn chatVRange
+        conn' <- updatePeerChatVRange conn chatVRange
         case memberCategory m of
           GCInviteeMember ->
             case chatMsgEvent of
@@ -3100,7 +3100,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-        _conn' <- updateConnChatVRange conn chatVRange
+        _conn' <- updatePeerChatVRange conn chatVRange
         case chatMsgEvent of
           XGrpMemInfo memId _memProfile
             | sameMemberId memId m -> do
@@ -3277,7 +3277,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- when recipient of the file "joins" connection created by the sender
         CONF confId _ connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-          conn' <- updateConnChatVRange conn chatVRange
+          conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
             -- TODO save XFileAcpt message
             XFileAcpt name
@@ -3346,7 +3346,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- (sender doesn't create connections for all group members)
         CONF confId _ connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-          conn' <- updateConnChatVRange conn chatVRange
+          conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
             XOk -> allowAgentConnectionAsync user conn' confId XOk -- [async agent commands] no continuation needed, but command should be asynchronous for stability
             _ -> pure ()
@@ -4042,7 +4042,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
     processGroupInvitation ct inv msg msgMeta = do
-      let Contact {localDisplayName = c, activeConn = Connection {connChatVRange, customUserProfileId, groupLinkId = groupLinkId'}} = ct
+      let Contact {localDisplayName = c, activeConn = Connection {peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'}} = ct
           GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} = inv
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
@@ -4053,7 +4053,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         then do
           connIds <- joinAgentConnectionAsync user True connRequest =<< directMessage (XGrpAcpt memberId)
           withStore' $ \db -> do
-            createMemberConnectionAsync db user hostId connIds connChatVRange
+            createMemberConnectionAsync db user hostId connIds peerChatVRange
             updateGroupMemberStatusById db userId hostId GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
           toView $ CRUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
@@ -4256,7 +4256,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     saveConnInfo :: Connection -> ConnInfo -> m Connection
     saveConnInfo activeConn connInfo = do
       ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage activeConn connInfo
-      conn' <- updateConnChatVRange activeConn chatVRange
+      conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db user conn' p
@@ -4481,11 +4481,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
         _ -> pure ()
 
-updateConnChatVRange :: ChatMonad m => Connection -> VersionRange -> m Connection
-updateConnChatVRange conn@Connection {connId, connChatVRange} msgChatVRange
-  | msgChatVRange /= connChatVRange = do
-    withStore' $ \db -> setConnChatVRange db connId msgChatVRange
-    pure conn {connChatVRange = msgChatVRange}
+updatePeerChatVRange :: ChatMonad m => Connection -> VersionRange -> m Connection
+updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange
+  | msgChatVRange /= peerChatVRange = do
+    withStore' $ \db -> setPeerChatVRange db connId msgChatVRange
+    pure conn {peerChatVRange = msgChatVRange}
   | otherwise = pure conn
 
 featureVersionSupported :: ChatMonad' m => VersionRange -> Version -> m Bool
@@ -4759,7 +4759,7 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
 saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> CommandId -> m (Connection, RcvMessage)
 saveRcvMSG conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
   ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} <- parseAChatMessage conn agentMsgMeta msgBody
-  conn' <- updateConnChatVRange conn chatVRange
+  conn' <- updatePeerChatVRange conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}

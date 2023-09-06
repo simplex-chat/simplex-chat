@@ -154,7 +154,7 @@ getGroupLinkConnection db User {userId} groupInfo@GroupInfo {groupId} =
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.chat_vrange_min_version, c.chat_vrange_max_version
+          c.peer_chat_min_version, c.peer_chat_max_version
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
         WHERE c.user_id = ? AND uc.user_id = ? AND uc.group_id = ?
@@ -236,7 +236,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
           m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.chat_vrange_min_version, c.chat_vrange_max_version
+          c.peer_chat_min_version, c.peer_chat_max_version
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
         JOIN groups g ON g.group_id = m.group_id
@@ -530,7 +530,7 @@ groupMemberQuery =
       m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-      c.chat_vrange_min_version, c.chat_vrange_max_version
+      c.peer_chat_min_version, c.peer_chat_max_version
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.connection_id = (
@@ -615,11 +615,11 @@ getGroupInvitation db user groupId =
         DB.query db "SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ?" (groupId, userId)
 
 createNewContactMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupId -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> ExceptT StoreError IO GroupMember
-createNewContactMember db gVar User {userId, userContactId} groupId Contact {contactId, localDisplayName, profile, activeConn = Connection {connChatVRange}} memberRole agentConnId connRequest =
+createNewContactMember db gVar User {userId, userContactId} groupId Contact {contactId, localDisplayName, profile, activeConn = Connection {peerChatVRange}} memberRole agentConnId connRequest =
   createWithRandomId gVar $ \memId -> do
     createdAt <- liftIO getCurrentTime
     member@GroupMember {groupMemberId} <- createMember_ (MemberId memId) createdAt
-    void $ createMemberConnection_ db userId groupMemberId agentConnId connChatVRange Nothing 0 createdAt
+    void $ createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange Nothing 0 createdAt
     pure member
   where
     createMember_ memberId createdAt = do
@@ -655,12 +655,12 @@ createNewContactMember db gVar User {userId, userContactId} groupId Contact {con
             )
 
 createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupId -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> VersionRange -> ExceptT StoreError IO ()
-createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) connChatVRange =
+createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) peerChatVRange =
   createWithRandomId gVar $ \memId -> do
     createdAt <- liftIO getCurrentTime
     insertMember_ (MemberId memId) createdAt
     groupMemberId <- liftIO $ insertedRowId db
-    Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId connChatVRange Nothing 0 createdAt
+    Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange Nothing 0 createdAt
     setCommandConnId db user cmdId connId
   where
     insertMember_ memberId createdAt =
@@ -690,7 +690,7 @@ getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
             c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-            c.chat_vrange_min_version, c.chat_vrange_max_version
+            c.peer_chat_min_version, c.peer_chat_max_version
           FROM contacts ct
           JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
           JOIN connections c ON c.connection_id = (
@@ -714,14 +714,14 @@ getMemberInvitation db User {userId} groupMemberId =
     DB.query db "SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?" (groupMemberId, userId)
 
 createMemberConnection :: DB.Connection -> UserId -> GroupMember -> ConnId -> VersionRange -> IO ()
-createMemberConnection db userId GroupMember {groupMemberId} agentConnId connChatVRange = do
+createMemberConnection db userId GroupMember {groupMemberId} agentConnId peerChatVRange = do
   currentTs <- getCurrentTime
-  void $ createMemberConnection_ db userId groupMemberId agentConnId connChatVRange Nothing 0 currentTs
+  void $ createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange Nothing 0 currentTs
 
 createMemberConnectionAsync :: DB.Connection -> User -> GroupMemberId -> (CommandId, ConnId) -> VersionRange -> IO ()
-createMemberConnectionAsync db user@User {userId} groupMemberId (cmdId, agentConnId) connChatVRange = do
+createMemberConnectionAsync db user@User {userId} groupMemberId (cmdId, agentConnId) peerChatVRange = do
   currentTs <- getCurrentTime
-  Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId connChatVRange Nothing 0 currentTs
+  Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange Nothing 0 currentTs
   setCommandConnId db user cmdId connId
 
 updateGroupMemberStatus :: DB.Connection -> UserId -> GroupMember -> GroupMemberStatus -> IO ()
@@ -978,7 +978,7 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
         [":contact_id" := contactId, ":updated_at" := ts, ":group_member_id" := groupMemberId]
 
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> VersionRange -> Maybe Int64 -> Int -> UTCTime -> IO Connection
-createMemberConnection_ db userId groupMemberId agentConnId connChatVRange viaContact = createConnection_ db userId ConnMember (Just groupMemberId) agentConnId connChatVRange viaContact Nothing Nothing
+createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange viaContact = createConnection_ db userId ConnMember (Just groupMemberId) agentConnId peerChatVRange viaContact Nothing Nothing
 
 getViaGroupMember :: DB.Connection -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))
 getViaGroupMember db User {userId, userContactId} Contact {contactId} =
@@ -999,7 +999,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
           m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.chat_vrange_min_version, c.chat_vrange_max_version
+          c.peer_chat_min_version, c.peer_chat_max_version
         FROM group_members m
         JOIN contacts ct ON ct.contact_id = m.contact_id
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -1033,7 +1033,7 @@ getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
           p.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.chat_vrange_min_version, c.chat_vrange_max_version
+          c.peer_chat_min_version, c.peer_chat_max_version
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
         JOIN connections c ON c.connection_id = (

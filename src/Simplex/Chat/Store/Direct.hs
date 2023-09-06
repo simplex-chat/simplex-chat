@@ -145,7 +145,7 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-              c.chat_vrange_min_version, c.chat_vrange_max_version
+              c.peer_chat_min_version, c.peer_chat_max_version
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             JOIN connections c ON c.contact_id = ct.contact_id
@@ -443,7 +443,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
             db
             [sql|
               INSERT INTO contact_requests
-                (user_contact_link_id, agent_invitation_id, chat_vrange_min_version, chat_vrange_max_version, contact_profile_id, local_display_name, user_id, created_at, updated_at, xcontact_id)
+                (user_contact_link_id, agent_invitation_id, peer_chat_min_version, peer_chat_max_version, contact_profile_id, local_display_name, user_id, created_at, updated_at, xcontact_id)
               VALUES (?,?,?,?,?,?,?,?,?,?)
             |]
             (userContactLinkId, invId, minV, maxV, profileId, ldn, userId, currentTs, currentTs, xContactId_)
@@ -461,7 +461,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-              c.chat_vrange_min_version, c.chat_vrange_max_version
+              c.peer_chat_min_version, c.peer_chat_max_version
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             LEFT JOIN connections c ON c.contact_id = ct.contact_id
@@ -479,7 +479,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
               c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at,
-              cr.chat_vrange_min_version, cr.chat_vrange_max_version
+              cr.peer_chat_min_version, cr.peer_chat_max_version
             FROM contact_requests cr
             JOIN connections c USING (user_contact_link_id)
             JOIN contact_profiles p USING (contact_profile_id)
@@ -499,7 +499,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
               db
               [sql|
                 UPDATE contact_requests
-                SET agent_invitation_id = ?, chat_vrange_min_version = ?, chat_vrange_max_version = ?, updated_at = ?
+                SET agent_invitation_id = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, updated_at = ?
                 WHERE user_id = ? AND contact_request_id = ?
               |]
               (invId, minV, maxV, currentTs, userId, cReqId)
@@ -509,7 +509,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
               db
               [sql|
                 UPDATE contact_requests
-                SET agent_invitation_id = ?, chat_vrange_min_version = ?, chat_vrange_max_version = ?, local_display_name = ?, updated_at = ?
+                SET agent_invitation_id = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
                 WHERE user_id = ? AND contact_request_id = ?
               |]
               (invId, minV, maxV, ldn, currentTs, userId, cReqId)
@@ -548,7 +548,7 @@ getContactRequest db User {userId} contactRequestId =
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
           c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, p.preferences, cr.created_at, cr.updated_at,
-          cr.chat_vrange_min_version, cr.chat_vrange_max_version
+          cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
         JOIN contact_profiles p USING (contact_profile_id)
@@ -625,7 +625,7 @@ getContact_ db user@User {userId} contactId deleted =
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.chat_vrange_min_version, c.chat_vrange_max_version
+          c.peer_chat_min_version, c.peer_chat_max_version
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
@@ -674,7 +674,7 @@ getContactConnections db userId Contact {contactId} =
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
             c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-            c.chat_vrange_min_version, c.chat_vrange_max_version
+            c.peer_chat_min_version, c.peer_chat_max_version
           FROM connections c
           JOIN contacts ct ON ct.contact_id = c.contact_id
           WHERE c.user_id = ? AND ct.user_id = ? AND ct.contact_id = ?
@@ -691,7 +691,7 @@ getConnectionById db User {userId} connId = ExceptT $ do
       [sql|
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
           conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at, auth_err_counter,
-          chat_vrange_min_version, chat_vrange_max_version
+          peer_chat_min_version, peer_chat_max_version
         FROM connections
         WHERE user_id = ? AND connection_id = ?
       |]

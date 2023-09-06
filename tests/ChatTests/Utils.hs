@@ -528,7 +528,7 @@ startFileTransferWithDest' cc1 cc2 fileName fileSize fileDest_ = do
 
 currentChatVRangeInfo :: String
 currentChatVRangeInfo =
-  "chat protocol version range: " <> vRangeStr supportedChatVRange
+  "peer chat protocol version range: " <> vRangeStr supportedChatVRange
 
 vRangeStr :: VersionRange -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"

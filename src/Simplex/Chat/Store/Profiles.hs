@@ -317,7 +317,7 @@ getUserAddressConnections db User {userId} = do
           [sql|
             SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
               c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-              c.chat_vrange_min_version, c.chat_vrange_max_version
+              c.peer_chat_min_version, c.peer_chat_max_version
             FROM connections c
             JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
             WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
@@ -332,7 +332,7 @@ getUserContactLinks db User {userId} =
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.chat_vrange_min_version, c.chat_vrange_max_version,
+          c.peer_chat_min_version, c.peer_chat_max_version,
           uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
