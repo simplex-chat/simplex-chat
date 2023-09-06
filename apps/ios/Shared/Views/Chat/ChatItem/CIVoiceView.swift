@@ -159,7 +159,8 @@ struct VoiceMessagePlayer: View {
             }
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { it in
-            if let recordingFileName = getLoadedFileName(recordingFile), chatModel.stopPreviousRecPlay != getAppFilePath(recordingFileName) {
+            if let recordingFileName = getLoadedFileSource(recordingFile)?.filePath,
+               chatModel.stopPreviousRecPlay != getAppFilePath(recordingFileName) {
                 audioPlayer?.stop()
                 playbackState = .noPlayback
                 playbackTime = TimeInterval(0)
@@ -219,8 +220,7 @@ struct VoiceMessagePlayer: View {
         Button {
             Task {
                 if let user = ChatModel.shared.currentUser {
-                    // TODO encrypt voice
-                    await receiveFile(user: user, fileId: recordingFile.fileId, encrypted: false)
+                    await receiveFile(user: user, fileId: recordingFile.fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get())
                 }
             }
         } label: {

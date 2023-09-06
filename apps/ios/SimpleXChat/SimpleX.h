@@ -33,3 +33,9 @@ extern char *chat_write_file(char *path, char *data, int len);
 // 1. NUL-terminated C string with JSON of ReadFileResult, followed by
 // 2. file data, the length is defined in ReadFileResult
 extern char *chat_read_file(char *path, char *key, char *nonce);
+
+// chat_encrypt_file returns NUL-terminated string with JSON of WriteFileResult
+extern char *chat_encrypt_file(char *fromPath, char *toPath);
+
+// chat_decrypt_file returns NUL-terminated string with the error message
+extern char *chat_decrypt_file(char *fromPath, char *key, char *nonce, char *toPath);

@@ -79,7 +79,6 @@ struct MsgContentView: View {
             .foregroundColor(.secondary)
     }
 
-    // TODO: encrypt: reserve space for lock icon
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
         (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, transparent: true)
     }

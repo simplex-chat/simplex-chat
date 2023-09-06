@@ -2118,8 +2118,9 @@ public struct ChatItem: Identifiable, Decodable {
     }
 
     public var encryptLocalFile: Bool {
-        guard let mc = content.msgContent else { return false }
-        return mc.isImage || mc.isVoice
+        file?.fileProtocol == .xftp &&
+        content.msgContent?.isVideo == false &&
+        privacyEncryptLocalFilesGroupDefault.get()
     }
 
     public var memberDisplayName: String? {
@@ -2759,7 +2760,7 @@ public struct CIFile: Decodable {
 }
 
 public struct CryptoFile: Codable {
-    public var filePath: String
+    public var filePath: String // the name of the file, not a full path
     public var cryptoArgs: CryptoFileArgs?
 
     public init(filePath: String, cryptoArgs: CryptoFileArgs?) {

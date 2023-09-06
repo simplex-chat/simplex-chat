@@ -658,7 +658,7 @@ struct ComposeView: View {
                 let file = voiceCryptoFile(recordingFileName)
                 sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
             case let .filePreview(_, file):
-                if let savedFile = saveFileFromURL(file, encrypted: false) {
+                if let savedFile = saveFileFromURL(file, encrypted: privacyEncryptLocalFilesGroupDefault.get()) {
                     sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
                 }
             }
@@ -733,14 +733,15 @@ struct ComposeView: View {
         }
 
         func voiceCryptoFile(_ fileName: String) -> CryptoFile? {
+            if !privacyEncryptLocalFilesGroupDefault.get() {
+                return CryptoFile.plain(fileName)
+            }
             let url = getAppFilePath(fileName)
-            let data = try? Data(contentsOf: url)
-            removeFile(url)
-            let newFileName = generateNewFileName("voice", "m4a")
-            let newUrl = getAppFilePath(newFileName)
-            if let data = data,
-               let cfArgs = try? writeCryptoFile(path: newUrl.path, data: data) {
-                return CryptoFile(filePath: newFileName, cryptoArgs: cfArgs)
+            let toFile = generateNewFileName("voice", "m4a")
+            let toUrl = getAppFilePath(toFile)
+            if let cfArgs = try? encryptCryptoFile(fromPath: url.path, toPath: toUrl.path) {
+                removeFile(url)
+                return CryptoFile(filePath: toFile, cryptoArgs: cfArgs)
             } else {
                 return nil
             }

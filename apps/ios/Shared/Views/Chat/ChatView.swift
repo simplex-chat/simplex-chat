@@ -601,15 +601,15 @@ struct ChatView: View {
                 }
                 menu.append(shareUIAction())
                 menu.append(copyUIAction())
-                if let filePath = getLoadedFilePath(ci.file) {
+                if let fileSource = getLoadedFileSource(ci.file) {
                     if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
                         if image.imageData != nil {
-                            menu.append(saveFileAction(filePath))
+                            menu.append(saveFileAction(fileSource))
                         } else {
                             menu.append(saveImageAction(image))
                         }
                     } else {
-                        menu.append(saveFileAction(filePath))
+                        menu.append(saveFileAction(fileSource))
                     }
                 }
                 if ci.meta.editable && !mc.isVoice && !live {
@@ -747,13 +747,12 @@ struct ChatView: View {
             }
         }
         
-        private func saveFileAction(_ filePath: String) -> UIAction {
+        private func saveFileAction(_ fileSource: CryptoFile) -> UIAction {
             UIAction(
                 title: NSLocalizedString("Save", comment: "chat item action"),
-                image: UIImage(systemName: "square.and.arrow.down")
+                image: UIImage(systemName: fileSource.cryptoArgs == nil ? "square.and.arrow.down" : "lock.open")
             ) { _ in
-                let fileURL = URL(fileURLWithPath: filePath)
-                showShareSheet(items: [fileURL])
+                saveCryptoFile(fileSource)
             }
         }
         

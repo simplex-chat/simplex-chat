@@ -16,8 +16,8 @@ struct CIFileView: View {
 
     var body: some View {
         let metaReserve = edited
-        ? "                         "
-        : "                     "
+        ? "                           "
+        : "                       "
         Button(action: fileAction) {
             HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
@@ -84,7 +84,8 @@ struct CIFileView: View {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
                         if let user = ChatModel.shared.currentUser {
-                            await receiveFile(user: user, fileId: file.fileId, encrypted: false)
+                            let encrypted = file.fileProtocol == .xftp && privacyEncryptLocalFilesGroupDefault.get()
+                            await receiveFile(user: user, fileId: file.fileId, encrypted: encrypted)
                         }
                     }
                 } else {
@@ -109,9 +110,8 @@ struct CIFileView: View {
                 }
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
-                if let filePath = getLoadedFilePath(file) {
-                    let url = URL(fileURLWithPath: filePath)
-                    showShareSheet(items: [url])
+                if let fileSource = getLoadedFileSource(file) {
+                    saveCryptoFile(fileSource)
                 }
             default: break
             }
@@ -190,6 +190,24 @@ struct CIFileView: View {
             )
             .rotationEffect(.degrees(-90))
             .frame(width: 30, height: 30)
+    }
+}
+
+func saveCryptoFile(_ fileSource: CryptoFile) {
+    if let cfArgs = fileSource.cryptoArgs {
+        let url = getAppFilePath(fileSource.filePath)
+        let tempUrl = getTempFilesDirectory().appendingPathComponent(fileSource.filePath)
+        do {
+            try decryptCryptoFile(fromPath: url.path, cryptoArgs: cfArgs, toPath: tempUrl.path)
+            showShareSheet(items: [tempUrl]) {
+                removeFile(tempUrl)
+            }
+        } catch {
+            AlertManager.shared.showAlertMsg(title: "Error decrypting file", message: "Error: \(error.localizedDescription)")
+        }
+    } else {
+        let url = getAppFilePath(fileSource.filePath)
+        showShareSheet(items: [url])
     }
 }
 

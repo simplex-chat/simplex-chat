@@ -41,3 +41,24 @@ public func readCryptoFile(path: String, cryptoArgs: CryptoFileArgs) throws -> D
     case let .result(size): return Data(bytes: r.advanced(by: d.count + 1), count: size)
     }
 }
+
+public func encryptCryptoFile(fromPath: String, toPath: String) throws -> CryptoFileArgs {
+    var cFromPath = fromPath.cString(using: .utf8)!
+    var cToPath = toPath.cString(using: .utf8)!
+    let cjson = chat_encrypt_file(&cFromPath, &cToPath)!
+    let d = fromCString(cjson).data(using: .utf8)!
+    switch try jsonDecoder.decode(WriteFileResult.self, from: d) {
+    case let .result(cfArgs): return cfArgs
+    case let .error(err): throw RuntimeError(err)
+    }
+}
+
+public func decryptCryptoFile(fromPath: String, cryptoArgs: CryptoFileArgs, toPath: String) throws {
+    var cFromPath = fromPath.cString(using: .utf8)!
+    var cKey = cryptoArgs.fileKey.cString(using: .utf8)!
+    var cNonce = cryptoArgs.fileNonce.cString(using: .utf8)!
+    var cToPath = toPath.cString(using: .utf8)!
+    let cErr = chat_decrypt_file(&cFromPath, &cKey, &cNonce, &cToPath)!
+    let err = fromCString(cErr)
+    if err != "" { throw RuntimeError(err) }
+}
