@@ -963,7 +963,7 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
-    <> [viewConnChatVRange (connChatVRange activeConn)]
+    <> [viewPeerChatVRange (peerChatVRange activeConn)]
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
 viewGroupInfo GroupInfo {groupId} s =
@@ -979,14 +979,14 @@ viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProf
     <> maybe ["member not connected"] viewConnectionStats stats
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (memberSecurityCode m) | isJust stats]
-    <> maybe [] (\ac -> [viewConnChatVRange (connChatVRange ac)]) activeConn
+    <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
 
 viewConnectionVerified :: Maybe SecurityCode -> StyledString
 viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
 viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
 
-viewConnChatVRange :: VersionRange -> StyledString
-viewConnChatVRange (VersionRange minVer maxVer) = "chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
+viewPeerChatVRange :: VersionRange -> StyledString
+viewPeerChatVRange (VersionRange minVer maxVer) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =

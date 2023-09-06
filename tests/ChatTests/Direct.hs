@@ -96,18 +96,18 @@ chatDirectTests = do
   describe "delivery receipts" $ do
     it "should send delivery receipts" testSendDeliveryReceipts
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
-  describe "negotiate connection chat protocol version range" $ do
-    describe "version range correctly set for new connection via invitation" $ do
+  describe "negotiate connection peer chat protocol version range" $ do
+    describe "peer version range correctly set for new connection via invitation" $ do
       testInvVRange supportedChatVRange supportedChatVRange
       testInvVRange supportedChatVRange vr11
       testInvVRange vr11 supportedChatVRange
       testInvVRange vr11 vr11
-    describe "version range correctly set for new connection via contact request" $ do
+    describe "peer version range correctly set for new connection via contact request" $ do
       testReqVRange supportedChatVRange supportedChatVRange
       testReqVRange supportedChatVRange vr11
       testReqVRange vr11 supportedChatVRange
       testReqVRange vr11 vr11
-    it "update connection version range on received messages" testUpdateConnChatVRange
+    it "update peer version range on received messages" testUpdatePeerChatVRange
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -2330,8 +2330,8 @@ testConnReqChatVRange ct1VRange ct2VRange tmp =
       bob ##> "/i alice"
       contactInfoChatVRange bob ct1VRange
 
-testUpdateConnChatVRange :: HasCallStack => FilePath -> IO ()
-testUpdateConnChatVRange tmp =
+testUpdatePeerChatVRange :: HasCallStack => FilePath -> IO ()
+testUpdatePeerChatVRange tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChatCfg tmp cfg11 "bob" bobProfile $ \bob -> do
       connectUsers alice bob
@@ -2378,4 +2378,4 @@ contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "sending messages via: localhost"
   cc <## "you've shared main profile with this contact"
   cc <## "connection not verified, use /code command to see security code"
-  cc <## ("chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
+  cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")

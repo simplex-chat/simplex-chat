@@ -564,7 +564,7 @@ memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
   MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
   where
-    memberChatVRange = ChatVersionRange . connChatVRange <$> activeConn
+    memberChatVRange = ChatVersionRange . peerChatVRange <$> activeConn
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -1167,7 +1167,7 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
-    connChatVRange :: VersionRange,
+    peerChatVRange :: VersionRange,
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
