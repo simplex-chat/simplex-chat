@@ -2118,7 +2118,8 @@ public struct ChatItem: Identifiable, Decodable {
     }
 
     public var encryptLocalFile: Bool {
-        content.msgContent?.isImage ?? false
+        guard let mc = content.msgContent else { return false }
+        return mc.isImage || mc.isVoice
     }
 
     public var memberDisplayName: String? {
@@ -2760,6 +2761,11 @@ public struct CIFile: Decodable {
 public struct CryptoFile: Codable {
     public var filePath: String
     public var cryptoArgs: CryptoFileArgs?
+
+    public init(filePath: String, cryptoArgs: CryptoFileArgs?) {
+        self.filePath = filePath
+        self.cryptoArgs = cryptoArgs
+    }
 
     public static func plain(_ f: String) -> CryptoFile {
         CryptoFile(filePath: f, cryptoArgs: nil)

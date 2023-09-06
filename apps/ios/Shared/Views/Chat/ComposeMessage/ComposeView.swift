@@ -167,25 +167,23 @@ struct ComposeState {
 }
 
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
-    let chatItemPreview: ComposePreview
     switch chatItem.content.msgContent {
     case .text:
-        chatItemPreview = .noPreview
+        return .noPreview
     case let .link(_, preview: preview):
-        chatItemPreview = .linkPreview(linkPreview: preview)
+        return .linkPreview(linkPreview: preview)
     case let .image(_, image):
-        chatItemPreview = .mediaPreviews(mediaPreviews: [(image, nil)])
+        return .mediaPreviews(mediaPreviews: [(image, nil)])
     case let .video(_, image, _):
-        chatItemPreview = .mediaPreviews(mediaPreviews: [(image, nil)])
+        return .mediaPreviews(mediaPreviews: [(image, nil)])
     case let .voice(_, duration):
-        chatItemPreview = .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
+        return .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
     case .file:
         let fileName = chatItem.file?.fileName ?? ""
-        chatItemPreview = .filePreview(fileName: fileName, file: getAppFilePath(fileName))
+        return .filePreview(fileName: fileName, file: getAppFilePath(fileName))
     default:
-        chatItemPreview = .noPreview
+        return .noPreview
     }
-    return chatItemPreview
 }
 
 enum UploadContent: Equatable {
@@ -656,9 +654,9 @@ struct ComposeView: View {
                 }
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
-                chatModel.filesToDelete.remove(getAppFilePath(recordingFileName))
                 // TODO encrypt voice
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: CryptoFile.plain(recordingFileName), ttl: ttl)
+                let file = voiceCryptoFile(recordingFileName)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file, encrypted: false) {
                     sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
@@ -732,6 +730,20 @@ struct ComposeView: View {
                 return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live, ttl: ttl)
             }
             return nil
+        }
+
+        func voiceCryptoFile(_ fileName: String) -> CryptoFile? {
+            let url = getAppFilePath(fileName)
+            let data = try? Data(contentsOf: url)
+            removeFile(url)
+            let newFileName = generateNewFileName("voice", "m4a")
+            let newUrl = getAppFilePath(newFileName)
+            if let data = data,
+               let cfArgs = try? writeCryptoFile(path: newUrl.path, data: data) {
+                return CryptoFile(filePath: newFileName, cryptoArgs: cfArgs)
+            } else {
+                return nil
+            }
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {

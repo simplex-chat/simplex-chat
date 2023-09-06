@@ -19,18 +19,21 @@ func getLoadedFilePath(_ file: CIFile?) -> String? {
 }
 
 func getLoadedFileName(_ file: CIFile?) -> String? {
+    getLoadedFileSource(file)?.filePath
+}
+
+func getLoadedFileSource(_ file: CIFile?) -> CryptoFile? {
     if let file = file,
        file.loaded,
-       let fileName = file.fileSource?.filePath {
-        return fileName
+       let fileSource = file.fileSource {
+        return fileSource
     }
     return nil
 }
 
 func getLoadedImage(_ file: CIFile?) -> UIImage? {
-    if let fileSource = file?.fileSource,
-        let fileName = getLoadedFileName(file) {
-        let filePath = getAppFilePath(fileName)
+    if let fileSource = getLoadedFileSource(file) {
+        let filePath = getAppFilePath(fileSource.filePath)
         do {
             let data = try getFileData(filePath, fileSource.cryptoArgs)
             let img = UIImage(data: data)

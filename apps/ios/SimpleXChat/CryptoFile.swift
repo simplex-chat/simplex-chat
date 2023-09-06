@@ -13,7 +13,7 @@ enum WriteFileResult: Decodable {
     case error(writeError: String)
 }
 
-func writeCryptoFile(path: String, data: Data) throws -> CryptoFileArgs {
+public func writeCryptoFile(path: String, data: Data) throws -> CryptoFileArgs {
     let ptr: UnsafeMutableRawPointer = malloc(data.count)
     memcpy(ptr, (data as NSData).bytes, data.count)
     var cPath = path.cString(using: .utf8)!
