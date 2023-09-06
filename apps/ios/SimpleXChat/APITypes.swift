@@ -245,7 +245,7 @@ public enum ChatCommand {
                     return s + " inline=\(onOff(inline))"
                 }
                 return s
-            case let .setFileToReceive(fileId, encrypted): return "/_set_file_to_receive \(fileId) encrypt=\(encrypted)"
+            case let .setFileToReceive(fileId, encrypted): return "/_set_file_to_receive \(fileId) encrypt=\(onOff(encrypted))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case .showVersion: return "/version"
             case let .string(str): return str
