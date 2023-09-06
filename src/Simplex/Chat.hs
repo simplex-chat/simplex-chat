@@ -1866,7 +1866,7 @@ processChatCommand = \case
       xftpCfg <- readTVarIO =<< asks userXFTPFileConfig
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
       when (fromInteger fileSize > maxFileSize) $ throwChatError $ CEFileSize f
-      let chunks = -((-fileSize) `div` fileChunkSize)
+      let chunks = - ((- fileSize) `div` fileChunkSize)
           fileInline = inlineFileMode mc inlineFiles chunks n
           fileMode = case xftpCfg of
             Just cfg
@@ -2566,7 +2566,7 @@ cleanupManager = do
           `catchChatError` (toView . CRChatError (Just user))
     cleanupMessages = do
       ts <- liftIO getCurrentTime
-      let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
+      let cutoffTs = addUTCTime (- (30 * nominalDay)) ts
       withStoreCtx' (Just "cleanupManager, deleteOldMessages") (`deleteOldMessages` cutoffTs)
 
 startProximateTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
@@ -3040,11 +3040,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           case cReq of
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
-              CFCreateConnGrpMemInv ->
-                ifM
-                  (featureVersionSupported (peerChatVRange conn) groupNoDirectVersion)
-                  sendWithoutDirectCReq
-                  sendWithDirectCReq
+              CFCreateConnGrpMemInv
+                | isCompatibleRange (peerChatVRange conn) groupNoDirectVRange -> sendWithoutDirectCReq
+                | otherwise -> sendWithDirectCReq
                 where
                   sendWithoutDirectCReq = do
                     let GroupMember {groupMemberId, memberId} = m
@@ -4291,11 +4289,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               groupConnIds <- createConn
               directConnIds <- case memberChatVRange of
                 Nothing -> Just <$> createConn
-                Just mcvr ->
-                  ifM
-                    (featureVersionSupported (fromChatVRange mcvr) groupNoDirectVersion)
-                    (pure Nothing)
-                    (Just <$> createConn)
+                Just mcvr
+                  | isCompatibleRange (fromChatVRange mcvr) groupNoDirectVRange -> pure Nothing
+                  | otherwise -> Just <$> createConn
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
@@ -4487,13 +4483,6 @@ updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange
     withStore' $ \db -> setPeerChatVRange db connId msgChatVRange
     pure conn {peerChatVRange = msgChatVRange}
   | otherwise = pure conn
-
-featureVersionSupported :: ChatMonad' m => VersionRange -> Version -> m Bool
-featureVersionSupported peerVRange v = do
-  ChatConfig {chatVRange} <- asks config
-  case chatVRange `compatibleVersion` peerVRange of
-    Just (Compatible v') -> pure $ v' >= v
-    Nothing -> pure False
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =
