@@ -22,7 +22,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (groupNoDirectVersion)
+import Simplex.Chat.Protocol (groupNoDirectVRange)
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
@@ -142,7 +142,7 @@ mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
 mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
 
 groupCreateDirectVRange :: VersionRange
-groupCreateDirectVRange = mkVersionRange 1 (groupNoDirectVersion - 1)
+groupCreateDirectVRange = mkVersionRange 1 1
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
