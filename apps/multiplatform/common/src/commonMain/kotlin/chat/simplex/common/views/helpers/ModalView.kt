@@ -8,6 +8,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -111,13 +114,22 @@ class ModalManager(private val placement: ModalPlacement? = null) {
       modalViews.lastOrNull()?.second?.invoke(::closeModal)
       return
     }
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     AnimatedContent(targetState = modalCount.value,
       transitionSpec = {
-        if (targetState > initialState) {
-          fromEndToStartTransition()
+        if (isRtl) {
+          if (targetState < initialState) {
+            fromStartToEndTransition()
+          } else {
+            fromStartToEndTransition().using(SizeTransform(clip = true) { _, target -> spring(visibilityThreshold = target) })
+          }
         } else {
-          fromStartToEndTransition()
-        }.using(SizeTransform(clip = false))
+          if (targetState > initialState) {
+            fromEndToStartTransition()
+          } else {
+            fromStartToEndTransition()
+          }.using(SizeTransform(clip = false))
+        }
       }
     ) {
       modalViews.getOrNull(it - 1)?.second?.invoke(::closeModal)
