@@ -16,6 +16,7 @@ struct CIImageView: View {
     let maxWidth: CGFloat
     @Binding var imgWidth: CGFloat?
     @State var scrollProxy: ScrollViewProxy?
+    @State var metaColor: Color
     @State private var showFullScreenImage = false
 
     var body: some View {
@@ -36,10 +37,8 @@ struct CIImageView: View {
                             case .rcvInvitation:
                                 Task {
                                     if let user = ChatModel.shared.currentUser {
-                                        // TODO encrypt local images
-                                        await receiveFile(user: user, fileId: file.fileId, encrypted: false)
+                                        await receiveFile(user: user, fileId: file.fileId, encrypted: chatItem.encryptLocalFile)
                                     }
-                                    // TODO image accepted alert?
                                 }
                             case .rcvAccepted:
                                 switch file.fileProtocol {
@@ -111,7 +110,7 @@ struct CIImageView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(.white)
+            .foregroundColor(metaColor)
             .padding(padding)
     }
 

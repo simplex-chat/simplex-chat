@@ -271,7 +271,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
             ntfBadgeCountGroupDefault.set(max(0, ntfBadgeCountGroupDefault.get() - 1))
         }
         if let file = cItem.autoReceiveFile() {
-            cItem = autoReceiveFile(file) ?? cItem
+            cItem = autoReceiveFile(file, encrypted: cItem.encryptLocalFile) ?? cItem
         }
         let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(notification: createMessageReceivedNtf(user, cInfo, cItem)) : .empty
         return cItem.showNotification ? (aChatItem.chatId, ntf) : nil
@@ -380,13 +380,12 @@ func apiSetFileToReceive(fileId: Int64, encrypted: Bool) {
     logger.error("setFileToReceive error: \(responseError(r))")
 }
 
-func autoReceiveFile(_ file: CIFile) -> ChatItem? {
+func autoReceiveFile(_ file: CIFile, encrypted: Bool) -> ChatItem? {
     switch file.fileProtocol {
     case .smp:
         return apiReceiveFile(fileId: file.fileId, encrypted: false)?.chatItem
     case .xftp:
-        // TODO encrypt images and voice
-        apiSetFileToReceive(fileId: file.fileId, encrypted: false)
+        apiSetFileToReceive(fileId: file.fileId, encrypted: encrypted)
         return nil
     }
 }

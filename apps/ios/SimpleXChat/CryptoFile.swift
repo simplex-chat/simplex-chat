@@ -7,24 +7,21 @@
 //
 
 import Foundation
-import SimpleXChat
 
 enum WriteFileResult: Decodable {
     case result(cryptoArgs: CryptoFileArgs)
     case error(writeError: String)
 }
 
-func writeCryptoFile(path: String, data: Data) -> WriteFileResult {
+func writeCryptoFile(path: String, data: Data) throws -> CryptoFileArgs {
     let ptr: UnsafeMutableRawPointer = malloc(data.count)
     memcpy(ptr, (data as NSData).bytes, data.count)
     var cPath = path.cString(using: .utf8)!
     let cjson = chat_write_file(&cPath, ptr, Int32(data.count))!
     let d = fromCString(cjson).data(using: .utf8)!
-    do {
-        return try jsonDecoder.decode(WriteFileResult.self, from: d)
-    } catch {
-        logger.error("writeCryptoFile jsonDecoder.decode error: \(error.localizedDescription)")
-        return .error(writeError: error.localizedDescription)
+    switch try jsonDecoder.decode(WriteFileResult.self, from: d) {
+    case let .result(cfArgs): return cfArgs
+    case let .error(err): throw RuntimeError(err)
     }
 }
 
@@ -33,12 +30,7 @@ enum ReadFileResult: Decodable {
     case error(readError: String)
 }
 
-enum ReadFileData {
-    case result(Data)
-    case error(String)
-}
-
-func readCryptoFile(path: String, cryptoArgs: CryptoFileArgs) throws -> Data {
+public func readCryptoFile(path: String, cryptoArgs: CryptoFileArgs) throws -> Data {
     var cPath = path.cString(using: .utf8)!
     var cKey = cryptoArgs.fileKey.cString(using: .utf8)!
     var cNonce = cryptoArgs.fileNonce.cString(using: .utf8)!

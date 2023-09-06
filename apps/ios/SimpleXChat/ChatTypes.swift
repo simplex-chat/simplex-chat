@@ -2117,6 +2117,10 @@ public struct ChatItem: Identifiable, Decodable {
         return fileSource.cryptoArgs != nil
     }
 
+    public var encryptLocalFile: Bool {
+        content.msgContent?.isImage ?? false
+    }
+
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {

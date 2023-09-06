@@ -69,8 +69,7 @@ func getLoadedVideo(_ file: CIFile?) -> URL? {
 func saveAnimImage(_ image: UIImage) -> CryptoFile? {
     let fileName = generateNewFileName("IMG", "gif")
     guard let imageData = image.imageData else { return nil }
-    // TODO encrypt image
-    return saveFile(imageData, fileName, encrypted: false)
+    return saveFile(imageData, fileName, encrypted: true)
 }
 
 func saveImage(_ uiImage: UIImage) -> CryptoFile? {
@@ -78,8 +77,7 @@ func saveImage(_ uiImage: UIImage) -> CryptoFile? {
     let ext = hasAlpha ? "png" : "jpg"
     if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: MAX_IMAGE_SIZE, hasAlpha: hasAlpha) {
         let fileName = generateNewFileName("IMG", ext)
-        // TODO encrypt image
-        return saveFile(imageDataResized, fileName, encrypted: false)
+        return saveFile(imageDataResized, fileName, encrypted: true)
     }
     return nil
 }

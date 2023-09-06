@@ -1357,9 +1357,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
         if let file = cItem.autoReceiveFile() {
             Task {
-                // TODO encrypt images and voice
-                let encrypted = cItem.content.msgContent?.isImage ?? false
-                await receiveFile(user: user, fileId: file.fileId, encrypted: encrypted, auto: true)
+                await receiveFile(user: user, fileId: file.fileId, encrypted: cItem.encryptLocalFile, auto: true)
             }
         }
         if cItem.showNotification {
@@ -1661,16 +1659,4 @@ func activateCall(_ callInvitation: RcvCallInvitation) {
 private struct UserResponse: Decodable {
     var user: User?
     var error: String?
-}
-
-struct RuntimeError: Error {
-    let message: String
-
-    init(_ message: String) {
-        self.message = message
-    }
-
-    public var localizedDescription: String {
-        return message
-    }
 }
