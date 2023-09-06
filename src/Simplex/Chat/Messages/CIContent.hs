@@ -50,7 +50,7 @@ instance FromField AMsgDirection where fromField = fromIntField_ $ fmap fromMsgD
 
 instance ToField MsgDirection where toField = toField . msgDirectionInt
 
-fromIntField_ :: (Typeable a) => (Int64 -> Maybe a) -> Field -> Ok a
+fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
 fromIntField_ fromInt = \case
   f@(Field (SQLInteger i) _) ->
     case fromInt i of

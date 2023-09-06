@@ -42,6 +42,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
@@ -963,7 +964,8 @@ instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.default
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool
+    agentRcvFileDeleted :: Bool,
+    cryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show, Generic)
 
@@ -1118,7 +1120,8 @@ instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaul
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
     privateSndFileDescr :: Maybe Text,
-    agentSndFileDeleted :: Bool
+    agentSndFileDeleted :: Bool,
+    cryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show, Generic)
 

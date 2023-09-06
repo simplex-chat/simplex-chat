@@ -8,14 +8,19 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Simplex.Chat (roundedFDCount)
 import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), XFTPFileConfig (..), defaultInlineFilesConfig)
+import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))
+import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
-import System.Directory (copyFile, doesFileExist)
+import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
 import System.Environment (withArgs)
 import System.IO.Silently (capture_)
 import Test.Hspec
@@ -59,6 +64,7 @@ chatFileTests = do
   describe "file transfer over XFTP" $ do
     it "round file description count" $ const testXFTPRoundFDCount
     it "send and receive file" testXFTPFileTransfer
+    it "send and receive locally encrypted files" testXFTPFileTransferEncrypted
     it "send and receive file, accepting after upload" testXFTPAcceptAfterUpload
     it "send and receive file in group" testXFTPGroupFileTransfer
     it "delete uploaded file" testXFTPDeleteUploadedFile
@@ -1012,6 +1018,35 @@ testXFTPFileTransfer =
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
+testXFTPFileTransferEncrypted :: HasCallStack => FilePath -> IO ()
+testXFTPFileTransferEncrypted =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    src <- B.readFile "./tests/fixtures/test.pdf"
+    srcLen <- getFileSize "./tests/fixtures/test.pdf"
+    let srcPath = "./tests/tmp/alice/test.pdf"
+    createDirectoryIfMissing True "./tests/tmp/alice/"
+    createDirectoryIfMissing True "./tests/tmp/bob/"
+    WFResult cfArgs <- chatWriteFile srcPath src
+    let fileJSON = LB.unpack $ J.encode $ CryptoFile srcPath $ Just cfArgs
+    withXFTPServer $ do
+      connectUsers alice bob
+      alice ##> ("/_send @2 json {\"msgContent\":{\"type\":\"file\", \"text\":\"\"}, \"fileSource\": " <> fileJSON <> "}")
+      alice <# "/f @bob ./tests/tmp/alice/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 encrypt=on ./tests/tmp/bob/"
+      bob <## "saving file 1 from alice to ./tests/tmp/bob/test.pdf"
+      Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine bob
+      alice <## "completed uploading file 1 (test.pdf) for bob"
+      bob <## "started receiving file 1 (test.pdf) from alice"
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+      (RFResult destLen, dest) <- chatReadFile "./tests/tmp/bob/test.pdf" (strEncode key) (strEncode nonce)
+      fromIntegral destLen `shouldBe` srcLen
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
 testXFTPAcceptAfterUpload :: HasCallStack => FilePath -> IO ()
 testXFTPAcceptAfterUpload =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
@@ -1446,7 +1481,7 @@ startFileTransfer alice bob =
   startFileTransfer' alice bob "test.jpg" "136.5 KiB / 139737 bytes"
 
 startFileTransfer' :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
-startFileTransfer' cc1 cc2 fileName fileSize = startFileTransferWithDest' cc1 cc2 fileName fileSize $ Just "./tests/tmp"
+startFileTransfer' cc1 cc2 fName fSize = startFileTransferWithDest' cc1 cc2 fName fSize $ Just "./tests/tmp"
 
 checkPartialTransfer :: HasCallStack => String -> IO ()
 checkPartialTransfer fileName = do

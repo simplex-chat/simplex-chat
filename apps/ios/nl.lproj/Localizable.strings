@@ -209,7 +209,7 @@
 "%lldw" = "%lldw";
 
 /* No comment provided by engineer. */
-"%u messages failed to decrypt." = "%u-berichten kunnen niet worden gedecodeerd.";
+"%u messages failed to decrypt." = "%u berichten kunnen niet worden ontsleuteld.";
 
 /* No comment provided by engineer. */
 "%u messages skipped." = "%u berichten zijn overgeslagen.";
@@ -1867,7 +1867,7 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chat profiel.";
 
 /* No comment provided by engineer. */
-"It can happen when you or your connection used the old database backup." = "Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.";
+"It can happen when you or your connection used the old database backup." = "Het kan gebeuren wanneer u of de ander een oude databaseback-up gebruikt.";
 
 /* No comment provided by engineer. */
 "It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Het kan gebeuren wanneer:\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.\n2. Decodering van het bericht is mislukt, omdat u of uw contactpersoon een oude databaseback-up heeft gebruikt.\n3. De verbinding is verbroken.";
@@ -3299,7 +3299,7 @@
 "Use iOS call interface" = "De iOS-oproepinterface gebruiken";
 
 /* No comment provided by engineer. */
-"Use new incognito profile" = "Gebruik een nieuw incognito -profiel";
+"Use new incognito profile" = "Gebruik een nieuw incognitoprofiel";
 
 /* No comment provided by engineer. */
 "Use server" = "Gebruik server";

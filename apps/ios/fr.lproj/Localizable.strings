@@ -1273,7 +1273,7 @@
 "encryption agreed for %@" = "chiffrement accepté pour %@";
 
 /* chat item text */
-"encryption ok" = "chiffrement ok";
+"encryption ok" = "chiffrement OK";
 
 /* chat item text */
 "encryption ok for %@" = "chiffrement ok pour %@";

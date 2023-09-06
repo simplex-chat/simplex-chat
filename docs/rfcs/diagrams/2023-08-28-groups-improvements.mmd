@@ -1,0 +1,40 @@
+sequenceDiagram
+  participant M as N existing<br>members
+  participant A as Alice
+  participant B as Bob
+
+  note over A, B: 1. send and accept group invitation /<br>join via group link
+  alt host invites contact
+    A ->> B: x.grp.inv<br>invite Bob to group<br>(via contact connection)
+  else user joins via group link
+    B ->> A: request to join group via link
+    A ->> B: auto-accept<br>x.group.link.info with host's profile<br>and joining member MemberId<br>establish group member connection
+    A ->> B: x.grp.info<br>group profile
+  end
+
+  note right of B: when joining via group link<br>Bob doesn't wait for x.grp.info<br>and initiates group handshake<br>with x.grp.acpt.address<br>after establishing connection
+
+  note over B: create per group address
+  B ->> A: x.grp.acpt.address<br>accept invitation<br>and send address to connect<br>(via member connection)
+  B ->> A: establish group member connection
+
+  note over M, B: 2. introduce new member Bob to all existing members
+  A ->> M: x.grp.mem.new<br>"announce" Bob<br>to existing members<br>(via member connections)
+
+  loop batched
+    A ->> B: x.grp.mem.intro * N<br>"introduce" members<br>(via member connection)  
+    note over B: create N MemberCodes
+    B ->> A: x.grp.mem.inv.code<br>unique MemberCodes<br>for all members<br>(via member connection)
+  end
+
+  A ->> M: x.grp.mem.fwd.code<br>forward address<br>and unique MemberCodes<br>to all members<br>(via member connections)
+
+  note over M, B: 3. establish group member connection
+  M ->> B: request group member connection<br>x.introduced with MemberCode
+  B ->> M: verify MemberCode, auto-accept
+
+  note over M, B: no contact deduplication
+
+  opt all introduced members connected / expiration
+    note over B: delete per group address
+  end

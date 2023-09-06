@@ -1337,7 +1337,7 @@
     <string name="v5_2_message_delivery_receipts_descr">Druhé zaškrtnutí jsme přehlédli! ✅</string>
     <string name="switch_receiving_address_desc">Přijímací adresa bude změněna na jiný server. Změna adresy bude dokončena po připojení odesílatele.</string>
     <string name="choose_file_title">Vybrat soubor</string>
-    <string name="connect_via_link_incognito">Připojit se inkognito</string>
+    <string name="connect_via_link_incognito">Spojit se inkognito</string>
     <string name="turn_off_battery_optimization_button">Povolit</string>
     <string name="disable_notifications_button">Vypnout upozornění</string>
     <string name="turn_off_system_restriction_button">Otevřít nastavení aplikace</string>
@@ -1355,4 +1355,25 @@
     <string name="send_receipts_disabled">vypnut</string>
     <string name="send_receipts_disabled_alert_title">Receipts jsou zakázány</string>
     <string name="in_developing_title">Již brzy!</string>
+    <string name="connect_use_current_profile">Použít aktuální profil</string>
+    <string name="connect_use_new_incognito_profile">Použít nový incognito profil</string>
+    <string name="system_restricted_background_desc">SimpleX nemůže běžet na pozadí. Pouze při spuštěné aplikaci obdržíte upozornění.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Chcete-li povolit oznámení, vyberte prosím <b>Baterii</b> / <b>bez omezení</b> v nastavení aplikace.]]></string>
+    <string name="system_restricted_background_in_call_desc">Aplikace může být uzavřena po 1 minutě na pozadí.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Chcete-li volat na pozadí, vyberte prosím <b>Baterii</b> / <b>bez omezení</b> v nastavení aplikace.]]></string>
+    <string name="connect__your_profile_will_be_shared">Váš profil %1$s bude sdílen.</string>
+    <string name="connect_via_member_address_alert_desc">Požadavek na připojení bude zaslán tomuto členu skupiny.</string>
+    <string name="delivery">Doručenka</string>
+    <string name="receipts_groups_title_disable">Zakázat doručenky pro skupiny\?</string>
+    <string name="receipts_groups_title_enable">Povolit doručenky pro skupiny\?</string>
+    <string name="receipts_groups_override_enabled">Odeslání doručenek je povoleno pro %d skupiny</string>
+    <string name="receipts_section_groups">Malé skupiny (max. 20)</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="rcv_group_event_2_members_connected">%s a %s připojen</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s a %s připojeni</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s a %d dalších členů připojeno</string>
+    <string name="privacy_message_draft">Rozepsáno</string>
+    <string name="privacy_show_last_messages">Zobrazit poslední zprávy</string>
+    <string name="send_receipts_disabled_alert_msg">Tato skupina má více než %1$d členů, doručenky nejsou odeslány.</string>
+    <string name="in_developing_desc">Tato funkce zatím není podporována. Vyzkoušejte další vydání.</string>
 </resources>
