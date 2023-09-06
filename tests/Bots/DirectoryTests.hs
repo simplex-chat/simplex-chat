@@ -795,7 +795,7 @@ withDirectoryServiceCfg tmp cfg test = do
         connectUsers ds superUser
         ds ##> "/ad"
         getContactLink ds True
-  withDirectory tmp dsLink test
+  withDirectory tmp cfg dsLink test
 
 restoreDirectoryService :: HasCallStack => FilePath -> Int -> Int -> (TestCC -> String -> IO ()) -> IO ()
 restoreDirectoryService tmp ctCount grCount test = do
@@ -809,24 +809,24 @@ restoreDirectoryService tmp ctCount grCount test = do
       dsLink <- getContactLink ds False
       ds <## "auto_accept on"
       pure dsLink
-  withDirectory tmp dsLink test
+  withDirectory tmp testCfg dsLink test
 
-withDirectory :: HasCallStack => FilePath -> String -> (TestCC -> String -> IO ()) -> IO ()
-withDirectory tmp dsLink test = do
+withDirectory :: HasCallStack => FilePath -> ChatConfig -> String -> (TestCC -> String -> IO ()) -> IO ()
+withDirectory tmp cfg dsLink test = do
   let opts = mkDirectoryOpts tmp [KnownContact 2 "alice"]
-  runDirectory opts $
-    withTestChat tmp "super_user" $ \superUser -> do
+  runDirectory cfg opts $
+    withTestChatCfg tmp cfg "super_user" $ \superUser -> do
       superUser <## "1 contacts connected (use /cs for the list)"
       test superUser dsLink
 
-runDirectory :: DirectoryOpts -> IO () -> IO ()
-runDirectory opts@DirectoryOpts {directoryLog} action = do
+runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
+runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
   st <- restoreDirectoryStore directoryLog
   t <- forkIO $ bot st
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
   where
-    bot st = simplexChatCore testCfg (mkChatOpts opts) Nothing $ directoryService st opts
+    bot st = simplexChatCore cfg (mkChatOpts opts) Nothing $ directoryService st opts
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
