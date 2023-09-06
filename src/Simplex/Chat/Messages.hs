@@ -48,16 +48,6 @@ data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
 data ChatName = ChatName ChatType Text
   deriving (Show)
 
-chatTypeStr :: ChatType -> String
-chatTypeStr = \case
-  CTDirect -> "@"
-  CTGroup -> "#"
-  CTContactRequest -> "<@"
-  CTContactConnection -> ":"
-
-chatNameStr :: ChatName -> String
-chatNameStr (ChatName cType name) = chatTypeStr cType <> T.unpack name
-
 data ChatRef = ChatRef ChatType Int64
   deriving (Eq, Show, Ord)
 

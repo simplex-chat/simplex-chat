@@ -1403,10 +1403,10 @@ processChatCommand = \case
     editedItemId <- getSentChatItemIdByText user chatRef editedMsg
     let mc = MCText msg
     processChatCommand $ APIUpdateChatItem chatRef editedItemId False mc
-  UpdateLiveMessage chatName chatItemId live msg -> withUser $ \user -> do
-    chatRef <- getChatRef user chatName
+  UpdateLiveMessage sendName chatItemId live msg -> withUser $ \user -> do
+    sendRef <- getSendRef user sendName
     let mc = MCText msg
-    processChatCommand $ APIUpdateChatItem chatRef chatItemId live mc
+    processChatCommand $ APIUpdateChatItem (sendToChatRef sendRef) chatItemId live mc
   ReactToMessage add reaction chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg

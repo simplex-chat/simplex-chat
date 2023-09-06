@@ -33,6 +33,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
@@ -54,13 +55,13 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, UserProtocol, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
-import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors)
@@ -353,7 +354,7 @@ data ChatCommand
   | DeleteMessage ChatName Text
   | DeleteMemberMessage GroupName ContactName Text
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
-  | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
+  | UpdateLiveMessage {sendName :: SendName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
   | APINewGroup UserId GroupProfile
   | NewGroup GroupProfile
@@ -611,10 +612,21 @@ data SendRef
   | SRGroup GroupId (Maybe GroupMemberId)
   deriving (Eq, Show)
 
+sendToChatRef :: SendRef -> ChatRef
+sendToChatRef = \case
+  SRDirect cId -> ChatRef CTDirect cId
+  SRGroup gId _ -> ChatRef CTGroup gId
+
 data SendName
   = SNDirect ContactName
   | SNGroup GroupName (Maybe ContactName)
   deriving (Eq, Show)
+
+sendNameStr :: SendName -> String
+sendNameStr = \case
+  SNDirect cName -> "@" <> T.unpack cName
+  SNGroup gName (Just cName) -> "#" <> T.unpack gName <> " @" <> T.unpack cName
+  SNGroup gName Nothing -> "#" <> T.unpack gName
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
