@@ -425,7 +425,7 @@ getChatRefByFileId db User {userId} fileId =
 createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> IO Connection
 createSndFileConnection_ db userId fileId agentConnId = do
   currentTs <- getCurrentTime
-  createConnection_ db userId ConnSndFile (Just fileId) agentConnId Nothing Nothing Nothing 0 currentTs
+  createConnection_ db userId ConnSndFile (Just fileId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs
 
 updateSndFileStatus :: DB.Connection -> SndFileTransfer -> FileStatus -> IO ()
 updateSndFileStatus db SndFileTransfer {fileId, connId} status = do
