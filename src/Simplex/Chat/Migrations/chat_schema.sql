@@ -285,6 +285,8 @@ CREATE TABLE connections(
   security_code TEXT NULL,
   security_code_verified_at TEXT NULL,
   auth_err_counter INTEGER DEFAULT 0 CHECK(auth_err_counter NOT NULL),
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -318,6 +320,8 @@ CREATE TABLE contact_requests(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
