@@ -32,8 +32,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.*
 
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
@@ -194,24 +193,27 @@ fun AndroidScreen(settingsState: SettingsViewState) {
       StartPartOfScreen(settingsState)
     }
     val scope = rememberCoroutineScope()
-    val onComposed: () -> Unit = {
+    val onComposed: suspend (chatId: String?) -> Unit = { chatId ->
+      // coroutine, scope and join() because:
+      // - it should be run from coroutine to wait until this function finishes
+      // - without using scope.launch it throws CancellationException when changing user
+      // - join allows to wait until completion
       scope.launch {
         offset.animateTo(
-          if (chatModel.chatId.value == null) 0f else maxWidth.value,
+          if (chatId == null) 0f else maxWidth.value,
           chatListAnimationSpec()
         )
-        if (offset.value == 0f) {
-          currentChatId = null
-        }
-      }
+      }.join()
     }
     LaunchedEffect(Unit) {
       launch {
         snapshotFlow { chatModel.chatId.value }
           .distinctUntilChanged()
           .collect {
-            if (it != null) currentChatId = it
-            else onComposed()
+            if (it == null) {
+              onComposed(null)
+            }
+            currentChatId = it
           }
       }
     }
