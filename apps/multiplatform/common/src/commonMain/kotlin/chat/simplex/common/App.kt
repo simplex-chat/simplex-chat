@@ -223,6 +223,9 @@ fun AndroidScreen(settingsState: SettingsViewState) {
       }
     }
   }
+  LaunchedEffect(Unit) {
+    testUserSwitching()
+  }
 }
 
 @Composable
@@ -330,4 +333,32 @@ fun InitializationView() {
       Text(stringResource(MR.strings.opening_database))
     }
   }
+}
+
+private suspend fun testUserSwitching() {
+  val users = chatModel.controller.listUsers().map { it.user.userId }
+  testChatSwitching()
+  delay(3000)
+  chatModel.controller.changeActiveUser(users[0], null)
+  testChatSwitching()
+  chatModel.controller.changeActiveUser(users[1], null)
+  testChatSwitching()
+  chatModel.controller.changeActiveUser(users[0], null)
+  testChatSwitching()
+  chatModel.controller.changeActiveUser(users[1], null)
+  testChatSwitching()
+}
+
+private suspend fun testChatSwitching() {
+  openChat(chatModel.getChat(chatModel.chats[0].id)!!.chatInfo, chatModel)
+  delay(300)
+  openChat(chatModel.getChat(chatModel.chats[1].id)!!.chatInfo, chatModel)
+  delay(1000)
+  openChat(chatModel.getChat(chatModel.chats[2].id)!!.chatInfo, chatModel)
+  delay(500)
+  openChat(chatModel.getChat(chatModel.chats[1].id)!!.chatInfo, chatModel)
+  delay(10)
+  openChat(chatModel.getChat(chatModel.chats[0].id)!!.chatInfo, chatModel)
+  delay(10)
+  openChat(chatModel.getChat(chatModel.chats[2].id)!!.chatInfo, chatModel)
 }
