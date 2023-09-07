@@ -97,7 +97,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, image):
-                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
+                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy, metaColor: metaColor)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear

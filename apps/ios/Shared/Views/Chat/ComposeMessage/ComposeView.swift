@@ -167,25 +167,23 @@ struct ComposeState {
 }
 
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
-    let chatItemPreview: ComposePreview
     switch chatItem.content.msgContent {
     case .text:
-        chatItemPreview = .noPreview
+        return .noPreview
     case let .link(_, preview: preview):
-        chatItemPreview = .linkPreview(linkPreview: preview)
+        return .linkPreview(linkPreview: preview)
     case let .image(_, image):
-        chatItemPreview = .mediaPreviews(mediaPreviews: [(image, nil)])
+        return .mediaPreviews(mediaPreviews: [(image, nil)])
     case let .video(_, image, _):
-        chatItemPreview = .mediaPreviews(mediaPreviews: [(image, nil)])
+        return .mediaPreviews(mediaPreviews: [(image, nil)])
     case let .voice(_, duration):
-        chatItemPreview = .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
+        return .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
     case .file:
         let fileName = chatItem.file?.fileName ?? ""
-        chatItemPreview = .filePreview(fileName: fileName, file: getAppFilePath(fileName))
+        return .filePreview(fileName: fileName, file: getAppFilePath(fileName))
     default:
-        chatItemPreview = .noPreview
+        return .noPreview
     }
-    return chatItemPreview
 }
 
 enum UploadContent: Equatable {
@@ -656,10 +654,10 @@ struct ComposeView: View {
                 }
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
-                chatModel.filesToDelete.remove(getAppFilePath(recordingFileName))
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName, ttl: ttl)
+                let file = voiceCryptoFile(recordingFileName)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
             case let .filePreview(_, file):
-                if let savedFile = saveFileFromURL(file) {
+                if let savedFile = saveFileFromURL(file, encrypted: privacyEncryptLocalFilesGroupDefault.get()) {
                     sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
                 }
             }
@@ -727,13 +725,28 @@ struct ComposeView: View {
 
         func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             let (image, data) = imageData
-            if case let .video(_, url, duration) = data, let savedFile = saveFileFromURLWithoutLoad(url) {
+            if case let .video(_, url, duration) = data, let savedFile = moveTempFileFromURL(url) {
                 return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live, ttl: ttl)
             }
             return nil
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
+        func voiceCryptoFile(_ fileName: String) -> CryptoFile? {
+            if !privacyEncryptLocalFilesGroupDefault.get() {
+                return CryptoFile.plain(fileName)
+            }
+            let url = getAppFilePath(fileName)
+            let toFile = generateNewFileName("voice", "m4a")
+            let toUrl = getAppFilePath(toFile)
+            if let cfArgs = try? encryptCryptoFile(fromPath: url.path, toPath: toUrl.path) {
+                removeFile(url)
+                return CryptoFile(filePath: toFile, cryptoArgs: cfArgs)
+            } else {
+                return nil
+            }
+        }
+
+        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             if let chatItem = await apiSendMessage(
                 type: chat.chatInfo.chatType,
                 id: chat.chatInfo.apiId,
@@ -750,7 +763,7 @@ struct ComposeView: View {
                 return chatItem
             }
             if let file = file {
-                removeFile(file)
+                removeFile(file.filePath)
             }
             return nil
         }
@@ -770,7 +783,7 @@ struct ComposeView: View {
             }
         }
 
-        func saveAnyImage(_ img: UploadContent) -> String? {
+        func saveAnyImage(_ img: UploadContent) -> CryptoFile? {
             switch img {
             case let .simpleImage(image): return saveImage(image)
             case let .animatedImage(image): return saveAnimImage(image)

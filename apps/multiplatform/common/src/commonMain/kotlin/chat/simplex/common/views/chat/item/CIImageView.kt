@@ -31,7 +31,7 @@ fun CIImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long, Boolean) -> Unit
 ) {
   @Composable
   fun progressIndicator() {
@@ -152,7 +152,8 @@ fun CIImageView(
           when (file.fileStatus) {
             CIFileStatus.RcvInvitation ->
               if (fileSizeValid()) {
-                receiveFile(file.fileId)
+                // TODO encrypt image
+                receiveFile(file.fileId, false)
               } else {
                 AlertManager.shared.showAlertMsg(
                   generalGetString(MR.strings.large_file),
