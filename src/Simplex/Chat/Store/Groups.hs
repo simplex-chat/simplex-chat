@@ -44,6 +44,7 @@ module Simplex.Chat.Store.Groups
     deleteGroupItemsAndMembers,
     deleteGroup,
     getUserGroups,
+    getUserGroupsNeedsSub,
     getUserGroupDetails,
     getUserGroupsWithSummary,
     getGroupSummary,
@@ -400,6 +401,14 @@ getGroup db user groupId = do
   members <- liftIO $ getGroupMembers db user gInfo
   pure $ Group gInfo members
 
+getGroupNeedsSub :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO Group
+getGroupNeedsSub db user groupId = do
+  gInfo <- getGroupInfo db user groupId
+  members <- liftIO $ getGroupMembersNeedsSub db user gInfo
+  case members of
+    [] -> throwError SEGroupWithoutUser
+    _ -> pure $ Group gInfo members
+
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
@@ -454,6 +463,11 @@ getUserGroups :: DB.Connection -> User -> IO [Group]
 getUserGroups db user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroup db user) groupIds
+
+getUserGroupsNeedsSub :: DB.Connection -> User -> IO [Group]
+getUserGroupsNeedsSub db user@User {userId} = do
+  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
+  rights <$> mapM (runExceptT . getGroupNeedsSub db user) groupIds
 
 getUserGroupDetails :: DB.Connection -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
 getUserGroupDetails db User {userId, userContactId} _contactId_ search_ =
@@ -563,6 +577,14 @@ getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
+      (userId, groupId, userId, userContactId)
+
+getGroupMembersNeedsSub :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
+getGroupMembersNeedsSub db user@User {userId, userContactId} GroupInfo {groupId} = do
+  map (toContactMember user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND c.needs_sub = 1")
       (userId, groupId, userId, userContactId)
 
 getGroupMembersForExpiration :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]

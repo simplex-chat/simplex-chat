@@ -26,6 +26,7 @@ import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (bimap, first)
+import Data.Bool (bool)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -2426,7 +2427,7 @@ agentSubscriber = do
         str :: StrEncoding a => a -> String
         str = B.unpack . strEncode
 
-type AgentBatchSubscribe m = AgentClient -> Bool -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
+type AgentBatchSubscribe m = AgentClient -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
 
 subscribeUserConnections :: forall m. ChatMonad m => Bool -> AgentBatchSubscribe m -> User -> m ()
 subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
@@ -2439,7 +2440,7 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   (rftConns, rfts) <- getRcvFileTransferConns
   (pcConns, pcs) <- getPendingContactConns
   -- subscribe using batched commands
-  rs <- withAgent $ \a -> agentBatchSubscribe a onlyNeeded (concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns])
+  rs <- withAgent $ \a -> agentBatchSubscribe a (concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns])
   -- send connection events to view
   contactSubsToView rs cts ce
   contactLinkSubsToView rs ucs
@@ -2450,32 +2451,35 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   where
     getContactConns :: m ([ConnId], Map ConnId Contact)
     getContactConns = do
-      cts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContacts") getUserContacts
+      let fetch = bool getUserContacts getUserContactsNeedsSub onlyNeeded -- XXX: option 1 - split functions
+      cts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContacts") fetch
       let connIds = map contactConnId cts
       pure (connIds, M.fromList $ zip connIds cts)
     getUserContactLinkConns :: m ([ConnId], Map ConnId UserContact)
     getUserContactLinkConns = do
-      (cs, ucs) <- unzip <$> withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContactLinks") getUserContactLinks
+      let fetch = bool getUserContactLinks getUserContactLinksNeedsSub onlyNeeded
+      (cs, ucs) <- unzip <$> withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContactLinks") fetch
       let connIds = map aConnId cs
       pure (connIds, M.fromList $ zip connIds ucs)
     getGroupMemberConns :: m ([Group], [ConnId], Map ConnId GroupMember)
     getGroupMemberConns = do
-      gs <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserGroups") getUserGroups
+      let fetch = bool getUserGroups getUserGroupsNeedsSub onlyNeeded
+      gs <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserGroups") fetch
       let mPairs = concatMap (\(Group _ ms) -> mapMaybe (\m -> (,m) <$> memberConnId m) ms) gs
       pure (gs, map fst mPairs, M.fromList mPairs)
     getSndFileTransferConns :: m ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
-      sfts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getLiveSndFileTransfers") getLiveSndFileTransfers
+      sfts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getLiveSndFileTransfers") (getLiveSndFileTransfers onlyNeeded) -- XXX: option 2 - pass the flag directly
       let connIds = map sndFileTransferConnId sfts
       pure (connIds, M.fromList $ zip connIds sfts)
     getRcvFileTransferConns :: m ([ConnId], Map ConnId RcvFileTransfer)
     getRcvFileTransferConns = do
-      rfts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getLiveRcvFileTransfers") getLiveRcvFileTransfers
+      rfts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getLiveRcvFileTransfers") (getLiveRcvFileTransfers onlyNeeded)
       let rftPairs = mapMaybe (\ft -> (,ft) <$> liveRcvFileTransferConnId ft) rfts
       pure (map fst rftPairs, M.fromList rftPairs)
     getPendingContactConns :: m ([ConnId], Map ConnId PendingContactConnection)
     getPendingContactConns = do
-      pcs <- withStore_ ("subscribeUserConnections " <> show userId <> ", getPendingContactConnections") getPendingContactConnections
+      pcs <- withStore_ ("subscribeUserConnections " <> show userId <> ", getPendingContactConnections") (getPendingContactConnections onlyNeeded)
       let connIds = map aConnId' pcs
       pure (connIds, M.fromList $ zip connIds pcs)
     contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> Bool -> m ()

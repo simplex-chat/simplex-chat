@@ -102,8 +102,8 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 
-getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
-getLiveSndFileTransfers db User {userId} = do
+getLiveSndFileTransfers :: Bool -> DB.Connection -> User -> IO [SndFileTransfer]
+getLiveSndFileTransfers onlyNeeded db User {userId} = do
   cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
@@ -120,13 +120,13 @@ getLiveSndFileTransfers db User {userId} = do
             AND s.created_at > ?
         |]
         (userId, FSNew, FSAccepted, FSConnected, cutoffTs)
-  concatMap (filter liveTransfer) . rights <$> mapM (getSndFileTransfers_ db userId) fileIds
+  concatMap (filter liveTransfer) . rights <$> mapM (getSndFileTransfers_ onlyNeeded db userId) fileIds
   where
     liveTransfer :: SndFileTransfer -> Bool
     liveTransfer SndFileTransfer {fileStatus} = fileStatus `elem` [FSNew, FSAccepted, FSConnected]
 
-getLiveRcvFileTransfers :: DB.Connection -> User -> IO [RcvFileTransfer]
-getLiveRcvFileTransfers db user@User {userId} = do
+getLiveRcvFileTransfers :: Bool -> DB.Connection -> User -> IO [RcvFileTransfer]
+getLiveRcvFileTransfers onlyNeeded db user@User {userId} = do
   cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
@@ -142,7 +142,7 @@ getLiveRcvFileTransfers db user@User {userId} = do
             AND r.created_at > ?
         |]
         (userId, FSAccepted, FSConnected, cutoffTs)
-  rights <$> mapM (runExceptT . getRcvFileTransfer db user) fileIds
+  rights <$> mapM (runExceptT . getRcvFileTransfer' onlyNeeded db user) fileIds
 
 getPendingSndChunks :: DB.Connection -> Int64 -> Int64 -> IO [Integer]
 getPendingSndChunks db fileId connId =
@@ -599,7 +599,10 @@ getRcvFileTransferById db fileId = do
   (user,) <$> getRcvFileTransfer db user fileId
 
 getRcvFileTransfer :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO RcvFileTransfer
-getRcvFileTransfer db User {userId} fileId = do
+getRcvFileTransfer = getRcvFileTransfer' False
+
+getRcvFileTransfer' :: Bool -> DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO RcvFileTransfer
+getRcvFileTransfer' onlyNeeded db User {userId} fileId = do
   rftRow <-
     ExceptT . firstRow id (SERcvFileNotFound fileId) $
       DB.query
@@ -613,9 +616,9 @@ getRcvFileTransfer db User {userId} fileId = do
           LEFT JOIN connections c ON r.file_id = c.rcv_file_id
           LEFT JOIN contacts cs USING (contact_id)
           LEFT JOIN group_members m USING (group_member_id)
-          WHERE f.user_id = ? AND f.file_id = ?
+          WHERE f.user_id = ? AND f.file_id = ? AND NOT (c.needs_sub IS ?)
         |]
-        (userId, fileId)
+        (userId, fileId, if onlyNeeded then Just True else Nothing)
   rfd_ <- liftIO $ getRcvFileDescrByFileId_ db fileId
   rcvFileTransfer rfd_ rftRow
   where
@@ -827,10 +830,10 @@ getSndFileTransfer db user fileId = do
   pure (fileTransferMeta, sndFileTransfers)
 
 getSndFileTransfers :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO [SndFileTransfer]
-getSndFileTransfers db User {userId} fileId = ExceptT $ getSndFileTransfers_ db userId fileId
+getSndFileTransfers db User {userId} fileId = ExceptT $ getSndFileTransfers_ False db userId fileId
 
-getSndFileTransfers_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
-getSndFileTransfers_ db userId fileId =
+getSndFileTransfers_ :: Bool -> DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
+getSndFileTransfers_ onlyNeeded db userId fileId =
   mapM sndFileTransfer
     <$> DB.query
       db
@@ -842,9 +845,9 @@ getSndFileTransfers_ db userId fileId =
         JOIN connections c USING (connection_id)
         LEFT JOIN contacts cs USING (contact_id)
         LEFT JOIN group_members m USING (group_member_id)
-        WHERE f.user_id = ? AND f.file_id = ?
+        WHERE f.user_id = ? AND f.file_id = ? AND NOT (c.needs_sub IS ?)
       |]
-      (userId, fileId)
+      (userId, fileId, if onlyNeeded then Just True else Nothing)
   where
     sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath) :. (Maybe Int64, Maybe InlineFileMode, Int64, AgentConnId, Maybe Int64, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
     sndFileTransfer ((fileStatus, fileName, fileSize, chunkSize, filePath) :. (fileDescrId, fileInline, connId, agentConnId, groupMemberId, contactName_, memberName_)) =

@@ -43,6 +43,7 @@ module Simplex.Chat.Store.Direct
     incConnectionAuthErrCounter,
     setConnectionAuthErrCounter,
     getUserContacts,
+    getUserContactsNeedsSub,
     createOrUpdateContactRequest,
     getContactRequest',
     getContactRequest,
@@ -414,6 +415,19 @@ getUserContacts db user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
   rights <$> mapM (runExceptT . getContact db user) contactIds
 
+getUserContactsNeedsSub :: DB.Connection -> User -> IO [Contact]
+getUserContactsNeedsSub db user@User {userId} = do
+  contactIds <- DB.query
+    db
+    [sql|
+      SELECT ct.contact_id
+      FROM contacts ct
+      JOIN connections c ON c.contact_id = ct.contact_id
+      WHERE ct.user_id = ? AND ct.deleted = 0 AND c.needs_sub = 1
+    |]
+    (Only userId)
+  rights <$> mapM (runExceptT . getContact db user . fromOnly) contactIds
+
 createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> VersionRange -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
 createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ =
   liftIO (maybeM getContact' xContactId_) >>= \case
@@ -651,8 +665,8 @@ getUserByContactRequestId db contactRequestId =
   ExceptT . firstRow toUser (SEUserNotFoundByContactRequestId contactRequestId) $
     DB.query db (userQuery <> " JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?") (Only contactRequestId)
 
-getPendingContactConnections :: DB.Connection -> User -> IO [PendingContactConnection]
-getPendingContactConnections db User {userId} = do
+getPendingContactConnections :: Bool -> DB.Connection -> User -> IO [PendingContactConnection]
+getPendingContactConnections onlyNeeded db User {userId} = do
   map toPendingContactConnection
     <$> DB.queryNamed
       db
@@ -662,8 +676,9 @@ getPendingContactConnections db User {userId} = do
         WHERE user_id = :user_id
           AND conn_type = :conn_type
           AND contact_id IS NULL
+          AND NOT (needs_sub IS :excluded)
       |]
-      [":user_id" := userId, ":conn_type" := ConnContact]
+      [":user_id" := userId, ":conn_type" := ConnContact, ":excluded" := if onlyNeeded then Just True else Nothing]
 
 getContactConnections :: DB.Connection -> UserId -> Contact -> ExceptT StoreError IO [Connection]
 getContactConnections db userId Contact {contactId} =
