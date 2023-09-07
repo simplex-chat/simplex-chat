@@ -2112,6 +2112,17 @@ public struct ChatItem: Identifiable, Decodable {
         return nil
     }
 
+    public var encryptedFile: Bool? {
+        guard let fileSource = file?.fileSource else { return nil }
+        return fileSource.cryptoArgs != nil
+    }
+
+    public var encryptLocalFile: Bool {
+        file?.fileProtocol == .xftp &&
+        content.msgContent?.isVideo == false &&
+        privacyEncryptLocalFilesGroupDefault.get()
+    }
+
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
@@ -2690,12 +2701,18 @@ public struct CIFile: Decodable {
     public var fileId: Int64
     public var fileName: String
     public var fileSize: Int64
-    public var filePath: String?
+    public var fileSource: CryptoFile?
     public var fileStatus: CIFileStatus
     public var fileProtocol: FileProtocol
 
     public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
-        CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus, fileProtocol: .xftp)
+        let f: CryptoFile?
+        if let filePath = filePath {
+            f = CryptoFile.plain(filePath)
+        } else {
+            f = nil
+        }
+        return CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, fileSource: f, fileStatus: fileStatus, fileProtocol: .xftp)
     }
 
     public var loaded: Bool {
@@ -2740,6 +2757,25 @@ public struct CIFile: Decodable {
             }
         }
     }
+}
+
+public struct CryptoFile: Codable {
+    public var filePath: String // the name of the file, not a full path
+    public var cryptoArgs: CryptoFileArgs?
+
+    public init(filePath: String, cryptoArgs: CryptoFileArgs?) {
+        self.filePath = filePath
+        self.cryptoArgs = cryptoArgs
+    }
+
+    public static func plain(_ f: String) -> CryptoFile {
+        CryptoFile(filePath: f, cryptoArgs: nil)
+    }
+}
+
+public struct CryptoFileArgs: Codable {
+    public var fileKey: String
+    public var fileNonce: String
 }
 
 public struct CancelAction {

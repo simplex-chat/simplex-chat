@@ -28,7 +28,7 @@ import java.net.URI
 fun CIFileView(
   file: CIFile?,
   edited: Boolean,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long, Boolean) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
 
@@ -71,7 +71,7 @@ fun CIFileView(
       when (file.fileStatus) {
         is CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
-            receiveFile(file.fileId)
+            receiveFile(file.fileId, false)
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),

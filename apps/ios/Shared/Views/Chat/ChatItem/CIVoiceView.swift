@@ -159,7 +159,8 @@ struct VoiceMessagePlayer: View {
             }
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { it in
-            if let recordingFileName = getLoadedFileName(recordingFile), chatModel.stopPreviousRecPlay != getAppFilePath(recordingFileName) {
+            if let recordingFileName = getLoadedFileSource(recordingFile)?.filePath,
+               chatModel.stopPreviousRecPlay != getAppFilePath(recordingFileName) {
                 audioPlayer?.stop()
                 playbackState = .noPlayback
                 playbackTime = TimeInterval(0)
@@ -174,8 +175,8 @@ struct VoiceMessagePlayer: View {
         switch playbackState {
         case .noPlayback:
             Button {
-                if let recordingFileName = getLoadedFileName(recordingFile) {
-                    startPlayback(recordingFileName)
+                if let recordingSource = getLoadedFileSource(recordingFile) {
+                    startPlayback(recordingSource)
                 }
             } label: {
                 playPauseIcon("play.fill")
@@ -219,7 +220,7 @@ struct VoiceMessagePlayer: View {
         Button {
             Task {
                 if let user = ChatModel.shared.currentUser {
-                    await receiveFile(user: user, fileId: recordingFile.fileId)
+                    await receiveFile(user: user, fileId: recordingFile.fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get())
                 }
             }
         } label: {
@@ -251,8 +252,8 @@ struct VoiceMessagePlayer: View {
             .clipShape(Circle())
     }
 
-    private func startPlayback(_ recordingFileName: String) {
-        chatModel.stopPreviousRecPlay = getAppFilePath(recordingFileName)
+    private func startPlayback(_ recordingSource: CryptoFile) {
+        chatModel.stopPreviousRecPlay = getAppFilePath(recordingSource.filePath)
         audioPlayer = AudioPlayer(
             onTimer: { playbackTime = $0 },
             onFinishPlayback: {
@@ -260,7 +261,7 @@ struct VoiceMessagePlayer: View {
                 playbackTime = TimeInterval(0)
             }
         )
-        audioPlayer?.start(fileName: recordingFileName, at: playbackTime)
+        audioPlayer?.start(fileSource: recordingSource, at: playbackTime)
         playbackState = .playing
     }
 }

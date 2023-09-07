@@ -244,8 +244,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           }
         }
       },
-      receiveFile = { fileId ->
-        withApi { chatModel.controller.receiveFile(user, fileId) }
+      receiveFile = { fileId, encrypted ->
+        withApi { chatModel.controller.receiveFile(user, fileId, encrypted) }
       },
       cancelFile = { fileId ->
         withApi { chatModel.controller.cancelFile(user, fileId) }
@@ -403,7 +403,7 @@ fun ChatLayout(
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
@@ -656,7 +656,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -1257,7 +1257,7 @@ fun PreviewChatLayout() {
       showMemberInfo = { _, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
-      receiveFile = {},
+      receiveFile = { _, _ -> },
       cancelFile = {},
       joinGroup = {},
       startCall = {},
@@ -1324,7 +1324,7 @@ fun PreviewGroupChatLayout() {
       showMemberInfo = { _, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
-      receiveFile = {},
+      receiveFile = { _, _ -> },
       cancelFile = {},
       joinGroup = {},
       startCall = {},
