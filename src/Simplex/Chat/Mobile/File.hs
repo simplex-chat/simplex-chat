@@ -34,6 +34,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), Cryp
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Util (catchAll)
 import UnliftIO (Handle, IOMode (..), withFile)
 
 data WriteFileResult
@@ -54,8 +55,8 @@ chatWriteFile :: FilePath -> ByteString -> IO WriteFileResult
 chatWriteFile path s = do
   cfArgs <- CF.randomArgs
   let file = CryptoFile path $ Just cfArgs
-  either (WFError . show) (\_ -> WFResult cfArgs)
-    <$> runExceptT (CF.writeFile file $ LB.fromStrict s)
+  either WFError (\_ -> WFResult cfArgs)
+    <$> runCatchExceptT (withExceptT show $ CF.writeFile file $ LB.fromStrict s)
 
 data ReadFileResult
   = RFResult {fileSize :: Int}
@@ -78,7 +79,7 @@ cChatReadFile cPath cKey cNonce = do
 
 chatReadFile :: FilePath -> ByteString -> ByteString -> IO (ReadFileResult, ByteString)
 chatReadFile path keyStr nonceStr = do
-  either ((,"") . RFError) result <$> runExceptT readFile_
+  either ((,"") . RFError) result <$> runCatchExceptT readFile_
   where
     result s = let s' = LB.toStrict s in (RFResult $ B.length s', s')
     readFile_ :: ExceptT String IO LB.ByteString
@@ -97,7 +98,7 @@ cChatEncryptFile cFromPath cToPath = do
 
 chatEncryptFile :: FilePath -> FilePath -> IO WriteFileResult
 chatEncryptFile fromPath toPath =
-  either WFError WFResult <$> runExceptT encrypt
+  either WFError WFResult <$> runCatchExceptT encrypt
   where
     encrypt = do
       cfArgs <- liftIO $ CF.randomArgs
@@ -122,7 +123,7 @@ cChatDecryptFile cFromPath cKey cNonce cToPath = do
   newCAString r
 
 chatDecryptFile :: FilePath -> ByteString -> ByteString -> FilePath -> IO String
-chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runExceptT decrypt
+chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runCatchExceptT decrypt
   where
     decrypt = do
       key <- liftEither $ strDecode keyStr
@@ -142,6 +143,9 @@ chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runExceptT dec
       when (B.length ch /= chSize') $ throwError $ FTCEFileIOError "encrypting file: unexpected EOF"
       liftIO $ B.hPut w ch
       when (size' > 0) $ decryptChunks r w size'
+
+runCatchExceptT :: ExceptT String IO a -> IO (Either String a)
+runCatchExceptT action = runExceptT action `catchAll` (pure . Left . show)
 
 chunkSize :: Num a => a
 chunkSize = 65536

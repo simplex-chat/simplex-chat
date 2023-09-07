@@ -28,7 +28,8 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..), getFileContentsSize)
+import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
+import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.Directory (copyFile)
@@ -51,10 +52,12 @@ mobileTests = do
       it "latin1 name" $ testFileCApi "test"
       it "utf8 name 1" $ testFileCApi "тест"
       it "utf8 name 2" $ testFileCApi "👍"
+      it "no exception on missing file" testMissingFileCApi
     describe "should encrypt/decrypt files via C API" $ do
       it "latin1 name" $ testFileEncryptionCApi "test"
       it "utf8 name 1" $ testFileEncryptionCApi "тест"
       it "utf8 name 2" $ testFileEncryptionCApi "👍"
+      it "no exception on missing file" testMissingFileEncryptionCApi
 
 noActiveUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -201,7 +204,7 @@ testFileCApi fileName tmp = do
   r <- peekCAString =<< cChatWriteFile cPath ptr cLen
   Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
   let encryptedFile = CryptoFile path $ Just cfArgs
-  getFileContentsSize encryptedFile `shouldReturn` fromIntegral (B.length src)
+  CF.getFileContentsSize encryptedFile `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   ptr' <- cChatReadFile cPath cKey cNonce
@@ -211,6 +214,18 @@ testFileCApi fileName tmp = do
   contents <- getByteString (ptr' `plusPtr` (length r' + 1)) $ fromIntegral sz
   contents `shouldBe` src
   sz `shouldBe` len
+
+testMissingFileCApi :: FilePath -> IO ()
+testMissingFileCApi tmp = do
+  let path = tmp </> "missing_file"
+  cPath <- newCString path
+  CFArgs key nonce <- CF.randomArgs
+  cKey <- encodedCString key
+  cNonce <- encodedCString nonce
+  ptr <- cChatReadFile cPath cKey cNonce
+  r <- peekCAString $ castPtr ptr
+  Just (RFError err) <- jDecode r
+  err `shouldContain` "missing_file: openBinaryFile: does not exist"
 
 testFileEncryptionCApi :: FilePath -> FilePath -> IO ()
 testFileEncryptionCApi fileName tmp = do
@@ -222,13 +237,30 @@ testFileEncryptionCApi fileName tmp = do
   cToPath <- newCString toPath
   r <- peekCAString =<< cChatEncryptFile cFromPath cToPath
   Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
-  getFileContentsSize (CryptoFile toPath $ Just cfArgs) `shouldReturn` fromIntegral (B.length src)
+  CF.getFileContentsSize (CryptoFile toPath $ Just cfArgs) `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   let toPath' = tmp </> (fileName <> ".decrypted.pdf")
   cToPath' <- newCString toPath'
   "" <- peekCAString =<< cChatDecryptFile cToPath cKey cNonce cToPath'
   B.readFile toPath' `shouldReturn` src
+
+testMissingFileEncryptionCApi :: FilePath -> IO ()
+testMissingFileEncryptionCApi tmp = do
+  let fromPath = tmp </> "missing_file.source.pdf"
+      toPath = tmp </> "missing_file.encrypted.pdf"
+  cFromPath <- newCString fromPath
+  cToPath <- newCString toPath
+  r <- peekCAString =<< cChatEncryptFile cFromPath cToPath
+  Just (WFError err) <- jDecode r
+  err `shouldContain` fromPath
+  CFArgs key nonce <- CF.randomArgs
+  cKey <- encodedCString key
+  cNonce <- encodedCString nonce
+  let toPath' = tmp </> "missing_file.decrypted.pdf"
+  cToPath' <- newCString toPath'
+  err' <- peekCAString =<< cChatDecryptFile cToPath cKey cNonce cToPath'
+  err' `shouldContain` toPath
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack
