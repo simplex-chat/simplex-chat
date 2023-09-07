@@ -33,7 +33,6 @@ dependencies:
   - memory == 0.15.*
   - mtl == 2.2.*
   - network >= 3.1.2.7 && < 3.2
-  - network-transport == 0.5.4
   - optparse-applicative >= 0.15 && < 0.17
   - process == 1.6.*
   - random >= 1.1 && < 1.3

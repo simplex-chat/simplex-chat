@@ -31,7 +31,6 @@ import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
 import Foreign.Storable (poke)
 import GHC.Generics (Generic)
-import Network.Transport.Internal (encodeWord32)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
 import qualified Simplex.Messaging.Crypto.File as CF
