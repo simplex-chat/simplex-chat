@@ -654,7 +654,6 @@ struct ComposeView: View {
                 }
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
-                // TODO encrypt voice
                 let file = voiceCryptoFile(recordingFileName)
                 sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
             case let .filePreview(_, file):
