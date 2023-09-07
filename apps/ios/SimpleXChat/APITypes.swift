@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 
-let jsonDecoder = getJSONDecoder()
+public let jsonDecoder = getJSONDecoder()
 let jsonEncoder = getJSONEncoder()
 
 public enum ChatCommand {
@@ -39,7 +39,7 @@ public enum ChatCommand {
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
-    case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
+    case apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
@@ -110,8 +110,8 @@ public enum ChatCommand {
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
-    case receiveFile(fileId: Int64, inline: Bool?)
-    case setFileToReceive(fileId: Int64)
+    case receiveFile(fileId: Int64, encrypted: Bool, inline: Bool?)
+    case setFileToReceive(fileId: Int64, encrypted: Bool)
     case cancelFile(fileId: Int64)
     case showVersion
     case string(String)
@@ -157,7 +157,7 @@ public enum ChatCommand {
                 (search == "" ? "" : " search=\(search)")
             case let .apiGetChatItemInfo(type, id, itemId): return "/_get item info \(ref(type, id)) \(itemId)"
             case let .apiSendMessage(type, id, file, quotedItemId, mc, live, ttl):
-                let msg = encodeJSON(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc))
+                let msg = encodeJSON(ComposedMessage(fileSource: file, quotedItemId: quotedItemId, msgContent: mc))
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
                 return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
@@ -239,12 +239,13 @@ public enum ChatCommand {
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
-            case let .receiveFile(fileId, inline):
+            case let .receiveFile(fileId, encrypted, inline):
+                let s = "/freceive \(fileId) encrypt=\(onOff(encrypted))"
                 if let inline = inline {
-                    return "/freceive \(fileId) inline=\(onOff(inline))"
+                    return s + " inline=\(onOff(inline))"
                 }
-                return "/freceive \(fileId)"
-            case let .setFileToReceive(fileId): return "/_set_file_to_receive \(fileId)"
+                return s
+            case let .setFileToReceive(fileId, encrypted): return "/_set_file_to_receive \(fileId) encrypt=\(onOff(encrypted))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case .showVersion: return "/version"
             case let .string(str): return str
@@ -481,7 +482,7 @@ public enum ChatResponse: Decodable, Error {
     case groupEmpty(user: UserRef, groupInfo: GroupInfo)
     case userContactLinkSubscribed
     case newChatItem(user: UserRef, chatItem: AChatItem)
-    case chatItemStatusUpdated(UserRef: User, chatItem: AChatItem)
+    case chatItemStatusUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
@@ -853,7 +854,7 @@ public enum ChatPagination {
 }
 
 struct ComposedMessage: Encodable {
-    var filePath: String?
+    var fileSource: CryptoFile?
     var quotedItemId: Int64?
     var msgContent: MsgContent
 }

@@ -15,6 +15,7 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -63,6 +64,9 @@ struct PrivacySettings: View {
                 }
 
                 Section {
+                    settingsRow("lock.doc") {
+                        Toggle("Encrypt local files", isOn: $encryptLocalFiles)
+                    }
                     settingsRow("photo") {
                         Toggle("Auto-accept images", isOn: $autoAcceptImages)
                             .onChange(of: autoAcceptImages) {

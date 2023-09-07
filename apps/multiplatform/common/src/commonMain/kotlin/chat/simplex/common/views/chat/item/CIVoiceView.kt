@@ -37,18 +37,19 @@ fun CIVoiceView(
   ci: ChatItem,
   timedMessagesTTL: Int?,
   longClick: () -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
 ) {
   Row(
     Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = if (hasText) 6.dp else 0.dp, end = if (hasText) 6.dp else 0.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (file != null) {
-      val filePath = remember(file.filePath, file.fileStatus) { getLoadedFilePath(file) }
-      var brokenAudio by rememberSaveable(file.filePath) { mutableStateOf(false) }
-      val audioPlaying = rememberSaveable(file.filePath) { mutableStateOf(false) }
-      val progress = rememberSaveable(file.filePath) { mutableStateOf(0) }
-      val duration = rememberSaveable(file.filePath) { mutableStateOf(providedDurationSec * 1000) }
+      val f = file.fileSource?.filePath
+      val filePath = remember(f, file.fileStatus) { getLoadedFilePath(file) }
+      var brokenAudio by rememberSaveable(f) { mutableStateOf(false) }
+      val audioPlaying = rememberSaveable(f) { mutableStateOf(false) }
+      val progress = rememberSaveable(f) { mutableStateOf(0) }
+      val duration = rememberSaveable(f) { mutableStateOf(providedDurationSec * 1000) }
       val play = {
         AudioPlayer.play(filePath, audioPlaying, progress, duration, true)
         brokenAudio = !audioPlaying.value
@@ -94,7 +95,7 @@ private fun VoiceLayout(
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   onProgressChanged: (Int) -> Unit,
 ) {
   @Composable
@@ -248,7 +249,7 @@ private fun VoiceMsgIndicator(
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
 ) {
   val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
   val strokeColor = MaterialTheme.colors.primary
@@ -268,7 +269,8 @@ private fun VoiceMsgIndicator(
     }
   } else {
     if (file?.fileStatus is CIFileStatus.RcvInvitation) {
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick)
+      // TODO encrypt voice
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId, false) }, {}, longClick = longClick)
     } else if (file?.fileStatus is CIFileStatus.RcvTransfer
       || file?.fileStatus is CIFileStatus.RcvAccepted
     ) {

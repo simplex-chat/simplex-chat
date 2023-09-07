@@ -21,27 +21,28 @@ struct CIMetaView: View {
         } else {
             let meta = chatItem.meta
             let ttl = chat.chatInfo.timedMessagesTTL
+            let encrypted = chatItem.encryptedFile
             switch meta.itemStatus {
             case let .sndSent(sndProgress):
                 switch sndProgress {
-                case .complete: ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .sent)
-                case .partial: ciMetaText(meta, chatTTL: ttl, color: paleMetaColor, sent: .sent)
+                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent)
+                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent)
                 }
             case let .sndRcvd(_, sndProgress):
                 switch sndProgress {
                 case .complete:
                     ZStack {
-                        ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd1)
-                        ciMetaText(meta, chatTTL: ttl, color: metaColor, sent: .rcvd2)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2)
                     }
                 case .partial:
                     ZStack {
-                        ciMetaText(meta, chatTTL: ttl, color: paleMetaColor, sent: .rcvd1)
-                        ciMetaText(meta, chatTTL: ttl, color: paleMetaColor, sent: .rcvd2)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1)
+                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2)
                     }
                 }
             default:
-                ciMetaText(meta, chatTTL: ttl, color: metaColor)
+                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor)
             }
         }
     }
@@ -53,7 +54,7 @@ enum SentCheckmark {
     case rcvd2
 }
 
-func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparent: Bool = false, sent: SentCheckmark? = nil) -> Text {
+func ciMetaText(_ meta: CIMeta, chatTTL: Int?, encrypted: Bool?,  color: Color = .clear, transparent: Bool = false, sent: SentCheckmark? = nil) -> Text {
     var r = Text("")
     if meta.itemEdited {
         r = r + statusIconText("pencil", color)
@@ -80,7 +81,11 @@ func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparen
     } else if !meta.disappearing {
         r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
     }
-    return (r + meta.timestampText.foregroundColor(color)).font(.caption)
+    if let enc = encrypted {
+        r = r + statusIconText(enc ? "lock" : "lock.open", color) + Text(" ")
+    }
+    r = r + meta.timestampText.foregroundColor(color)
+    return r.font(.caption)
 }
 
 private func statusIconText(_ icon: String, _ color: Color) -> Text {
