@@ -13,11 +13,13 @@ import qualified Data.Aeson as J
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BS
+import Data.ByteString.Internal (create, memcpy)
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Word (Word8)
+import Data.Word (Word8, Word32)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
+import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import Simplex.Chat.Mobile
 import Simplex.Chat.Mobile.File
@@ -207,13 +209,14 @@ testFileCApi fileName tmp = do
   CF.getFileContentsSize encryptedFile `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
+  -- the returned pointer contains 0, buffer length as Word32, then buffer
   ptr' <- cChatReadFile cPath cKey cNonce
-  -- the returned pointer contains NUL-terminated JSON string of ReadFileResult followed by the file contents
-  r' <- peekCAString $ castPtr ptr'
-  Just (RFResult sz) <- jDecode r'
-  contents <- getByteString (ptr' `plusPtr` (length r' + 1)) $ fromIntegral sz
+  peek ptr' `shouldReturn` (0 :: Word8)
+  sz :: Word32 <- peek $ castPtr (ptr' `plusPtr` 1)
+  let sz' = fromIntegral sz
+  contents <- create sz' $ \toPtr -> memcpy toPtr (ptr' `plusPtr` 5) sz'
   contents `shouldBe` src
-  sz `shouldBe` len
+  sz' `shouldBe` fromIntegral len
 
 testMissingFileCApi :: FilePath -> IO ()
 testMissingFileCApi tmp = do
@@ -223,8 +226,8 @@ testMissingFileCApi tmp = do
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   ptr <- cChatReadFile cPath cKey cNonce
-  r <- peekCAString $ castPtr ptr
-  Just (RFError err) <- jDecode r
+  peek ptr `shouldReturn` 1
+  err <- peekCAString (ptr `plusPtr` 1)
   err `shouldContain` "missing_file: openBinaryFile: does not exist"
 
 testFileEncryptionCApi :: FilePath -> FilePath -> IO ()
