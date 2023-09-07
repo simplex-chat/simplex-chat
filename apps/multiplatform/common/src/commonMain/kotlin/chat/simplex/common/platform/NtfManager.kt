@@ -55,7 +55,6 @@ abstract class NtfManager {
 
   fun openChatAction(userId: Long?, chatId: ChatId) {
     withBGApi {
-      delay(5000L)
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
         chatModel.controller.changeActiveUser(userId, null)
