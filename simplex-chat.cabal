@@ -110,6 +110,7 @@ library
       Simplex.Chat.Migrations.M20230814_indexes
       Simplex.Chat.Migrations.M20230827_file_encryption
       Simplex.Chat.Migrations.M20230829_connections_chat_vrange
+      Simplex.Chat.Migrations.M20230903_connection_needs_sub
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

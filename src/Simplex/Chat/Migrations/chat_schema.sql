@@ -287,6 +287,7 @@ CREATE TABLE connections(
   auth_err_counter INTEGER DEFAULT 0 CHECK(auth_err_counter NOT NULL),
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
+  needs_sub INTEGER DEFAULT 0 NOT NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
