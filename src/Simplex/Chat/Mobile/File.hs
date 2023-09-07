@@ -23,11 +23,13 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Lazy.Char8 as LB'
+import Data.Char (chr)
 import Data.Either (fromLeft)
-import Data.Word (Word8)
+import Data.Word (Word8, Word32)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
+import Foreign.Storable (poke)
 import GHC.Generics (Generic)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
@@ -70,24 +72,23 @@ cChatReadFile cPath cKey cNonce = do
   path <- peekCString cPath
   key <- B.packCString cKey
   nonce <- B.packCString cNonce
-  (r, s) <- chatReadFile path key nonce
-  let r' = LB.toStrict $ J.encode r <> "\NUL"
-  ptr <- mallocBytes $ B.length r' + B.length s
-  putByteString ptr r'
-  unless (B.null s) $ putByteString (ptr `plusPtr` B.length r') s
-  pure ptr
+  chatReadFile path key nonce >>= \case
+    Left e -> castPtr <$> newCString (chr 1 : e)
+    Right s -> do
+      let s' = LB.toStrict s
+          len = B.length s'
+      ptr <- mallocBytes $ len + 5
+      poke ptr 0
+      poke (ptr `plusPtr` 1) (fromIntegral len :: Word32)
+      putByteString (ptr `plusPtr` 5) s'
+      pure ptr
 
-chatReadFile :: FilePath -> ByteString -> ByteString -> IO (ReadFileResult, ByteString)
-chatReadFile path keyStr nonceStr = do
-  either ((,"") . RFError) result <$> runCatchExceptT readFile_
-  where
-    result s = let s' = LB.toStrict s in (RFResult $ B.length s', s')
-    readFile_ :: ExceptT String IO LB.ByteString
-    readFile_ = do
-      key <- liftEither $ strDecode keyStr
-      nonce <- liftEither $ strDecode nonceStr
-      let file = CryptoFile path $ Just $ CFArgs key nonce
-      withExceptT show $ CF.readFile file
+chatReadFile :: FilePath -> ByteString -> ByteString -> IO (Either String LB.ByteString)
+chatReadFile path keyStr nonceStr = runCatchExceptT $ do
+  key <- liftEither $ strDecode keyStr
+  nonce <- liftEither $ strDecode nonceStr
+  let file = CryptoFile path $ Just $ CFArgs key nonce
+  withExceptT show $ CF.readFile file
 
 cChatEncryptFile :: CString -> CString -> IO CJSONString
 cChatEncryptFile cFromPath cToPath = do
