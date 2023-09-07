@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom" xml:base="https://simplex.chat/,">
+<feed xmlns="http://www.w3.org/2005/Atom" xml:base="https://simplex.chat/">
     <title>SimpleX Chat Blog</title>
     <subtitle>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</subtitle>
     <link href="https://simplex.chat/feed.atom" rel="self"/>
-    <link href="https://simplex.chat/,"/>
+    <link href="https://simplex.chat/"/>
     <updated>2023-07-22T00:00:00Z</updated>
-    <id>https://simplex.chat/,</id>
+    <id>https://simplex.chat/</id>
     <author>
         <name>SimpleX Chat</name>
         <email>chat@simplex.chat</email>

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xml:base="https://simplex.chat/," xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xml:base="https://simplex.chat/" xmlns:atom="http://www.w3.org/2005/Atom">
     <channel>
         <title>SimpleX Chat Blog</title>
-        <link>https://simplex.chat/,</link>
+        <link>https://simplex.chat/</link>
         <atom:link href="https://simplex.chat/feed.rss" rel="self" type="application/rss+xml"/>
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
