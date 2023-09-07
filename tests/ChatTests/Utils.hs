@@ -181,7 +181,12 @@ chatF :: String -> [((Int, String), Maybe String)]
 chatF = map (\(a, _, c) -> (a, c)) . chat''
 
 chat'' :: String -> [((Int, String), Maybe (Int, String), Maybe String)]
-chat'' = read
+chat'' = map (\(a, b, c) -> (mapNoDirect a, mapNoDirect <$> b, c)) . chat'''
+  where
+    mapNoDirect (a1, _, a3) = (a1, a3)
+
+chat''' :: String -> [((Int, String, String), Maybe (Int, String, String), Maybe String)]
+chat''' = read
 
 chatFeatures :: [(Int, String)]
 chatFeatures = map (\(a, _, _) -> a) chatFeatures''

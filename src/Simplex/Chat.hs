@@ -562,7 +562,7 @@ processChatCommand = \case
           (fileSize, fileMode) <- checkSndFile mc file 1
           case fileMode of
             SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
-            SendFileXFTP -> xftpSndFileTransfer user file fileSize 1 $ CGContact ct
+            SendFileXFTP -> xftpSndFileTransfer user file fileSize 1 $ SDDirect ct
           where
             smpSndFileTransfer :: CryptoFile -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
             smpSndFileTransfer (CryptoFile _ (Just _)) _ _ = throwChatError $ CEFileInternal "locally encrypted files can't be sent via SMP" -- can only happen if XFTP is disabled
@@ -610,7 +610,7 @@ processChatCommand = \case
           | not (isVoice mc) && isJust file_ && not (groupFeatureAllowed SGFFiles gInfo) = notAllowedError GFFiles
           | otherwise = do
             let ms' = maybe ms (: []) directMember
-            (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms')
+            (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g directMember (length $ filter memberCurrent ms')
             timed_ <- sndGroupCITimed live gInfo itemTTL
             (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership directMember
             (msg@SndMessage {sharedMsgId}, sentToMembers) <- sendGroupMessage user gInfo ms' (XMsgNew msgContainer)
@@ -624,12 +624,12 @@ processChatCommand = \case
             setActive $ ActiveG gName
             pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
         notAllowedError f = pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText f))
-        setupSndFileTransfer :: Group -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
-        setupSndFileTransfer g@(Group gInfo _) n = forM file_ $ \file -> do
+        setupSndFileTransfer :: Group -> Maybe GroupMember -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
+        setupSndFileTransfer g@(Group gInfo _) directMember n = forM file_ $ \file -> do
           (fileSize, fileMode) <- checkSndFile mc file $ fromIntegral n
           case fileMode of
             SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
-            SendFileXFTP -> xftpSndFileTransfer user file fileSize n $ CGGroup g
+            SendFileXFTP -> xftpSndFileTransfer user file fileSize n $ SDGroup g directMember
           where
             smpSndFileTransfer :: CryptoFile -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
             smpSndFileTransfer (CryptoFile _ (Just _)) _ _ = throwChatError $ CEFileInternal "locally encrypted files can't be sent via SMP" -- can only happen if XFTP is disabled
@@ -670,7 +670,7 @@ processChatCommand = \case
             quoteData :: ChatItem c d -> GroupMember -> MessageScope -> m (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
             quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ _ =
               throwChatError CEInvalidQuote
-            quoteData ChatItem {chatDir = qChatDir@(CIGroupSnd Nothing), content = CISndMsgContent qmc} membership' qMsgScope =
+            quoteData ChatItem {chatDir = qChatDir@(CIGroupSnd _), content = CISndMsgContent qmc} membership' qMsgScope =
               checkDirDirectMember qChatDir $ pure (qmc, CIQGroupSnd qMsgScope, True, membership')
             quoteData ChatItem {chatDir = qChatDir@(CIGroupRcv m _), content = CIRcvMsgContent qmc} _ qMsgScope =
               checkDirDirectMember qChatDir $ pure (qmc, CIQGroupRcv (Just m) qMsgScope, False, m)
@@ -708,8 +708,8 @@ processChatCommand = \case
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
           qTextOrFile = if T.null qText then qFileName else qText
-      xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
-      xftpSndFileTransfer user file@(CryptoFile filePath cfArgs) fileSize n contactOrGroup = do
+      xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> SendDirection -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+      xftpSndFileTransfer user file@(CryptoFile filePath cfArgs) fileSize n sendDirection = do
         let fileName = takeFileName filePath
             fileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
             fInv = xftpFileInvitation fileName fileSize fileDescr
@@ -718,19 +718,21 @@ processChatCommand = \case
         aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) srcFile (roundedFDCount n)
         -- TODO CRSndFileStart event for XFTP
         chSize <- asks $ fileChunkSize . config
+        let contactOrGroup = sendDirToContactOrGroup sendDirection
         ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup file fInv (AgentSndFileId aFileId) chSize
         let fileSource = Just $ CryptoFile filePath cfArgs
             ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP}
-        case contactOrGroup of
-          CGContact Contact {activeConn} -> withStore' $ \db -> createSndFTDescrXFTP db user Nothing activeConn ft fileDescr
-          CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
-            where
-              -- we are not sending files to pending members, same as with inline files
-              saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
-                when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
-                  withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
-              saveMemberFD _ = pure ()
+        case sendDirection of
+          SDDirect Contact {activeConn} -> withStore' $ \db -> createSndFTDescrXFTP db user Nothing activeConn ft fileDescr
+          SDGroup (Group _ ms) Nothing -> forM_ ms $ \m -> saveMemberFD ft fileDescr m `catchChatError` (toView . CRChatError (Just user))
+          SDGroup _ (Just directMember) -> saveMemberFD ft fileDescr directMember
         pure (fInv, ciFile, ft)
+        where
+          -- we are not sending files to pending members, same as with inline files
+          saveMemberFD ft fileDescr m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
+            when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
+              withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
+          saveMemberFD _ _ _ = pure ()
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
@@ -1681,7 +1683,7 @@ processChatCommand = \case
         (_, RcvFileTransfer {xftpRcvFile = f}) <- withStore (`getRcvFileTransferById` fileId)
         unless (isJust f) $ throwChatError $ CEFileInternal "locally encrypted files can't be received via SMP"
         liftIO $ Just <$> CF.randomArgs
-  CancelFile fileId -> withUser $ \user@User {userId} ->
+  CancelFile fileId -> withUser $ \user ->
     withChatLock "cancelFile" . procCmd $
       withStore (\db -> getFileTransfer db user fileId) >>= \case
         FTSnd ftm@FileTransferMeta {xftpSndFile, cancelled} fts
@@ -1691,20 +1693,24 @@ processChatCommand = \case
           | otherwise -> do
             fileAgentConnIds <- cancelSndFile user ftm fts True
             deleteAgentConnectionsAsync user fileAgentConnIds
-            sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-            withStore (\db -> getChatRefByFileId db user fileId) >>= \case
-              ChatRef CTDirect contactId -> do
-                contact <- withStore $ \db -> getContact db user contactId
-                void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
-              ChatRef CTGroup groupId -> do
-                Group gInfo ms <- withStore $ \db -> getGroup db user groupId
-                void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
-              _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
-            ci <- withStore $ \db -> getChatItemByFileId db user fileId
-            pure $ CRSndFileCancelled user ci ftm fts
+            sendXFileCancel
+            ci' <- withStore $ \db -> getChatItemByFileId db user fileId
+            pure $ CRSndFileCancelled user ci' ftm fts
           where
             fileCancelledOrCompleteSMP SndFileTransfer {fileStatus = s} =
               s == FSCancelled || (s == FSComplete && isNothing xftpSndFile)
+            sendXFileCancel :: m ()
+            sendXFileCancel = do
+              (AChatItem _ _ cInfo ChatItem {chatDir, meta = CIMeta {itemSharedMsgId = msgId_}}) <- withStore (\db -> getChatItemByFileId db user fileId)
+              case (msgId_, chatDir, cInfo) of
+                (Just sharedMsgId, CIDirectSnd, DirectChat ct) -> do
+                  void $ sendDirectContactMessage ct (XFileCancel sharedMsgId)
+                (Just sharedMsgId, CIGroupSnd Nothing, GroupChat gInfo) -> do
+                  ms <- withStore' $ \db -> getGroupMembers db user gInfo
+                  void $ sendGroupMessage user gInfo ms (XFileCancel sharedMsgId)
+                (Just sharedMsgId, CIGroupSnd (Just directMember), GroupChat gInfo) -> do
+                  void $ sendGroupMessage user gInfo [directMember] (XFileCancel sharedMsgId)
+                _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
         FTRcv ftr@RcvFileTransfer {cancelled, fileStatus, xftpRcvFile}
           | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
           | rcvFileComplete fileStatus -> throwChatError $ CEFileCancel fileId "file transfer is complete"
@@ -2339,7 +2345,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
              )
 
 receiveViaCompleteFD :: ChatMonad m => User -> FileTransferId -> RcvFileDescr -> Maybe CryptoFileArgs -> m ()
-receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} cfArgs =
+receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} cfArgs = do
   when fileDescrComplete $ do
     rd <- parseFileDescription fileDescrText
     aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs
@@ -2741,21 +2747,25 @@ processAgentMsgSndFile _corrId aFileId msg =
           toView $ CRSndFileProgressXFTP user ci ft sndProgress sndTotal
         SFDONE sndDescr rfds -> do
           withStore' $ \db -> setSndFTPrivateSndDescr db user fileId (fileDescrText sndDescr)
-          ci@(AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) <-
+          ci@(AChatItem _ _ cInfo _ci@ChatItem {chatDir, meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) <-
             withStore $ \db -> getChatItemByFileId db user fileId
           case (msgId_, itemDeleted) of
             (Just sharedMsgId, Nothing) -> do
               when (length rfds < length sfts) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
               -- TODO either update database status or move to SFPROG
               toView $ CRSndFileProgressXFTP user ci ft 1 1
-              case (rfds, sfts, d, cInfo) of
-                (rfd : extraRFDs, sft : _, SMDSnd, DirectChat ct) -> do
+              case (rfds, sfts, chatDir, cInfo) of
+                (rfd : extraRFDs, sft : _, CIDirectSnd, DirectChat ct) -> do
                   withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                   msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage ct
                   withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
                   withAgent (`xftpDeleteSndFileInternal` aFileId)
-                (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
-                  ms <- withStore' $ \db -> getGroupMembers db user g
+                (_, _, CIGroupSnd directMember, GroupChat g@GroupInfo {groupId}) -> do
+                  ms <- case directMember of
+                    Nothing -> withStore' $ \db -> getGroupMembers db user g
+                    Just GroupMember {groupMemberId} -> do -- member is loaded w/t connection via chat item direction
+                      dm <- withStore $ \db -> getGroupMember db user groupId groupMemberId
+                      pure [dm]
                   let rfdsMemberFTs = zip rfds $ memberFTs ms
                       extraRFDs = drop (length rfdsMemberFTs) rfds
                   withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)

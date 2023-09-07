@@ -322,14 +322,35 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
     testViewChat :: AChat -> [StyledString]
     testViewChat (AChat _ Chat {chatInfo, chatItems}) = [sShow $ map toChatView chatItems]
       where
-        toChatView :: CChatItem c -> ((Int, Text), Maybe (Int, Text), Maybe String)
-        toChatView ci@(CChatItem dir ChatItem {quotedItem, file}) =
-          ((msgDirectionInt $ toMsgDirection dir, testViewItem ci (chatInfoMembership chatInfo)), qItem, fPath)
+        toChatView :: CChatItem c -> ((Int, String, Text), Maybe (Int, String, Text), Maybe String)
+        toChatView ci@(CChatItem dir ChatItem {chatDir, quotedItem, file}) =
+          (item, qItem, fPath)
           where
+            item =
+              ( msgDirectionInt $ toMsgDirection dir,
+                directMemberName,
+                testViewItem ci (chatInfoMembership chatInfo)
+              )
+            directMemberName = case chatDir of
+              CIGroupSnd (Just GroupMember {localDisplayName = n}) -> T.unpack n
+              CIGroupRcv GroupMember {localDisplayName = n} MSPrivate -> T.unpack n
+              _ -> ""
             qItem = case quotedItem of
               Nothing -> Nothing
               Just CIQuote {chatDir = quoteDir, content} ->
-                Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
+                Just
+                  ( msgDirectionInt $ quoteMsgDirection quoteDir,
+                    qMsgScope,
+                    msgContentText content
+                  )
+                where
+                  qMsgScope = case quoteDir of
+                    CIQGroupSnd ms -> msgScopeText ms
+                    CIQGroupRcv _ ms -> msgScopeText ms
+                    _ -> ""
+                  msgScopeText ms = case ms of
+                    MSGroup -> "group"
+                    MSPrivate -> "private"
             fPath = case file of
               Just CIFile {fileSource = Just (CryptoFile fp _)} -> Just fp
               _ -> Nothing
@@ -1322,7 +1343,7 @@ uploadingFile :: StyledString -> AChatItem -> [StyledString]
 uploadingFile status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
   [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
 uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd directMember}) =
-  let forMember = maybe "" (\GroupMember {localDisplayName = m} -> styled (colored Blue) $ " " <> m <> " (private)") directMember
+  let forMember = maybe "" (\GroupMember {localDisplayName = m} -> styled (colored Blue) $ " @" <> m <> " (private)") directMember
    in [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g <> forMember]
 uploadingFile status _ = [status <> " uploading file"] -- shouldn't happen
 
@@ -1585,7 +1606,7 @@ viewChatError logLevel = \case
     CEXFTPSndFile fileId aFileId e -> ["error sending XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
-    CEInvalidQuote -> ["cannot reply to this message"]
+    CEInvalidQuote -> ["invalid message reply"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEHasCurrentCall -> ["call already in progress"]

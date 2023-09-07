@@ -8,8 +8,9 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (when)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
@@ -82,7 +83,11 @@ chatGroupTests = do
       testNoDirect4 _1 _1 _0 False False False
       testNoDirect4 _1 _1 _1 False False False
   describe "group direct messages" $ do
-    it "should send delivery receipts in group" testGroupSendDirectMessages
+    it "should send direct messages" testGroupDirectMessages
+    it "should create direct messages chat items" testGroupDirectMessagesItems
+    it "should send direct quotes" testGroupDirectQuotes
+    it "should create direct quotes chat items" testGroupDirectQuotesItems
+    it "should send direct XFTP files" testGroupDirectFilesXFTP
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -2681,8 +2686,8 @@ testNoGroupDirectConns4Members hostVRange mem2VRange mem3VRange mem4VRange noCon
       cc2 ##> ("@" <> name1 <> " hi")
       cc2 <## ("no contact " <> name1)
 
-testGroupSendDirectMessages :: HasCallStack => FilePath -> IO ()
-testGroupSendDirectMessages =
+testGroupDirectMessages :: HasCallStack => FilePath -> IO ()
+testGroupDirectMessages =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     createGroup3 "team" alice bob cath
     connectUsers alice dan
@@ -2699,12 +2704,47 @@ testGroupSendDirectMessages =
         aliceAddedDan bob,
         aliceAddedDan cath
       ]
-    threadDelay 1000000
 
     alice #> "#team hi"
     bob <# "#team alice> hi"
     cath <# "#team alice> hi"
     dan <# "#team alice> hi"
+
+    alice `send` "#team @bob hi bob"
+    alice <# "#team @bob (private) hi bob"
+    bob <# "#team alice (private)> hi bob"
+
+    bob `send` "#team @alice hi alice"
+    bob <# "#team @alice (private) hi alice"
+    alice <# "#team bob (private)> hi alice"
+
+    dan #> "#team hello"
+    alice <# "#team dan> hello"
+    bob <# "#team dan> hello"
+    cath <# "#team dan> hello"
+
+    bob `send` "#team @cath hi cath"
+    bob <# "#team @cath (private) hi cath"
+    cath <# "#team bob (private)> hi cath"
+
+    cath `send` "#team @bob hello bob"
+    cath <# "#team @bob (private) hello bob"
+    bob <# "#team cath (private)> hello bob"
+  where
+    aliceAddedDan :: HasCallStack => TestCC -> IO ()
+    aliceAddedDan cc = do
+      cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
+      cc <## "#team: new member dan is connected"
+
+testGroupDirectMessagesItems :: HasCallStack => FilePath -> IO ()
+testGroupDirectMessagesItems =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+
+    alice #> "#team hi"
+    bob <# "#team alice> hi"
+    cath <# "#team alice> hi"
     threadDelay 1000000
 
     alice `send` "#team @bob hi bob"
@@ -2717,27 +2757,184 @@ testGroupSendDirectMessages =
     alice <# "#team bob (private)> hi alice"
     threadDelay 1000000
 
-    dan #> "#team hello"
-    alice <# "#team dan> hello"
-    bob <# "#team dan> hello"
-    cath <# "#team dan> hello"
-    threadDelay 1000000
-
-    bob `send` "#team @cath hi cath"
-    bob <# "#team @cath (private) hi cath"
-    cath <# "#team bob (private)> hi cath"
-    threadDelay 1000000
-
-    cath `send` "#team @bob hello bob"
-    cath <# "#team @bob (private) hello bob"
-    bob <# "#team cath (private)> hello bob"
-
-    alice #$> ("/_get chat #1 count=5", chat, [(0, "connected"), (1, "hi"), (1, "hi bob"), (0, "hi alice"), (0, "hello")])
-    bob #$> ("/_get chat #1 count=7", chat, [(0, "connected"), (0, "hi"), (0, "hi bob"), (1, "hi alice"), (0, "hello"), (1, "hi cath"), (0, "hello bob")])
-    cath #$> ("/_get chat #1 count=5", chat, [(0, "connected"), (0, "hi"), (0, "hello"), (0, "hi cath"), (1, "hello bob")])
-    dan #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "hi"), (1, "hello")])
+    alice #$> ("/_get chat #1 count=4", mapChat, [(0, "", "connected"), (1, "", "hi"), (1, "bob", "hi bob"), (0, "bob", "hi alice")])
+    bob #$> ("/_get chat #1 count=4", mapChat, [(0, "", "connected"), (0, "", "hi"), (0, "alice", "hi bob"), (1, "alice", "hi alice")])
+    cath #$> ("/_get chat #1 count=2", mapChat, [(0, "", "connected"), (0, "", "hi")])
   where
-    aliceAddedDan :: HasCallStack => TestCC -> IO ()
-    aliceAddedDan cc = do
-      cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
-      cc <## "#team: new member dan is connected"
+    mapChat = map (\(a, _, _) -> a) . chat'''
+
+testGroupDirectQuotes :: HasCallStack => FilePath -> IO ()
+testGroupDirectQuotes =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+
+    alice #> "#team 1-g-a"
+    bob <# "#team alice> 1-g-a"
+    cath <# "#team alice> 1-g-a"
+
+    bob #> "#team 2-g-b"
+    alice <# "#team bob> 2-g-b"
+    cath <# "#team bob> 2-g-b"
+
+    cath #> "#team 3-g-c"
+    alice <# "#team cath> 3-g-c"
+    bob <# "#team cath> 3-g-c"
+
+    alice `send` "#team @bob 4-p-ab"
+    alice <# "#team @bob (private) 4-p-ab"
+    bob <# "#team alice (private)> 4-p-ab"
+
+    bob `send` "#team @alice 5-p-ba"
+    bob <# "#team @alice (private) 5-p-ba"
+    alice <# "#team bob (private)> 5-p-ba"
+
+    alice `send` "#team @cath 6-p-ac"
+    alice <# "#team @cath (private) 6-p-ac"
+    cath <# "#team alice (private)> 6-p-ac"
+
+    cath `send` "#team @alice 7-p-ca"
+    cath <# "#team @alice (private) 7-p-ca"
+    alice <# "#team cath (private)> 7-p-ca"
+
+    -- quotes
+
+    alice `send` "> #team @bob (1-g-a) 8-pq-ab"
+    alice <# "#team @bob (private) > alice 1-g-a"
+    alice <## "      8-pq-ab"
+    bob <# "#team alice (private)> > alice 1-g-a"
+    bob <## "      8-pq-ab"
+
+    alice `send` "> #team @bob (2-g-b) 9-pq-ab"
+    alice <# "#team @bob (private) > bob 2-g-b"
+    alice <## "      9-pq-ab"
+    bob <# "#team alice (private)> > bob 2-g-b"
+    bob <## "      9-pq-ab"
+
+    alice `send` "> #team >@cath @bob (3-g-c) 10-pq-ab"
+    alice <# "#team @bob (private) > cath 3-g-c"
+    alice <## "      10-pq-ab"
+    bob <# "#team alice (private)> > cath 3-g-c"
+    bob <## "      10-pq-ab"
+
+    alice `send` "> #team @bob (4-p-ab) 11-pq-ab"
+    alice <# "#team @bob (private) > alice 4-p-ab"
+    alice <## "      11-pq-ab"
+    bob <# "#team alice (private)> > alice 4-p-ab"
+    bob <## "      11-pq-ab"
+
+    alice `send` "> #team >@bob @bob (5-p-ba) 12-pq-ab"
+    alice <# "#team @bob (private) > bob 5-p-ba"
+    alice <## "      12-pq-ab"
+    bob <# "#team alice (private)> > bob 5-p-ba"
+    bob <## "      12-pq-ab"
+
+    alice `send` "> #team @bob (6-p-ac) 13-pq-ab"
+    alice <## "> #team @bob (6-p-ac) 13-pq-ab"
+    alice <## "invalid message reply"
+
+    alice `send` "> #team @bob (7-p-ca) 14-pq-ab"
+    alice <## "> #team @bob (7-p-ca) 14-pq-ab"
+    alice <## "invalid message reply"
+
+    alice `send` "> #team (4-p-ab) 15-gq-a"
+    alice <## "> #team (4-p-ab) 15-gq-a"
+    alice <## "invalid message reply"
+
+    alice `send` "> #team (5-p-ba) 16-gq-a"
+    alice <## "> #team (5-p-ba) 16-gq-a"
+    alice <## "invalid message reply"
+
+testGroupDirectQuotesItems :: HasCallStack => FilePath -> IO ()
+testGroupDirectQuotesItems =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+
+    alice #> "#team 1-g-a"
+    bob <# "#team alice> 1-g-a"
+    cath <# "#team alice> 1-g-a"
+
+    alice `send` "#team @bob 2-p-ab"
+    alice <# "#team @bob (private) 2-p-ab"
+    bob <# "#team alice (private)> 2-p-ab"
+
+    bob `send` "#team @alice 3-p-ba"
+    bob <# "#team @alice (private) 3-p-ba"
+    alice <# "#team bob (private)> 3-p-ba"
+    threadDelay 1000000
+
+    -- quotes
+
+    alice `send` "> #team @bob (1-g-a) 4-pq-ab"
+    alice <# "#team @bob (private) > alice 1-g-a"
+    alice <## "      4-pq-ab"
+    bob <# "#team alice (private)> > alice 1-g-a"
+    bob <## "      4-pq-ab"
+    threadDelay 1000000
+
+    alice `send` "> #team @bob (2-p-ab) 5-pq-ab"
+    alice <# "#team @bob (private) > alice 2-p-ab"
+    alice <## "      5-pq-ab"
+    bob <# "#team alice (private)> > alice 2-p-ab"
+    bob <## "      5-pq-ab"
+    threadDelay 1000000
+
+    alice `send` "> #team >@bob @bob (3-p-ba) 6-pq-ab"
+    alice <# "#team @bob (private) > bob 3-p-ba"
+    alice <## "      6-pq-ab"
+    bob <# "#team alice (private)> > bob 3-p-ba"
+    bob <## "      6-pq-ab"
+
+    alice
+      #$> ( "/_get chat #1 count=3",
+            mapChat,
+            [ ((1, "bob", "4-pq-ab"), Just (1, "group", "1-g-a")),
+              ((1, "bob", "5-pq-ab"), Just (1, "private", "2-p-ab")),
+              ((1, "bob", "6-pq-ab"), Just (0, "private", "3-p-ba"))
+            ]
+          )
+    bob
+      #$> ( "/_get chat #1 count=3",
+            mapChat,
+            [ ((0, "alice", "4-pq-ab"), Just (0, "group", "1-g-a")),
+              ((0, "alice", "5-pq-ab"), Just (0, "private", "2-p-ab")),
+              ((0, "alice", "6-pq-ab"), Just (1, "private", "3-p-ba"))
+            ]
+          )
+  where
+    mapChat = map (\(a, b, _) -> (a, b)) . chat'''
+
+testGroupDirectFilesXFTP :: HasCallStack => FilePath -> IO ()
+testGroupDirectFilesXFTP =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    withXFTPServer $ do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+
+      alice `send` "/f #team @bob ./tests/fixtures/test.pdf"
+      alice <# "/f #team @bob (private) ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "#team alice (private)> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for #team @bob (private)"
+
+      bob ##> "/fr 1 ./tests/tmp"
+      bob
+        <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+
+      cath <// 50000
+      cath ##> "/fr 1 ./tests/tmp"
+      cath <##. "chat db error: SEUserNotFoundByFileId"
+
+      alice #$> ("/_get chat #1 count=1", mapChat, [((1, "bob", ""), Just "./tests/fixtures/test.pdf")])
+      bob #$> ("/_get chat #1 count=1", mapChat, [((0, "alice", ""), Just "./tests/tmp/test.pdf")])
+      cath #$> ("/_get chat #1 count=1", mapChat, [((0, "", "connected"), Nothing)])
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    mapChat = map (\(a, _, c) -> (a, c)) . chat'''

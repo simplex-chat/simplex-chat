@@ -633,6 +633,16 @@ sendNameStr = \case
   SNGroup gName (Just cName) -> "#" <> T.unpack gName <> " @" <> T.unpack cName
   SNGroup gName Nothing -> "#" <> T.unpack gName
 
+data SendDirection
+  = SDDirect Contact
+  | SDGroup Group (Maybe GroupMember)
+  deriving (Eq, Show)
+
+sendDirToContactOrGroup :: SendDirection -> ContactOrGroup
+sendDirToContactOrGroup = \case
+  SDDirect c -> CGContact c
+  SDGroup g _ -> CGGroup g
+
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
 
