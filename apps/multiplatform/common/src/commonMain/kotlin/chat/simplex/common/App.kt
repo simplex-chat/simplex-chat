@@ -210,9 +210,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         snapshotFlow { chatModel.chatId.value }
           .distinctUntilChanged()
           .collect {
-            if (it == null) {
-              onComposed(null)
-            }
+            if (it == null) onComposed(null)
             currentChatId = it
           }
       }
