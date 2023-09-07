@@ -1306,7 +1306,7 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">El envío de confirmaciones de entrega se activará para todos los contactos en todos los perfiles visibles.</string>
     <string name="receipts_section_contacts">Contactos</string>
     <string name="delivery_receipts_title">¡Confirmación de entrega!</string>
-    <string name="receipts_contacts_disable_keep_overrides">Desactivar (conservar anulaciones)</string>
+    <string name="receipts_contacts_disable_keep_overrides">Desactivar (conservando anulaciones)</string>
     <string name="v5_2_favourites_filter">Encontrar chats mas rápido</string>
     <string name="v5_2_disappear_one_message">Escribir un mensaje temporal</string>
     <string name="receipts_contacts_override_disabled">El envío de confirmaciones está desactivado para %d contactos</string>
@@ -1351,7 +1351,7 @@
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="send_receipts_disabled">desactivado</string>
     <string name="receipts_groups_disable_for_all">Desactivado para todos los grupos</string>
-    <string name="receipts_groups_disable_keep_overrides">Desactivar (conservar anulaciones de grupo)</string>
+    <string name="receipts_groups_disable_keep_overrides">Desactivar (conservando anulaciones de grupo)</string>
     <string name="receipts_groups_title_disable">¿Desactivar confirmaciones para grupos\?</string>
     <string name="receipts_groups_enable_keep_overrides">Activar (conservar anulaciones de grupo)</string>
     <string name="send_receipts_disabled_alert_title">Confirmaciones desactivadas</string>
@@ -1377,4 +1377,16 @@
     <string name="rcv_group_event_3_members_connected">%s, %s y %s conectados</string>
     <string name="rcv_group_event_2_members_connected">%s y %s conectados</string>
     <string name="privacy_message_draft">Borrador de mensaje</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">La base de datos será cifrada y la contraseña se guardará en Configuración</string>
+    <string name="you_can_change_it_later">La contraseña aleatoria se almacenará en Configuración como texto plano.
+\nPuedes cambiarlo más tarde.</string>
+    <string name="database_encryption_will_be_updated_in_settings">La contraseña para el cifrado de la base de datos se actualizará y almacenará en Configuración</string>
+    <string name="remove_passphrase_from_settings">Eliminar contraseña de configuración\?</string>
+    <string name="use_random_passphrase">Usar contraseña aleatoria</string>
+    <string name="save_passphrase_in_settings">Guardar contraseña en configuración</string>
+    <string name="setup_database_passphrase">Configuración contraseña base de datos</string>
+    <string name="set_database_passphrase">Escribe una contraseña para la base de datos</string>
+    <string name="open_database_folder">Abrir carpeta base de datos</string>
+    <string name="passphrase_will_be_saved_in_settings">La contraseña se almacenará en configuración como texto plano después de cambiarla o reiniciar la aplicación.</string>
+    <string name="settings_is_storing_in_clear_text">La contraseña está almacenada en configuración como texto plano.</string>
 </resources>
