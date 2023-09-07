@@ -197,13 +197,19 @@ func saveCryptoFile(_ fileSource: CryptoFile) {
     if let cfArgs = fileSource.cryptoArgs {
         let url = getAppFilePath(fileSource.filePath)
         let tempUrl = getTempFilesDirectory().appendingPathComponent(fileSource.filePath)
-        do {
-            try decryptCryptoFile(fromPath: url.path, cryptoArgs: cfArgs, toPath: tempUrl.path)
-            showShareSheet(items: [tempUrl]) {
-                removeFile(tempUrl)
+        Task {
+            do {
+                try decryptCryptoFile(fromPath: url.path, cryptoArgs: cfArgs, toPath: tempUrl.path)
+                await MainActor.run {
+                    showShareSheet(items: [tempUrl]) {
+                        removeFile(tempUrl)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    AlertManager.shared.showAlertMsg(title: "Error decrypting file", message: "Error: \(error.localizedDescription)")
+                }
             }
-        } catch {
-            AlertManager.shared.showAlertMsg(title: "Error decrypting file", message: "Error: \(error.localizedDescription)")
         }
     } else {
         let url = getAppFilePath(fileSource.filePath)
