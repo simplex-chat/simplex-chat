@@ -1374,4 +1374,16 @@
     <string name="privacy_show_last_messages">إظهار الرسائل الأخيرة</string>
     <string name="rcv_group_event_n_members_connected">%s، %s و %d أعضاء آخرين متصلون</string>
     <string name="rcv_group_event_3_members_connected">%s، %s و %s متصل</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">سيتم تشفير قاعدة البيانات وتخزين عبارة المرور في الإعدادات.</string>
+    <string name="you_can_change_it_later">يُخزين عبارة المرور العشوائية في الإعدادات كنص عادي.
+\nيمكنك تغييره لاحقا.</string>
+    <string name="database_encryption_will_be_updated_in_settings">سيتم تحديث عبارة مرور تشفير قاعدة البيانات وتخزينها في الإعدادات.</string>
+    <string name="remove_passphrase_from_settings">هل تريد إزالة عبارة المرور من الإعدادات؟</string>
+    <string name="use_random_passphrase">استخدم عبارة مرور عشوائية</string>
+    <string name="save_passphrase_in_settings">حفظ عبارة المرور في الإعدادات</string>
+    <string name="setup_database_passphrase">إعداد كلمة المرور لقاعدة البيانات</string>
+    <string name="set_database_passphrase">تعيين عبارة مرور قاعدة البيانات</string>
+    <string name="open_database_folder">افتح مجلد قاعدة البيانات</string>
+    <string name="passphrase_will_be_saved_in_settings">سيتم تخزين عبارة المرور في الإعدادات كنص عادي بعد تغييرها أو إعادة تشغيل التطبيق.</string>
+    <string name="settings_is_storing_in_clear_text">يُخزين عبارة المرور في الإعدادات كنص عادي.</string>
 </resources>
