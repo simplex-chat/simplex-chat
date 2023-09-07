@@ -482,7 +482,7 @@ public enum ChatResponse: Decodable, Error {
     case groupEmpty(user: UserRef, groupInfo: GroupInfo)
     case userContactLinkSubscribed
     case newChatItem(user: UserRef, chatItem: AChatItem)
-    case chatItemStatusUpdated(UserRef: User, chatItem: AChatItem)
+    case chatItemStatusUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
