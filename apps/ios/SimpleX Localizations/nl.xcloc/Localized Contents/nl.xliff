@@ -267,9 +267,9 @@
         <target>**Nieuw contact toevoegen**: om uw eenmalige QR-code of link voor uw contact te maken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve">
+      <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve" approved="no">
         <source>**Create link / QR code** for your contact to use.</source>
-        <target>**Maak een link / QR-code aan** die uw contactpersoon kan gebruiken.</target>
+        <target state="translated">**Maak een link / QR-code aan** die uw contact kan gebruiken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
@@ -297,9 +297,9 @@
         <target>**Aanbevolen**: apparaattoken en meldingen worden naar de SimpleX Chat-meldingsserver gestuurd, maar niet de berichtinhoud, -grootte of van wie het afkomstig is.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve">
+      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve" approved="no">
         <source>**Scan QR code**: to connect to your contact in person or via video call.</source>
-        <target>**Scan QR-code**: om persoonlijk of via een video gesprek verbinding te maken met uw contactpersoon.</target>
+        <target state="translated">**Scan QR-code**: om persoonlijk of via een video gesprek verbinding te maken met uw contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -480,9 +480,9 @@
         <note>accept contact request via notification
    accept incoming call via notification</note>
       </trans-unit>
-      <trans-unit id="Accept connection request?" xml:space="preserve">
+      <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
         <source>Accept connection request?</source>
-        <target>Accepteer contactpersoon</target>
+        <target state="translated">Accepteer contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
@@ -590,24 +590,24 @@
         <target>Toestaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow calls only if your contact allows them.</source>
-        <target>Sta oproepen alleen toe als uw contact persoon dit toestaat.</target>
+        <target state="translated">Sta oproepen alleen toe als uw contact dit toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
+      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve" approved="no">
         <source>Allow disappearing messages only if your contact allows it to you.</source>
-        <target>Sta verdwijnende berichten alleen toe als uw contactpersoon dit toestaat.</target>
+        <target state="translated">Sta verdwijnende berichten alleen toe als uw contact dit toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
+      <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve" approved="no">
         <source>Allow irreversible message deletion only if your contact allows it to you.</source>
-        <target>Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contactpersoon dit toestaat.</target>
+        <target state="translated">Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow message reactions only if your contact allows them.</source>
-        <target>Sta berichtreacties alleen toe als uw contactpersoon dit toestaat.</target>
+        <target state="translated">Sta berichtreacties alleen toe als uw contact dit toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions." xml:space="preserve">
@@ -640,9 +640,9 @@
         <target>Sta toe om spraak berichten te verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow voice messages only if your contact allows them.</source>
-        <target>Sta spraak berichten alleen toe als uw contactpersoon ze toestaat.</target>
+        <target state="translated">Sta spraak berichten alleen toe als uw contact ze toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow voice messages?" xml:space="preserve">
@@ -810,29 +810,29 @@
         <target>Betere berichten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
+      <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Both you and your contact can add message reactions.</source>
-        <target>Zowel u als uw contactpersoon kunnen berichtreacties toevoegen.</target>
+        <target state="translated">Zowel u als uw contact kunnen berichtreacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
+      <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve" approved="no">
         <source>Both you and your contact can irreversibly delete sent messages.</source>
-        <target>Zowel jij als je contactpersoon kunnen verzonden berichten onherroepelijk verwijderen.</target>
+        <target state="translated">Zowel jij als je contact kunnen verzonden berichten onherroepelijk verwijderen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
+      <trans-unit id="Both you and your contact can make calls." xml:space="preserve" approved="no">
         <source>Both you and your contact can make calls.</source>
-        <target>Zowel u als uw contact persoon kunnen bellen.</target>
+        <target state="translated">Zowel u als uw contact kunnen bellen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve" approved="no">
         <source>Both you and your contact can send disappearing messages.</source>
-        <target>Zowel jij als je contactpersoon kunnen verdwijnende berichten sturen.</target>
+        <target state="translated">Zowel jij als je contact kunnen verdwijnende berichten sturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
+      <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve" approved="no">
         <source>Both you and your contact can send voice messages.</source>
-        <target>Zowel jij als je contactpersoon kunnen spraak berichten verzenden.</target>
+        <target state="translated">Zowel jij als je contact kunnen spraak berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -2197,14 +2197,14 @@
         <target>Het bestand wordt van de servers verwijderd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>File will be received when your contact completes uploading it.</source>
-        <target>Het bestand wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target state="translated">Het bestand wordt gedownload wanneer uw contact het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>File will be received when your contact is online, please wait or check later!</source>
-        <target>Het bestand wordt ontvangen wanneer uw contact persoon online is, even geduld a.u.b. of controleer later!</target>
+        <target state="translated">Het bestand wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of controleer later!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File: %@" xml:space="preserve">
@@ -2512,9 +2512,9 @@
         <target>Als je elkaar niet persoonlijk kunt ontmoeten, laat dan de QR-code zien in een videogesprek of deel de link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
+      <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve" approved="no">
         <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
-        <target>Als u elkaar niet persoonlijk kunt ontmoeten, kunt u **de QR-code scannen in het video gesprek**, of uw contactpersoon kan een uitnodiging link delen.</target>
+        <target state="translated">Als u elkaar niet persoonlijk kunt ontmoeten, kunt u **de QR-code scannen in het video gesprek**, of uw contact kan een uitnodiging link delen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
@@ -2537,9 +2537,9 @@
         <target>Negeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>Image will be received when your contact completes uploading it.</source>
-        <target>De afbeelding wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target state="translated">De afbeelding wordt gedownload wanneer uw contact het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -2724,14 +2724,14 @@
         <target>Het kan gebeuren wanneer u of de ander een oude databaseback-up gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
         <source>It can happen when:
 1. The messages expired in the sending client after 2 days or on the server after 30 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
-        <target>Het kan gebeuren wanneer:
+        <target state="translated">Het kan gebeuren wanneer:
 1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.
-2. Decodering van het bericht is mislukt, omdat u of uw contactpersoon een oude databaseback-up heeft gebruikt.
+2. Decodering van het bericht is mislukt, omdat u of uw contact een oude databaseback-up heeft gebruikt.
 3. De verbinding is verbroken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3259,9 +3259,9 @@
         <target>Alleen jij kunt berichtreacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve">
+      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve" approved="no">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion).</source>
-        <target>Alleen jij kunt berichten onomkeerbaar verwijderen (je contactpersoon kan ze markeren voor verwijdering).</target>
+        <target state="translated">Alleen jij kunt berichten onomkeerbaar verwijderen (je contact kan ze markeren voor verwijdering).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can make calls." xml:space="preserve">
@@ -3279,14 +3279,14 @@
         <target>Alleen jij kunt spraak berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can add message reactions." xml:space="preserve">
+      <trans-unit id="Only your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Only your contact can add message reactions.</source>
-        <target>Alleen uw contactpersoon kan berichtreacties toevoegen.</target>
+        <target state="translated">Alleen uw contact kan berichtreacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
+      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve" approved="no">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
-        <target>Alleen uw contactpersoon kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).</target>
+        <target state="translated">Alleen uw contact kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can make calls." xml:space="preserve">
@@ -3294,14 +3294,14 @@
         <target>Alleen je contact kan bellen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve" approved="no">
         <source>Only your contact can send disappearing messages.</source>
-        <target>Alleen uw contactpersoon kan verdwijnende berichten verzenden.</target>
+        <target state="translated">Alleen uw contact kan verdwijnende berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
+      <trans-unit id="Only your contact can send voice messages." xml:space="preserve" approved="no">
         <source>Only your contact can send voice messages.</source>
-        <target>Alleen uw contactpersoon kan spraak berichten verzenden.</target>
+        <target state="translated">Alleen uw contact kan spraak berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
@@ -3394,9 +3394,9 @@
         <target>Plak de ontvangen link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste the link you received to connect with your contact." xml:space="preserve">
+      <trans-unit id="Paste the link you received to connect with your contact." xml:space="preserve" approved="no">
         <source>Paste the link you received to connect with your contact.</source>
-        <target>Plak de link die je hebt ontvangen in het vak hieronder om verbinding te maken met je contactpersoon.</target>
+        <target state="translated">Plak de link die je hebt ontvangen in het vak hieronder om verbinding te maken met je contact.</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
@@ -3414,14 +3414,14 @@
         <target>Decodering fout</target>
         <note>message decrypt error item</note>
       </trans-unit>
-      <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
+      <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve" approved="no">
         <source>Please ask your contact to enable sending voice messages.</source>
-        <target>Vraag uw contactpersoon om het verzenden van spraak berichten in te schakelen.</target>
+        <target state="translated">Vraag uw contact om het verzenden van spraak berichten in te schakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
+      <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve" approved="no">
         <source>Please check that you used the correct link or ask your contact to send you another one.</source>
-        <target>Controleer of u de juiste link heeft gebruikt of vraag uw contactpersoon om u een andere te sturen.</target>
+        <target state="translated">Controleer of u de juiste link heeft gebruikt of vraag uw contact om u een andere te sturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve">
@@ -3964,9 +3964,9 @@
         <target>Code scannen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan security code from your contact's app." xml:space="preserve">
+      <trans-unit id="Scan security code from your contact's app." xml:space="preserve" approved="no">
         <source>Scan security code from your contact's app.</source>
-        <target>Scan de beveiligingscode van de app van uw contactpersoon.</target>
+        <target state="translated">Scan de beveiligingscode van de app van uw contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scan server QR code" xml:space="preserve">
@@ -4686,9 +4686,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Om vragen te stellen en updates te ontvangen:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To connect, your contact can scan QR code or use the link in the app." xml:space="preserve">
+      <trans-unit id="To connect, your contact can scan QR code or use the link in the app." xml:space="preserve" approved="no">
         <source>To connect, your contact can scan QR code or use the link in the app.</source>
-        <target>Om verbinding te maken, kan uw contact persoon de QR-code scannen of de link in de app gebruiken.</target>
+        <target state="translated">Om verbinding te maken, kan uw contact de QR-code scannen of de link in de app gebruiken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
@@ -4728,9 +4728,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Om directe push meldingen te ondersteunen, moet de chat database worden gemigreerd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
+      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve" approved="no">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
-        <target>Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contactpersoon te verifiëren.</target>
+        <target state="translated">Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contact te verifiëren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transport isolation" xml:space="preserve">
@@ -4823,11 +4823,11 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Schakel de modus Niet storen in om onderbrekingen te voorkomen, tenzij u de iOS-oproepinterface gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
+      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve" approved="no">
         <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
 To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>Tenzij uw contactpersoon de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
-Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</target>
+        <target state="translated">Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
+Om verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlock" xml:space="preserve">
@@ -4970,9 +4970,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>video oproep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>Video will be received when your contact completes uploading it.</source>
-        <target>De video wordt gedownload wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target state="translated">De video wordt gedownload wanneer uw contact het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -5220,9 +5220,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>U moet elke keer dat de app start het wachtwoord invoeren, deze wordt niet op het apparaat opgeslagen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You invited a contact" xml:space="preserve">
+      <trans-unit id="You invited a contact" xml:space="preserve" approved="no">
         <source>You invited a contact</source>
-        <target>Je hebt je contactpersoon uitgenodigd</target>
+        <target state="translated">Je hebt je contact uitgenodigd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You joined this group" xml:space="preserve">
@@ -5355,16 +5355,16 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Uw chat profielen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
+      <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve" approved="no">
         <source>Your contact needs to be online for the connection to complete.
 You can cancel this connection and remove the contact (and try later with a new link).</source>
-        <target>Uw contactpersoon moet online zijn om de verbinding te voltooien.
+        <target state="translated">Uw contact moet online zijn om de verbinding te voltooien.
 U kunt deze verbinding verbreken en het contact verwijderen (en later proberen met een nieuwe link).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
+      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve" approved="no">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
-        <target>Uw contactpersoon heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%@).</target>
+        <target state="translated">Uw contact heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
