@@ -18,6 +18,7 @@ import Data.Word (Word8)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
+import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import Simplex.Chat.Mobile
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
@@ -30,18 +31,30 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..), getFileContentsSize)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import System.Directory (copyFile)
 import System.FilePath ((</>))
+import System.IO (utf8)
 import Test.Hspec
 
 mobileTests :: HasCallStack => SpecWith FilePath
 mobileTests = do
   describe "mobile API" $ do
+    runIO $ do
+      setLocaleEncoding utf8
+      setFileSystemEncoding utf8
+      setForeignEncoding utf8
     it "start new chat without user" testChatApiNoUser
     it "start new chat with existing user" testChatApi
     it "should encrypt/decrypt WebRTC frames" testMediaApi
     it "should encrypt/decrypt WebRTC frames via C API" testMediaCApi
-    it "should read/write encrypted files via C API" testFileCApi
-    it "should encrypt/decrypt files via C API" testFileEncryptionCApi
+    describe "should read/write encrypted files via C API" $ do
+      it "latin1 name" $ testFileCApi "test"
+      it "utf8 name 1" $ testFileCApi "тест"
+      it "utf8 name 2" $ testFileCApi "👍"
+    describe "should encrypt/decrypt files via C API" $ do
+      it "latin1 name" $ testFileEncryptionCApi "test"
+      it "utf8 name 1" $ testFileEncryptionCApi "тест"
+      it "utf8 name 2" $ testFileEncryptionCApi "👍"
 
 noActiveUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -176,16 +189,19 @@ instance FromJSON WriteFileResult where parseJSON = J.genericParseJSON . sumType
 
 instance FromJSON ReadFileResult where parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RF"
 
-testFileCApi :: FilePath -> IO ()
-testFileCApi tmp = do
+testFileCApi :: FilePath -> FilePath -> IO ()
+testFileCApi fileName tmp = do
   src <- B.readFile "./tests/fixtures/test.pdf"
-  cPath <- newCAString $ tmp </> "test.pdf"
+  let path = tmp </> (fileName <> ".pdf")
+  cPath <- newCString path
   let len = B.length src
       cLen = fromIntegral len
   ptr <- mallocBytes $ B.length src
   putByteString ptr src
   r <- peekCAString =<< cChatWriteFile cPath ptr cLen
-  Just (WFResult (CFArgs key nonce)) <- jDecode r
+  Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
+  let encryptedFile = CryptoFile path $ Just cfArgs
+  getFileContentsSize encryptedFile `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   ptr' <- cChatReadFile cPath cKey cNonce
@@ -196,19 +212,21 @@ testFileCApi tmp = do
   contents `shouldBe` src
   sz `shouldBe` len
 
-testFileEncryptionCApi :: FilePath -> IO ()
-testFileEncryptionCApi tmp = do
-  src <- B.readFile "./tests/fixtures/test.pdf"
-  cFromPath <- newCAString "./tests/fixtures/test.pdf"
-  let toPath = tmp </> "test.encrypted.pdf"
-  cToPath <- newCAString toPath
+testFileEncryptionCApi :: FilePath -> FilePath -> IO ()
+testFileEncryptionCApi fileName tmp = do
+  let fromPath = tmp </> (fileName <> ".source.pdf")
+  copyFile "./tests/fixtures/test.pdf" fromPath
+  src <- B.readFile fromPath
+  cFromPath <- newCString fromPath
+  let toPath = tmp </> (fileName <> ".encrypted.pdf")
+  cToPath <- newCString toPath
   r <- peekCAString =<< cChatEncryptFile cFromPath cToPath
   Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
   getFileContentsSize (CryptoFile toPath $ Just cfArgs) `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
-  let toPath' = tmp </> "test.decrypted.pdf"
-  cToPath' <- newCAString toPath'
+  let toPath' = tmp </> (fileName <> ".decrypted.pdf")
+  cToPath' <- newCString toPath'
   "" <- peekCAString =<< cChatDecryptFile cToPath cKey cNonce cToPath'
   B.readFile toPath' `shouldReturn` src
 

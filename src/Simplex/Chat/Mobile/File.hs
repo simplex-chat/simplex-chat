@@ -45,7 +45,7 @@ instance ToJSON WriteFileResult where toEncoding = J.genericToEncoding . sumType
 
 cChatWriteFile :: CString -> Ptr Word8 -> CInt -> IO CJSONString
 cChatWriteFile cPath ptr len = do
-  path <- peekCAString cPath
+  path <- peekCString cPath
   s <- getByteString ptr len
   r <- chatWriteFile path s
   newCAString $ LB'.unpack $ J.encode r
@@ -66,7 +66,7 @@ instance ToJSON ReadFileResult where toEncoding = J.genericToEncoding . sumTypeJ
 
 cChatReadFile :: CString -> CString -> CString -> IO (Ptr Word8)
 cChatReadFile cPath cKey cNonce = do
-  path <- peekCAString cPath
+  path <- peekCString cPath
   key <- B.packCString cKey
   nonce <- B.packCString cNonce
   (r, s) <- chatReadFile path key nonce
@@ -90,8 +90,8 @@ chatReadFile path keyStr nonceStr = do
 
 cChatEncryptFile :: CString -> CString -> IO CJSONString
 cChatEncryptFile cFromPath cToPath = do
-  fromPath <- peekCAString cFromPath
-  toPath <- peekCAString cToPath
+  fromPath <- peekCString cFromPath
+  toPath <- peekCString cToPath
   r <- chatEncryptFile fromPath toPath
   newCAString . LB'.unpack $ J.encode r
 
@@ -114,13 +114,13 @@ chatEncryptFile fromPath toPath =
 
 cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 cChatDecryptFile cFromPath cKey cNonce cToPath = do
-  fromPath <- peekCAString cFromPath
+  fromPath <- peekCString cFromPath
   key <- B.packCString cKey
   nonce <- B.packCString cNonce
-  toPath <- peekCAString cToPath
+  toPath <- peekCString cToPath
   r <- chatDecryptFile fromPath key nonce toPath
   newCAString r
-  
+
 chatDecryptFile :: FilePath -> ByteString -> ByteString -> FilePath -> IO String
 chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runExceptT decrypt
   where
