@@ -212,7 +212,7 @@ testFileCApi fileName tmp = do
   -- the returned pointer contains 0, buffer length as Word32, then buffer
   ptr' <- cChatReadFile cPath cKey cNonce
   peek ptr' `shouldReturn` (0 :: Word8)
-  sz :: Word32 <- peek $ castPtr (ptr' `plusPtr` 1)
+  sz :: Word32 <- peek (ptr' `plusPtr` 1)
   let sz' = fromIntegral sz
   contents <- create sz' $ \toPtr -> memcpy toPtr (ptr' `plusPtr` 5) sz'
   contents `shouldBe` src
