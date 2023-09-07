@@ -88,6 +88,8 @@ chatGroupTests = do
     it "should send direct quotes" testGroupDirectQuotes
     it "should create direct quotes chat items" testGroupDirectQuotesItems
     it "should send direct XFTP files" testGroupDirectFilesXFTP
+    it "should send direct SMP files" testGroupDirectFilesSMP
+    it "should cancel sent direct XFTP file" testGroupDirectCancelFileXFTP
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -2932,9 +2934,112 @@ testGroupDirectFilesXFTP =
       cath ##> "/fr 1 ./tests/tmp"
       cath <##. "chat db error: SEUserNotFoundByFileId"
 
-      alice #$> ("/_get chat #1 count=1", mapChat, [((1, "bob", ""), Just "./tests/fixtures/test.pdf")])
-      bob #$> ("/_get chat #1 count=1", mapChat, [((0, "alice", ""), Just "./tests/tmp/test.pdf")])
-      cath #$> ("/_get chat #1 count=1", mapChat, [((0, "", "connected"), Nothing)])
+      alice `send` "/f #team @cath ./tests/fixtures/test.jpg"
+      alice <# "/f #team @cath (private) ./tests/fixtures/test.jpg"
+      alice <## "use /fc 2 to cancel sending"
+      cath <# "#team alice (private)> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 2 (test.jpg) for #team @cath (private)"
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from alice to ./tests/tmp/test.jpg",
+               "started receiving file 1 (test.jpg) from alice"
+             ]
+      cath <## "completed receiving file 1 (test.jpg) from alice"
+
+      src2 <- B.readFile "./tests/fixtures/test.jpg"
+      dest2 <- B.readFile "./tests/tmp/test.jpg"
+      dest2 `shouldBe` src2
+
+      bob <// 50000
+
+      alice #$> ("/_get chat #1 count=2", mapChat, [((1, "bob", ""), Just "./tests/fixtures/test.pdf"), ((1, "cath", ""), Just "./tests/fixtures/test.jpg")])
+      bob #$> ("/_get chat #1 count=2", mapChat, [((0, "", "connected"), Nothing), ((0, "alice", ""), Just "./tests/tmp/test.pdf")])
+      cath #$> ("/_get chat #1 count=2", mapChat, [((0, "", "connected"), Nothing), ((0, "alice", ""), Just "./tests/tmp/test.jpg")])
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
     mapChat = map (\(a, _, c) -> (a, c)) . chat'''
+
+testGroupDirectFilesSMP :: HasCallStack => FilePath -> IO ()
+testGroupDirectFilesSMP =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+
+    alice `send` "/f #team @bob ./tests/fixtures/test.pdf"
+    alice <# "/f #team @bob (private) ./tests/fixtures/test.pdf"
+    alice <## "use /fc 1 to cancel sending"
+    bob <# "#team alice (private)> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob ##> "/fr 1 ./tests/tmp"
+    bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+    concurrently_
+      (alice <## "started sending file 1 (test.pdf) to bob")
+      (bob <## "started receiving file 1 (test.pdf) from alice")
+    concurrently_
+      (alice <## "completed sending file 1 (test.pdf) to bob")
+      (bob <## "completed receiving file 1 (test.pdf) from alice")
+
+    src <- B.readFile "./tests/fixtures/test.pdf"
+    dest <- B.readFile "./tests/tmp/test.pdf"
+    dest `shouldBe` src
+
+    cath <// 50000
+    cath ##> "/fr 1 ./tests/tmp"
+    cath <##. "chat db error: SEUserNotFoundByFileId"
+
+    alice `send` "/f #team @cath ./tests/fixtures/test.jpg"
+    alice <# "/f #team @cath (private) ./tests/fixtures/test.jpg"
+    alice <## "use /fc 2 to cancel sending"
+    cath <# "#team alice (private)> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    cath ##> "/fr 1 ./tests/tmp"
+    cath <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+    concurrently_
+      (alice <## "started sending file 2 (test.jpg) to cath")
+      (cath <## "started receiving file 1 (test.jpg) from alice")
+    concurrently_
+      (alice <## "completed sending file 2 (test.jpg) to cath")
+      (cath <## "completed receiving file 1 (test.jpg) from alice")
+
+    src2 <- B.readFile "./tests/fixtures/test.jpg"
+    dest2 <- B.readFile "./tests/tmp/test.jpg"
+    dest2 `shouldBe` src2
+
+    bob <// 50000
+
+    alice #$> ("/_get chat #1 count=2", mapChat, [((1, "bob", ""), Just "./tests/fixtures/test.pdf"), ((1, "cath", ""), Just "./tests/fixtures/test.jpg")])
+    bob #$> ("/_get chat #1 count=2", mapChat, [((0, "", "connected"), Nothing), ((0, "alice", ""), Just "./tests/tmp/test.pdf")])
+    cath #$> ("/_get chat #1 count=2", mapChat, [((0, "", "connected"), Nothing), ((0, "alice", ""), Just "./tests/tmp/test.jpg")])
+  where
+    mapChat = map (\(a, _, c) -> (a, c)) . chat'''
+
+testGroupDirectCancelFileXFTP :: HasCallStack => FilePath -> IO ()
+testGroupDirectCancelFileXFTP =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    withXFTPServer $ do
+      createGroup3 "team" alice bob cath
+
+      alice `send` "/f #team @bob ./tests/fixtures/test.pdf"
+      alice <# "/f #team @bob (private) ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "#team alice (private)> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for #team @bob (private)"
+
+      cath <// 50000
+
+      alice ##> "/fc 1"
+      alice <## "cancelled sending file 1 (test.pdf) to bob"
+      bob <## "alice cancelled sending file 1 (test.pdf)"
+
+      cath <// 50000
+
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "file cancelled: test.pdf"
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath <##. "chat db error: SEUserNotFoundByFileId"
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}

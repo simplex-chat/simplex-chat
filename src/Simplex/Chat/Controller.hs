@@ -635,7 +635,7 @@ sendNameStr = \case
 
 data SendDirection
   = SDDirect Contact
-  | SDGroup Group (Maybe GroupMember)
+  | SDGroup GroupInfo [GroupMember]
   deriving (Eq, Show)
 
 sendDirToContactOrGroup :: SendDirection -> ContactOrGroup
