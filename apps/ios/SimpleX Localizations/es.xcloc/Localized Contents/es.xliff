@@ -1634,9 +1634,9 @@
         <target>Los mensajes directos entre miembros del grupo no están permitidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable (keep overrides)" xml:space="preserve">
+      <trans-unit id="Disable (keep overrides)" xml:space="preserve" approved="no">
         <source>Disable (keep overrides)</source>
-        <target>Desactivar (conservar anulaciones)</target>
+        <target state="translated">Desactivar (conservando anulaciones)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -5777,8 +5777,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>error</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="event happened" xml:space="preserve">
+      <trans-unit id="event happened" xml:space="preserve" approved="no">
         <source>event happened</source>
+        <target state="translated">evento ocurrido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">
