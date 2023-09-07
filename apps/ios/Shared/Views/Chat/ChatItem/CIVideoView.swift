@@ -59,7 +59,7 @@ struct CIVideoView: View {
                         if let file = file {
                             switch file.fileStatus {
                             case .rcvInvitation:
-                                receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                                receiveFileIfValidSize(file: file, encrypted: false, receiveFile: receiveFile)
                             case .rcvAccepted:
                                 switch file.fileProtocol {
                                 case .xftp:
@@ -85,7 +85,7 @@ struct CIVideoView: View {
             }
             if let file = file, case .rcvInvitation = file.fileStatus {
                 Button {
-                    receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                    receiveFileIfValidSize(file: file, encrypted: false, receiveFile: receiveFile)
                 } label: {
                     playPauseIcon("play.fill")
                 }
@@ -253,10 +253,11 @@ struct CIVideoView: View {
         .padding([.trailing, .top], 11)
     }
 
-    private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool) async -> Void) {
+    // TODO encrypt: where file size is checked?
+    private func receiveFileIfValidSize(file: CIFile, encrypted: Bool, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
         Task {
             if let user = ChatModel.shared.currentUser {
-                await receiveFile(user, file.fileId, false)
+                await receiveFile(user, file.fileId, encrypted, false)
             }
         }
     }

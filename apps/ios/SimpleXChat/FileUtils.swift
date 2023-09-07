@@ -173,11 +173,16 @@ public func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
-public func saveFile(_ data: Data, _ fileName: String) -> String? {
+public func saveFile(_ data: Data, _ fileName: String, encrypted: Bool) -> CryptoFile? {
     let filePath = getAppFilePath(fileName)
     do {
-        try data.write(to: filePath)
-        return fileName
+        if encrypted {
+            let cfArgs = try writeCryptoFile(path: filePath.path, data: data)
+            return CryptoFile(filePath: fileName, cryptoArgs: cfArgs)
+        } else {
+            try data.write(to: filePath)
+            return CryptoFile.plain(fileName)
+        }
     } catch {
         logger.error("FileUtils.saveFile error: \(error.localizedDescription)")
         return nil
@@ -210,7 +215,7 @@ public func cleanupFile(_ aChatItem: AChatItem) {
     let cItem = aChatItem.chatItem
     let mc = cItem.content.msgContent
     if case .file = mc,
-       let fileName = cItem.file?.filePath {
+       let fileName = cItem.file?.fileSource?.filePath {
         removeFile(fileName)
     }
 }
@@ -219,5 +224,17 @@ public func getMaxFileSize(_ fileProtocol: FileProtocol) -> Int64 {
     switch fileProtocol {
     case .xftp: return MAX_FILE_SIZE_XFTP
     case .smp: return MAX_FILE_SIZE_SMP
+    }
+}
+
+public struct RuntimeError: Error {
+    let message: String
+
+    public init(_ message: String) {
+        self.message = message
+    }
+
+    public var localizedDescription: String {
+        return message
     }
 }

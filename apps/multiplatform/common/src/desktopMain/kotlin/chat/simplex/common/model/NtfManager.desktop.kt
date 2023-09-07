@@ -104,7 +104,11 @@ object NtfManager {
     actions.forEach {
       builder.action(it.first, it.second)
     }
-    prevNtfs.add(chatId to builder.toast())
+    try {
+      prevNtfs.add(chatId to builder.toast())
+    } catch (e: Exception) {
+      Log.e(TAG, e.stackTraceToString())
+    }
   }
 
   private fun prepareIconPath(icon: ImageBitmap?): String? = if (icon != null) {

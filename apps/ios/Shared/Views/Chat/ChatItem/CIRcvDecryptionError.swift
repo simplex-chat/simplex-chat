@@ -118,7 +118,7 @@ struct CIRcvDecryptionError: View {
                         .foregroundColor(syncSupported ? .accentColor : .secondary)
                         .font(.callout)
                     + Text("   ")
-                    + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
+                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true)
                 )
             }
             .padding(.horizontal, 12)
@@ -139,7 +139,7 @@ struct CIRcvDecryptionError: View {
                     .foregroundColor(.red)
                     .italic()
                 + Text("   ")
-                + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
+                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true)
             }
             .padding(.horizontal, 12)
             CIMetaView(chatItem: chatItem)

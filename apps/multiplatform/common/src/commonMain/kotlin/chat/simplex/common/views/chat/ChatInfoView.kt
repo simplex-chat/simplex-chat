@@ -24,6 +24,7 @@ import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -278,7 +279,7 @@ fun ChatInfoLayout(
       ChatInfoHeader(chat.chatInfo, contact)
     }
 
-    LocalAliasEditor(localAlias, updateValue = onLocalAliasChanged)
+    LocalAliasEditor(chat.id, localAlias, updateValue = onLocalAliasChanged)
     SectionSpacer()
     if (customUserProfile != null) {
       SectionView(generalGetString(MR.strings.incognito).uppercase()) {
@@ -403,13 +404,16 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 
 @Composable
 fun LocalAliasEditor(
+  chatId: String,
   initialValue: String,
   center: Boolean = true,
   leadingIcon: Boolean = false,
   focus: Boolean = false,
   updateValue: (String) -> Unit
 ) {
-  var value by rememberSaveable { mutableStateOf(initialValue) }
+  val state = remember(chatId) {
+    mutableStateOf(TextFieldValue(initialValue))
+  }
   var updatedValueAtLeastOnce = remember { false }
   val modifier = if (center)
     Modifier.padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).widthIn(min = 100.dp)
@@ -418,7 +422,7 @@ fun LocalAliasEditor(
   Row(Modifier.fillMaxWidth(), horizontalArrangement = if (center) Arrangement.Center else Arrangement.Start) {
     DefaultBasicTextField(
       modifier,
-      value,
+      state,
       {
         Text(
           generalGetString(MR.strings.text_field_set_contact_placeholder),
@@ -431,27 +435,27 @@ fun LocalAliasEditor(
       } else null,
       color = MaterialTheme.colors.secondary,
       focus = focus,
-      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
-      keyboardActions = KeyboardActions(onDone = { updateValue(value) })
+      textStyle = TextStyle.Default.copy(textAlign = if (state.value.text.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
+      keyboardActions = KeyboardActions(onDone = { updateValue(state.value.text) })
     ) {
-      value = it
+      state.value = it
       updatedValueAtLeastOnce = true
     }
   }
-  LaunchedEffect(Unit) {
-    var prevValue = value
-    snapshotFlow { value }
+  LaunchedEffect(chatId) {
+    var prevValue = state.value
+    snapshotFlow { state.value }
       .distinctUntilChanged()
       .onEach { delay(500) } // wait a little after every new character, don't emit until user stops typing
       .conflate() // get the latest value
-      .filter { it == value && it != prevValue } // don't process old ones
+      .filter { it == state.value && it != prevValue } // don't process old ones
       .collect {
-        updateValue(it)
+        updateValue(it.text)
         prevValue = it
       }
   }
-  DisposableEffect(Unit) {
-    onDispose { if (updatedValueAtLeastOnce) updateValue(value) } // just in case snapshotFlow will be canceled when user presses Back too fast
+  DisposableEffect(chatId) {
+    onDispose { if (updatedValueAtLeastOnce) updateValue(state.value.text) } // just in case snapshotFlow will be canceled when user presses Back too fast
   }
 }
 
