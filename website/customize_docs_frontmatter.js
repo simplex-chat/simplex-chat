@@ -56,9 +56,10 @@ Object.entries(fileLanguageMapping).forEach(([fileName, languages]) => {
             const permalink = `/docs/${linkPath}`.toLowerCase();
 
             if (fileName === 'JOIN_TEAM') {
-                parsedMatter.data.title = 'SimpleX Chat - Careers';
-                parsedMatter.data.permalink = '/careers/index.html';
-                parsedMatter.data.layout = 'layouts/careers.html';
+                parsedMatter.data.title = 'SimpleX Chat - Career';
+                parsedMatter.data.permalink = '/career/index.html';
+                parsedMatter.data.layout = 'layouts/career.html';
+                parsedMatter.data.active_career = true;
             }
             else {
                 parsedMatter.data.permalink = permalink;
