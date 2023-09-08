@@ -178,19 +178,6 @@ instance ToField MessageScope where
 instance FromField MessageScope where
   fromField = fromTextField_ decodeJSON
 
--- instance FromField MessageScope where fromField = fromTextField_ textDecode
-
--- instance ToField MessageScope where toField = toField . textEncode
-
--- instance TextEncoding MessageScope where
---   textDecode = \case
---     "group" -> Just MSGroup
---     "private" -> Just MSPrivate
---     _ -> Nothing
---   textEncode = \case
---     MSGroup -> "group"
---     MSPrivate -> "private"
-
 data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
