@@ -469,8 +469,8 @@ processChatCommand = \case
     withAgent foregroundAgent
     users <- withStoreCtx' (Just "APIActivateChat, getUsers") getUsers
     chatReadVar subscriptionMode >>= \case
-      SMOnlyCreate -> void . forkIO $ subscribeUsers True users
-      SMSubscribe -> pure () -- Subscriptions are automatic, nothing to do
+      SMSubscribe -> void . forkIO $ subscribeUsers True users -- activated iOS app
+      SMOnlyCreate -> pure () -- APIActivatedChat called from iOS NSE (never happens)
     void . forkIO $ startFilesToReceive users
     setAllExpireCIFlags True
     ok_
@@ -578,7 +578,7 @@ processChatCommand = \case
               (agentConnId_, fileConnReq) <-
                 if isJust fileInline
                   then pure (Nothing, Nothing)
-                  else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation subMode Nothing)
+                  else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation Nothing subMode)
               let fileName = takeFileName file
                   fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
               chSize <- asks $ fileChunkSize . config
@@ -1282,7 +1282,7 @@ processChatCommand = \case
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
-    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation subMode Nothing
+    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnNew incognitoProfile subMode
     toView $ CRNewContactConnection user conn
     pure $ CRInvitation user cReq conn
@@ -1309,7 +1309,7 @@ processChatCommand = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = userProfileToSend user incognitoProfile Nothing
     dm <- directMessage $ XInfo profileToSend
-    connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq subMode dm
+    connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode
     toView $ CRNewContactConnection user conn
     pure $ CRSentConfirmation user
@@ -1328,7 +1328,7 @@ processChatCommand = \case
     processChatCommand $ APIListContacts userId
   APICreateMyAddress userId -> withUserId userId $ \user -> withChatLock "createMyAddress" . procCmd $ do
     subMode <- chatReadVar subscriptionMode
-    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact subMode Nothing
+    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact Nothing subMode
     withStore $ \db -> createUserContactLink db user connId cReq subMode
     pure $ CRUserContactLinkCreated user cReq
   CreateMyAddress -> withUser $ \User {userId} ->
@@ -1435,7 +1435,7 @@ processChatCommand = \case
       Nothing -> do
         gVar <- asks idsDrg
         subMode <- chatReadVar subscriptionMode
-        (agentConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation subMode Nothing
+        (agentConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing subMode
         member <- withStore $ \db -> createNewContactMember db gVar user groupId contact memRole agentConnId cReq subMode
         sendInvitation member cReq
         pure $ CRSentGroupInvitation user gInfo contact member
@@ -1457,7 +1457,7 @@ processChatCommand = \case
     withChatLock "joinGroup" . procCmd $ do
       subMode <- chatReadVar subscriptionMode
       dm <- directMessage $ XGrpAcpt (memberId (membership :: GroupMember))
-      agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest subMode dm
+      agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm subMode
       withStore' $ \db -> do
         createMemberConnection db userId fromMember agentConnId peerChatVRange subMode
         updateGroupMemberStatus db userId fromMember GSMemAccepted
@@ -1572,7 +1572,7 @@ processChatCommand = \case
     groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     subMode <- chatReadVar subscriptionMode
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
-    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact subMode $ Just crClientData
+    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact (Just crClientData) subMode
     withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo cReq mRole
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withChatLock "groupLinkMemberRole " $ do
@@ -1864,7 +1864,7 @@ processChatCommand = \case
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = userProfileToSend user incognitoProfile Nothing
           dm <- directMessage (XContact profileToSend $ Just xContactId)
-          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq subMode dm
+          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm subMode
           let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode
           toView $ CRNewContactConnection user conn
@@ -2256,7 +2256,8 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
     -- direct file protocol
     (Nothing, Just connReq) -> do
       subMode <- chatReadVar subscriptionMode
-      connIds <- joinAgentConnectionAsync user True subMode connReq =<< directMessage (XFileAcpt fName)
+      dm <- directMessage $ XFileAcpt fName
+      connIds <- joinAgentConnectionAsync user True connReq dm subMode
       filePath <- getRcvFilePath fileId filePath_ fName True
       withStoreCtx (Just "acceptFileReceive, acceptRcvFileTransfer") $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath subMode
     -- XFTP
@@ -2300,7 +2301,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
           | otherwise -> do
             -- accepting via a new connection
             subMode <- chatReadVar subscriptionMode
-            connIds <- createAgentConnectionAsync user cmdFunction True subMode SCMInvitation
+            connIds <- createAgentConnectionAsync user cmdFunction True SCMInvitation subMode
             withStoreCtx (Just "acceptFile, acceptRcvFileTransfer") $ \db -> acceptRcvFileTransfer db user fileId connIds ConnNew filePath subMode
     receiveInline :: m Bool
     receiveInline = do
@@ -2376,14 +2377,14 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile
   dm <- directMessage $ XInfo profileToSend
-  acId <- withAgent $ \a -> acceptContact a True subMode invId dm
+  acId <- withAgent $ \a -> acceptContact a True invId dm subMode
   withStore' $ \db -> createAcceptedContact db user acId cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode
 
 acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
 acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile
-  (cmdId, acId) <- agentAcceptContactAsync user True subMode invId $ XInfo profileToSend
+  (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode
   withStore' $ \db -> do
     ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db user acId cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode
     setCommandConnId db user cmdId connId
@@ -2995,7 +2996,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                       toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
                     forM_ groupId_ $ \groupId -> do
                       gVar <- asks idsDrg
-                      groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True subMode SCMInvitation
+                      groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
                       withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds peerChatVRange subMode
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
@@ -3944,7 +3945,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           -- receiving via a separate connection
           Just fileConnReq -> do
             subMode <- chatReadVar subscriptionMode
-            connIds <- joinAgentConnectionAsync user True subMode fileConnReq =<< directMessage XOk
+            dm <- directMessage XOk
+            connIds <- joinAgentConnectionAsync user True fileConnReq dm subMode
             withStore' $ \db -> createSndDirectFTConnection db user fileId connIds subMode
           -- receiving inline
           _ -> do
@@ -4042,7 +4044,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             subMode <- chatReadVar subscriptionMode
             -- receiving via a separate connection
             -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-            connIds <- joinAgentConnectionAsync user True subMode fileConnReq =<< directMessage XOk
+            dm <- directMessage XOk
+            connIds <- joinAgentConnectionAsync user True fileConnReq dm subMode
             withStore' $ \db -> createSndGroupFileTransferConnection db user fileId connIds m subMode
           (_, Just conn) -> do
             -- receiving inline
@@ -4075,7 +4078,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       if sameGroupLinkId groupLinkId groupLinkId'
         then do
           subMode <- chatReadVar subscriptionMode
-          connIds <- joinAgentConnectionAsync user True subMode connRequest =<< directMessage (XGrpAcpt memberId)
+          dm <- directMessage $ XGrpAcpt memberId
+          connIds <- joinAgentConnectionAsync user True connRequest dm subMode
           withStore' $ \db -> do
             createMemberConnectionAsync db user hostId connIds peerChatVRange subMode
             updateGroupMemberStatusById db userId hostId GSMemAccepted
@@ -4323,7 +4327,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
-        createConn subMode = createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs subMode SCMInvitation
+        createConn subMode = createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation subMode
 
     sendXGrpMemInv :: Int64 -> Maybe ConnReqInvitation -> XGrpMemIntroCont -> m ()
     sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
@@ -4361,8 +4365,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- [incognito] send membership incognito profile, create direct connection as incognito
       dm <- directMessage $ XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
-      groupConnIds <- joinAgentConnectionAsync user enableNtfs subMode groupConnReq dm
-      directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user enableNtfs subMode dcr dm
+      groupConnIds <- joinAgentConnectionAsync user enableNtfs groupConnReq dm subMode
+      directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user enableNtfs dcr dm subMode
       let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
           mcvr = maybe chatInitialVRange fromChatVRange memberChatVRange
       withStore' $ \db -> createIntroToMemberContact db user m toMember mcvr groupConnIds directConnIds customUserProfileId subMode
@@ -4866,16 +4870,16 @@ cancelCIFile user file_ =
     fileAgentConnIds <- cancelFile' user (mkCIFileInfo file) True
     deleteAgentConnectionsAsync user fileAgentConnIds
 
-createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> CommandFunction -> Bool -> SubscriptionMode -> SConnectionMode c -> m (CommandId, ConnId)
-createAgentConnectionAsync user cmdFunction enableNtfs subMode cMode = do
+createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> CommandFunction -> Bool -> SConnectionMode c -> SubscriptionMode -> m (CommandId, ConnId)
+createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing cmdFunction
   connId <- withAgent $ \a -> createConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cMode subMode
   pure (cmdId, connId)
 
-joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> SubscriptionMode -> ConnectionRequestUri c -> ConnInfo -> m (CommandId, ConnId)
-joinAgentConnectionAsync user enableNtfs subMode cReqUri cInfo = do
+joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> m (CommandId, ConnId)
+joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFJoinConn
-  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri subMode cInfo
+  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri cInfo subMode
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: (MsgEncodingI e, ChatMonad m) => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> m ()
@@ -4885,11 +4889,11 @@ allowAgentConnectionAsync user conn@Connection {connId} confId msg = do
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId dm
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
-agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> SubscriptionMode -> InvitationId -> ChatMsgEvent e -> m (CommandId, ConnId)
-agentAcceptContactAsync user enableNtfs subMode invId msg = do
+agentAcceptContactAsync :: (MsgEncodingI e, ChatMonad m) => User -> Bool -> InvitationId -> ChatMsgEvent e -> SubscriptionMode -> m (CommandId, ConnId)
+agentAcceptContactAsync user enableNtfs invId msg subMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
   dm <- directMessage msg
-  connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs subMode invId dm
+  connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm subMode
   pure (cmdId, connId)
 
 deleteAgentConnectionAsync :: ChatMonad m => User -> ConnId -> m ()
