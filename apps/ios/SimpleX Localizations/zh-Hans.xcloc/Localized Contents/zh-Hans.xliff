@@ -1819,8 +1819,9 @@
         <target>加密数据库？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt local files" xml:space="preserve">
+      <trans-unit id="Encrypt local files" xml:space="preserve" approved="no">
         <source>Encrypt local files</source>
+        <target state="translated">加密本地文件</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
@@ -1953,8 +1954,9 @@
         <target>创建资料错误！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error decrypting file" xml:space="preserve">
+      <trans-unit id="Error decrypting file" xml:space="preserve" approved="no">
         <source>Error decrypting file</source>
+        <target state="translated">解密文件时出错</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
@@ -5483,7 +5485,7 @@ SimpleX 服务器无法看到您的资料。</target>
       </trans-unit>
       <trans-unit id="agreeing encryption for %@…" xml:space="preserve" approved="no">
         <source>agreeing encryption for %@…</source>
-        <target state="translated">同意为 %@… 加密</target>
+        <target state="translated">正在协商将加密应用于 %@…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="agreeing encryption…" xml:space="preserve" approved="no">
@@ -5553,7 +5555,7 @@ SimpleX 服务器无法看到您的资料。</target>
       </trans-unit>
       <trans-unit id="changing address for %@…" xml:space="preserve" approved="no">
         <source>changing address for %@…</source>
-        <target state="translated">更改 %@… 的地址</target>
+        <target state="translated">正在将变更的地址应用于 %@…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changing address…" xml:space="preserve" approved="no">
