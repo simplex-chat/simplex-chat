@@ -25,20 +25,25 @@ public func writeCryptoFile(path: String, data: Data) throws -> CryptoFileArgs {
     }
 }
 
-enum ReadFileResult: Decodable {
-    case result(fileSize: Int)
-    case error(readError: String)
-}
-
 public func readCryptoFile(path: String, cryptoArgs: CryptoFileArgs) throws -> Data {
     var cPath = path.cString(using: .utf8)!
     var cKey = cryptoArgs.fileKey.cString(using: .utf8)!
     var cNonce = cryptoArgs.fileNonce.cString(using: .utf8)!
-    let r = chat_read_file(&cPath, &cKey, &cNonce)!
-    let d = String.init(cString: r).data(using: .utf8)!
-    switch try jsonDecoder.decode(ReadFileResult.self, from: d) {
-    case let .error(err): throw RuntimeError(err)
-    case let .result(size): return Data(bytes: r.advanced(by: d.count + 1), count: size)
+    let ptr = chat_read_file(&cPath, &cKey, &cNonce)!
+    let status = UInt8(ptr.pointee)
+    switch status {
+    case 0: // ok
+        let dLen = Data(bytes: ptr.advanced(by: 1), count: 4)
+        let len = dLen.withUnsafeBytes { $0.load(as: UInt32.self) }
+        let d = Data(bytes: ptr.advanced(by: 5), count: Int(len))
+        free(ptr)
+        return d
+    case 1: // error
+        let err = String.init(cString: ptr)
+        free(ptr)
+        throw RuntimeError(err)
+    default:
+        throw RuntimeError("unexpected chat_read_file status: \(status)")
     }
 }
 
