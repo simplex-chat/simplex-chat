@@ -35,6 +35,7 @@ fun readCryptoFile(path: String, cryptoArgs: CryptoFileArgs): ByteArray {
   val res: ByteArray = chatReadFile(path, cryptoArgs.fileKey, cryptoArgs.fileNonce)
   // If the first 10 bytes aren't zero, then the whole array is the data to be returned
   return if (
+    res.size >= 10 &&
     res[0].toInt() == 0 &&
     res[1].toInt() == 0 &&
     res[2].toInt() == 0 &&
