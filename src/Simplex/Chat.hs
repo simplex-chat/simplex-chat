@@ -31,7 +31,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace, toLower)
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, isRight, rights)
+import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -468,9 +468,7 @@ processChatCommand = \case
     restoreCalls
     withAgent foregroundAgent
     users <- withStoreCtx' (Just "APIActivateChat, getUsers") getUsers
-    chatReadVar subscriptionMode >>= \case
-      SMSubscribe -> void . forkIO $ subscribeUsers True users -- activated iOS app
-      SMOnlyCreate -> pure () -- APIActivatedChat called from iOS NSE (never happens)
+    void . forkIO $ subscribeUsers True users
     void . forkIO $ startFilesToReceive users
     setAllExpireCIFlags True
     ok_

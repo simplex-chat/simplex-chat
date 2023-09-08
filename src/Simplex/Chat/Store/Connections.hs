@@ -146,4 +146,4 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ _ = Left SEUserContactLinkNotFound
 
 unsetConnectionNeedsSub :: DB.Connection -> [ConnId] -> IO ()
-unsetConnectionNeedsSub db = mapM_ $ DB.execute db "UPDATE connections SET needs_sub = 0 WHERE agent_conn_id = ?" . Only . AgentConnId
+unsetConnectionNeedsSub db = DB.executeMany db "UPDATE connections SET needs_sub = 0 WHERE agent_conn_id = ?" . map (Only . AgentConnId)
