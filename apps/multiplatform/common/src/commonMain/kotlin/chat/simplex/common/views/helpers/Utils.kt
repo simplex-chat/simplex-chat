@@ -168,13 +168,13 @@ fun saveFileFromUri(uri: URI, encrypted: Boolean): CryptoFile? {
       null
     }
   } catch (e: Exception) {
-    Log.e(TAG, "Util.kt saveFileFromUri error: ${e.message}")
+    Log.e(TAG, "Util.kt saveFileFromUri error: ${e.stackTraceToString()}")
     null
   }
 }
 
 fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
-  val tmpFile = File.createTempFile("tmpFile", ".tmp", tmpDir)
+  val tmpFile = File(tmpDir, UUID.randomUUID().toString())
   tmpFile.deleteOnExit()
   ChatModel.filesToDelete.add(tmpFile)
   try {
