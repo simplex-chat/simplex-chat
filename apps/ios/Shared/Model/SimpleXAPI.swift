@@ -315,11 +315,13 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -
     throw r
 }
 
-func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
+func apiSendMessage(sendRef: SendRef, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
     let chatModel = ChatModel.shared
-    let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
+    let cmd: ChatCommand = .apiSendMessage(sendRef: sendRef, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
     let r: ChatResponse
-    if type == .direct {
+    switch sendRef {
+    // TODO group-direct: re-use direct logic for directMember
+    case .direct:
         var cItem: ChatItem? = nil
         let endTask = beginBGTask({
             if let cItem = cItem {
@@ -341,7 +343,7 @@ func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: 
         }
         endTask()
         return nil
-    } else {
+    default:
         r = await chatSendCmd(cmd, bgDelay: msgDelay)
         if case let .newChatItem(_, aChatItem) = r {
             return aChatItem.chatItem

@@ -747,25 +747,37 @@ struct ComposeView: View {
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
-            if let chatItem = await apiSendMessage(
-                type: chat.chatInfo.chatType,
-                id: chat.chatInfo.apiId,
-                file: file,
-                quotedItemId: quoted,
-                msg: mc,
-                live: live,
-                ttl: ttl
-            ) {
-                await MainActor.run {
-                    chatModel.removeLiveDummy(animated: false)
-                    chatModel.addChatItem(chat.chatInfo, chatItem)
+            // TODO group-direct: directMember in compose state
+            var sendRef: SendRef?
+            let chatId = chat.chatInfo.apiId
+            switch chat.chatInfo.chatType {
+            case .direct: sendRef = .direct(contactId: chatId)
+            case .group: sendRef = .group(groupId: chatId, directMemberId: nil)
+            default: sendRef = nil
+            }
+            if let sendRef = sendRef {
+                if let chatItem = await apiSendMessage(
+                    sendRef: sendRef,
+                    file: file,
+                    quotedItemId: quoted,
+                    msg: mc,
+                    live: live,
+                    ttl: ttl
+                ) {
+                    await MainActor.run {
+                        chatModel.removeLiveDummy(animated: false)
+                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    }
+                    return chatItem
                 }
-                return chatItem
+                if let file = file {
+                    removeFile(file.filePath)
+                }
+                return nil
+            } else {
+                logger.error("ComposeView send: sendRef is nil")
+                return nil
             }
-            if let file = file {
-                removeFile(file.filePath)
-            }
-            return nil
         }
 
         func checkLinkPreview() -> MsgContent {

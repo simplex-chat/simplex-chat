@@ -41,7 +41,7 @@ struct CIRcvDecryptionError: View {
             .onAppear {
                 // for direct chat ConnectionStats are populated on opening chat, see ChatView onAppear
                 if case let .group(groupInfo) = chat.chatInfo,
-                   case let .groupRcv(groupMember) = chatItem.chatDir {
+                   case let .groupRcv(groupMember, _) = chatItem.chatDir {
                     do {
                         let (member, stats) = try apiGroupMemberInfo(groupInfo.apiId, groupMember.groupMemberId)
                         if let s = stats {
@@ -78,7 +78,7 @@ struct CIRcvDecryptionError: View {
                 basicDecryptionErrorItem()
             }
         } else if case let .group(groupInfo) = chat.chatInfo,
-                  case let .groupRcv(groupMember) = chatItem.chatDir,
+                  case let .groupRcv(groupMember, _) = chatItem.chatDir,
                   let modelMember = ChatModel.shared.groupMembers.first(where: { $0.id == groupMember.id }),
                   let memberStats = modelMember.activeConn?.connectionStats {
             if memberStats.ratchetSyncAllowed {

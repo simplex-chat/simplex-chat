@@ -39,7 +39,7 @@ public enum ChatCommand {
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
-    case apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
+    case apiSendMessage(sendRef: SendRef, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
@@ -156,10 +156,10 @@ public enum ChatCommand {
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
             case let .apiGetChatItemInfo(type, id, itemId): return "/_get item info \(ref(type, id)) \(itemId)"
-            case let .apiSendMessage(type, id, file, quotedItemId, mc, live, ttl):
+            case let .apiSendMessage(sendRef, file, quotedItemId, mc, live, ttl):
                 let msg = encodeJSON(ComposedMessage(fileSource: file, quotedItemId: quotedItemId, msgContent: mc))
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-                return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msg)"
+                return "/_send \(sendRefStr(sendRef)) live=\(onOff(live)) ttl=\(ttlStr) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
@@ -363,6 +363,14 @@ public enum ChatCommand {
 
     func ref(_ type: ChatType, _ id: Int64) -> String {
         "\(type.rawValue)\(id)"
+    }
+
+    func sendRefStr(_ sendRef: SendRef) -> String {
+        switch sendRef {
+        case let .direct(contactId): return "@\(contactId)"
+        case let .group(groupId, .none): return "#\(groupId)"
+        case let .group(groupId, .some(directMemberId)): return "#\(groupId) @\(directMemberId)"
+        }
     }
 
     func protoServersStr(_ servers: [ServerCfg]) -> String {
@@ -823,6 +831,11 @@ public enum ChatResponse: Decodable, Error {
         }
         return s
     }
+}
+
+public enum SendRef {
+    case direct(contactId: Int64)
+    case group(groupId: Int64, directMemberId: Int64?)
 }
 
 public func chatError(_ chatResponse: ChatResponse) -> ChatErrorType? {
@@ -1454,6 +1467,7 @@ public enum ChatErrorType: Decodable {
     case agentCommandError(message: String)
     case invalidFileDescription(message: String)
     case connectionIncognitoChangeProhibited
+    case peerChatVRangeIncompatible
     case internalError(message: String)
     case exception(message: String)
 }
@@ -1468,6 +1482,7 @@ public enum StoreError: Decodable {
     case userNotFoundByContactRequestId(contactRequestId: Int64)
     case contactNotFound(contactId: Int64)
     case contactNotFoundByName(contactName: ContactName)
+    case contactNotFoundByMemberId(groupMemberId: Int64)
     case contactNotReady(contactName: ContactName)
     case duplicateContactLink
     case userContactLinkNotFound
@@ -1495,6 +1510,7 @@ public enum StoreError: Decodable {
     case rcvFileNotFoundXFTP(agentRcvFileId: String)
     case connectionNotFound(agentConnId: String)
     case connectionNotFoundById(connId: Int64)
+    case connectionNotFoundByMemberId(groupMemberId: Int64)
     case pendingConnectionNotFound(connId: Int64)
     case introNotFound
     case uniqueID

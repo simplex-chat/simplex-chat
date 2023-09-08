@@ -33,7 +33,7 @@ struct DeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             DeletedItemView(chatItem: ChatItem.getDeletedContentSample())
-            DeletedItemView(chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData)))
+            DeletedItemView(chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData, messageScope: .msGroup)))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

@@ -318,24 +318,33 @@ fun ComposeView(
   }
 
   suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
-    val aChatItem = chatModel.controller.apiSendMessage(
-      type = cInfo.chatType,
-      id = cInfo.apiId,
-      file = file,
-      quotedItemId = quoted,
-      mc = mc,
-      live = live,
-      ttl = ttl
-    )
-    if (aChatItem != null) {
-      chatModel.addChatItem(cInfo, aChatItem.chatItem)
-      return aChatItem.chatItem
+    // TODO group-direct: directMember in compose state
+    val chatId = chat.chatInfo.apiId
+    val sendRef = when (chat.chatInfo.chatType) {
+      ChatType.Direct -> SendRef.Direct(contactId = chatId)
+      ChatType.Group -> SendRef.Group(groupId = chatId, directMemberId = null)
+      else -> null
     }
-    if (file != null) removeFile(file.filePath)
-    return null
+    if (sendRef != null) {
+      val aChatItem = chatModel.controller.apiSendMessage(
+        sendRef = sendRef,
+        file = file,
+        quotedItemId = quoted,
+        mc = mc,
+        live = live,
+        ttl = ttl
+      )
+      if (aChatItem != null) {
+        chatModel.addChatItem(cInfo, aChatItem.chatItem)
+        return aChatItem.chatItem
+      }
+      if (file != null) removeFile(file.filePath)
+      return null
+    } else {
+      Log.e(TAG, "ComposeView send: sendRef is null")
+      return null
+    }
   }
-
-
 
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): ChatItem? {
     val cInfo = chat.chatInfo

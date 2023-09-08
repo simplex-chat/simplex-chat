@@ -428,7 +428,8 @@ struct ChatView: View {
     }
     
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
-        if case let .groupRcv(member) = ci.chatDir,
+        // TODO group-direct: display message as sent/received privately
+        if case let .groupRcv(member, _) = ci.chatDir,
            case let .group(groupInfo) = chat.chatInfo {
             let (prevItem, nextItem) = chatModel.getChatItemNeighbors(ci)
             if ci.memberConnected != nil && nextItem?.memberConnected != nil {
@@ -874,10 +875,11 @@ struct ChatView: View {
         }
     }
 
+    // TODO group-direct: show image if scope changes from group to private or vice versa
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
         switch (prevItem?.chatDir) {
         case .groupSnd: return true
-        case let .groupRcv(prevMember): return prevMember.groupMemberId != member.groupMemberId
+        case let .groupRcv(prevMember, _): return prevMember.groupMemberId != member.groupMemberId
         default: return false
         }
     }

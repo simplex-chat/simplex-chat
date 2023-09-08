@@ -1286,20 +1286,20 @@ fun PreviewGroupChatLayout() {
   SimpleXTheme {
     val chatItems = listOf(
       ChatItem.getSampleData(
-        1, CIDirection.GroupSnd(), Clock.System.now(), "hello"
+        1, CIDirection.GroupSnd(directMember = null), Clock.System.now(), "hello"
       ),
       ChatItem.getSampleData(
-        2, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+        2, CIDirection.GroupRcv(GroupMember.sampleData, MessageScope.MSGroup), Clock.System.now(), "hello"
       ),
       ChatItem.getDeletedContentSampleData(3),
       ChatItem.getSampleData(
-        4, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+        4, CIDirection.GroupRcv(GroupMember.sampleData, MessageScope.MSGroup), Clock.System.now(), "hello"
       ),
       ChatItem.getSampleData(
-        5, CIDirection.GroupSnd(), Clock.System.now(), "hello"
+        5, CIDirection.GroupSnd(directMember = null), Clock.System.now(), "hello"
       ),
       ChatItem.getSampleData(
-        6, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
+        6, CIDirection.GroupRcv(GroupMember.sampleData, MessageScope.MSGroup), Clock.System.now(), "hello"
       )
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }

@@ -1968,7 +1968,7 @@ public struct AChatItem: Decodable {
     public var chatItem: ChatItem
 
     public var chatId: String {
-        if case let .groupRcv(groupMember) = chatItem.chatDir {
+        if case let .groupRcv(groupMember, _) = chatItem.chatDir {
             return groupMember.id
         }
         return chatInfo.id
@@ -2041,7 +2041,7 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var memberConnected: GroupMember? {
         switch chatDir {
-        case .groupRcv(let groupMember):
+        case let .groupRcv(groupMember, _):
             switch content {
             case .rcvGroupEvent(rcvGroupEvent: .memberConnected): return groupMember
             default: return nil
@@ -2125,7 +2125,7 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var memberDisplayName: String? {
         get {
-            if case let .groupRcv(groupMember) = chatDir {
+            if case let .groupRcv(groupMember, _) = chatDir {
                 return groupMember.displayName
             } else {
                 return nil
@@ -2133,9 +2133,10 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    // TODO group-direct: prohibit moderation if directMember is present
     public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
         switch (chatInfo, chatDir) {
-        case let (.group(groupInfo), .groupRcv(groupMember)):
+        case let (.group(groupInfo), .groupRcv(groupMember, _)):
             let m = groupInfo.membership
             return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
                     ? (groupInfo, groupMember)
@@ -2246,9 +2247,10 @@ public struct ChatItem: Identifiable, Decodable {
         )
     }
 
+    // TODO group-direct: possibly this has to take sendRef as parameter instead (for directMember)
     public static func liveDummy(_ chatType: ChatType) -> ChatItem {
         var item = ChatItem(
-            chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd,
+            chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd(directMember: nil),
             meta: CIMeta(
                 itemId: -2,
                 itemTs: .now,
@@ -2280,11 +2282,34 @@ public struct ChatItem: Identifiable, Decodable {
     }
 }
 
+public enum MessageScope: String, Decodable {
+    case msGroup = "group"
+    case msPrivate = "private"
+}
+
 public enum CIDirection: Decodable {
     case directSnd
     case directRcv
-    case groupSnd
-    case groupRcv(groupMember: GroupMember)
+    case groupSnd(directMember: GroupMember?)
+    case groupRcv(groupMember: GroupMember, messageScope: MessageScope)
+
+    public var sent: Bool {
+        get {
+            switch self {
+            case .directSnd: return true
+            case .directRcv: return false
+            case .groupSnd: return true
+            case .groupRcv: return false
+            }
+        }
+    }
+}
+
+public enum CIQDirection: Decodable {
+    case directSnd
+    case directRcv
+    case groupSnd(messageScope: MessageScope)
+    case groupRcv(groupMember: GroupMember, messageScope: MessageScope)
 
     public var sent: Bool {
         get {
@@ -2592,7 +2617,7 @@ public enum MsgDecryptError: String, Decodable {
 }
 
 public struct CIQuote: Decodable, ItemContent {
-    public var chatDir: CIDirection?
+    public var chatDir: CIQDirection?
     public var itemId: Int64?
     var sharedMsgId: String? = nil
     public var sentAt: Date
@@ -2606,17 +2631,18 @@ public struct CIQuote: Decodable, ItemContent {
         }
     }
 
+    // TODO group-direct: "<sender> privately" possibly here?
     public func getSender(_ membership: GroupMember?) -> String? {
         switch (chatDir) {
         case .directSnd: return "you"
         case .directRcv: return nil
         case .groupSnd: return membership?.displayName ?? "you"
-        case let .groupRcv(member): return member.displayName
+        case let .groupRcv(member, _): return member.displayName
         case nil: return nil
         }
     }
 
-    public static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?, image: String? = nil) -> CIQuote {
+    public static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIQDirection?, image: String? = nil) -> CIQuote {
         let mc: MsgContent
         if let image = image {
             mc = .image(text: text, image: image)

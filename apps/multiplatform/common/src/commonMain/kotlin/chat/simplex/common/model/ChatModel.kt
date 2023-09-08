@@ -1588,8 +1588,9 @@ data class ChatItem (
         file = null
       )
 
+    // TODO group-direct: possibly this has to take sendRef as parameter instead (for directMember)
     fun liveDummy(direct: Boolean): ChatItem = ChatItem(
-        chatDir = if (direct) CIDirection.DirectSnd() else CIDirection.GroupSnd(),
+        chatDir = if (direct) CIDirection.DirectSnd() else CIDirection.GroupSnd(directMember = null),
         meta = CIMeta(
           itemId = TEMP_LIVE_CHAT_ITEM_ID,
           itemTs = Clock.System.now(),
@@ -1622,11 +1623,32 @@ data class ChatItem (
 }
 
 @Serializable
+enum class MessageScope(val messageScope: String) {
+  @SerialName("group") MSGroup("group"),
+  @SerialName("private") MSPrivate("private");
+}
+
+@Serializable
 sealed class CIDirection {
   @Serializable @SerialName("directSnd") class DirectSnd: CIDirection()
   @Serializable @SerialName("directRcv") class DirectRcv: CIDirection()
-  @Serializable @SerialName("groupSnd") class GroupSnd: CIDirection()
-  @Serializable @SerialName("groupRcv") class GroupRcv(val groupMember: GroupMember): CIDirection()
+  @Serializable @SerialName("groupSnd") class GroupSnd(val directMember: GroupMember? = null): CIDirection()
+  @Serializable @SerialName("groupRcv") class GroupRcv(val groupMember: GroupMember, val messageScope: MessageScope): CIDirection()
+
+  val sent: Boolean get() = when(this) {
+    is DirectSnd -> true
+    is DirectRcv -> false
+    is GroupSnd -> true
+    is GroupRcv -> false
+  }
+}
+
+@Serializable
+sealed class CIQDirection {
+  @Serializable @SerialName("directSnd") class DirectSnd: CIQDirection()
+  @Serializable @SerialName("directRcv") class DirectRcv: CIQDirection()
+  @Serializable @SerialName("groupSnd") class GroupSnd(val messageScope: MessageScope): CIQDirection()
+  @Serializable @SerialName("groupRcv") class GroupRcv(val groupMember: GroupMember, val messageScope: MessageScope): CIQDirection()
 
   val sent: Boolean get() = when(this) {
     is DirectSnd -> true
@@ -1921,7 +1943,7 @@ enum class MsgDecryptError {
 
 @Serializable
 class CIQuote (
-  val chatDir: CIDirection? = null,
+  val chatDir: CIQDirection? = null,
   val itemId: Long? = null,
   val sharedMsgId: String? = null,
   val sentAt: Instant,
@@ -1937,15 +1959,15 @@ class CIQuote (
 
 
   fun sender(membership: GroupMember?): String? = when (chatDir) {
-    is CIDirection.DirectSnd -> generalGetString(MR.strings.sender_you_pronoun)
-    is CIDirection.DirectRcv -> null
-    is CIDirection.GroupSnd -> membership?.displayName ?: generalGetString(MR.strings.sender_you_pronoun)
-    is CIDirection.GroupRcv -> chatDir.groupMember.displayName
+    is CIQDirection.DirectSnd -> generalGetString(MR.strings.sender_you_pronoun)
+    is CIQDirection.DirectRcv -> null
+    is CIQDirection.GroupSnd -> membership?.displayName ?: generalGetString(MR.strings.sender_you_pronoun)
+    is CIQDirection.GroupRcv -> chatDir.groupMember.displayName
     null -> null
   }
 
   companion object {
-    fun getSample(itemId: Long?, sentAt: Instant, text: String, chatDir: CIDirection?): CIQuote =
+    fun getSample(itemId: Long?, sentAt: Instant, text: String, chatDir: CIQDirection?): CIQuote =
       CIQuote(chatDir = chatDir, itemId = itemId, sentAt = sentAt, content = MsgContent.MCText(text))
   }
 }
