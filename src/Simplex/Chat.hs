@@ -5522,10 +5522,7 @@ chatCommandP =
     sendNameP =
       (A.char '@' $> SNDirect <*> displayName)
         <|> (A.char '#' $> SNGroup <*> displayName <*> optional (" @" *> displayName))
-    sendNameP' =
-      (A.char '@' $> SNDirect <*> displayName)
-        <|> (A.char '#' $> SNGroup <*> displayName <*> optional (" @" *> displayName))
-        <|> (SNDirect <$> displayName)
+    sendNameP' = sendNameP <|> (SNDirect <$> displayName)
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
         <|> (A.char '#' $> SRGroup <*> A.decimal <*> optional (" @" *> A.decimal))
