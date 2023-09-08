@@ -94,7 +94,7 @@
       </trans-unit>
       <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
         <source>%1$@ at %2$@:</source>
-        <target state="translated">%1$@ 在 %2$@:</target>
+        <target state="translated">@ %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
