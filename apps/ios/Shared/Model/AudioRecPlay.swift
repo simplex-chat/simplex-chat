@@ -103,9 +103,15 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         self.onFinishPlayback = onFinishPlayback
     }
 
-    func start(fileName: String, at: TimeInterval?) {
-        let url = getAppFilePath(fileName)
-        audioPlayer = try? AVAudioPlayer(contentsOf: url)
+    func start(fileSource: CryptoFile, at: TimeInterval?) {
+        let url = getAppFilePath(fileSource.filePath)
+        if let cfArgs = fileSource.cryptoArgs {
+            if let data = try? readCryptoFile(path: url.path, cryptoArgs: cfArgs) {
+                audioPlayer = try? AVAudioPlayer(data: data)
+            }
+        } else {
+            audioPlayer = try? AVAudioPlayer(contentsOf: url)
+        }
         audioPlayer?.delegate = self
         audioPlayer?.prepareToPlay()
         if let at = at {

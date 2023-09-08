@@ -31,7 +31,7 @@ fun CIVideoView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long, Boolean) -> Unit
 ) {
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID),
@@ -54,7 +54,7 @@ fun CIVideoView(
           if (file != null) {
             when (file.fileStatus) {
               CIFileStatus.RcvInvitation ->
-                receiveFileIfValidSize(file, receiveFile)
+                receiveFileIfValidSize(file, encrypted = false, receiveFile)
               CIFileStatus.RcvAccepted ->
                 when (file.fileProtocol) {
                   FileProtocol.XFTP ->
@@ -80,7 +80,7 @@ fun CIVideoView(
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
         if (file?.fileStatus is CIFileStatus.RcvInvitation) {
-          PlayButton(error = false, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
+          PlayButton(error = false, { showMenu.value = true }) { receiveFileIfValidSize(file, encrypted = false, receiveFile) }
         }
       }
     }
@@ -301,9 +301,9 @@ private fun fileSizeValid(file: CIFile?): Boolean {
   return false
 }
 
-private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
+private fun receiveFileIfValidSize(file: CIFile, encrypted: Boolean, receiveFile: (Long, Boolean) -> Unit) {
   if (fileSizeValid(file)) {
-    receiveFile(file.fileId)
+    receiveFile(file.fileId, encrypted)
   } else {
     AlertManager.shared.showAlertMsg(
       generalGetString(MR.strings.large_file),

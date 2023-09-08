@@ -1041,9 +1041,9 @@ testXFTPFileTransferEncrypted =
       alice <## "completed uploading file 1 (test.pdf) for bob"
       bob <## "started receiving file 1 (test.pdf) from alice"
       bob <## "completed receiving file 1 (test.pdf) from alice"
-      (RFResult destLen, dest) <- chatReadFile "./tests/tmp/bob/test.pdf" (strEncode key) (strEncode nonce)
-      fromIntegral destLen `shouldBe` srcLen
-      dest `shouldBe` src
+      Right dest <- chatReadFile "./tests/tmp/bob/test.pdf" (strEncode key) (strEncode nonce)
+      LB.length dest `shouldBe` fromIntegral srcLen
+      LB.toStrict dest `shouldBe` src
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
