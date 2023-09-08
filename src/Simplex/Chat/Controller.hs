@@ -966,7 +966,7 @@ chatReadVar f = asks f >>= readTVarIO
 {-# INLINE chatReadVar #-}
 
 chatWriteVar :: ChatMonad' m => (ChatController -> TVar a) -> a -> m ()
-chatWriteVar f value = asks f >>= \var -> atomically (writeTVar var value)
+chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
 {-# INLINE chatWriteVar #-}
 
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)

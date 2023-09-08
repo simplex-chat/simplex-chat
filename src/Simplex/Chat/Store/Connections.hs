@@ -6,7 +6,7 @@
 
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
-    dropAgentConnectionNeedsSub,
+    unsetConnectionNeedsSub,
   )
 where
 
@@ -24,6 +24,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow')
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 
@@ -144,5 +145,5 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
 
-dropAgentConnectionNeedsSub :: DB.Connection -> [AgentConnId] -> IO ()
-dropAgentConnectionNeedsSub db = DB.executeMany db "UPDATE connections SET needs_sub = 0 WHERE agent_conn_id = ?" . map Only
+unsetConnectionNeedsSub :: DB.Connection -> [ConnId] -> IO ()
+unsetConnectionNeedsSub db = mapM_ $ DB.execute db "UPDATE connections SET needs_sub = 0 WHERE agent_conn_id = ?" . Only . AgentConnId

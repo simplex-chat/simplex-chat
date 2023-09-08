@@ -536,6 +536,7 @@ groupMemberQuery = groupMemberQuery' False
 groupMemberQuery' :: Bool -> Query
 groupMemberQuery' onlyNeeded = q <> filterNeeded <> ")"
   where
+    -- this query is terminated above
     q =
       [sql|
         SELECT
@@ -549,7 +550,6 @@ groupMemberQuery' onlyNeeded = q <> filterNeeded <> ")"
           SELECT max(cc.connection_id)
           FROM connections cc
           WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
-          -- XXX: unterminated subquery
       |]
     filterNeeded = if onlyNeeded then " AND cc.needs_sub = 1" else ""
 

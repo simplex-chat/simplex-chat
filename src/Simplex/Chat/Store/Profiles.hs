@@ -324,14 +324,6 @@ getUserAddressConnections db User {userId} = do
           |]
           (userId, userId)
 
-getUserContactLinks :: Bool -> DB.Connection -> User -> IO [(Connection, UserContact)]
-getUserContactLinks onlyNeeded db User {userId} =
-  map toUserContactConnection <$> DB.query db (userContactLinksQuery <> filterNeeded) (userId, userId)
-  where
-    toUserContactConnection :: (ConnectionRow :. (Int64, ConnReqContact, Maybe GroupId)) -> (Connection, UserContact)
-    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection connRow, UserContact {userContactLinkId, connReqContact, groupId})
-    filterNeeded = if onlyNeeded then " AND c.needs_sub = 1" else ""
-
 userContactLinksQuery :: Query
 userContactLinksQuery =
   [sql|
@@ -342,6 +334,14 @@ userContactLinksQuery =
     JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
     WHERE c.user_id = ? AND uc.user_id = ?
   |]
+
+getUserContactLinks :: Bool -> DB.Connection -> User -> IO [(Connection, UserContact)]
+getUserContactLinks onlyNeeded db User {userId} =
+  map toUserContactConnection <$> DB.query db (userContactLinksQuery <> filterNeeded) (userId, userId)
+  where
+    toUserContactConnection :: (ConnectionRow :. (Int64, ConnReqContact, Maybe GroupId)) -> (Connection, UserContact)
+    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection connRow, UserContact {userContactLinkId, connReqContact, groupId})
+    filterNeeded = if onlyNeeded then " AND c.needs_sub = 1" else ""
 
 deleteUserAddress :: DB.Connection -> User -> IO ()
 deleteUserAddress db user@User {userId} = do

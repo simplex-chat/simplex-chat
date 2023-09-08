@@ -843,11 +843,6 @@ getSndFileTransfers' onlyNeeded db userId fileId =
       (q <> filterNeeded)
       (userId, fileId)
   where
-    sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath) :. (Maybe Int64, Maybe InlineFileMode, Int64, AgentConnId, Maybe Int64, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer ((fileStatus, fileName, fileSize, chunkSize, filePath) :. (fileDescrId, fileInline, connId, agentConnId, groupMemberId, contactName_, memberName_)) =
-      case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, recipientDisplayName, connId, agentConnId, groupMemberId}
-        Nothing -> Left $ SESndFileInvalid fileId
     q =
       [sql|
         SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_descr_id, s.file_inline, s.connection_id, c.agent_conn_id, s.group_member_id,
@@ -859,6 +854,11 @@ getSndFileTransfers' onlyNeeded db userId fileId =
         LEFT JOIN group_members m USING (group_member_id)
         WHERE f.user_id = ? AND f.file_id = ?
       |]
+    sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath) :. (Maybe Int64, Maybe InlineFileMode, Int64, AgentConnId, Maybe Int64, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer ((fileStatus, fileName, fileSize, chunkSize, filePath) :. (fileDescrId, fileInline, connId, agentConnId, groupMemberId, contactName_, memberName_)) =
+      case contactName_ <|> memberName_ of
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, recipientDisplayName, connId, agentConnId, groupMemberId}
+        Nothing -> Left $ SESndFileInvalid fileId
     filterNeeded = if onlyNeeded then " AND c.needs_sub = 1" else ""
 
 getFileTransferMeta :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransferMeta

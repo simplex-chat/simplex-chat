@@ -2317,7 +2317,7 @@ receiveViaCompleteFD :: ChatMonad m => User -> FileTransferId -> RcvFileDescr ->
 receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete} cfArgs =
   when fileDescrComplete $ do
     rd <- parseFileDescription fileDescrText
-    aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd Nothing
+    aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs
     startReceivingFile user fileId
     withStoreCtx' (Just "receiveViaCompleteFD, updateRcvFileAgentId") $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
 
@@ -2444,9 +2444,9 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   (rftConns, rfts) <- getRcvFileTransferConns
   (pcConns, pcs) <- getPendingContactConns
   -- subscribe using batched commands
-  rs <- withAgent $ \a -> agentBatchSubscribe a (concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns])
-  when onlyNeeded $
-    withStore' $ \db -> dropAgentConnectionNeedsSub db . map AgentConnId . M.keys $ M.filter isRight rs
+  let conns = concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
+  rs <- withAgent $ \a -> agentBatchSubscribe a conns
+  when onlyNeeded $ withStore' (`unsetConnectionNeedsSub` conns)
   -- send connection events to view
   contactSubsToView rs cts ce
   contactLinkSubsToView rs ucs
@@ -2462,9 +2462,8 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
       pure (connIds, M.fromList $ zip connIds cts)
     getUserContactLinkConns :: m ([ConnId], Map ConnId UserContact)
     getUserContactLinkConns = do
-      ucls <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContactLinks") $ getUserContactLinks onlyNeeded
-      let (cs, ucs) = unzip ucls
-          connIds = map aConnId cs
+      (cs, ucs) <- unzip <$> withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContactLinks") (getUserContactLinks onlyNeeded)
+      let connIds = map aConnId cs
       pure (connIds, M.fromList $ zip connIds ucs)
     getGroupMemberConns :: m ([Group], [ConnId], Map ConnId GroupMember)
     getGroupMemberConns = do
@@ -2985,7 +2984,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               whenUserNtfs user $ do
                 setActive $ ActiveC c
                 showToast (c <> "> ") "connected"
-              subMode <- chatReadVar subscriptionMode
               forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
@@ -2995,6 +2993,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
                       toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
                     forM_ groupId_ $ \groupId -> do
+                      subMode <- chatReadVar subscriptionMode
                       gVar <- asks idsDrg
                       groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
                       withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds peerChatVRange subMode
