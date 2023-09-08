@@ -191,9 +191,9 @@ fun ChatItemView(
             }
             val clipboard = LocalClipboardManager.current
             ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
-              val filePath = getLoadedFilePath(cItem.file)
+              val fileSource = getLoadedFileSource(cItem.file)
               when {
-                filePath != null && cItem.file?.fileSource != null -> shareFile(cItem.text, cItem.file.fileSource)
+                fileSource != null -> shareFile(cItem.text, fileSource)
                 else -> clipboard.shareText(cItem.content.text)
               }
               showMenu.value = false

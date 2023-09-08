@@ -8,8 +8,9 @@ import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.UriHandler
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
-import chat.simplex.common.helpers.toUri
+import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
 import java.io.BufferedOutputStream
@@ -34,7 +35,8 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
     val tmpFile = File(tmpDir, fileSource.filePath)
     tmpFile.deleteOnExit()
     ChatModel.filesToDelete.add(tmpFile)
-    tmpFile.toURI()
+    decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
+    FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", File(tmpFile.absolutePath)).toURI()
   } else {
     getAppFileUri(fileSource.filePath)
   }
