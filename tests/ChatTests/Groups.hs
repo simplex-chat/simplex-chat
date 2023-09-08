@@ -83,13 +83,20 @@ chatGroupTests = do
       testNoDirect4 _1 _1 _0 False False False
       testNoDirect4 _1 _1 _1 False False False
   describe "group direct messages" $ do
-    it "should send direct messages" testGroupDirectMessages
-    it "should create direct messages chat items" testGroupDirectMessagesItems
-    it "should send direct quotes" testGroupDirectQuotes
-    it "should create direct quotes chat items" testGroupDirectQuotesItems
-    it "should send direct XFTP files" testGroupDirectFilesXFTP
-    it "should send direct SMP files" testGroupDirectFilesSMP
-    it "should cancel sent direct XFTP file" testGroupDirectCancelFileXFTP
+    it "should send group direct messages" testGroupDirectMessages
+    it "should create group direct messages chat items" testGroupDirectMessagesItems
+    it "should send group direct quotes" testGroupDirectQuotes
+    it "should create group direct quotes chat items" testGroupDirectQuotesItems
+    it "should send group direct XFTP files" testGroupDirectFilesXFTP
+    it "should send group direct SMP files" testGroupDirectFilesSMP
+    it "should cancel sent group direct XFTP file" testGroupDirectCancelFileXFTP
+    it "should send group direct quotes with files" testGroupDirectQuotesFiles
+    it "should update group direct message" testGroupDirectUpdate
+    it "should delete group direct message" testGroupDirectDelete
+    it "should send group direct live message" testGroupDirectLiveMessage
+    it "should send group direct message reactions" testGroupDirectReactions
+    it "should prohibit group direct messages based on preference" testGroupDirectProhibitPreference
+    it "should prohibit group direct messages if peer version doesn't support" testGroupDirectProhibitNotSupported
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -3043,3 +3050,178 @@ testGroupDirectCancelFileXFTP =
       cath <##. "chat db error: SEUserNotFoundByFileId"
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupDirectQuotesFiles :: HasCallStack => FilePath -> IO ()
+testGroupDirectQuotesFiles =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    withXFTPServer $ do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+
+      bob `send` "#team @alice hi alice"
+      bob <# "#team @alice (private) hi alice"
+      alice <# "#team bob (private)> hi alice"
+      threadDelay 1000000
+
+      msgItemId1 <- lastItemId alice
+      alice ##> ("/_send #1 @2 json {\"filePath\": \"./tests/fixtures/test.pdf\", \"quotedItemId\": " <> msgItemId1 <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}")
+      alice <# "#team @bob (private) > bob hi alice"
+      alice <## "      hey bob"
+      alice <# "/f #team @bob (private) ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "#team alice (private)> > bob hi alice"
+      bob <## "      hey bob"
+      bob <# "#team alice (private)> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for #team @bob (private)"
+
+      bob ##> "/fr 1 ./tests/tmp"
+      bob
+        <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+
+      cath <// 50000
+      cath ##> "/fr 1 ./tests/tmp"
+      cath <##. "chat db error: SEUserNotFoundByFileId"
+
+      alice
+        #$> ( "/_get chat #1 count=2",
+              chat''',
+              [ ((0, "bob", "hi alice"), Nothing, Nothing),
+                ((1, "bob", "hey bob"), Just (0, "private", "hi alice"), Just "./tests/fixtures/test.pdf")
+              ]
+            )
+      bob
+        #$> ( "/_get chat #1 count=2",
+              chat''',
+              [ ((1, "alice", "hi alice"), Nothing, Nothing),
+                ((0, "alice", "hey bob"), Just (1, "private", "hi alice"), Just "./tests/tmp/test.pdf")
+              ]
+            )
+      cath #$> ("/_get chat #1 count=1", chat''', [((0, "", "connected"), Nothing, Nothing)])
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupDirectUpdate :: HasCallStack => FilePath -> IO ()
+testGroupDirectUpdate =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+
+    alice `send` "#team @bob hi bob"
+    alice <# "#team @bob (private) hi bob"
+    bob <# "#team alice (private)> hi bob"
+
+    msgItemId1 <- lastItemId alice
+    alice ##> ("/_update item #1 " <> msgItemId1 <> " text hey 👋")
+    alice <# "#team @bob (private) [edited] hey 👋"
+    bob <# "#team alice (private)> [edited] hey 👋"
+    cath <// 50000
+
+    alice ##> "! #team (hey 👋) hello there"
+    alice <# "#team @bob (private) [edited] hello there"
+    bob <# "#team alice (private)> [edited] hello there"
+    cath <// 50000
+
+testGroupDirectDelete :: HasCallStack => FilePath -> IO ()
+testGroupDirectDelete =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+
+    alice `send` "#team @bob hi bob"
+    alice <# "#team @bob (private) hi bob"
+    bob <# "#team alice (private)> hi bob"
+
+    msgItemId1 <- lastItemId alice
+    alice #$> ("/_delete item #1 " <> msgItemId1 <> " broadcast", id, "message marked deleted")
+    bob <# "#team alice (private)> [marked deleted] hi bob"
+    cath <// 50000
+
+testGroupDirectLiveMessage :: HasCallStack => FilePath -> IO ()
+testGroupDirectLiveMessage =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+
+    alice `send` "/live #team @bob hello"
+    msgItemId1 <- lastItemId alice
+    bob <#. "#team alice (private)> [LIVE started]"
+    alice ##> ("/_update item #1 " <> msgItemId1 <> " text hello there")
+    alice <# "#team @bob (private) [LIVE] hello there"
+    bob <# "#team alice (private)> [LIVE ended] hello there"
+    cath <// 50000
+
+testGroupDirectReactions :: HasCallStack => FilePath -> IO ()
+testGroupDirectReactions =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+
+    alice `send` "#team @bob hi bob"
+    alice <# "#team @bob (private) hi bob"
+    bob <# "#team alice (private)> hi bob"
+
+    bob ##> "+1 #team hi"
+    bob <## "added 👍"
+    alice <# "#team bob (private)> > alice hi bob"
+    alice <## "    + 👍"
+    cath <// 50000
+
+    alice ##> "+^ #team hi"
+    alice <## "added 🚀"
+    bob <# "#team alice (private)> > alice hi bob"
+    bob <## "    + 🚀"
+    cath <// 50000
+
+testGroupDirectProhibitPreference :: HasCallStack => FilePath -> IO ()
+testGroupDirectProhibitPreference =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3' "team" alice bob cath GRMember
+
+    alice ##> "/set direct #team off"
+    alice <## "updated group preferences:"
+    alice <## "Direct messages: off"
+    directProhibited bob
+    directProhibited cath
+
+    bob ##> "#team @cath hi cath"
+    bob <## "bad chat command: direct messages not allowed"
+
+    cath ##> "#team @bob hi cath"
+    cath <## "bad chat command: direct messages not allowed"
+
+    alice ##> "/mr team bob admin"
+    alice <## "#team: you changed the role of bob from member to admin"
+    concurrentlyN_
+      [ bob <## "#team: alice changed your role from member to admin",
+        cath <## "#team: alice changed the role of bob from member to admin"
+      ]
+
+    -- admin can send & can send to admin
+
+    bob `send` "#team @cath hi cath, as admin"
+    bob <# "#team @cath (private) hi cath, as admin"
+    cath <# "#team bob (private)> hi cath, as admin"
+
+    cath `send` "#team @bob hi bob, to admin"
+    cath <# "#team @bob (private) hi bob, to admin"
+    bob <# "#team cath (private)> hi bob, to admin"
+  where
+    directProhibited :: HasCallStack => TestCC -> IO ()
+    directProhibited cc = do
+      cc <## "alice updated group #team:"
+      cc <## "updated group preferences:"
+      cc <## "Direct messages: off"
+
+testGroupDirectProhibitNotSupported :: HasCallStack => FilePath -> IO ()
+testGroupDirectProhibitNotSupported tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp testCfg {chatVRange = mkVersionRange 1 1} "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+
+        bob ##> "#team @cath hi cath"
+        bob <## "peer chat protocol version range incompatible"
