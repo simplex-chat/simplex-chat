@@ -6,6 +6,7 @@
 
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
+    dropAgentConnectionNeedsSub,
   )
 where
 
@@ -15,7 +16,7 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..))
-import Database.SQLite.Simple ((:.) (..))
+import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
@@ -142,3 +143,6 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ :: [(ConnReqContact, Maybe GroupId)] -> Either StoreError UserContact
         userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
+
+dropAgentConnectionNeedsSub :: DB.Connection -> [AgentConnId] -> IO ()
+dropAgentConnectionNeedsSub db = DB.executeMany db "UPDATE connections SET needs_sub = 0 WHERE agent_conn_id = ?" . map Only

@@ -31,7 +31,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace, toLower)
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, rights)
+import Data.Either (fromRight, isRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -2444,7 +2444,8 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   (pcConns, pcs) <- getPendingContactConns
   -- subscribe using batched commands
   rs <- withAgent $ \a -> agentBatchSubscribe a (concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns])
-  -- TODO: when onlyNeeded $ dropNeedsSub rs
+  when onlyNeeded $
+    withStore' $ \db -> dropAgentConnectionNeedsSub db . map AgentConnId . M.keys $ M.filter isRight rs
   -- send connection events to view
   contactSubsToView rs cts ce
   contactLinkSubsToView rs ucs
