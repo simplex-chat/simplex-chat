@@ -21,7 +21,7 @@
     <string name="v4_3_improved_server_configuration_desc">扫描二维码来添加服务器。</string>
     <string name="network_settings">高级网络设置</string>
     <string name="accept_connection_request__question">接受连接请求？</string>
-    <string name="accept_contact_incognito_button">接受隐身聊天</string>
+    <string name="accept_contact_incognito_button">接受匿名聊天</string>
     <string name="v4_2_group_links_desc">管理员可以创建链接以加入群组。</string>
     <string name="smp_servers_preset_add">添加预设服务器</string>
     <string name="connect_via_link">通过链接连接</string>
@@ -67,7 +67,7 @@
     <string name="connect_via_group_link">通过群组链接连接？</string>
     <string name="connect_via_link_or_qr">通过群组链接/二维码连接</string>
     <string name="always_use_relay">总是通过中继连接</string>
-    <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不可撤回地删除已发送消息。</string>
+    <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不可逆地删除已发送消息。</string>
     <string name="chat_preferences_contact_allows">联系人允许</string>
     <string name="allow_voice_messages_only_if">仅有您的联系人许可后才允许语音消息。</string>
     <string name="group_info_member_you">您: %1$s</string>
@@ -98,7 +98,7 @@
     <string name="app_version_title">应用程序版本</string>
     <string name="full_backup">应用程序数据备份</string>
     <string name="settings_section_title_icon">应用程序图标</string>
-    <string name="app_version_name">应用程序版本：v%s</string>
+    <string name="app_version_name">应用版本：v%s</string>
     <string name="notifications_mode_off_desc">应用程序仅在运行时可以接受通知，没有后台服务会被启动</string>
     <string name="auth_unavailable">身份验证不可用</string>
     <string name="auto_accept_images">自动接受图像</string>
@@ -122,8 +122,8 @@
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。后台服务每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
     <string name="bold_text">加粗</string>
-    <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以不可逆转地删除已发送的消息。</string>
-    <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送限时消息。</string>
+    <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以永久删除已发送的消息。</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送定时自毁消息。</string>
     <string name="both_you_and_your_contact_can_send_voice">您和您的联系人都可以发送语音消息。</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> 可以在设置里禁用它 </b> - 应用程序运行时仍会显示通知。]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> 使用更多电量 </b>！后台服务始终运行——一旦收到消息，就会显示通知。]]></string>
