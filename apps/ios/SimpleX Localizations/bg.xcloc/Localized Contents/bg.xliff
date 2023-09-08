@@ -5190,42 +5190,52 @@ You can cancel this connection and remove the contact (and try later with a new 
         <target state="translated">Вашите контакти могат да позволят пълното изтриване на съобщението.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
+      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve" approved="no">
         <source>Your contacts in SimpleX will see it.
 You can change it in Settings.</source>
+        <target state="translated">Вашите контакти в SimpleX ще го видят.
+Можете да го промените в Настройки.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contacts will remain connected." xml:space="preserve">
+      <trans-unit id="Your contacts will remain connected." xml:space="preserve" approved="no">
         <source>Your contacts will remain connected.</source>
+        <target state="translated">Вашите контакти ще останат свързани.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
+      <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve" approved="no">
         <source>Your current chat database will be DELETED and REPLACED with the imported one.</source>
+        <target state="translated">Вашата текуща чат база данни ще бъде ИЗТРИТА и ЗАМЕНЕНА с импортираната.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your current profile" xml:space="preserve">
+      <trans-unit id="Your current profile" xml:space="preserve" approved="no">
         <source>Your current profile</source>
+        <target state="translated">Вашият текущ профил</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your preferences" xml:space="preserve">
+      <trans-unit id="Your preferences" xml:space="preserve" approved="no">
         <source>Your preferences</source>
+        <target state="translated">Вашите настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your privacy" xml:space="preserve">
+      <trans-unit id="Your privacy" xml:space="preserve" approved="no">
         <source>Your privacy</source>
+        <target state="translated">Вашата поверителност</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
+      <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve" approved="no">
         <source>Your profile is stored on your device and shared only with your contacts.
 SimpleX servers cannot see your profile.</source>
+        <target state="translated">Вашият профил се съхранява на вашето устройство и се споделя само с вашите контакти.
+SimpleX сървърите не могат да видят вашия профил.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile will be sent to the contact that you received this link from" xml:space="preserve">
         <source>Your profile will be sent to the contact that you received this link from</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
+      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve" approved="no">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
+        <target state="translated">Вашият профил, контакти и доставени съобщения се съхраняват на вашето устройство.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve" approved="no">
@@ -5233,360 +5243,449 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">Вашият автоматично генериран профил</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your server" xml:space="preserve">
+      <trans-unit id="Your server" xml:space="preserve" approved="no">
         <source>Your server</source>
+        <target state="translated">Вашият сървър</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your server address" xml:space="preserve">
+      <trans-unit id="Your server address" xml:space="preserve" approved="no">
         <source>Your server address</source>
+        <target state="translated">Вашият адрес на сървъра</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your settings" xml:space="preserve">
+      <trans-unit id="Your settings" xml:space="preserve" approved="no">
         <source>Your settings</source>
+        <target state="translated">Вашите настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">
+      <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve" approved="no">
         <source>[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</source>
+        <target state="translated">[Допринеси](https://github.com/simplex-chat/simplex-chat#contribute)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
+      <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve" approved="no">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
+        <target state="translated">[Изпратете ни имейл](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
+      <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve" approved="no">
         <source>[Star on GitHub](https://github.com/simplex-chat/simplex-chat)</source>
+        <target state="translated">[Звезда в GitHub](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="_italic_" xml:space="preserve">
+      <trans-unit id="_italic_" xml:space="preserve" approved="no">
         <source>\_italic_</source>
+        <target state="translated">\_курсив_</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="`a + b`" xml:space="preserve">
+      <trans-unit id="`a + b`" xml:space="preserve" approved="no">
         <source>\`a + b`</source>
+        <target state="translated">\`a + b`</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="above, then choose:" xml:space="preserve">
+      <trans-unit id="above, then choose:" xml:space="preserve" approved="no">
         <source>above, then choose:</source>
+        <target state="translated">по-горе, след това избери:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="accepted call" xml:space="preserve">
+      <trans-unit id="accepted call" xml:space="preserve" approved="no">
         <source>accepted call</source>
+        <target state="translated">обаждането прието</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="admin" xml:space="preserve">
+      <trans-unit id="admin" xml:space="preserve" approved="no">
         <source>admin</source>
+        <target state="translated">админ</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="agreeing encryption for %@…" xml:space="preserve">
+      <trans-unit id="agreeing encryption for %@…" xml:space="preserve" approved="no">
         <source>agreeing encryption for %@…</source>
+        <target state="translated">съгласуване на криптиране за %@…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="agreeing encryption…" xml:space="preserve">
+      <trans-unit id="agreeing encryption…" xml:space="preserve" approved="no">
         <source>agreeing encryption…</source>
+        <target state="translated">съгласуване на криптиране…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="always" xml:space="preserve">
+      <trans-unit id="always" xml:space="preserve" approved="no">
         <source>always</source>
+        <target state="translated">винаги</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
+      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve" approved="no">
         <source>audio call (not e2e encrypted)</source>
+        <target state="translated">аудио разговор (не е e2e криптиран)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="bad message ID" xml:space="preserve">
+      <trans-unit id="bad message ID" xml:space="preserve" approved="no">
         <source>bad message ID</source>
+        <target state="translated">лошо ID на съобщението</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="bad message hash" xml:space="preserve">
+      <trans-unit id="bad message hash" xml:space="preserve" approved="no">
         <source>bad message hash</source>
+        <target state="translated">лош хеш на съобщението</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="bold" xml:space="preserve">
+      <trans-unit id="bold" xml:space="preserve" approved="no">
         <source>bold</source>
+        <target state="translated">удебелен</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="call error" xml:space="preserve">
+      <trans-unit id="call error" xml:space="preserve" approved="no">
         <source>call error</source>
+        <target state="translated">грешка при повикване</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="call in progress" xml:space="preserve">
+      <trans-unit id="call in progress" xml:space="preserve" approved="no">
         <source>call in progress</source>
+        <target state="translated">в момента тече разговор</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="calling…" xml:space="preserve">
+      <trans-unit id="calling…" xml:space="preserve" approved="no">
         <source>calling…</source>
+        <target state="translated">повикване…</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="cancelled %@" xml:space="preserve">
+      <trans-unit id="cancelled %@" xml:space="preserve" approved="no">
         <source>cancelled %@</source>
+        <target state="translated">отменен %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="changed address for you" xml:space="preserve">
+      <trans-unit id="changed address for you" xml:space="preserve" approved="no">
         <source>changed address for you</source>
+        <target state="translated">променен е адреса за вас</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="changed role of %@ to %@" xml:space="preserve">
+      <trans-unit id="changed role of %@ to %@" xml:space="preserve" approved="no">
         <source>changed role of %1$@ to %2$@</source>
+        <target state="translated">променена роля от %1$@ на %2$@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="changed your role to %@" xml:space="preserve">
+      <trans-unit id="changed your role to %@" xml:space="preserve" approved="no">
         <source>changed your role to %@</source>
+        <target state="translated">променена е вашата ролята на %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="changing address for %@…" xml:space="preserve">
+      <trans-unit id="changing address for %@…" xml:space="preserve" approved="no">
         <source>changing address for %@…</source>
+        <target state="translated">промяна на адреса за %@…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="changing address…" xml:space="preserve">
+      <trans-unit id="changing address…" xml:space="preserve" approved="no">
         <source>changing address…</source>
+        <target state="translated">промяна на адреса…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="colored" xml:space="preserve">
+      <trans-unit id="colored" xml:space="preserve" approved="no">
         <source>colored</source>
+        <target state="translated">цветен</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="complete" xml:space="preserve">
+      <trans-unit id="complete" xml:space="preserve" approved="no">
         <source>complete</source>
+        <target state="translated">завършен</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connect to SimpleX Chat developers." xml:space="preserve">
+      <trans-unit id="connect to SimpleX Chat developers." xml:space="preserve" approved="no">
         <source>connect to SimpleX Chat developers.</source>
+        <target state="translated">свържете се с разработчиците на SimpleX Chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connected" xml:space="preserve">
+      <trans-unit id="connected" xml:space="preserve" approved="no">
         <source>connected</source>
+        <target state="translated">свързан</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting" xml:space="preserve">
+      <trans-unit id="connecting" xml:space="preserve" approved="no">
         <source>connecting</source>
+        <target state="translated">свързване</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting (accepted)" xml:space="preserve">
+      <trans-unit id="connecting (accepted)" xml:space="preserve" approved="no">
         <source>connecting (accepted)</source>
+        <target state="translated">свързване (прието)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting (announced)" xml:space="preserve">
+      <trans-unit id="connecting (announced)" xml:space="preserve" approved="no">
         <source>connecting (announced)</source>
+        <target state="translated">свързване (обявено)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting (introduced)" xml:space="preserve">
+      <trans-unit id="connecting (introduced)" xml:space="preserve" approved="no">
         <source>connecting (introduced)</source>
+        <target state="translated">свързване (представен)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting (introduction invitation)" xml:space="preserve">
+      <trans-unit id="connecting (introduction invitation)" xml:space="preserve" approved="no">
         <source>connecting (introduction invitation)</source>
+        <target state="translated">свързване (покана за представяне)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting call" xml:space="preserve">
+      <trans-unit id="connecting call" xml:space="preserve" approved="no">
         <source>connecting call…</source>
+        <target state="translated">разговорът се свързва…</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="connecting…" xml:space="preserve">
+      <trans-unit id="connecting…" xml:space="preserve" approved="no">
         <source>connecting…</source>
+        <target state="translated">свързване…</target>
         <note>chat list item title</note>
       </trans-unit>
-      <trans-unit id="connection established" xml:space="preserve">
+      <trans-unit id="connection established" xml:space="preserve" approved="no">
         <source>connection established</source>
+        <target state="translated">установена е връзка</target>
         <note>chat list item title (it should not be shown</note>
       </trans-unit>
-      <trans-unit id="connection:%@" xml:space="preserve">
+      <trans-unit id="connection:%@" xml:space="preserve" approved="no">
         <source>connection:%@</source>
+        <target state="translated">връзка:%@</target>
         <note>connection information</note>
       </trans-unit>
-      <trans-unit id="contact has e2e encryption" xml:space="preserve">
+      <trans-unit id="contact has e2e encryption" xml:space="preserve" approved="no">
         <source>contact has e2e encryption</source>
+        <target state="translated">контактът има e2e криптиране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contact has no e2e encryption" xml:space="preserve">
+      <trans-unit id="contact has no e2e encryption" xml:space="preserve" approved="no">
         <source>contact has no e2e encryption</source>
+        <target state="translated">контактът няма e2e криптиране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="creator" xml:space="preserve">
+      <trans-unit id="creator" xml:space="preserve" approved="no">
         <source>creator</source>
+        <target state="translated">създател</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="custom" xml:space="preserve">
+      <trans-unit id="custom" xml:space="preserve" approved="no">
         <source>custom</source>
+        <target state="translated">персонализиран</target>
         <note>dropdown time picker choice</note>
       </trans-unit>
-      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
+      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve" approved="no">
         <source>database version is newer than the app, but no down migration for: %@</source>
+        <target state="translated">версията на базата данни е по-нова от приложението, но няма миграция надолу за: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="days" xml:space="preserve">
+      <trans-unit id="days" xml:space="preserve" approved="no">
         <source>days</source>
+        <target state="translated">дни</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="default (%@)" xml:space="preserve">
+      <trans-unit id="default (%@)" xml:space="preserve" approved="no">
         <source>default (%@)</source>
+        <target state="translated">по подразбиране (%@)</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="default (no)" xml:space="preserve">
+      <trans-unit id="default (no)" xml:space="preserve" approved="no">
         <source>default (no)</source>
+        <target state="translated">по подразбиране (не)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="default (yes)" xml:space="preserve">
+      <trans-unit id="default (yes)" xml:space="preserve" approved="no">
         <source>default (yes)</source>
+        <target state="translated">по подразбиране (да)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="deleted" xml:space="preserve">
+      <trans-unit id="deleted" xml:space="preserve" approved="no">
         <source>deleted</source>
+        <target state="translated">изтрит</target>
         <note>deleted chat item</note>
       </trans-unit>
-      <trans-unit id="deleted group" xml:space="preserve">
+      <trans-unit id="deleted group" xml:space="preserve" approved="no">
         <source>deleted group</source>
+        <target state="translated">групата изтрита</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve">
+      <trans-unit id="different migration in the app/database: %@ / %@" xml:space="preserve" approved="no">
         <source>different migration in the app/database: %@ / %@</source>
+        <target state="translated">различна миграция в приложението/базата данни: %@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="direct" xml:space="preserve">
+      <trans-unit id="direct" xml:space="preserve" approved="no">
         <source>direct</source>
+        <target state="translated">директна</target>
         <note>connection level description</note>
       </trans-unit>
-      <trans-unit id="duplicate message" xml:space="preserve">
+      <trans-unit id="duplicate message" xml:space="preserve" approved="no">
         <source>duplicate message</source>
+        <target state="translated">дублирано съобщение</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="e2e encrypted" xml:space="preserve">
+      <trans-unit id="e2e encrypted" xml:space="preserve" approved="no">
         <source>e2e encrypted</source>
+        <target state="translated">e2e криптиран</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="enabled" xml:space="preserve">
+      <trans-unit id="enabled" xml:space="preserve" approved="no">
         <source>enabled</source>
+        <target state="translated">активирано</target>
         <note>enabled status</note>
       </trans-unit>
-      <trans-unit id="enabled for contact" xml:space="preserve">
+      <trans-unit id="enabled for contact" xml:space="preserve" approved="no">
         <source>enabled for contact</source>
+        <target state="translated">активирано за контакт</target>
         <note>enabled status</note>
       </trans-unit>
-      <trans-unit id="enabled for you" xml:space="preserve">
+      <trans-unit id="enabled for you" xml:space="preserve" approved="no">
         <source>enabled for you</source>
+        <target state="translated">активирано за вас</target>
         <note>enabled status</note>
       </trans-unit>
-      <trans-unit id="encryption agreed" xml:space="preserve">
+      <trans-unit id="encryption agreed" xml:space="preserve" approved="no">
         <source>encryption agreed</source>
+        <target state="translated">криптирането е съгласувано</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption agreed for %@" xml:space="preserve">
+      <trans-unit id="encryption agreed for %@" xml:space="preserve" approved="no">
         <source>encryption agreed for %@</source>
+        <target state="translated">криптирането е съгласувано за %@</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption ok" xml:space="preserve">
+      <trans-unit id="encryption ok" xml:space="preserve" approved="no">
         <source>encryption ok</source>
+        <target state="translated">криптирането работи</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption ok for %@" xml:space="preserve">
+      <trans-unit id="encryption ok for %@" xml:space="preserve" approved="no">
         <source>encryption ok for %@</source>
+        <target state="translated">криптирането работи за %@</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation allowed" xml:space="preserve">
+      <trans-unit id="encryption re-negotiation allowed" xml:space="preserve" approved="no">
         <source>encryption re-negotiation allowed</source>
+        <target state="translated">разрешено повторно договаряне на криптиране</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve">
+      <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve" approved="no">
         <source>encryption re-negotiation allowed for %@</source>
+        <target state="translated">разрешено повторно договаряне на криптиране за %@</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation required" xml:space="preserve">
+      <trans-unit id="encryption re-negotiation required" xml:space="preserve" approved="no">
         <source>encryption re-negotiation required</source>
+        <target state="translated">необходимо е повторно договаряне на криптиране</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve">
+      <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve" approved="no">
         <source>encryption re-negotiation required for %@</source>
+        <target state="translated">необходимо е повторно договаряне на криптиране за %@</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="ended" xml:space="preserve">
+      <trans-unit id="ended" xml:space="preserve" approved="no">
         <source>ended</source>
+        <target state="translated">приключен</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="ended call %@" xml:space="preserve">
+      <trans-unit id="ended call %@" xml:space="preserve" approved="no">
         <source>ended call %@</source>
+        <target state="translated">приключи разговор %@</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="error" xml:space="preserve">
+      <trans-unit id="error" xml:space="preserve" approved="no">
         <source>error</source>
+        <target state="translated">грешка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="group deleted" xml:space="preserve">
+      <trans-unit id="group deleted" xml:space="preserve" approved="no">
         <source>group deleted</source>
+        <target state="translated">групата е изтрита</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="group profile updated" xml:space="preserve">
+      <trans-unit id="group profile updated" xml:space="preserve" approved="no">
         <source>group profile updated</source>
+        <target state="translated">профилът на групата е актуализиран</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="hours" xml:space="preserve">
+      <trans-unit id="hours" xml:space="preserve" approved="no">
         <source>hours</source>
+        <target state="translated">часове</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve">
+      <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve" approved="no">
         <source>iOS Keychain is used to securely store passphrase - it allows receiving push notifications.</source>
+        <target state="translated">iOS Keychain се използва за сигурно съхраняване на парола - позволява получаване на push известия.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." xml:space="preserve">
+      <trans-unit id="iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." xml:space="preserve" approved="no">
         <source>iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.</source>
+        <target state="translated">iOS Keychain ще се използва за сигурно съхраняване на паролата, след като рестартирате приложението или промените паролата - това ще позволи получаването на push известия.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="incognito via contact address link" xml:space="preserve">
+      <trans-unit id="incognito via contact address link" xml:space="preserve" approved="no">
         <source>incognito via contact address link</source>
+        <target state="translated">инкогнито чрез линк с адрес за контакт</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="incognito via group link" xml:space="preserve">
+      <trans-unit id="incognito via group link" xml:space="preserve" approved="no">
         <source>incognito via group link</source>
+        <target state="translated">инкогнито чрез групов линк</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="incognito via one-time link" xml:space="preserve">
+      <trans-unit id="incognito via one-time link" xml:space="preserve" approved="no">
         <source>incognito via one-time link</source>
+        <target state="translated">инкогнито чрез еднократен линк за връзка</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="indirect (%d)" xml:space="preserve">
+      <trans-unit id="indirect (%d)" xml:space="preserve" approved="no">
         <source>indirect (%d)</source>
+        <target state="translated">индиректна (%d)</target>
         <note>connection level description</note>
       </trans-unit>
-      <trans-unit id="invalid chat" xml:space="preserve">
+      <trans-unit id="invalid chat" xml:space="preserve" approved="no">
         <source>invalid chat</source>
+        <target state="translated">невалиден чат</target>
         <note>invalid chat data</note>
       </trans-unit>
-      <trans-unit id="invalid chat data" xml:space="preserve">
+      <trans-unit id="invalid chat data" xml:space="preserve" approved="no">
         <source>invalid chat data</source>
+        <target state="translated">невалидни данни за чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="invalid data" xml:space="preserve">
+      <trans-unit id="invalid data" xml:space="preserve" approved="no">
         <source>invalid data</source>
+        <target state="translated">невалидни данни</target>
         <note>invalid chat item</note>
       </trans-unit>
-      <trans-unit id="invitation to group %@" xml:space="preserve">
+      <trans-unit id="invitation to group %@" xml:space="preserve" approved="no">
         <source>invitation to group %@</source>
+        <target state="translated">покана за група %@</target>
         <note>group name</note>
       </trans-unit>
-      <trans-unit id="invited" xml:space="preserve">
+      <trans-unit id="invited" xml:space="preserve" approved="no">
         <source>invited</source>
+        <target state="translated">поканен</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="invited %@" xml:space="preserve">
+      <trans-unit id="invited %@" xml:space="preserve" approved="no">
         <source>invited %@</source>
+        <target state="translated">поканен %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="invited to connect" xml:space="preserve">
+      <trans-unit id="invited to connect" xml:space="preserve" approved="no">
         <source>invited to connect</source>
+        <target state="translated">поканен да се свърже</target>
         <note>chat list item title</note>
       </trans-unit>
-      <trans-unit id="invited via your group link" xml:space="preserve">
+      <trans-unit id="invited via your group link" xml:space="preserve" approved="no">
         <source>invited via your group link</source>
+        <target state="translated">поканен чрез вашия групов линк</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="italic" xml:space="preserve">
+      <trans-unit id="italic" xml:space="preserve" approved="no">
         <source>italic</source>
+        <target state="translated">курсив</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="join as %@" xml:space="preserve" approved="no">
         <source>join as %@</source>
+        <target state="translated">присъединяване като %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="left" xml:space="preserve">
+      <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
+        <target state="translated">напусна</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve" approved="no">
@@ -5604,8 +5703,9 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">свързан</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="message received" xml:space="preserve">
+      <trans-unit id="message received" xml:space="preserve" approved="no">
         <source>message received</source>
+        <target state="translated">получено съобщение</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="minutes" xml:space="preserve" approved="no">
@@ -5623,8 +5723,9 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">модерирано</target>
         <note>moderated chat item</note>
       </trans-unit>
-      <trans-unit id="moderated by %@" xml:space="preserve">
+      <trans-unit id="moderated by %@" xml:space="preserve" approved="no">
         <source>moderated by %@</source>
+        <target state="translated">модерирано от %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="months" xml:space="preserve" approved="no">
@@ -5668,72 +5769,89 @@ SimpleX servers cannot see your profile.</source>
         <note>enabled status
    group pref value</note>
       </trans-unit>
-      <trans-unit id="offered %@" xml:space="preserve">
+      <trans-unit id="offered %@" xml:space="preserve" approved="no">
         <source>offered %@</source>
+        <target state="translated">предлага %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="offered %@: %@" xml:space="preserve">
+      <trans-unit id="offered %@: %@" xml:space="preserve" approved="no">
         <source>offered %1$@: %2$@</source>
+        <target state="translated">предлага %1$@: %2$@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="on" xml:space="preserve">
+      <trans-unit id="on" xml:space="preserve" approved="no">
         <source>on</source>
+        <target state="translated">включено</target>
         <note>group pref value</note>
       </trans-unit>
-      <trans-unit id="or chat with the developers" xml:space="preserve">
+      <trans-unit id="or chat with the developers" xml:space="preserve" approved="no">
         <source>or chat with the developers</source>
+        <target state="translated">или пишете на разработчиците</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="owner" xml:space="preserve">
+      <trans-unit id="owner" xml:space="preserve" approved="no">
         <source>owner</source>
+        <target state="translated">собственик</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="peer-to-peer" xml:space="preserve">
+      <trans-unit id="peer-to-peer" xml:space="preserve" approved="no">
         <source>peer-to-peer</source>
+        <target state="translated">peer-to-peer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="received answer…" xml:space="preserve">
+      <trans-unit id="received answer…" xml:space="preserve" approved="no">
         <source>received answer…</source>
+        <target state="translated">получен отговор…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="received confirmation…" xml:space="preserve">
+      <trans-unit id="received confirmation…" xml:space="preserve" approved="no">
         <source>received confirmation…</source>
+        <target state="translated">получено потвърждение…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="rejected call" xml:space="preserve">
+      <trans-unit id="rejected call" xml:space="preserve" approved="no">
         <source>rejected call</source>
+        <target state="translated">отхвърлено повикване</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="removed" xml:space="preserve">
+      <trans-unit id="removed" xml:space="preserve" approved="no">
         <source>removed</source>
+        <target state="translated">отстранен</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="removed %@" xml:space="preserve">
+      <trans-unit id="removed %@" xml:space="preserve" approved="no">
         <source>removed %@</source>
+        <target state="translated">отстранен %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="removed you" xml:space="preserve">
+      <trans-unit id="removed you" xml:space="preserve" approved="no">
         <source>removed you</source>
+        <target state="translated">ви острани</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="sec" xml:space="preserve">
+      <trans-unit id="sec" xml:space="preserve" approved="no">
         <source>sec</source>
+        <target state="translated">сек.</target>
         <note>network option</note>
       </trans-unit>
-      <trans-unit id="seconds" xml:space="preserve">
+      <trans-unit id="seconds" xml:space="preserve" approved="no">
         <source>seconds</source>
+        <target state="translated">секунди</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="secret" xml:space="preserve">
+      <trans-unit id="secret" xml:space="preserve" approved="no">
         <source>secret</source>
+        <target state="translated">таен</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="security code changed" xml:space="preserve">
+      <trans-unit id="security code changed" xml:space="preserve" approved="no">
         <source>security code changed</source>
+        <target state="translated">кодът за сигурност е променен</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="starting…" xml:space="preserve">
+      <trans-unit id="starting…" xml:space="preserve" approved="no">
         <source>starting…</source>
+        <target state="translated">стартиране…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve" approved="no">
@@ -5741,28 +5859,34 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">зачеркнат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="this contact" xml:space="preserve">
+      <trans-unit id="this contact" xml:space="preserve" approved="no">
         <source>this contact</source>
+        <target state="translated">този контакт</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="unknown" xml:space="preserve">
+      <trans-unit id="unknown" xml:space="preserve" approved="no">
         <source>unknown</source>
+        <target state="translated">неизвестен</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="updated group profile" xml:space="preserve">
+      <trans-unit id="updated group profile" xml:space="preserve" approved="no">
         <source>updated group profile</source>
+        <target state="translated">актуализиран профил на групата</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="v%@ (%@)" xml:space="preserve">
+      <trans-unit id="v%@ (%@)" xml:space="preserve" approved="no">
         <source>v%@ (%@)</source>
+        <target state="translated">v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="via contact address link" xml:space="preserve">
+      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
         <source>via contact address link</source>
+        <target state="translated">чрез линк с адрес за контакт</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="via group link" xml:space="preserve">
+      <trans-unit id="via group link" xml:space="preserve" approved="no">
         <source>via group link</source>
+        <target state="translated">чрез групов линк</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via one-time link" xml:space="preserve" approved="no">
@@ -6117,6 +6241,31 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="Show last messages" xml:space="preserve" approved="no">
         <source>Show last messages</source>
         <target state="translated">Показване на последните съобщения в листа с чатовете</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="disabled" xml:space="preserve" approved="no">
+        <source>disabled</source>
+        <target state="translated">деактивирано</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your profile **%@** will be shared." xml:space="preserve" approved="no">
+        <source>Your profile **%@** will be shared.</source>
+        <target state="translated">Вашият профил **%@** ще бъде споделен.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="event happened" xml:space="preserve" approved="no">
+        <source>event happened</source>
+        <target state="translated">събитие се случи</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error decrypting file" xml:space="preserve" approved="no">
+        <source>Error decrypting file</source>
+        <target state="translated">Грешка при декриптирането на файла</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Encrypt local files" xml:space="preserve" approved="no">
+        <source>Encrypt local files</source>
+        <target state="translated">Криптирай локални файлове</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
