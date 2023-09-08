@@ -54,32 +54,40 @@ Object.entries(fileLanguageMapping).forEach(([fileName, languages]) => {
             // Calculate the permalink based on the file's location
             const linkPath = path.relative(directoryPath, fullPath).replace(/\.md$/, '.html');
             const permalink = `/docs/${linkPath}`.toLowerCase();
-            parsedMatter.data.permalink = permalink;
 
-            // Update the frontmatter with the new languages list
-            parsedMatter.data.supportedLangsForDoc = languages;
+            if (fileName === 'JOIN_TEAM') {
+                parsedMatter.data.title = 'SimpleX Chat - Careers';
+                parsedMatter.data.permalink = '/careers/index.html';
+                parsedMatter.data.layout = 'layouts/careers.html';
+            }
+            else {
+                parsedMatter.data.permalink = permalink;
 
-            // Add the layout value
-            parsedMatter.data.layout = 'layouts/doc.html';
+                // Update the frontmatter with the new languages list
+                parsedMatter.data.supportedLangsForDoc = languages;
 
-            if (fullPath.startsWith(path.join(directoryPath, langFolder))) {
-                // Non-English files
-                const [language, ...rest] = relativePath.split(path.sep).slice(1);
-                const enFilePath = path.join(directoryPath, ...rest);
+                // Add the layout value
+                parsedMatter.data.layout = 'layouts/doc.html';
 
-                if (enFiles[enFilePath]) {
-                    const enRevision = new Date(enFiles[enFilePath].revision);
-                    const currentRevision = new Date(parsedMatter.data.revision);
+                if (fullPath.startsWith(path.join(directoryPath, langFolder))) {
+                    // Non-English files
+                    const [language, ...rest] = relativePath.split(path.sep).slice(1);
+                    const enFilePath = path.join(directoryPath, ...rest);
 
-                    const isOld = currentRevision < enRevision;
+                    if (enFiles[enFilePath]) {
+                        const enRevision = new Date(enFiles[enFilePath].revision);
+                        const currentRevision = new Date(parsedMatter.data.revision);
+
+                        const isOld = currentRevision < enRevision;
+                        // Add the version value
+                        parsedMatter.data.version = isOld ? 'old' : 'new';
+                    }
+                } else {
+                    // English files
+                    enFiles[fullPath] = { revision: parsedMatter.data.revision };
                     // Add the version value
-                    parsedMatter.data.version = isOld ? 'old' : 'new';
+                    parsedMatter.data.version = 'new';
                 }
-            } else {
-                // English files
-                enFiles[fullPath] = { revision: parsedMatter.data.revision };
-                // Add the version value
-                parsedMatter.data.version = 'new';
             }
 
             // Save the updated frontmatter and content back to the file

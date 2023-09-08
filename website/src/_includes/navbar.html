@@ -125,7 +125,7 @@
             </div>
         </nav>
 
-        {% if 'blog' not in page.url %}
+        {% if ('blog' not in page.url) and ('careers' not in page.url) %}
         <div class="nav-link relative flag-container">
             <a href="javascript:void(0);" class="flex items-center justify-end ltr:ml-8 ltr:lg:ml-5 ltr:xl:ml-10 rtl:mr-8 rtl:lg:mr-5 rtl:xl:mr-10 h-6 w-8 whitespace-nowrap">
                 {% for language in languages.languages %}
