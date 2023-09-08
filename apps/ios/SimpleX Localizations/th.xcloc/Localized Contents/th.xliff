@@ -1807,6 +1807,10 @@
         <target>Encrypt ฐานข้อมูล?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Encrypt local files" xml:space="preserve">
+        <source>Encrypt local files</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
         <source>Encrypted database</source>
         <target>Encrypt ฐานข้อมูลเรียบร้อยแล้ว</target>
@@ -1935,6 +1939,10 @@
       <trans-unit id="Error creating profile!" xml:space="preserve">
         <source>Error creating profile!</source>
         <target>เกิดข้อผิดพลาดในการสร้างโปรไฟล์!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error decrypting file" xml:space="preserve">
+        <source>Error decrypting file</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
