@@ -4,6 +4,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.serialization.decodeFromString
+import java.nio.ByteBuffer
 
 // ghc's rts
 external fun initHS()
@@ -19,6 +20,11 @@ external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
 external fun chatParseServer(str: String): String
 external fun chatPasswordHash(pwd: String, salt: String): String
+//external fun chatWriteFile(path: String, array: ByteArray): String
+external fun chatWriteFile(path: String, buffer: ByteBuffer): String
+external fun chatReadFile(path: String, key: String, nonce: String): ByteArray
+external fun chatEncryptFile(fromPath: String, toPath: String): String
+external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
 
 val chatModel: ChatModel
   get() = chatController.chatModel

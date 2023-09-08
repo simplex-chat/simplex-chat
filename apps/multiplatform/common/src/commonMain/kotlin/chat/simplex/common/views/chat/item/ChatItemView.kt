@@ -193,7 +193,7 @@ fun ChatItemView(
             ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
               val filePath = getLoadedFilePath(cItem.file)
               when {
-                filePath != null -> shareFile(cItem.text, filePath)
+                filePath != null && cItem.file?.fileSource != null -> shareFile(cItem.text, cItem.file.fileSource)
                 else -> clipboard.shareText(cItem.content.text)
               }
               showMenu.value = false

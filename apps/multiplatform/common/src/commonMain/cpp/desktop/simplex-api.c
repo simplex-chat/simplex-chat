@@ -20,7 +20,10 @@ extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
 extern char *chat_parse_server(const char *str);
 extern char *chat_password_hash(const char *pwd, const char *salt);
-
+extern char *chat_write_file(const char *path, char *ptr, int length);
+extern char *chat_read_file(const char *path, const char *key, const char *nonce);
+extern char *chat_encrypt_file(const char *from_path, const char *to_path);
+extern char *chat_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
 
 // As a reference: https://stackoverflow.com/a/60002045
 jstring decode_to_utf8_string(JNIEnv *env, char *string) {
@@ -126,5 +129,77 @@ Java_chat_simplex_common_platform_CoreKt_chatPasswordHash(JNIEnv *env, jclass cl
     jstring res = decode_to_utf8_string(env, chat_password_hash(_pwd, _salt));
     (*env)->ReleaseStringUTFChars(env, pwd, _pwd);
     (*env)->ReleaseStringUTFChars(env, salt, _salt);
+    return res;
+}
+
+/*JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz, jstring path, jbyteArray array) {
+    const char *_path = encode_to_utf8_chars(env, path);
+    jbyte* bufferPtr = (*env)->GetByteArrayElements(env, array, NULL);
+    jsize len = (*env)->GetArrayLength(env, array);
+    jstring res = decode_to_utf8_string(env, chat_write_file(_path, bufferPtr, len));
+    (*env)->ReleaseByteArrayElements(env, array, bufferPtr, 0);
+    (*env)->ReleaseStringUTFChars(env, path, _path);
+    return res;
+}*/
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz, jstring path, jobject buffer) {
+    const char *_path = encode_to_utf8_chars(env, path);
+    jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
+    jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
+    jstring res = decode_to_utf8_string(env, chat_write_file(_path, buff, capacity));
+    (*env)->ReleaseStringUTFChars(env, path, _path);
+    return res;
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz, jstring path, jstring key, jstring nonce) {
+    const char *_path = encode_to_utf8_chars(env, path);
+    const char *_key = encode_to_utf8_chars(env, key);
+    const char *_nonce = encode_to_utf8_chars(env, nonce);
+
+    jbyte *res = chat_read_file(_path, _key, _nonce);
+    (*env)->ReleaseStringUTFChars(env, path, _path);
+    (*env)->ReleaseStringUTFChars(env, key, _key);
+    (*env)->ReleaseStringUTFChars(env, nonce, _nonce);
+
+    if (res[0] == 0) {
+      int len = (res[4] << 24) & 0xff000000|
+                (res[3] << 16) & 0x00ff0000|
+                (res[2] << 8)  & 0x0000ff00|
+                (res[1] << 0)  & 0x000000ff;
+      jbyteArray arr = (*env)->NewByteArray(env, len);
+      (*env)->SetByteArrayRegion(env, arr, 0, len, res + 5);
+      return arr;
+    } else {
+      int len = strlen(res);
+      jbyteArray arr = (*env)->NewByteArray(env, len + 10);
+      (*env)->SetByteArrayRegion(env, arr, 10, len, res + 1);
+      return arr;
+    }
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatEncryptFile(JNIEnv *env, jclass clazz, jstring from_path, jstring to_path) {
+    const char *_from_path = encode_to_utf8_chars(env, from_path);
+    const char *_to_path = encode_to_utf8_chars(env, to_path);
+    jstring res = decode_to_utf8_string(env, chat_encrypt_file(_from_path, _to_path));
+    (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
+    (*env)->ReleaseStringUTFChars(env, to_path, _to_path);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatDecryptFile(JNIEnv *env, jclass clazz, jstring from_path, jstring key, jstring nonce, jstring to_path) {
+    const char *_from_path = encode_to_utf8_chars(env, from_path);
+    const char *_key = encode_to_utf8_chars(env, key);
+    const char *_nonce = encode_to_utf8_chars(env, nonce);
+    const char *_to_path = encode_to_utf8_chars(env, to_path);
+    jstring res = decode_to_utf8_string(env, chat_decrypt_file(_from_path, _key, _nonce, _to_path));
+    (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
+    (*env)->ReleaseStringUTFChars(env, key, _key);
+    (*env)->ReleaseStringUTFChars(env,  nonce, _nonce);
+    (*env)->ReleaseStringUTFChars(env, to_path, _to_path);
     return res;
 }

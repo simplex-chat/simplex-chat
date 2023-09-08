@@ -71,7 +71,8 @@ fun CIFileView(
       when (file.fileStatus) {
         is CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
-            receiveFile(file.fileId, false)
+            val encrypted = file.fileProtocol == FileProtocol.XFTP && chatController.appPrefs.privacyEncryptLocalFiles.get()
+            receiveFile(file.fileId, encrypted)
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),
@@ -184,9 +185,9 @@ fun CIFileView(
   ) {
     fileIndicator()
     val metaReserve = if (edited)
-      "                     "
+      "                       "
     else
-      "                 "
+      "                   "
     if (file != null) {
       Column {
         Text(
@@ -211,7 +212,11 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
   rememberFileChooserLauncher(false, ciFile) { to: URI? ->
     val filePath = getLoadedFilePath(ciFile)
     if (filePath != null && to != null) {
-      copyFileToFile(File(filePath), to) {}
+      if (ciFile?.fileSource?.cryptoArgs != null) {
+        decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, to.path)
+      } else {
+        copyFileToFile(File(filePath), to) {}
+      }
     }
   }
 

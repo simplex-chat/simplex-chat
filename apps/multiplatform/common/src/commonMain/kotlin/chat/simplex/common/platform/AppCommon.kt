@@ -1,8 +1,9 @@
 package chat.simplex.common.platform
 
 import chat.simplex.common.BuildConfigCommon
-import chat.simplex.common.model.ChatController
+import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.DefaultTheme
+import java.io.File
 import java.util.*
 
 enum class AppPlatform {
@@ -45,4 +46,23 @@ fun runMigrations() {
       }
     }
   }
+}
+
+fun testCrypto() {
+  val f = File(tmpDir.absolutePath, "LALAL")
+  f.createNewFile()
+  val enc = File(tmpDir.absolutePath, "LALAL.enc")
+  val encToWrite = File(tmpDir.absolutePath, "LALALwrite.enc")
+  f.writer().use {
+    it.write("LALALAL")
+  }
+  val args = encryptCryptoFile(f.absolutePath, enc.absolutePath)
+  println("LALAL RES enc " + args + " was text: " + f.readText() + " now text: " + enc.readText())
+  f.delete()
+  decryptCryptoFile(enc.absolutePath, args, f.absolutePath)
+  println("LALAL RES dec was text: " + enc.readText() + " now text: " + f.readText())
+  val write = writeCryptoFile(encToWrite.absolutePath, "LOLOLO".toByteArray())
+  println("LALAL RES write $write path: ${encToWrite.absolutePath} text: ${encToWrite.readText()}")
+  val read = readCryptoFile(encToWrite.absolutePath, args)
+  println("LALAL RES read ${String(read)} from ${enc.readText()}")
 }

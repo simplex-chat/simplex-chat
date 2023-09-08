@@ -20,8 +20,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.getLoadedFilePath
-import chat.simplex.common.platform.AudioPlayer
+import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -45,14 +44,16 @@ fun CIVoiceView(
   ) {
     if (file != null) {
       val f = file.fileSource?.filePath
-      val filePath = remember(f, file.fileStatus) { getLoadedFilePath(file) }
+      val fileSource = remember(f, file.fileStatus) { getLoadedFileSource(file) }
       var brokenAudio by rememberSaveable(f) { mutableStateOf(false) }
       val audioPlaying = rememberSaveable(f) { mutableStateOf(false) }
       val progress = rememberSaveable(f) { mutableStateOf(0) }
       val duration = rememberSaveable(f) { mutableStateOf(providedDurationSec * 1000) }
       val play = {
-        AudioPlayer.play(filePath, audioPlaying, progress, duration, true)
-        brokenAudio = !audioPlaying.value
+        if (fileSource != null) {
+          AudioPlayer.play(fileSource, audioPlaying, progress, duration, true)
+          brokenAudio = !audioPlaying.value
+        }
       }
       val pause = {
         AudioPlayer.pause(audioPlaying, progress)
@@ -67,7 +68,7 @@ fun CIVoiceView(
         }
       }
       VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick, receiveFile) {
-        AudioPlayer.seekTo(it, progress, filePath)
+        AudioPlayer.seekTo(it, progress, fileSource?.filePath)
       }
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick, receiveFile)
@@ -269,8 +270,7 @@ private fun VoiceMsgIndicator(
     }
   } else {
     if (file?.fileStatus is CIFileStatus.RcvInvitation) {
-      // TODO encrypt voice
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId, false) }, {}, longClick = longClick)
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId, chatController.appPrefs.privacyEncryptLocalFiles.get()) }, {}, longClick = longClick)
     } else if (file?.fileStatus is CIFileStatus.RcvTransfer
       || file?.fileStatus is CIFileStatus.RcvAccepted
     ) {

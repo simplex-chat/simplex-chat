@@ -411,8 +411,8 @@ fun ComposeView(
         is ComposePreview.MediaPreview -> {
           preview.content.forEachIndexed { index, it ->
             val file = when (it) {
-              is UploadContent.SimpleImage -> saveImage(it.uri)
-              is UploadContent.AnimatedImage -> saveAnimImage(it.uri)
+              is UploadContent.SimpleImage -> saveImage(it.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
+              is UploadContent.AnimatedImage -> saveAnimImage(it.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
               is UploadContent.Video -> saveFileFromUri(it.uri, encrypted = false)
             }
             if (file != null) {
@@ -429,16 +429,21 @@ fun ComposeView(
           val tmpFile = File(preview.voice)
           AudioPlayer.stop(tmpFile.absolutePath)
           val actualFile = File(getAppFilePath(tmpFile.name.replaceAfter(RecorderInterface.extension, "")))
-          withContext(Dispatchers.IO) {
-            Files.move(tmpFile.toPath(), actualFile.toPath())
-          }
-          // TODO encrypt voice files
-          files.add(CryptoFile.plain(actualFile.name))
+          files.add(withContext(Dispatchers.IO) {
+            if (chatController.appPrefs.privacyEncryptLocalFiles.get()) {
+              val args = encryptCryptoFile(tmpFile.absolutePath, actualFile.absolutePath)
+              tmpFile.delete()
+              CryptoFile(actualFile.name, args)
+            } else {
+              Files.move(tmpFile.toPath(), actualFile.toPath())
+              CryptoFile.plain(actualFile.name)
+            }
+          })
           deleteUnusedFiles()
           msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
         }
-        is ComposePreview.FilePreview -> {
-          val file = saveFileFromUri(preview.uri, encrypted = false)
+        is ComposePreview.FilePreview -> { // LALAL Not sure we need to save encrypted because it will be deleted anyway
+          val file = saveFileFromUri(preview.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
           if (file != null) {
             files.add((file))
             msgs.add(MsgContent.MCFile(if (msgs.isEmpty()) msgText else ""))
