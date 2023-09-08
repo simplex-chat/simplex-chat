@@ -1891,7 +1891,7 @@
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve" approved="no">
         <source>Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)</source>
-        <target state="translated">Встановіть [SimpleX Chat для терміналу] (https://github.com/simplex-chat/simplex-chat)</target>
+        <target state="translated">Встановіть [SimpleX Chat для терміналу](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve" approved="no">
@@ -2586,7 +2586,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve" approved="no">
         <source>Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme).</source>
-        <target state="translated">Читайте більше в нашому [GitHub репозиторії] (https://github.com/simplex-chat/simplex-chat#readme).</target>
+        <target state="translated">Читайте більше в нашому [GitHub репозиторії](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve" approved="no">
@@ -3892,17 +3892,17 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve" approved="no">
         <source>[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</source>
-        <target state="translated">[Внесок] (https://github.com/simplex-chat/simplex-chat#contribute)</target>
+        <target state="translated">[Внесок](https://github.com/simplex-chat/simplex-chat#contribute)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve" approved="no">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
-        <target state="translated">[Напишіть нам електронною поштою] (mailto:chat@simplex.chat)</target>
+        <target state="translated">[Напишіть нам електронною поштою](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve" approved="no">
         <source>[Star on GitHub](https://github.com/simplex-chat/simplex-chat)</source>
-        <target state="translated">[Зірка на GitHub] (https://github.com/simplex-chat/simplex-chat)</target>
+        <target state="translated">[Зірка на GitHub](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve" approved="no">
@@ -5369,7 +5369,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve" approved="no">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
-        <target state="translated">Читайте більше в [Посібнику користувача] (https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
+        <target state="translated">Читайте більше в [Посібнику користувача](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve" approved="no">
@@ -5419,7 +5419,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve" approved="no">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</source>
-        <target state="translated">Читайте більше в [Посібнику користувача] (https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</target>
+        <target state="translated">Читайте більше в [Посібнику користувача](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderated at" xml:space="preserve" approved="no">
