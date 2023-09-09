@@ -32,25 +32,13 @@ fun writeCryptoFile(path: String, data: ByteArray): CryptoFileArgs {
 }
 
 fun readCryptoFile(path: String, cryptoArgs: CryptoFileArgs): ByteArray {
-  val res: ByteArray = chatReadFile(path, cryptoArgs.fileKey, cryptoArgs.fileNonce)
-  // If the first 10 bytes aren't zero, then the whole array is the data to be returned
-  return if (
-    res.size >= 10 &&
-    res[0].toInt() == 0 &&
-    res[1].toInt() == 0 &&
-    res[2].toInt() == 0 &&
-    res[3].toInt() == 0 &&
-    res[4].toInt() == 0 &&
-    res[5].toInt() == 0 &&
-    res[6].toInt() == 0 &&
-    res[7].toInt() == 0 &&
-    res[8].toInt() == 0 &&
-    res[9].toInt() == 0
-    ) {
-    // otherwise, first 10 elements should be skipped and copy of next elements will be made
-    throw Exception(String(res.sliceArray(10..res.lastIndex)))
+  val res: Array<Any> = chatReadFile(path, cryptoArgs.fileKey, cryptoArgs.fileNonce)
+  val status = (res[0] as Byte).toInt()
+  val arr = res[1] as ByteArray
+  if (status == 0) {
+    return arr
   } else {
-    res
+    throw Exception(String(arr))
   }
 }
 

@@ -120,17 +120,6 @@ Java_chat_simplex_common_platform_CoreKt_chatPasswordHash(JNIEnv *env, __unused 
     return res;
 }
 
-/*JNIEXPORT jstring JNICALL
-Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz, jstring path, jbyteArray array) {
-    const char *_path = encode_to_utf8_chars(env, path, JNI_FALSE);
-    jbyte* bufferPtr = (*env)->GetByteArrayElements(env, array, NULL);
-    jsize len = (*env)->GetArrayLength(env, array);
-    jstring res = (*env)->NewStringUTF(env, chat_write_file(_path, bufferPtr, len));
-    (*env)->ReleaseByteArrayElements(env, array, bufferPtr, 0);
-    (*env)->ReleaseStringUTFChars(env, path, _path);
-    return res;
-}*/
-
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz, jstring path, jobject buffer) {
     const char *_path = (*env)->GetStringUTFChars(env, path, JNI_FALSE);
@@ -141,7 +130,7 @@ Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz
     return res;
 }
 
-JNIEXPORT jbyteArray JNICALL
+JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz, jstring path, jstring key, jstring nonce) {
     const char *_path = (*env)->GetStringUTFChars(env, path, JNI_FALSE);
     const char *_key = (*env)->GetStringUTFChars(env, key, JNI_FALSE);
@@ -152,20 +141,32 @@ Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz,
     (*env)->ReleaseStringUTFChars(env, key, _key);
     (*env)->ReleaseStringUTFChars(env, nonce, _nonce);
 
-    if (res[0] == 0) {
-      int len = (res[4] << 24) & 0xff000000|
-                (res[3] << 16) & 0x00ff0000|
-                (res[2] << 8)  & 0x0000ff00|
-                (res[1] << 0)  & 0x000000ff;
-      jbyteArray arr = (*env)->NewByteArray(env, len);
-      (*env)->SetByteArrayRegion(env, arr, 0, len, res + 5);
-      return arr;
+    jbyte status = res[0];
+    jbyteArray arr;
+    if (status == 0) {
+        union {
+            uint32_t w;
+            uint8_t b[4];
+        } len;
+        len.b[0] = (uint8_t)res[1];
+        len.b[1] = (uint8_t)res[2];
+        len.b[2] = (uint8_t)res[3];
+        len.b[3] = (uint8_t)res[4];
+        arr = (*env)->NewByteArray(env, len.w);
+        (*env)->SetByteArrayRegion(env, arr, 0, len.w, res + 5);
     } else {
-      int len = strlen(res);
-      jbyteArray arr = (*env)->NewByteArray(env, len + 10);
-      (*env)->SetByteArrayRegion(env, arr, 10, len, res + 1);
-      return arr;
+        int len = strlen(res + 1); // + 1 offset here is to not include status byte
+        arr = (*env)->NewByteArray(env, len);
+        (*env)->SetByteArrayRegion(env, arr, 0, len, res + 1);
     }
+
+    jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
+    jobject *statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Byte"),
+                                           (*env)->GetMethodID(env, (*env)->FindClass(env, "java/lang/Byte"), "<init>", "(B)V"),
+                                           status);
+    (*env)->SetObjectArrayElement(env, ret, 0, statusObj);
+    (*env)->SetObjectArrayElement(env, ret, 1, arr);
+    return ret;
 }
 
 JNIEXPORT jstring JNICALL
