@@ -285,7 +285,7 @@
     <string name="incoming_video_call">视频通话来电</string>
     <string name="no_call_on_lock_screen">禁用</string>
     <string name="status_e2e_encrypted">端到端加密</string>
-    <string name="status_contact_has_e2e_encryption">联系人具有端到端加密</string>
+    <string name="status_contact_has_e2e_encryption">联系人开启端到端加密</string>
     <string name="allow_accepting_calls_from_lock_screen">通过设置启用在锁定屏幕上通话。</string>
     <string name="icon_descr_call_connecting">连接通话中</string>
     <string name="status_contact_has_no_e2e_encryption">联系人没有端到端加密</string>
@@ -1004,7 +1004,7 @@
     <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
     <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
     <string name="group_welcome_title">欢迎消息</string>
-    <string name="confirm_database_upgrades">确认数据库升级</string>
+    <string name="confirm_database_upgrades">确定升级数据库</string>
     <string name="settings_section_title_experimenta">实验性</string>
     <string name="database_upgrade">数据库升级</string>
     <string name="mtr_error_different">应用程序/数据库中的不同迁移：%s / %s</string>
@@ -1119,7 +1119,7 @@
     <string name="only_you_can_make_calls">只有您可以拨打电话。</string>
     <string name="only_your_contact_can_make_calls">只有您的联系人可以拨打电话。</string>
     <string name="allow_your_contacts_to_call">允许您的联系人与您进行语音通话。</string>
-    <string name="allow_calls_only_if">仅当您的联系人许可时才允许呼叫。</string>
+    <string name="allow_calls_only_if">仅当您的联系人同意时才允许呼叫。</string>
     <string name="calls_prohibited_with_this_contact">禁止音频/视频通话。</string>
     <string name="send_disappearing_message_1_minute">1分钟</string>
     <string name="one_time_link_short">一次性链接</string>
