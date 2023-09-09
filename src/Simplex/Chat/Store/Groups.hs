@@ -91,7 +91,7 @@ import Control.Monad.Except
 import Crypto.Random (ChaChaDRG)
 import Data.Either (rights)
 import Data.Int (Int64)
-import Data.Maybe (catMaybes, fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), (:.) (..))
@@ -400,13 +400,6 @@ getGroup db user groupId = do
   members <- liftIO $ getGroupMembers db user gInfo
   pure $ Group gInfo members
 
-getGroup_ :: Bool -> DB.Connection -> User -> GroupId -> ExceptT StoreError IO (Maybe Group)
-getGroup_ onlyNeeded db user groupId = do
-  members <- liftIO $ getGroupMembers' onlyNeeded db user groupId
-  if null members
-    then pure Nothing
-    else Just . (`Group` members) <$> getGroupInfo db user groupId
-
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
@@ -457,10 +450,10 @@ deleteGroupProfile_ db userId groupId =
     |]
     (userId, groupId)
 
-getUserGroups :: Bool -> DB.Connection -> User -> IO [Group]
-getUserGroups onlyNeeded db user@User {userId} = do
+getUserGroups :: DB.Connection -> User -> IO [Group]
+getUserGroups db user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
-  catMaybes . rights <$> mapM (runExceptT . getGroup_ onlyNeeded db user) groupIds
+  rights <$> mapM (runExceptT . getGroup db user) groupIds
 
 getUserGroupDetails :: DB.Connection -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
 getUserGroupDetails db User {userId, userContactId} _contactId_ search_ =
@@ -531,28 +524,22 @@ getGroupInfoByName db user gName = do
   getGroupInfo db user gId
 
 groupMemberQuery :: Query
-groupMemberQuery = groupMemberQuery' False
-
-groupMemberQuery' :: Bool -> Query
-groupMemberQuery' onlyNeeded = q <> filterNeeded <> ")"
-  where
-    -- this query is terminated above
-    q =
-      [sql|
-        SELECT
-          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.peer_chat_min_version, c.peer_chat_max_version
-        FROM group_members m
-        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
-      |]
-    filterNeeded = if onlyNeeded then " AND cc.needs_sub = 1" else ""
+groupMemberQuery =
+  [sql|
+    SELECT
+      m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
+      m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+      c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+      c.peer_chat_min_version, c.peer_chat_max_version
+    FROM group_members m
+    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+    LEFT JOIN connections c ON c.connection_id = (
+      SELECT max(cc.connection_id)
+      FROM connections cc
+      WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
+    )
+  |]
 
 getGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMember db user@User {userId} groupId groupMemberId =
@@ -571,14 +558,11 @@ getGroupMemberById db user@User {userId} groupMemberId =
       (userId, groupMemberId, userId)
 
 getGroupMembers :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
-getGroupMembers db user GroupInfo {groupId} = getGroupMembers' False db user groupId
-
-getGroupMembers' :: Bool -> DB.Connection -> User -> GroupId -> IO [GroupMember]
-getGroupMembers' onlyNeeded db user@User {userId, userContactId} groupId = do
+getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
   map (toContactMember user)
     <$> DB.query
       db
-      (groupMemberQuery' onlyNeeded <> " WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
       (userId, groupId, userId, userContactId)
 
 getGroupMembersForExpiration :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]

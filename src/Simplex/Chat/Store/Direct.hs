@@ -43,7 +43,6 @@ module Simplex.Chat.Store.Direct
     incConnectionAuthErrCounter,
     setConnectionAuthErrCounter,
     getUserContacts,
-    getUserContacts',
     createOrUpdateContactRequest,
     getContactRequest',
     getContactRequest,
@@ -68,7 +67,7 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
+import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -121,7 +120,7 @@ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile grou
     [sql|
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type,
-        via_contact_uri_hash, xcontact_id, custom_user_profile_id, via_group_link, group_link_id, created_at, updated_at, needs_sub
+        via_contact_uri_hash, xcontact_id, custom_user_profile_id, via_group_link, group_link_id, created_at, updated_at, to_subscribe
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ((userId, acId, pccConnStatus, ConnContact, cReqHash, xContactId) :. (customUserProfileId, isJust groupLinkId, groupLinkId, createdAt, createdAt, subMode == SMOnlyCreate))
@@ -172,7 +171,7 @@ createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile
     db
     [sql|
       INSERT INTO connections
-        (user_id, agent_conn_id, conn_req_inv, conn_status, conn_type, custom_user_profile_id, created_at, updated_at, needs_sub) VALUES (?,?,?,?,?,?,?,?,?)
+        (user_id, agent_conn_id, conn_req_inv, conn_status, conn_type, custom_user_profile_id, created_at, updated_at, to_subscribe) VALUES (?,?,?,?,?,?,?,?,?)
     |]
     (userId, acId, cReq, pccConnStatus, ConnContact, customUserProfileId, createdAt, createdAt, subMode == SMOnlyCreate)
   pccConnId <- insertedRowId db
@@ -252,7 +251,7 @@ getDeletedContacts db user@User {userId} = do
   rights <$> mapM (runExceptT . getDeletedContact db user) contactIds
 
 getDeletedContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
-getDeletedContact = getContact_ True
+getDeletedContact db user contactId = getContact_ db user contactId True
 
 deleteContactProfile_ :: DB.Connection -> UserId -> ContactId -> IO ()
 deleteContactProfile_ db userId contactId =
@@ -411,12 +410,9 @@ getContactByName db user localDisplayName = do
   getContact db user cId
 
 getUserContacts :: DB.Connection -> User -> IO [Contact]
-getUserContacts = getUserContacts' False
-
-getUserContacts' :: Bool -> DB.Connection -> User -> IO [Contact]
-getUserContacts' onlyNeeded db user@User {userId} = do
+getUserContacts db user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
-  rights <$> mapM (runExceptT . getContact'_ onlyNeeded False db user) contactIds
+  rights <$> mapM (runExceptT . getContact db user) contactIds
 
 createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> VersionRange -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
 createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ =
@@ -615,61 +611,51 @@ getContactIdByName db User {userId} cName =
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ? AND deleted = 0" (userId, cName)
 
 getContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
-getContact = getContact_ False
+getContact db user contactId = getContact_ db user contactId False
 
-getContact_ :: Bool -> DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
-getContact_ deleted = getContact'_ False deleted
-
-getContact'_ :: Bool -> Bool -> DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
-getContact'_ onlyNeeded deleted db user@User {userId} contactId =
+getContact_ :: DB.Connection -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
+getContact_ db user@User {userId} contactId deleted =
   ExceptT . fmap join . firstRow (toContactOrError user) (SEContactNotFound contactId) $
-    DB.query db (contactQuery <> filterNeeded) (userId, contactId, deleted, ConnReady, ConnSndReady)
-  where
-    filterNeeded = if onlyNeeded then " AND c.needs_sub = 1" else ""
-
-contactQuery :: Query
-contactQuery =
-  [sql|
-    SELECT
-      -- Contact
-      ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
-      -- Connection
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-      c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-      c.peer_chat_min_version, c.peer_chat_max_version
-    FROM contacts ct
-    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-    LEFT JOIN connections c ON c.contact_id = ct.contact_id
-    WHERE ct.user_id = ? AND ct.contact_id = ?
-      AND ct.deleted = ?
-      AND c.connection_id = (
-        SELECT cc_connection_id FROM (
-          SELECT
-            cc.connection_id AS cc_connection_id,
-            (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
-          FROM connections cc
-          WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-          ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
-          LIMIT 1
-        )
-      )
-  |]
+    DB.query
+      db 
+      [sql|
+        SELECT
+          -- Contact
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
+          -- Connection
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+          c.peer_chat_min_version, c.peer_chat_max_version
+        FROM contacts ct
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
+        WHERE ct.user_id = ? AND ct.contact_id = ?
+          AND ct.deleted = ?
+          AND c.connection_id = (
+            SELECT cc_connection_id FROM (
+              SELECT
+                cc.connection_id AS cc_connection_id,
+                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+              FROM connections cc
+              WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+              ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
+              LIMIT 1
+            )
+          )
+      |]
+      (userId, contactId, deleted, ConnReady, ConnSndReady)
 
 getUserByContactRequestId :: DB.Connection -> Int64 -> ExceptT StoreError IO User
 getUserByContactRequestId db contactRequestId =
   ExceptT . firstRow toUser (SEUserNotFoundByContactRequestId contactRequestId) $
     DB.query db (userQuery <> " JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?") (Only contactRequestId)
 
-getPendingContactConnections :: Bool -> DB.Connection -> User -> IO [PendingContactConnection]
-getPendingContactConnections onlyNeeded db User {userId} = do
+getPendingContactConnections :: DB.Connection -> User -> IO [PendingContactConnection]
+getPendingContactConnections db User {userId} = do
   map toPendingContactConnection
     <$> DB.queryNamed
       db
-      (q <> filterNeeded)
-      [":user_id" := userId, ":conn_type" := ConnContact]
-  where
-    q =
       [sql|
         SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
         FROM connections
@@ -677,7 +663,7 @@ getPendingContactConnections onlyNeeded db User {userId} = do
           AND conn_type = :conn_type
           AND contact_id IS NULL
       |]
-    filterNeeded = if onlyNeeded then " AND needs_sub = 1" else ""
+      [":user_id" := userId, ":conn_type" := ConnContact]
 
 getContactConnections :: DB.Connection -> UserId -> Contact -> ExceptT StoreError IO [Connection]
 getContactConnections db userId Contact {contactId} =

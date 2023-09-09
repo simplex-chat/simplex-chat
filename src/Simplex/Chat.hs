@@ -2435,16 +2435,24 @@ subscribeUserConnections :: forall m. ChatMonad m => Bool -> AgentBatchSubscribe
 subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   -- get user connections
   ce <- asks $ subscriptionEvents . config
-  (ctConns, cts) <- getContactConns
-  (ucConns, ucs) <- getUserContactLinkConns
-  (gs, mConns, ms) <- getGroupMemberConns
-  (sftConns, sfts) <- getSndFileTransferConns
-  (rftConns, rfts) <- getRcvFileTransferConns
-  (pcConns, pcs) <- getPendingContactConns
+  (conns, cts, ucs, gs, ms, sfts, rfts, pcs) <-
+    if onlyNeeded
+      then do
+        (conns, entities) <- withStore' getConnectionsToSubscribe
+        let (cts, ucs, ms, sfts, rfts, pcs) = foldl' addEntity (M.empty, M.empty, M.empty, M.empty, M.empty, M.empty) entities
+        pure (conns, cts, ucs, [], ms, sfts, rfts, pcs)
+      else do
+        (ctConns, cts) <- getContactConns
+        (ucConns, ucs) <- getUserContactLinkConns
+        (gs, mConns, ms) <- getGroupMemberConns
+        (sftConns, sfts) <- getSndFileTransferConns
+        (rftConns, rfts) <- getRcvFileTransferConns
+        (pcConns, pcs) <- getPendingContactConns
+        let conns = concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
+        pure (conns, cts, ucs, gs, ms, sfts, rfts, pcs)
   -- subscribe using batched commands
-  let conns = concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns]
   rs <- withAgent $ \a -> agentBatchSubscribe a conns
-  when onlyNeeded $ withStore' (`unsetConnectionNeedsSub` conns)
+  -- when onlyNeeded $ withStore' (`unsetConnectionNeedsSub` conns)
   -- send connection events to view
   contactSubsToView rs cts ce
   contactLinkSubsToView rs ucs
@@ -2453,34 +2461,57 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   rcvFileSubsToView rs rfts
   pendingConnSubsToView rs pcs
   where
+    addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
+      RcvDirectMsgConnection c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, sfts, rfts, pcs)
+      RcvDirectMsgConnection c Nothing -> let pcs' = addConn c (toPCC c) pcs in (cts, ucs, ms, sfts, rfts, pcs')
+      RcvGroupMsgConnection c _g m -> let ms' = addConn c m ms in (cts, ucs, ms', sfts, rfts, pcs)
+      SndFileConnection c sft -> let sfts' = addConn c sft sfts in (cts, ucs, ms, sfts', rfts, pcs)
+      RcvFileConnection c rft -> let rfts' = addConn c rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
+      UserContactConnection c uc -> let ucs' = addConn c uc ucs in (cts, ucs', ms, sfts, rfts, pcs)
+    addConn :: Connection -> a -> Map ConnId a -> Map ConnId a
+    addConn = M.insert . aConnId
+    toPCC Connection {connId, agentConnId, connStatus, viaUserContactLink, groupLinkId, customUserProfileId, localAlias, createdAt} =
+      PendingContactConnection
+        { pccConnId = connId,
+          pccAgentConnId = agentConnId,
+          pccConnStatus = connStatus,
+          viaContactUri = False,
+          viaUserContactLink,
+          groupLinkId,
+          customUserProfileId,
+          connReqInv = Nothing,
+          localAlias,
+          createdAt,
+          updatedAt = createdAt
+        }
     getContactConns :: m ([ConnId], Map ConnId Contact)
     getContactConns = do
-      cts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContacts") $ getUserContacts' onlyNeeded
+      cts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContacts") getUserContacts
       let connIds = map contactConnId cts
       pure (connIds, M.fromList $ zip connIds cts)
     getUserContactLinkConns :: m ([ConnId], Map ConnId UserContact)
     getUserContactLinkConns = do
-      (cs, ucs) <- unzip <$> withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContactLinks") (getUserContactLinks onlyNeeded)
+      (cs, ucs) <- unzip <$> withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContactLinks") getUserContactLinks
       let connIds = map aConnId cs
       pure (connIds, M.fromList $ zip connIds ucs)
     getGroupMemberConns :: m ([Group], [ConnId], Map ConnId GroupMember)
     getGroupMemberConns = do
-      gs <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserGroups") $ getUserGroups onlyNeeded
+      gs <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserGroups") getUserGroups
       let mPairs = concatMap (\(Group _ ms) -> mapMaybe (\m -> (,m) <$> memberConnId m) ms) gs
       pure (gs, map fst mPairs, M.fromList mPairs)
     getSndFileTransferConns :: m ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
-      sfts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getLiveSndFileTransfers") $ getLiveSndFileTransfers onlyNeeded
+      sfts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getLiveSndFileTransfers") getLiveSndFileTransfers
       let connIds = map sndFileTransferConnId sfts
       pure (connIds, M.fromList $ zip connIds sfts)
     getRcvFileTransferConns :: m ([ConnId], Map ConnId RcvFileTransfer)
     getRcvFileTransferConns = do
-      rfts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getLiveRcvFileTransfers") $ getLiveRcvFileTransfers onlyNeeded
+      rfts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getLiveRcvFileTransfers") getLiveRcvFileTransfers
       let rftPairs = mapMaybe (\ft -> (,ft) <$> liveRcvFileTransferConnId ft) rfts
       pure (map fst rftPairs, M.fromList rftPairs)
     getPendingContactConns :: m ([ConnId], Map ConnId PendingContactConnection)
     getPendingContactConns = do
-      pcs <- withStore_ ("subscribeUserConnections " <> show userId <> ", getPendingContactConnections") $ getPendingContactConnections onlyNeeded
+      pcs <- withStore_ ("subscribeUserConnections " <> show userId <> ", getPendingContactConnections") getPendingContactConnections
       let connIds = map aConnId' pcs
       pure (connIds, M.fromList $ zip connIds pcs)
     contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> Bool -> m ()

@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -6,20 +7,21 @@
 
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
-    unsetConnectionNeedsSub,
+    getConnectionsToSubscribe,
   )
 where
 
 import Control.Applicative ((<|>))
 import Control.Monad.Except
 import Data.Int (Int64)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..))
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
+import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -27,6 +29,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow')
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Util (eitherToMaybe)
 
 getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db user@User {userId, userContactId} agentConnId = do
@@ -145,5 +148,13 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
 
-unsetConnectionNeedsSub :: DB.Connection -> [ConnId] -> IO ()
-unsetConnectionNeedsSub db = DB.executeMany db "UPDATE connections SET needs_sub = 0 WHERE agent_conn_id = ?" . map (Only . AgentConnId)
+getConnectionsToSubscribe :: DB.Connection -> IO ([ConnId], [ConnectionEntity])
+getConnectionsToSubscribe db = do
+  aConnIds <- map fromOnly <$> DB.query_ db "SELECT agent_conn_id FROM connections where to_subscribe = 1"
+  entities <- forM aConnIds $ \acId -> do
+    getUserByAConnId db acId >>= \case
+      Just user -> eitherToMaybe <$> runExceptT (getConnectionEntity db user acId)
+      Nothing -> pure Nothing
+  DB.execute_ db "UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1"
+  let connIds = map (\(AgentConnId connId) -> connId) aConnIds
+  pure (connIds, catMaybes entities)

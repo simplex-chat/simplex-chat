@@ -170,7 +170,7 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
       INSERT INTO connections (
         user_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, custom_user_profile_id, conn_status, conn_type,
         contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, updated_at,
-        peer_chat_min_version, peer_chat_max_version, needs_sub
+        peer_chat_min_version, peer_chat_max_version, to_subscribe
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, customUserProfileId, ConnNew, connType)

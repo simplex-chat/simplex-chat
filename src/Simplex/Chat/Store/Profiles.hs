@@ -65,7 +65,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
+import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
 import Simplex.Chat.Call
@@ -324,25 +324,24 @@ getUserAddressConnections db User {userId} = do
           |]
           (userId, userId)
 
-userContactLinksQuery :: Query
-userContactLinksQuery =
-  [sql|
-    SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-      c.peer_chat_min_version, c.peer_chat_max_version,
-      uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
-    FROM connections c
-    JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
-    WHERE c.user_id = ? AND uc.user_id = ?
-  |]
-
-getUserContactLinks :: Bool -> DB.Connection -> User -> IO [(Connection, UserContact)]
-getUserContactLinks onlyNeeded db User {userId} =
-  map toUserContactConnection <$> DB.query db (userContactLinksQuery <> filterNeeded) (userId, userId)
+getUserContactLinks :: DB.Connection -> User -> IO [(Connection, UserContact)]
+getUserContactLinks db User {userId} =
+  map toUserContactConnection
+    <$> DB.query
+      db
+      [sql|
+        SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+          c.peer_chat_min_version, c.peer_chat_max_version,
+          uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
+        FROM connections c
+        JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
+        WHERE c.user_id = ? AND uc.user_id = ?
+      |]
+      (userId, userId)
   where
     toUserContactConnection :: (ConnectionRow :. (Int64, ConnReqContact, Maybe GroupId)) -> (Connection, UserContact)
     toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection connRow, UserContact {userContactLinkId, connReqContact, groupId})
-    filterNeeded = if onlyNeeded then " AND c.needs_sub = 1" else ""
 
 deleteUserAddress :: DB.Connection -> User -> IO ()
 deleteUserAddress db user@User {userId} = do
