@@ -153,7 +153,7 @@ Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz,
     (*env)->ReleaseStringUTFChars(env, key, _key);
     (*env)->ReleaseStringUTFChars(env, nonce, _nonce);
 
-    jbyte status = res[0];
+    jint status = (jint)res[0];
     jbyteArray arr;
     if (status == 0) {
         union {
@@ -173,8 +173,8 @@ Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz,
     }
 
     jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
-    jobject *statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Byte"),
-                                           (*env)->GetMethodID(env, (*env)->FindClass(env, "java/lang/Byte"), "<init>", "(B)V"),
+    jobject *statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Integer"),
+                                           (*env)->GetMethodID(env, (*env)->FindClass(env, "java/lang/Integer"), "<init>", "(I)V"),
                                            status);
     (*env)->SetObjectArrayElement(env, ret, 0, statusObj);
     (*env)->SetObjectArrayElement(env, ret, 1, arr);

@@ -33,7 +33,7 @@ fun writeCryptoFile(path: String, data: ByteArray): CryptoFileArgs {
 
 fun readCryptoFile(path: String, cryptoArgs: CryptoFileArgs): ByteArray {
   val res: Array<Any> = chatReadFile(path, cryptoArgs.fileKey, cryptoArgs.fileNonce)
-  val status = (res[0] as Byte).toInt()
+  val status = (res[0] as Integer).toInt()
   val arr = res[1] as ByteArray
   if (status == 0) {
     return arr
