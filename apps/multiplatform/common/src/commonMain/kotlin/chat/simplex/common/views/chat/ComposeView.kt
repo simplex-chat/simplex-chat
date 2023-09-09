@@ -442,7 +442,7 @@ fun ComposeView(
           deleteUnusedFiles()
           msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
         }
-        is ComposePreview.FilePreview -> { // LALAL Not sure we need to save encrypted because it will be deleted anyway
+        is ComposePreview.FilePreview -> {
           val file = saveFileFromUri(preview.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
           if (file != null) {
             files.add((file))

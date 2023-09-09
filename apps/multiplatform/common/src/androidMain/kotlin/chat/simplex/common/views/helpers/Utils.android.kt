@@ -159,13 +159,12 @@ actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   val filePath = getLoadedFilePath(file)
   return if (filePath != null && file != null) {
     try {
-      if (file.fileSource?.cryptoArgs != null) {
-        val data = readCryptoFile(getAppFilePath(file.fileName), file.fileSource.cryptoArgs)
-        decodeSampledBitmapFromByteArray(data, 1000, 1000).asImageBitmap() to data
+      val data = if (file.fileSource?.cryptoArgs != null) {
+        readCryptoFile(getAppFilePath(file.fileSource.filePath), file.fileSource.cryptoArgs)
       } else {
-        val data = File(getAppFilePath(file.fileName)).readBytes()
-        decodeSampledBitmapFromByteArray(data, 1000, 1000).asImageBitmap() to data
+        File(getAppFilePath(file.fileName)).readBytes()
       }
+      decodeSampledBitmapFromByteArray(data, 1000, 1000).asImageBitmap() to data
     } catch (e: Exception) {
       Log.e(TAG, e.stackTraceToString())
       null

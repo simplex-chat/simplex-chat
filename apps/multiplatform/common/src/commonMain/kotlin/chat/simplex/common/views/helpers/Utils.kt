@@ -112,6 +112,10 @@ fun saveImage(image: ImageBitmap, encrypted: Boolean): CryptoFile? {
       val args = writeCryptoFile(destFile.absolutePath, dataResized.toByteArray())
       CryptoFile(destFileName, args)
     } else {
+      val output = FileOutputStream(destFile)
+      dataResized.writeTo(output)
+      output.flush()
+      output.close()
       CryptoFile.plain(destFileName)
     }
   } catch (e: Exception) {
@@ -133,9 +137,10 @@ fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
     val destFileName = generateNewFileName("IMG", ext)
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
-      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream().use { input -> input?.readAllBytes() } ?: return null )
+      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readAllBytes() ?: return null)
       CryptoFile(destFileName, args)
     } else {
+      Files.copy(uri.inputStream(), destFile.toPath())
       CryptoFile.plain(destFileName)
     }
   } catch (e: Exception) {

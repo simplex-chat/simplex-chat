@@ -20,7 +20,6 @@ external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
 external fun chatParseServer(str: String): String
 external fun chatPasswordHash(pwd: String, salt: String): String
-//external fun chatWriteFile(path: String, array: ByteArray): String
 external fun chatWriteFile(path: String, buffer: ByteBuffer): String
 external fun chatReadFile(path: String, key: String, nonce: String): ByteArray
 external fun chatEncryptFile(fromPath: String, toPath: String): String

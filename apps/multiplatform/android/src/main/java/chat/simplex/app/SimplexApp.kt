@@ -43,8 +43,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
       runMigrations()
     }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
-    // LALAL
-    //testCrypto()
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {

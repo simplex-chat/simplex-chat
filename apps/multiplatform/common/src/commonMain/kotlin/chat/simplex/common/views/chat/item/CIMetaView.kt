@@ -78,7 +78,7 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, color: 
     Spacer(Modifier.width(4.dp))
   }
   if (encrypted != null) {
-    StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open), color)
+    StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
     Spacer(Modifier.width(4.dp))
   }
   Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
