@@ -2442,6 +2442,7 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
         let (cts, ucs, ms, sfts, rfts, pcs) = foldl' addEntity (M.empty, M.empty, M.empty, M.empty, M.empty, M.empty) entities
         pure (conns, cts, ucs, [], ms, sfts, rfts, pcs)
       else do
+        withStore' unsetConnectionToSubscribe
         (ctConns, cts) <- getContactConns
         (ucConns, ucs) <- getUserContactLinkConns
         (gs, mConns, ms) <- getGroupMemberConns

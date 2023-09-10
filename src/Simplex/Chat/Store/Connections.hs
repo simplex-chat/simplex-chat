@@ -8,6 +8,7 @@
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
     getConnectionsToSubscribe,
+    unsetConnectionToSubscribe,
   )
 where
 
@@ -155,6 +156,9 @@ getConnectionsToSubscribe db = do
     getUserByAConnId db acId >>= \case
       Just user -> eitherToMaybe <$> runExceptT (getConnectionEntity db user acId)
       Nothing -> pure Nothing
-  DB.execute_ db "UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1"
+  unsetConnectionToSubscribe db
   let connIds = map (\(AgentConnId connId) -> connId) aConnIds
   pure (connIds, catMaybes entities)
+
+unsetConnectionToSubscribe :: DB.Connection -> IO ()
+unsetConnectionToSubscribe db = DB.execute_ db "UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1"
