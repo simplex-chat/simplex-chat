@@ -213,7 +213,11 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
     val filePath = getLoadedFilePath(ciFile)
     if (filePath != null && to != null) {
       if (ciFile?.fileSource?.cryptoArgs != null) {
-        decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, to.path)
+        createTmpFileAndDelete { tmpFile ->
+          decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+          copyFileToFile(tmpFile, to) {}
+          tmpFile.delete()
+        }
       } else {
         copyFileToFile(File(filePath), to) {}
       }
