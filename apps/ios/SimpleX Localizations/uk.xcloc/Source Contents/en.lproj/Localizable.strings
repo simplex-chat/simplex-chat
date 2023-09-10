@@ -1,0 +1,30 @@
+/* No comment provided by engineer. */
+"_italic_" = "\\_italic_";
+
+/* No comment provided by engineer. */
+"**Add new contact**: to create your one-time QR Code for your contact." = "**Add new contact**: to create your one-time QR Code or link for your contact.";
+
+/* No comment provided by engineer. */
+"*bold*" = "\\*bold*";
+
+/* No comment provided by engineer. */
+"`a + b`" = "\\`a + b`";
+
+/* No comment provided by engineer. */
+"~strike~" = "\\~strike~";
+
+/* call status */
+"connecting call" = "connecting call…";
+
+/* No comment provided by engineer. */
+"Connecting server…" = "Connecting to server…";
+
+/* No comment provided by engineer. */
+"Connecting server… (error: %@)" = "Connecting to server… (error: %@)";
+
+/* rcv group event chat item */
+"member connected" = "connected";
+
+/* No comment provided by engineer. */
+"No group!" = "Group not found!";
+

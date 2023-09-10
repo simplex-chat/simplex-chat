@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun DefaultBasicTextField(
   modifier: Modifier,
-  initialValue: String,
+  state: MutableState<TextFieldValue>,
   placeholder: (@Composable () -> Unit)? = null,
   leadingIcon: (@Composable () -> Unit)? = null,
   focus: Boolean = false,
@@ -41,11 +41,8 @@ fun DefaultBasicTextField(
   selectTextOnFocus: Boolean = false,
   keyboardOptions: KeyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
   keyboardActions: KeyboardActions = KeyboardActions(),
-  onValueChange: (String) -> Unit,
+  onValueChange: (TextFieldValue) -> Unit,
 ) {
-  val state = remember {
-    mutableStateOf(TextFieldValue(initialValue))
-  }
   val focusRequester = remember { FocusRequester() }
   val keyboard = LocalSoftwareKeyboardController.current
 
@@ -83,8 +80,7 @@ fun DefaultBasicTextField(
         minHeight = TextFieldDefaults.MinHeight
       ),
     onValueChange = {
-      state.value = it
-      onValueChange(it.text)
+      onValueChange(it)
     },
     cursorBrush = SolidColor(colors.cursorColor(false).value),
     visualTransformation = VisualTransformation.None,

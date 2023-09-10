@@ -3,6 +3,8 @@ package chat.simplex.common.platform
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.AnnotatedString
+import chat.simplex.common.model.*
+import chat.simplex.common.views.helpers.getAppFileUri
 import chat.simplex.common.views.helpers.withApi
 import java.io.File
 import java.net.URI
@@ -20,12 +22,16 @@ actual fun ClipboardManager.shareText(text: String) {
   showToast(MR.strings.copied.localized())
 }
 
-actual fun shareFile(text: String, filePath: String) {
+actual fun shareFile(text: String, fileSource: CryptoFile) {
   withApi {
     FileChooserLauncher(false) { to: URI? ->
       if (to != null) {
-        copyFileToFile(File(filePath), to) {}
+        if (fileSource.cryptoArgs != null) {
+          decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, to.path)
+        } else {
+          copyFileToFile(File(fileSource.filePath), to) {}
+        }
       }
-    }.launch(filePath)
+    }.launch(fileSource.filePath)
   }
 }

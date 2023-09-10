@@ -178,7 +178,7 @@ fun DatabaseLayout(
     SectionView(stringResource(MR.strings.chat_database_section)) {
       val unencrypted = chatDbEncrypted == false
       SettingsActionItem(
-        if (unencrypted) painterResource(MR.images.ic_lock_open) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
+        if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
         else painterResource(MR.images.ic_lock),
         stringResource(MR.strings.database_passphrase),
         click = showSettingsModal() { DatabaseEncryptionView(it) },

@@ -123,8 +123,8 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
         // LALAL
         // https://github.com/JetBrains/compose-multiplatform/pull/2015/files#diff-841b3825c504584012e1d1c834d731bae794cce6acad425d81847c8bbbf239e0R24
         if (media is ProviderMedia.Image) {
-          val (uri: URI, imageBitmap: ImageBitmap) = media
-          FullScreenImageView(modifier, uri, imageBitmap)
+          val (data: ByteArray, imageBitmap: ImageBitmap) = media
+          FullScreenImageView(modifier, data, imageBitmap)
         } else if (media is ProviderMedia.Video) {
           val preview = remember(media.uri.path) { base64ToBitmap(media.preview) }
           VideoView(modifier, media.uri, preview, index == settledCurrentPage)
@@ -138,7 +138,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
 }
 
 @Composable
-expect fun FullScreenImageView(modifier: Modifier, uri: URI, imageBitmap: ImageBitmap)
+expect fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap)
 
 @Composable
 private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap, currentPage: Boolean) {
