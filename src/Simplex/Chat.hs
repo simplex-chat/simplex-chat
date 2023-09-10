@@ -2452,7 +2452,6 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
         pure (conns, cts, ucs, gs, ms, sfts, rfts, pcs)
   -- subscribe using batched commands
   rs <- withAgent $ \a -> agentBatchSubscribe a conns
-  -- when onlyNeeded $ withStore' (`unsetConnectionNeedsSub` conns)
   -- send connection events to view
   contactSubsToView rs cts ce
   contactLinkSubsToView rs ucs
