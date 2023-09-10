@@ -8,13 +8,15 @@ import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.UriHandler
-import chat.simplex.common.helpers.toUri
-import chat.simplex.common.model.CIFile
-import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.common.views.helpers.getAppFileUri
+import androidx.core.content.FileProvider
+import androidx.core.net.toUri
+import chat.simplex.common.helpers.*
+import chat.simplex.common.model.*
+import chat.simplex.common.views.helpers.*
 import java.io.BufferedOutputStream
 import java.io.File
 import chat.simplex.res.MR
+import java.io.ByteArrayOutputStream
 
 actual fun ClipboardManager.shareText(text: String) {
   val sendIntent: Intent = Intent().apply {
@@ -28,9 +30,17 @@ actual fun ClipboardManager.shareText(text: String) {
   androidAppContext.startActivity(shareIntent)
 }
 
-actual fun shareFile(text: String, filePath: String) {
-  val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
-  val ext = filePath.substringAfterLast(".")
+actual fun shareFile(text: String, fileSource: CryptoFile) {
+  val uri = if (fileSource.cryptoArgs != null) {
+    val tmpFile = File(tmpDir, fileSource.filePath)
+    tmpFile.deleteOnExit()
+    ChatModel.filesToDelete.add(tmpFile)
+    decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
+    FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", File(tmpFile.absolutePath)).toURI()
+  } else {
+    getAppFileUri(fileSource.filePath)
+  }
+  val ext = fileSource.filePath.substringAfterLast(".")
   val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: return
   val sendIntent: Intent = Intent().apply {
     action = Intent.ACTION_SEND
@@ -84,8 +94,16 @@ fun saveImage(ciFile: CIFile?) {
     uri?.let {
       androidAppContext.contentResolver.openOutputStream(uri)?.let { stream ->
         val outputStream = BufferedOutputStream(stream)
-        File(filePath).inputStream().use { it.copyTo(outputStream) }
-        outputStream.close()
+        if (ciFile.fileSource?.cryptoArgs != null) {
+          createTmpFileAndDelete { tmpFile ->
+            decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+            tmpFile.inputStream().use { it.copyTo(outputStream) }
+          }
+          outputStream.close()
+        } else {
+          File(filePath).inputStream().use { it.copyTo(outputStream) }
+          outputStream.close()
+        }
         showToast(generalGetString(MR.strings.image_saved))
       }
     }

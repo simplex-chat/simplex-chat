@@ -855,6 +855,7 @@
   <string name="privacy_and_security">Privacy &amp; security</string>
   <string name="your_privacy">Your privacy</string>
   <string name="protect_app_screen">Protect app screen</string>
+  <string name="encrypt_local_files">Encrypt local files</string>
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="privacy_show_last_messages">Show last messages</string>

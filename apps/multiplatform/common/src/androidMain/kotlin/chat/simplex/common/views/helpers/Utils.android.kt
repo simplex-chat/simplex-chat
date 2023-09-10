@@ -1,6 +1,5 @@
 package chat.simplex.common.views.helpers
 
-import android.app.Application
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
@@ -12,11 +11,8 @@ import android.text.Spanned
 import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.BaselineShift
@@ -159,17 +155,18 @@ actual fun getAppFileUri(fileName: String): URI =
   FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", File(getAppFilePath(fileName))).toURI()
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-actual fun getLoadedImage(file: CIFile?): ImageBitmap? {
+actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   val filePath = getLoadedFilePath(file)
-  return if (filePath != null) {
+  return if (filePath != null && file != null) {
     try {
-      val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
-      val parcelFileDescriptor = androidAppContext.contentResolver.openFileDescriptor(uri.toUri(), "r")
-      val fileDescriptor = parcelFileDescriptor?.fileDescriptor
-      val image = decodeSampledBitmapFromFileDescriptor(fileDescriptor, 1000, 1000)
-      parcelFileDescriptor?.close()
-      image.asImageBitmap()
+      val data = if (file.fileSource?.cryptoArgs != null) {
+        readCryptoFile(getAppFilePath(file.fileSource.filePath), file.fileSource.cryptoArgs)
+      } else {
+        File(getAppFilePath(file.fileName)).readBytes()
+      }
+      decodeSampledBitmapFromByteArray(data, 1000, 1000).asImageBitmap() to data
     } catch (e: Exception) {
+      Log.e(TAG, e.stackTraceToString())
       null
     }
   } else {
@@ -178,17 +175,17 @@ actual fun getLoadedImage(file: CIFile?): ImageBitmap? {
 }
 
 // https://developer.android.com/topic/performance/graphics/load-bitmap#load-bitmap
-private fun decodeSampledBitmapFromFileDescriptor(fileDescriptor: FileDescriptor?, reqWidth: Int, reqHeight: Int): Bitmap {
+private fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, reqHeight: Int): Bitmap {
   // First decode with inJustDecodeBounds=true to check dimensions
   return BitmapFactory.Options().run {
     inJustDecodeBounds = true
-    BitmapFactory.decodeFileDescriptor(fileDescriptor, null, this)
+    BitmapFactory.decodeByteArray(data, 0, data.size)
     // Calculate inSampleSize
     inSampleSize = calculateInSampleSize(this, reqWidth, reqHeight)
     // Decode bitmap with inSampleSize set
     inJustDecodeBounds = false
 
-    BitmapFactory.decodeFileDescriptor(fileDescriptor, null, this)
+    BitmapFactory.decodeByteArray(data, 0, data.size)
   }
 }
 
@@ -251,6 +248,26 @@ actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitma
     }
   } else {
     BitmapFactory.decodeFile(getAppFilePath(uri))
+  }?.asImageBitmap()
+}
+
+actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap? {
+  return if (Build.VERSION.SDK_INT >= 31) {
+    val source = ImageDecoder.createSource(data)
+    try {
+      ImageDecoder.decodeBitmap(source)
+    } catch (e: android.graphics.ImageDecoder.DecodeException) {
+      Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
+      if (withAlertOnException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.image_decoding_exception_title),
+          text = generalGetString(MR.strings.image_decoding_exception_desc)
+        )
+      }
+      null
+    }
+  } else {
+    BitmapFactory.decodeByteArray(data, 0, data.size)
   }?.asImageBitmap()
 }
 

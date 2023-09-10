@@ -13,6 +13,7 @@ import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.platform.AudioPlayer
+import chat.simplex.common.platform.chatController
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -1394,6 +1395,13 @@ data class ChatItem (
 
   private val isLiveDummy: Boolean get() = meta.itemId == TEMP_LIVE_CHAT_ITEM_ID
 
+  val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
+
+  val encryptLocalFile: Boolean
+    get() = file?.fileProtocol == FileProtocol.XFTP &&
+        content.msgContent !is MsgContent.MCVideo &&
+        chatController.appPrefs.privacyEncryptLocalFiles.get()
+
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.displayName
     else null
@@ -2077,7 +2085,7 @@ class CIFile(
 }
 
 @Serializable
-class CryptoFile(
+data class CryptoFile(
   val filePath: String,
   val cryptoArgs: CryptoFileArgs?
 ) {
@@ -2087,7 +2095,7 @@ class CryptoFile(
 }
 
 @Serializable
-class  CryptoFileArgs(val fileKey: String, val fileNonce: String)
+data class CryptoFileArgs(val fileKey: String, val fileNonce: String)
 
 class CancelAction(
   val uiActionId: StringResource,
