@@ -177,6 +177,8 @@
                             
                                 <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">منصة SimpleX</a></li>
                             
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX خدمة الدليل</a></li>
+                            
                                 <li><a href="/docs/android.html" class=" lg:px-[20px] inline-block whitespace-nowrap">الوصول إلى ملفات اندرويد</a></li>
                             
                                 <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">الوصول إلى قاعدة بيانات الدردشة</a></li>
@@ -607,7 +609,7 @@ window.addEventListener('scroll',changeHeaderBg);
     سأل العديد من المستخدمين: <em> إذا لم يكن لدى SimpleX معرفات مستخدم، فكيف يمكنها معرفة مكان تسليم الرسائل؟ </em>
 </p>
 <p>
-    لتقديم الرسائل، بدلاً من معرفات المستخدم التي تستخدمها جميع المنصات الأخرى، يستخدم SimpleX معرفات مزدوجة مؤقتة مجهولة الهوية لقوائم انتظار الرسائل، مختلفة لكل اتصال من اتصالاتك — لا توجد معرفات مستخدم دائمة.
+    لتوصيل الرسائل، بدلاً من معرفات المستخدم التي تستخدمها جميع المنصات الأخرى، يستخدم SimpleX معرفات مزدوجة مؤقتة مجهولة الهوية لقوائم انتظار الرسائل، مختلفة لكل اتصال من اتصالاتك — لا توجد معرفات مستخدم دائمة.
 </p>
 <p>
     أنت تحدد الخادم (الخوادم) المراد استخدامه لتلقي الرسائل وجهات الاتصال الخاصة بك — الخوادم التي تستخدمها لإرسال الرسائل إليهم. من المرجح أن تستخدم كل محادثة خادمين مختلفين.
@@ -671,7 +673,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             <div class="socials flex items-center justify-center xl:justify-start gap-4 flex-wrap mt-[30px]">
                                 <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg"></a>
                                 <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg"></a>
-                                <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg"></a>
+                                <a href="/ar/fdroid" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg"></a>
                                 <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png"></a>
                                 <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png"></a>
                             </div>
@@ -822,7 +824,7 @@ window.addEventListener('scroll',changeHeaderBg);
     لكي تكون موضوعيًا وتتخذ قرارات مستقلة، يجب أن تكون متحكمًا في مساحة المعلومات الخاصة بك. هذا ممكن فقط إذا كنت تستخدم منصة اتصالات خاصة لا يمكنها الوصول إلى الرسم البياني الاجتماعي الخاص بك.
 </p>
 <p>
-    SimpleX هو النظام الأساسي الأول الذي لا يحتوي على أي معرفات مستخدم حسب التصميم، وبهذه الطريقة تحمي مخطط اتصالاتك بشكل أفضل من أي بديل معروف.
+    SimpleX هو النظام الأساسي الأول الذي لا يحتوي على أي معرفات مستخدم صمّم ليكون خاصًا، وبهذه الطريقة تحمي مخطط اتصالاتك بشكل أفضل من أي بديل معروف.
 </p>
 
                         </div>
@@ -1731,6 +1733,8 @@ window.addEventListener('scroll',changeHeaderBg);
             <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">3. ما الذي تراة الخوادم</div>
         </div>
 
+        <div class="simplex-explained-lottie h-[340px] mb-[74px] hidden md:block"></div>
+
         <!-- Tab content -->
         <div class="swiper simplex-explained-swiper">
             <div class="swiper-wrapper h-[inherit] mb-20 md:mb-0">
@@ -1738,7 +1742,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="swiper-slide h-[inherit]">
                     <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">1. تجربة المستخدم</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="h-[340px] mb-[74px]" src="/img/new/explained-1.svg" alt="">
+                        <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-1.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             يمكنك إنشاء جهات اتصال ومجموعات وإجراء محادثات ثنائية الاتجاه، كما هو الحال في أي برنامج مراسلة آخر.
                         </p>
@@ -1751,7 +1755,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="swiper-slide h-[inherit]">
                     <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">2. كيف يعمل</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="h-[340px] mb-[74px]" src="/img/new/explained-2.svg" alt="">
+                        <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-2.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             لكل اتصال، تستخدم قائمتي انتظار منفصلتين للمراسلة لإرسال واستقبال الرسائل عبر خوادم مختلفة.
                         </p>
@@ -1764,7 +1768,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="swiper-slide h-[inherit]">
                     <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">3. ما الذي تراة الخوادم</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="h-[340px] mb-[74px]" src="/img/new/explained-3.svg" alt="">
+                        <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-3.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             تحتوي الخوادم على بيانات اعتماد مجهولة منفصلة لكل قائمة انتظار، ولا تعرف المستخدمين الذين ينتمون إليهم.
                         </p>
@@ -1780,10 +1784,34 @@ window.addEventListener('scroll',changeHeaderBg);
     </div>
 </section>
 
+<script src="/js/lottie.min.js"></script>
 <script>
 window.addEventListener("load", function () {
     const simplexExplainedSwiper__bullets = document.querySelectorAll(".simplex-explained-swiper .swiper-pagination > span");
     const simplexExplainedSwiper__tabs = document.querySelectorAll("#simplex-explained .tabs .tab-button");
+
+    const simplexExplainedLottie = document.querySelector('.simplex-explained-lottie');
+
+    const simplexExplainedLottieAnimation = lottie.loadAnimation({
+        container: simplexExplainedLottie,
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        path: '/lottie_file/SimpleXExplainedLottie.json'
+    })
+
+    let targetFrame = null;
+
+    function animateToTarget() {
+        if (targetFrame !== null) {
+            const currentFrame = Math.round(simplexExplainedLottieAnimation.currentRawFrame);
+            if (currentFrame !== targetFrame) {
+                const direction = currentFrame < targetFrame ? 1 : -1;
+                simplexExplainedLottieAnimation.goToAndStop(currentFrame + direction, true);
+                setTimeout(animateToTarget, 22);  // Add delay here
+            }
+        }
+    }
 
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -1791,6 +1819,24 @@ window.addEventListener("load", function () {
                 simplexExplainedSwiper__bullets.forEach((el,index) => {
                     if (el.classList.contains("swiper-pagination-bullet-active")) {
                         simplexExplainedSwiper__tabs[index].classList.add("active");
+
+                        const currentFrame = Math.round(simplexExplainedLottieAnimation.currentRawFrame);
+                        if(index === 0){
+                            if (currentFrame > 0) {
+                                targetFrame = 0;
+                                animateToTarget();
+                            }
+                        }else if(index === 1){ 
+                            if (currentFrame !== 35) {
+                                targetFrame = 35;
+                                animateToTarget();
+                            }
+                        }else if(index === 2){
+                            if (currentFrame < 68) {
+                                targetFrame = 68;
+                                animateToTarget();
+                            }
+                        }
                     } else {
                         simplexExplainedSwiper__tabs[index].classList.remove("active");
                     }
@@ -1841,8 +1887,8 @@ window.addEventListener("load", function () {
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">احتمالية هجوم الوسيط</td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">لا - آمن</td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم <sup>4</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">لا - آمن <sup>4</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم <sup>5</sup></td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم</td>
                     </tr>
@@ -1857,15 +1903,15 @@ window.addEventListener("load", function () {
                         <td class="min-w-[210px]">شبكة أحادية أو مركزية</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">لا - لامركزي</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم</td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">لا - فدرالي <sup>5</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم <sup>6</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">لا - فدرالي <sup>6</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم <sup>7</sup></td>
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">مكون مركزي أو هجوم الشبكة الواسع</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">لا - مرن</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم <sup>2</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم <sup>7</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">نعم <sup>8</sup></td>
                     </tr>
                 </tbody>
             </table>
@@ -1879,8 +1925,9 @@ window.addEventListener("load", function () {
                     <li> عادة ما يكون مكوناً من رقم الهاتف، أو اسم المستخدم في بعض الأحيان</li>
                     <li> العناوين تعتمد على الـDNS</li>
                     <li> المفتاح العام أو معرف آخر فريد وعام</li>
-                    <li> إذا خوادم المشغّل مُخترقة</li>
-                    <li> لا يحمي المعلومات الوصفية للمستخدمين</li>
+                    <li> مُرحلات SimpleX لا يمكنها أن تتنازل عن تشفير بين الطرفين. تحقق من رمز الأمان للتخفيف من الهجوم على القناة خارج النطاق</li>
+                    <li> إذا خوادم المشغّل مُخترقة. تحقق من رمز الأمان في Signal وبعض التطبيقات الأخرى للتخفيف منه</li>
+                    <li> لا يحمي خصوصية البيانات الوصفية للمستخدمين</li>
                     <li> على الرغم من أن الـP2P موزعة، إلا أنها ليست فدرالية - يعملون كشبكة واحدة</li>
                     <li> شبكات P2P إما لديها سلطة مركزية أو أن الشبكة كلها يمكن عرضة للخطر - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">اقرأ هنا</a></li>
                 </ol>
@@ -1888,6 +1935,8 @@ window.addEventListener("load", function () {
         </div>
     </div>
 </section>
+
+
 
 
 
@@ -1918,7 +1967,7 @@ window.addEventListener("load", function () {
         <div class="flex items-center justify-center gap-4 flex-wrap">
             <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg"></a>
             <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg"></a>
-            <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg"></a>
+            <a href="/ar/fdroid" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg"></a>
             <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png"></a>
             <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png"></a>
         </div>

@@ -177,6 +177,8 @@
                             
                                 <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Plataforma SimpleX</a></li>
                             
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Servicio Simplex Directory</a></li>
+                            
                                 <li><a href="/docs/android.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Acceso a archivos de Android</a></li>
                             
                                 <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Acceso a la base de datos de chat</a></li>
@@ -605,7 +607,7 @@ window.addEventListener('scroll',changeHeaderBg);
     Muchos usuarios se preguntan: <em>si SimpleX no tiene identificadores de usuario, ¿cómo puede saber dónde entregar los mensajes?</em>
 </p>
 <p>
-    Para entregar los mensajes, en lugar de los identificadores de usuario utilizados por todas las demás plataformas, SimpleX usa identificadores por pares anónimos y temporales de colas de mensajes, independientes para cada una de sus conexiones — no hay identificadores a largo plazo.
+    Para entregar los mensajes, en lugar de los identificadores de usuario utilizados por todas las demás plataformas, SimpleX emplea identificadores por pares temporales y anónimos de colas de mensajes, independientes para cada una de sus conexiones — no hay identificadores a largo plazo.
 </p>
 <p>
     Usted define qué servidor(es) se usan para recibir los mensajes; sus contactos — los servidores que se usan para enviar los mensajes. Es probable que cada conversación use dos servidores distintos.
@@ -669,7 +671,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             <div class="socials flex items-center justify-center xl:justify-start gap-4 flex-wrap mt-[30px]">
                                 <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg"></a>
                                 <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg"></a>
-                                <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg"></a>
+                                <a href="/es/fdroid" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg"></a>
                                 <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png"></a>
                                 <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png"></a>
                             </div>
@@ -1729,6 +1731,8 @@ window.addEventListener('scroll',changeHeaderBg);
             <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">3. Qué ven los servidores</div>
         </div>
 
+        <div class="simplex-explained-lottie h-[340px] mb-[74px] hidden md:block"></div>
+
         <!-- Tab content -->
         <div class="swiper simplex-explained-swiper">
             <div class="swiper-wrapper h-[inherit] mb-20 md:mb-0">
@@ -1736,7 +1740,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="swiper-slide h-[inherit]">
                     <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">1. Experiencia del usuario</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="h-[340px] mb-[74px]" src="/img/new/explained-1.svg" alt="">
+                        <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-1.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             Puedes crear contactos y grupos, y mantener conversaciones bidireccionales como en cualquier aplicación de mensajería.
                         </p>
@@ -1749,7 +1753,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="swiper-slide h-[inherit]">
                     <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">2. Cómo funciona la red</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="h-[340px] mb-[74px]" src="/img/new/explained-2.svg" alt="">
+                        <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-2.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             Por cada conexión se usan dos colas de mensajes separadas para que el envío y recepción se hagan a través de servidores diferentes.
                         </p>
@@ -1762,7 +1766,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="swiper-slide h-[inherit]">
                     <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">3. Qué ven los servidores</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="h-[340px] mb-[74px]" src="/img/new/explained-3.svg" alt="">
+                        <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-3.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             Para cada cola los servidores disponen de credenciales separadas y anónimas, por lo que desconocen a qué usuarios pertenecen.
                         </p>
@@ -1778,10 +1782,34 @@ window.addEventListener('scroll',changeHeaderBg);
     </div>
 </section>
 
+<script src="/js/lottie.min.js"></script>
 <script>
 window.addEventListener("load", function () {
     const simplexExplainedSwiper__bullets = document.querySelectorAll(".simplex-explained-swiper .swiper-pagination > span");
     const simplexExplainedSwiper__tabs = document.querySelectorAll("#simplex-explained .tabs .tab-button");
+
+    const simplexExplainedLottie = document.querySelector('.simplex-explained-lottie');
+
+    const simplexExplainedLottieAnimation = lottie.loadAnimation({
+        container: simplexExplainedLottie,
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        path: '/lottie_file/SimpleXExplainedLottie.json'
+    })
+
+    let targetFrame = null;
+
+    function animateToTarget() {
+        if (targetFrame !== null) {
+            const currentFrame = Math.round(simplexExplainedLottieAnimation.currentRawFrame);
+            if (currentFrame !== targetFrame) {
+                const direction = currentFrame < targetFrame ? 1 : -1;
+                simplexExplainedLottieAnimation.goToAndStop(currentFrame + direction, true);
+                setTimeout(animateToTarget, 22);  // Add delay here
+            }
+        }
+    }
 
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -1789,6 +1817,24 @@ window.addEventListener("load", function () {
                 simplexExplainedSwiper__bullets.forEach((el,index) => {
                     if (el.classList.contains("swiper-pagination-bullet-active")) {
                         simplexExplainedSwiper__tabs[index].classList.add("active");
+
+                        const currentFrame = Math.round(simplexExplainedLottieAnimation.currentRawFrame);
+                        if(index === 0){
+                            if (currentFrame > 0) {
+                                targetFrame = 0;
+                                animateToTarget();
+                            }
+                        }else if(index === 1){ 
+                            if (currentFrame !== 35) {
+                                targetFrame = 35;
+                                animateToTarget();
+                            }
+                        }else if(index === 2){
+                            if (currentFrame < 68) {
+                                targetFrame = 68;
+                                animateToTarget();
+                            }
+                        }
                     } else {
                         simplexExplainedSwiper__tabs[index].classList.remove("active");
                     }
@@ -1839,8 +1885,8 @@ window.addEventListener("load", function () {
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">Posibilidad de MITM</td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - seguro</td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí <sup>4</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - seguro <sup>4</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí <sup>5</sup></td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí</td>
                     </tr>
@@ -1855,15 +1901,15 @@ window.addEventListener("load", function () {
                         <td class="min-w-[210px]">Red única o centralizada</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - descentralizado</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí</td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - federado <sup>5</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí <sup>6</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - federado <sup>6</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí <sup>7</sup></td>
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">Componente central u otro ataque en toda la red</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - resiliente</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí</td>
                         <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí <sup>2</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí <sup>7</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Sí <sup>8</sup></td>
                     </tr>
                 </tbody>
             </table>
@@ -1877,8 +1923,9 @@ window.addEventListener("load", function () {
                     <li> Generalmente basado en un número de teléfono, en algunos casos en nombres de usuario</li>
                     <li> Direcciones basadas en DNS</li>
                     <li> Clave pública o algun otro ID único a nivel global</li>
-                    <li> Si los servidores del operador se ven comprometidos</li>
-                    <li> No protege los metadatos del usuario</li>
+                    <li> Los servidores de retransmisión no pueden comprometer la encriptación e2e. Para evitar posibles ataques, verifique el código de seguridad mediante un canal alternativo</li>
+                    <li> Si los servidores del operador se ven comprometidos. Verifique el código de seguridad en Signal y alguna otra aplicación para mitigarlo</li>
+                    <li> No protege la privacidad de los metadatos del usuario</li>
                     <li> A pesar de que las redes P2P son distribuidas, no son federadas - funcionan como una única red</li>
                     <li> Las redes P2P o bien tienen una autoridad central o toda la red puede verse comprometida - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">ver aquí</a></li>
                 </ol>
@@ -1886,6 +1933,8 @@ window.addEventListener("load", function () {
         </div>
     </div>
 </section>
+
+
 
 
 
@@ -1916,7 +1965,7 @@ window.addEventListener("load", function () {
         <div class="flex items-center justify-center gap-4 flex-wrap">
             <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg"></a>
             <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg"></a>
-            <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg"></a>
+            <a href="/es/fdroid" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg"></a>
             <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png"></a>
             <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png"></a>
         </div>

@@ -169,6 +169,8 @@
                             
                                 <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX platform</a></li>
                             
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
+                            
                                 <li><a href="/docs/android.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing Android files</a></li>
                             
                                 <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing chat database</a></li>
@@ -523,6 +525,10 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/directory.html">SimpleX Directory Service</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/android.html">Accessing files in Android app</a>
                                                 </li>
                                             
@@ -672,11 +678,38 @@ window.addEventListener('scroll',changeHeaderBg);
 <li>protection of sender IP address from the recipients.</li>
 </ul>
 <h2 id="installation" tabindex="-1">Installation</h2>
-<ol>
+<ol start="0">
 <li>
-<p>Download <code>xftp-server</code> binary:</p>
-<pre><code class="language-sh">sudo curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server &amp;&amp; sudo chmod +x /usr/local/bin/xftp-server
+<p>First, install <code>xftp-server</code>:</p>
+<ul>
+<li>
+<p>Manual deployment (see below)</p>
+</li>
+<li>
+<p>Semi-automatic deployment:</p>
+<ul>
+<li><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></li>
+<li><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p>Manual installation requires some preliminary actions:</p>
+<ol start="0">
+<li>
+<p>Install binary:</p>
+<ul>
+<li>
+<p>Using offical binaries:</p>
+<pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server
 </code></pre>
+</li>
+<li>
+<p>Compiling from source:</p>
+<p>Please refer to <a href="https://github.com/simplex-chat/simplexmq#using-your-distribution">Build from source: Using your distribution</a></p>
+</li>
+</ul>
 </li>
 <li>
 <p>Create user and group for <code>xftp-server</code>:</p>
@@ -718,6 +751,77 @@ AmbientCapabilities=CAP_NET_BIND_SERVICE
 WantedBy=multi-user.target
 </code></pre>
 <p>And execute <code>sudo systemctl daemon-reload</code>.</p>
+</li>
+</ol>
+<h2 id="tor-installation" tabindex="-1">Tor installation</h2>
+<p>xftp-server can also be deployed to serve from <a href="https://www.torproject.org">tor</a> network. Run the following commands as <code>root</code> user.</p>
+<ol>
+<li>
+<p>Install tor:</p>
+<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">offical tor documentation</a> or your distribution guide.</p>
+<ul>
+<li>
+<p>Configure offical Tor PPA repository:</p>
+<pre><code class="language-sh">CODENAME=&quot;$(lsb_release -c | awk '{print $2}')&quot;
+echo &quot;deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
+deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main&quot; &gt; /etc/apt/sources.list.d/tor.list
+</code></pre>
+</li>
+<li>
+<p>Import repository key:</p>
+<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg &gt;/dev/null
+</code></pre>
+</li>
+<li>
+<p>Update repository index:</p>
+<pre><code class="language-sh">apt update
+</code></pre>
+</li>
+<li>
+<p>Install <code>tor</code> package:</p>
+<pre><code class="language-sh">apt install -y tor deb.torproject.org-keyring
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Configure tor:</p>
+<ul>
+<li>
+<p>File configuration:</p>
+<p>Open tor configuration with your editor of choice (<code>nano</code>,<code>vim</code>,<code>emacs</code>,etc.):</p>
+<pre><code class="language-sh">vim /etc/tor/torrc
+</code></pre>
+<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: this is comments about each individual options.</p>
+<pre><code class="language-sh"># Enable log (otherwise, tor doesn't seemd to deploy onion address)
+Log notice file /var/log/tor/notices.log
+# Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside xftp-server and onion address will be displayed in clients, this is totally fine)
+SOCKSPort 0
+HiddenServiceNonAnonymousMode 1
+HiddenServiceSingleHopMode 1
+# xftp-server hidden service host directory and port mappings
+HiddenServiceDir /var/lib/tor/simplex-xftp/
+HiddenServicePort 443 localhost:443
+</code></pre>
+</li>
+<li>
+<p>Create directories:</p>
+<pre><code class="language-sh">mkdir /var/lib/tor/simplex-xftp/ &amp;&amp; chown debian-tor:debian-tor /var/lib/tor/simplex-xftp/ &amp;&amp; chmod 700 /var/lib/tor/simplex-xftp/
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Start tor:</p>
+<p>Enable <code>systemd</code> service and start tor. Offical <code>tor</code> is a bit flunky on the first start and may not create onion host address, so we're restarting it just in case.</p>
+<pre><code class="language-sh">systemctl enable tor &amp;&amp; systemctl start tor &amp;&amp; systemctl restart tor
+</code></pre>
+</li>
+<li>
+<p>Display onion host:</p>
+<p>Execute the following command to display your onion host address:</p>
+<pre><code class="language-sh">cat /var/lib/tor/simplex-xftp/hostname
+</code></pre>
 </li>
 </ol>
 <h2 id="configuration" tabindex="-1">Configuration</h2>
@@ -942,7 +1046,7 @@ allow_local_mode = true
 </ol>
 <p>For further documentation, see: <a href="https://grafana.github.io/grafana-csv-datasource/">CSV Data Source for Grafana - Documentation</a></p>
 <h3 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h3>
-<p>Please see: <a href="SERVER.html#configuring-the-app-to-use-the-server">SMP Server: Configuring the app to use the server</a>.</p>
+<p>Please see: <a href="server.html#configuring-the-app-to-use-the-server">SMP Server: Configuring the app to use the server</a>.</p>
 </div>
                 </article>
             </main>

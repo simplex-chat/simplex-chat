@@ -174,6 +174,8 @@
                             
                                 <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX platform</a></li>
                             
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
+                            
                                 <li><a href="/docs/android.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing Android files</a></li>
                             
                                 <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing chat database</a></li>
@@ -417,8 +419,8 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>Please report the cases when messages are not delivered – delivery receipts should help with that.</p>
 <h4 id="messages-failed-to-decrypt-problem-solved" tabindex="-1">Messages failed to decrypt? Problem solved!</h4>
 <p>Previously, a growing number of users had the issue when after restoring the chat database from backup, messages from some contacts failed to decrypt and were showing an error in the app.</p>
-<p>This happens due to double ratchet protocol protecting the integrity of end-to-end encryption after the compromise - <a href="docs/GLOSSARY.html#post-compromise-security">post-compromise security</a>. The protocol logic does not allow to use the old version of the database to decrypt the message.</p>
-<p>v5.2 added the extension to the messaging protocol allowing to negotiate the new ratchet keys in such cases - both with the contacts and the group members. This requires a user action, and it resets the security code verification status for this contact or member – you need to verify it again to have the additional protection from <a href="docs/GLOSSARY.html#man-in-the-middle-attack">man-in-the-middle attacks</a>.</p>
+<p>This happens due to double ratchet protocol protecting the integrity of end-to-end encryption after the compromise - <a href="docs/glossary.html#post-compromise-security">post-compromise security</a>. The protocol logic does not allow to use the old version of the database to decrypt the message.</p>
+<p>v5.2 added the extension to the messaging protocol allowing to negotiate the new ratchet keys in such cases - both with the contacts and the group members. This requires a user action, and it resets the security code verification status for this contact or member – you need to verify it again to have the additional protection from <a href="docs/glossary.html#man-in-the-middle-attack">man-in-the-middle attacks</a>.</p>
 <p>The negotiation of the new ratchet keys still happens via the end-to-end encrypted messages, as the protocol has two layers of end-to-end encryption, so it cannot be compromised by the messaging relays.</p>
 <p>You may still lose connection if you or your contact changed the receiving address after you made the backup, so make sure to make a new backup after any receiving address changes.</p>
 <h4 id="reconnect-the-servers" tabindex="-1">Reconnect the servers</h4>

@@ -169,6 +169,8 @@
                             
                                 <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX platform</a></li>
                             
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
+                            
                                 <li><a href="/docs/android.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing Android files</a></li>
                             
                                 <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing chat database</a></li>
@@ -601,6 +603,10 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/directory.html">SimpleX Directory Service</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/android.html">Accessing files in Android app</a>
                                                 </li>
                                             
@@ -738,7 +744,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             </div>
                         </div>
                     </div>
-                    <div><p>| Updated 31.01.2023 | Languages: EN, <a href="/docs/lang/fr/CLI.html">FR</a>, <a href="/docs/lang/cs/CLI.html">CZ</a> |</p>
+                    <div><p>| Updated 31.01.2023 | Languages: EN, <a href="/docs/lang/fr/cli.html">FR</a>, <a href="/docs/lang/cs/cli.html">CZ</a> |</p>
 <h1 id="simplex-chat-terminal-console-app-for-linuxmacoswindows" tabindex="-1">SimpleX Chat terminal (console) app for Linux/MacOS/Windows</h1>
 <h2 id="table-of-contents" tabindex="-1">Table of contents</h2>
 <ul>
@@ -904,7 +910,7 @@ brew services start tor
 <p>Open SQLite Command Line Shell:</p>
 <pre><code class="language-sh">sqlite3 ~/.simplex/simplex_v1_chat.db
 </code></pre>
-<p>See <a href="SQL.html">Message queries</a> for examples.</p>
+<p>See <a href="sql.html">Message queries</a> for examples.</p>
 <blockquote>
 <p><strong>Please note:</strong> SQLite foreign key constraints are disabled by default, and must be <strong><a href="https://sqlite.org/foreignkeys.html#fk_enable">enabled separately for each database connection</a></strong>. The latter can be achieved by running <code>PRAGMA foreign_keys = ON;</code> command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.</p>
 </blockquote>

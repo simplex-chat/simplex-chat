@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xml:base="https://simplex.chat/," xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xml:base="https://simplex.chat/" xmlns:atom="http://www.w3.org/2005/Atom">
     <channel>
         <title>SimpleX Chat Blog</title>
-        <link>https://simplex.chat/,</link>
+        <link>https://simplex.chat/</link>
         <atom:link href="https://simplex.chat/feed.rss" rel="self" type="application/rss+xml"/>
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
@@ -72,8 +72,8 @@
 &lt;p&gt;Please report the cases when messages are not delivered – delivery receipts should help with that.&lt;/p&gt;
 &lt;h4 id=&quot;messages-failed-to-decrypt-problem-solved&quot; tabindex=&quot;-1&quot;&gt;Messages failed to decrypt? Problem solved!&lt;/h4&gt;
 &lt;p&gt;Previously, a growing number of users had the issue when after restoring the chat database from backup, messages from some contacts failed to decrypt and were showing an error in the app.&lt;/p&gt;
-&lt;p&gt;This happens due to double ratchet protocol protecting the integrity of end-to-end encryption after the compromise - &lt;a href=&quot;https://simplex.chat/blog/docs/GLOSSARY.html#post-compromise-security&quot;&gt;post-compromise security&lt;/a&gt;. The protocol logic does not allow to use the old version of the database to decrypt the message.&lt;/p&gt;
-&lt;p&gt;v5.2 added the extension to the messaging protocol allowing to negotiate the new ratchet keys in such cases - both with the contacts and the group members. This requires a user action, and it resets the security code verification status for this contact or member – you need to verify it again to have the additional protection from &lt;a href=&quot;https://simplex.chat/blog/docs/GLOSSARY.html#man-in-the-middle-attack&quot;&gt;man-in-the-middle attacks&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;This happens due to double ratchet protocol protecting the integrity of end-to-end encryption after the compromise - &lt;a href=&quot;https://simplex.chat/blog/docs/glossary.html#post-compromise-security&quot;&gt;post-compromise security&lt;/a&gt;. The protocol logic does not allow to use the old version of the database to decrypt the message.&lt;/p&gt;
+&lt;p&gt;v5.2 added the extension to the messaging protocol allowing to negotiate the new ratchet keys in such cases - both with the contacts and the group members. This requires a user action, and it resets the security code verification status for this contact or member – you need to verify it again to have the additional protection from &lt;a href=&quot;https://simplex.chat/blog/docs/glossary.html#man-in-the-middle-attack&quot;&gt;man-in-the-middle attacks&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;The negotiation of the new ratchet keys still happens via the end-to-end encrypted messages, as the protocol has two layers of end-to-end encryption, so it cannot be compromised by the messaging relays.&lt;/p&gt;
 &lt;p&gt;You may still lose connection if you or your contact changed the receiving address after you made the backup, so make sure to make a new backup after any receiving address changes.&lt;/p&gt;
 &lt;h4 id=&quot;reconnect-the-servers&quot; tabindex=&quot;-1&quot;&gt;Reconnect the servers&lt;/h4&gt;
@@ -181,7 +181,7 @@
 &lt;h2 id=&quot;customize-and-share-color-themes&quot; tabindex=&quot;-1&quot;&gt;Customize and share color themes&lt;/h2&gt;
 &lt;img src=&quot;https://simplex.chat/blog/images/20230523-theme.png&quot; width=&quot;288&quot; /&gt;
 &lt;p&gt;Android app now allows choosing between three color themes - Light, Dark and SimpleX (a dark blue theme). You can customize any theme by setting 9 different colors used in the app, including titles, menus, accent colors and colors for sent and received messages.&lt;/p&gt;
-&lt;p&gt;You can share your theme with other users by exporting it to a file and sending to them. You can also &lt;a href=&quot;https://simplex.chat/blog/docs/THEMES.html&quot;&gt;contribute your favorite themes&lt;/a&gt; to our GitHub repository.&lt;/p&gt;
+&lt;p&gt;You can share your theme with other users by exporting it to a file and sending to them. You can also &lt;a href=&quot;https://simplex.chat/blog/docs/themes.html&quot;&gt;contribute your favorite themes&lt;/a&gt; to our GitHub repository.&lt;/p&gt;
 &lt;h2 id=&quot;self-destruct-passcode&quot; tabindex=&quot;-1&quot;&gt;Self-destruct passcode&lt;/h2&gt;
 &lt;img src=&quot;https://simplex.chat/blog/images/20230523-self-destruct.png&quot; width=&quot;288&quot; /&gt;
 &lt;p&gt;This is something many of you asked before - when asked to enter the app passcode under duress, to be able to enter a special self-destruct code that would remove the app data. This feature is offered in many security tools, and now you can configure it in SimpleX Chat as well.&lt;/p&gt;

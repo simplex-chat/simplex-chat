@@ -169,6 +169,8 @@
                             
                                 <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX platform</a></li>
                             
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
+                            
                                 <li><a href="/docs/android.html" class="active lg:px-[20px] inline-block whitespace-nowrap">Accessing Android files</a></li>
                             
                                 <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing chat database</a></li>
@@ -601,6 +603,10 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/directory.html">SimpleX Directory Service</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="active" href="/docs/android.html">Accessing files in Android app</a>
                                                 </li>
                                             
@@ -738,7 +744,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             </div>
                         </div>
                     </div>
-                    <div><p>| 07.02.2023 | EN, <a href="/docs/lang/cs/ANDROID.html">CZ</a>, <a href="/docs/lang/fr/ANDROID.html">FR</a> |</p>
+                    <div><p>| 07.02.2023 | EN, <a href="/docs/lang/cs/android.html">CZ</a>, <a href="/docs/lang/fr/android.html">FR</a> |</p>
 <h1 id="accessing-files-in-android-app" tabindex="-1">Accessing files in Android app</h1>
 <p>SimpleX uses databases and stores its preferences inside private data directory in Android. The directory contains:</p>
 <ul>
@@ -771,7 +777,7 @@ tar -xvzf chat.gz
 <p>After that the backup should be ended. If you see an error saying <code>tar: Error is not recoverable: exiting now</code> but before that you have printed some file names, don't worry, it's ok.</p>
 <p>Now the backed-up files will be inside <code>./apps/chat.simplex.app/</code>.</p>
 <p>Please, note, that if you use a modern version of SimpleX, the databases will be encrypted, and you'll not be able to view contents of them without using <code>sqlcipher</code> application and without knowing decryption passphrase (you need to change it to yours from randomly generated in the app firstly).</p>
-<p>Please, follow <a href="SQL.html">SQL.md</a> guide for more info of how to decrypt your databases and to make queries to them.</p>
+<p>Please, follow <a href="sql.html">SQL.md</a> guide for more info of how to decrypt your databases and to make queries to them.</p>
 </div>
                 </article>
             </main>

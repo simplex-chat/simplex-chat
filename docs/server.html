@@ -169,6 +169,8 @@
                             
                                 <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX platform</a></li>
                             
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
+                            
                                 <li><a href="/docs/android.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing Android files</a></li>
                             
                                 <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing chat database</a></li>
@@ -601,6 +603,10 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
+                                                    <a class="" href="/docs/directory.html">SimpleX Directory Service</a>
+                                                </li>
+                                            
+                                                <li>
                                                     <a class="" href="/docs/android.html">Accessing files in Android app</a>
                                                 </li>
                                             
@@ -738,7 +744,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             </div>
                         </div>
                     </div>
-                    <div><p>| Updated 05.06.2023 | Languages: EN, <a href="/docs/lang/fr/SERVER.html">FR</a>, <a href="/docs/lang/cs/SERVER.html">CZ</a> |</p>
+                    <div><p>| Updated 05.06.2023 | Languages: EN, <a href="/docs/lang/fr/server.html">FR</a>, <a href="/docs/lang/cs/server.html">CZ</a> |</p>
 <h1 id="hosting-your-own-smp-server" tabindex="-1">Hosting your own SMP Server</h1>
 <h2 id="overview" tabindex="-1">Overview</h2>
 <p>SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp11, smp12 and <a href="http://smp14.simplex.im">smp14.simplex.im</a>), but you can easily change app configuration to use other servers.</p>
@@ -750,16 +756,13 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>First, install <code>smp-server</code>:</p>
 <ul>
 <li>
-<p>Manual deployment:</p>
-<ul>
-<li><a href="https://github.com/simplex-chat/simplexmq#using-your-distribution">Compiling from source</a></li>
-<li><a href="https://github.com/simplex-chat/simplexmq#install-binaries">Using pre-compiled binaries</a></li>
-</ul>
+<p>Manual deployment (see below)</p>
 </li>
 <li>
-<p>Alternatively, you can deploy <code>smp-server</code> using:</p>
+<p>Semi-automatic deployment:</p>
 <ul>
-<li><a href="https://github.com/simplex-chat/simplexmq#using-docker-1">Docker container</a></li>
+<li><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></li>
+<li><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></li>
 <li><a href="https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode">Linode StackScript</a></li>
 </ul>
 </li>
@@ -767,7 +770,21 @@ window.addEventListener('scroll',changeHeaderBg);
 </li>
 </ol>
 <p>Manual installation requires some preliminary actions:</p>
-<ol>
+<ol start="0">
+<li>
+<p>Install binary:</p>
+<ul>
+<li>
+<p>Using offical binaries:</p>
+<pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server
+</code></pre>
+</li>
+<li>
+<p>Compiling from source:</p>
+<p>Please refer to <a href="https://github.com/simplex-chat/simplexmq#using-your-distribution">Build from source: Using your distribution</a></p>
+</li>
+</ul>
+</li>
 <li>
 <p>Create user and group for <code>smp-server</code>:</p>
 <pre><code class="language-sh">sudo useradd -m smp
@@ -791,22 +808,93 @@ sudo firewall-cmd --reload
 <li>
 <p><strong>Optional</strong> — If you're using distribution with <code>systemd</code>, create <code>/etc/systemd/system/smp-server.service</code> file with the following content:</p>
 <pre><code class="language-sh">[Unit]
-Description=SMP server
+Description=SMP server systemd service
+
 [Service]
 User=smp
 Group=smp
 Type=simple
-ExecStart=smp-server start
+ExecStart=/usr/local/bin/smp-server start +RTS -N -RTS
 ExecStopPost=/usr/bin/env sh -c '[ -e &quot;/var/opt/simplex/smp-server-store.log&quot; ] &amp;&amp; cp &quot;/var/opt/simplex/smp-server-store.log&quot; &quot;/var/opt/simplex/smp-server-store.log.bak&quot;'
+LimitNOFILE=65535
 KillSignal=SIGINT
 TimeoutStopSec=infinity
-Restart=always
-RestartSec=10
-LimitNOFILE=65535
+
 [Install]
 WantedBy=multi-user.target
 </code></pre>
 <p>And execute <code>sudo systemctl daemon-reload</code>.</p>
+</li>
+</ol>
+<h2 id="tor-installation" tabindex="-1">Tor installation</h2>
+<p>smp-server can also be deployed to serve from <a href="https://www.torproject.org">tor</a> network. Run the following commands as <code>root</code> user.</p>
+<ol>
+<li>
+<p>Install tor:</p>
+<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">offical tor documentation</a> or your distribution guide.</p>
+<ul>
+<li>
+<p>Configure offical Tor PPA repository:</p>
+<pre><code class="language-sh">CODENAME=&quot;$(lsb_release -c | awk '{print $2}')&quot;
+echo &quot;deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
+deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main&quot; &gt; /etc/apt/sources.list.d/tor.list
+</code></pre>
+</li>
+<li>
+<p>Import repository key:</p>
+<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg &gt;/dev/null
+</code></pre>
+</li>
+<li>
+<p>Update repository index:</p>
+<pre><code class="language-sh">apt update
+</code></pre>
+</li>
+<li>
+<p>Install <code>tor</code> package:</p>
+<pre><code class="language-sh">apt install -y tor deb.torproject.org-keyring
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Configure tor:</p>
+<ul>
+<li>
+<p>File configuration:</p>
+<p>Open tor configuration with your editor of choice (<code>nano</code>,<code>vim</code>,<code>emacs</code>,etc.):</p>
+<pre><code class="language-sh">vim /etc/tor/torrc
+</code></pre>
+<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: this is comments about each individual options.</p>
+<pre><code class="language-sh"># Enable log (otherwise, tor doesn't seemd to deploy onion address)
+Log notice file /var/log/tor/notices.log
+# Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside smp-server and onion address will be displayed in clients, this is totally fine)
+SOCKSPort 0
+HiddenServiceNonAnonymousMode 1
+HiddenServiceSingleHopMode 1
+# smp-server hidden service host directory and port mappings
+HiddenServiceDir /var/lib/tor/simplex-smp/
+HiddenServicePort 5223 localhost:5223
+</code></pre>
+</li>
+<li>
+<p>Create directories:</p>
+<pre><code class="language-sh">mkdir /var/lib/tor/simplex-smp/ &amp;&amp; chown debian-tor:debian-tor /var/lib/tor/simplex-smp/ &amp;&amp; chmod 700 /var/lib/tor/simplex-smp/
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Start tor:</p>
+<p>Enable <code>systemd</code> service and start tor. Offical <code>tor</code> is a bit flunky on the first start and may not create onion host address, so we're restarting it just in case.</p>
+<pre><code class="language-sh">systemctl enable tor &amp;&amp; systemctl start tor &amp;&amp; systemctl restart tor
+</code></pre>
+</li>
+<li>
+<p>Display onion host:</p>
+<p>Execute the following command to display your onion host address:</p>
+<pre><code class="language-sh">cat /var/lib/tor/simplex-smp/hostname
+</code></pre>
 </li>
 </ol>
 <h2 id="configuration" tabindex="-1">Configuration</h2>
