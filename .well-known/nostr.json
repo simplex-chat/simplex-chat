@@ -1,0 +1,18 @@
+{
+  "names": {
+    "_": "c998a5739f04f7fff202c54962aa5782b34ecb10d6f915bdfdd7582963bf9171"
+  },
+  "relays": {
+    "c998a5739f04f7fff202c54962aa5782b34ecb10d6f915bdfdd7582963bf9171": [
+      "wss://nostr.orangepill.dev",
+      "wss://eden.nostr.land",
+      "wss://relay.damus.io",
+      "wss://relay.snort.social",
+      "wss://relay.current.fyi",
+      "wss://nos.lol",
+      "wss://relay.nostr.bg",
+      "wss://nostr-verified.wellorder.net",
+      "wss://nostr.milou.lol"
+    ]
+  }
+}
