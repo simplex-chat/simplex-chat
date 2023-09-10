@@ -15,7 +15,7 @@
 ## Welcome to SimpleX Chat!
 
 1. 📲 [Install the app](#install-the-app).
-2. ↔️ [Connect to the team](#connect-to-the-team-via-the-app) and [join user groups](#join-user-groups).
+2. ↔️ [Connect to the team](#connect-to-the-team), [join user groups](#join-user-groups) and [follow our updates](#follow-our-updates).
 3. 🤝 [Make a private connection](#make-a-private-connection) with a friend.
 4. 🔤 [Help translating SimpleX Chat](#help-translating-simplex-chat).
 5. ⚡️ [Contribute](#contribute) and [help us with donations](#help-us-with-donations).
@@ -40,13 +40,21 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) [app / CLI](#zap-quick-installation-of-a-terminal-app) on Linux, MacOS, Windows.
 
-## Connect to the team via the app
+## Connect to the team
+
+You can connect to the team via the app using "chat with the developers button" available when you have no conversations in the profile, "Send questions and ideas" in the app settings or via our [SimpleX address](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). Please connect to:
 
 - to ask any questions
 - to suggest any improvements
 - to share anything relevant
 
+We are replying the questions manually, so it is not instant – it can take up to 24 hours.
+
+If you are interested in helping us to integrate open-source language models, and in [joining our team](./docs/JOIN_TEAM.md), please get in touch.
+
 ## Join user groups
+
+You can join the groups created by other users via the new [directory service](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion). We are not responsible for the content shared in these groups.
 
 **Please note**: The groups below are created for the users to be able to ask questions, make suggestions and ask questions about SimpleX Chat only.
 
@@ -79,7 +87,14 @@ There are groups in other languages, that we have the apps interface translated 
 
 You can join either by opening these links in the app or by opening them in a desktop browser and scanning the QR code.
 
-You can also join the group created by other users by searching for them via the [directory service](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion). We are not responsible for the content shared in these groups.
+## Follow our updates
+
+We publish our updates and releases via:
+
+- [Reddit](https://www.reddit.com/r/SimpleXChat/), [Twitter](https://twitter.com/SimpleXChat), [Lemmy](https://lemmy.ml/c/simplex), [Mastodon](https://mastodon.social/@simplex) and [Nostr](https://snort.social/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828).
+- SimpleX Chat [team profile](#connect-to-the-team).
+- [blog](https://simplex.chat/blog/) and [RSS feed](https://simplex.chat/feed.rss).
+- [mailing list](https://simplex.chat/#join-simplex), very rarely.
 
 ## Make a private connection
 
