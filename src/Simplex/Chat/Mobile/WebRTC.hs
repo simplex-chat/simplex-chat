@@ -14,16 +14,15 @@ import Control.Monad.IO.Class
 import qualified Crypto.Cipher.Types as AES
 import Data.Bifunctor (bimap)
 import qualified Data.ByteArray as BA
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.URL as U
-import Data.ByteString.Internal (ByteString (PS), memcpy)
 import Data.Either (fromLeft)
 import Data.Word (Word8)
 import Foreign.C (CInt, CString, newCAString)
-import Foreign.ForeignPtr (newForeignPtr_)
-import Foreign.ForeignPtr.Unsafe (unsafeForeignPtrToPtr)
-import Foreign.Ptr (Ptr, plusPtr)
+import Foreign.Ptr (Ptr)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Chat.Mobile.Shared
 
 cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 cChatEncryptMedia = cTransformMedia chatEncryptMedia
@@ -34,16 +33,10 @@ cChatDecryptMedia = cTransformMedia chatDecryptMedia
 cTransformMedia :: (ByteString -> ByteString -> ExceptT String IO ByteString) -> CString -> Ptr Word8 -> CInt -> IO CString
 cTransformMedia f cKey cFrame cFrameLen = do
   key <- B.packCString cKey
-  frame <- getFrame
+  frame <- getByteString cFrame cFrameLen
   runExceptT (f key frame >>= liftIO . putFrame) >>= newCAString . fromLeft ""
   where
-    getFrame = do
-      fp <- newForeignPtr_ cFrame
-      pure $ PS fp 0 $ fromIntegral cFrameLen
-    putFrame bs@(PS fp offset _) = do
-      let len = B.length bs
-          p = unsafeForeignPtrToPtr fp `plusPtr` offset
-      when (len <= fromIntegral cFrameLen) $ memcpy cFrame p len
+    putFrame s = when (B.length s <= fromIntegral cFrameLen) $ putByteString cFrame s
 {-# INLINE cTransformMedia #-}
 
 chatEncryptMedia :: ByteString -> ByteString -> ExceptT String IO ByteString

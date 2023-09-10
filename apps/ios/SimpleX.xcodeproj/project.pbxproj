@@ -77,6 +77,7 @@
 		5C9CC7A928C532AB00BEF955 /* DatabaseErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9CC7A828C532AB00BEF955 /* DatabaseErrorView.swift */; };
 		5C9CC7AD28C55D7800BEF955 /* DatabaseEncryptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9CC7AC28C55D7800BEF955 /* DatabaseEncryptionView.swift */; };
 		5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9D13A2282187BB00AB8B43 /* WebRTC.swift */; };
+		5C9D811A2AA8727A001D49FD /* CryptoFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9D81182AA7A4F1001D49FD /* CryptoFile.swift */; };
 		5C9F83F42A9A7D98009AD0AA /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C9F83EF2A9A7D98009AD0AA /* libffi.a */; };
 		5C9F83F52A9A7D98009AD0AA /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C9F83F02A9A7D98009AD0AA /* libgmp.a */; };
 		5C9F83F62A9A7D98009AD0AA /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C9F83F12A9A7D98009AD0AA /* libgmpxx.a */; };
@@ -267,6 +268,8 @@
 		5C10D88728EED12E00E58BF0 /* ContactConnectionInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactConnectionInfo.swift; sourceTree = "<group>"; };
 		5C10D88928F187F300E58BF0 /* FullScreenMediaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenMediaView.swift; sourceTree = "<group>"; };
 		5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactRequestView.swift; sourceTree = "<group>"; };
+		5C136D8E2AAB3D14006DE2FC /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = "fi.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5C136D8F2AAB3D14006DE2FC /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5C13730A28156D2700F43030 /* ContactConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactConnectionView.swift; sourceTree = "<group>"; };
 		5C13730C2815740A00F43030 /* DebugJSON.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = DebugJSON.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemView.swift; sourceTree = "<group>"; };
@@ -295,6 +298,8 @@
 		5C5E5D3C282447AB00B0488A /* CallTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallTypes.swift; sourceTree = "<group>"; };
 		5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileImage.swift; sourceTree = "<group>"; };
+		5C636F662AAB3D2400751C84 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = "uk.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5C636F672AAB3D2400751C84 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5C65DAE429C77136003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		5C65DAE629C771B9003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5C65DAE729C771B9003CEE45 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
@@ -331,6 +336,7 @@
 		5C9CC7A828C532AB00BEF955 /* DatabaseErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseErrorView.swift; sourceTree = "<group>"; };
 		5C9CC7AC28C55D7800BEF955 /* DatabaseEncryptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseEncryptionView.swift; sourceTree = "<group>"; };
 		5C9D13A2282187BB00AB8B43 /* WebRTC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTC.swift; sourceTree = "<group>"; };
+		5C9D81182AA7A4F1001D49FD /* CryptoFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoFile.swift; sourceTree = "<group>"; };
 		5C9F83EF2A9A7D98009AD0AA /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5C9F83F02A9A7D98009AD0AA /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		5C9F83F12A9A7D98009AD0AA /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
@@ -413,6 +419,8 @@
 		5CE2BA96284537A800EC33A6 /* dummy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = dummy.m; sourceTree = "<group>"; };
 		5CE4407127ADB1D0007B033A /* Emoji.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Emoji.swift; sourceTree = "<group>"; };
 		5CE4407827ADB701007B033A /* EmojiItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiItemView.swift; sourceTree = "<group>"; };
+		5CE6C7B32AAB1515007F345C /* fi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fi; path = fi.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5CE6C7B42AAB1527007F345C /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CEACCE227DE9246000BD591 /* ComposeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeView.swift; sourceTree = "<group>"; };
 		5CEACCEC27DEA495000BD591 /* MsgContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MsgContentView.swift; sourceTree = "<group>"; };
 		5CEBD7452A5C0A8F00665FE2 /* KeyboardPadding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardPadding.swift; sourceTree = "<group>"; };
@@ -723,10 +731,10 @@
 				5CADE79929211BB900072E13 /* PreferencesView.swift */,
 				5C5DB70D289ABDD200730FFF /* AppearanceSettings.swift */,
 				5C05DF522840AA1D00C683F9 /* CallSettings.swift */,
-				5C3F1D57284363C400EC8A82 /* PrivacySettings.swift */,
 				5CB924E027A867BA00ACCCDD /* UserProfile.swift */,
 				5CC036DF29C488D500C0EF20 /* HiddenProfileView.swift */,
 				5C577F7C27C83AA10006112D /* MarkdownHelp.swift */,
+				5C3F1D57284363C400EC8A82 /* PrivacySettings.swift */,
 				5C93292E29239A170090FFF9 /* ProtocolServersView.swift */,
 				5C93293029239BED0090FFF9 /* ProtocolServerView.swift */,
 				5C9329402929248A0090FFF9 /* ScanProtocolServer.swift */,
@@ -779,6 +787,7 @@
 				5CDCAD7D2818941F00503DA2 /* API.swift */,
 				5CDCAD80281A7E2700503DA2 /* Notifications.swift */,
 				64DAE1502809D9F5000DA960 /* FileUtils.swift */,
+				5C9D81182AA7A4F1001D49FD /* CryptoFile.swift */,
 				5C00168028C4FE760094D739 /* KeyChain.swift */,
 				5CE2BA76284530BF00EC33A6 /* SimpleXChat.h */,
 				5CE2BA8A2845332200EC33A6 /* SimpleX.h */,
@@ -1003,6 +1012,8 @@
 				pl,
 				ja,
 				th,
+				fi,
+				uk,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -1236,6 +1247,7 @@
 				5CE2BA90284533A300EC33A6 /* JSON.swift in Sources */,
 				5CE2BA8B284533A300EC33A6 /* ChatTypes.swift in Sources */,
 				5CE2BA8F284533A300EC33A6 /* APITypes.swift in Sources */,
+				5C9D811A2AA8727A001D49FD /* CryptoFile.swift in Sources */,
 				5CE2BA8C284533A300EC33A6 /* AppGroup.swift in Sources */,
 				5CE2BA8D284533A300EC33A6 /* CallTypes.swift in Sources */,
 				5CE2BA8E284533A300EC33A6 /* API.swift in Sources */,
@@ -1283,6 +1295,8 @@
 				5C6D183329E93FBA00D430B3 /* pl */,
 				5CAC411B2A192DE800C331A2 /* ja */,
 				5CA3ED502A9422D1005D71E2 /* th */,
+				5C136D8F2AAB3D14006DE2FC /* fi */,
+				5C636F672AAB3D2400751C84 /* uk */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -1302,6 +1316,8 @@
 				5CAB912529E93F9400F34A95 /* pl */,
 				5CAC41182A192D8400C331A2 /* ja */,
 				5CA3ED4D2A942170005D71E2 /* th */,
+				5CE6C7B32AAB1515007F345C /* fi */,
+				5CE6C7B42AAB1527007F345C /* uk */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1320,6 +1336,8 @@
 				5C6D183229E93FBA00D430B3 /* pl */,
 				5CAC411A2A192DE800C331A2 /* ja */,
 				5CA3ED4F2A9422D1005D71E2 /* th */,
+				5C136D8E2AAB3D14006DE2FC /* fi */,
+				5C636F662AAB3D2400751C84 /* uk */,
 			);
 			name = "SimpleX--iOS--InfoPlist.strings";
 			sourceTree = "<group>";

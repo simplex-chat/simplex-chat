@@ -14,13 +14,14 @@ import Control.Monad (forM_)
 import Directory.Options
 import Directory.Service
 import Directory.Store
+import GHC.IO.Handle (hClose)
 import Simplex.Chat.Bot.KnownContacts
+import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Types (GroupMemberRole (..), Profile (..))
 import System.FilePath ((</>))
 import Test.Hspec
-import GHC.IO.Handle (hClose)
 
 directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
@@ -233,10 +234,10 @@ testJoinGroup tmp =
                 dan <## "bob (Bob): contact is connected"
                 dan <## "#privacy: you joined the group"
                 dan <# ("#privacy bob> " <> welcomeMsg)
-                dan <###
-                  [ "#privacy: member SimpleX-Directory is connected",
-                    "#privacy: member cath (Catherine) is connected"
-                  ],
+                dan
+                  <### [ "#privacy: member SimpleX-Directory is connected",
+                         "#privacy: member cath (Catherine) is connected"
+                       ],
               do
                 cath <## "#privacy: bob added dan (Daniel) to the group (connecting...)"
                 cath <## "#privacy: new member dan is connected"
@@ -244,9 +245,9 @@ testJoinGroup tmp =
 
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -260,9 +261,9 @@ testDelistedOwnerLeaves tmp =
 
 testDelistedOwnerRemoved :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerRemoved tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -275,9 +276,9 @@ testDelistedOwnerRemoved tmp =
 
 testNotDelistedMemberLeaves :: HasCallStack => FilePath -> IO ()
 testNotDelistedMemberLeaves tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -287,10 +288,10 @@ testNotDelistedMemberLeaves tmp =
         groupFound cath "privacy"
 
 testNotDelistedMemberRemoved :: HasCallStack => FilePath -> IO ()
-testNotDelistedMemberRemoved tmp = 
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+testNotDelistedMemberRemoved tmp =
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -300,9 +301,9 @@ testNotDelistedMemberRemoved tmp =
 
 testDelistedServiceRemoved :: HasCallStack => FilePath -> IO ()
 testDelistedServiceRemoved tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -317,9 +318,9 @@ testDelistedServiceRemoved tmp =
 
 testDelistedRoleChanges :: HasCallStack => FilePath -> IO ()
 testDelistedRoleChanges tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -363,9 +364,9 @@ testDelistedRoleChanges tmp =
 
 testNotDelistedMemberRoleChanged :: HasCallStack => FilePath -> IO ()
 testNotDelistedMemberRoleChanged tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -427,9 +428,9 @@ testNotApprovedBadRoles tmp =
 
 testRegOwnerChangedProfile :: HasCallStack => FilePath -> IO ()
 testRegOwnerChangedProfile tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -446,9 +447,9 @@ testRegOwnerChangedProfile tmp =
 
 testAnotherOwnerChangedProfile :: HasCallStack => FilePath -> IO ()
 testAnotherOwnerChangedProfile tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -465,9 +466,9 @@ testAnotherOwnerChangedProfile tmp =
 
 testRegOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
 testRegOwnerRemovedLink tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -498,9 +499,9 @@ testRegOwnerRemovedLink tmp =
 
 testAnotherOwnerRemovedLink :: HasCallStack => FilePath -> IO ()
 testAnotherOwnerRemovedLink tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -647,9 +648,9 @@ testDuplicateProhibitApproval tmp =
 
 testListUserGroups :: HasCallStack => FilePath -> IO ()
 testListUserGroups tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob ->
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         cath `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -687,15 +688,15 @@ testRestoreDirectory tmp = do
     withTestChat tmp "bob" $ \bob ->
       withTestChat tmp "cath" $ \cath -> do
         bob <## "2 contacts connected (use /cs for the list)"
-        bob <###
-          [ "#privacy (Privacy): connected to server(s)",
-            "#security (Security): connected to server(s)"
-          ] 
+        bob
+          <### [ "#privacy (Privacy): connected to server(s)",
+                 "#security (Security): connected to server(s)"
+               ]
         cath <## "2 contacts connected (use /cs for the list)"
-        cath <###
-          [ "#privacy (Privacy): connected to server(s)",
-            "#anonymity (Anonymity): connected to server(s)"
-          ]
+        cath
+          <### [ "#privacy (Privacy): connected to server(s)",
+                 "#anonymity (Anonymity): connected to server(s)"
+               ]
         listGroups superUser bob cath
         groupFoundN 3 bob "privacy"
         groupFound bob "security"
@@ -785,14 +786,17 @@ addCathAsOwner bob cath = do
   cath <## "#privacy: member SimpleX-Directory is connected"
 
 withDirectoryService :: HasCallStack => FilePath -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryService tmp test = do
+withDirectoryService tmp = withDirectoryServiceCfg tmp testCfg
+
+withDirectoryServiceCfg :: HasCallStack => FilePath -> ChatConfig -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryServiceCfg tmp cfg test = do
   dsLink <-
-    withNewTestChat tmp serviceDbPrefix directoryProfile $ \ds ->
-      withNewTestChat tmp "super_user" aliceProfile $ \superUser -> do
+    withNewTestChatCfg tmp cfg serviceDbPrefix directoryProfile $ \ds ->
+      withNewTestChatCfg tmp cfg "super_user" aliceProfile $ \superUser -> do
         connectUsers ds superUser
         ds ##> "/ad"
         getContactLink ds True
-  withDirectory tmp dsLink test
+  withDirectory tmp cfg dsLink test
 
 restoreDirectoryService :: HasCallStack => FilePath -> Int -> Int -> (TestCC -> String -> IO ()) -> IO ()
 restoreDirectoryService tmp ctCount grCount test = do
@@ -801,29 +805,29 @@ restoreDirectoryService tmp ctCount grCount test = do
       ds <## (show ctCount <> " contacts connected (use /cs for the list)")
       ds <## "Your address is active! To show: /sa"
       ds <## (show grCount <> " group links active")
-      forM_ [1..grCount] $ \_ -> ds <##. "#"
+      forM_ [1 .. grCount] $ \_ -> ds <##. "#"
       ds ##> "/sa"
       dsLink <- getContactLink ds False
       ds <## "auto_accept on"
       pure dsLink
-  withDirectory tmp dsLink test
+  withDirectory tmp testCfg dsLink test
 
-withDirectory :: HasCallStack => FilePath -> String -> (TestCC -> String -> IO ()) -> IO ()
-withDirectory tmp dsLink test = do
+withDirectory :: HasCallStack => FilePath -> ChatConfig -> String -> (TestCC -> String -> IO ()) -> IO ()
+withDirectory tmp cfg dsLink test = do
   let opts = mkDirectoryOpts tmp [KnownContact 2 "alice"]
-  runDirectory opts $
-    withTestChat tmp "super_user" $ \superUser -> do
+  runDirectory cfg opts $
+    withTestChatCfg tmp cfg "super_user" $ \superUser -> do
       superUser <## "1 contacts connected (use /cs for the list)"
       test superUser dsLink
 
-runDirectory :: DirectoryOpts -> IO () -> IO ()
-runDirectory opts@DirectoryOpts {directoryLog} action = do
+runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
+runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
   st <- restoreDirectoryStore directoryLog
   t <- forkIO $ bot st
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
   where
-    bot st = simplexChatCore testCfg (mkChatOpts opts) Nothing $ directoryService st opts
+    bot st = simplexChatCore cfg (mkChatOpts opts) Nothing $ directoryService st opts
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1

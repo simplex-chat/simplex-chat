@@ -36,7 +36,7 @@ fun FramedItemView(
   imageProvider: (() -> ImageGalleryProvider)? = null,
   linkMode: SimplexLinkMode,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
 ) {
@@ -226,7 +226,7 @@ fun FramedItemView(
           } else {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
+                CIImageView(image = mc.image, file = ci.file, ci.encryptLocalFile, metaColor = metaColor, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {

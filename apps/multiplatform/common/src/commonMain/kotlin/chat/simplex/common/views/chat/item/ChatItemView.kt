@@ -48,7 +48,7 @@ fun ChatItemView(
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -191,9 +191,9 @@ fun ChatItemView(
             }
             val clipboard = LocalClipboardManager.current
             ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
-              val filePath = getLoadedFilePath(cItem.file)
+              val fileSource = getLoadedFileSource(cItem.file)
               when {
-                filePath != null -> shareFile(cItem.text, filePath)
+                fileSource != null -> shareFile(cItem.text, fileSource)
                 else -> clipboard.shareText(cItem.content.text)
               }
               showMenu.value = false
@@ -566,7 +566,7 @@ fun PreviewChatItemView() {
       linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       deleteMessage = { _, _ -> },
-      receiveFile = {},
+      receiveFile = { _, _ -> },
       cancelFile = {},
       joinGroup = {},
       acceptCall = { _ -> },
@@ -595,7 +595,7 @@ fun PreviewChatItemViewDeletedContent() {
       linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       deleteMessage = { _, _ -> },
-      receiveFile = {},
+      receiveFile = { _, _ -> },
       cancelFile = {},
       joinGroup = {},
       acceptCall = { _ -> },

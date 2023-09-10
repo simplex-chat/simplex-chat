@@ -17,6 +17,7 @@ public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal"
 public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic"
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline" // no longer used
+public let GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES = "privacyEncryptLocalFiles"
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
 let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
@@ -59,6 +60,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
         GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
         GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: false,
+        GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES: true,
         GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
         GROUP_DEFAULT_CALL_KIT_ENABLED: true,
     ])
@@ -113,7 +115,7 @@ public let ntfEnablePeriodicGroupDefault = BoolDefault(defaults: groupDefaults, 
 
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 
-public let privacyTransferImagesInlineGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE)
+public let privacyEncryptLocalFilesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES)
 
 public let ntfBadgeCountGroupDefault = IntDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_BADGE_COUNT)
 

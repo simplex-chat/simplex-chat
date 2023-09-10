@@ -44,10 +44,12 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Version
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -233,6 +235,7 @@ data UserContactRequest = UserContactRequest
     agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
+    cReqChatVRange :: VersionRange,
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile,
@@ -347,11 +350,12 @@ data ChatSettings = ChatSettings
 instance ToJSON ChatSettings where toEncoding = J.genericToEncoding J.defaultOptions
 
 defaultChatSettings :: ChatSettings
-defaultChatSettings = ChatSettings
-  { enableNtfs = True,
-    sendRcpts = Nothing,
-    favorite = False
-  }
+defaultChatSettings =
+  ChatSettings
+    { enableNtfs = True,
+      sendRcpts = Nothing,
+      favorite = False
+    }
 
 pattern DisableNtfs :: ChatSettings
 pattern DisableNtfs <- ChatSettings {enableNtfs = False}
@@ -538,24 +542,31 @@ instance ToJSON MemberIdRole where toEncoding = J.genericToEncoding J.defaultOpt
 
 data IntroInvitation = IntroInvitation
   { groupConnReq :: ConnReqInvitation,
-    directConnReq :: ConnReqInvitation
+    directConnReq :: Maybe ConnReqInvitation
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON IntroInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON IntroInvitation where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
     memberRole :: GroupMemberRole,
+    v :: Maybe ChatVersionRange,
     profile :: Profile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON MemberInfo where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MemberInfo where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 memberInfo :: GroupMember -> MemberInfo
-memberInfo GroupMember {memberId, memberRole, memberProfile} =
-  MemberInfo memberId memberRole (fromLocalProfile memberProfile)
+memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
+  MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
+  where
+    memberChatVRange = ChatVersionRange . peerChatVRange <$> activeConn
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -955,7 +966,8 @@ instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.default
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool
+    agentRcvFileDeleted :: Bool,
+    cryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show, Generic)
 
@@ -1110,7 +1122,8 @@ instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaul
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
     privateSndFileDescr :: Maybe Text,
-    agentSndFileDeleted :: Bool
+    agentSndFileDeleted :: Bool,
+    cryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show, Generic)
 
@@ -1156,6 +1169,7 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
+    peerChatVRange :: VersionRange,
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
@@ -1466,3 +1480,15 @@ instance ProtocolTypeI p => ToJSON (ServerCfg p) where
 
 instance ProtocolTypeI p => FromJSON (ServerCfg p) where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRange} deriving (Eq, Show)
+
+chatInitialVRange :: VersionRange
+chatInitialVRange = versionToRange 1
+
+instance FromJSON ChatVersionRange where
+  parseJSON v = ChatVersionRange <$> strParseJSON "ChatVersionRange" v
+
+instance ToJSON ChatVersionRange where
+  toJSON (ChatVersionRange vr) = strToJSON vr
+  toEncoding (ChatVersionRange vr) = strToJEncoding vr

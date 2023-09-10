@@ -5,7 +5,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
-import chat.simplex.common.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -94,6 +93,7 @@ class AppPreferences {
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
+  val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -249,6 +249,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
+    private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
@@ -586,7 +587,7 @@ object ChatController {
     return null
   }
 
-  suspend fun apiSendMessage(type: ChatType, id: Long, file: String? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false, ttl: Int? = null): AChatItem? {
+  suspend fun apiSendMessage(type: ChatType, id: Long, file: CryptoFile? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false, ttl: Int? = null): AChatItem? {
     val cmd = CC.ApiSendMessage(type, id, file, quotedItemId, mc, live, ttl)
     val r = sendCmd(cmd)
     return when (r) {
@@ -1079,8 +1080,8 @@ object ChatController {
     return false
   }
 
-  suspend fun apiReceiveFile(fileId: Long, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
-    val r = sendCmd(CC.ReceiveFile(fileId, inline))
+  suspend fun apiReceiveFile(fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
+    val r = sendCmd(CC.ReceiveFile(fileId, encrypted, inline))
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
@@ -1413,7 +1414,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withApi { receiveFile(r.user, file.fileId, auto = true) }
+          withApi { receiveFile(r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs.privacyEncryptLocalFiles.get(), auto = true) }
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -1647,8 +1648,8 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(user: UserLike, fileId: Long, auto: Boolean = false) {
-    val chatItem = apiReceiveFile(fileId, auto = auto)
+  suspend fun receiveFile(user: UserLike, fileId: Long, encrypted: Boolean, auto: Boolean = false) {
+    val chatItem = apiReceiveFile(fileId, encrypted = encrypted, auto = auto)
     if (chatItem != null) {
       chatItemSimpleUpdate(user, chatItem)
     }
@@ -1804,7 +1805,7 @@ sealed class CC {
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
-  class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean, val ttl: Int?): CC()
+  class ApiSendMessage(val type: ChatType, val id: Long, val file: CryptoFile?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean, val ttl: Int?): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
@@ -1867,7 +1868,7 @@ sealed class CC {
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long, val inline: Boolean?): CC()
+  class ReceiveFile(val fileId: Long, val encrypted: Boolean, val inline: Boolean?): CC()
   class CancelFile(val fileId: Long): CC()
   class ShowVersion(): CC()
 
@@ -1972,7 +1973,7 @@ sealed class CC {
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
-    is ReceiveFile -> if (inline == null) "/freceive $fileId" else "/freceive $fileId inline=${onOff(inline)}"
+    is ReceiveFile -> "/freceive $fileId encrypt=${onOff(encrypted)}" + (if (inline == null) "" else " inline=${onOff(inline)}")
     is CancelFile -> "/fcancel $fileId"
     is ShowVersion -> "/version"
   }
@@ -2134,7 +2135,7 @@ sealed class ChatPagination {
 }
 
 @Serializable
-class ComposedMessage(val filePath: String?, val quotedItemId: Long?, val msgContent: MsgContent)
+class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent)
 
 @Serializable
 class XFTPFileConfig(val minFileSize: Long)

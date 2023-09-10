@@ -115,6 +115,9 @@
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
 
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ i %@ połączeni";
+
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ o %2$@:";
 
@@ -132,6 +135,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "%@ chce się połączyć!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ i %lld innych członków połączeni";
 
 /* copied message info */
 "%@:" = "%@:";
@@ -1466,6 +1472,9 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Nawet po wyłączeniu w rozmowie.";
+
+/* No comment provided by engineer. */
+"event happened" = "nowe wydarzenie";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Wyjdź bez zapisywania";
@@ -2880,6 +2889,9 @@
 
 /* No comment provided by engineer. */
 "Show developer options" = "Pokaż opcje dewelopera";
+
+/* No comment provided by engineer. */
+"Show last messages" = "Pokaż ostatnie wiadomości";
 
 /* No comment provided by engineer. */
 "Show preview" = "Pokaż podgląd";

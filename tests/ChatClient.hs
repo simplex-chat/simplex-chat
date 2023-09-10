@@ -136,6 +136,16 @@ testAgentCfgV1 =
 testCfgV1 :: ChatConfig
 testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 
+testCfgCreateGroupDirect :: ChatConfig
+testCfgCreateGroupDirect =
+  mkCfgCreateGroupDirect testCfg
+
+mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
+mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
+
+groupCreateDirectVRange :: VersionRange
+groupCreateDirectVRange = mkVersionRange 1 1
+
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
   Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
@@ -252,7 +262,7 @@ getTermLine cc =
     Just s -> do
       -- remove condition to always echo virtual terminal
       when (printOutput cc) $ do
-      -- when True $ do
+        -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
@@ -291,7 +301,10 @@ testChatCfgOpts3 cfg opts p1 p2 p3 test = testChatN cfg opts [p1, p2, p3] test_
     test_ _ = error "expected 3 chat clients"
 
 testChat4 :: HasCallStack => Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
-testChat4 p1 p2 p3 p4 test = testChatN testCfg testOpts [p1, p2, p3, p4] test_
+testChat4 = testChatCfg4 testCfg
+
+testChatCfg4 :: HasCallStack => ChatConfig -> Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChatCfg4 cfg p1 p2 p3 p4 test = testChatN cfg testOpts [p1, p2, p3, p4] test_
   where
     test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4

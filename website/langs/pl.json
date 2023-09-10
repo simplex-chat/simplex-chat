@@ -232,5 +232,15 @@
     "menu": "Menu",
     "on-this-page": "Na tej stronie",
     "back-to-top": "Powrót do góry",
-    "glossary": "Słowniczek"
+    "glossary": "Słowniczek",
+    "f-droid-page-simplex-chat-repo-section-text": "Aby dodać do Twojego klienta F-Droid, <span class='hide-on-mobile'>zeskanuj kod QR lub</span> użyj tego URL:",
+    "f-droid-page-f-droid-org-repo-section-text": "Repozytoria SimpleX Chat i F-Droid.org mają podpisane budowy z innymi kluczami. Aby zmienić, proszę <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>wyeksportuj</a> bazę czatu i przeinstaluj aplikację.",
+    "docs-dropdown-8": "Serwis katalogowy SimpleX",
+    "simplex-chat-via-f-droid": "SimpleX Chat na F-Droid",
+    "simplex-chat-repo": "Repo SimpleX",
+    "stable-and-beta-versions-built-by-developers": "Wersje stabilne i beta zbudowane przez deweloperów",
+    "signing-key-fingerprint": "Odcisk klucza podpisu (SHA-256)",
+    "f-droid-org-repo": "Repo F-Droid.org",
+    "stable-versions-built-by-f-droid-org": "Wersje stabilne zbudowane przez F-Droid.org",
+    "releases-to-this-repo-are-done-1-2-days-later": "Wydania na tym repo są 1-2 dni później"
 }

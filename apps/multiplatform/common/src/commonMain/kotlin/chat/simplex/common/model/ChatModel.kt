@@ -13,6 +13,7 @@ import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.platform.AudioPlayer
+import chat.simplex.common.platform.chatController
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -38,7 +39,6 @@ import kotlin.time.*
 @Stable
 object ChatModel {
   val controller: ChatController = ChatController
-  val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val setDeliveryReceipts = mutableStateOf(false)
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()
@@ -1395,6 +1395,13 @@ data class ChatItem (
 
   private val isLiveDummy: Boolean get() = meta.itemId == TEMP_LIVE_CHAT_ITEM_ID
 
+  val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
+
+  val encryptLocalFile: Boolean
+    get() = file?.fileProtocol == FileProtocol.XFTP &&
+        content.msgContent !is MsgContent.MCVideo &&
+        chatController.appPrefs.privacyEncryptLocalFiles.get()
+
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.displayName
     else null
@@ -2025,7 +2032,7 @@ class CIFile(
   val fileId: Long,
   val fileName: String,
   val fileSize: Long,
-  val filePath: String? = null,
+  val fileSource: CryptoFile? = null,
   val fileStatus: CIFileStatus,
   val fileProtocol: FileProtocol
 ) {
@@ -2073,9 +2080,22 @@ class CIFile(
       filePath: String? = "test.txt",
       fileStatus: CIFileStatus = CIFileStatus.RcvComplete
     ): CIFile =
-      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
+      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, fileSource = if (filePath == null) null else CryptoFile.plain(filePath), fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
   }
 }
+
+@Serializable
+data class CryptoFile(
+  val filePath: String,
+  val cryptoArgs: CryptoFileArgs?
+) {
+  companion object {
+    fun plain(f: String): CryptoFile = CryptoFile(f, null)
+  }
+}
+
+@Serializable
+data class CryptoFileArgs(val fileKey: String, val fileNonce: String)
 
 class CancelAction(
   val uiActionId: StringResource,

@@ -67,7 +67,7 @@ const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 expect fun getAppFileUri(fileName: String): URI
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-expect fun getLoadedImage(file: CIFile?): ImageBitmap?
+expect fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>?
 
 expect fun getFileName(uri: URI): String?
 
@@ -76,6 +76,8 @@ expect fun getAppFilePath(uri: URI): String?
 expect fun getFileSize(uri: URI): Long?
 
 expect fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean = true): ImageBitmap?
+
+expect fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap?
 
 expect fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean = true): Any?
 
@@ -95,29 +97,34 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
   return null
 }
 
-fun saveImage(uri: URI): String? {
+fun saveImage(uri: URI, encrypted: Boolean): CryptoFile? {
   val bitmap = getBitmapFromUri(uri) ?: return null
-  return saveImage(bitmap)
+  return saveImage(bitmap, encrypted)
 }
 
-fun saveImage(image: ImageBitmap): String? {
+fun saveImage(image: ImageBitmap, encrypted: Boolean): CryptoFile? {
   return try {
     val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
-    val fileToSave = generateNewFileName("IMG", ext)
-    val file = File(getAppFilePath(fileToSave))
-    val output = FileOutputStream(file)
-    dataResized.writeTo(output)
-    output.flush()
-    output.close()
-    fileToSave
+    val destFileName = generateNewFileName("IMG", ext)
+    val destFile = File(getAppFilePath(destFileName))
+    if (encrypted) {
+      val args = writeCryptoFile(destFile.absolutePath, dataResized.toByteArray())
+      CryptoFile(destFileName, args)
+    } else {
+      val output = FileOutputStream(destFile)
+      dataResized.writeTo(output)
+      output.flush()
+      output.close()
+      CryptoFile.plain(destFileName)
+    }
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveImage error: ${e.stackTraceToString()}")
     null
   }
 }
 
-fun saveAnimImage(uri: URI): String? {
+fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
   return try {
     val filename = getFileName(uri)?.lowercase()
     var ext = when {
@@ -127,15 +134,15 @@ fun saveAnimImage(uri: URI): String? {
     }
     // Just in case the image has a strange extension
     if (ext.length < 3 || ext.length > 4) ext = "gif"
-    val fileToSave = generateNewFileName("IMG", ext)
-    val file = File(getAppFilePath(fileToSave))
-    val output = FileOutputStream(file)
-    uri.inputStream().use { input ->
-      output.use { output ->
-        input?.copyTo(output)
-      }
+    val destFileName = generateNewFileName("IMG", ext)
+    val destFile = File(getAppFilePath(destFileName))
+    if (encrypted) {
+      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readAllBytes() ?: return null)
+      CryptoFile(destFileName, args)
+    } else {
+      Files.copy(uri.inputStream(), destFile.toPath())
+      CryptoFile.plain(destFileName)
     }
-    fileToSave
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveAnimImage error: ${e.message}")
     null
@@ -144,22 +151,41 @@ fun saveAnimImage(uri: URI): String? {
 
 expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean): File?
 
-fun saveFileFromUri(uri: URI): String? {
+fun saveFileFromUri(uri: URI, encrypted: Boolean): CryptoFile? {
   return try {
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
-    if (inputStream != null && fileToSave != null) {
+    return if (inputStream != null && fileToSave != null) {
       val destFileName = uniqueCombine(fileToSave)
       val destFile = File(getAppFilePath(destFileName))
-      Files.copy(inputStream, destFile.toPath())
-      destFileName
+      if (encrypted) {
+        createTmpFileAndDelete { tmpFile ->
+          Files.copy(inputStream, tmpFile.toPath())
+          val args = encryptCryptoFile(tmpFile.absolutePath, destFile.absolutePath)
+          CryptoFile(destFileName, args)
+        }
+      } else {
+        Files.copy(inputStream, destFile.toPath())
+        CryptoFile.plain(destFileName)
+      }
     } else {
       Log.e(TAG, "Util.kt saveFileFromUri null inputStream")
       null
     }
   } catch (e: Exception) {
-    Log.e(TAG, "Util.kt saveFileFromUri error: ${e.message}")
+    Log.e(TAG, "Util.kt saveFileFromUri error: ${e.stackTraceToString()}")
     null
+  }
+}
+
+fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
+  val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+  tmpFile.deleteOnExit()
+  ChatModel.filesToDelete.add(tmpFile)
+  try {
+    return onCreated(tmpFile)
+  } finally {
+    tmpFile.delete()
   }
 }
 
@@ -262,6 +288,17 @@ fun blendARGB(
   val b: Float = color1.blue * inverseRatio + color2.blue * ratio
   return Color(r, g, b, a)
 }
+
+fun InputStream.toByteArray(): ByteArray =
+  ByteArrayOutputStream().use { output ->
+    val b = ByteArray(4096)
+    var n = read(b)
+    while (n != -1) {
+      output.write(b, 0, n);
+      n = read(b)
+    }
+    return output.toByteArray()
+  }
 
 expect fun ByteArray.toBase64StringForPassphrase(): String
 

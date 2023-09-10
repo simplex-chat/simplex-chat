@@ -180,7 +180,13 @@ fun NetworkAndServersView(
       SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
     if (networkUseSocksProxy.value) {
-      SectionCustomFooter { Text(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported)) }
+      SectionCustomFooter {
+        Column {
+          Text(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          Text(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
+        }
+      }
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     } else {
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))

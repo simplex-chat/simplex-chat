@@ -21,6 +21,7 @@ import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
+import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
@@ -51,6 +52,7 @@ import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
@@ -58,6 +60,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, Pro
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow, tshow)
+import Simplex.Messaging.Version hiding (version)
 import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
@@ -161,7 +164,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRRcvFileDescrReady _ _ -> []
   CRRcvFileDescrNotReady _ _ -> []
   CRRcvFileProgressXFTP {} -> []
-  CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
+  CRRcvFileAccepted u ci -> ttyUser u $ savingFile' testView ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
   CRRcvFileCancelled u _ ft -> ttyUser u $ receivingFile_ "cancelled" ft
@@ -252,7 +255,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
-          "count: " <> sShow count
+          ("count: " <> sShow count)
             <> (" :: max: " <> sShow timeMax <> " ms")
             <> (" :: avg: " <> sShow timeAvg <> " ms")
             <> (" :: " <> plain (T.unwords $ T.lines query))
@@ -262,20 +265,21 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
-  CRAgentSubs {activeSubs, distinctActiveSubs, pendingSubs, distinctPendingSubs} ->
-    [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", distinct active = " <> show (sum distinctActiveSubs) <> ", pending = " <> show (sum pendingSubs) <> ", distinct pending = " <> show (sum distinctPendingSubs)]
+  CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
+    [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
       <> ("active subscriptions:" : listSubs activeSubs)
-      <> ("distinct active subscriptions:" : listSubs distinctActiveSubs)
       <> ("pending subscriptions:" : listSubs pendingSubs)
-      <> ("distinct pending subscriptions:" : listSubs distinctPendingSubs)
+      <> ("removed subscriptions:" : listSubs removedSubs)
     where
-      listSubs = map (\(srv, count) -> plain $ srv <> ": " <> tshow count) . M.assocs
-  CRAgentSubsDetails SubscriptionsInfo {activeSubscriptions, pendingSubscriptions} ->
+      listSubs :: Show a => Map Text a -> [StyledString]
+      listSubs = map (\(srv, info) -> plain $ srv <> ": " <> tshow info) . M.assocs
+  CRAgentSubsDetails SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} ->
     ("active subscriptions:" : map sShow activeSubscriptions)
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
+      <> ("removed subscriptions: " : map sShow removedSubscriptions)
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
-    [ "completed deleting rcv queue, agent connection id: " <> sShow acId
+    [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)
         <> (", server: " <> sShow srv)
         <> (", agent queue id: " <> sShow aqId)
         <> maybe "" (\e -> ", error: " <> sShow e) err_
@@ -328,7 +332,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
               Just CIQuote {chatDir = quoteDir, content} ->
                 Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
             fPath = case file of
-              Just CIFile {filePath = Just fp} -> Just fp
+              Just CIFile {fileSource = Just (CryptoFile fp _)} -> Just fp
               _ -> Nothing
     testViewItem :: CChatItem c -> Maybe GroupMember -> Text
     testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText}}) membership_ =
@@ -954,8 +958,9 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}} stats incognitoProfile =
-  ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn} stats incognitoProfile =
+  ["contact ID: " <> sShow contactId]
+    <> viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) l]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
@@ -963,6 +968,7 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
+    <> [viewPeerChatVRange (peerChatVRange activeConn)]
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
 viewGroupInfo GroupInfo {groupId} s =
@@ -971,17 +977,21 @@ viewGroupInfo GroupInfo {groupId} s =
   ]
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}} stats =
+viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}, activeConn} stats =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> maybe ["member not connected"] viewConnectionStats stats
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (memberSecurityCode m) | isJust stats]
+    <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
 
 viewConnectionVerified :: Maybe SecurityCode -> StyledString
 viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
 viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
+
+viewPeerChatVRange :: VersionRange -> StyledString
+viewPeerChatVRange (VersionRange minVer maxVer) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
@@ -1274,8 +1284,8 @@ viewSentBroadcast mc s f ts tz time = prependFirst (highlight' "/feed" <> " (" <
       | otherwise = ""
 
 viewSentFileInvitation :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
-viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts tz = case filePath of
-  Just fPath -> sentWithTime_ ts tz $ ttySentFile fPath
+viewSentFileInvitation to CIFile {fileId, fileSource, fileStatus} ts tz = case fileSource of
+  Just (CryptoFile fPath _) -> sentWithTime_ ts tz $ ttySentFile fPath
   _ -> const []
   where
     ttySentFile fPath = ["/f " <> to <> ttyFilePath fPath] <> cancelSending
@@ -1343,14 +1353,20 @@ humanReadableSize size
     mB = kB * 1024
     gB = mB * 1024
 
-savingFile' :: AChatItem -> [StyledString]
-savingFile' (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIDirectRcv}) =
-  ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
-savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
-  ["saving file " <> sShow fileId <> " from " <> ttyContact m <> " to " <> plain filePath]
-savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}}) =
-  ["saving file " <> sShow fileId <> " to " <> plain filePath]
-savingFile' _ = ["saving file"] -- shouldn't happen
+savingFile' :: Bool -> AChatItem -> [StyledString]
+savingFile' testView (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath cfArgs_)}, chatDir}) =
+  let from = case (chat, chatDir) of
+        (DirectChat Contact {localDisplayName = c}, CIDirectRcv) -> " from " <> ttyContact c
+        (_, CIGroupRcv GroupMember {localDisplayName = m}) -> " from " <> ttyContact m
+        _ -> ""
+   in ["saving file " <> sShow fileId <> from <> " to " <> plain filePath] <> cfArgsStr
+  where
+    cfArgsStr = case cfArgs_ of
+      Just cfArgs@(CFArgs key nonce)
+        | testView -> [plain $ LB.unpack $ J.encode cfArgs]
+        | otherwise -> [plain $ "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce]
+      _ -> []
+savingFile' _ _ = ["saving file"] -- shouldn't happen
 
 receivingFile_' :: StyledString -> AChatItem -> [StyledString]
 receivingFile_' status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =
@@ -1403,7 +1419,7 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSCancelled Nothing -> "cancelled"
 
 viewFileTransferStatusXFTP :: AChatItem -> [StyledString]
-viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, filePath}}) =
+viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, fileSource}}) =
   case fileStatus of
     CIFSSndStored -> ["sending " <> fstr <> " just started"]
     CIFSSndTransfer progress total -> ["sending " <> fstr <> " in progress " <> fileProgressXFTP progress total fileSize]
@@ -1413,7 +1429,7 @@ viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId
     CIFSRcvInvitation -> ["receiving " <> fstr <> " not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"]
     CIFSRcvAccepted -> ["receiving " <> fstr <> " just started"]
     CIFSRcvTransfer progress total -> ["receiving " <> fstr <> " progress " <> fileProgressXFTP progress total fileSize]
-    CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\fp -> ", path: " <> plain fp) filePath]
+    CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\(CryptoFile fp _) -> ", path: " <> plain fp) fileSource]
     CIFSRcvCancelled -> ["receiving " <> fstr <> " cancelled"]
     CIFSRcvError -> ["receiving " <> fstr <> " error"]
     CIFSInvalid text -> [fstr <> " invalid status: " <> plain text]

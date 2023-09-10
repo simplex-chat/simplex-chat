@@ -1,7 +1,7 @@
 package chat.simplex.common.platform
 
 import androidx.compose.runtime.MutableState
-import chat.simplex.common.model.ChatItem
+import chat.simplex.common.model.*
 import kotlinx.coroutines.CoroutineScope
 
 interface RecorderInterface {
@@ -18,7 +18,7 @@ expect class RecorderNative(): RecorderInterface
 
 interface AudioPlayerInterface {
   fun play(
-    filePath: String?,
+    fileSource: CryptoFile,
     audioPlaying: MutableState<Boolean>,
     progress: MutableState<Int>,
     duration: MutableState<Int>,

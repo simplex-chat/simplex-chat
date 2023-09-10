@@ -43,7 +43,7 @@ import java.net.URI
 import kotlin.math.sign
 
 @Composable
-fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
+fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: String) -> Unit) {
   val activeChat = remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
   val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
@@ -66,12 +66,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
     launch {
       snapshotFlow { chatModel.chatId.value }
         .distinctUntilChanged()
+        .filter { it != null && activeChat.value?.id != it }
         .collect { chatId ->
-          if (activeChat.value?.id != chatId && chatId != null) {
-            // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
-            // Also for situation when chatId changes after clicking in notification, etc
-            activeChat.value = chatModel.getChat(chatId)
-          }
+          // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
+          // Also for situation when chatId changes after clicking in notification, etc
+          activeChat.value = chatModel.getChat(chatId!!)
           markUnreadChatAsRead(activeChat, chatModel)
         }
     }
@@ -91,7 +90,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       }
         .distinctUntilChanged()
         // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
-        .filter { it?.chatInfo != activeChat.value?.chatInfo && it != null }
+        .filter { it != null && it?.chatInfo != activeChat.value?.chatInfo }
         .collect { activeChat.value = it }
     }
   }
@@ -245,8 +244,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           }
         }
       },
-      receiveFile = { fileId ->
-        withApi { chatModel.controller.receiveFile(user, fileId) }
+      receiveFile = { fileId, encrypted ->
+        withApi { chatModel.controller.receiveFile(user, fileId, encrypted) }
       },
       cancelFile = { fileId ->
         withApi { chatModel.controller.cancelFile(user, fileId) }
@@ -404,7 +403,7 @@ fun ChatLayout(
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
@@ -422,7 +421,7 @@ fun ChatLayout(
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
-  onComposed: () -> Unit,
+  onComposed: suspend (chatId: String) -> Unit,
 ) {
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
@@ -657,7 +656,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -672,7 +671,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   setFloatingButton: (@Composable () -> Unit) -> Unit,
-  onComposed: () -> Unit,
+  onComposed: suspend (chatId: String) -> Unit,
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
@@ -703,13 +702,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
       scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded) }
     }
   }
-  LaunchedEffect(Unit) {
+  LaunchedEffect(chat.id) {
     var stopListening = false
     snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
       .filter { !stopListening }
       .collect {
-        onComposed()
+        onComposed(chat.id)
         stopListening = true
       }
   }
@@ -1118,7 +1117,7 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
 }
 
 sealed class ProviderMedia {
-  data class Image(val uri: URI, val image: ImageBitmap): ProviderMedia()
+  data class Image(val data: ByteArray, val image: ImageBitmap): ProviderMedia()
   data class Video(val uri: URI, val preview: String): ProviderMedia()
 }
 
@@ -1156,11 +1155,11 @@ private fun providerForGallery(
       val item = item(internalIndex, initialChatId)?.second ?: return null
       return when (item.content.msgContent) {
         is MsgContent.MCImage -> {
-          val imageBitmap: ImageBitmap? = getLoadedImage(item.file)
+          val res = getLoadedImage(item.file)
           val filePath = getLoadedFilePath(item.file)
-          if (imageBitmap != null && filePath != null) {
-            val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
-            ProviderMedia.Image(uri, imageBitmap)
+          if (res != null && filePath != null) {
+            val (imageBitmap: ImageBitmap, data: ByteArray) = res
+            ProviderMedia.Image(data, imageBitmap)
           } else null
         }
         is MsgContent.MCVideo -> {
@@ -1258,7 +1257,7 @@ fun PreviewChatLayout() {
       showMemberInfo = { _, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
-      receiveFile = {},
+      receiveFile = { _, _ -> },
       cancelFile = {},
       joinGroup = {},
       startCall = {},
@@ -1325,7 +1324,7 @@ fun PreviewGroupChatLayout() {
       showMemberInfo = { _, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
-      receiveFile = {},
+      receiveFile = { _, _ -> },
       cancelFile = {},
       joinGroup = {},
       startCall = {},

@@ -466,7 +466,7 @@
       </trans-unit>
       <trans-unit id="About SimpleX address" xml:space="preserve">
         <source>About SimpleX address</source>
-        <target>Acerca de dirección SimpleX</target>
+        <target>Acerca de la dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent color" xml:space="preserve">
@@ -1208,12 +1208,12 @@
       </trans-unit>
       <trans-unit id="Create SimpleX address" xml:space="preserve">
         <source>Create SimpleX address</source>
-        <target>Crear dirección SimpleX</target>
+        <target>Crear tu dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
         <source>Create an address to let people connect with you.</source>
-        <target>Crear una dirección para que otras personas se puedan conectar contigo.</target>
+        <target>Crea una dirección para que otras personas puedan conectar contigo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve">
@@ -1248,7 +1248,7 @@
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
         <source>Create your profile</source>
-        <target>Crear tu perfil</target>
+        <target>Crea tu perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created on %@" xml:space="preserve">
@@ -1381,7 +1381,7 @@
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
         <source>Decentralized</source>
-        <target>Descentralizado</target>
+        <target>Descentralizada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decryption error" xml:space="preserve">
@@ -1706,7 +1706,7 @@
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
         <source>Don't create address</source>
-        <target>No crear dirección</target>
+        <target>No crear dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't enable" xml:space="preserve">
@@ -1817,6 +1817,10 @@
       <trans-unit id="Encrypt database?" xml:space="preserve">
         <source>Encrypt database?</source>
         <target>¿Cifrar base de datos?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Encrypt local files" xml:space="preserve">
+        <source>Encrypt local files</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
@@ -1947,6 +1951,10 @@
       <trans-unit id="Error creating profile!" xml:space="preserve">
         <source>Error creating profile!</source>
         <target>¡Error al crear perfil!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error decrypting file" xml:space="preserve">
+        <source>Error decrypting file</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
@@ -2899,7 +2907,7 @@
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve">
         <source>Markdown in messages</source>
-        <target>Sintaxis markdown en los mensajes</target>
+        <target>Sintaxis Markdown</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Max 30 seconds, received instantly." xml:space="preserve">
@@ -3663,7 +3671,7 @@
       </trans-unit>
       <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
         <source>Receiving address will be changed to a different server. Address change will complete after sender comes online.</source>
-        <target>La dirección de recepción se cambiará. El cambio se completará cuando el remitente esté en línea.</target>
+        <target>La dirección de recepción pasará a otro servidor. El cambio se completará cuando el remitente esté en línea.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -4383,7 +4391,7 @@
       </trans-unit>
       <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
         <source>Stop chat to enable database actions</source>
-        <target>Para habilitar las acciones sobre la base de datos, previamente debes detener Chat</target>
+        <target>Detén SimpleX para habilitar las acciones sobre la base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
@@ -4590,7 +4598,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="The next generation of private messaging" xml:space="preserve">
         <source>The next generation of private messaging</source>
-        <target>La próxima generación de mensajería privada</target>
+        <target>La nueva generación de mensajería privada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
@@ -5130,7 +5138,7 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
         <source>You can create it later</source>
-        <target>Puedes crearlo más tarde</target>
+        <target>Puedes crearla más tarde</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can enable later via Settings" xml:space="preserve">
@@ -5330,7 +5338,7 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
       </trans-unit>
       <trans-unit id="Your chat database" xml:space="preserve">
         <source>Your chat database</source>
-        <target>Base de datos Chat</target>
+        <target>Base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
@@ -5411,7 +5419,7 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
-        <target>Tu perfil, contactos y mensajes entregados se almacenan en tu dispositivo.</target>
+        <target>Tu perfil, contactos y mensajes se almacenan en tu dispositivo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
