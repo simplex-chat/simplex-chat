@@ -6,7 +6,6 @@
 
 module Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications) where
 
-import Control.Exception
 import Control.Monad (void)
 import Data.List (isInfixOf)
 import Data.Map (Map, fromList)
@@ -15,6 +14,7 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Types
+import Simplex.Messaging.Util (catchAll_)
 import System.Directory (createDirectoryIfMissing, doesFileExist, findExecutable, getAppUserDataDirectory)
 import System.FilePath (combine)
 import System.Info (os)
@@ -39,7 +39,7 @@ noNotifications :: Notification -> IO ()
 noNotifications _ = pure ()
 
 hideException :: (a -> IO ()) -> (a -> IO ())
-hideException f a = f a `catch` \(_ :: SomeException) -> pure ()
+hideException f a = f a `catchAll_` pure ()
 
 initLinuxNotify :: IO (Notification -> IO ())
 initLinuxNotify = do

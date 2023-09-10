@@ -26,19 +26,19 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
-import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
-import Simplex.Chat.Messages.ChatItemContent
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..))
+import Simplex.Chat.Types.Preferences
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
@@ -341,19 +341,17 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     editable :: Bool,
-    localItemTs :: ZonedTime,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive tz currentTs itemTs createdAt updatedAt =
-  let localItemTs = utcToZonedTime tz itemTs
-      editable = case itemContent of
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs createdAt updatedAt =
+  let editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, localItemTs, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, createdAt, updatedAt}
 
 instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -503,6 +501,7 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
   CIFSRcvError :: CIFileStatus 'MDRcv
+  CIFSInvalid :: {text :: Text} -> CIFileStatus 'MDSnd
 
 deriving instance Eq (CIFileStatus d)
 
@@ -521,6 +520,7 @@ ciFileEnded = \case
   CIFSRcvCancelled -> True
   CIFSRcvComplete -> True
   CIFSRcvError -> True
+  CIFSInvalid {} -> True
 
 instance ToJSON (CIFileStatus d) where
   toJSON = J.toJSON . jsonCIFileStatus
@@ -547,25 +547,29 @@ instance MsgDirectionI d => StrEncoding (CIFileStatus d) where
     CIFSRcvComplete -> "rcv_complete"
     CIFSRcvCancelled -> "rcv_cancelled"
     CIFSRcvError -> "rcv_error"
+    CIFSInvalid {} -> "invalid"
   strP = (\(AFS _ st) -> checkDirection st) <$?> strP
 
 instance StrEncoding ACIFileStatus where
   strEncode (AFS _ s) = strEncode s
   strP =
-    A.takeTill (== ' ') >>= \case
-      "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
-      "snd_transfer" -> AFS SMDSnd <$> progress CIFSSndTransfer
-      "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
-      "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
-      "snd_error" -> pure $ AFS SMDSnd CIFSSndError
-      "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
-      "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
-      "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
-      "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
-      "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
-      "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
-      _ -> fail "bad file status"
+    (statusP <* A.endOfInput) -- endOfInput to make it fail on partial correct parse
+      <|> (AFS SMDSnd . CIFSInvalid . safeDecodeUtf8 <$> A.takeByteString)
     where
+      statusP =
+        A.takeTill (== ' ') >>= \case
+          "snd_stored" -> pure $ AFS SMDSnd CIFSSndStored
+          "snd_transfer" -> AFS SMDSnd <$> progress CIFSSndTransfer
+          "snd_cancelled" -> pure $ AFS SMDSnd CIFSSndCancelled
+          "snd_complete" -> pure $ AFS SMDSnd CIFSSndComplete
+          "snd_error" -> pure $ AFS SMDSnd CIFSSndError
+          "rcv_invitation" -> pure $ AFS SMDRcv CIFSRcvInvitation
+          "rcv_accepted" -> pure $ AFS SMDRcv CIFSRcvAccepted
+          "rcv_transfer" -> AFS SMDRcv <$> progress CIFSRcvTransfer
+          "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
+          "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
+          "rcv_error" -> pure $ AFS SMDRcv CIFSRcvError
+          _ -> fail "bad file status"
       progress :: (Int64 -> Int64 -> a) -> A.Parser a
       progress f = f <$> num <*> num <|> pure (f 0 1)
       num = A.space *> A.decimal
@@ -582,6 +586,7 @@ data JSONCIFileStatus
   | JCIFSRcvComplete
   | JCIFSRcvCancelled
   | JCIFSRcvError
+  | JCIFSInvalid {text :: Text}
   deriving (Generic)
 
 instance ToJSON JSONCIFileStatus where
@@ -601,6 +606,7 @@ jsonCIFileStatus = \case
   CIFSRcvComplete -> JCIFSRcvComplete
   CIFSRcvCancelled -> JCIFSRcvCancelled
   CIFSRcvError -> JCIFSRcvError
+  CIFSInvalid text -> JCIFSInvalid text
 
 aciFileStatusJSON :: JSONCIFileStatus -> ACIFileStatus
 aciFileStatusJSON = \case
@@ -615,6 +621,7 @@ aciFileStatusJSON = \case
   JCIFSRcvComplete -> AFS SMDRcv CIFSRcvComplete
   JCIFSRcvCancelled -> AFS SMDRcv CIFSRcvCancelled
   JCIFSRcvError -> AFS SMDRcv CIFSRcvError
+  JCIFSInvalid text -> AFS SMDSnd $ CIFSInvalid text
 
 -- to conveniently read file data from db
 data CIFileInfo = CIFileInfo
@@ -627,10 +634,12 @@ data CIFileInfo = CIFileInfo
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
   CISSndSent :: CIStatus 'MDSnd
+  CISSndRcvd :: MsgReceiptStatus -> CIStatus 'MDSnd
   CISSndErrorAuth :: CIStatus 'MDSnd
   CISSndError :: String -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
   CISRcvRead :: CIStatus 'MDRcv
+  CISInvalid :: Text -> CIStatus 'MDSnd
 
 deriving instance Show (CIStatus d)
 
@@ -650,31 +659,40 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
   strEncode = \case
     CISSndNew -> "snd_new"
     CISSndSent -> "snd_sent"
+    CISSndRcvd status -> "snd_rcvd " <> strEncode status
     CISSndErrorAuth -> "snd_error_auth"
     CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
     CISRcvNew -> "rcv_new"
     CISRcvRead -> "rcv_read"
+    CISInvalid {} -> "invalid"
   strP = (\(ACIStatus _ st) -> checkDirection st) <$?> strP
 
 instance StrEncoding ACIStatus where
   strEncode (ACIStatus _ s) = strEncode s
   strP =
-    A.takeTill (== ' ') >>= \case
-      "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
-      "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
-      "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-      "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
-      "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
-      "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
-      _ -> fail "bad status"
+    (statusP <* A.endOfInput) -- endOfInput to make it fail on partial correct parse, e.g. "snd_rcvd ok complete"
+      <|> (ACIStatus SMDSnd . CISInvalid . safeDecodeUtf8 <$> A.takeByteString)
+    where
+      statusP =
+        A.takeTill (== ' ') >>= \case
+          "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
+          "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
+          "snd_rcvd" -> ACIStatus SMDSnd . CISSndRcvd <$> (A.space *> strP)
+          "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
+          "snd_error" -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+          "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
+          "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
+          _ -> fail "bad status"
 
 data JSONCIStatus
   = JCISSndNew
   | JCISSndSent
+  | JCISSndRcvd {msgRcptStatus :: MsgReceiptStatus}
   | JCISSndErrorAuth
   | JCISSndError {agentError :: String}
   | JCISRcvNew
   | JCISRcvRead
+  | JCISInvalid {text :: Text}
   deriving (Show, Generic)
 
 instance ToJSON JSONCIStatus where
@@ -685,10 +703,12 @@ jsonCIStatus :: CIStatus d -> JSONCIStatus
 jsonCIStatus = \case
   CISSndNew -> JCISSndNew
   CISSndSent -> JCISSndSent
+  CISSndRcvd ok -> JCISSndRcvd ok
   CISSndErrorAuth -> JCISSndErrorAuth
   CISSndError e -> JCISSndError e
   CISRcvNew -> JCISRcvNew
   CISRcvRead -> JCISRcvRead
+  CISInvalid text -> JCISInvalid text
 
 ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
 ciStatusNew = case msgDirection @d of
@@ -808,7 +828,7 @@ data MsgDeliveryStatus (d :: MsgDirection) where
   MDSSndPending :: MsgDeliveryStatus 'MDSnd
   MDSSndAgent :: MsgDeliveryStatus 'MDSnd
   MDSSndSent :: MsgDeliveryStatus 'MDSnd
-  MDSSndReceived :: MsgDeliveryStatus 'MDSnd
+  MDSSndRcvd :: MsgReceiptStatus -> MsgDeliveryStatus 'MDSnd
   MDSSndRead :: MsgDeliveryStatus 'MDSnd
 
 data AMsgDeliveryStatus = forall d. AMDS (SMsgDirection d) (MsgDeliveryStatus d)
@@ -825,19 +845,22 @@ serializeMsgDeliveryStatus = \case
   MDSSndPending -> "snd_pending"
   MDSSndAgent -> "snd_agent"
   MDSSndSent -> "snd_sent"
-  MDSSndReceived -> "snd_received"
+  MDSSndRcvd status -> "snd_rcvd " <> safeDecodeUtf8 (strEncode status)
   MDSSndRead -> "snd_read"
 
 msgDeliveryStatusT :: Text -> Maybe AMsgDeliveryStatus
-msgDeliveryStatusT = \case
-  "rcv_agent" -> Just $ AMDS SMDRcv MDSRcvAgent
-  "rcv_acknowledged" -> Just $ AMDS SMDRcv MDSRcvAcknowledged
-  "snd_pending" -> Just $ AMDS SMDSnd MDSSndPending
-  "snd_agent" -> Just $ AMDS SMDSnd MDSSndAgent
-  "snd_sent" -> Just $ AMDS SMDSnd MDSSndSent
-  "snd_received" -> Just $ AMDS SMDSnd MDSSndReceived
-  "snd_read" -> Just $ AMDS SMDSnd MDSSndRead
-  _ -> Nothing
+msgDeliveryStatusT = eitherToMaybe . parseAll statusP . encodeUtf8
+  where
+    statusP =
+      A.takeTill (== ' ') >>= \case
+        "rcv_agent" -> pure $ AMDS SMDRcv MDSRcvAgent
+        "rcv_acknowledged" -> pure $ AMDS SMDRcv MDSRcvAcknowledged
+        "snd_pending" -> pure $ AMDS SMDSnd MDSSndPending
+        "snd_agent" -> pure $ AMDS SMDSnd MDSSndAgent
+        "snd_sent" -> pure $ AMDS SMDSnd MDSSndSent
+        "snd_rcvd" -> AMDS SMDSnd . MDSSndRcvd <$> (A.space *> strP)
+        "snd_read" -> pure $ AMDS SMDSnd MDSSndRead
+        _ -> fail "bad AMsgDeliveryStatus"
 
 msgDeliveryStatusT' :: forall d. MsgDirectionI d => Text -> Maybe (MsgDeliveryStatus d)
 msgDeliveryStatusT' s =
@@ -910,3 +933,11 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
           itemVersionTs = itemTs,
           createdAt = createdAt
         }
+
+data CIModeration = CIModeration
+  { moderationId :: Int64,
+    moderatorMember :: GroupMember,
+    createdByMsgId :: MessageId,
+    moderatedAt :: UTCTime
+  }
+  deriving (Show)

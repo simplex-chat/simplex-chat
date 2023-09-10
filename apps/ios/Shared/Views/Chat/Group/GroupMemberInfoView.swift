@@ -26,6 +26,8 @@ struct GroupMemberInfoView: View {
         case removeMemberAlert(mem: GroupMember)
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
+        case abortSwitchAddressAlert
+        case syncConnectionForceAlert
         case connRequestSentAlert(type: ConnReqType)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
         case other(alert: Alert)
@@ -35,7 +37,9 @@ struct GroupMemberInfoView: View {
             case .removeMemberAlert: return "removeMemberAlert"
             case let .changeMemberRoleAlert(_, role): return "changeMemberRoleAlert \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
+            case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .connRequestSentAlert: return "connRequestSentAlert"
+            case .syncConnectionForceAlert: return "syncConnectionForceAlert"
             case let .error(title, _): return "error \(title)"
             case let .other(alert): return "other \(alert)"
             }
@@ -75,6 +79,13 @@ struct GroupMemberInfoView: View {
                             }
                         }
                         if let code = connectionCode { verifyCodeButton(code) }
+                        if let connStats = connectionStats,
+                           connStats.ratchetSyncAllowed {
+                            synchronizeConnectionButton()
+                        }
+//                        } else if developerTools {
+//                            synchronizeConnectionButtonForce()
+//                        }
                     }
                 }
 
@@ -127,8 +138,21 @@ struct GroupMemberInfoView: View {
                         Button("Change receiving address") {
                             alert = .switchAddressAlert
                         }
-                        smpServers("Receiving via", connStats.rcvServers)
-                        smpServers("Sending via", connStats.sndServers)
+                        .disabled(
+                            connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
+                            || connStats.ratchetSyncSendProhibited
+                        )
+                        if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
+                            Button("Abort changing address") {
+                                alert = .abortSwitchAddressAlert
+                            }
+                            .disabled(
+                                connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                || connStats.ratchetSyncSendProhibited
+                            )
+                        }
+                        smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
+                        smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
                     }
                 }
 
@@ -153,7 +177,7 @@ struct GroupMemberInfoView: View {
                 }
                 newRole = member.memberRole
                 do {
-                    let stats = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                    let (_, stats) = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
                     let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                     member = mem
                     connectionStats = stats
@@ -175,6 +199,8 @@ struct GroupMemberInfoView: View {
             case let .removeMemberAlert(mem): return removeMemberAlert(mem)
             case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
             case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
+            case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
+            case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
             case let .connRequestSentAlert(type): return connReqSentAlert(type)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             case let .other(alert): return alert
@@ -235,19 +261,30 @@ struct GroupMemberInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            HStack {
-                if mem.verified {
-                    Image(systemName: "checkmark.shield")
-                }
+            if mem.verified {
+                (
+                    Text(Image(systemName: "checkmark.shield"))
+                        .foregroundColor(.secondary)
+                        .font(.title2)
+                    + Text(" ")
+                    + Text(mem.displayName)
+                        .font(.largeTitle)
+                )
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .padding(.bottom, 2)
+            } else {
                 Text(mem.displayName)
                     .font(.largeTitle)
-                    .lineLimit(1)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .padding(.bottom, 2)
             }
-            .padding(.bottom, 2)
             if mem.fullName != "" && mem.fullName != mem.displayName {
                 Text(mem.fullName)
                     .font(.title2)
-                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -281,7 +318,24 @@ struct GroupMemberInfoView: View {
                 systemImage: member.verified ? "checkmark.shield" : "shield"
             )
         }
+    }
 
+    private func synchronizeConnectionButton() -> some View {
+        Button {
+            syncMemberConnection(force: false)
+        } label: {
+            Label("Fix connection", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
+                .foregroundColor(.orange)
+        }
+    }
+
+    private func synchronizeConnectionButtonForce() -> some View {
+        Button {
+            alert = .syncConnectionForceAlert
+        } label: {
+            Label("Renegotiate encryption", systemImage: "exclamationmark.triangle")
+                .foregroundColor(.red)
+        }
     }
 
     private func removeMemberButton(_ mem: GroupMember) -> some View {
@@ -346,10 +400,52 @@ struct GroupMemberInfoView: View {
     private func switchMemberAddress() {
         Task {
             do {
-                try await apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+                let stats = try apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+                connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, member, stats)
+                    dismiss()
+                }
             } catch let error {
                 logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+
+    private func abortSwitchMemberAddress() {
+        Task {
+            do {
+                let stats = try apiAbortSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+                connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, member, stats)
+                }
+            } catch let error {
+                logger.error("abortSwitchMemberAddress apiAbortSwitchGroupMember error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error aborting address change")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+
+    private func syncMemberConnection(force: Bool) {
+        Task {
+            do {
+                let (mem, stats) = try apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force)
+                connectionStats = stats
+                await MainActor.run {
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, mem, stats)
+                    dismiss()
+                }
+            } catch let error {
+                logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
                     alert = .error(title: a.title, error: a.message)
                 }

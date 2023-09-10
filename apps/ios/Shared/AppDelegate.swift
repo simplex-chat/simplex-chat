@@ -14,7 +14,26 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         logger.debug("AppDelegate: didFinishLaunchingWithOptions")
         application.registerForRemoteNotifications()
+        if #available(iOS 17.0, *) { trackKeyboard() }
         return true
+    }
+
+    @available(iOS 17.0, *)
+    private func trackKeyboard() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @available(iOS 17.0, *)
+    @objc func keyboardWillShow(_ notification: Notification) {
+        if let keyboardFrame: NSValue = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
+            ChatModel.shared.keyboardHeight = keyboardFrame.cgRectValue.height
+        }
+    }
+
+    @available(iOS 17.0, *)
+    @objc func keyboardWillHide(_ notification: Notification) {
+        ChatModel.shared.keyboardHeight = 0
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -42,7 +61,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
            m.notificationMode != .off {
             if let verification = ntfData["verification"] as? String,
                let nonce = ntfData["nonce"] as? String {
-                if let token = ChatModel.shared.deviceToken {
+                if let token = m.deviceToken {
                     logger.debug("AppDelegate: didReceiveRemoteNotification: verification, confirming \(verification)")
                     Task {
                         do {
@@ -62,7 +81,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                if appStateGroupDefault.get().inactive {
+                if appStateGroupDefault.get().inactive && m.ntfEnablePeriodic {
                     receiveMessages(completionHandler)
                 } else {
                     completionHandler(.noData)
@@ -76,7 +95,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
-        logger.debug("AppDelegate: applicationWillTerminate")
+        logger.debug("DEBUGGING: AppDelegate: applicationWillTerminate")
         ChatModel.shared.filesToDelete.forEach {
             removeFile($0)
         }

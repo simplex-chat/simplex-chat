@@ -204,5 +204,7 @@ multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do
   it "correct markdown" do
     parseMaybeMarkdownList "http://simplex.chat\nhttp://app.simplex.chat" `shouldBe` Just [uri' "http://simplex.chat", "\n", uri' "http://app.simplex.chat"]
+  it "combines the same formats" do
+    parseMaybeMarkdownList "http://simplex.chat\ntext 1\ntext 2\nhttp://app.simplex.chat" `shouldBe` Just [uri' "http://simplex.chat", "\ntext 1\ntext 2\n", uri' "http://app.simplex.chat"]
   it "no markdown" do
     parseMaybeMarkdownList "not a\nmarkdown" `shouldBe` Nothing

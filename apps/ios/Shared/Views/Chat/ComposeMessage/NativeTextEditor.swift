@@ -16,7 +16,7 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var disableEditing: Bool
     let height: CGFloat
     let font: UIFont
-    @FocusState.Binding var focused: Bool
+    @Binding var focused: Bool
     let alignment: TextAlignment
     let onImagesAdded: ([UploadContent]) -> Void
     
@@ -144,13 +144,12 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
 
 struct NativeTextEditor_Previews: PreviewProvider{
     static var previews: some View {
-        @FocusState var keyboardVisible: Bool
         return NativeTextEditor(
             text: Binding.constant("Hello, world!"),
             disableEditing: Binding.constant(false),
             height: 100,
             font: UIFont.preferredFont(forTextStyle: .body),
-            focused: $keyboardVisible,
+            focused: Binding.constant(false),
             alignment: TextAlignment.leading,
             onImagesAdded: { _ in }
         )

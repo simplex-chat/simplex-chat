@@ -34,6 +34,10 @@ class BGManager {
     }
 
     func schedule() {
+        if !ChatModel.shared.ntfEnableLocal {
+            logger.debug("BGManager.schedule: disabled")
+            return
+        }
         logger.debug("BGManager.schedule")
         let request = BGAppRefreshTaskRequest(identifier: receiveTaskId)
         request.earliestBeginDate = Date(timeIntervalSinceNow: bgRefreshInterval)
@@ -45,6 +49,10 @@ class BGManager {
     }
 
     private func handleRefresh(_ task: BGAppRefreshTask) {
+        if !ChatModel.shared.ntfEnableLocal {
+            logger.debug("BGManager.handleRefresh: disabled")
+            return
+        }
         logger.debug("BGManager.handleRefresh")
         schedule()
         if appStateGroupDefault.get().inactive {

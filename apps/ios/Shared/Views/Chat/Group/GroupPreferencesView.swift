@@ -25,8 +25,10 @@ struct GroupPreferencesView: View {
                 featureSection(.timedMessages, $preferences.timedMessages.enable)
                 featureSection(.fullDelete, $preferences.fullDelete.enable)
                 featureSection(.directMessages, $preferences.directMessages.enable)
-                // featureSection(.reactions, $preferences.reactions.enable)
+                featureSection(.reactions, $preferences.reactions.enable)
                 featureSection(.voice, $preferences.voice.enable)
+//                TODO uncomment in 5.3
+//                featureSection(.files, $preferences.files.enable)
 
                 if groupInfo.canEdit {
                     Section {
@@ -79,7 +81,7 @@ struct GroupPreferencesView: View {
                     DropdownCustomTimePicker(
                         selection: $preferences.timedMessages.ttl,
                         label: "Delete after",
-                        dropdownValues: TimedMessagesPreference.ttlValues.filter { $0 != nil }, // TODO in 5.2 - allow "off"
+                        dropdownValues: TimedMessagesPreference.ttlValues,
                         customPickerConfirmButtonText: "Select",
                         customPickerDescription: "Delete after"
                     )

@@ -22,6 +22,8 @@ struct GroupChatInfoView: View {
     @State private var connectionStats: ConnectionStats?
     @State private var connectionCode: String?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @State private var searchText: String = ""
+    @FocusState private var searchFocussed
 
     enum GroupChatInfoViewAlert: Identifiable {
         case deleteGroupAlert
@@ -67,8 +69,14 @@ struct GroupChatInfoView: View {
                             addMembersButton()
                         }
                     }
+                    if members.count > 8 {
+                        searchFieldView(text: $searchText, focussed: $searchFocussed)
+                            .padding(.leading, 8)
+                    }
+                    let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+                    let filteredMembers = s == "" ? members : members.filter { $0.chatViewName.localizedLowercase.contains(s) }
                     memberView(groupInfo.membership, user: true)
-                    ForEach(members) { member in
+                    ForEach(filteredMembers) { member in
                         ZStack {
                             NavigationLink {
                                 memberInfoView(member.groupMemberId)
@@ -118,6 +126,7 @@ struct GroupChatInfoView: View {
                 logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
         }
+         .keyboardPadding()
     }
 
     private func groupInfoHeader() -> some View {
@@ -129,12 +138,14 @@ struct GroupChatInfoView: View {
                 .padding()
             Text(cInfo.displayName)
                 .font(.largeTitle)
-                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .lineLimit(4)
                 .padding(.bottom, 2)
             if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
                 Text(cInfo.fullName)
                     .font(.title2)
-                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(8)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -144,6 +155,7 @@ struct GroupChatInfoView: View {
         NavigationLink {
             AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 .onAppear {
+                    searchFocussed = false
                     Task {
                         let groupMembers = await apiListMembers(groupInfo.groupId)
                         await MainActor.run {

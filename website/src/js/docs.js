@@ -1,4 +1,51 @@
 document.addEventListener("DOMContentLoaded", function () {
+    if (window.location.pathname.endsWith('cli.html')) {
+        const cliHeader = document.querySelector('h1')
+        const demoSection = document.createElement('section')
+        demoSection.id = 'demo'
+        demoSection.innerHTML = `
+            <div class="all-users">
+                <div class="user alice">
+                    <h3>@alice</h3>
+                    <div class="terminal">
+                        <div class="display"></div>
+                        <div class="input"></div>
+                        <input type="text" />
+                    </div>
+                </div>
+                <div class="user bob">
+                    <h3>@bob</h3>
+                    <div class="terminal">
+                        <div class="display"></div>
+                        <div class="input"></div>
+                        <input type="text" />
+                    </div>
+                </div>
+                <div class="user tom">
+                    <h3>@tom</h3>
+                    <div class="terminal">
+                        <div class="display"></div>
+                        <div class="input"></div>
+                        <input type="text" />
+                    </div>
+                </div>
+                <button class="run-demo">Run demo</button>
+                <button class="run-faster">Faster!</button>
+                <button class="try-it">Try it!</button>
+            </div>
+        `
+        cliHeader.parentNode.insertBefore(demoSection, cliHeader.nextSibling)
+
+        const demoScript = document.createElement('script')
+        demoScript.src = '/js/demo.js'
+        document.body.appendChild(demoScript)
+
+        const demoStyles = document.createElement('link')
+        demoStyles.rel = 'stylesheet'
+        demoStyles.href = '/css/demo.css'
+        document.head.appendChild(demoStyles)
+    }
+
     const imgs = document.querySelectorAll('p img')
     imgs.forEach(img => {
         console.log(img.height)

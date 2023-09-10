@@ -38,7 +38,7 @@
             {% include "navbar.html" %}
         </section>
 
-        {{ content | safe }}
+        {{ content | applyGlossary | safe }}
 
         {% include "footer.html" %}
 

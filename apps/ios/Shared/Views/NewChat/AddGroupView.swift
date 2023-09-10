@@ -36,7 +36,7 @@ struct AddGroupView: View {
                 }
             }
         } else {
-            createGroupView()
+            createGroupView().keyboardPadding()
         }
     }
 

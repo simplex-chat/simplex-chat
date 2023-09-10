@@ -234,7 +234,7 @@ struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
-    @FocusState.Binding var keyboardVisible: Bool
+    @Binding var keyboardVisible: Bool
 
     @State var linkUrl: URL? = nil
     @State var prevLinkUrl: URL? = nil
@@ -264,7 +264,7 @@ struct ComposeView: View {
             default: previewView()
             }
             HStack (alignment: .bottom) {
-                Button {
+                let b = Button {
                     showChooseSource = true
                 } label: {
                     Image(systemName: "paperclip")
@@ -274,6 +274,17 @@ struct ComposeView: View {
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
+                if case let .group(g) = chat.chatInfo,
+                   !g.fullGroupPreferences.files.on {
+                    b.disabled(true).onTapGesture {
+                        AlertManager.shared.showAlertMsg(
+                            title: "Files and media prohibited!",
+                            message: "Only group owners can enable files and media."
+                        )
+                    }
+                } else {
+                    b
+                }
                 ZStack(alignment: .leading) {
                     SendMessageView(
                         composeState: $composeState,
@@ -296,9 +307,7 @@ struct ComposeView: View {
                         },
                         finishVoiceMessageRecording: finishVoiceMessageRecording,
                         allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                        // TODO in 5.2 - allow if ttl is not configured
-                        // timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
-                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages) && chat.chatInfo.timedMessagesTTL != nil,
+                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                         keyboardVisible: $keyboardVisible
                     )
@@ -656,17 +665,21 @@ struct ComposeView: View {
             if let oldMsgContent = ei.content.msgContent {
                 do {
                     let mc = updateMsgContent(oldMsgContent)
-                    let chatItem = try await apiUpdateChatItem(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        itemId: ei.id,
-                        msg: mc,
-                        live: live
-                    )
-                    await MainActor.run {
-                        _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                    if mc != oldMsgContent || (ei.meta.itemLive ?? false) {
+                        let chatItem = try await apiUpdateChatItem(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            itemId: ei.id,
+                            msg: mc,
+                            live: live
+                        )
+                        await MainActor.run {
+                            _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                        }
+                        return chatItem
+                    } else {
+                        return nil
                     }
-                    return chatItem
                 } catch {
                     logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
                     AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
@@ -934,19 +947,18 @@ struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
         @State var composeState = ComposeState(message: "hello")
-        @FocusState var keyboardVisible: Bool
 
         return Group {
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible
+                keyboardVisible: Binding.constant(true)
             )
             .environmentObject(ChatModel())
         }

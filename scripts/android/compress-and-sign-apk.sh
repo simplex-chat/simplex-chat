@@ -23,7 +23,7 @@ touch remove_this_file remove_this_FILE
 #echo Case-insensitive file system: $case_insensitive
 rm remove_this_file remove_this_FILE 2> /dev/null || true
 
-ORIG_NAMES=( $(echo app*.apk) )
+ORIG_NAMES=( $(echo android*.apk) )
 for ORIG_NAME in "${ORIG_NAMES[@]}"; do
     unzip -o -q -d apk $ORIG_NAME
     ORIG_NAME_COPY=$ORIG_NAME-copy

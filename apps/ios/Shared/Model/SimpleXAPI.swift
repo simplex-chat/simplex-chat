@@ -159,6 +159,18 @@ func apiSetActiveUserAsync(_ userId: Int64, viewPwd: String?) async throws -> Us
     throw r
 }
 
+func apiSetAllContactReceipts(enable: Bool) async throws {
+    let r = await chatSendCmd(.setAllContactReceipts(enable: enable))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiSetUserContactReceipts(_ userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings) async throws {
+    let r = await chatSendCmd(.apiSetUserContactReceipts(userId: userId, userMsgReceiptSettings: userMsgReceiptSettings))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
 }
@@ -464,6 +476,10 @@ func setNetworkConfig(_ cfg: NetCfg) throws {
     throw r
 }
 
+func reconnectAllServers() async throws {
+    try await sendCommandOkResp(.reconnectAllServers)
+}
+
 func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) async throws {
     try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
 }
@@ -474,18 +490,46 @@ func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profi
     throw r
 }
 
-func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (ConnectionStats?) {
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (GroupMember, ConnectionStats?) {
     let r = chatSendCmdSync(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
-    if case let .groupMemberInfo(_, _, _, connStats_) = r { return (connStats_) }
+    if case let .groupMemberInfo(_, _, member, connStats_) = r { return (member, connStats_) }
     throw r
 }
 
-func apiSwitchContact(contactId: Int64) async throws {
-    try await sendCommandOkResp(.apiSwitchContact(contactId: contactId))
+func apiSwitchContact(contactId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSwitchContact(contactId: contactId))
+    if case let .contactSwitchStarted(_, _, connectionStats) = r { return connectionStats }
+    throw r
 }
 
-func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) async throws {
-    try await sendCommandOkResp(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberSwitchStarted(_, _, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiAbortSwitchContact(_ contactId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiAbortSwitchContact(contactId: contactId))
+    if case let .contactSwitchAborted(_, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiAbortSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiAbortSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberSwitchAborted(_, _, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiSyncContactRatchet(_ contactId: Int64, _ force: Bool) throws -> ConnectionStats {
+    let r = chatSendCmdSync(.apiSyncContactRatchet(contactId: contactId, force: force))
+    if case let .contactRatchetSyncStarted(_, _, connectionStats) = r { return connectionStats }
+    throw r
+}
+
+func apiSyncGroupMemberRatchet(_ groupId: Int64, _ groupMemberId: Int64, _ force: Bool) throws -> (GroupMember, ConnectionStats) {
+    let r = chatSendCmdSync(.apiSyncGroupMemberRatchet(groupId: groupId, groupMemberId: groupMemberId, force: force))
+    if case let .groupMemberRatchetSyncStarted(_, _, member, connectionStats) = r { return (member, connectionStats) }
+    throw r
 }
 
 func apiGetContactCode(_ contactId: Int64) async throws -> (Contact, String) {
@@ -884,7 +928,9 @@ func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
             let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
             let cInfo = chat.chatInfo
             try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-            await MainActor.run { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+            await MainActor.run {
+                withAnimation { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+            }
         }
         if chat.chatStats.unreadChat {
             await markChatUnread(chat, unreadChat: false)
@@ -898,7 +944,9 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
     do {
         let cInfo = chat.chatInfo
         try await apiChatUnread(type: cInfo.chatType, id: cInfo.apiId, unreadChat: unreadChat)
-        await MainActor.run { ChatModel.shared.markChatUnread(cInfo, unreadChat: unreadChat) }
+        await MainActor.run {
+            withAnimation { ChatModel.shared.markChatUnread(cInfo, unreadChat: unreadChat) }
+        }
     } catch {
         logger.error("markChatUnread apiChatUnread error: \(responseError(error))")
     }
@@ -1055,6 +1103,7 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)
+        privacyDeliveryReceiptsSet.set(true)
         m.onboardingStage = .step1_SimpleXInfo
     } else if start {
         try startChat(refreshInvitations: refreshInvitations)
@@ -1084,6 +1133,9 @@ func startChat(refreshInvitations: Bool = true) throws {
             m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
                                 ? .step3_CreateSimpleXAddress
                                 : savedOnboardingStage
+            if m.onboardingStage == .onboardingComplete && !privacyDeliveryReceiptsSet.get() {
+                m.setDeliveryReceipts = true
+            }
         }
     }
     ChatReceiver.shared.start()
@@ -1274,8 +1326,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .chatItemStatusUpdated(user, aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
-            if !cItem.isDeletedContent && (!active(user) || m.upsertChatItem(cInfo, cItem)) {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+            if !cItem.isDeletedContent {
+                let added = active(user) ? m.upsertChatItem(cInfo, cItem) : true
+                if added && cItem.showNotification {
+                    NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
+                }
             }
             if let endTask = m.messageDelivery[cItem.id] {
                 switch cItem.meta.itemStatus {
@@ -1345,9 +1400,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if active(user) {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
-        case let .connectedToGroupMember(user, groupInfo, member):
+        case let .connectedToGroupMember(user, groupInfo, member, memberContact):
             if active(user) {
                 _ = m.upsertGroupMember(groupInfo, member)
+            }
+            if let contact = memberContact {
+                m.setContactNetworkStatus(contact, .connected)
             }
         case let .groupUpdated(user, toGroup):
             if active(user) {
@@ -1426,6 +1484,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case .chatSuspended:
             chatSuspended()
+        case let .contactSwitch(_, contact, switchProgress):
+            m.updateContactConnectionStats(contact, switchProgress.connectionStats)
+        case let .groupMemberSwitch(_, groupInfo, member, switchProgress):
+            m.updateGroupMemberConnectionStats(groupInfo, member, switchProgress.connectionStats)
+        case let .contactRatchetSync(_, contact, ratchetSyncProgress):
+            m.updateContactConnectionStats(contact, ratchetSyncProgress.connectionStats)
+        case let .groupMemberRatchetSync(_, groupInfo, member, ratchetSyncProgress):
+            m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

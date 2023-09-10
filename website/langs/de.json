@@ -137,7 +137,7 @@
     "install-simplex-app": "Installieren Sie die SimpleX Applikation",
     "connect-in-app": "Verbinden Sie sich in der Applikation",
     "open-simplex-app": "Öffnen Sie die SimpleX Applikation",
-    "scan-the-qr-code-with-the-simplex-chat-app-description": "Die öffentlichen Schlüssel und die Adresse der Nachrichtenwarteschlange in diesem Link werden NICHT über das Netzwerk gesendet, wenn Sie diese Seite aufrufen &mdash; Sie sind in dem Hash-Fragment der Link-URL enthalten.",
+    "scan-the-qr-code-with-the-simplex-chat-app-description": "Die öffentlichen Schlüssel und die Adresse der Nachrichtenwarteschlange in diesem Link werden NICHT über das Netzwerk gesendet, wenn Sie diese Seite aufrufen &mdash;<br> sie sind in dem Hash-Fragment der Link-URL enthalten.",
     "installing-simplex-chat-to-terminal": "Installation von SimpleX-Chat im Terminal",
     "use-this-command": "Benutzen Sie dieses Kommando:",
     "see-simplex-chat": "Siehe SimpleX-Chat",
@@ -207,7 +207,7 @@
     "simplex-unique-overlay-card-4-p-2": "Die SimpleX-Plattform verwendet ein <a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>offenes Protokoll</a> und bietet ein <a href='https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript' target='_blank'>SDK zur Erstellung von Chatbots</a> an, welches die Erstellung von Diensten ermöglicht, mit denen Nutzer über SimpleX-Chat interagieren können &mdash; Wir sind gespannt, welche SimpleX-Dienste Sie erstellen können.",
     "simplex-unique-card-4-p-2": "Sie können <strong>SimpleX mit Ihren eigenen Servern</strong> oder mit den von uns zur Verfügung gestellten Servern verwenden &mdash; und sich trotzdem mit jedem Benutzer verbinden.",
     "why-simplex-is": "Warum ist SimpleX",
-    "contact-hero-p-1": "Die öffentlichen Schlüssel und die Adresse der Nachrichtenwarteschlange in diesem Link werden NICHT über das Netzwerk gesendet, wenn Sie diese Seite aufrufen &mdash; Sie sind in dem Hash-Fragment der Link-URL enthalten.",
+    "contact-hero-p-1": "Die öffentlichen Schlüssel und die Adresse der Nachrichtenwarteschlange in diesem Link werden NICHT über das Netzwerk gesendet, wenn Sie diese Seite aufrufen &mdash; sie sind in dem Hash-Fragment der Link-URL enthalten.",
     "if-you-already-installed-simplex-chat-for-the-terminal": "Wenn Sie SimpleX schon für das Terminal installiert haben",
     "simplex-network-3-desc": "Die Server stellen <span class='text-active-blue'>unidirektionale Warteschlangen</span> zur Verfügung, um die Benutzer miteinander zu verbinden. Sie haben aber keinen Einblick in den Verbindungs-Graphen des Netzwerks &mdash; Diesen haben nur die Benutzer selbst.",
     "guide-dropdown-1": "Schnellstart",
@@ -231,5 +231,6 @@
     "on-this-page": "Auf dieser Seite",
     "back-to-top": "Zum Anfang",
     "guide-dropdown-3": "Geheime Gruppen",
-    "docs-dropdown-7": "SimpleX Chat übersetzen"
+    "docs-dropdown-7": "SimpleX Chat übersetzen",
+    "glossary": "Glossar"
 }

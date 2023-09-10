@@ -18,8 +18,9 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
-import Simplex.Chat.Store (getUserContactProfiles)
+import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
 import Simplex.Messaging.Encoding.String
 import System.Directory (doesFileExist)
@@ -204,7 +205,8 @@ groupFeatures'' =
     ((0, "Direct messages: on"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: on"), Nothing, Nothing),
-    ((0, "Voice messages: on"), Nothing, Nothing)
+    ((0, "Voice messages: on"), Nothing, Nothing),
+    ((0, "Files and media: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String
@@ -306,6 +308,9 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
 (cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
 
+(⩗) :: HasCallStack => TestCC -> String -> Expectation
+cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
+
 (</) :: HasCallStack => TestCC -> Expectation
 (</) = (<// 500000)
 
@@ -341,6 +346,16 @@ dropTime_ msg = case splitAt 6 msg of
     if all isDigit [m, m', s, s'] then Just text else Nothing
   _ -> Nothing
 
+dropReceipt :: HasCallStack => String -> String
+dropReceipt msg = fromMaybe err $ dropReceipt_ msg
+  where
+    err = error $ "invalid receipt: " <> msg
+
+dropReceipt_ :: String -> Maybe String
+dropReceipt_ msg = case splitAt 2 msg of
+  ("⩗ ", text) -> Just text
+  _ -> Nothing
+
 getInvitation :: HasCallStack => TestCC -> IO String
 getInvitation cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
@@ -358,7 +373,7 @@ getContactLink cc created = do
   cc <## ""
   cc <## "Anybody can send you contact requests with: /c <contact_link_above>"
   cc <## "to show it again: /sa"
-  -- cc <## "to share with your contacts: /profile_address on"
+  cc <## "to share with your contacts: /profile_address on"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
   pure link
 

@@ -212,6 +212,7 @@ struct CIVideoView: View {
                 }
             case .rcvCancelled: fileIcon("xmark", 10, 13)
             case .rcvError: fileIcon("xmark", 10, 13)
+            case .invalid: fileIcon("questionmark", 10, 13)
             default: EmptyView()
             }
         }

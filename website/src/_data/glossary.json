@@ -1,0 +1,110 @@
+[
+    {
+        "term": "Address portability",
+        "definition": "Address portability"
+    },
+    {
+        "term": "Anonymous credentials",
+        "definition": "Anonymous credentials"
+    },
+    {
+        "term": "Blockchain",
+        "definition": "Blockchain"
+    },
+    {
+        "term": "Break-in recovery",
+        "definition": "Post-compromise security"
+    },
+    {
+        "term": "Centralized network",
+        "definition": "Centralized network"
+    },
+    {
+        "term": "Content padding",
+        "definition": "Message padding"
+    },
+    {
+        "term": "Decentralized network",
+        "definition": "Decentralized network"
+    },
+    {
+        "term": "Defense in depth",
+        "definition": "Defense in depth"
+    },
+    {
+        "term": "Double ratchet algorithm",
+        "definition": "Double ratchet algorithm"
+    },
+    {
+        "term": "End-to-end encryption",
+        "definition": "End-to-end encryption"
+    },
+    {
+        "term": "Federated network",
+        "definition": "Federated network"
+    },
+    {
+        "term": "Forward secrecy",
+        "definition": "Forward secrecy"
+    },
+    {
+        "term": "Key agreement protocol",
+        "definition": "Key agreement protocol"
+    },
+    {
+        "term": "Key exchange",
+        "definition": "Key agreement protocol"
+    },
+    {
+        "term": "Man-in-the-middle attack",
+        "definition": "Man-in-the-middle attack"
+    },
+    {
+        "term": "Merkle directed acyclic graph",
+        "definition": "Merkle directed acyclic graph"
+    },
+    {
+        "term": "Message padding",
+        "definition": "Message padding"
+    },
+    {
+        "term": "Onion routing",
+        "definition": "Onion routing"
+    },
+    {
+        "term": "Overlay network",
+        "definition": "Overlay network"
+    },
+    {
+        "term": "Pairwise pseudonymous identifier",
+        "definition": "Pairwise pseudonymous identifier"
+    },
+    {
+        "term": "Peer-to-peer",
+        "definition": "Peer-to-peer"
+    },
+    {
+        "term": "Perfect forward secrecy",
+        "definition": "Forward secrecy"
+    },
+    {
+        "term": "Post-compromise security",
+        "definition": "Post-compromise security"
+    },
+    {
+        "term": "Post-quantum cryptography",
+        "definition": "Post-quantum cryptography"
+    },
+    {
+        "term": "Proxied peer-to-peer",
+        "definition": "Proxied peer-to-peer"
+    },
+    {
+        "term": "Recovery from compromise",
+        "definition": "Post-compromise security"
+    },
+    {
+        "term": "User identity",
+        "definition": "User identity"
+    }
+]

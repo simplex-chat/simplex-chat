@@ -13,6 +13,7 @@ import SimpleXChat
 
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
+    @Published var setDeliveryReceipts = false
     @Published var v3DBMigration: V3DBMigrationState = v3DBMigrationDefault.get()
     @Published var currentUser: User?
     @Published var users: [UserInfo] = []
@@ -41,7 +42,7 @@ final class ChatModel: ObservableObject {
     @Published var tokenRegistered = false
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
-    @Published var notificationPreview: NotificationPreviewMode? = ntfPreviewModeGroupDefault.get()
+    @Published var notificationPreview: NotificationPreviewMode = ntfPreviewModeGroupDefault.get()
     @Published var incognito: Bool = incognitoGroupDefault.get()
     // pending notification actions
     @Published var ntfContactRequest: ChatId?
@@ -57,6 +58,8 @@ final class ChatModel: ObservableObject {
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
+    // tracks keyboard height via subscription in AppDelegate
+    @Published var keyboardHeight: CGFloat = 0
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -65,6 +68,14 @@ final class ChatModel: ObservableObject {
     static let shared = ChatModel()
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
+
+    var ntfEnableLocal: Bool {
+        notificationMode == .off || ntfEnableLocalGroupDefault.get()
+    }
+
+    var ntfEnablePeriodic: Bool {
+        notificationMode == .periodic || ntfEnablePeriodicGroupDefault.get()
+    }
 
     func getUser(_ userId: Int64) -> User? {
         currentUser?.userId == userId
@@ -131,6 +142,14 @@ final class ChatModel: ObservableObject {
 
     func updateContact(_ contact: Contact) {
         updateChat(.direct(contact: contact), addMissing: contact.directOrUsed)
+    }
+
+    func updateContactConnectionStats(_ contact: Contact, _ connectionStats: ConnectionStats) {
+        var updatedConn = contact.activeConn
+        updatedConn.connectionStats = connectionStats
+        var updatedContact = contact
+        updatedContact.activeConn = updatedConn
+        updateContact(updatedContact)
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {
@@ -521,6 +540,16 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func updateGroupMemberConnectionStats(_ groupInfo: GroupInfo, _ member: GroupMember, _ connectionStats: ConnectionStats) {
+        if let conn = member.activeConn {
+            var updatedConn = conn
+            updatedConn.connectionStats = connectionStats
+            var updatedMember = member
+            updatedMember.activeConn = updatedConn
+            _ = upsertGroupMember(groupInfo, updatedMember)
+        }
+    }
+
     func unreadChatItemCounts(itemsInView: Set<String>) -> UnreadChatItemCounts {
         var i = 0
         var totalBelow = 0
@@ -581,6 +610,14 @@ final class Chat: ObservableObject, Identifiable {
         self.chatInfo = chatInfo
         self.chatItems = chatItems
         self.chatStats = chatStats
+    }
+
+    func copy(chatInfo: ChatInfo? = nil, chatItems: [ChatItem]? = nil, chatStats: ChatStats? = nil) -> Chat {
+        Chat(
+            chatInfo: chatInfo ?? self.chatInfo,
+            chatItems: chatItems ?? self.chatItems,
+            chatStats: chatStats ?? self.chatStats
+        )
     }
 
     var userCanSend: Bool {

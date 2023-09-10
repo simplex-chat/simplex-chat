@@ -8,7 +8,7 @@ You can contribute your themes to the repository by creating a pull request.
 
 1. Once you have configured your theme in the app, export it to a file and give it a descriptive name – e.g., `example.theme`
 
-2. Export your app database, and import a [sample chat database](./themes/simplex-chat.sample.zip).
+2. Export your app database, and import a [sample chat database](./themes/simplex-chat.sample.zip) - the passphrase is `passphrase`.
 
 3. Make three screenshots - the list of conversations with opened profile picker, conversation and privacy settings.
 

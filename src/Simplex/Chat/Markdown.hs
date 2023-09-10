@@ -17,7 +17,7 @@ import qualified Data.Attoparsec.Text as A
 import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
-import Data.List (intercalate)
+import Data.List (intercalate, foldl')
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isNothing)
@@ -28,6 +28,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
@@ -123,9 +124,15 @@ unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
 
 parseMaybeMarkdownList :: Text -> Maybe MarkdownList
-parseMaybeMarkdownList s =
-  let m = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
-   in if all (isNothing . format) m then Nothing else Just m
+parseMaybeMarkdownList s
+  | all (isNothing . format) ml = Nothing
+  | otherwise = Just . reverse $ foldl' acc [] ml
+  where
+    ml = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
+    acc [] m = [m] 
+    acc ms@(FormattedText f t : ms') ft@(FormattedText f' t')
+      | f == f' = FormattedText f (t <> t') : ms'
+      | otherwise = ft : ms
 
 parseMarkdownList :: Text -> MarkdownList
 parseMarkdownList = markdownToList . parseMarkdown

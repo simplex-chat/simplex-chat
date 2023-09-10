@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.ChatItemContent
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Contact (..), IsContact (..), User (..))

@@ -195,8 +195,7 @@ struct UserAddressView: View {
             if MFMailComposeViewController.canSendMail() {
                 shareViaEmailButton(userAddress)
             }
-//            TODO uncomment in 5.2
-//            shareWithContactsButton()
+            shareWithContactsButton()
             autoAcceptToggle()
             learnMoreButton()
         } header: {
@@ -223,8 +222,7 @@ struct UserAddressView: View {
                     let connReqContact = try await apiCreateUserAddress()
                     DispatchQueue.main.async {
                         chatModel.userAddress = UserContactLink(connReqContact: connReqContact)
-//                        TODO uncomment in 5.2
-//                        alert = .shareOnCreate
+                        alert = .shareOnCreate
                         progressIndicator = false
                     }
                 } catch let error {

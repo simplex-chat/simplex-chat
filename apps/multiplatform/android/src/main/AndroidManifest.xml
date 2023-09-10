@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="chat.simplex.app">
+
+  <uses-feature android:name="android.hardware.camera" />
+
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.VIDEO_CAPTURE" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <uses-permission android:name="android.permission.VIBRATE" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+      tools:ignore="ScopedStorage" />
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+  <application
+      android:name="SimplexApp"
+      android:allowBackup="false"
+      android:fullBackupOnly="false"
+      android:icon="@mipmap/icon"
+      android:label="${app_name}"
+      android:extractNativeLibs="${extract_native_libs}"
+      android:supportsRtl="true"
+      android:theme="@style/Theme.SimpleX">
+    <!--      android:localeConfig="@xml/locales_config"-->
+
+    <!-- Main activity -->
+    <activity
+        android:name=".MainActivity"
+        android:launchMode="singleTask"
+        android:exported="true"
+        android:label="${app_name}"
+        android:windowSoftInputMode="adjustResize"
+        android:theme="@style/Theme.SimpleX">
+      <intent-filter>
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+
+      <!-- open simplex:/ connection URI -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+
+        <data android:scheme="simplex" />
+      </intent-filter>
+      <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW" />
+
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+
+        <data android:scheme="http" />
+        <data android:scheme="https" />
+        <data android:host="simplex.chat" />
+        <data android:pathPrefix="/invitation" />
+        <data android:pathPrefix="/contact" />
+      </intent-filter>
+      <!-- Receive files from other apps -->
+      <intent-filter>
+        <action android:name="android.intent.action.SEND" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="*/*" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.SEND_MULTIPLE" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="image/*" />
+      </intent-filter>
+    </activity>
+
+    <activity-alias
+        android:name=".MainActivity_default"
+        android:exported="true"
+        android:icon="@mipmap/icon"
+        android:enabled="true"
+        android:targetActivity=".MainActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+
+    <activity-alias
+        android:name=".MainActivity_dark_blue"
+        android:exported="true"
+        android:icon="@mipmap/icon_dark_blue"
+        android:enabled="false"
+        android:targetActivity=".MainActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+
+
+    <activity android:name=".views.call.IncomingCallActivity"
+        android:showOnLockScreen="true"
+        android:exported="false"
+        android:launchMode="singleTask"/>
+
+    <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="${provider_authorities}"
+        android:exported="false"
+        android:grantUriPermissions="true">
+      <meta-data
+          android:name="android.support.FILE_PROVIDER_PATHS"
+          android:resource="@xml/file_paths" />
+    </provider>
+
+    <!-- NtfManager action processing (buttons in notifications) -->
+    <receiver
+        android:name=".model.NtfManager$NtfActionReceiver"
+        android:enabled="true"
+        android:exported="false" />
+
+    <!-- SimplexService foreground service -->
+    <service
+        android:name=".SimplexService"
+        android:enabled="true"
+        android:exported="false"
+        android:stopWithTask="false"></service>
+
+    <!-- SimplexService restart on reboot -->
+    <receiver
+        android:name=".SimplexService$StartReceiver"
+        android:enabled="true"
+        android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+      </intent-filter>
+    </receiver>
+
+    <!-- SimplexService restart on destruction -->
+    <receiver
+        android:name=".SimplexService$AutoRestartReceiver"
+        android:enabled="true"
+        android:exported="false" />
+  </application>
+</manifest>

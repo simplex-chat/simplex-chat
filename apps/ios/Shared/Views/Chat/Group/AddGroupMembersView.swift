@@ -29,6 +29,8 @@ struct AddGroupMembersViewCommon: View {
     @State private var selectedContacts = Set<Int64>()
     @State private var selectedRole: GroupMemberRole = .member
     @State private var alert: AddGroupMembersAlert?
+    @State private var searchText: String = ""
+    @FocusState private var searchFocussed
 
     private enum AddGroupMembersAlert: Identifiable {
         case prohibitedToInviteIncognito
@@ -85,7 +87,7 @@ struct AddGroupMembersViewCommon: View {
                         if showFooterCounter {
                             if (count >= 1) {
                                 HStack {
-                                    Button { selectedContacts.removeAll() } label: { Text("Clear") }
+                                    Button { selectedContacts.removeAll() } label: { Text("Clear").font(.caption) }
                                     Spacer()
                                     Text("\(count) contact(s) selected")
                                 }
@@ -97,7 +99,11 @@ struct AddGroupMembersViewCommon: View {
                     }
 
                     Section {
-                        ForEach(membersToAdd) { contact in
+                        searchFieldView(text: $searchText, focussed: $searchFocussed)
+                            .padding(.leading, 2)
+                        let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+                        let members = s == "" ? membersToAdd : membersToAdd.filter { $0.chatViewName.localizedLowercase.contains(s) }
+                        ForEach(members) { contact in
                             contactCheckView(contact)
                         }
                     }
@@ -115,6 +121,9 @@ struct AddGroupMembersViewCommon: View {
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
+        }
+        .onChange(of: selectedContacts) { _ in
+            searchFocussed = false
         }
     }
 
@@ -197,6 +206,31 @@ struct AddGroupMembersViewCommon: View {
             }
         }
     }
+}
+
+func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding) -> some View {
+    HStack {
+        Image(systemName: "magnifyingglass")
+            .resizable()
+            .scaledToFit()
+            .frame(height: 20)
+            .padding(.trailing, 10)
+        TextField("Search", text: text)
+            .focused(focussed)
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+        Image(systemName: "xmark.circle.fill")
+            .resizable()
+            .scaledToFit()
+            .opacity(text.wrappedValue == "" ? 0 : 1)
+            .frame(height: 20)
+            .onTapGesture {
+                text.wrappedValue = ""
+                focussed.wrappedValue = false
+            }
+    }
+    .foregroundColor(.secondary)
+    .frame(height: 36)
 }
 
 struct AddGroupMembersView_Previews: PreviewProvider {
