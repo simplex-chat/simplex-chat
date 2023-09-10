@@ -1,5 +1,6 @@
 #include <jni.h>
-//#include <string.h>
+#include <string.h>
+#include <stdint.h>
 //#include <stdlib.h>
 //#include <android/log.h>
 
@@ -161,7 +162,7 @@ Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz,
     }
 
     jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
-    jobject *statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Integer"),
+    jobject statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Integer"),
                                            (*env)->GetMethodID(env, (*env)->FindClass(env, "java/lang/Integer"), "<init>", "(I)V"),
                                            status);
     (*env)->SetObjectArrayElement(env, ret, 0, statusObj);
