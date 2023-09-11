@@ -44,14 +44,14 @@ fun CIMetaView(
         modifier = Modifier.padding(start = 3.dp)
       )
     } else {
-      CIMetaText(chatItem.meta, timedMessagesTTL, metaColor, paleMetaColor)
+      CIMetaText(chatItem.meta, timedMessagesTTL, encrypted = chatItem.encryptedFile, metaColor, paleMetaColor)
     }
   }
 }
 
 @Composable
 // changing this function requires updating reserveSpaceForMeta
-private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color, paleColor: Color) {
+private fun CIMetaText(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?, color: Color, paleColor: Color) {
   if (meta.itemEdited) {
     StatusIconText(painterResource(MR.images.ic_edit), color)
     Spacer(Modifier.width(3.dp))
@@ -77,11 +77,15 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color, paleColor: Col
     StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
     Spacer(Modifier.width(4.dp))
   }
+  if (encrypted != null) {
+    StatusIconText(painterResource(if (encrypted) MR.images.ic_lock else MR.images.ic_lock_open_right), color)
+    Spacer(Modifier.width(4.dp))
+  }
   Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 // the conditions in this function should match CIMetaText
-fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?): String {
+fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?, encrypted: Boolean?): String {
   val iconSpace = "    "
   var res = ""
   if (meta.itemEdited) res += iconSpace
@@ -93,6 +97,9 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?): String {
     }
   }
   if (meta.statusIcon(CurrentColors.value.colors.secondary) != null || !meta.disappearing) {
+    res += iconSpace
+  }
+  if (encrypted != null) {
     res += iconSpace
   }
   return res + meta.timestampText

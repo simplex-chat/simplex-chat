@@ -11,7 +11,7 @@ import java.net.URI
 
 @Composable
 actual fun SimpleAndAnimatedImageView(
-  uri: URI,
+  data: ByteArray,
   imageBitmap: ImageBitmap,
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,

@@ -287,6 +287,7 @@ CREATE TABLE connections(
   auth_err_counter INTEGER DEFAULT 0 CHECK(auth_err_counter NOT NULL),
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
+  to_subscribe INTEGER DEFAULT 0 NOT NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -716,3 +717,4 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
 CREATE INDEX idx_chat_items_item_direct_group_member_id ON chat_items(
   item_direct_group_member_id
 );
+CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);

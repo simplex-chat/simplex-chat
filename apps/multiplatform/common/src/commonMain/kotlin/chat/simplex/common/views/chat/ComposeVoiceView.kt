@@ -17,6 +17,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.model.durationText
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -52,7 +53,7 @@ fun ComposeVoiceView(
         IconButton(
           onClick = {
             if (!audioPlaying.value) {
-              AudioPlayer.play(filePath, audioPlaying, progress, duration, false)
+              AudioPlayer.play(CryptoFile.plain(filePath), audioPlaying, progress, duration, false)
             } else {
               AudioPlayer.pause(audioPlaying, progress)
             }

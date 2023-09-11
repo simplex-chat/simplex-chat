@@ -1,5 +1,6 @@
 #include <jni.h>
-//#include <string.h>
+#include <string.h>
+#include <stdint.h>
 //#include <stdlib.h>
 //#include <android/log.h>
 
@@ -45,6 +46,10 @@ extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
 extern char *chat_parse_server(const char *str);
 extern char *chat_password_hash(const char *pwd, const char *salt);
+extern char *chat_write_file(const char *path, char *ptr, int length);
+extern char *chat_read_file(const char *path, const char *key, const char *nonce);
+extern char *chat_encrypt_file(const char *from_path, const char *to_path);
+extern char *chat_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
 
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey, jstring confirm) {
@@ -113,5 +118,78 @@ Java_chat_simplex_common_platform_CoreKt_chatPasswordHash(JNIEnv *env, __unused 
     jstring res = (*env)->NewStringUTF(env, chat_password_hash(_pwd, _salt));
     (*env)->ReleaseStringUTFChars(env, pwd, _pwd);
     (*env)->ReleaseStringUTFChars(env, salt, _salt);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz, jstring path, jobject buffer) {
+    const char *_path = (*env)->GetStringUTFChars(env, path, JNI_FALSE);
+    jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
+    jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
+    jstring res = (*env)->NewStringUTF(env, chat_write_file(_path, buff, capacity));
+    (*env)->ReleaseStringUTFChars(env, path, _path);
+    return res;
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz, jstring path, jstring key, jstring nonce) {
+    const char *_path = (*env)->GetStringUTFChars(env, path, JNI_FALSE);
+    const char *_key = (*env)->GetStringUTFChars(env, key, JNI_FALSE);
+    const char *_nonce = (*env)->GetStringUTFChars(env, nonce, JNI_FALSE);
+
+    jbyte *res = chat_read_file(_path, _key, _nonce);
+    (*env)->ReleaseStringUTFChars(env, path, _path);
+    (*env)->ReleaseStringUTFChars(env, key, _key);
+    (*env)->ReleaseStringUTFChars(env, nonce, _nonce);
+
+    jint status = (jint)res[0];
+    jbyteArray arr;
+    if (status == 0) {
+        union {
+            uint32_t w;
+            uint8_t b[4];
+        } len;
+        len.b[0] = (uint8_t)res[1];
+        len.b[1] = (uint8_t)res[2];
+        len.b[2] = (uint8_t)res[3];
+        len.b[3] = (uint8_t)res[4];
+        arr = (*env)->NewByteArray(env, len.w);
+        (*env)->SetByteArrayRegion(env, arr, 0, len.w, res + 5);
+    } else {
+        int len = strlen(res + 1); // + 1 offset here is to not include status byte
+        arr = (*env)->NewByteArray(env, len);
+        (*env)->SetByteArrayRegion(env, arr, 0, len, res + 1);
+    }
+
+    jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
+    jobject statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Integer"),
+                                           (*env)->GetMethodID(env, (*env)->FindClass(env, "java/lang/Integer"), "<init>", "(I)V"),
+                                           status);
+    (*env)->SetObjectArrayElement(env, ret, 0, statusObj);
+    (*env)->SetObjectArrayElement(env, ret, 1, arr);
+    return ret;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatEncryptFile(JNIEnv *env, jclass clazz, jstring from_path, jstring to_path) {
+    const char *_from_path = (*env)->GetStringUTFChars(env, from_path, JNI_FALSE);
+    const char *_to_path = (*env)->GetStringUTFChars(env, to_path, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_encrypt_file(_from_path, _to_path));
+    (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
+    (*env)->ReleaseStringUTFChars(env, to_path, _to_path);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatDecryptFile(JNIEnv *env, jclass clazz, jstring from_path, jstring key, jstring nonce, jstring to_path) {
+    const char *_from_path = (*env)->GetStringUTFChars(env, from_path, JNI_FALSE);
+    const char *_key = (*env)->GetStringUTFChars(env, key, JNI_FALSE);
+    const char *_nonce = (*env)->GetStringUTFChars(env, nonce, JNI_FALSE);
+    const char *_to_path = (*env)->GetStringUTFChars(env, to_path, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_decrypt_file(_from_path, _key, _nonce, _to_path));
+    (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
+    (*env)->ReleaseStringUTFChars(env, key, _key);
+    (*env)->ReleaseStringUTFChars(env,  nonce, _nonce);
+    (*env)->ReleaseStringUTFChars(env, to_path, _to_path);
     return res;
 }
