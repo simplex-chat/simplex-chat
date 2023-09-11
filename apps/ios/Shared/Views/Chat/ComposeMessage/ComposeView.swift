@@ -273,6 +273,7 @@ struct ComposeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            contextDirectMemberView()
             contextItemView()
             switch (composeState.editing, composeState.preview) {
             case (true, .filePreview): EmptyView()
@@ -605,7 +606,10 @@ struct ComposeView: View {
         case let .directMember(groupMember):
             ContextDirectMemberView(
                 directMember: groupMember,
-                cancelDirectMemberContext: { composeState = composeState.copy(directMember: .directMemberCancelled) }
+                cancelDirectMemberContext: { composeState = composeState.copy(
+                    directMember: .directMemberCancelled,
+                    contextItem: .noContextItem
+                )}
             )
         case .directMemberCancelled:
             ContextDirectMemberView(

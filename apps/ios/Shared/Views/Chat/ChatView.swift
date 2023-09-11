@@ -486,7 +486,7 @@ struct ChatView: View {
                         HStack {
                             if let directMember = directMember {
                                 ProfileImage(imageStr: directMember.image)
-                                    .frame(width: 30, height: 30)
+                                    .frame(width: 20, height: 20)
                                     .onTapGesture { selectedMember = directMember }
                                     .appSheet(item: $selectedMember) { member in
                                         GroupMemberInfoView(groupInfo: groupInfo, member: directMember, navigation: true)
@@ -549,6 +549,8 @@ struct ChatView: View {
         @State private var audioPlayer: AudioPlayer?
         @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
         @State private var playbackTime: TimeInterval?
+
+        @State private var allowMemberMenu: Bool = true
 
         var body: some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
@@ -642,7 +644,15 @@ struct ChatView: View {
                     menu.append(rm)
                 }
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
-                    menu.append(replyUIAction())
+                    if ci.directMember == nil {
+                        menu.append(replyUIAction())
+                    }
+                    if case let .group(groupInfo) = chat.chatInfo,
+                       let toDirectMember = ci.memberToReplyDirectlyTo,
+                       let toDirectMemberWithConn = ChatModel.shared.getGroupMember(toDirectMember.groupMemberId),
+                       toDirectMemberWithConn.allowedToSendDirectlyTo(groupInfo: groupInfo) {
+                        menu.append(replyDirectlyUIAction(toDirectMemberWithConn, groupInfo))
+                    }
                 }
                 menu.append(shareUIAction())
                 menu.append(copyUIAction())
@@ -697,7 +707,45 @@ struct ChatView: View {
                     if composeState.editing {
                         composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
                     } else {
-                        composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+                        composeState = composeState.copy(
+                            directMember: .noDirectMember,
+                            contextItem: .quotedItem(chatItem: ci)
+                        )
+                    }
+                }
+            }
+        }
+
+        private func replyDirectlyUIAction(_ toDirectMember: GroupMember, _ groupInfo: GroupInfo) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Reply directly", comment: "chat item action"),
+                image: UIImage(systemName: "arrowshape.turn.up.left")
+            ) { _ in
+                let canSend = toDirectMember.canSendDirectlyTo(groupInfo: groupInfo)
+                switch canSend {
+                case .notConnected:
+                    AlertManager.shared.showAlert(Alert(
+                        title: Text("Can't send directly!"),
+                        message: Text("Member is not connected.")
+                    ))
+                case .notSupported:
+                    AlertManager.shared.showAlert(Alert(
+                        title: Text("Can't send directly!"),
+                        message: Text("Member doesn't support this feature, ask them to update.")
+                    ))
+                case .canSend:
+                    withAnimation {
+                        if composeState.editing {
+                            composeState = ComposeState(
+                                directMember: .directMember(groupMember: toDirectMember),
+                                contextItem: .quotedItem(chatItem: ci)
+                            )
+                        } else {
+                            composeState = composeState.copy(
+                                directMember: .directMember(groupMember: toDirectMember),
+                                contextItem: .quotedItem(chatItem: ci)
+                            )
+                        }
                     }
                 }
             }

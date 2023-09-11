@@ -1807,6 +1807,30 @@ public struct GroupMember: Identifiable, Decodable {
         return GroupMemberRole.allCases.filter { $0 <= userRole }
     }
 
+    public func allowedToSendDirectlyTo(groupInfo: GroupInfo) -> Bool {
+        let userRole = groupInfo.membership.memberRole
+        return (
+            (groupInfo.fullGroupPreferences.directMessages.on && userRole >= .author)
+            || userRole >= .admin
+            || memberRole >= .admin
+        )
+    }
+
+    public enum CanSendDirectlyTo {
+        case canSend
+        case notConnected
+        case notSupported
+    }
+
+    public func canSendDirectlyTo(groupInfo: GroupInfo) -> CanSendDirectlyTo {
+        // TODO group-direct: check version
+        if let activeConn = activeConn {
+            return .canSend
+        } else {
+            return .notConnected
+        }
+    }
+
     public var memberIncognito: Bool {
         memberProfile.profileId != memberContactProfileId
     }
@@ -1834,6 +1858,7 @@ public struct GroupMemberRef: Decodable {
 
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
     case observer = "observer"
+    case author = "author"
     case member = "member"
     case admin = "admin"
     case owner = "owner"
@@ -1843,6 +1868,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
     public var text: String {
         switch self {
         case .observer: return NSLocalizedString("observer", comment: "member role")
+        case .author: return NSLocalizedString("author", comment: "member role")
         case .member: return NSLocalizedString("member", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")
@@ -1852,9 +1878,10 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
     private var comparisonValue: Int {
         switch self {
         case .observer: return 0
-        case .member: return 1
-        case .admin: return 2
-        case .owner: return 3
+        case .author: return 1
+        case .member: return 2
+        case .admin: return 3
+        case .owner: return 4
         }
     }
 
@@ -2141,6 +2168,14 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public var memberToReplyDirectlyTo: GroupMember? {
+        switch chatDir {
+        case let .groupSnd(directMember): return directMember
+        case let .groupRcv(groupMember, _): return groupMember
+        default: return nil
+        }
+    }
+
     public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
         switch (chatInfo, chatDir) {
         case let (.group(groupInfo), .groupRcv(groupMember, .msGroup)):
@@ -2254,7 +2289,6 @@ public struct ChatItem: Identifiable, Decodable {
         )
     }
 
-    // TODO group-direct: possibly this has to take sendRef as parameter instead (for directMember)
     public static func liveDummy(_ chatType: ChatType) -> ChatItem {
         var item = ChatItem(
             chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd(directMember: nil),
