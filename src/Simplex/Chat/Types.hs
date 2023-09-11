@@ -330,12 +330,12 @@ data GroupSummary = GroupSummary
 
 instance ToJSON GroupSummary where toEncoding = J.genericToEncoding J.defaultOptions
 
-data ContactOrGroup = CGContact Contact | CGGroup Group
+data ContactOrGroup = CGContact Contact | CGGroup GroupInfo
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
   CGContact Contact {contactId} -> (Just contactId, Nothing)
-  CGGroup (Group GroupInfo {groupId} _) -> (Nothing, Just groupId)
+  CGGroup GroupInfo {groupId} -> (Nothing, Just groupId)
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
