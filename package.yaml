@@ -46,6 +46,7 @@ dependencies:
   - terminal == 0.2.*
   - text == 2.0.*
   - time == 1.9.*
+  - unix == 2.8.1.1
   - unliftio == 0.2.*
   - unliftio-core == 0.2.*
   - zip == 2.0.*

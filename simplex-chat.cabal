@@ -176,6 +176,7 @@ library
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -225,6 +226,7 @@ executable simplex-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -274,6 +276,7 @@ executable simplex-bot-advanced
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -325,6 +328,7 @@ executable simplex-broadcast-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -375,6 +379,7 @@ executable simplex-chat
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
@@ -429,6 +434,7 @@ executable simplex-directory-service
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -505,6 +511,7 @@ test-suite simplex-chat-test
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
