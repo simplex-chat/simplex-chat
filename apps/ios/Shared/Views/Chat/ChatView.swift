@@ -450,7 +450,7 @@ struct ChatView: View {
                         if ci.content.showMemberName {
                             Group {
                                 if msgScope == .msDirect {
-                                    Text("\(member.displayName) **directly**")
+                                    Text("\(member.displayName) **only to you**")
                                 } else {
                                     Text(member.displayName)
                                 }
@@ -488,7 +488,7 @@ struct ChatView: View {
                     if ci.content.showMemberName {
                         HStack {
                             if let directMember = directMember {
-                                Text("**directly** to \(directMember.displayName)")
+                                Text("**only to** \(directMember.displayName)")
                                 ProfileImage(imageStr: directMember.image)
                                     .frame(width: 20, height: 20)
                                     .onTapGesture { selectedMember = directMember }
@@ -762,7 +762,7 @@ struct ChatView: View {
         private func replyUIAction() -> UIAction {
             UIAction(
                 title: NSLocalizedString("Reply", comment: "chat item action"),
-                image: UIImage(systemName: "arrowshape.turn.up.left")
+                image: UIImage(systemName: "arrowshape.turn.up.left.2")
             ) { _ in
                 withAnimation {
                     if composeState.editing {
@@ -780,7 +780,7 @@ struct ChatView: View {
         private func replyDirectlyUIAction(_ toDirectMember: GroupMember, _ groupInfo: GroupInfo) -> UIAction {
             UIAction(
                 title: NSLocalizedString("Reply directly", comment: "chat item action"),
-                image: UIImage(systemName: "arrow.left.arrow.right")
+                image: UIImage(systemName: "arrowshape.turn.up.left")
             ) { _ in
                 let canSend = toDirectMember.canSendDirectlyTo(groupInfo: groupInfo)
                 switch canSend {
@@ -1046,14 +1046,9 @@ struct ChatView: View {
 
     private func showSndScope(_ directMember: GroupMember?, _ prevItem: ChatItem?) -> Bool {
         switch (prevItem?.chatDir) {
-        case .groupRcv: return true
+        case .groupRcv: return directMember != nil
         case let .groupSnd(prevDirectMember):
-            switch (prevDirectMember, directMember) {
-            case (.none, .some(_)): return true
-            case (.some(_), .none): return true
-            case let (.some(prevDM), .some(dm)): return prevDM.groupMemberId != dm.groupMemberId
-            default: return false
-            }
+            return prevDirectMember?.groupMemberId != directMember?.groupMemberId
         default: return false
         }
     }

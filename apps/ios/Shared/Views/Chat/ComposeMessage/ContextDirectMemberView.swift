@@ -17,9 +17,11 @@ struct ContextDirectMemberView: View {
     var body: some View {
         HStack {
             if let directMember = directMember {
+                Text("**only to** \(directMember.chatViewName)")
+                    .lineLimit(1)
                 if let image = directMember.image {
                     ProfileImage(imageStr: image)
-                        .frame(width: 30, height: 30)
+                        .frame(width: 24, height: 24)
                         .padding(.trailing, 2)
                 } else {
                     Image(systemName: "arrow.left.arrow.right")
@@ -29,10 +31,9 @@ struct ContextDirectMemberView: View {
                         .foregroundColor(.secondary)
                         .padding(.trailing, 2)
                 }
-                Text("Directly to \(directMember.chatViewName)")
-                    .lineLimit(1)
             } else {
-                Text("Message will be sent to all members")
+                // maybe make it disappear after some time?
+                Text("send to all group members")
             }
             Spacer()
             Button {

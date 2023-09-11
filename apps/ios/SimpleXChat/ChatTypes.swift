@@ -2702,6 +2702,9 @@ public struct CIQuote: Decodable, ItemContent {
                 return NSLocalizedString("you", comment: "quote sender")
             }
         case .groupSnd(.msDirect):
+            // TODO don't quite understand this condition - this is always user's message, why we show the name, and when "you" will be shown?
+            // Maybe better to repeat "only to <member>" as it was on the original message?
+            // Or "<user name> only to <member>"?
             if let membershipName = membership?.displayName {
                 return String.localizedStringWithFormat(NSLocalizedString("%@, directly", comment: "quote sender"), membershipName)
             } else {
@@ -2710,7 +2713,7 @@ public struct CIQuote: Decodable, ItemContent {
         case let .groupRcv(member, .msGroup):
             return member.displayName
         case let .groupRcv(member, .msDirect):
-            return String.localizedStringWithFormat(NSLocalizedString("%@, directly", comment: "quote sender"), member.displayName)
+            return String.localizedStringWithFormat(NSLocalizedString("%@ only to you", comment: "quote sender"), member.displayName)
         case nil: return nil
         }
     }
