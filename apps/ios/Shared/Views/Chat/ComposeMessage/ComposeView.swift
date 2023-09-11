@@ -11,6 +11,12 @@ import SimpleXChat
 import SwiftyGif
 import PhotosUI
 
+enum ComposeDirectMember {
+    case noDirectMember
+    case directMember(groupMember: GroupMember)
+    case directMemberCancelled
+}
+
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
@@ -40,6 +46,7 @@ struct LiveMessage {
 struct ComposeState {
     var message: String
     var liveMessage: LiveMessage? = nil
+    var directMember: ComposeDirectMember
     var preview: ComposePreview
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
@@ -49,12 +56,14 @@ struct ComposeState {
     init(
         message: String = "",
         liveMessage: LiveMessage? = nil,
+        directMember: ComposeDirectMember = .noDirectMember,
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
         voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording
     ) {
         self.message = message
         self.liveMessage = liveMessage
+        self.directMember = directMember
         self.preview = preview
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
@@ -62,6 +71,11 @@ struct ComposeState {
 
     init(editingItem: ChatItem) {
         self.message = editingItem.content.text
+        if let directMember = editingItem.directMember {
+            self.directMember = .directMember(groupMember: directMember)
+        } else {
+            self.directMember = .noDirectMember
+        }
         self.preview = chatItemPreview(chatItem: editingItem)
         self.contextItem = .editingItem(chatItem: editingItem)
         if let emc = editingItem.content.msgContent,
@@ -75,6 +89,7 @@ struct ComposeState {
     func copy(
         message: String? = nil,
         liveMessage: LiveMessage? = nil,
+        directMember: ComposeDirectMember? = nil,
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
         voiceMessageRecordingState: VoiceMessageRecordingState? = nil
@@ -82,6 +97,7 @@ struct ComposeState {
         ComposeState(
             message: message ?? self.message,
             liveMessage: liveMessage ?? self.liveMessage,
+            directMember: directMember ?? self.directMember,
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
             voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
@@ -582,6 +598,23 @@ struct ComposeView: View {
         }
     }
 
+    @ViewBuilder private func contextDirectMemberView() -> some View {
+        switch composeState.directMember {
+        case .noDirectMember:
+            EmptyView()
+        case let .directMember(groupMember):
+            ContextDirectMemberView(
+                directMember: groupMember,
+                cancelDirectMemberContext: { composeState = composeState.copy(directMember: .directMemberCancelled) }
+            )
+        case .directMemberCancelled:
+            ContextDirectMemberView(
+                directMember: nil,
+                cancelDirectMemberContext: { composeState = composeState.copy(directMember: .noDirectMember) }
+            )
+        }
+    }
+
     @ViewBuilder private func contextItemView() -> some View {
         switch composeState.contextItem {
         case .noContextItem:
@@ -747,12 +780,18 @@ struct ComposeView: View {
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
-            // TODO group-direct: directMember in compose state
             var sendRef: SendRef?
             let chatId = chat.chatInfo.apiId
             switch chat.chatInfo.chatType {
-            case .direct: sendRef = .direct(contactId: chatId)
-            case .group: sendRef = .group(groupId: chatId, directMemberId: nil)
+            case .direct:
+                sendRef = .direct(contactId: chatId)
+            case .group:
+                switch composeState.directMember {
+                case let .directMember(groupMember):
+                    sendRef = .group(groupId: chatId, directMemberId: groupMember.groupMemberId)
+                default:
+                    sendRef = .group(groupId: chatId, directMemberId: nil)
+                }
             default: sendRef = nil
             }
             if let sendRef = sendRef {

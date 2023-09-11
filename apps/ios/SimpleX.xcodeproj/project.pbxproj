@@ -172,6 +172,7 @@
 		648010AB281ADD15009009B9 /* CIFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648010AA281ADD15009009B9 /* CIFileView.swift */; };
 		649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCD9F280460FD00C3A862 /* ComposeImageView.swift */; };
 		649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCDA12805D6EF00C3A862 /* CIImageView.swift */; };
+		64A2723E2AAF16CD00BE1136 /* ContextDirectMemberView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A2723D2AAF16CD00BE1136 /* ContextDirectMemberView.swift */; };
 		64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64C06EB52A0A4A7C00792D4D /* ChatItemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */; };
@@ -449,6 +450,7 @@
 		6493D667280ED77F007A76FB /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		649BCD9F280460FD00C3A862 /* ComposeImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeImageView.swift; sourceTree = "<group>"; };
 		649BCDA12805D6EF00C3A862 /* CIImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIImageView.swift; sourceTree = "<group>"; };
+		64A2723D2AAF16CD00BE1136 /* ContextDirectMemberView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextDirectMemberView.swift; sourceTree = "<group>"; };
 		64AA1C6827EE10C800AC7277 /* ContextItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextItemView.swift; sourceTree = "<group>"; };
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
 		64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemInfoView.swift; sourceTree = "<group>"; };
@@ -837,6 +839,7 @@
 				3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */,
 				644EFFDD292BCD9D00525D5B /* ComposeVoiceView.swift */,
 				D72A9087294BD7A70047C86D /* NativeTextEditor.swift */,
+				64A2723D2AAF16CD00BE1136 /* ContextDirectMemberView.swift */,
 			);
 			path = ComposeMessage;
 			sourceTree = "<group>";
@@ -1119,6 +1122,7 @@
 				64D0C2C629FAC1EC00B38D5F /* AddContactLearnMore.swift in Sources */,
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
 				5C65F343297D45E100B67AF3 /* VersionView.swift in Sources */,
+				64A2723E2AAF16CD00BE1136 /* ContextDirectMemberView.swift in Sources */,
 				64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */,
 				5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */,
 				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,

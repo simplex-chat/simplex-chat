@@ -318,39 +318,46 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -
 func apiSendMessage(sendRef: SendRef, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
     let chatModel = ChatModel.shared
     let cmd: ChatCommand = .apiSendMessage(sendRef: sendRef, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
-    let r: ChatResponse
     switch sendRef {
-    // TODO group-direct: re-use direct logic for directMember
     case .direct:
-        var cItem: ChatItem? = nil
-        let endTask = beginBGTask({
-            if let cItem = cItem {
-                DispatchQueue.main.async {
-                    chatModel.messageDelivery.removeValue(forKey: cItem.id)
-                }
-            }
-        })
-        r = await chatSendCmd(cmd, bgTask: false)
-        if case let .newChatItem(_, aChatItem) = r {
-            cItem = aChatItem.chatItem
-            chatModel.messageDelivery[aChatItem.chatItem.id] = endTask
-            return cItem
-        }
-        if let networkErrorAlert = networkErrorAlert(r) {
-            AlertManager.shared.showAlert(networkErrorAlert)
-        } else {
-            sendMessageErrorAlert(r)
-        }
-        endTask()
-        return nil
-    default:
-        r = await chatSendCmd(cmd, bgDelay: msgDelay)
+        let cItem = await sendMessageDirect(cmd)
+        return cItem
+    case .group(_, .some(_)):
+        let cItem = await sendMessageDirect(cmd)
+        return cItem
+    case .group(_, .none):
+        let r = await chatSendCmd(cmd, bgDelay: msgDelay)
         if case let .newChatItem(_, aChatItem) = r {
             return aChatItem.chatItem
         }
         sendMessageErrorAlert(r)
         return nil
     }
+}
+
+private func sendMessageDirect(_ cmd: ChatCommand) async -> ChatItem? {
+    let chatModel = ChatModel.shared
+    var cItem: ChatItem? = nil
+    let endTask = beginBGTask({
+        if let cItem = cItem {
+            DispatchQueue.main.async {
+                chatModel.messageDelivery.removeValue(forKey: cItem.id)
+            }
+        }
+    })
+    let r = await chatSendCmd(cmd, bgTask: false)
+    if case let .newChatItem(_, aChatItem) = r {
+        cItem = aChatItem.chatItem
+        chatModel.messageDelivery[aChatItem.chatItem.id] = endTask
+        return cItem
+    }
+    if let networkErrorAlert = networkErrorAlert(r) {
+        AlertManager.shared.showAlert(networkErrorAlert)
+    } else {
+        sendMessageErrorAlert(r)
+    }
+    endTask()
+    return nil
 }
 
 private func sendMessageErrorAlert(_ r: ChatResponse) {

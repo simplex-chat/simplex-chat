@@ -207,6 +207,13 @@ struct ChatView: View {
                     logger.error("apiContactInfo error: \(responseError(error))")
                 }
             }
+        } else if case let .group(groupInfo) = cInfo {
+            Task {
+                let groupMembers = await apiListMembers(groupInfo.groupId)
+                await MainActor.run {
+                    ChatModel.shared.groupMembers = groupMembers
+                }
+            }
         }
         if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
             composeState = draft
@@ -428,22 +435,27 @@ struct ChatView: View {
     }
     
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
-        // TODO group-direct: display message as sent/received privately
-        if case let .groupRcv(member, _) = ci.chatDir,
+        if case let .groupRcv(member, msgScope) = ci.chatDir,
            case let .group(groupInfo) = chat.chatInfo {
             let (prevItem, nextItem) = chatModel.getChatItemNeighbors(ci)
             if ci.memberConnected != nil && nextItem?.memberConnected != nil {
                 // memberConnected events are aggregated at the last chat item in a row of such events, see ChatItemView
                 ZStack {} // scroll doesn't work if it's EmptyView()
             } else {
-                if prevItem == nil || showMemberImage(member, prevItem) {
+                if prevItem == nil || showMemberImage(member, msgScope, prevItem) {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
-                            Text(member.displayName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, memberImageSize + 14)
-                                .padding(.top, 7)
+                            Group {
+                                if msgScope == .msPrivate {
+                                    Text("\(member.displayName) **privately**")
+                                } else {
+                                    Text(member.displayName)
+                                }
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, memberImageSize + 14)
+                            .padding(.top, 7)
                         }
                         HStack(alignment: .top, spacing: 8) {
                             ProfileImage(imageStr: member.memberProfile.image)
@@ -464,6 +476,38 @@ struct ChatView: View {
                         .padding(.trailing)
                         .padding(.leading, memberImageSize + 8 + 12)
                 }
+            }
+        } else if case let .groupSnd(directMember) = ci.chatDir,
+                  case let .group(groupInfo) = chat.chatInfo {
+            let (prevItem, _) = chatModel.getChatItemNeighbors(ci)
+            if prevItem == nil || showSndScope(directMember, prevItem) {
+                VStack(alignment: .trailing, spacing: 4) {
+                    if ci.content.showMemberName {
+                        HStack {
+                            if let directMember = directMember {
+                                ProfileImage(imageStr: directMember.image)
+                                    .frame(width: 30, height: 30)
+                                    .onTapGesture { selectedMember = directMember }
+                                    .appSheet(item: $selectedMember) { member in
+                                        GroupMemberInfoView(groupInfo: groupInfo, member: directMember, navigation: true)
+                                    }
+                                Text("**privately** to \(directMember.displayName)")
+                            } else {
+                                Text("to group")
+                            }
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 7)
+                    }
+                    chatItemWithMenu(ci, maxWidth)
+                }
+                .padding(.horizontal)
+                .padding(.top, 5)
+            } else {
+                chatItemWithMenu(ci, maxWidth)
+                    .padding(.horizontal)
+                    .padding(.top, 5)
             }
         } else {
             chatItemWithMenu(ci, maxWidth)
@@ -875,11 +919,24 @@ struct ChatView: View {
         }
     }
 
-    // TODO group-direct: show image if scope changes from group to private or vice versa
-    private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
+    private func showMemberImage(_ member: GroupMember, _ msgScope: MessageScope, _ prevItem: ChatItem?) -> Bool {
         switch (prevItem?.chatDir) {
         case .groupSnd: return true
-        case let .groupRcv(prevMember, _): return prevMember.groupMemberId != member.groupMemberId
+        case let .groupRcv(prevMember, prevMsgScope): return prevMember.groupMemberId != member.groupMemberId || prevMsgScope != msgScope
+        default: return false
+        }
+    }
+
+    private func showSndScope(_ directMember: GroupMember?, _ prevItem: ChatItem?) -> Bool {
+        switch (prevItem?.chatDir) {
+        case .groupRcv: return true
+        case let .groupSnd(prevDirectMember):
+            switch (prevDirectMember, directMember) {
+            case (.none, .some(_)): return true
+            case (.some(_), .none): return true
+            case let (.some(prevDM), .some(dm)): return prevDM.groupMemberId != dm.groupMemberId
+            default: return false
+            }
         default: return false
         }
     }

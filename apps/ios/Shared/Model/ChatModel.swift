@@ -563,6 +563,10 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func getGroupMember(_ groupMemberId: Int64) -> GroupMember? {
+        groupMembers.first(where: { $0.groupMemberId == groupMemberId })
+    }
+
     func upsertGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) -> Bool {
         // user member was updated
         if groupInfo.membership.groupMemberId == member.groupMemberId {

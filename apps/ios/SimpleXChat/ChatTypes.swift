@@ -2133,10 +2133,17 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    // TODO group-direct: prohibit moderation if directMember is present
+    public var directMember: GroupMember? {
+        switch chatDir {
+        case let .groupSnd(directMember): return directMember
+        case let .groupRcv(groupMember, .msPrivate): return groupMember
+        default: return nil
+        }
+    }
+
     public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
         switch (chatInfo, chatDir) {
-        case let (.group(groupInfo), .groupRcv(groupMember, _)):
+        case let (.group(groupInfo), .groupRcv(groupMember, .msGroup)):
             let m = groupInfo.membership
             return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
                     ? (groupInfo, groupMember)
@@ -2588,12 +2595,17 @@ public enum CIContent: Decodable, ItemContent {
     public var showMemberName: Bool {
         switch self {
         case .rcvMsgContent: return true
+        case .sndMsgContent: return true
         case .rcvDeleted: return true
+        case .sndDeleted: return true
         case .rcvCall: return true
+        case .sndCall: return true
         case .rcvIntegrityError: return true
         case .rcvDecryptionError: return true
         case .rcvGroupInvitation: return true
+        case .sndGroupInvitation: return true
         case .rcvModerated: return true
+        case .sndModerated: return true
         case .invalidJSON: return true
         default: return false
         }
@@ -2631,13 +2643,28 @@ public struct CIQuote: Decodable, ItemContent {
         }
     }
 
-    // TODO group-direct: "<sender> privately" possibly here?
     public func getSender(_ membership: GroupMember?) -> String? {
-        switch (chatDir) {
-        case .directSnd: return "you"
-        case .directRcv: return nil
-        case .groupSnd: return membership?.displayName ?? "you"
-        case let .groupRcv(member, _): return member.displayName
+        switch chatDir {
+        case .directSnd:
+            return NSLocalizedString("you", comment: "quote sender")
+        case .directRcv:
+            return nil
+        case .groupSnd(.msGroup):
+            if let membershipName = membership?.displayName {
+                return membershipName
+            } else {
+                return NSLocalizedString("you", comment: "quote sender")
+            }
+        case .groupSnd(.msPrivate):
+            if let membershipName = membership?.displayName {
+                return String.localizedStringWithFormat(NSLocalizedString("%@, privately", comment: "quote sender"), membershipName)
+            } else {
+                return NSLocalizedString("you, privately", comment: "quote sender")
+            }
+        case let .groupRcv(member, .msGroup):
+            return member.displayName
+        case let .groupRcv(member, .msPrivate):
+            return String.localizedStringWithFormat(NSLocalizedString("%@, privately", comment: "quote sender"), member.displayName)
         case nil: return nil
         }
     }
