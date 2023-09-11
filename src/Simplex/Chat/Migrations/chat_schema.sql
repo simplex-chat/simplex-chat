@@ -392,7 +392,9 @@ CREATE TABLE chat_items(
   timed_delete_at TEXT,
   item_live INTEGER,
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  item_deleted_ts TEXT
+  item_deleted_ts TEXT,
+  item_direct_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  quoted_message_scope TEXT
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -713,3 +715,6 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   item_status
 );
 CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
+CREATE INDEX idx_chat_items_item_direct_group_member_id ON chat_items(
+  item_direct_group_member_id
+);
