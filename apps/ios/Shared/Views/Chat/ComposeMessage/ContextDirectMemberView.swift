@@ -18,8 +18,15 @@ struct ContextDirectMemberView: View {
         HStack {
             if let directMember = directMember {
                 if let image = directMember.image {
-                    ProfileImage(imageStr: directMember.image)
+                    ProfileImage(imageStr: image)
                         .frame(width: 30, height: 30)
+                        .padding(.trailing, 2)
+                } else {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(.secondary)
                         .padding(.trailing, 2)
                 }
                 Text("Directly to \(directMember.chatViewName)")

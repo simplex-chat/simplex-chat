@@ -141,6 +141,9 @@ struct ChatView: View {
                     .appSheet(isPresented: $showChatInfoSheet) {
                         GroupChatInfoView(chat: chat, groupInfo: groupInfo)
                     }
+                    .appSheet(item: $selectedMember) { member in
+                        GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
+                    }
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -458,12 +461,13 @@ struct ChatView: View {
                             .padding(.top, 7)
                         }
                         HStack(alignment: .top, spacing: 8) {
-                            ProfileImage(imageStr: member.memberProfile.image)
-                                .frame(width: memberImageSize, height: memberImageSize)
-                                .onTapGesture { selectedMember = member }
-                                .appSheet(item: $selectedMember) { member in
-                                    GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
-                                }
+                            RcvMemberImageWithMenu(
+                                member: member,
+                                groupInfo: groupInfo,
+                                composeState: $composeState,
+                                selectedMember: $selectedMember
+                            )
+                            .environmentObject(chat)
                             chatItemWithMenu(ci, maxWidth)
                         }
                     }
@@ -477,8 +481,7 @@ struct ChatView: View {
                         .padding(.leading, memberImageSize + 8 + 12)
                 }
             }
-        } else if case let .groupSnd(directMember) = ci.chatDir,
-                  case let .group(groupInfo) = chat.chatInfo {
+        } else if case let .groupSnd(directMember) = ci.chatDir {
             let (prevItem, _) = chatModel.getChatItemNeighbors(ci)
             if prevItem == nil || showSndScope(directMember, prevItem) {
                 VStack(alignment: .trailing, spacing: 4) {
@@ -488,9 +491,6 @@ struct ChatView: View {
                                 ProfileImage(imageStr: directMember.image)
                                     .frame(width: 20, height: 20)
                                     .onTapGesture { selectedMember = directMember }
-                                    .appSheet(item: $selectedMember) { member in
-                                        GroupMemberInfoView(groupInfo: groupInfo, member: directMember, navigation: true)
-                                    }
                                 Text("**directly** to \(directMember.displayName)")
                             } else {
                                 Text("to group")
@@ -513,6 +513,69 @@ struct ChatView: View {
             chatItemWithMenu(ci, maxWidth)
                 .padding(.horizontal)
                 .padding(.top, 5)
+        }
+    }
+
+    private struct RcvMemberImageWithMenu: View {
+        var member: GroupMember
+        var groupInfo: GroupInfo
+        @Binding var composeState: ComposeState
+        @Binding var selectedMember: GroupMember?
+        @State private var allowMenu: Bool = true
+
+        var body: some View {
+            let menuItems = memberMenu(member, groupInfo)
+            if menuItems.isEmpty {
+                profileImage()
+            } else {
+                let uiMenu: Binding<UIMenu> = Binding(
+                    get: { UIMenu(title: "", children: menuItems) },
+                    set: { _ in }
+                )
+                profileImage()
+                    .uiKitContextMenu(menu: uiMenu, allowMenu: $allowMenu)
+            }
+        }
+
+        private func profileImage() -> some View {
+            ProfileImage(imageStr: member.memberProfile.image)
+                .frame(width: memberImageSize, height: memberImageSize)
+                .onTapGesture { selectedMember = member }
+        }
+
+        private func memberMenu(_ member: GroupMember, _ groupInfo: GroupInfo) -> [UIMenuElement] {
+            var menu: [UIMenuElement] = []
+            if let memberWithConn = ChatModel.shared.getGroupMember(member.groupMemberId),
+               memberWithConn.allowedToSendDirectlyTo(groupInfo: groupInfo) {
+                menu.append(memberMenuSendDirectlyUIAction(memberWithConn, groupInfo))
+            }
+            return menu
+        }
+
+        private func memberMenuSendDirectlyUIAction(_ toDirectMember: GroupMember, _ groupInfo: GroupInfo) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Send directly", comment: "chat item action"),
+                image: UIImage(systemName: "arrow.left.arrow.right")
+            ) { _ in
+                let canSend = toDirectMember.canSendDirectlyTo(groupInfo: groupInfo)
+                switch canSend {
+                case .notConnected:
+                    AlertManager.shared.showAlert(cantSendDirectlyNotConnectedAlert())
+                case .notSupported:
+                    AlertManager.shared.showAlert(cantSendDirectlyNotSupportedAlert())
+                case .canSend:
+                    withAnimation {
+                        if composeState.editing {
+                            composeState = ComposeState(directMember: .directMember(groupMember: toDirectMember))
+                        } else {
+                            composeState = composeState.copy(
+                                directMember: .directMember(groupMember: toDirectMember),
+                                contextItem: .noContextItem
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -549,8 +612,6 @@ struct ChatView: View {
         @State private var audioPlayer: AudioPlayer?
         @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
         @State private var playbackTime: TimeInterval?
-
-        @State private var allowMemberMenu: Bool = true
 
         var body: some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
@@ -719,20 +780,14 @@ struct ChatView: View {
         private func replyDirectlyUIAction(_ toDirectMember: GroupMember, _ groupInfo: GroupInfo) -> UIAction {
             UIAction(
                 title: NSLocalizedString("Reply directly", comment: "chat item action"),
-                image: UIImage(systemName: "arrowshape.turn.up.left")
+                image: UIImage(systemName: "arrow.left.arrow.right")
             ) { _ in
                 let canSend = toDirectMember.canSendDirectlyTo(groupInfo: groupInfo)
                 switch canSend {
                 case .notConnected:
-                    AlertManager.shared.showAlert(Alert(
-                        title: Text("Can't send directly!"),
-                        message: Text("Member is not connected.")
-                    ))
+                    AlertManager.shared.showAlert(cantSendDirectlyNotConnectedAlert())
                 case .notSupported:
-                    AlertManager.shared.showAlert(Alert(
-                        title: Text("Can't send directly!"),
-                        message: Text("Member doesn't support this feature, ask them to update.")
-                    ))
+                    AlertManager.shared.showAlert(cantSendDirectlyNotSupportedAlert())
                 case .canSend:
                     withAnimation {
                         if composeState.editing {
@@ -965,6 +1020,20 @@ struct ChatView: View {
         private var broadcastDeleteButtonText: LocalizedStringKey {
             chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
         }
+    }
+
+    private static func cantSendDirectlyNotConnectedAlert() -> Alert {
+        Alert(
+            title: Text("Can't send directly!"),
+            message: Text("Member is not connected.")
+        )
+    }
+
+    private static func cantSendDirectlyNotSupportedAlert() -> Alert {
+        Alert(
+            title: Text("Can't send directly!"),
+            message: Text("Member doesn't support this feature, ask them to update.")
+        )
     }
 
     private func showMemberImage(_ member: GroupMember, _ msgScope: MessageScope, _ prevItem: ChatItem?) -> Bool {
