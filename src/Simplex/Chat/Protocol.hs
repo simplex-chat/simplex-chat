@@ -44,7 +44,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
@@ -57,6 +57,10 @@ supportedChatVRange = mkVersionRange 1 currentChatVersion
 -- version range that supports skipping establishing direct connections in a group
 groupNoDirectVRange :: VersionRange
 groupNoDirectVRange = mkVersionRange 2 currentChatVersion
+
+-- version range that supports private messages from members in a group
+groupPrivateMessagesVRange :: VersionRange
+groupPrivateMessagesVRange = mkVersionRange 2 currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -158,11 +162,28 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+data MessageScope = MSGroup | MSDirect
+  deriving (Eq, Show, Generic)
+
+instance FromJSON MessageScope where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MS"
+
+instance ToJSON MessageScope where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MS"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MS"
+
+instance ToField MessageScope where
+  toField = toField . encodeJSON
+
+instance FromField MessageScope where
+  fromField = fromTextField_ decodeJSON
+
 data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
     sent :: Bool,
-    memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
+    memberId :: Maybe MemberId, -- must be present in all group message references, both referencing sent and received
+    msgScope :: Maybe MessageScope
   }
   deriving (Eq, Show, Generic)
 
@@ -447,7 +468,13 @@ msgContentTag = \case
   MCFile {} -> MCFile_
   MCUnknown {tag} -> MCUnknown_ tag
 
-data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
+data ExtMsgContent = ExtMsgContent
+  { content :: MsgContent,
+    file :: Maybe FileInvitation,
+    ttl :: Maybe Int,
+    live :: Maybe Bool,
+    scope :: Maybe MessageScope
+  }
   deriving (Eq, Show)
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
@@ -456,10 +483,10 @@ parseMsgContainer v =
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
     <|> MCSimple <$> mc
   where
-    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
+    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live" <*> v .:? "scope"
 
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc file Nothing Nothing
+extMsgContent mc file = ExtMsgContent mc file Nothing Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -503,7 +530,7 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    msgContent (ExtMsgContent c file ttl live) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= c]
+    msgContent (ExtMsgContent c file ttl live scope) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) ["content" .= c]
 
 instance ToJSON MsgContent where
   toJSON = \case
