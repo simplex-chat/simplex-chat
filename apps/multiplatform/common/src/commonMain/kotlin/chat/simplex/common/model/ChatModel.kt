@@ -2089,6 +2089,10 @@ data class CryptoFile(
   val filePath: String,
   val cryptoArgs: CryptoFileArgs?
 ) {
+
+  val isAbsolutePath: Boolean
+    get() = File(filePath).isAbsolute
+
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)
   }
