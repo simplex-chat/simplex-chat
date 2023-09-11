@@ -1449,6 +1449,7 @@ public struct ContactSubStatus: Decodable {
 public struct Connection: Decodable {
     public var connId: Int64
     public var agentConnId: String
+    // public var peerChatVRange: VersionRange
     var connStatus: ConnStatus
     public var connLevel: Int
     public var viaGroupLink: Bool
@@ -1459,6 +1460,7 @@ public struct Connection: Decodable {
 
     private enum CodingKeys: String, CodingKey {
         case connId, agentConnId, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode
+        // case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode
     }
 
     public var id: ChatId { get { ":\(connId)" } }
@@ -1466,10 +1468,20 @@ public struct Connection: Decodable {
     static let sampleData = Connection(
         connId: 1,
         agentConnId: "abc",
+        // peerChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
         connStatus: .ready,
         connLevel: 0,
         viaGroupLink: false
     )
+}
+
+public struct VersionRange: Decodable {
+    public var minVersion: Int
+    public var maxVersion: Int
+
+    public func isCompatibleRange(_ range: VersionRange) -> Bool {
+        minVersion <= range.maxVersion && range.minVersion <= maxVersion
+    }
 }
 
 public struct SecurityCode: Decodable, Equatable {
