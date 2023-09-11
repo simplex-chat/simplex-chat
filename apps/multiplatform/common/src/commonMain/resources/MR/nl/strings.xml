@@ -1387,4 +1387,6 @@
     <string name="open_database_folder">Database map openen</string>
     <string name="passphrase_will_be_saved_in_settings">Het wachtwoord wordt als platte tekst in de instellingen opgeslagen nadat u deze hebt gewijzigd of de app opnieuw hebt opgestart.</string>
     <string name="settings_is_storing_in_clear_text">Het wachtwoord wordt als leesbare tekst in de instellingen opgeslagen.</string>
+    <string name="socks_proxy_setting_limitations"><b>Let op</b>: bericht en bestands relais zijn verbonden via SOCKS-proxy. Voor oproepen en het verzenden van link voorbeelden wordt gebruik gemaakt van een directe verbinding.</string>
+    <string name="encrypt_local_files">Versleutel lokale bestanden</string>
 </resources>
