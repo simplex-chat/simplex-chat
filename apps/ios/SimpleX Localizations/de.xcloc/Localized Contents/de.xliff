@@ -1819,8 +1819,9 @@
         <target>Datenbank verschlüsseln?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt local files" xml:space="preserve">
+      <trans-unit id="Encrypt local files" xml:space="preserve" approved="no">
         <source>Encrypt local files</source>
+        <target state="translated">Lokale Dateien verschlüsseln</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
@@ -1953,8 +1954,9 @@
         <target>Fehler beim Erstellen des Profils!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error decrypting file" xml:space="preserve">
+      <trans-unit id="Error decrypting file" xml:space="preserve" approved="no">
         <source>Error decrypting file</source>
+        <target state="translated">Fehler beim Entschlüsseln der Datei</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
