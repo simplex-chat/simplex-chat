@@ -2136,7 +2136,7 @@ public struct ChatItem: Identifiable, Decodable {
     public var directMember: GroupMember? {
         switch chatDir {
         case let .groupSnd(directMember): return directMember
-        case let .groupRcv(groupMember, .msPrivate): return groupMember
+        case let .groupRcv(groupMember, .msDirect): return groupMember
         default: return nil
         }
     }
@@ -2291,7 +2291,7 @@ public struct ChatItem: Identifiable, Decodable {
 
 public enum MessageScope: String, Decodable {
     case msGroup = "group"
-    case msPrivate = "private"
+    case msDirect = "direct"
 }
 
 public enum CIDirection: Decodable {
@@ -2655,16 +2655,16 @@ public struct CIQuote: Decodable, ItemContent {
             } else {
                 return NSLocalizedString("you", comment: "quote sender")
             }
-        case .groupSnd(.msPrivate):
+        case .groupSnd(.msDirect):
             if let membershipName = membership?.displayName {
-                return String.localizedStringWithFormat(NSLocalizedString("%@, privately", comment: "quote sender"), membershipName)
+                return String.localizedStringWithFormat(NSLocalizedString("%@, directly", comment: "quote sender"), membershipName)
             } else {
-                return NSLocalizedString("you, privately", comment: "quote sender")
+                return NSLocalizedString("you, directly", comment: "quote sender")
             }
         case let .groupRcv(member, .msGroup):
             return member.displayName
-        case let .groupRcv(member, .msPrivate):
-            return String.localizedStringWithFormat(NSLocalizedString("%@, privately", comment: "quote sender"), member.displayName)
+        case let .groupRcv(member, .msDirect):
+            return String.localizedStringWithFormat(NSLocalizedString("%@, directly", comment: "quote sender"), member.displayName)
         case nil: return nil
         }
     }

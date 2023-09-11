@@ -446,8 +446,8 @@ struct ChatView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
                             Group {
-                                if msgScope == .msPrivate {
-                                    Text("\(member.displayName) **privately**")
+                                if msgScope == .msDirect {
+                                    Text("\(member.displayName) **directly**")
                                 } else {
                                     Text(member.displayName)
                                 }
@@ -491,7 +491,7 @@ struct ChatView: View {
                                     .appSheet(item: $selectedMember) { member in
                                         GroupMemberInfoView(groupInfo: groupInfo, member: directMember, navigation: true)
                                     }
-                                Text("**privately** to \(directMember.displayName)")
+                                Text("**directly** to \(directMember.displayName)")
                             } else {
                                 Text("to group")
                             }

@@ -1633,7 +1633,7 @@ data class ChatItem (
 @Serializable
 enum class MessageScope(val messageScope: String) {
   @SerialName("group") MSGroup("group"),
-  @SerialName("private") MSPrivate("private");
+  @SerialName("private") MSDirect("direct");
 }
 
 @Serializable

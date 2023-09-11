@@ -20,7 +20,7 @@ struct ContextDirectMemberView: View {
                 ProfileImage(imageStr: directMember.image)
                     .frame(width: 30, height: 30)
                     .padding(.trailing, 2)
-                Text("Message will be sent privately to \(directMember.chatViewName)")
+                Text("Directly to \(directMember.chatViewName)")
                     .lineLimit(1)
             } else {
                 Text("Message will be sent to all members")
