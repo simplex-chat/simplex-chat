@@ -488,10 +488,10 @@ struct ChatView: View {
                     if ci.content.showMemberName {
                         HStack {
                             if let directMember = directMember {
+                                Text("**directly** to \(directMember.displayName)")
                                 ProfileImage(imageStr: directMember.image)
                                     .frame(width: 20, height: 20)
                                     .onTapGesture { selectedMember = directMember }
-                                Text("**directly** to \(directMember.displayName)")
                             } else {
                                 Text("to group")
                             }
