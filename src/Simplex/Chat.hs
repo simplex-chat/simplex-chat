@@ -682,12 +682,19 @@ processChatCommand = \case
               checkDirDirectMember qChatDir $ pure (qmc, CIQGroupRcv (Just m) qMsgScope, False, m)
             quoteData _ _ _ =
               throwChatError CEInvalidQuote
+            -- can quote:
+            -- - group message to group (Nothing, Nothing)
+            -- - group message to direct member (Nothing, Just)
+            -- - direct message to the same direct member (Just, Just, same Id)
+            -- can't quote:
+            -- - direct message to group (Just, Nothing)
+            -- - direct message to another direct member (Just, Just, different Id)
             checkDirDirectMember :: CIDirection 'CTGroup d -> m a -> m a
-            checkDirDirectMember quoteChatDir a = case (directMember, ciDirDirectMember quoteChatDir) of
+            checkDirDirectMember quoteChatDir a = case (ciDirDirectMember quoteChatDir, directMember) of
               (Nothing, Nothing) -> a
-              (Nothing, Just _) -> throwChatError CEInvalidQuote
-              (Just _, Nothing) -> a
-              (Just GroupMember {groupMemberId = directMemId}, Just GroupMember {groupMemberId = dirDirectMemId})
+              (Nothing, Just _) -> a
+              (Just _, Nothing) -> throwChatError CEInvalidQuote
+              (Just GroupMember {groupMemberId = dirDirectMemId}, Just GroupMember {groupMemberId = directMemId})
                 | directMemId == dirDirectMemId -> a
                 | otherwise -> throwChatError CEInvalidQuote
     where
@@ -3897,7 +3904,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             case msgScope_ of
               Nothing -> processGroupScopeMsg timed_ live
               Just MSGroup -> processGroupScopeMsg timed_ live
-              Just MSPrivate -> createItem timed_ live
+              Just MSDirect -> createItem timed_ live
         processGroupScopeMsg timed_ live =
           withStore' (\db -> getCIModeration db user gInfo memberId sharedMsgId_) >>= \case
             Just ciModeration -> do
@@ -3937,7 +3944,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     assertMemberSendAllowed
       gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}}
       m@GroupMember {memberRole}
-      MSPrivate
+      MSDirect
       directMessagesProhibitedAction
         | userRole >= GRAdmin || memberRole >= GRAdmin = assertMemberStatus m
         | not (groupFeatureAllowed SGFDirectMessages gInfo) = directMessagesProhibitedAction

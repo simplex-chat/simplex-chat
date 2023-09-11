@@ -386,7 +386,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
       CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing)
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} messageScope -> case messageScope of
         MSGroup -> (Nothing, Just groupId, Just groupMemberId, Nothing)
-        MSPrivate -> (Nothing, Just groupId, Just groupMemberId, Just groupMemberId)
+        MSDirect -> (Nothing, Just groupId, Just groupMemberId, Just groupMemberId)
       CDGroupSnd GroupInfo {groupId} directMember -> case directMember of
         Nothing -> (Nothing, Just groupId, Nothing, Nothing)
         Just GroupMember {groupMemberId} -> (Nothing, Just groupId, Nothing, Just groupMemberId)
@@ -1064,12 +1064,12 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
       (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Nothing) ->
         Right $ cItem SMDSnd (CIGroupSnd directMember_) ciStatus ciContent Nothing
       -- read of group chat item can be refactored so that direct member is not read for rcv items:
-      -- if item_direct_group_member_id is equal to group_member_id, then message scope is private
+      -- if item_direct_group_member_id is equal to group_member_id, then message scope is direct
       (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Just (AFS SMDRcv fileStatus)) ->
         case directMember_ of
           Just directMember
             | sameMember member directMember ->
-              Right $ cItem SMDRcv (CIGroupRcv member MSPrivate) ciStatus ciContent (maybeCIFile fileStatus)
+              Right $ cItem SMDRcv (CIGroupRcv member MSDirect) ciStatus ciContent (maybeCIFile fileStatus)
             | otherwise -> badItem
           Nothing ->
             Right $ cItem SMDRcv (CIGroupRcv member MSGroup) ciStatus ciContent (maybeCIFile fileStatus)
@@ -1077,7 +1077,7 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
         case directMember_ of
           Just directMember
             | sameMember member directMember ->
-              Right $ cItem SMDRcv (CIGroupRcv member MSPrivate) ciStatus ciContent Nothing
+              Right $ cItem SMDRcv (CIGroupRcv member MSDirect) ciStatus ciContent Nothing
             | otherwise -> badItem
           Nothing ->
             Right $ cItem SMDRcv (CIGroupRcv member MSGroup) ciStatus ciContent Nothing

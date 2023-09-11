@@ -162,7 +162,7 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data MessageScope = MSGroup | MSPrivate
+data MessageScope = MSGroup | MSDirect
   deriving (Eq, Show, Generic)
 
 instance FromJSON MessageScope where

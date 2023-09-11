@@ -109,9 +109,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.new simple text - live message" $
     "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"live\":true}}"
       #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing Nothing (Just True) Nothing))
-  it "x.msg.new simple text - private message scope" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"scope\":\"private\"}}"
-      #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing Nothing Nothing (Just MSPrivate)))
+  it "x.msg.new simple text - direct message scope" $
+    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"scope\":\"direct\"}}"
+      #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing Nothing Nothing (Just MSDirect)))
   it "x.msg.new simple link" $
     "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
       #==# XMsgNew (MCSimple (extMsgContent (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}) Nothing))
@@ -133,15 +133,15 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (MCQuote quotedMsg (extMsgContent (MCText "hello to you too") Nothing)))
-  it "x.msg.new quote - private referenced message scope" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\",\"msgScope\":\"private\"}}}}"
+  it "x.msg.new quote - direct referenced message scope" $
+    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\",\"msgScope\":\"direct\"}}}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         ( XMsgNew
             ( MCQuote
                 ( QuotedMsg
-                    (MsgRef (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True Nothing (Just MSPrivate))
+                    (MsgRef (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True Nothing (Just MSDirect))
                     $ MCText "hello there!"
                 )
                 (extMsgContent (MCText "hello to you too") Nothing)

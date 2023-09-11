@@ -169,12 +169,12 @@ ciDirDirectMember :: CIDirection 'CTGroup d -> Maybe GroupMember
 ciDirDirectMember = \case
   CIGroupSnd dm -> dm
   CIGroupRcv _ MSGroup -> Nothing
-  CIGroupRcv m MSPrivate -> Just m
+  CIGroupRcv m MSDirect -> Just m
 
 directMemberToMsgScope :: Maybe GroupMember -> MessageScope
 directMemberToMsgScope = \case
   Nothing -> MSGroup
-  Just _ -> MSPrivate
+  Just _ -> MSDirect
 
 data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
   deriving (Show, Generic)

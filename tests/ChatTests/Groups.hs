@@ -2720,12 +2720,12 @@ testGroupDirectMessages =
     dan <# "#team alice> hi"
 
     alice `send` "#team @bob hi bob"
-    alice <# "#team @bob (private) hi bob"
-    bob <# "#team alice (private)> hi bob"
+    alice <# "#team @bob (direct) hi bob"
+    bob <# "#team alice (direct)> hi bob"
 
     bob `send` "#team @alice hi alice"
-    bob <# "#team @alice (private) hi alice"
-    alice <# "#team bob (private)> hi alice"
+    bob <# "#team @alice (direct) hi alice"
+    alice <# "#team bob (direct)> hi alice"
 
     dan #> "#team hello"
     alice <# "#team dan> hello"
@@ -2733,12 +2733,12 @@ testGroupDirectMessages =
     cath <# "#team dan> hello"
 
     bob `send` "#team @cath hi cath"
-    bob <# "#team @cath (private) hi cath"
-    cath <# "#team bob (private)> hi cath"
+    bob <# "#team @cath (direct) hi cath"
+    cath <# "#team bob (direct)> hi cath"
 
     cath `send` "#team @bob hello bob"
-    cath <# "#team @bob (private) hello bob"
-    bob <# "#team cath (private)> hello bob"
+    cath <# "#team @bob (direct) hello bob"
+    bob <# "#team cath (direct)> hello bob"
   where
     aliceAddedDan :: HasCallStack => TestCC -> IO ()
     aliceAddedDan cc = do
@@ -2757,13 +2757,13 @@ testGroupDirectMessagesItems =
     threadDelay 1000000
 
     alice `send` "#team @bob hi bob"
-    alice <# "#team @bob (private) hi bob"
-    bob <# "#team alice (private)> hi bob"
+    alice <# "#team @bob (direct) hi bob"
+    bob <# "#team alice (direct)> hi bob"
     threadDelay 1000000
 
     bob `send` "#team @alice hi alice"
-    bob <# "#team @alice (private) hi alice"
-    alice <# "#team bob (private)> hi alice"
+    bob <# "#team @alice (direct) hi alice"
+    alice <# "#team bob (direct)> hi alice"
     threadDelay 1000000
 
     alice #$> ("/_get chat #1 count=4", mapChat, [(0, "", "connected"), (1, "", "hi"), (1, "bob", "hi bob"), (0, "bob", "hi alice")])
@@ -2790,51 +2790,51 @@ testGroupDirectQuotes =
     bob <# "#team cath> 3-g-c"
 
     alice `send` "#team @bob 4-p-ab"
-    alice <# "#team @bob (private) 4-p-ab"
-    bob <# "#team alice (private)> 4-p-ab"
+    alice <# "#team @bob (direct) 4-p-ab"
+    bob <# "#team alice (direct)> 4-p-ab"
 
     bob `send` "#team @alice 5-p-ba"
-    bob <# "#team @alice (private) 5-p-ba"
-    alice <# "#team bob (private)> 5-p-ba"
+    bob <# "#team @alice (direct) 5-p-ba"
+    alice <# "#team bob (direct)> 5-p-ba"
 
     alice `send` "#team @cath 6-p-ac"
-    alice <# "#team @cath (private) 6-p-ac"
-    cath <# "#team alice (private)> 6-p-ac"
+    alice <# "#team @cath (direct) 6-p-ac"
+    cath <# "#team alice (direct)> 6-p-ac"
 
     cath `send` "#team @alice 7-p-ca"
-    cath <# "#team @alice (private) 7-p-ca"
-    alice <# "#team cath (private)> 7-p-ca"
+    cath <# "#team @alice (direct) 7-p-ca"
+    alice <# "#team cath (direct)> 7-p-ca"
 
     -- quotes
 
     alice `send` "> #team @bob (1-g-a) 8-pq-ab"
-    alice <# "#team @bob (private) > alice 1-g-a"
+    alice <# "#team @bob (direct) > alice 1-g-a"
     alice <## "      8-pq-ab"
-    bob <# "#team alice (private)> > alice 1-g-a"
+    bob <# "#team alice (direct)> > alice 1-g-a"
     bob <## "      8-pq-ab"
 
     alice `send` "> #team @bob (2-g-b) 9-pq-ab"
-    alice <# "#team @bob (private) > bob 2-g-b"
+    alice <# "#team @bob (direct) > bob 2-g-b"
     alice <## "      9-pq-ab"
-    bob <# "#team alice (private)> > bob 2-g-b"
+    bob <# "#team alice (direct)> > bob 2-g-b"
     bob <## "      9-pq-ab"
 
     alice `send` "> #team >@cath @bob (3-g-c) 10-pq-ab"
-    alice <# "#team @bob (private) > cath 3-g-c"
+    alice <# "#team @bob (direct) > cath 3-g-c"
     alice <## "      10-pq-ab"
-    bob <# "#team alice (private)> > cath 3-g-c"
+    bob <# "#team alice (direct)> > cath 3-g-c"
     bob <## "      10-pq-ab"
 
     alice `send` "> #team @bob (4-p-ab) 11-pq-ab"
-    alice <# "#team @bob (private) > alice 4-p-ab"
+    alice <# "#team @bob (direct) > alice 4-p-ab"
     alice <## "      11-pq-ab"
-    bob <# "#team alice (private)> > alice 4-p-ab"
+    bob <# "#team alice (direct)> > alice 4-p-ab"
     bob <## "      11-pq-ab"
 
     alice `send` "> #team >@bob @bob (5-p-ba) 12-pq-ab"
-    alice <# "#team @bob (private) > bob 5-p-ba"
+    alice <# "#team @bob (direct) > bob 5-p-ba"
     alice <## "      12-pq-ab"
-    bob <# "#team alice (private)> > bob 5-p-ba"
+    bob <# "#team alice (direct)> > bob 5-p-ba"
     bob <## "      12-pq-ab"
 
     alice `send` "> #team @bob (6-p-ac) 13-pq-ab"
@@ -2863,50 +2863,50 @@ testGroupDirectQuotesItems =
     cath <# "#team alice> 1-g-a"
 
     alice `send` "#team @bob 2-p-ab"
-    alice <# "#team @bob (private) 2-p-ab"
-    bob <# "#team alice (private)> 2-p-ab"
+    alice <# "#team @bob (direct) 2-p-ab"
+    bob <# "#team alice (direct)> 2-p-ab"
 
     bob `send` "#team @alice 3-p-ba"
-    bob <# "#team @alice (private) 3-p-ba"
-    alice <# "#team bob (private)> 3-p-ba"
+    bob <# "#team @alice (direct) 3-p-ba"
+    alice <# "#team bob (direct)> 3-p-ba"
     threadDelay 1000000
 
     -- quotes
 
     alice `send` "> #team @bob (1-g-a) 4-pq-ab"
-    alice <# "#team @bob (private) > alice 1-g-a"
+    alice <# "#team @bob (direct) > alice 1-g-a"
     alice <## "      4-pq-ab"
-    bob <# "#team alice (private)> > alice 1-g-a"
+    bob <# "#team alice (direct)> > alice 1-g-a"
     bob <## "      4-pq-ab"
     threadDelay 1000000
 
     alice `send` "> #team @bob (2-p-ab) 5-pq-ab"
-    alice <# "#team @bob (private) > alice 2-p-ab"
+    alice <# "#team @bob (direct) > alice 2-p-ab"
     alice <## "      5-pq-ab"
-    bob <# "#team alice (private)> > alice 2-p-ab"
+    bob <# "#team alice (direct)> > alice 2-p-ab"
     bob <## "      5-pq-ab"
     threadDelay 1000000
 
     alice `send` "> #team >@bob @bob (3-p-ba) 6-pq-ab"
-    alice <# "#team @bob (private) > bob 3-p-ba"
+    alice <# "#team @bob (direct) > bob 3-p-ba"
     alice <## "      6-pq-ab"
-    bob <# "#team alice (private)> > bob 3-p-ba"
+    bob <# "#team alice (direct)> > bob 3-p-ba"
     bob <## "      6-pq-ab"
 
     alice
       #$> ( "/_get chat #1 count=3",
             mapChat,
             [ ((1, "bob", "4-pq-ab"), Just (1, "group", "1-g-a")),
-              ((1, "bob", "5-pq-ab"), Just (1, "private", "2-p-ab")),
-              ((1, "bob", "6-pq-ab"), Just (0, "private", "3-p-ba"))
+              ((1, "bob", "5-pq-ab"), Just (1, "direct", "2-p-ab")),
+              ((1, "bob", "6-pq-ab"), Just (0, "direct", "3-p-ba"))
             ]
           )
     bob
       #$> ( "/_get chat #1 count=3",
             mapChat,
             [ ((0, "alice", "4-pq-ab"), Just (0, "group", "1-g-a")),
-              ((0, "alice", "5-pq-ab"), Just (0, "private", "2-p-ab")),
-              ((0, "alice", "6-pq-ab"), Just (1, "private", "3-p-ba"))
+              ((0, "alice", "5-pq-ab"), Just (0, "direct", "2-p-ab")),
+              ((0, "alice", "6-pq-ab"), Just (1, "direct", "3-p-ba"))
             ]
           )
   where
@@ -2920,11 +2920,11 @@ testGroupDirectFilesXFTP =
       threadDelay 1000000
 
       alice `send` "/f #team @bob ./tests/fixtures/test.pdf"
-      alice <# "/f #team @bob (private) ./tests/fixtures/test.pdf"
+      alice <# "/f #team @bob (direct) ./tests/fixtures/test.pdf"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "#team alice (private)> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <# "#team alice (direct)> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice <## "completed uploading file 1 (test.pdf) for #team @bob (private)"
+      alice <## "completed uploading file 1 (test.pdf) for #team @bob (direct)"
 
       bob ##> "/fr 1 ./tests/tmp"
       bob
@@ -2942,11 +2942,11 @@ testGroupDirectFilesXFTP =
       cath <##. "chat db error: SEUserNotFoundByFileId"
 
       alice `send` "/f #team @cath ./tests/fixtures/test.jpg"
-      alice <# "/f #team @cath (private) ./tests/fixtures/test.jpg"
+      alice <# "/f #team @cath (direct) ./tests/fixtures/test.jpg"
       alice <## "use /fc 2 to cancel sending"
-      cath <# "#team alice (private)> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      cath <# "#team alice (direct)> sends file test.jpg (136.5 KiB / 139737 bytes)"
       cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice <## "completed uploading file 2 (test.jpg) for #team @cath (private)"
+      alice <## "completed uploading file 2 (test.jpg) for #team @cath (direct)"
 
       cath ##> "/fr 1 ./tests/tmp"
       cath
@@ -2975,9 +2975,9 @@ testGroupDirectFilesSMP =
     threadDelay 1000000
 
     alice `send` "/f #team @bob ./tests/fixtures/test.pdf"
-    alice <# "/f #team @bob (private) ./tests/fixtures/test.pdf"
+    alice <# "/f #team @bob (direct) ./tests/fixtures/test.pdf"
     alice <## "use /fc 1 to cancel sending"
-    bob <# "#team alice (private)> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    bob <# "#team alice (direct)> sends file test.pdf (266.0 KiB / 272376 bytes)"
     bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
     bob ##> "/fr 1 ./tests/tmp"
     bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
@@ -2997,9 +2997,9 @@ testGroupDirectFilesSMP =
     cath <##. "chat db error: SEUserNotFoundByFileId"
 
     alice `send` "/f #team @cath ./tests/fixtures/test.jpg"
-    alice <# "/f #team @cath (private) ./tests/fixtures/test.jpg"
+    alice <# "/f #team @cath (direct) ./tests/fixtures/test.jpg"
     alice <## "use /fc 2 to cancel sending"
-    cath <# "#team alice (private)> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    cath <# "#team alice (direct)> sends file test.jpg (136.5 KiB / 139737 bytes)"
     cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
     cath ##> "/fr 1 ./tests/tmp"
     cath <## "saving file 1 from alice to ./tests/tmp/test.jpg"
@@ -3029,11 +3029,11 @@ testGroupDirectCancelFileXFTP =
       createGroup3 "team" alice bob cath
 
       alice `send` "/f #team @bob ./tests/fixtures/test.pdf"
-      alice <# "/f #team @bob (private) ./tests/fixtures/test.pdf"
+      alice <# "/f #team @bob (direct) ./tests/fixtures/test.pdf"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "#team alice (private)> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <# "#team alice (direct)> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice <## "completed uploading file 1 (test.pdf) for #team @bob (private)"
+      alice <## "completed uploading file 1 (test.pdf) for #team @bob (direct)"
 
       cath <// 50000
 
@@ -3059,21 +3059,21 @@ testGroupDirectQuotesFiles =
       threadDelay 1000000
 
       bob `send` "#team @alice hi alice"
-      bob <# "#team @alice (private) hi alice"
-      alice <# "#team bob (private)> hi alice"
+      bob <# "#team @alice (direct) hi alice"
+      alice <# "#team bob (direct)> hi alice"
       threadDelay 1000000
 
       msgItemId1 <- lastItemId alice
       alice ##> ("/_send #1 @2 json {\"filePath\": \"./tests/fixtures/test.pdf\", \"quotedItemId\": " <> msgItemId1 <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}")
-      alice <# "#team @bob (private) > bob hi alice"
+      alice <# "#team @bob (direct) > bob hi alice"
       alice <## "      hey bob"
-      alice <# "/f #team @bob (private) ./tests/fixtures/test.pdf"
+      alice <# "/f #team @bob (direct) ./tests/fixtures/test.pdf"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "#team alice (private)> > bob hi alice"
+      bob <# "#team alice (direct)> > bob hi alice"
       bob <## "      hey bob"
-      bob <# "#team alice (private)> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <# "#team alice (direct)> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice <## "completed uploading file 1 (test.pdf) for #team @bob (private)"
+      alice <## "completed uploading file 1 (test.pdf) for #team @bob (direct)"
 
       bob ##> "/fr 1 ./tests/tmp"
       bob
@@ -3094,14 +3094,14 @@ testGroupDirectQuotesFiles =
         #$> ( "/_get chat #1 count=2",
               chat''',
               [ ((0, "bob", "hi alice"), Nothing, Nothing),
-                ((1, "bob", "hey bob"), Just (0, "private", "hi alice"), Just "./tests/fixtures/test.pdf")
+                ((1, "bob", "hey bob"), Just (0, "direct", "hi alice"), Just "./tests/fixtures/test.pdf")
               ]
             )
       bob
         #$> ( "/_get chat #1 count=2",
               chat''',
               [ ((1, "alice", "hi alice"), Nothing, Nothing),
-                ((0, "alice", "hey bob"), Just (1, "private", "hi alice"), Just "./tests/tmp/test.pdf")
+                ((0, "alice", "hey bob"), Just (1, "direct", "hi alice"), Just "./tests/tmp/test.pdf")
               ]
             )
       cath #$> ("/_get chat #1 count=1", chat''', [((0, "", "connected"), Nothing, Nothing)])
@@ -3114,18 +3114,18 @@ testGroupDirectUpdate =
     createGroup3 "team" alice bob cath
 
     alice `send` "#team @bob hi bob"
-    alice <# "#team @bob (private) hi bob"
-    bob <# "#team alice (private)> hi bob"
+    alice <# "#team @bob (direct) hi bob"
+    bob <# "#team alice (direct)> hi bob"
 
     msgItemId1 <- lastItemId alice
     alice ##> ("/_update item #1 " <> msgItemId1 <> " text hey 👋")
-    alice <# "#team @bob (private) [edited] hey 👋"
-    bob <# "#team alice (private)> [edited] hey 👋"
+    alice <# "#team @bob (direct) [edited] hey 👋"
+    bob <# "#team alice (direct)> [edited] hey 👋"
     cath <// 50000
 
     alice ##> "! #team (hey 👋) hello there"
-    alice <# "#team @bob (private) [edited] hello there"
-    bob <# "#team alice (private)> [edited] hello there"
+    alice <# "#team @bob (direct) [edited] hello there"
+    bob <# "#team alice (direct)> [edited] hello there"
     cath <// 50000
 
 testGroupDirectDelete :: HasCallStack => FilePath -> IO ()
@@ -3134,12 +3134,12 @@ testGroupDirectDelete =
     createGroup3 "team" alice bob cath
 
     alice `send` "#team @bob hi bob"
-    alice <# "#team @bob (private) hi bob"
-    bob <# "#team alice (private)> hi bob"
+    alice <# "#team @bob (direct) hi bob"
+    bob <# "#team alice (direct)> hi bob"
 
     msgItemId1 <- lastItemId alice
     alice #$> ("/_delete item #1 " <> msgItemId1 <> " broadcast", id, "message marked deleted")
-    bob <# "#team alice (private)> [marked deleted] hi bob"
+    bob <# "#team alice (direct)> [marked deleted] hi bob"
     cath <// 50000
 
 testGroupDirectLiveMessage :: HasCallStack => FilePath -> IO ()
@@ -3149,10 +3149,10 @@ testGroupDirectLiveMessage =
 
     alice `send` "/live #team @bob hello"
     msgItemId1 <- lastItemId alice
-    bob <#. "#team alice (private)> [LIVE started]"
+    bob <#. "#team alice (direct)> [LIVE started]"
     alice ##> ("/_update item #1 " <> msgItemId1 <> " text hello there")
-    alice <# "#team @bob (private) [LIVE] hello there"
-    bob <# "#team alice (private)> [LIVE ended] hello there"
+    alice <# "#team @bob (direct) [LIVE] hello there"
+    bob <# "#team alice (direct)> [LIVE ended] hello there"
     cath <// 50000
 
 testGroupDirectReactions :: HasCallStack => FilePath -> IO ()
@@ -3161,18 +3161,18 @@ testGroupDirectReactions =
     createGroup3 "team" alice bob cath
 
     alice `send` "#team @bob hi bob"
-    alice <# "#team @bob (private) hi bob"
-    bob <# "#team alice (private)> hi bob"
+    alice <# "#team @bob (direct) hi bob"
+    bob <# "#team alice (direct)> hi bob"
 
     bob ##> "+1 #team hi"
     bob <## "added 👍"
-    alice <# "#team bob (private)> > alice hi bob"
+    alice <# "#team bob (direct)> > alice hi bob"
     alice <## "    + 👍"
     cath <// 50000
 
     alice ##> "+^ #team hi"
     alice <## "added 🚀"
-    bob <# "#team alice (private)> > alice hi bob"
+    bob <# "#team alice (direct)> > alice hi bob"
     bob <## "    + 🚀"
     cath <// 50000
 
@@ -3203,12 +3203,12 @@ testGroupDirectProhibitPreference =
     -- admin can send & can send to admin
 
     bob `send` "#team @cath hi cath, as admin"
-    bob <# "#team @cath (private) hi cath, as admin"
-    cath <# "#team bob (private)> hi cath, as admin"
+    bob <# "#team @cath (direct) hi cath, as admin"
+    cath <# "#team bob (direct)> hi cath, as admin"
 
     cath `send` "#team @bob hi bob, to admin"
-    cath <# "#team @bob (private) hi bob, to admin"
-    bob <# "#team cath (private)> hi bob, to admin"
+    cath <# "#team @bob (direct) hi bob, to admin"
+    bob <# "#team cath (direct)> hi bob, to admin"
   where
     directProhibited :: HasCallStack => TestCC -> IO ()
     directProhibited cc = do

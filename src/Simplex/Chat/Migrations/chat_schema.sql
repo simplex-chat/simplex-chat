@@ -714,7 +714,7 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   user_id,
   item_status
 );
+CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
 CREATE INDEX idx_chat_items_item_direct_group_member_id ON chat_items(
   item_direct_group_member_id
 );
-CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);

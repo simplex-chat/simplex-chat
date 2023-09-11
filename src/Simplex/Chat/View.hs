@@ -333,7 +333,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
               )
             directMemberName = case chatDir of
               CIGroupSnd (Just GroupMember {localDisplayName = n}) -> T.unpack n
-              CIGroupRcv GroupMember {localDisplayName = n} MSPrivate -> T.unpack n
+              CIGroupRcv GroupMember {localDisplayName = n} MSDirect -> T.unpack n
               _ -> ""
             qItem = case quotedItem of
               Nothing -> Nothing
@@ -350,7 +350,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
                     _ -> ""
                   msgScopeText ms = case ms of
                     MSGroup -> "group"
-                    MSPrivate -> "private"
+                    MSDirect -> "direct"
             fPath = case file of
               Just CIFile {fileSource = Just (CryptoFile fp _)} -> Just fp
               _ -> Nothing
@@ -1343,7 +1343,7 @@ uploadingFile :: StyledString -> AChatItem -> [StyledString]
 uploadingFile status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
   [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
 uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd directMember}) =
-  let forMember = maybe "" (\GroupMember {localDisplayName = m} -> styled (colored Blue) $ " @" <> m <> " (private)") directMember
+  let forMember = maybe "" (\GroupMember {localDisplayName = m} -> styled (colored Blue) $ " @" <> m <> " (direct)") directMember
    in [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g <> forMember]
 uploadingFile status _ = [status <> " uploading file"] -- shouldn't happen
 
@@ -1779,7 +1779,7 @@ fromGroup_ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} m
 fromGroupScope :: MessageScope -> Text
 fromGroupScope = \case
   MSGroup -> ""
-  MSPrivate -> " (private)"
+  MSDirect -> " (direct)"
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
@@ -1798,7 +1798,7 @@ ttyToGroupEdited g@GroupInfo {localDisplayName = n} dirMem =
 toDirectMember :: Maybe GroupMember -> Text
 toDirectMember = \case
   Nothing -> ""
-  Just GroupMember {localDisplayName = m} -> " @" <> m <> " (private)"
+  Just GroupMember {localDisplayName = m} -> " @" <> m <> " (direct)"
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
