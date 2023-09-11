@@ -145,7 +145,7 @@ createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName}
       "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, memberRole, True, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId (toJSONVRange chatInitialVRange) Nothing Nothing Nothing 0 currentTs subMode
 
 getGroupLinkConnection :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO Connection
 getGroupLinkConnection db User {userId} groupInfo@GroupInfo {groupId} =
@@ -655,7 +655,7 @@ createNewContactMember db gVar User {userId, userContactId} groupId Contact {con
                 :. (userId, localDisplayName, contactId, localProfileId profile, connRequest, createdAt, createdAt)
             )
 
-createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupId -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> VersionRange -> SubscriptionMode -> ExceptT StoreError IO ()
+createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupId -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> JSONVRange -> SubscriptionMode -> ExceptT StoreError IO ()
 createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) peerChatVRange subMode =
   createWithRandomId gVar $ \memId -> do
     createdAt <- liftIO getCurrentTime
@@ -714,12 +714,12 @@ getMemberInvitation db User {userId} groupMemberId =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?" (groupMemberId, userId)
 
-createMemberConnection :: DB.Connection -> UserId -> GroupMember -> ConnId -> VersionRange -> SubscriptionMode -> IO ()
+createMemberConnection :: DB.Connection -> UserId -> GroupMember -> ConnId -> JSONVRange -> SubscriptionMode -> IO ()
 createMemberConnection db userId GroupMember {groupMemberId} agentConnId peerChatVRange subMode = do
   currentTs <- getCurrentTime
   void $ createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange Nothing 0 currentTs subMode
 
-createMemberConnectionAsync :: DB.Connection -> User -> GroupMemberId -> (CommandId, ConnId) -> VersionRange -> SubscriptionMode -> IO ()
+createMemberConnectionAsync :: DB.Connection -> User -> GroupMemberId -> (CommandId, ConnId) -> JSONVRange -> SubscriptionMode -> IO ()
 createMemberConnectionAsync db user@User {userId} groupMemberId (cmdId, agentConnId) peerChatVRange subMode = do
   currentTs <- getCurrentTime
   Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange Nothing 0 currentTs subMode
@@ -923,7 +923,7 @@ getIntroduction_ db reMember toMember = ExceptT $ do
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberChatVRange memberProfile) (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
-  let mcvr = maybe chatInitialVRange fromChatVRange memberChatVRange
+  let mcvr = toJSONVRange $ maybe chatInitialVRange fromChatVRange memberChatVRange
       cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- liftIO getCurrentTime
   newMember <- case directConnIds of
@@ -941,7 +941,7 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
     liftIO $ setCommandConnId db user groupCmdId groupConnId
     pure (member :: GroupMember) {activeConn = Just conn}
 
-createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionRange -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> IO ()
+createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> JSONVRange -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> IO ()
 createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} mcvr (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- getCurrentTime
@@ -978,7 +978,7 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
         |]
         [":contact_id" := contactId, ":updated_at" := ts, ":group_member_id" := groupMemberId]
 
-createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> VersionRange -> Maybe Int64 -> Int -> UTCTime -> SubscriptionMode -> IO Connection
+createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> JSONVRange -> Maybe Int64 -> Int -> UTCTime -> SubscriptionMode -> IO Connection
 createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange viaContact = createConnection_ db userId ConnMember (Just groupMemberId) agentConnId peerChatVRange viaContact Nothing Nothing
 
 getViaGroupMember :: DB.Connection -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))

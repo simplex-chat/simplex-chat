@@ -144,7 +144,7 @@ toConnection :: ConnectionRow -> Connection
 toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer)) =
   let entityId = entityId_ connType
       connectionCode = SecurityCode <$> code_ <*> verifiedAt_
-      peerChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
+      peerChatVRange = JSONVRange minVer maxVer
    in Connection {connId, agentConnId = AgentConnId acId, peerChatVRange, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias, entityId, connectionCode, authErrCounter, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
@@ -159,8 +159,8 @@ toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, v
   Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer))
 toMaybeConnection _ = Nothing
 
-createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> VersionRange -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> IO Connection
-createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode = do
+createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> JSONVRange -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> IO Connection
+createConnection_ db userId connType entityId acId peerChatVRange@(JSONVRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode = do
   viaLinkGroupId :: Maybe Int64 <- fmap join . forM viaUserContactLink $ \ucLinkId ->
     maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL" (userId, ucLinkId)
   let viaGroupLink = isJust viaLinkGroupId
@@ -178,12 +178,12 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
         :. (minV, maxV, subMode == SMOnlyCreate)
     )
   connId <- insertedRowId db
-  pure Connection {connId, agentConnId = AgentConnId acId, peerChatVRange, connType, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
+  pure Connection {connId, agentConnId = AgentConnId acId, peerChatVRange = peerChatVRange, connType, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
   where
     ent ct = if connType == ct then entityId else Nothing
 
-setPeerChatVRange :: DB.Connection -> Int64 -> VersionRange -> IO ()
-setPeerChatVRange db connId (VersionRange minVer maxVer) =
+setPeerChatVRange :: DB.Connection -> Int64 -> JSONVRange -> IO ()
+setPeerChatVRange db connId (JSONVRange minVer maxVer) =
   DB.execute
     db
     [sql|
@@ -279,7 +279,7 @@ type ContactRequestRow = (Int64, ContactName, AgentInvId, Int64, AgentConnId, In
 toContactRequest :: ContactRequestRow -> UserContactRequest
 toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, userContactLinkId, agentContactConnId, profileId, displayName, fullName, image, contactLink) :. (xContactId, preferences, createdAt, updatedAt, minVer, maxVer)) = do
   let profile = Profile {displayName, fullName, image, contactLink, preferences}
-      cReqChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
+      cReqChatVRange = JSONVRange minVer maxVer
    in UserContactRequest {contactRequestId, agentInvitationId, userContactLinkId, agentContactConnId, cReqChatVRange, localDisplayName, profileId, profile, xContactId, createdAt, updatedAt}
 
 userQuery :: Query

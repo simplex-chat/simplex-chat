@@ -31,7 +31,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
@@ -233,7 +233,7 @@ data UserContactRequest = UserContactRequest
     agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
-    cReqChatVRange :: VersionRange,
+    cReqChatVRange :: JSONVRange,
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile,
@@ -564,7 +564,7 @@ memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
   MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
   where
-    memberChatVRange = ChatVersionRange . peerChatVRange <$> activeConn
+    memberChatVRange = ChatVersionRange . fromJSONVRange . peerChatVRange <$> activeConn
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -1167,7 +1167,7 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
-    peerChatVRange :: VersionRange,
+    peerChatVRange :: JSONVRange,
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
@@ -1217,6 +1217,22 @@ connIncognito Connection {customUserProfileId} = isJust customUserProfileId
 instance ToJSON Connection where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data JSONVRange = JSONVRange
+  { minV :: Version,
+    maxV :: Version
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON JSONVRange where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
+fromJSONVRange :: JSONVRange -> VersionRange
+fromJSONVRange JSONVRange {minV, maxV} = fromMaybe (versionToRange maxV) $ safeVersionRange minV maxV
+
+toJSONVRange :: VersionRange -> JSONVRange
+toJSONVRange (VersionRange minV maxV) = JSONVRange {minV, maxV}
 
 data PendingContactConnection = PendingContactConnection
   { pccConnId :: Int64,

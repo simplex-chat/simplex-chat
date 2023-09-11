@@ -1993,7 +1993,7 @@ processChatCommand = \case
     assertGroupSendAllowed
       gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}}
       (Just GroupMember {memberRole = directMemberRole, activeConn = Just Connection {peerChatVRange}}) = do
-        unless (isCompatibleRange peerChatVRange groupPrivateMessagesVRange) $ throwChatError CEPeerChatVRangeIncompatible
+        unless (isCompatibleRange (fromJSONVRange peerChatVRange) groupPrivateMessagesVRange) $ throwChatError CEPeerChatVRangeIncompatible
         if
             | userRole >= GRAdmin || directMemberRole >= GRAdmin -> assertUserMembershipStatus gInfo
             | not (groupFeatureAllowed SGFDirectMessages gInfo) -> throwChatError $ CECommandError "direct messages not allowed"
@@ -3168,7 +3168,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
               CFCreateConnGrpMemInv
-                | isCompatibleRange (peerChatVRange conn) groupNoDirectVRange -> sendWithDirectCReq -- sendWithoutDirectCReq
+                | isCompatibleRange (fromJSONVRange $ peerChatVRange conn) groupNoDirectVRange -> sendWithDirectCReq -- sendWithoutDirectCReq
                 | otherwise -> sendWithDirectCReq
                 where
                   sendWithoutDirectCReq = do
@@ -4509,7 +4509,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       groupConnIds <- joinAgentConnectionAsync user enableNtfs groupConnReq dm subMode
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user enableNtfs dcr dm subMode
       let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
-          mcvr = maybe chatInitialVRange fromChatVRange memberChatVRange
+          mcvr = toJSONVRange $ maybe chatInitialVRange fromChatVRange memberChatVRange
       withStore' $ \db -> createIntroToMemberContact db user m toMember mcvr groupConnIds directConnIds customUserProfileId subMode
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> MsgMeta -> m ()
@@ -4651,11 +4651,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         _ -> pure ()
 
 updatePeerChatVRange :: ChatMonad m => Connection -> VersionRange -> m Connection
-updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange
-  | msgChatVRange /= peerChatVRange = do
-    withStore' $ \db -> setPeerChatVRange db connId msgChatVRange
-    pure conn {peerChatVRange = msgChatVRange}
-  | otherwise = pure conn
+updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange = do
+  let jsonMsgChatVRange = toJSONVRange msgChatVRange
+  if jsonMsgChatVRange /= peerChatVRange
+    then do
+      withStore' $ \db -> setPeerChatVRange db connId jsonMsgChatVRange
+      pure conn {peerChatVRange = jsonMsgChatVRange}
+    else pure conn
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =
