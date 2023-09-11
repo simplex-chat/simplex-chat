@@ -64,6 +64,7 @@ fun PrivacySettingsView(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
+      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles)
       SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
       SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SettingsPreferenceItem(

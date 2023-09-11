@@ -26,7 +26,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import java.net.URI
 
 @Composable
-actual fun FullScreenImageView(modifier: Modifier, uri: URI, imageBitmap: ImageBitmap) {
+actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap) {
   // I'm making a new instance of imageLoader here because if I use one instance in multiple places
   // after end of composition here a GIF from the first instance will be paused automatically which isn't what I want
   val imageLoader = ImageLoader.Builder(LocalContext.current)
@@ -40,7 +40,7 @@ actual fun FullScreenImageView(modifier: Modifier, uri: URI, imageBitmap: ImageB
     .build()
   Image(
     rememberAsyncImagePainter(
-      ImageRequest.Builder(LocalContext.current).data(data = uri.toUri()).size(Size.ORIGINAL).build(),
+      ImageRequest.Builder(LocalContext.current).data(data = data).size(Size.ORIGINAL).build(),
       placeholder = BitmapPainter(imageBitmap), // show original image while it's still loading by coil
       imageLoader = imageLoader
     ),

@@ -181,7 +181,12 @@ chatF :: String -> [((Int, String), Maybe String)]
 chatF = map (\(a, _, c) -> (a, c)) . chat''
 
 chat'' :: String -> [((Int, String), Maybe (Int, String), Maybe String)]
-chat'' = read
+chat'' = map (\(a, b, c) -> (mapNoDirect a, mapNoDirect <$> b, c)) . chat'''
+  where
+    mapNoDirect (a1, _, a3) = (a1, a3)
+
+chat''' :: String -> [((Int, String, String), Maybe (Int, String, String), Maybe String)]
+chat''' = read
 
 chatFeatures :: [(Int, String)]
 chatFeatures = map (\(a, _, _) -> a) chatFeatures''
@@ -456,27 +461,33 @@ showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
   pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 
 createGroup2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
-createGroup2 gName cc1 cc2 = do
+createGroup2 gName cc1 cc2 = createGroup2' gName cc1 cc2 GRAdmin
+
+createGroup2' :: HasCallStack => String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
+createGroup2' gName cc1 cc2 memberRole = do
   connectUsers cc1 cc2
   name2 <- userName cc2
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
   cc1 <## ("to add members use /a " <> gName <> " <name> or /create link #" <> gName)
-  addMember gName cc1 cc2 GRAdmin
+  addMember gName cc1 cc2 memberRole
   cc2 ##> ("/j " <> gName)
   concurrently_
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
     (cc2 <## ("#" <> gName <> ": you joined the group"))
 
 createGroup3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
-createGroup3 gName cc1 cc2 cc3 = do
-  createGroup2 gName cc1 cc2
+createGroup3 gName cc1 cc2 cc3 = createGroup3' gName cc1 cc2 cc3 GRAdmin
+
+createGroup3' :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> GroupMemberRole -> IO ()
+createGroup3' gName cc1 cc2 cc3 memberRole = do
+  createGroup2' gName cc1 cc2 memberRole
   connectUsers cc1 cc3
   name1 <- userName cc1
   name3 <- userName cc3
   sName2 <- showName cc2
   sName3 <- showName cc3
-  addMember gName cc1 cc3 GRAdmin
+  addMember gName cc1 cc3 memberRole
   cc3 ##> ("/j " <> gName)
   concurrentlyN_
     [ cc1 <## ("#" <> gName <> ": " <> name3 <> " joined the group"),

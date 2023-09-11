@@ -34,6 +34,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
@@ -62,7 +63,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, UserProtocol, XFTPServerWithAuth)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -176,6 +177,7 @@ data ChatController = ChatController
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
+    subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
@@ -240,7 +242,7 @@ data ChatCommand
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
-  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
+  | APISendMessage {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
@@ -351,14 +353,14 @@ data ChatCommand
   | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName
-  | SendMessage ChatName Text
-  | SendLiveMessage ChatName Text
+  | SendMessage SendName Text
+  | SendLiveMessage SendName Text
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: Text, message :: Text}
   | SendMessageBroadcast Text -- UserId (not used in UI)
   | DeleteMessage ChatName Text
   | DeleteMemberMessage GroupName ContactName Text
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
-  | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
+  | UpdateLiveMessage {sendName :: SendName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
   | APINewGroup UserId GroupProfile
   | NewGroup GroupProfile
@@ -380,17 +382,17 @@ data ChatCommand
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
-  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
+  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, directMemberName :: Maybe ContactName, quotedMsg :: Text, message :: Text}
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
   | ShowChatItemInfo ChatName Text
   | ShowLiveItems Bool
-  | SendFile ChatName FilePath
-  | SendImage ChatName FilePath
-  | ForwardFile ChatName FileTransferId
-  | ForwardImage ChatName FileTransferId
+  | SendFile SendName FilePath
+  | SendImage SendName FilePath
+  | ForwardFile SendName FileTransferId
+  | ForwardImage SendName FileTransferId
   | SendFileDescription ChatName FilePath
   | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
   | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Bool}
@@ -610,6 +612,37 @@ logResponseToFile = \case
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+data SendRef
+  = SRDirect ContactId
+  | SRGroup GroupId (Maybe GroupMemberId)
+  deriving (Eq, Show)
+
+sendToChatRef :: SendRef -> ChatRef
+sendToChatRef = \case
+  SRDirect cId -> ChatRef CTDirect cId
+  SRGroup gId _ -> ChatRef CTGroup gId
+
+data SendName
+  = SNDirect ContactName
+  | SNGroup GroupName (Maybe ContactName)
+  deriving (Eq, Show)
+
+sendNameStr :: SendName -> String
+sendNameStr = \case
+  SNDirect cName -> "@" <> T.unpack cName
+  SNGroup gName (Just cName) -> "#" <> T.unpack gName <> " @" <> T.unpack cName
+  SNGroup gName Nothing -> "#" <> T.unpack gName
+
+data SendDirection
+  = SDDirect Contact
+  | SDGroup GroupInfo [GroupMember]
+  deriving (Eq, Show)
+
+sendDirToContactOrGroup :: SendDirection -> ContactOrGroup
+sendDirToContactOrGroup = \case
+  SDDirect c -> CGContact c
+  SDGroup g _ -> CGGroup g
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -926,6 +959,7 @@ data ChatErrorType
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
   | CEConnectionIncognitoChangeProhibited
+  | CEPeerChatVRangeIncompatible
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception, Generic)
@@ -959,6 +993,14 @@ throwDBError = throwError . ChatErrorDatabase
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
+
+chatReadVar :: ChatMonad' m => (ChatController -> TVar a) -> m a
+chatReadVar f = asks f >>= readTVarIO
+{-# INLINE chatReadVar #-}
+
+chatWriteVar :: ChatMonad' m => (ChatController -> TVar a) -> a -> m ()
+chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
+{-# INLINE chatWriteVar #-}
 
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError

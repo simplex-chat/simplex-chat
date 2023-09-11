@@ -287,6 +287,7 @@ CREATE TABLE connections(
   auth_err_counter INTEGER DEFAULT 0 CHECK(auth_err_counter NOT NULL),
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
+  to_subscribe INTEGER DEFAULT 0 NOT NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -391,7 +392,9 @@ CREATE TABLE chat_items(
   timed_delete_at TEXT,
   item_live INTEGER,
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  item_deleted_ts TEXT
+  item_deleted_ts TEXT,
+  item_direct_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  quoted_message_scope TEXT
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -710,4 +713,8 @@ CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statu
 CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   user_id,
   item_status
+);
+CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
+CREATE INDEX idx_chat_items_item_direct_group_member_id ON chat_items(
+  item_direct_group_member_id
 );
