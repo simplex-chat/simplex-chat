@@ -239,7 +239,7 @@ struct GroupMemberInfoView: View {
                 chatModel.chatId = chat.id
             }
         } label: {
-            Label("Send direct message", systemImage: "message")
+            Label("Open direct chat", systemImage: "message")
         }
     }
 
@@ -256,7 +256,7 @@ struct GroupMemberInfoView: View {
                 logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
             }
         } label: {
-            Label("Send direct message", systemImage: "message")
+            Label("Open direct chat", systemImage: "message")
         }
     }
 
