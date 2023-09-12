@@ -1494,5 +1494,5 @@ instance ToJSON ChatVersionRange where
 newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRange} deriving (Eq, Show)
 
 instance ToJSON JVersionRange where
-  toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minV" .= minV, "maxV" .= maxV]
-  toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minV" .= minV <> "maxV" .= maxV
+  toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minVersion" .= minV, "maxVersion" .= maxV]
+  toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minVersion" .= minV <> "maxVersion" .= maxV
