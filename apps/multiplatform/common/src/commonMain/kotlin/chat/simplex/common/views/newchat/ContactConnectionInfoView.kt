@@ -126,7 +126,7 @@ private fun ContactConnectionInfoLayout(
     )
 
     if (contactConnection.groupLinkId == null) {
-      LocalAliasEditor(contactConnection.localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
+      LocalAliasEditor(contactConnection.id, contactConnection.localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
     }
 
     SectionView {

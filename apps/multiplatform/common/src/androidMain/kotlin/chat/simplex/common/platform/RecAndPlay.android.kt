@@ -1,6 +1,5 @@
 package chat.simplex.common.platform
 
-import android.app.Application
 import android.content.Context
 import android.media.*
 import android.media.AudioManager.AudioPlaybackCallback
@@ -8,10 +7,10 @@ import android.media.MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED
 import android.media.MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED
 import android.os.Build
 import androidx.compose.runtime.*
-import chat.simplex.res.MR
-import chat.simplex.common.model.ChatItem
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.AudioPlayer.duration
 import chat.simplex.common.views.helpers.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.io.*
 
@@ -134,20 +133,25 @@ actual object AudioPlayer: AudioPlayerInterface {
   }
 
   // Returns real duration of the track
-  private fun start(filePath: String, seek: Int? = null, onProgressUpdate: (position: Int?, state: TrackState) -> Unit): Int? {
-    if (!File(filePath).exists()) {
-      Log.e(TAG, "No such file: $filePath")
+  private fun start(fileSource: CryptoFile, seek: Int? = null, onProgressUpdate: (position: Int?, state: TrackState) -> Unit): Int? {
+    val absoluteFilePath = if (fileSource.isAbsolutePath) fileSource.filePath else getAppFilePath(fileSource.filePath)
+    if (!File(absoluteFilePath).exists()) {
+      Log.e(TAG, "No such file: ${fileSource.filePath}")
       return null
     }
 
     VideoPlayer.stopAll()
     RecorderInterface.stopRecording?.invoke()
     val current = currentlyPlaying.value
-    if (current == null || current.first != filePath) {
+    if (current == null || current.first != fileSource.filePath) {
       stopListener()
       player.reset()
       runCatching {
-        player.setDataSource(filePath)
+        if (fileSource.cryptoArgs != null) {
+          player.setDataSource(CryptoMediaSource(readCryptoFile(absoluteFilePath, fileSource.cryptoArgs)))
+        } else {
+          player.setDataSource(absoluteFilePath)
+        }
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
         AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
@@ -162,7 +166,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     }
     if (seek != null) player.seekTo(seek)
     player.start()
-    currentlyPlaying.value = filePath to onProgressUpdate
+    currentlyPlaying.value = fileSource.filePath to onProgressUpdate
     progressJob = CoroutineScope(Dispatchers.Default).launch {
       onProgressUpdate(player.currentPosition, TrackState.PLAYING)
       while(isActive && player.isPlaying) {
@@ -229,7 +233,7 @@ actual object AudioPlayer: AudioPlayerInterface {
   }
 
   override fun play(
-    filePath: String?,
+    fileSource: CryptoFile,
     audioPlaying: MutableState<Boolean>,
     progress: MutableState<Int>,
     duration: MutableState<Int>,
@@ -238,7 +242,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     if (progress.value == duration.value) {
       progress.value = 0
     }
-    val realDuration = start(filePath ?: return, progress.value) { pro, state ->
+    val realDuration = start(fileSource, progress.value) { pro, state ->
       if (pro != null) {
         progress.value = pro
       }
@@ -268,10 +272,10 @@ actual object AudioPlayer: AudioPlayerInterface {
     }
   }
 
-  override fun duration(filePath: String): Int? {
+  override fun duration(unencryptedFilePath: String): Int? {
     var res: Int? = null
     kotlin.runCatching {
-      helperPlayer.setDataSource(filePath)
+      helperPlayer.setDataSource(unencryptedFilePath)
       helperPlayer.prepare()
       helperPlayer.start()
       helperPlayer.stop()
@@ -283,3 +287,21 @@ actual object AudioPlayer: AudioPlayerInterface {
 }
 
 actual typealias SoundPlayer = chat.simplex.common.helpers.SoundPlayer
+
+class CryptoMediaSource(val data: ByteArray) : MediaDataSource() {
+  override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int): Int {
+    if (position >= data.size) return -1
+
+    val endPosition: Int = (position + size).toInt()
+    var sizeLeft: Int = size
+    if (endPosition > data.size) {
+      sizeLeft -= endPosition - data.size
+    }
+
+    System.arraycopy(data, position.toInt(), buffer, offset, sizeLeft)
+    return sizeLeft
+  }
+
+  override fun getSize(): Long = data.size.toLong()
+  override fun close() {}
+}

@@ -39,7 +39,7 @@ kotlin {
         api("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2")
         api("com.russhwolf:multiplatform-settings:1.0.0")
         api("com.charleskorn.kaml:kaml:0.43.0")
-        api("dev.icerock.moko:resources-compose:0.22.3")
+        api("dev.icerock.moko:resources-compose:0.23.0")
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
         implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
@@ -48,7 +48,7 @@ kotlin {
         // Link Previews
         implementation("org.jsoup:jsoup:1.13.1")
         // Resources
-        implementation("dev.icerock.moko:resources:0.22.3")
+        implementation("dev.icerock.moko:resources:0.23.0")
       }
     }
     val commonTest by getting {
@@ -62,7 +62,7 @@ kotlin {
         val work_version = "2.7.1"
         implementation("androidx.work:work-runtime-ktx:$work_version")
         implementation("com.google.accompanist:accompanist-insets:0.23.0")
-        implementation("dev.icerock.moko:resources:0.22.3")
+        implementation("dev.icerock.moko:resources:0.23.0")
 
         // Video support
         implementation("com.google.android.exoplayer:exoplayer:2.17.1")

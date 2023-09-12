@@ -71,7 +71,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         Lifecycle.Event.ON_RESUME -> {
           isAppOnForeground = true
-          if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
+          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
             SimplexService.showBackgroundServiceNoticeIfNeeded()
           }
           /**
@@ -80,7 +80,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * It can happen when app was started and a user enables battery optimization while app in background
            * */
           if (chatModel.chatRunning.value != false &&
-            chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete &&
+            chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete &&
             appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
           ) {
             SimplexService.start()
@@ -143,7 +143,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun notifyCallInvitation(invitation: RcvCallInvitation) = NtfManager.notifyCallInvitation(invitation)
       override fun hasNotificationsForChat(chatId: String): Boolean = NtfManager.hasNotificationsForChat(chatId)
       override fun cancelNotificationsForChat(chatId: String) = NtfManager.cancelNotificationsForChat(chatId)
-      override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions.map { it.first })
+      override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions.map { it.first })
       override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
       override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
@@ -191,7 +191,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidChatInitializedAndStarted() {
         // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
-        if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
+        if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           SimplexService.showBackgroundServiceNoticeIfNeeded()
           if (appPrefs.notificationsMode.get() == NotificationsMode.SERVICE)
             withBGApi {

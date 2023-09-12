@@ -88,6 +88,15 @@
 /* No comment provided by engineer. */
 "*bold*" = "\\*жирный*";
 
+/* copied message info title, # <title> */
+"# %@" = "# %@";
+
+/* copied message info */
+"## History" = "## История";
+
+/* copied message info */
+"## In reply to" = "## В ответ на";
+
 /* No comment provided by engineer. */
 "#secret#" = "#секрет#";
 
@@ -106,6 +115,9 @@
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
 
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ и %@ соединены";
+
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ в %2$@:";
 
@@ -123,6 +135,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "%@ хочет соединиться!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ и %lld других членов соединены";
 
 /* copied message info */
 "%@:" = "%@:";
@@ -243,6 +258,9 @@
 
 /* notification title */
 "A new contact" = "Новый контакт";
+
+/* No comment provided by engineer. */
+"A new random profile will be shared." = "Будет отправлен новый случайный профиль.";
 
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "Отдельное TCP-соединение будет использоваться **для каждого профиля чата, который Вы имеете в приложении**.";
@@ -691,6 +709,12 @@
 "Connect" = "Соединиться";
 
 /* No comment provided by engineer. */
+"Connect directly" = "Соединиться напрямую";
+
+/* No comment provided by engineer. */
+"Connect incognito" = "Соединиться Инкогнито";
+
+/* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "соединитесь с разработчиками.";
 
 /* No comment provided by engineer. */
@@ -706,7 +730,7 @@
 "Connect via link / QR code" = "Соединиться через ссылку / QR код";
 
 /* No comment provided by engineer. */
-"Connect via one-time link" = "Соединиться через одноразовую ссылку?";
+"Connect via one-time link" = "Соединиться через одноразовую ссылку";
 
 /* No comment provided by engineer. */
 "connected" = "соединение установлено";
@@ -1051,6 +1075,9 @@
 "deleted group" = "удалил(а) группу";
 
 /* No comment provided by engineer. */
+"Delivery" = "Доставка";
+
+/* No comment provided by engineer. */
 "Delivery receipts are disabled!" = "Отчёты о доставке выключены!";
 
 /* No comment provided by engineer. */
@@ -1097,6 +1124,9 @@
 
 /* authentication reason */
 "Disable SimpleX Lock" = "Отключить блокировку SimpleX";
+
+/* No comment provided by engineer. */
+"disabled" = "выключено";
 
 /* No comment provided by engineer. */
 "Disappearing message" = "Исчезающее сообщение";
@@ -1444,6 +1474,9 @@
 "Even when disabled in the conversation." = "Даже когда они выключены в разговоре.";
 
 /* No comment provided by engineer. */
+"event happened" = "событие произошло";
+
+/* No comment provided by engineer. */
 "Exit without saving" = "Выйти без сохранения";
 
 /* No comment provided by engineer. */
@@ -1719,6 +1752,9 @@
 /* No comment provided by engineer. */
 "Incognito mode" = "Режим Инкогнито";
 
+/* No comment provided by engineer. */
+"Incognito mode protects your privacy by using a new random profile for each contact." = "Режим Инкогнито защищает Вашу конфиденциальность — для каждого контакта создается новый случайный профиль.";
+
 /* chat list item description */
 "incognito via contact address link" = "инкогнито через ссылку-контакт";
 
@@ -1781,6 +1817,9 @@
 
 /* No comment provided by engineer. */
 "Invalid server address!" = "Ошибка в адресе сервера!";
+
+/* item status text */
+"Invalid status" = "Неверный статус";
 
 /* No comment provided by engineer. */
 "Invitation expired!" = "Приглашение истекло!";
@@ -2026,7 +2065,7 @@
 "Moderate" = "Модерировать";
 
 /* moderated chat item */
-"moderated" = "удалено";
+"moderated" = "модерировано";
 
 /* No comment provided by engineer. */
 "Moderated at" = "Модерировано";
@@ -2042,6 +2081,9 @@
 
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Дополнительные улучшения скоро!";
+
+/* item status description */
+"Most likely this connection is deleted." = "Скорее всего, соединение удалено.";
 
 /* No comment provided by engineer. */
 "Most likely this contact has deleted the connection with you." = "Скорее всего, этот контакт удалил соединение с Вами.";
@@ -2114,6 +2156,9 @@
 
 /* No comment provided by engineer. */
 "No contacts to add" = "Нет контактов для добавления";
+
+/* No comment provided by engineer. */
+"No delivery information" = "Нет информации от доставке";
 
 /* No comment provided by engineer. */
 "No device token!" = "Отсутствует токен устройства!";
@@ -2447,6 +2492,9 @@
 "Read more in our GitHub repository." = "Узнайте больше из нашего GitHub репозитория.";
 
 /* No comment provided by engineer. */
+"Receipts are disabled" = "Отчёты о доставке выключены";
+
+/* No comment provided by engineer. */
 "received answer…" = "получен ответ…";
 
 /* No comment provided by engineer. */
@@ -2750,7 +2798,13 @@
 "Sending receipts is disabled for %lld contacts" = "Отправка отчётов о доставке выключена для %lld контактов";
 
 /* No comment provided by engineer. */
+"Sending receipts is disabled for %lld groups" = "Отчёты о доставке выключены для %lld групп";
+
+/* No comment provided by engineer. */
 "Sending receipts is enabled for %lld contacts" = "Отправка отчётов о доставке включена для %lld контактов";
+
+/* No comment provided by engineer. */
+"Sending receipts is enabled for %lld groups" = "Отчёты о доставке включены для %lld групп";
 
 /* No comment provided by engineer. */
 "Sending via" = "Отправка через";
@@ -2837,6 +2891,9 @@
 "Show developer options" = "Показать опции для девелоперов";
 
 /* No comment provided by engineer. */
+"Show last messages" = "Показывать последние сообщения";
+
+/* No comment provided by engineer. */
 "Show preview" = "Показывать уведомления";
 
 /* No comment provided by engineer. */
@@ -2883,6 +2940,9 @@
 
 /* No comment provided by engineer. */
 "Skipped messages" = "Пропущенные сообщения";
+
+/* No comment provided by engineer. */
+"Small groups (max 20)" = "Маленькие группы (до 20)";
 
 /* No comment provided by engineer. */
 "SMP servers" = "SMP серверы";
@@ -3083,6 +3143,9 @@
 "this contact" = "этот контакт";
 
 /* No comment provided by engineer. */
+"This group has over %lld members, delivery receipts are not sent." = "В группе более %lld членов, отчёты о доставке выключены.";
+
+/* No comment provided by engineer. */
 "This group no longer exists." = "Эта группа больше не существует.";
 
 /* No comment provided by engineer. */
@@ -3227,10 +3290,16 @@
 "Use chat" = "Использовать чат";
 
 /* No comment provided by engineer. */
+"Use current profile" = "Использовать активный профиль";
+
+/* No comment provided by engineer. */
 "Use for new connections" = "Использовать для новых соединений";
 
 /* No comment provided by engineer. */
 "Use iOS call interface" = "Использовать интерфейс iOS для звонков";
+
+/* No comment provided by engineer. */
+"Use new incognito profile" = "Использовать новый Инкогнито профиль";
 
 /* No comment provided by engineer. */
 "Use server" = "Использовать сервер";
@@ -3573,6 +3642,9 @@
 
 /* No comment provided by engineer. */
 "Your privacy" = "Конфиденциальность";
+
+/* No comment provided by engineer. */
+"Your profile **%@** will be shared." = "Будет отправлен Ваш профиль **%@**.";
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам.\nSimpleX серверы не могут получить доступ к Вашему профилю.";

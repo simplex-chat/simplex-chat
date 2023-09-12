@@ -88,6 +88,15 @@
 /* No comment provided by engineer. */
 "*bold*" = "\\*vetgedrukt*";
 
+/* copied message info title, # <title> */
+"# %@" = "# %@";
+
+/* copied message info */
+"## History" = "## Geschiedenis";
+
+/* copied message info */
+"## In reply to" = "## Als antwoord op";
+
 /* No comment provided by engineer. */
 "#secret#" = "#geheim#";
 
@@ -106,6 +115,9 @@
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
 
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ en %@ verbonden";
+
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ bij %2$@:";
 
@@ -123,6 +135,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "%@ wil verbinding maken!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ en %lld andere leden hebben verbinding gemaakt";
 
 /* copied message info */
 "%@:" = "%@:";
@@ -194,7 +209,7 @@
 "%lldw" = "%lldw";
 
 /* No comment provided by engineer. */
-"%u messages failed to decrypt." = "%u-berichten kunnen niet worden gedecodeerd.";
+"%u messages failed to decrypt." = "%u berichten kunnen niet worden ontsleuteld.";
 
 /* No comment provided by engineer. */
 "%u messages skipped." = "%u berichten zijn overgeslagen.";
@@ -243,6 +258,9 @@
 
 /* notification title */
 "A new contact" = "Een nieuw contact";
+
+/* No comment provided by engineer. */
+"A new random profile will be shared." = "Een nieuw willekeurig profiel wordt gedeeld.";
 
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "Er wordt een aparte TCP-verbinding gebruikt **voor elk chat profiel dat je in de app hebt**.";
@@ -492,10 +510,10 @@
 "Bad message hash" = "Onjuiste bericht hash";
 
 /* integrity error chat item */
-"bad message ID" = "Onjuiste bericht ID";
+"bad message ID" = "Onjuiste bericht-ID";
 
 /* No comment provided by engineer. */
-"Bad message ID" = "Onjuiste bericht ID";
+"Bad message ID" = "Onjuiste bericht-ID";
 
 /* No comment provided by engineer. */
 "Better messages" = "Betere berichten";
@@ -691,6 +709,12 @@
 "Connect" = "Verbind";
 
 /* No comment provided by engineer. */
+"Connect directly" = "Verbind direct";
+
+/* No comment provided by engineer. */
+"Connect incognito" = "Verbind incognito";
+
+/* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "maak verbinding met SimpleX Chat-ontwikkelaars.";
 
 /* No comment provided by engineer. */
@@ -874,13 +898,13 @@
 "Database error" = "Database fout";
 
 /* No comment provided by engineer. */
-"Database ID" = "Database ID";
+"Database ID" = "Database-ID";
 
 /* copied message info */
-"Database ID: %d" = "Database ID: %d";
+"Database ID: %d" = "Database-ID: %d";
 
 /* No comment provided by engineer. */
-"Database IDs and Transport isolation option." = "Database ID's en Transport isolatie optie.";
+"Database IDs and Transport isolation option." = "Database-ID's en Transport isolatie optie.";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "De database is versleuteld met een willekeurig wachtwoord, u kunt deze wijzigen.";
@@ -1051,6 +1075,9 @@
 "deleted group" = "verwijderde groep";
 
 /* No comment provided by engineer. */
+"Delivery" = "Bezorging";
+
+/* No comment provided by engineer. */
 "Delivery receipts are disabled!" = "Ontvangstbewijzen zijn uitgeschakeld!";
 
 /* No comment provided by engineer. */
@@ -1097,6 +1124,9 @@
 
 /* authentication reason */
 "Disable SimpleX Lock" = "SimpleX Vergrendelen uitschakelen";
+
+/* No comment provided by engineer. */
+"disabled" = "uitgeschakeld";
 
 /* No comment provided by engineer. */
 "Disappearing message" = "Verdwijnend bericht";
@@ -1444,6 +1474,9 @@
 "Even when disabled in the conversation." = "Zelfs wanneer uitgeschakeld in het gesprek.";
 
 /* No comment provided by engineer. */
+"event happened" = "gebeurtenis gebeurd";
+
+/* No comment provided by engineer. */
 "Exit without saving" = "Afsluiten zonder opslaan";
 
 /* No comment provided by engineer. */
@@ -1719,6 +1752,9 @@
 /* No comment provided by engineer. */
 "Incognito mode" = "Incognito modus";
 
+/* No comment provided by engineer. */
+"Incognito mode protects your privacy by using a new random profile for each contact." = "Incognito -modus beschermt uw privacy met behulp van een nieuw willekeurig profiel voor elk contact.";
+
 /* chat list item description */
 "incognito via contact address link" = "incognito via contact adres link";
 
@@ -1782,6 +1818,9 @@
 /* No comment provided by engineer. */
 "Invalid server address!" = "Ongeldig server adres!";
 
+/* item status text */
+"Invalid status" = "Ongeldige status";
+
 /* No comment provided by engineer. */
 "Invitation expired!" = "Uitnodiging verlopen!";
 
@@ -1828,7 +1867,7 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chat profiel.";
 
 /* No comment provided by engineer. */
-"It can happen when you or your connection used the old database backup." = "Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.";
+"It can happen when you or your connection used the old database backup." = "Het kan gebeuren wanneer u of de ander een oude databaseback-up gebruikt.";
 
 /* No comment provided by engineer. */
 "It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Het kan gebeuren wanneer:\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.\n2. Decodering van het bericht is mislukt, omdat u of uw contactpersoon een oude databaseback-up heeft gebruikt.\n3. De verbinding is verbroken.";
@@ -1933,7 +1972,7 @@
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Zorg ervoor dat WebRTC ICE server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.";
 
 /* No comment provided by engineer. */
-"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Veel mensen vroegen: *als SimpleX geen gebruikers ID's heeft, hoe kan het dan berichten bezorgen?*";
+"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Veel mensen vroegen: *als SimpleX geen gebruikers-ID's heeft, hoe kan het dan berichten bezorgen?*";
 
 /* No comment provided by engineer. */
 "Mark deleted for everyone" = "Markeer verwijderd voor iedereen";
@@ -2043,6 +2082,9 @@
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Meer verbeteringen volgen snel!";
 
+/* item status description */
+"Most likely this connection is deleted." = "Hoogstwaarschijnlijk is deze verbinding verwijderd.";
+
 /* No comment provided by engineer. */
 "Most likely this contact has deleted the connection with you." = "Hoogstwaarschijnlijk heeft dit contact de verbinding met jou verwijderd.";
 
@@ -2114,6 +2156,9 @@
 
 /* No comment provided by engineer. */
 "No contacts to add" = "Geen contacten om toe te voegen";
+
+/* No comment provided by engineer. */
+"No delivery information" = "Geen bezorging informatie";
 
 /* No comment provided by engineer. */
 "No device token!" = "Geen apparaattoken!";
@@ -2447,6 +2492,9 @@
 "Read more in our GitHub repository." = "Lees meer in onze GitHub repository.";
 
 /* No comment provided by engineer. */
+"Receipts are disabled" = "Bevestigingen zijn uitgeschakeld";
+
+/* No comment provided by engineer. */
 "received answer…" = "antwoord gekregen…";
 
 /* No comment provided by engineer. */
@@ -2750,7 +2798,13 @@
 "Sending receipts is disabled for %lld contacts" = "Het verzenden van ontvangst bevestiging is uitgeschakeld voor %lld-contactpersonen";
 
 /* No comment provided by engineer. */
+"Sending receipts is disabled for %lld groups" = "Het verzenden van bevestigingen is uitgeschakeld voor %LLD -groepen";
+
+/* No comment provided by engineer. */
 "Sending receipts is enabled for %lld contacts" = "Het verzenden van ontvangst bevestiging is ingeschakeld voor %lld-contactpersonen";
+
+/* No comment provided by engineer. */
+"Sending receipts is enabled for %lld groups" = "Het verzenden van bevestigingen is ingeschakeld voor %LLD -groepen";
 
 /* No comment provided by engineer. */
 "Sending via" = "Verzenden via";
@@ -2837,6 +2891,9 @@
 "Show developer options" = "Ontwikkelaars opties tonen";
 
 /* No comment provided by engineer. */
+"Show last messages" = "Laat laatste berichten zien";
+
+/* No comment provided by engineer. */
 "Show preview" = "Toon voorbeeld";
 
 /* No comment provided by engineer. */
@@ -2883,6 +2940,9 @@
 
 /* No comment provided by engineer. */
 "Skipped messages" = "Overgeslagen berichten";
+
+/* No comment provided by engineer. */
+"Small groups (max 20)" = "Kleine groepen (max 20)";
 
 /* No comment provided by engineer. */
 "SMP servers" = "SMP servers";
@@ -3002,7 +3062,7 @@
 "Thanks to the users – contribute via Weblate!" = "Dank aan de gebruikers – draag bij via Weblate!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Het eerste platform zonder gebruikers ID's, privé door ontwerp.";
+"The 1st platform without any user identifiers – private by design." = "Het eerste platform zonder gebruikers-ID's, privé door ontwerp.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "De app kan u op de hoogte stellen wanneer u berichten of contact verzoeken ontvangt - open de instellingen om dit in te schakelen.";
@@ -3014,7 +3074,7 @@
 "The connection you accepted will be cancelled!" = "De door u geaccepteerde verbinding wordt geannuleerd!";
 
 /* No comment provided by engineer. */
-"The contact you shared this link with will NOT be able to connect!" = "Het contact met wie je deze link hebt gedeeld, kan GEEN verbinding maken!";
+"The contact you shared this link with will NOT be able to connect!" = "Het contact met wie je deze link hebt gedeeld kan GEEN verbinding maken!";
 
 /* No comment provided by engineer. */
 "The created archive is available via app Settings / Database / Old database archive." = "Het aangemaakte archief is beschikbaar via app Instellingen / Database / Oud database archief.";
@@ -3083,6 +3143,9 @@
 "this contact" = "dit contact";
 
 /* No comment provided by engineer. */
+"This group has over %lld members, delivery receipts are not sent." = "Deze groep heeft meer dan %lld -leden, ontvangstbevestigingen worden niet verzonden.";
+
+/* No comment provided by engineer. */
 "This group no longer exists." = "Deze groep bestaat niet meer.";
 
 /* No comment provided by engineer. */
@@ -3098,7 +3161,7 @@
 "To make a new connection" = "Om een nieuwe verbinding te maken";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers ID's die door alle andere platforms worden gebruikt, ID's voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.";
+"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID's die door alle andere platforms worden gebruikt, ID's voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.";
 
 /* No comment provided by engineer. */
 "To protect timezone, image/voice files use UTC." = "Om de tijdzone te beschermen, gebruiken afbeeldings-/spraakbestanden UTC.";
@@ -3227,10 +3290,16 @@
 "Use chat" = "Gebruik chat";
 
 /* No comment provided by engineer. */
+"Use current profile" = "Gebruik het huidige profiel";
+
+/* No comment provided by engineer. */
 "Use for new connections" = "Gebruik voor nieuwe verbindingen";
 
 /* No comment provided by engineer. */
 "Use iOS call interface" = "De iOS-oproepinterface gebruiken";
+
+/* No comment provided by engineer. */
+"Use new incognito profile" = "Gebruik een nieuw incognitoprofiel";
 
 /* No comment provided by engineer. */
 "Use server" = "Gebruik server";
@@ -3521,7 +3590,7 @@
 "you: " = "Jij: ";
 
 /* No comment provided by engineer. */
-"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Je probeert een contact met wie je een incognito profiel hebt gedeeld, uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt";
+"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Je probeert een contact met wie je een incognito profiel hebt gedeeld uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt";
 
 /* No comment provided by engineer. */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Je gebruikt een incognito profiel voor deze groep. Om te voorkomen dat je je hoofdprofiel deelt, is het niet toegestaan om contacten uit te nodigen";
@@ -3554,7 +3623,7 @@
 "Your contacts can allow full message deletion." = "Uw contacten kunnen volledige verwijdering van berichten toestaan.";
 
 /* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Uw contacten in SimpleX zullen het zien. U kunt dit wijzigen in Instellingen.";
+"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Uw contacten in SimpleX kunnen het zien. \nU kunt dit wijzigen in Instellingen.";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Uw contacten blijven verbonden.";
@@ -3573,6 +3642,9 @@
 
 /* No comment provided by engineer. */
 "Your privacy" = "Uw privacy";
+
+/* No comment provided by engineer. */
+"Your profile **%@** will be shared." = "Uw profiel **%@** wordt gedeeld.";
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten.\nSimpleX servers kunnen uw profiel niet zien.";

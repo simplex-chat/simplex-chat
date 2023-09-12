@@ -315,7 +315,7 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -
     throw r
 }
 
-func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
+func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
     let chatModel = ChatModel.shared
     let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
     let r: ChatResponse
@@ -691,12 +691,12 @@ func apiListContacts() throws -> [Contact] {
     throw r
 }
 
-func apiUpdateProfile(profile: Profile) async throws -> Profile? {
+func apiUpdateProfile(profile: Profile) async throws -> (Profile, [Contact])? {
     let userId = try currentUserId("apiUpdateProfile")
     let r = await chatSendCmd(.apiUpdateProfile(userId: userId, profile: profile))
     switch r {
     case .userProfileNoChange: return nil
-    case let .userProfileUpdated(_, _, toProfile): return toProfile
+    case let .userProfileUpdated(_, _, toProfile, updateSummary): return (toProfile, updateSummary.changedContacts)
     default: throw r
     }
 }
@@ -706,7 +706,7 @@ func apiSetProfileAddress(on: Bool) async throws -> User? {
     let r = await chatSendCmd(.apiSetProfileAddress(userId: userId, on: on))
     switch r {
     case .userProfileNoChange: return nil
-    case let .userProfileUpdated(user, _, _): return user
+    case let .userProfileUpdated(user, _, _, _): return user
     default: throw r
     }
 }
@@ -807,14 +807,14 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
-func receiveFile(user: User, fileId: Int64, auto: Bool = false) async {
-    if let chatItem = await apiReceiveFile(fileId: fileId, auto: auto) {
+func receiveFile(user: any UserLike, fileId: Int64, encrypted: Bool, auto: Bool = false) async {
+    if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: encrypted, auto: auto) {
         await chatItemSimpleUpdate(user, chatItem)
     }
 }
 
-func apiReceiveFile(fileId: Int64, inline: Bool? = nil, auto: Bool = false) async -> AChatItem? {
-    let r = await chatSendCmd(.receiveFile(fileId: fileId, inline: inline))
+func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil, auto: Bool = false) async -> AChatItem? {
+    let r = await chatSendCmd(.receiveFile(fileId: fileId, encrypted: encrypted, inline: inline))
     let am = AlertManager.shared
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     if case .rcvFileAcceptedSndCancelled = r {
@@ -1357,7 +1357,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
         if let file = cItem.autoReceiveFile() {
             Task {
-                await receiveFile(user: user, fileId: file.fileId, auto: true)
+                await receiveFile(user: user, fileId: file.fileId, encrypted: cItem.encryptLocalFile, auto: true)
             }
         }
         if cItem.showNotification {
@@ -1518,7 +1518,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await chatItemSimpleUpdate(user, aChatItem)
         Task { cleanupFile(aChatItem) }
     case let .callInvitation(invitation):
-        m.callInvitations[invitation.contact.id] = invitation
+        await MainActor.run {
+            m.callInvitations[invitation.contact.id] = invitation
+        }
         activateCall(invitation)
     case let .callOffer(_, contact, callType, offer, sharedKey, _):
         await withCall(contact) { call in
@@ -1585,11 +1587,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
     }
 }
 
-func active(_ user: User) -> Bool {
-    user.id == ChatModel.shared.currentUser?.id
+func active(_ user: any UserLike) -> Bool {
+    user.userId == ChatModel.shared.currentUser?.id
 }
 
-func chatItemSimpleUpdate(_ user: User, _ aChatItem: AChatItem) async {
+func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let m = ChatModel.shared
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
@@ -1657,16 +1659,4 @@ func activateCall(_ callInvitation: RcvCallInvitation) {
 private struct UserResponse: Decodable {
     var user: User?
     var error: String?
-}
-
-struct RuntimeError: Error {
-    let message: String
-
-    init(_ message: String) {
-        self.message = message
-    }
-
-    public var localizedDescription: String {
-        return message
-    }
 }

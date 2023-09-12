@@ -20,6 +20,9 @@
 "_italic_" = "\\_斜体_";
 
 /* No comment provided by engineer. */
+"- more stable message delivery.\n- a bit better groups.\n- and more!" = "- 更稳定的传输！\n- 更好的社群！\n- 以及更多！";
+
+/* No comment provided by engineer. */
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- 语音消息最长5分钟。\n- 自定义限时消息。\n- 编辑消息历史。";
 
 /* No comment provided by engineer. */
@@ -85,6 +88,15 @@
 /* No comment provided by engineer. */
 "*bold*" = "\\*加粗*";
 
+/* copied message info title, # <title> */
+"# %@" = "# %@";
+
+/* copied message info */
+"## History" = "## 历史";
+
+/* copied message info */
+"## In reply to" = "## 回复";
+
 /* No comment provided by engineer. */
 "#secret#" = "#秘密#";
 
@@ -103,6 +115,12 @@
 /* No comment provided by engineer. */
 "%@ %@" = "%@ %@";
 
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ 和%@ 以建立连接";
+
+/* copied message info, <sender> at <time> */
+"%@ at %@:" = "%2$@:";
+
 /* notification title */
 "%@ is connected!" = "%@ 已连接！";
 
@@ -117,6 +135,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "%@ 要连接！";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ 和 %lld 个成员";
 
 /* copied message info */
 "%@:" = "%@:";
@@ -232,8 +253,14 @@
 /* No comment provided by engineer. */
 "30 seconds" = "30秒";
 
+/* No comment provided by engineer. */
+"A few more things" = "";
+
 /* notification title */
 "A new contact" = "新联系人";
+
+/* No comment provided by engineer. */
+"A new random profile will be shared." = "创建一个随机的共享文件";
 
 /* No comment provided by engineer. */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "一个单独的 TCP 连接将被用于**您在应用程序中的每个聊天资料**。";

@@ -179,8 +179,8 @@
     "no-federated": "No - federado",
     "comparison-section-list-point-1": "Generalmente basado en un número de teléfono, en algunos casos en nombres de usuario",
     "comparison-section-list-point-2": "Direcciones basadas en DNS",
-    "comparison-section-list-point-4": "Si los servidores del operador se ven comprometidos",
-    "comparison-section-list-point-5": "No protege los metadatos del usuario",
+    "comparison-section-list-point-4": "Si los servidores del operador se ven comprometidos. Verifique el código de seguridad en Signal y alguna otra aplicación para mitigarlo",
+    "comparison-section-list-point-5": "No protege la privacidad de los metadatos del usuario",
     "comparison-section-list-point-3": "Clave pública o algun otro ID único a nivel global",
     "comparison-section-list-point-6": "A pesar de que las redes P2P son distribuidas, no son federadas - funcionan como una única red",
     "comparison-section-list-point-7": "Las redes P2P o bien tienen una autoridad central o toda la red puede verse comprometida",
@@ -232,5 +232,16 @@
     "menu": "Menú",
     "on-this-page": "En esta página",
     "back-to-top": "Volver arriba",
-    "glossary": "Glosario"
+    "glossary": "Glosario",
+    "stable-and-beta-versions-built-by-developers": "Versiones estables y beta compilados por los desarrolladores",
+    "f-droid-page-simplex-chat-repo-section-text": "Para añadirlo a tu cliente F-Droid <span class='hide-on-mobile'>escanea el código QR</span> usa esta URL:",
+    "docs-dropdown-8": "Servicio Simplex Directory",
+    "simplex-chat-repo": "Repositorio Simplex Chat",
+    "simplex-chat-via-f-droid": "SimpleX Chat en F-Droid",
+    "f-droid-org-repo": "Repositorio F-Droid.org",
+    "stable-versions-built-by-f-droid-org": "Versión estable compilada por F-Droid.org",
+    "f-droid-page-f-droid-org-repo-section-text": "Los repositorios de SimpleX Chat y F-Droid.org firman con distinto certificado. Para cambiar, por favor <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exportar</a> la base de datos y reinstala la aplicación.",
+    "signing-key-fingerprint": "Huella digital de la clave de firma (SHA-256)",
+    "releases-to-this-repo-are-done-1-2-days-later": "Las versiones aparecen 1-2 días más tarde en este repositorio",
+    "comparison-section-list-point-4a": "Los servidores de retransmisión no pueden comprometer la encriptación e2e. Para evitar posibles ataques, verifique el código de seguridad mediante un canal alternativo"
 }

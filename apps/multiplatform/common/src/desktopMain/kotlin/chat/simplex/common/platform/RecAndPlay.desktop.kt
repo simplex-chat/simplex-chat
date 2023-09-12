@@ -1,7 +1,7 @@
 package chat.simplex.common.platform
 
 import androidx.compose.runtime.MutableState
-import chat.simplex.common.model.ChatItem
+import chat.simplex.common.model.*
 import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import kotlinx.coroutines.CoroutineScope
 
@@ -18,7 +18,7 @@ actual class RecorderNative: RecorderInterface {
 }
 
 actual object AudioPlayer: AudioPlayerInterface {
-  override fun play(filePath: String?, audioPlaying: MutableState<Boolean>, progress: MutableState<Int>, duration: MutableState<Int>, resetOnEnd: Boolean) {
+  override fun play(fileSource: CryptoFile, audioPlaying: MutableState<Boolean>, progress: MutableState<Int>, duration: MutableState<Int>, resetOnEnd: Boolean) {
     showInDevelopingAlert()
   }
 
@@ -42,7 +42,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     /*LALAL*/
   }
 
-  override fun duration(filePath: String): Int? {
+  override fun duration(unencryptedFilePath: String): Int? {
     /*LALAL*/
     return null
   }

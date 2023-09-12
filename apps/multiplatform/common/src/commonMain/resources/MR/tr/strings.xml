@@ -58,8 +58,6 @@
     <string name="group_member_role_admin">yönetici</string>
     <string name="button_add_welcome_message">Karşılama mesajı ekleyin</string>
     <string name="users_delete_all_chats_deleted">Tüm konuşmalar ve mesajlar silinecektir. Bu, geri alınamaz!</string>
-    <string name="incognito_random_profile_description">Kişinize rastgele bir profil gönderilecek</string>
-    <string name="incognito_random_profile_from_contact_description">Bu bağlantıyı aldığınız kişiye rastgele bir profil gönderilecek</string>
     <string name="color_primary">Ana renk</string>
     <string name="chat_preferences_always">sürekli</string>
     <string name="allow_message_reactions">Mesaj tepkilerine izin ver.</string>
@@ -152,7 +150,6 @@
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Gizliliğinizi ve güvenliğinizi koruyan mesajlaşma ve uygulama platformu.</string>
     <string name="settings_section_title_incognito">Gizlilik kipi</string>
     <string name="member_role_will_be_changed_with_invitation">Yetki, \"%s\" olarak değiştirilecek. Üye, yeni bir davet alacak.</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Gizli mod burada desteklenmiyor. Ana profiliniz grup üyelerine gönderilecek</string>
     <string name="role_in_group">Yetki</string>
     <string name="allow_voice_messages_question">Sesli mesajlara izin ver\?</string>
     <string name="users_add">Profil ekle</string>
@@ -864,7 +861,6 @@
     <string name="observer_cant_send_message_title">Mesaj gönderemezsiniz</string>
     <string name="view_security_code">Güvenlik kodunu görüntüle</string>
     <string name="you_need_to_allow_to_send_voice">Sesli mesaj gönderebilmeniz için kişinizin de sesli mesaj göndermesine izin vermeniz gerekir.</string>
-    <string name="your_profile_will_be_sent">Sohbet profiliniz kişinize gönderilecek</string>
     <string name="xftp_servers">XFTP sunucuları</string>
     <string name="your_ICE_servers">ICE sunucularınız</string>
     <string name="how_to">Nasıl</string>
@@ -911,7 +907,6 @@
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Ayrıca bağlantıya tıklayarak da bağlanabilirsiniz. Eğer bağlantı tarayıcda açılırsa, <b>mobil uygulamada aç</b> seçeneğine tıklayın.]]></string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Soru sormak ve güncellemeleri almak için <font color=#0088ff>SimpleX Chat geliştiricilerine bağlanabilirsiniz</font>.]]></string>
     <string name="you_can_hide_or_mute_user_profile">Bir kullanıcının profilini gizleyebilir veya sessize alabilirsiniz - menü için basılı tutun.</string>
-    <string name="you_invited_your_contact">Kişinizi davet ettiniz</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sohbet veritabanınızın en son sürümünü SADECE bir cihazda kullanmalısınız, aksi takdirde bazı kişilerden daha fazla mesaj alamayabilirsiniz.</string>
     <string name="wrong_passphrase">Yanlış veritabanı parolası</string>
     <string name="you_rejected_group_invitation">Grup davetini reddettiniz.</string>
@@ -955,8 +950,6 @@
     <string name="v5_2_more_things_descr">- daha stabil mesaj iletimi.
 \n- biraz daha iyi gruplar.
 \n- ve daha fazlası!</string>
-    <string name="item_status_rcv_new_desc">Bu göndericiden yeni bir mesaj var.</string>
-    <string name="item_status_snd_error_auth_desc">Mesaj teslim hatası. Büyük olasılıkla bu alıcı sizinle olan bağlantısını silmiştir.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Sadece istemci cihazlar <b>2 katmanlı uçtan uca şifreleme</b> ile kullanıcı profillerini, kişileri, grupları ve gönderilen mesajları depolar.]]></string>
     <string name="only_group_owners_can_change_prefs">Grup tercihlerini sadece grup sahipleri değiştirebilir.</string>
     <string name="item_info_no_text">metin yok</string>
@@ -987,7 +980,6 @@
     <string name="to_connect_via_link_title">Link ile bağlanmak için</string>
     <string name="this_link_is_not_a_valid_connection_link">Bu geçerli bir bağlantı linki değil</string>
     <string name="this_QR_code_is_not_a_link">Bu QR kodu bir bağlantı değil!</string>
-    <string name="paste_connection_link_below_to_connect">Kişinizle bağlantı kurmak için aldığınız bağlantıyı aşağıdaki kutuya yapıştırın.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Daha fazla bilgi için <font color=#0088ff>Kullanıcı Kılavuzu</font>.]]></string>
     <string name="paste_button">Yapıştır</string>
     <string name="this_string_is_not_a_connection_link">Bu dize bir bağlantı linki değil!</string>
@@ -1022,7 +1014,6 @@
     <string name="unhide_chat_profile">Sohbet profilini gizlemeyi kaldır</string>
     <string name="unhide_profile">Profili gizlemeyi kaldır</string>
     <string name="profile_password">Profil parolası</string>
-    <string name="incognito_info_find">Gizli bağlantı için kullanılan profili bulmak için sohbetin üst kısmındaki kişi veya grup adına dokunun.</string>
     <string name="prohibit_message_reactions">Mesaj tepkilerini yasakla.</string>
     <string name="prohibit_sending_voice_messages">Sesli mesaj göndermeyi yasakla.</string>
     <string name="prohibit_message_deletion">Geri alınamaz mesaj silme işlemini yasakla.</string>
@@ -1038,12 +1029,6 @@
     <string name="users_delete_with_connections">Profil ve sunucu bağlantıları</string>
     <string name="user_unhide">gizlemeyi kaldır</string>
     <string name="v4_3_voice_messages_desc">Maksimum 40 saniye, anında alınır.</string>
-    <string name="item_status_snd_sent_text">Mesaj gönderildi</string>
-    <string name="item_status_rcv_new_text">Mesaj alındı</string>
-    <string name="item_status_rcv_read_text">Mesaj okundu</string>
-    <string name="item_status_snd_sent_desc">Mesaj alıcının aktarıcısına gönderildi.</string>
-    <string name="item_status_snd_rcvd_desc">Mesaj alıcı tarafından alındı.</string>
-    <string name="item_status_snd_error_unexpected_desc">Beklenmeyen mesaj teslim hatası: %1$s</string>
     <string name="icon_descr_record_voice_message">Sesli mesaj kaydet</string>
     <string name="toast_permission_denied">İzin Reddedildi!</string>
     <string name="to_share_with_your_contact">(irtibat kişinizle paylaşmak için)</string>
@@ -1060,4 +1045,9 @@
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Gizliliği korumak için, diğer tüm platformlar gibi kullanıcı kimliği kullanmak yerine, SimpleX mesaj kuyrukları için kişilerinizin her biri için ayrı tanımlayıcılara sahiptir.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %1$s).</string>
     <string name="v4_4_live_messages_desc">Alıcılar güncellemeleri siz yazdıkça görürler.</string>
+    <string name="auth_log_in_using_credential">Bilgilerinizi kullanarak giriş yapın</string>
+    <string name="markdown_in_messages">Mesajlarda Markdown</string>
+    <string name="users_delete_data_only">Sadece yerel profil verisi</string>
+    <string name="info_row_local_name">Yerel ad</string>
+    <string name="only_you_can_add_message_reactions">Sadece sen mesaj tepkileri ekleyebilirsin.</string>
 </resources>

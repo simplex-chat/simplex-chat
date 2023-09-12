@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
@@ -100,6 +101,10 @@ class AlertManager {
             Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING_HALF),
             horizontalArrangement = Arrangement.SpaceBetween
           ) {
+            val focusRequester = remember { FocusRequester() }
+            LaunchedEffect(Unit) {
+              focusRequester.requestFocus()
+            }
             TextButton(onClick = {
               onDismiss?.invoke()
               hideAlert()
@@ -107,7 +112,7 @@ class AlertManager {
             TextButton(onClick = {
               onConfirm?.invoke()
               hideAlert()
-            }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
+            }, Modifier.focusRequester(focusRequester)) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
@@ -215,7 +220,7 @@ private fun alertText(text: String?): (@Composable () -> Unit)? {
   } else {
     ({
       Text(
-        text,
+        escapedHtmlToAnnotatedString(text, LocalDensity.current),
         Modifier.fillMaxWidth(),
         textAlign = TextAlign.Center,
         fontSize = 16.sp,

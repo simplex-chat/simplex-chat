@@ -13,6 +13,7 @@ import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.platform.AudioPlayer
+import chat.simplex.common.platform.chatController
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -38,7 +39,6 @@ import kotlin.time.*
 @Stable
 object ChatModel {
   val controller: ChatController = ChatController
-  val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val setDeliveryReceipts = mutableStateOf(false)
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()
@@ -407,18 +407,18 @@ object ChatModel {
     )
   }
 
-  fun increaseUnreadCounter(user: User) {
+  fun increaseUnreadCounter(user: UserLike) {
     changeUnreadCounter(user, 1)
   }
 
-  fun decreaseUnreadCounter(user: User, by: Int = 1) {
+  fun decreaseUnreadCounter(user: UserLike, by: Int = 1) {
     changeUnreadCounter(user, -by)
   }
 
-  private fun changeUnreadCounter(user: User, by: Int) {
+  private fun changeUnreadCounter(user: UserLike, by: Int) {
     val i = users.indexOfFirst { it.user.userId == user.userId }
     if (i != -1) {
-      users[i] = UserInfo(user, users[i].unreadCount + by)
+      users[i] = UserInfo(users[i].user, users[i].unreadCount + by)
     }
   }
 
@@ -500,25 +500,23 @@ enum class ChatType(val type: String) {
 
 @Serializable
 data class User(
-  val userId: Long,
+  override val userId: Long,
   val userContactId: Long,
   val localDisplayName: String,
   val profile: LocalProfile,
   val fullPreferences: FullChatPreferences,
-  val activeUser: Boolean,
-  val showNtfs: Boolean,
+  override val activeUser: Boolean,
+  override val showNtfs: Boolean,
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
   val viewPwdHash: UserPwdHash?
-): NamedChat {
+): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
   override val image: String? get() = profile.image
   override val localAlias: String = ""
 
   val hidden: Boolean = viewPwdHash != null
-
-  val showNotifications: Boolean = activeUser || showNtfs
 
   val addressShared: Boolean = profile.contactLink != null
 
@@ -536,6 +534,22 @@ data class User(
       viewPwdHash = null,
     )
   }
+}
+
+@Serializable
+data class UserRef(
+  override val userId: Long,
+  val localDisplayName: String,
+  override val activeUser: Boolean,
+  override val showNtfs: Boolean
+): UserLike {}
+
+interface UserLike {
+  val userId: Long
+  val activeUser: Boolean
+  val showNtfs: Boolean
+
+  val showNotifications: Boolean get() = activeUser || showNtfs
 }
 
 @Serializable
@@ -931,6 +945,14 @@ data class LocalProfile(
     )
   }
 }
+
+@Serializable
+data class UserProfileUpdateSummary(
+  val notChanged: Int,
+  val updateSuccesses: Int,
+  val updateFailures: Int,
+  val changedContacts: List<Contact>
+)
 
 @Serializable
 class Group (
@@ -1372,6 +1394,13 @@ data class ChatItem (
     meta.itemDeleted == null && !isLiveDummy && (reactions.count { it.userReacted } < 3)
 
   private val isLiveDummy: Boolean get() = meta.itemId == TEMP_LIVE_CHAT_ITEM_ID
+
+  val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
+
+  val encryptLocalFile: Boolean
+    get() = file?.fileProtocol == FileProtocol.XFTP &&
+        content.msgContent !is MsgContent.MCVideo &&
+        chatController.appPrefs.privacyEncryptLocalFiles.get()
 
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.displayName
@@ -2003,7 +2032,7 @@ class CIFile(
   val fileId: Long,
   val fileName: String,
   val fileSize: Long,
-  val filePath: String? = null,
+  val fileSource: CryptoFile? = null,
   val fileStatus: CIFileStatus,
   val fileProtocol: FileProtocol
 ) {
@@ -2051,9 +2080,26 @@ class CIFile(
       filePath: String? = "test.txt",
       fileStatus: CIFileStatus = CIFileStatus.RcvComplete
     ): CIFile =
-      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
+      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, fileSource = if (filePath == null) null else CryptoFile.plain(filePath), fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
   }
 }
+
+@Serializable
+data class CryptoFile(
+  val filePath: String,
+  val cryptoArgs: CryptoFileArgs?
+) {
+
+  val isAbsolutePath: Boolean
+    get() = File(filePath).isAbsolute
+
+  companion object {
+    fun plain(f: String): CryptoFile = CryptoFile(f, null)
+  }
+}
+
+@Serializable
+data class CryptoFileArgs(val fileKey: String, val fileNonce: String)
 
 class CancelAction(
   val uiActionId: StringResource,

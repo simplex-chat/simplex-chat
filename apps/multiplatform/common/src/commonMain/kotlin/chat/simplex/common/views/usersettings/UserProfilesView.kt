@@ -164,10 +164,9 @@ private fun UserProfilesLayout(
   ) {
     if (profileHidden.value) {
       SectionView {
-        SettingsActionItem(painterResource(MR.images.ic_lock_open), stringResource(MR.strings.enter_password_to_show), click = {
+        SettingsActionItem(painterResource(MR.images.ic_lock_open_right), stringResource(MR.strings.enter_password_to_show), click = {
           profileHidden.value = false
-        }
-        )
+        })
       }
       SectionSpacer()
     }
@@ -223,7 +222,7 @@ private fun UserView(
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
-        ItemAction(stringResource(MR.strings.user_unhide), painterResource(MR.images.ic_lock_open), onClick = {
+        ItemAction(stringResource(MR.strings.user_unhide), painterResource(MR.images.ic_lock_open_right), onClick = {
           showMenu.value = false
           unhideUser(user)
         })

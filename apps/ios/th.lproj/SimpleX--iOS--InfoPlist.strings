@@ -1,0 +1,15 @@
+/* Bundle name */
+"CFBundleName" = "SimpleX";
+
+/* Privacy - Camera Usage Description */
+"NSCameraUsageDescription" = "SimpleX ต้องการการเข้าถึงกล้องเพื่อสแกนรหัสคิวอาร์เพื่อเชื่อมต่อกับผู้ใช้รายอื่นและสำหรับการโทรวิดีโอ";
+
+/* Privacy - Face ID Usage Description */
+"NSFaceIDUsageDescription" = "SimpleX ใช้ Face ID สำหรับการรับรองความถูกต้องในเครื่อง";
+
+/* Privacy - Microphone Usage Description */
+"NSMicrophoneUsageDescription" = "SimpleX ต้องการการเข้าถึงไมโครโฟนสำหรับการโทรด้วยเสียงและวิดีโอ และเพื่อบันทึกข้อความเสียง";
+
+/* Privacy - Photo Library Additions Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "SimpleX ต้องการเข้าถึง Photo Library เพื่อบันทึกสื่อที่ถ่ายและได้รับ";
+

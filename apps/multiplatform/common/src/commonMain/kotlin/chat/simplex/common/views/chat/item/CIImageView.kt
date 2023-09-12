@@ -29,9 +29,11 @@ import java.net.URI
 fun CIImageView(
   image: String,
   file: CIFile?,
+  encryptLocalFile: Boolean,
+  metaColor: Color,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long, Boolean) -> Unit
 ) {
   @Composable
   fun progressIndicator() {
@@ -48,7 +50,7 @@ fun CIImageView(
       icon,
       stringResource(stringId),
       Modifier.fillMaxSize(),
-      tint = Color.White
+      tint = metaColor
     )
   }
 
@@ -132,27 +134,31 @@ fun CIImageView(
     return false
   }
 
-  fun imageAndFilePath(file: CIFile?): Pair<ImageBitmap?, String?> {
-    val imageBitmap: ImageBitmap? = getLoadedImage(file)
-    val filePath = getLoadedFilePath(file)
-    return imageBitmap to filePath
+  fun imageAndFilePath(file: CIFile?): Triple<ImageBitmap, ByteArray, String>? {
+    val res = getLoadedImage(file)
+    if (res != null) {
+      val (imageBitmap: ImageBitmap, data: ByteArray) = res
+      val filePath = getLoadedFilePath(file)!!
+      return Triple(imageBitmap, data, filePath)
+    }
+    return null
   }
 
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID),
     contentAlignment = Alignment.TopEnd
   ) {
-    val (imageBitmap, filePath) = remember(file) { imageAndFilePath(file) }
-    if (imageBitmap != null && filePath != null) {
-      val uri = remember(filePath) { getAppFileUri(filePath.substringAfterLast(File.separator))  }
-      SimpleAndAnimatedImageView(uri, imageBitmap, file, imageProvider, @Composable { painter, onClick -> ImageView(painter, onClick) })
+    val res = remember(file) { imageAndFilePath(file) }
+    if (res != null) {
+      val (imageBitmap, data, _) = res
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, @Composable { painter, onClick -> ImageView(painter, onClick) })
     } else {
       imageView(base64ToBitmap(image), onClick = {
         if (file != null) {
           when (file.fileStatus) {
             CIFileStatus.RcvInvitation ->
               if (fileSizeValid()) {
-                receiveFile(file.fileId)
+                receiveFile(file.fileId, encryptLocalFile)
               } else {
                 AlertManager.shared.showAlertMsg(
                   generalGetString(MR.strings.large_file),
@@ -186,7 +192,7 @@ fun CIImageView(
 
 @Composable
 expect fun SimpleAndAnimatedImageView(
-  uri: URI,
+  data: ByteArray,
   imageBitmap: ImageBitmap,
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,

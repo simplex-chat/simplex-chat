@@ -1,0 +1,25 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "5NN7GUYB6T.chat.simplex.app"
+        ],
+        "components": [
+          {
+            "/": "/contact/*"
+          },
+          {
+            "/": "/contact"
+          },
+          {
+            "/": "/invitation/*"
+          },
+          {
+            "/": "/invitation"
+          }
+        ]
+      }
+    ]
+  }
+}

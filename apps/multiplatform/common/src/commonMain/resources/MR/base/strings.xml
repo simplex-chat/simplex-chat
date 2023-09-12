@@ -615,7 +615,7 @@
   <string name="network_use_onion_hosts_required">Required</string>
   <string name="network_use_onion_hosts_prefer_desc">Onion hosts will be used when available.</string>
   <string name="network_use_onion_hosts_no_desc">Onion hosts will not be used.</string>
-  <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.</string>
+  <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.\nPlease note: you will not be able to connect to the servers without .onion address.</string>
   <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts will be used when available.</string>
   <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts will not be used.</string>
   <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts will be required for connection.</string>
@@ -626,6 +626,7 @@
   <string name="network_session_mode_entity_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.]]></string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.]]></string>
+  <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls and sending link previews use direct connection.]]></string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
   <string name="theme_colors_section_title">THEME COLORS</string>
@@ -769,6 +770,11 @@
   <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. Background service checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
   <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! Background service always runs – notifications are shown as soon as messages are available.]]></string>
 
+  <!-- SetupDatabasePassphrase.kt -->
+  <string name="setup_database_passphrase">Setup database passphrase</string>
+  <string name="you_can_change_it_later">Random passphrase is stored in settings as plaintext.\nYou can change it later.</string>
+  <string name="use_random_passphrase">Use random passphrase</string>
+
   <!-- MakeConnection -->
   <string name="paste_the_link_you_received">Paste received link</string>
 
@@ -850,6 +856,7 @@
   <string name="privacy_and_security">Privacy &amp; security</string>
   <string name="your_privacy">Your privacy</string>
   <string name="protect_app_screen">Protect app screen</string>
+  <string name="encrypt_local_files">Encrypt local files</string>
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="privacy_show_last_messages">Show last messages</string>
@@ -939,6 +946,7 @@
   <string name="import_database">Import database</string>
   <string name="new_database_archive">New database archive</string>
   <string name="old_database_archive">Old database archive</string>
+  <string name="open_database_folder">Open database folder</string>
   <string name="delete_database">Delete database</string>
   <string name="error_starting_chat">Error starting chat</string>
   <string name="stop_chat_question">Stop chat?</string>
@@ -984,9 +992,11 @@
 
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>
+  <string name="save_passphrase_in_settings">Save passphrase in settings</string>
   <string name="database_encrypted">Database encrypted!</string>
   <string name="error_encrypting_database">Error encrypting database</string>
   <string name="remove_passphrase_from_keychain">Remove passphrase from Keystore?</string>
+  <string name="remove_passphrase_from_settings">Remove passphrase from settings?</string>
   <string name="notifications_will_be_hidden">Notifications will be delivered only until the app stops!</string>
   <string name="remove_passphrase">Remove</string>
   <string name="encrypt_database">Encrypt</string>
@@ -995,18 +1005,23 @@
   <string name="new_passphrase">New passphrase…</string>
   <string name="confirm_new_passphrase">Confirm new passphrase…</string>
   <string name="update_database_passphrase">Update database passphrase</string>
+  <string name="set_database_passphrase">Set database passphrase</string>
   <string name="enter_correct_current_passphrase">Please enter correct current passphrase.</string>
   <string name="database_is_not_encrypted">Your chat database is not encrypted - set passphrase to protect it.</string>
   <string name="keychain_is_storing_securely">Android Keystore is used to securely store passphrase - it allows notification service to work.</string>
+  <string name="settings_is_storing_in_clear_text">The passphrase is stored in settings as plaintext.</string>
   <string name="encrypted_with_random_passphrase">Database is encrypted using a random passphrase, you can change it.</string>
   <string name="impossible_to_recover_passphrase"><![CDATA[<b>Please note</b>: you will NOT be able to recover or change passphrase if you lose it.]]></string>
   <string name="keychain_allows_to_receive_ntfs">Android Keystore will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving notifications.</string>
+  <string name="passphrase_will_be_saved_in_settings">The passphrase will be stored in settings as plaintext after you change it or restart the app.</string>
   <string name="you_have_to_enter_passphrase_every_time">You have to enter passphrase every time the app starts - it is not stored on the device.</string>
   <string name="encrypt_database_question">Encrypt database?</string>
   <string name="change_database_passphrase_question">Change database passphrase?</string>
   <string name="database_will_be_encrypted">Database will be encrypted.</string>
   <string name="database_will_be_encrypted_and_passphrase_stored">Database will be encrypted and the passphrase stored in the Keystore.</string>
+  <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Database will be encrypted and the passphrase stored in settings.</string>
   <string name="database_encryption_will_be_updated">Database encryption passphrase will be updated and stored in the Keystore.</string>
+  <string name="database_encryption_will_be_updated_in_settings">Database encryption passphrase will be updated and stored in settings.</string>
   <string name="database_passphrase_will_be_updated">Database encryption passphrase will be updated.</string>
   <string name="store_passphrase_securely">Please store passphrase securely, you will NOT be able to change it if you lose it.</string>
   <string name="store_passphrase_securely_without_recover">Please store passphrase securely, you will NOT be able to access chat if you lose it.</string>

@@ -211,17 +211,17 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         center.delegate = self
     }
 
-    func notifyContactRequest(_ user: User, _ contactRequest: UserContactRequest) {
+    func notifyContactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest) {
         logger.debug("NtfManager.notifyContactRequest")
         addNotification(createContactRequestNtf(user, contactRequest))
     }
 
-    func notifyContactConnected(_ user: User, _ contact: Contact) {
+    func notifyContactConnected(_ user: any UserLike, _ contact: Contact) {
         logger.debug("NtfManager.notifyContactConnected")
         addNotification(createContactConnectedNtf(user, contact))
     }
 
-    func notifyMessageReceived(_ user: User, _ cInfo: ChatInfo, _ cItem: ChatItem) {
+    func notifyMessageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
         if cInfo.ntfsEnabled {
             addNotification(createMessageReceivedNtf(user, cInfo, cItem))

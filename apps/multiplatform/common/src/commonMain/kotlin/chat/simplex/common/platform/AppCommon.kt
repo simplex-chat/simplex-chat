@@ -1,8 +1,9 @@
 package chat.simplex.common.platform
 
 import chat.simplex.common.BuildConfigCommon
-import chat.simplex.common.model.ChatController
+import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.DefaultTheme
+import java.io.File
 import java.util.*
 
 enum class AppPlatform {

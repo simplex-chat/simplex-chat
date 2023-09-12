@@ -17,14 +17,14 @@ enum class NotificationAction {
 lateinit var ntfManager: NtfManager
 
 abstract class NtfManager {
-  fun notifyContactConnected(user: User, contact: Contact) = displayNotification(
+  fun notifyContactConnected(user: UserLike, contact: Contact) = displayNotification(
     user = user,
     chatId = contact.id,
     displayName = contact.displayName,
     msgText = generalGetString(MR.strings.notification_contact_connected)
   )
 
-  fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) = displayNotification(
+  fun notifyContactRequestReceived(user: UserLike, cInfo: ChatInfo.ContactRequest) = displayNotification(
     user = user,
     chatId = cInfo.id,
     displayName = cInfo.displayName,
@@ -36,7 +36,7 @@ abstract class NtfManager {
     )
   )
 
-  fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) {
+  fun notifyMessageReceived(user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
     if (!cInfo.ntfsEnabled) return
     displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
   }
@@ -89,7 +89,7 @@ abstract class NtfManager {
   abstract fun notifyCallInvitation(invitation: RcvCallInvitation)
   abstract fun hasNotificationsForChat(chatId: String): Boolean
   abstract fun cancelNotificationsForChat(chatId: String)
-  abstract fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())
+  abstract fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())
   abstract fun cancelCallNotification()
   abstract fun cancelAllNotifications()
   // Android only
@@ -100,7 +100,7 @@ abstract class NtfManager {
     if (chatModel.chatRunning.value == null) {
       val step = 50L
       for (i in 0..(timeout / step)) {
-        if (chatModel.chatRunning.value == true || chatModel.onboardingStage.value == OnboardingStage.Step1_SimpleXInfo) {
+        if (chatModel.chatRunning.value == true || chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.Step1_SimpleXInfo) {
           break
         }
         delay(step)

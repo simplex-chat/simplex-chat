@@ -11,42 +11,43 @@ import SimpleXChat
 import SwiftUI
 import AVKit
 
-func getLoadedFilePath(_ file: CIFile?) -> String? {
-    if let fileName = getLoadedFileName(file) {
-        return getAppFilePath(fileName).path
-    }
-    return nil
-}
-
-func getLoadedFileName(_ file: CIFile?) -> String? {
-    if let file = file,
-       file.loaded,
-       let fileName = file.filePath {
-        return fileName
+func getLoadedFileSource(_ file: CIFile?) -> CryptoFile? {
+    if let file = file, file.loaded {
+        return file.fileSource
     }
     return nil
 }
 
 func getLoadedImage(_ file: CIFile?) -> UIImage? {
-    let loadedFilePath = getLoadedFilePath(file)
-    if let loadedFilePath = loadedFilePath, let fileName = file?.filePath {
-        let filePath = getAppFilePath(fileName)
+    if let fileSource = getLoadedFileSource(file) {
+        let filePath = getAppFilePath(fileSource.filePath)
         do {
-            let data = try Data(contentsOf: filePath)
+            let data = try getFileData(filePath, fileSource.cryptoArgs)
             let img = UIImage(data: data)
-            try img?.setGifFromData(data, levelOfIntegrity: 1.0)
-            return img
+            do {
+                try img?.setGifFromData(data, levelOfIntegrity: 1.0)
+                return img
+            } catch {
+                return UIImage(data: data)
+            }
         } catch {
-            return UIImage(contentsOfFile: loadedFilePath)
+            return nil
         }
     }
     return nil
 }
 
+func getFileData(_ path: URL, _ cfArgs: CryptoFileArgs?) throws -> Data {
+    if let cfArgs = cfArgs {
+        return try readCryptoFile(path: path.path, cryptoArgs: cfArgs)
+    } else {
+        return try Data(contentsOf: path)
+    }
+}
+
 func getLoadedVideo(_ file: CIFile?) -> URL? {
-    let loadedFilePath = getLoadedFilePath(file)
-    if loadedFilePath != nil, let fileName = file?.filePath {
-        let filePath = getAppFilePath(fileName)
+    if let fileSource = getLoadedFileSource(file) {
+        let filePath = getAppFilePath(fileSource.filePath)
         if FileManager.default.fileExists(atPath: filePath.path) {
             return filePath
         }
@@ -54,18 +55,18 @@ func getLoadedVideo(_ file: CIFile?) -> URL? {
     return nil
 }
 
-func saveAnimImage(_ image: UIImage) -> String? {
+func saveAnimImage(_ image: UIImage) -> CryptoFile? {
     let fileName = generateNewFileName("IMG", "gif")
     guard let imageData = image.imageData else { return nil }
-    return saveFile(imageData, fileName)
+    return saveFile(imageData, fileName, encrypted: privacyEncryptLocalFilesGroupDefault.get())
 }
 
-func saveImage(_ uiImage: UIImage) -> String? {
+func saveImage(_ uiImage: UIImage) -> CryptoFile? {
     let hasAlpha = imageHasAlpha(uiImage)
     let ext = hasAlpha ? "png" : "jpg"
     if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: MAX_IMAGE_SIZE, hasAlpha: hasAlpha) {
         let fileName = generateNewFileName("IMG", ext)
-        return saveFile(imageDataResized, fileName)
+        return saveFile(imageDataResized, fileName, encrypted: privacyEncryptLocalFilesGroupDefault.get())
     }
     return nil
 }
@@ -157,13 +158,19 @@ func imageHasAlpha(_ img: UIImage) -> Bool {
     return false
 }
 
-func saveFileFromURL(_ url: URL) -> String? {
-    let savedFile: String?
+func saveFileFromURL(_ url: URL, encrypted: Bool) -> CryptoFile? {
+    let savedFile: CryptoFile?
     if url.startAccessingSecurityScopedResource() {
         do {
-            let fileData = try Data(contentsOf: url)
             let fileName = uniqueCombine(url.lastPathComponent)
-            savedFile = saveFile(fileData, fileName)
+            let toPath = getAppFilePath(fileName).path
+            if encrypted {
+                let cfArgs = try encryptCryptoFile(fromPath: url.path, toPath: toPath)
+                savedFile = CryptoFile(filePath: fileName, cryptoArgs: cfArgs)
+            } else {
+                try FileManager.default.copyItem(atPath: url.path, toPath: toPath)
+                savedFile = CryptoFile.plain(fileName)
+            }
         } catch {
             logger.error("FileUtils.saveFileFromURL error: \(error.localizedDescription)")
             savedFile = nil
@@ -176,18 +183,16 @@ func saveFileFromURL(_ url: URL) -> String? {
     return savedFile
 }
 
-func saveFileFromURLWithoutLoad(_ url: URL) -> String? {
-    let savedFile: String?
+func moveTempFileFromURL(_ url: URL) -> CryptoFile? {
     do {
         let fileName = uniqueCombine(url.lastPathComponent)
         try FileManager.default.moveItem(at: url, to: getAppFilePath(fileName))
         ChatModel.shared.filesToDelete.remove(url)
-        savedFile = fileName
+        return CryptoFile.plain(fileName)
     } catch {
-        logger.error("FileUtils.saveFileFromURLWithoutLoad error: \(error.localizedDescription)")
-        savedFile = nil
+        logger.error("ImageUtils.moveTempFileFromURL error: \(error.localizedDescription)")
+        return nil
     }
-    return savedFile
 }
 
 func generateNewFileName(_ prefix: String, _ ext: String) -> String {
