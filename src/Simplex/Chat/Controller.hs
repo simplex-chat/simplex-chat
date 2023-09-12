@@ -34,7 +34,6 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
@@ -242,7 +241,7 @@ data ChatCommand
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
-  | APISendMessage {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
+  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
@@ -353,14 +352,14 @@ data ChatCommand
   | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName
-  | SendMessage SendName Text
-  | SendLiveMessage SendName Text
+  | SendMessage ChatName Text
+  | SendLiveMessage ChatName Text
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: Text, message :: Text}
   | SendMessageBroadcast Text -- UserId (not used in UI)
   | DeleteMessage ChatName Text
   | DeleteMemberMessage GroupName ContactName Text
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
-  | UpdateLiveMessage {sendName :: SendName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
+  | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
   | APINewGroup UserId GroupProfile
   | NewGroup GroupProfile
@@ -382,17 +381,17 @@ data ChatCommand
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
-  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, directMemberName :: Maybe ContactName, quotedMsg :: Text, message :: Text}
+  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
   | ShowChatItemInfo ChatName Text
   | ShowLiveItems Bool
-  | SendFile SendName FilePath
-  | SendImage SendName FilePath
-  | ForwardFile SendName FileTransferId
-  | ForwardImage SendName FileTransferId
+  | SendFile ChatName FilePath
+  | SendImage ChatName FilePath
+  | ForwardFile ChatName FileTransferId
+  | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
   | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
   | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Bool}
@@ -612,37 +611,6 @@ logResponseToFile = \case
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
-
-data SendRef
-  = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupMemberId)
-  deriving (Eq, Show)
-
-sendToChatRef :: SendRef -> ChatRef
-sendToChatRef = \case
-  SRDirect cId -> ChatRef CTDirect cId
-  SRGroup gId _ -> ChatRef CTGroup gId
-
-data SendName
-  = SNDirect ContactName
-  | SNGroup GroupName (Maybe ContactName)
-  deriving (Eq, Show)
-
-sendNameStr :: SendName -> String
-sendNameStr = \case
-  SNDirect cName -> "@" <> T.unpack cName
-  SNGroup gName (Just cName) -> "#" <> T.unpack gName <> " @" <> T.unpack cName
-  SNGroup gName Nothing -> "#" <> T.unpack gName
-
-data SendDirection
-  = SDDirect Contact
-  | SDGroup GroupInfo [GroupMember]
-  deriving (Eq, Show)
-
-sendDirToContactOrGroup :: SendDirection -> ContactOrGroup
-sendDirToContactOrGroup = \case
-  SDDirect c -> CGContact c
-  SDGroup g _ -> CGGroup g
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -959,7 +927,6 @@ data ChatErrorType
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
   | CEConnectionIncognitoChangeProhibited
-  | CEPeerChatVRangeIncompatible
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception, Generic)

@@ -322,35 +322,14 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
     testViewChat :: AChat -> [StyledString]
     testViewChat (AChat _ Chat {chatInfo, chatItems}) = [sShow $ map toChatView chatItems]
       where
-        toChatView :: CChatItem c -> ((Int, String, Text), Maybe (Int, String, Text), Maybe String)
-        toChatView ci@(CChatItem dir ChatItem {chatDir, quotedItem, file}) =
-          (item, qItem, fPath)
+        toChatView :: CChatItem c -> ((Int, Text), Maybe (Int, Text), Maybe String)
+        toChatView ci@(CChatItem dir ChatItem {quotedItem, file}) =
+          ((msgDirectionInt $ toMsgDirection dir, testViewItem ci (chatInfoMembership chatInfo)), qItem, fPath)
           where
-            item =
-              ( msgDirectionInt $ toMsgDirection dir,
-                directMemberName,
-                testViewItem ci (chatInfoMembership chatInfo)
-              )
-            directMemberName = case chatDir of
-              CIGroupSnd (Just GroupMember {localDisplayName = n}) -> T.unpack n
-              CIGroupRcv GroupMember {localDisplayName = n} MSDirect -> T.unpack n
-              _ -> ""
             qItem = case quotedItem of
               Nothing -> Nothing
               Just CIQuote {chatDir = quoteDir, content} ->
-                Just
-                  ( msgDirectionInt $ quoteMsgDirection quoteDir,
-                    qMsgScope,
-                    msgContentText content
-                  )
-                where
-                  qMsgScope = case quoteDir of
-                    CIQGroupSnd ms -> msgScopeText ms
-                    CIQGroupRcv _ ms -> msgScopeText ms
-                    _ -> ""
-                  msgScopeText ms = case ms of
-                    MSGroup -> "group"
-                    MSDirect -> "direct"
+                Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
             fPath = case file of
               Just CIFile {fileSource = Just (CryptoFile fp _)} -> Just fp
               _ -> Nothing
@@ -401,7 +380,7 @@ viewUsersList = mapMaybe userInfo . sortOn ldn
 muted :: ChatInfo c -> CIDirection c d -> Bool
 muted chat chatDir = case (chat, chatDir) of
   (DirectChat Contact {chatSettings = DisableNtfs}, CIDirectRcv) -> True
-  (GroupChat GroupInfo {chatSettings = DisableNtfs}, CIGroupRcv _ _) -> True
+  (GroupChat GroupInfo {chatSettings = DisableNtfs}, CIGroupRcv _) -> True
   _ -> False
 
 viewGroupSubscribed :: GroupInfo -> [StyledString]
@@ -424,9 +403,8 @@ viewChats ts tz = concatMap chatPreview . reverse
       where
         chatName = case chat of
           DirectChat ct -> ["      " <> ttyToContact' ct]
-          GroupChat g -> ["      " <> ttyToGroup' g]
+          GroupChat g -> ["      " <> ttyToGroup g]
           _ -> []
-    ttyToGroup' g@GroupInfo {localDisplayName = n} = membershipIncognito g <> ttyTo ("#" <> n <> " ")
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} doShow ts tz =
@@ -448,20 +426,20 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
       where
         quote = maybe [] (directQuote chatDir) quotedItem
     GroupChat g -> case chatDir of
-      CIGroupSnd directMember -> case content of
+      CIGroupSnd -> case content of
         CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to quote mc
         CISndGroupInvitation {} -> showSndItemProhibited to
         _ -> showSndItem to
         where
-          to = ttyToGroup g directMember
-      CIGroupRcv m msgScope -> case content of
+          to = ttyToGroup g
+      CIGroupRcv m -> case content of
         CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
         CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
         CIRcvGroupInvitation {} -> showRcvItemProhibited from
-        CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g m msgScope) quote meta [plainContent content] False
+        CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g m) quote meta [plainContent content] False
         _ -> showRcvItem from
         where
-          from = ttyFromGroup g m msgScope
+          from = ttyFromGroup g m
       where
         quote = maybe [] (groupQuote g) quotedItem
     _ -> []
@@ -553,18 +531,18 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
     where
       quote = maybe [] (directQuote chatDir) quotedItem
   GroupChat g -> case chatDir of
-    CIGroupRcv m msgScope -> case content of
+    CIGroupRcv m -> case content of
       CIRcvMsgContent mc
         | itemLive == Just True && not liveItems -> []
         | otherwise -> viewReceivedUpdatedMessage from quote mc ts tz meta
       _ -> []
       where
-        from = if itemEdited then ttyFromGroupEdited g m msgScope else ttyFromGroup g m msgScope
-    CIGroupSnd directMember -> case content of
+        from = if itemEdited then ttyFromGroupEdited g m else ttyFromGroup g m
+    CIGroupSnd -> case content of
       CISndMsgContent mc -> hideLive meta $ viewSentMessage to quote mc ts tz meta
       _ -> []
       where
-        to = if itemEdited then ttyToGroupEdited g directMember else ttyToGroup g directMember
+        to = if itemEdited then ttyToGroupEdited g else ttyToGroup g
     where
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
@@ -589,8 +567,7 @@ viewItemDelete chat ci@ChatItem {chatDir, meta, content = deletedContent} toItem
     GroupChat g -> case ciMsgContent deletedContent of
       Just mc ->
         let m = chatItemMember g ci
-            msgScope = directMemberToMsgScope $ ciDirDirectMember chatDir
-         in viewReceivedMessage (ttyFromGroupDeleted g m msgScope deletedText_) [] mc ts tz meta
+         in viewReceivedMessage (ttyFromGroupDeleted g m deletedText_) [] mc ts tz meta
       _ -> prohibited
     _ -> prohibited
   where
@@ -609,14 +586,14 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       where
         from = ttyFromContact c
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
-    (GroupChat g, CIGroupRcv m messageScope) -> case ciMsgContent content of
+    (GroupChat g, CIGroupRcv m) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
       _ -> []
       where
-        from = ttyFromGroup g m messageScope
+        from = ttyFromGroup g m
         reactionMsg mc = quoteText mc . ttyQuotedMember . Just $ sentByMember' g itemDir
     (_, CIDirectSnd) -> [sentText]
-    (_, CIGroupSnd _) -> [sentText]
+    (_, CIGroupSnd) -> [sentText]
   where
     view from msg
       | showReactions = viewReceivedReaction from msg reactionText ts tz sentAt
@@ -644,13 +621,13 @@ groupQuote g CIQuote {content = qmc, chatDir = quoteDir} = quoteText qmc . ttyQu
 
 sentByMember :: GroupInfo -> CIQDirection 'CTGroup -> Maybe GroupMember
 sentByMember GroupInfo {membership} = \case
-  CIQGroupSnd _ -> Just membership
-  CIQGroupRcv m _ -> m
+  CIQGroupSnd -> Just membership
+  CIQGroupRcv m -> m
 
 sentByMember' :: GroupInfo -> CIDirection 'CTGroup d -> GroupMember
 sentByMember' GroupInfo {membership} = \case
-  CIGroupSnd _ -> membership
-  CIGroupRcv m _ -> m
+  CIGroupSnd -> membership
+  CIGroupRcv m -> m
 
 quoteText :: MsgContent -> StyledString -> [StyledString]
 quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
@@ -1008,8 +985,8 @@ viewConnectionVerified :: Maybe SecurityCode -> StyledString
 viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
 viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
 
-viewPeerChatVRange :: VersionRange -> StyledString
-viewPeerChatVRange (VersionRange minVer maxVer) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
+viewPeerChatVRange :: JVersionRange -> StyledString
+viewPeerChatVRange (JVersionRange (VersionRange minVer maxVer)) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
@@ -1342,9 +1319,8 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 uploadingFile :: StyledString -> AChatItem -> [StyledString]
 uploadingFile status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
   [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd directMember}) =
-  let forMember = maybe "" (\GroupMember {localDisplayName = m} -> styled (colored Blue) $ " @" <> m <> " (direct)") directMember
-   in [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g <> forMember]
+uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) =
+  [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
 uploadingFile status _ = [status <> " uploading file"] -- shouldn't happen
 
 sndFile :: SndFileTransfer -> StyledString
@@ -1376,7 +1352,7 @@ savingFile' :: Bool -> AChatItem -> [StyledString]
 savingFile' testView (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath cfArgs_)}, chatDir}) =
   let from = case (chat, chatDir) of
         (DirectChat Contact {localDisplayName = c}, CIDirectRcv) -> " from " <> ttyContact c
-        (_, CIGroupRcv GroupMember {localDisplayName = m} _) -> " from " <> ttyContact m
+        (_, CIGroupRcv GroupMember {localDisplayName = m}) -> " from " <> ttyContact m
         _ -> ""
    in ["saving file " <> sShow fileId <> from <> " to " <> plain filePath] <> cfArgsStr
   where
@@ -1390,7 +1366,7 @@ savingFile' _ _ = ["saving file"] -- shouldn't happen
 receivingFile_' :: StyledString -> AChatItem -> [StyledString]
 receivingFile_' status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =
   [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact c]
-receivingFile_' status (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupRcv GroupMember {localDisplayName = m} _}) =
+receivingFile_' status (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
   [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact m]
 receivingFile_' status _ = [status <> " receiving file"] -- shouldn't happen
 
@@ -1606,7 +1582,7 @@ viewChatError logLevel = \case
     CEXFTPSndFile fileId aFileId e -> ["error sending XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
-    CEInvalidQuote -> ["invalid message reply"]
+    CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEHasCurrentCall -> ["call already in progress"]
@@ -1621,7 +1597,6 @@ viewChatError logLevel = \case
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
-    CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
@@ -1762,24 +1737,19 @@ ttyFullGroup :: GroupInfo -> StyledString
 ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullName}} =
   ttyGroup g <> optFullName g fullName
 
-ttyFromGroup :: GroupInfo -> GroupMember -> MessageScope -> StyledString
-ttyFromGroup g m ms = membershipIncognito g <> ttyFrom (fromGroup_ g m ms)
+ttyFromGroup :: GroupInfo -> GroupMember -> StyledString
+ttyFromGroup g m = membershipIncognito g <> ttyFrom (fromGroup_ g m)
 
-ttyFromGroupEdited :: GroupInfo -> GroupMember -> MessageScope -> StyledString
-ttyFromGroupEdited g m ms = membershipIncognito g <> ttyFrom (fromGroup_ g m ms <> "[edited] ")
+ttyFromGroupEdited :: GroupInfo -> GroupMember -> StyledString
+ttyFromGroupEdited g m = membershipIncognito g <> ttyFrom (fromGroup_ g m <> "[edited] ")
 
-ttyFromGroupDeleted :: GroupInfo -> GroupMember -> MessageScope -> Maybe Text -> StyledString
-ttyFromGroupDeleted g m ms deletedText_ =
-  membershipIncognito g <> ttyFrom (fromGroup_ g m ms <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
+ttyFromGroupDeleted :: GroupInfo -> GroupMember -> Maybe Text -> StyledString
+ttyFromGroupDeleted g m deletedText_ =
+  membershipIncognito g <> ttyFrom (fromGroup_ g m <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
 
-fromGroup_ :: GroupInfo -> GroupMember -> MessageScope -> Text
-fromGroup_ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} ms =
-  "#" <> g <> " " <> m <> fromGroupScope ms <> "> "
-
-fromGroupScope :: MessageScope -> Text
-fromGroupScope = \case
-  MSGroup -> ""
-  MSDirect -> " (direct)"
+fromGroup_ :: GroupInfo -> GroupMember -> Text
+fromGroup_ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} =
+  "#" <> g <> " " <> m <> "> "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
@@ -1787,18 +1757,13 @@ ttyFrom = styled $ colored Yellow
 ttyTo :: Text -> StyledString
 ttyTo = styled $ colored Cyan
 
-ttyToGroup :: GroupInfo -> Maybe GroupMember -> StyledString
-ttyToGroup g@GroupInfo {localDisplayName = n} dirMem =
-  membershipIncognito g <> ttyTo ("#" <> n <> toDirectMember dirMem <> " ")
+ttyToGroup :: GroupInfo -> StyledString
+ttyToGroup g@GroupInfo {localDisplayName = n} =
+  membershipIncognito g <> ttyTo ("#" <> n <> " ")
 
-ttyToGroupEdited :: GroupInfo -> Maybe GroupMember -> StyledString
-ttyToGroupEdited g@GroupInfo {localDisplayName = n} dirMem =
-  membershipIncognito g <> ttyTo ("#" <> n <> toDirectMember dirMem <> " [edited] ")
-
-toDirectMember :: Maybe GroupMember -> Text
-toDirectMember = \case
-  Nothing -> ""
-  Just GroupMember {localDisplayName = m} -> " @" <> m <> " (direct)"
+ttyToGroupEdited :: GroupInfo -> StyledString
+ttyToGroupEdited g@GroupInfo {localDisplayName = n} =
+  membershipIncognito g <> ttyTo ("#" <> n <> " [edited] ")
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain

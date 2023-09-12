@@ -134,7 +134,7 @@ actual object AudioPlayer: AudioPlayerInterface {
 
   // Returns real duration of the track
   private fun start(fileSource: CryptoFile, seek: Int? = null, onProgressUpdate: (position: Int?, state: TrackState) -> Unit): Int? {
-    val absoluteFilePath = getAppFilePath(fileSource.filePath)
+    val absoluteFilePath = if (fileSource.isAbsolutePath) fileSource.filePath else getAppFilePath(fileSource.filePath)
     if (!File(absoluteFilePath).exists()) {
       Log.e(TAG, "No such file: ${fileSource.filePath}")
       return null
@@ -272,10 +272,10 @@ actual object AudioPlayer: AudioPlayerInterface {
     }
   }
 
-  override fun duration(filePath: String): Int? {
+  override fun duration(unencryptedFilePath: String): Int? {
     var res: Int? = null
     kotlin.runCatching {
-      helperPlayer.setDataSource(filePath)
+      helperPlayer.setDataSource(unencryptedFilePath)
       helperPlayer.prepare()
       helperPlayer.start()
       helperPlayer.stop()

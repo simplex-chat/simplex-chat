@@ -29,7 +29,7 @@ interface AudioPlayerInterface {
   fun stop(fileName: String?)
   fun pause(audioPlaying: MutableState<Boolean>, pro: MutableState<Int>)
   fun seekTo(ms: Int, pro: MutableState<Int>, filePath: String?)
-  fun duration(filePath: String): Int?
+  fun duration(unencryptedFilePath: String): Int?
 }
 
 expect object AudioPlayer: AudioPlayerInterface

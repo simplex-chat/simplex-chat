@@ -42,7 +42,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     /*LALAL*/
   }
 
-  override fun duration(filePath: String): Int? {
+  override fun duration(unencryptedFilePath: String): Int? {
     /*LALAL*/
     return null
   }
