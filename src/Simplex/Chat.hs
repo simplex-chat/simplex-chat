@@ -1484,7 +1484,7 @@ processChatCommand = \case
       dm <- directMessage $ XGrpAcpt (memberId (membership :: GroupMember))
       agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm subMode
       withStore' $ \db -> do
-        createMemberConnection db userId fromMember agentConnId peerChatVRange subMode
+        createMemberConnection db userId fromMember agentConnId (fromJVersionRange peerChatVRange) subMode
         updateGroupMemberStatus db userId fromMember GSMemAccepted
         updateGroupMemberStatus db userId membership GSMemAccepted
       updateCIGroupInvitationStatus user
@@ -1993,7 +1993,7 @@ processChatCommand = \case
     assertGroupSendAllowed
       gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}}
       (Just GroupMember {memberRole = directMemberRole, activeConn = Just Connection {peerChatVRange}}) = do
-        unless (isCompatibleRange peerChatVRange groupPrivateMessagesVRange) $ throwChatError CEPeerChatVRangeIncompatible
+        unless (isCompatibleRange (fromJVersionRange peerChatVRange) groupPrivateMessagesVRange) $ throwChatError CEPeerChatVRangeIncompatible
         if
             | userRole >= GRAdmin || directMemberRole >= GRAdmin -> assertUserMembershipStatus gInfo
             | not (groupFeatureAllowed SGFDirectMessages gInfo) -> throwChatError $ CECommandError "direct messages not allowed"
@@ -2450,7 +2450,7 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
   let profileToSend = profileToSendOnAccept user incognitoProfile
   dm <- directMessage $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm subMode
-  withStore' $ \db -> createAcceptedContact db user acId cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode
+  withStore' $ \db -> createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId cp userContactLinkId xContactId incognitoProfile subMode
 
 acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
 acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
@@ -2458,7 +2458,7 @@ acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvI
   let profileToSend = profileToSendOnAccept user incognitoProfile
   (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode
   withStore' $ \db -> do
-    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db user acId cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode
+    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId p userContactLinkId xContactId incognitoProfile subMode
     setCommandConnId db user cmdId connId
     pure ct
 
@@ -3100,7 +3100,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                       subMode <- chatReadVar subscriptionMode
                       gVar <- asks idsDrg
                       groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
-                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds peerChatVRange subMode
+                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds (fromJVersionRange peerChatVRange) subMode
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
@@ -3168,7 +3168,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
               CFCreateConnGrpMemInv
-                | isCompatibleRange (peerChatVRange conn) groupNoDirectVRange -> sendWithDirectCReq -- sendWithoutDirectCReq
+                | isCompatibleRange (fromJVersionRange $ peerChatVRange conn) groupNoDirectVRange -> sendWithDirectCReq -- sendWithoutDirectCReq
                 | otherwise -> sendWithDirectCReq
                 where
                   sendWithoutDirectCReq = do
@@ -4222,7 +4222,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           dm <- directMessage $ XGrpAcpt memberId
           connIds <- joinAgentConnectionAsync user True connRequest dm subMode
           withStore' $ \db -> do
-            createMemberConnectionAsync db user hostId connIds peerChatVRange subMode
+            createMemberConnectionAsync db user hostId connIds (fromJVersionRange peerChatVRange) subMode
             updateGroupMemberStatusById db userId hostId GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
           toView $ CRUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
@@ -4651,11 +4651,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         _ -> pure ()
 
 updatePeerChatVRange :: ChatMonad m => Connection -> VersionRange -> m Connection
-updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange
-  | msgChatVRange /= peerChatVRange = do
-    withStore' $ \db -> setPeerChatVRange db connId msgChatVRange
-    pure conn {peerChatVRange = msgChatVRange}
-  | otherwise = pure conn
+updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange = do
+  let jMsgChatVRange = JVersionRange msgChatVRange
+  if jMsgChatVRange /= peerChatVRange
+    then do
+      withStore' $ \db -> setPeerChatVRange db connId msgChatVRange
+      pure conn {peerChatVRange = jMsgChatVRange}
+    else pure conn
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =

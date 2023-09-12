@@ -620,7 +620,7 @@ createNewContactMember db gVar User {userId, userContactId} groupId Contact {con
   createWithRandomId gVar $ \memId -> do
     createdAt <- liftIO getCurrentTime
     member@GroupMember {groupMemberId} <- createMember_ (MemberId memId) createdAt
-    void $ createMemberConnection_ db userId groupMemberId agentConnId peerChatVRange Nothing 0 createdAt subMode
+    void $ createMemberConnection_ db userId groupMemberId agentConnId (fromJVersionRange peerChatVRange) Nothing 0 createdAt subMode
     pure member
   where
     createMember_ memberId createdAt = do
