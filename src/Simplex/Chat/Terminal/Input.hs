@@ -73,19 +73,19 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       Right SendMessageBroadcast {} -> True
       _ -> False
     startLiveMessage :: Either a ChatCommand -> ChatResponse -> IO ()
-    startLiveMessage (Right (SendLiveMessage sendName msg)) (CRNewChatItem _ (AChatItem cType SMDSnd _ ChatItem {meta = CIMeta {itemId}})) = do
+    startLiveMessage (Right (SendLiveMessage chatName msg)) (CRNewChatItem _ (AChatItem cType SMDSnd _ ChatItem {meta = CIMeta {itemId}})) = do
       whenM (isNothing <$> readTVarIO liveMessageState) $ do
         let s = T.unpack msg
             int = case cType of SCTGroup -> 5000000; _ -> 3000000 :: Int
         liveThreadId <- mkWeakThreadId =<< runLiveMessage int `forkFinally` const (atomically $ writeTVar liveMessageState Nothing)
         promptThreadId <- mkWeakThreadId =<< forkIO blinkLivePrompt
         atomically $ do
-          let lm = LiveMessage {sendName, chatItemId = itemId, livePrompt = True, sentMsg = s, typedMsg = s, liveThreadId, promptThreadId}
+          let lm = LiveMessage {chatName, chatItemId = itemId, livePrompt = True, sentMsg = s, typedMsg = s, liveThreadId, promptThreadId}
           writeTVar liveMessageState (Just lm)
           modifyTVar termState $ \ts -> ts {inputString = s, inputPosition = length s, inputPrompt = liveInputPrompt lm}
       where
-        liveInputPrompt LiveMessage {sendName = n, livePrompt} =
-          "> " <> sendNameStr n <> " [" <> (if livePrompt then "LIVE" else "    ") <> "] "
+        liveInputPrompt LiveMessage {chatName = n, livePrompt} =
+          "> " <> chatNameStr n <> " [" <> (if livePrompt then "LIVE" else "    ") <> "] "
         runLiveMessage :: Int -> IO ()
         runLiveMessage int = do
           threadDelay int
@@ -123,8 +123,8 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
     startLiveMessage _ _ = pure ()
 
 sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO ChatResponse
-sendUpdatedLiveMessage cc sentMsg LiveMessage {sendName, chatItemId} live = do
-  let cmd = UpdateLiveMessage sendName chatItemId live $ T.pack sentMsg
+sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
+  let cmd = UpdateLiveMessage chatName chatItemId live $ T.pack sentMsg
   either (CRChatCmdError Nothing) id <$> runExceptT (processChatCommand cmd) `runReaderT` cc
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
@@ -174,14 +174,14 @@ receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@C
       let s = inputString ts
       lm_ <- readTVar liveMessageState
       case lm_ of
-        Just LiveMessage {sendName}
+        Just LiveMessage {chatName}
           | live -> do
             writeTVar termState ts' {previousInput}
-            writeTBQueue inputQ $ "/live " <> sendNameStr sendName
+            writeTBQueue inputQ $ "/live " <> chatNameStr chatName
           | otherwise ->
             writeTVar termState ts' {inputPrompt = "> ", previousInput}
           where
-            previousInput = sendNameStr sendName <> " " <> s
+            previousInput = chatNameStr chatName <> " " <> s
         _
           | live -> when (isSend s) $ do
             writeTVar termState ts' {previousInput = s}
