@@ -55,7 +55,7 @@ data AutoCompleteState = ACState
   }
 
 data LiveMessage = LiveMessage
-  { sendName :: SendName,
+  { chatName :: ChatName,
     chatItemId :: ChatItemId,
     livePrompt :: Bool,
     sentMsg :: String,
