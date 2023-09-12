@@ -66,6 +66,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       if (chatModel.chatId.value != null) {
         ModalManager.end.closeModalsExceptFirst()
       }
+      AudioPlayer.stop()
+      VideoPlayerHolder.stopAll()
     }
   }
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp

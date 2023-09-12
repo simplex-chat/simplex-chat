@@ -714,7 +714,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   }
   DisposableEffectOnGone(
     whenGone = {
-      VideoPlayer.releaseAll()
+      VideoPlayerHolder.releaseAll()
     }
   )
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {

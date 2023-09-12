@@ -3,51 +3,195 @@ package chat.simplex.common.platform
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.ImageBitmap
-import chat.simplex.common.views.usersettings.showInDevelopingAlert
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import chat.simplex.common.views.helpers.*
+import chat.simplex.res.MR
+import kotlinx.coroutines.*
+import org.jetbrains.compose.videoplayer.initializeMediaPlayerComponent
+import org.jetbrains.compose.videoplayer.mediaPlayer
+import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery
+import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
+import uk.co.caprica.vlcj.player.list.MediaListPlayer
+import java.io.File
 import java.net.URI
 
-actual class VideoPlayer: VideoPlayerInterface {
-  actual companion object {
-    actual fun getOrCreate(
-      uri: URI,
-      gallery: Boolean,
-      defaultPreview: ImageBitmap,
-      defaultDuration: Long,
-      soundEnabled: Boolean
-    ): VideoPlayer = VideoPlayer().also {
-      it.preview.value = defaultPreview
-      it.duration.value = defaultDuration
-      it.soundEnabled.value = soundEnabled
-    }
-    actual fun enableSound(enable: Boolean, fileName: String?, gallery: Boolean): Boolean { /*TODO*/ return false }
-    actual fun release(uri: URI, gallery: Boolean, remove: Boolean) { /*TODO*/ }
-    actual fun stopAll() { /*LALAL*/ }
-    actual fun releaseAll() { /*LALAL*/ }
-  }
-
+actual class VideoPlayer actual constructor(
+  override val uri: URI,
+  override val gallery: Boolean,
+  private val defaultPreview: ImageBitmap,
+  defaultDuration: Long,
+  soundEnabled: Boolean
+): VideoPlayerInterface {
   override val soundEnabled: MutableState<Boolean> = mutableStateOf(false)
   override val brokenVideo: MutableState<Boolean> = mutableStateOf(false)
   override val videoPlaying: MutableState<Boolean> = mutableStateOf(false)
   override val progress: MutableState<Long> = mutableStateOf(0L)
   override val duration: MutableState<Long> = mutableStateOf(0L)
-  override val preview: MutableState<ImageBitmap> = mutableStateOf(ImageBitmap(0, 0))
+  override val preview: MutableState<ImageBitmap> = mutableStateOf(defaultPreview)
+
+  val mediaPlayerComponent = initializeMediaPlayerComponent()
+  val player = mediaPlayerComponent.mediaPlayer()
+
+  init {
+    withBGApi {
+      setPreviewAndDuration()
+    }
+  }
+
+  private val currentVolume: Int = player.audio().volume()
+  private var isReleased: Boolean = false
+
+  private val listener: MutableState<((position: Long?, state: TrackState) -> Unit)?> = mutableStateOf(null)
+  private var progressJob: Job? = null
+
+  enum class TrackState {
+    PLAYING, PAUSED, STOPPED
+  }
+
+  private fun start(seek: Long? = null, onProgressUpdate: (position: Long?, state: TrackState) -> Unit): Boolean {
+    val filepath = getAppFilePath(uri)
+    if (filepath == null || !File(filepath).exists()) {
+      Log.e(TAG, "No such file: $uri")
+      brokenVideo.value = true
+      return false
+    }
+
+    if (soundEnabled.value)  {
+      RecorderInterface.stopRecording?.invoke()
+    }
+    AudioPlayer.stop()
+    VideoPlayerHolder.stopAll()
+    val playerFilePath = uri.toString().replaceFirst("file:", "file://")
+    if (listener.value == null) {
+      runCatching {
+        player.media().prepare(playerFilePath)
+        if (seek != null) {
+          player.seekTo(seek.toInt())
+        }
+      }.onFailure {
+        Log.e(TAG, it.stackTraceToString())
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
+        brokenVideo.value = true
+        return false
+      }
+    }
+    player.start()
+    if (seek != null) player.seekTo(seek.toInt())
+    if (!player.isPlaying) {
+      // Can happen when video file is broken
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error))
+      brokenVideo.value = true
+      return false
+    }
+    listener.value = onProgressUpdate
+    // Player can only be accessed in one specific thread
+    progressJob = CoroutineScope(Dispatchers.Main).launch {
+      onProgressUpdate(player.currentPosition.toLong(), TrackState.PLAYING)
+      while (isActive && player.isPlaying && !isReleased) {
+        // Even when current position is equal to duration, the player has isPlaying == true for some time,
+        // so help to make the playback stopped in UI immediately
+        if (player.currentPosition == player.duration) {
+          onProgressUpdate(player.currentPosition.toLong(), TrackState.PLAYING)
+          break
+        }
+        delay(50)
+        onProgressUpdate(player.currentPosition.toLong(), TrackState.PLAYING)
+      }
+      if (isActive && !isReleased) {
+        onProgressUpdate(player.currentPosition.toLong(), TrackState.PAUSED)
+      }
+      onProgressUpdate(null, TrackState.PAUSED)
+    }
+
+    return true
+  }
 
   override fun stop() {
-    /*TODO*/
+    if (isReleased) return
+    player.controls().stop()
+    stopListener()
+  }
+
+  private fun stopListener() {
+    val afterCoroutineCancel: CompletionHandler = {
+      // Notify prev video listener about stop
+      listener.value?.invoke(null, TrackState.STOPPED)
+    }
+    /** Preventing race by calling a code AFTER coroutine ends, so [TrackState] will be:
+     * [TrackState.PLAYING] -> [TrackState.PAUSED] -> [TrackState.STOPPED] (in this order)
+     * */
+    if (progressJob != null) {
+      progressJob?.invokeOnCompletion(afterCoroutineCancel)
+    } else {
+      afterCoroutineCancel(null)
+    }
+    progressJob?.cancel()
+    progressJob = null
   }
 
   override fun play(resetOnEnd: Boolean) {
-    if (appPlatform.isDesktop) {
-      showInDevelopingAlert()
+    if (progress.value == duration.value) {
+      progress.value = 0
+    }
+    videoPlaying.value = start(progress.value) { pro, _ ->
+      if (pro != null) {
+        progress.value = pro
+      }
+      if ((pro == null || pro == duration.value) && duration.value != 0L) {
+        videoPlaying.value = false
+        if (pro == duration.value) {
+          progress.value = if (resetOnEnd) 0 else duration.value
+        }/* else if (state == TrackState.STOPPED) {
+          progress.value = 0 //
+        }*/
+      }
     }
   }
 
   override fun enableSound(enable: Boolean): Boolean {
-    /*TODO*/
-    return false
+    if (isReleased) return false
+    if (soundEnabled.value == enable) return false
+    soundEnabled.value = enable
+    player.audio().setVolume(if (enable) currentVolume else 0)
+    return true
   }
 
-  override fun release(remove: Boolean) {
-    /*TODO*/
+  override fun release(remove: Boolean) { withApi {
+    if (isReleased) return@withApi
+    isReleased = true
+    // TODO
+    /** [player.release] freezes thread for some reason. It happens periodically. So doing this we don't see the freeze, but it's still there */
+    CoroutineScope(Dispatchers.IO).launch { player.release() }
+    if (remove) {
+      VideoPlayerHolder.players.remove(uri to gallery)
+    }
+  }}
+
+  private suspend fun setPreviewAndDuration() {
+    // It freezes main thread, doing it in IO thread
+    CoroutineScope(Dispatchers.IO).launch {
+      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo() }
+      withContext(Dispatchers.Main) {
+        preview.value = previewAndDuration.preview ?: defaultPreview
+        duration.value = (previewAndDuration.duration ?: 0)
+      }
+    }
+  }
+
+  private suspend fun getBitmapFromVideo(): VideoPlayerInterface.PreviewAndDuration {
+    val player = CallbackMediaPlayerComponent().mediaPlayer()
+    val filepath = getAppFilePath(uri)
+    if (filepath == null || !File(filepath).exists()) {
+      return VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
+    }
+    player.media().startPaused(filepath)
+    val start = System.currentTimeMillis()
+    while (player.snapshots()?.get() == null && start + 5000 > System.currentTimeMillis()) {
+      delay(10)
+    }
+    val preview = player.snapshots()?.get()?.toComposeImageBitmap()
+    val duration = player.duration.toLong()
+    CoroutineScope(Dispatchers.IO).launch { player.release() }
+    return VideoPlayerInterface.PreviewAndDuration(preview = preview, timestamp = 0L, duration = duration)
   }
 }

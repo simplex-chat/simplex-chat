@@ -97,6 +97,7 @@ kotlin {
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.6")
         implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
         implementation("org.slf4j:slf4j-simple:2.0.7")
+        implementation("uk.co.caprica:vlcj:4.7.0")
       }
     }
     val desktopTest by getting
