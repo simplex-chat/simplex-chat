@@ -612,7 +612,8 @@
     <string name="network_and_servers">Rete e server</string>
     <string name="network_settings_title">Impostazioni di rete</string>
     <string name="network_use_onion_hosts_no">No</string>
-    <string name="network_use_onion_hosts_required_desc">Gli host Onion saranno necessari per la connessione.</string>
+    <string name="network_use_onion_hosts_required_desc">Gli host Onion saranno necessari per la connessione.
+\nNota bene: non potrai connetterti ai server senza indirizzo .onion .</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Gli host Onion saranno necessari per la connessione.</string>
     <string name="network_use_onion_hosts_prefer_desc">Gli host Onion verranno usati quando disponibili.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Gli host Onion verranno usati quando disponibili.</string>
@@ -1388,4 +1389,6 @@
     <string name="open_database_folder">Apri cartella del database</string>
     <string name="passphrase_will_be_saved_in_settings">La password verrà conservata nelle impostazioni come testo normale dopo averla cambiata o il riavvio dell\'app.</string>
     <string name="settings_is_storing_in_clear_text">La password viene conservata nelle impostazioni come testo normale.</string>
+    <string name="socks_proxy_setting_limitations"><b>Nota bene</b>: i relay di messaggi e file sono connessi via proxy SOCKS. Le chiamate e l\'invio di anteprime dei link usano una connessione diretta.</string>
+    <string name="encrypt_local_files">Cripta i file locali</string>
 </resources>
