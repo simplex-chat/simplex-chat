@@ -1588,6 +1588,33 @@ processChatCommand = \case
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     (_, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo groupLink mRole
+  APICreateMemberContact groupId groupMemberId -> do
+    -- check direct messages preference
+    -- check contact doesn't exist
+    -- create connection and contact
+    -- reuse member incognito profile
+    -- how to differentiate between ready contacts and pending member contacts in UI?
+    -- (it should affect whether send, attachment is enabled; invite button inside chat;
+    -- currently non ready contacts can't be opened in UI)
+    --   - special cases (via new field pending_contact_member_id?)
+    --   - or new entity - PendingMemberContact?
+    -- CRNewMemberContact
+    ok_
+  APISendMemberContactInvitation contactId msgContent_ -> do
+    -- get group and group member by contact (via new field pending_contact_member_id?)
+    -- send XGrpDirectInv to member
+    -- optionally create chat item for contact
+    -- further messages / repeat invitation:
+    --   - flag that message was sent? (prohibit to send further messages until member accepts?)
+    --   - or allow to send pending messages to not ready contacts? (+ pending_direct_messages table)
+    ok_
+  APIJoinMemberContact contactId msgContact_ -> do
+    -- get group and group member by contact (via new field pending_contact_member_id?)
+    -- join connection
+    -- reuse member incognito profile
+    -- optionally create chat item for contact
+    -- further messages - same as above
+    ok_
   CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APICreateGroupLink groupId mRole
@@ -3231,6 +3258,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpLeave -> xGrpLeave gInfo m' msg msgMeta
             XGrpDel -> xGrpDel gInfo m' msg msgMeta
             XGrpInfo p' -> xGrpInfo gInfo m' p' msg msgMeta
+            XGrpDirectInv connReq mContent_ -> xGrpDirectInv gInfo m' connReq mContent_ msg msgMeta
             BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
           currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
@@ -4488,6 +4516,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ci <- saveRcvChatItem user cd msg msgMeta (CIRcvGroupEvent $ RGEGroupUpdated p')
           groupMsgToView g' m ci msgMeta
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
+
+    xGrpDirectInv :: GroupInfo -> GroupMember -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> MsgMeta -> m ()
+    xGrpDirectInv g m connReq mContent_ msg msgMeta = do
+      -- check direct messages preference
+      -- auto-join / client setting? (new to_join field if auto join is in UI?)
+      -- create contact (PendingMemberContact?)
+      -- if member already has contact, replace it (to not mix messages from connections)
+      -- create chat item for contact
+      -- CRNewMemberContactInvitation
+      -- how to display "contact invitation" in UI?
+      --   - special interaction in chat list + can open chat?
+      --   - accept button inside chat?
+      -- how to differentiate initiating and joining contact? (joining contact should have "accept" interaction)
+      --   - new conn status - ConnNewInvited?
+      pure ()
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do

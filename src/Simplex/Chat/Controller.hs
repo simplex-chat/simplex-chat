@@ -282,6 +282,9 @@ data ChatCommand
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
+  | APICreateMemberContact GroupId GroupMemberId
+  | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
+  | APIJoinMemberContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | APIGetUserProtoServers UserId AProtocolType
   | GetUserProtoServers AProtocolType
   | APISetUserProtoServers UserId AProtoServersConfig
@@ -553,6 +556,8 @@ data ChatResponse
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRAcceptingGroupJoinRequest {user :: User, groupInfo :: GroupInfo, contact :: Contact}
+  | CRNewMemberContact {user :: User, contact :: Contact}
+  | CRNewMemberContactInvitation {user :: User, contact :: Contact}
   | CRMemberSubError {user :: User, groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {user :: User, groupInfo :: GroupInfo}
