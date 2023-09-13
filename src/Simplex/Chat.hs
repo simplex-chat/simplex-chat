@@ -2884,7 +2884,7 @@ processAgentMsgRcvFile _corrId aFileId msg =
               liftIO $ updateFileCancelled db user fileId CIFSRcvError
               getChatItemByFileId db user fileId
             agentXFTPDeleteRcvFile aFileId fileId
-            toView $ CRRcvFileError user ci
+            toView $ CRRcvFileError user ci e
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn user _ agentConnId END =
