@@ -20,6 +20,15 @@ private fun initHaskell() {
   val libsTmpDir = File(tmpDir.absolutePath + File.separator + "libs")
   copyResources(desktopPlatform.libPath, libsTmpDir.toPath())
   System.load(File(libsTmpDir, libApp).absolutePath)
+
+  vlcDir.deleteRecursively()
+  Files.move(File(libsTmpDir, "vlc").toPath(), vlcDir.toPath(), StandardCopyOption.REPLACE_EXISTING)
+  // No picture without preloading it, only sound. However, with libs from AppImage it works without preloading
+  //val libXcb = "libvlc_xcb_events.so.0.0.0"
+  //System.load(File(File(vlcDir, "vlc"), libXcb).absolutePath)
+  System.setProperty("jna.library.path", vlcDir.absolutePath)
+  //discoverVlcLibs(File(File(File(vlcDir, "vlc"), "vlc"), "plugins").absolutePath)
+
   libsTmpDir.deleteRecursively()
   initHS()
 }

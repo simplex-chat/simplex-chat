@@ -9,11 +9,11 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import org.jetbrains.compose.videoplayer.initializeMediaPlayerComponent
 import org.jetbrains.compose.videoplayer.mediaPlayer
-import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery
+import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
-import uk.co.caprica.vlcj.player.list.MediaListPlayer
 import java.io.File
 import java.net.URI
+import kotlin.math.max
 
 actual class VideoPlayer actual constructor(
   override val uri: URI,
@@ -87,7 +87,7 @@ actual class VideoPlayer actual constructor(
     // Player can only be accessed in one specific thread
     progressJob = CoroutineScope(Dispatchers.Main).launch {
       onProgressUpdate(player.currentPosition.toLong(), TrackState.PLAYING)
-      while (isActive && player.isPlaying && !isReleased) {
+      while (isActive && !isReleased && player.isPlaying) {
         // Even when current position is equal to duration, the player has isPlaying == true for some time,
         // so help to make the playback stopped in UI immediately
         if (player.currentPosition == player.duration) {
@@ -161,11 +161,15 @@ actual class VideoPlayer actual constructor(
     isReleased = true
     // TODO
     /** [player.release] freezes thread for some reason. It happens periodically. So doing this we don't see the freeze, but it's still there */
+    if (player.isPlaying) player.stop()
     CoroutineScope(Dispatchers.IO).launch { player.release() }
     if (remove) {
       VideoPlayerHolder.players.remove(uri to gallery)
     }
   }}
+
+  private val MediaPlayer.currentPosition: Int
+    get() = if (isReleased) 0 else max(0, player.status().time().toInt())
 
   private suspend fun setPreviewAndDuration() {
     // It freezes main thread, doing it in IO thread

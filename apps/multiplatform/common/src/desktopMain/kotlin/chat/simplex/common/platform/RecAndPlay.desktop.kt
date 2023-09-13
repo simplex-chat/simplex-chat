@@ -199,7 +199,7 @@ fun MediaPlayer.stop() {
   controls().stop()
 }
 
-val MediaPlayer.currentPosition: Int
+private val MediaPlayer.currentPosition: Int
   get() = max(0, status().time().toInt())
 
 val MediaPlayer.duration: Int

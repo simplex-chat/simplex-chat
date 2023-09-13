@@ -1,6 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
-import java.util.*
 
 plugins {
   kotlin("multiplatform")
@@ -33,16 +32,23 @@ compose {
   desktop {
     application {
       // For debugging via VisualVM
-      /*jvmArgs += listOf(
-        "-Dcom.sun.management.jmxremote.port=8080",
-        "-Dcom.sun.management.jmxremote.ssl=false",
-        "-Dcom.sun.management.jmxremote.authenticate=false"
-      )*/
+      val debugJava = false
+      if (debugJava) {
+        jvmArgs += listOf(
+          "-Dcom.sun.management.jmxremote.port=8080",
+          "-Dcom.sun.management.jmxremote.ssl=false",
+          "-Dcom.sun.management.jmxremote.authenticate=false"
+        )
+      }
       mainClass = "chat.simplex.desktop.MainKt"
       nativeDistributions {
         // For debugging via VisualVM
-        //modules("jdk.zipfs", "jdk.management.agent")
-        modules("jdk.zipfs")
+        if (debugJava) {
+          modules("jdk.zipfs", "jdk.unsupported", "jdk.management.agent")
+        } else {
+          // 'jdk.unsupported' is for vlcj
+          modules("jdk.zipfs", "jdk.unsupported")
+        }
         //includeAllModules = true
         outputBaseDir.set(project.file("../release"))
         targetFormats(
@@ -157,12 +163,24 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
+        from("$cppPath/desktop/libs/linux-x86_64/deps/vlc")
+        into("src/jvmMain/resources/libs/linux-x86_64/vlc")
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
         from("${project(":desktop").buildDir}/cmake/main/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64/deps")
         into("src/jvmMain/resources/libs/linux-aarch64")
         include("*.so*")
         eachFile {
           path = name
         }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
+        from("$cppPath/desktop/libs/linux-aarch64/deps/vlc")
+        into("src/jvmMain/resources/libs/linux-aarch64/vlc")
         includeEmptyDirs = false
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
@@ -177,6 +195,12 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
+        from("$cppPath/desktop/libs/windows-x86_64/deps/vlc")
+        into("src/jvmMain/resources/libs/windows-x86_64/vlc")
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
         from("${project(":desktop").buildDir}/cmake/main/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64/deps")
         into("src/jvmMain/resources/libs/mac-x86_64")
         include("*.dylib")
@@ -187,12 +211,24 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
+        from("$cppPath/desktop/libs/mac-x86_64/deps/vlc")
+        into("src/jvmMain/resources/libs/mac-x86_64/vlc")
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
         from("${project(":desktop").buildDir}/cmake/main/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64/deps")
         into("src/jvmMain/resources/libs/mac-aarch64")
         include("*.dylib")
         eachFile {
           path = name
         }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
+        from("$cppPath/desktop/libs/mac-aarch64/deps/vlc")
+        into("src/jvmMain/resources/libs/mac-aarch64/vlc")
         includeEmptyDirs = false
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
