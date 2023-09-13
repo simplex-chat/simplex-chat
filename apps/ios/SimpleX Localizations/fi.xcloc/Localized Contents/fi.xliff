@@ -6338,6 +6338,16 @@ Voit muuttaa sitä Asetuksista.</target>
         <target state="translated">turvakoodi on muuttunut</target>
         <note>chat item text</note>
       </trans-unit>
+      <trans-unit id="Error decrypting file" xml:space="preserve" approved="no">
+        <source>Error decrypting file</source>
+        <target state="translated">Virhe tiedoston salauksen purussa</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Encrypt local files" xml:space="preserve" approved="no">
+        <source>Encrypt local files</source>
+        <target state="translated">Salaa paikalliset tiedostot</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="fi" datatype="plaintext">
