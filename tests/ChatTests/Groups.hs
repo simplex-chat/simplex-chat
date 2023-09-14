@@ -81,6 +81,9 @@ chatGroupTests = do
       testNoDirect4 _1 _0 _1 False False False -- False False True
       testNoDirect4 _1 _1 _0 False False False
       testNoDirect4 _1 _1 _1 False False False
+  describe "create member contact" $ do
+    it "create contact with group member with invitation message" testMemberContactMessage
+    it "create contact with group member without invitation message" testMemberContactNoMessage
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -2686,3 +2689,58 @@ testNoGroupDirectConns4Members hostVRange mem2VRange mem3VRange mem4VRange noCon
       cc1 <## ("no contact " <> name2)
       cc2 ##> ("@" <> name1 <> " hi")
       cc2 <## ("no contact " <> name1)
+
+testMemberContactMessage :: HasCallStack => FilePath -> IO ()
+testMemberContactMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      -- TODO here and in following tests there would be no direct contacts initially, after "no direct conns" functionality is uncommented
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+
+      alice ##> "/contact member #team bob"
+      alice <## "contact for member #team bob prepared, use /invite member contact @bob <message> to send invitation"
+
+      alice ##> "/invite member contact @bob hi"
+      alice
+        <### [ "sent invitation to connect directly to member #team bob",
+               WithTime "@bob hi"
+             ]
+      bob
+        <### [ "#team alice is creating direct contact alice with you",
+               WithTime "alice> hi"
+             ]
+      concurrently_
+        (alice <## "bob (Bob): contact is connected")
+        (bob <## "alice (Alice): contact is connected")
+
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
+      alice <##> bob
+
+testMemberContactNoMessage :: HasCallStack => FilePath -> IO ()
+testMemberContactNoMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+
+      alice ##> "/contact member #team bob"
+      alice <## "contact for member #team bob prepared, use /invite member contact @bob <message> to send invitation"
+
+      alice ##> "/invite member contact @bob"
+      alice <## "sent invitation to connect directly to member #team bob"
+      bob <## "#team alice is creating direct contact alice with you"
+      concurrently_
+        (alice <## "bob (Bob): contact is connected")
+        (bob <## "alice (Alice): contact is connected")
+
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
+      alice <##> bob

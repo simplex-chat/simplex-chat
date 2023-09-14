@@ -172,7 +172,9 @@ data Contact = Contact
     mergedPreferences :: ContactUserPreferences,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    chatTs :: Maybe UTCTime
+    chatTs :: Maybe UTCTime,
+    memberContactMemberId :: Maybe GroupMemberId,
+    memberContactXGrpDirectInvSent :: Bool
   }
   deriving (Eq, Show, Generic)
 
