@@ -214,7 +214,7 @@ data RcvGroupEvent
   -- but being RcvGroupEvent allows them to be assigned to the respective member (and so enable "send direct message")
   -- and be created as unread without adding / working around new status for sent items
   | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
-  | RGEMemberCreatedContact -- CRNewMemberContactInvitation
+  | RGEMemberCreatedContact -- CRNewMemberContactReceivedInv
   deriving (Show, Generic)
 
 instance FromJSON RcvGroupEvent where
