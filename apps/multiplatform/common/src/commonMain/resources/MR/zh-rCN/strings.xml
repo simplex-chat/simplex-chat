@@ -1120,7 +1120,7 @@
     <string name="only_you_can_make_calls">只有您可以拨打电话。</string>
     <string name="only_your_contact_can_make_calls">只有您的联系人可以拨打电话。</string>
     <string name="allow_your_contacts_to_call">允许您的联系人与您进行语音通话。</string>
-    <string name="allow_calls_only_if">仅当您的联系人同意时才允许呼叫。</string>
+    <string name="allow_calls_only_if">仅当您的联系人同意才允许呼叫。</string>
     <string name="calls_prohibited_with_this_contact">禁止音频/视频通话。</string>
     <string name="send_disappearing_message_1_minute">1分钟</string>
     <string name="one_time_link_short">一次性链接</string>
