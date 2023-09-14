@@ -2966,3 +2966,20 @@ testMemberContactIncognito =
       cath ?<# (bobIncognito <> "> hi, I'm incognito")
       cath ?#> ("@" <> bobIncognito <> " hey, me too")
       bob ?<# (cathIncognito <> "> hey, me too")
+
+      -- members still use incognito profile for group
+      alice #> "#team hello"
+      concurrentlyN_
+        [ bob ?<# "#team alice> hello",
+          cath ?<# "#team alice> hello"
+        ]
+      bob ?#> "#team hi there"
+      concurrentlyN_
+        [ alice <# ("#team " <> bobIncognito <> "> hi there"),
+          cath ?<# ("#team " <> bobIncognito <> "> hi there")
+        ]
+      cath ?#> "#team hey"
+      concurrentlyN_
+        [ alice <# "#team " <> cathIncognito <> "> hey",
+          bob ?<# "#team " <> cathIncognito <> "> hey"
+        ]
