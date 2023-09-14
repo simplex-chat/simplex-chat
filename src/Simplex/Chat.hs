@@ -4531,10 +4531,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       subMode <- chatReadVar subscriptionMode
       connIds <- joinAgentConnectionAsync user True connReq dm subMode
       -- [incognito] reuse membership incognito profile
-      ct <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode
-      checkIntegrityCreateItem (CDGroupRcv g m) msgMeta
-      createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
-      toView $ CRNewMemberContactReceivedInv user ct g m
+      (ct, m') <- withStore $ \db -> createMemberContactInvited db user connIds g m mConn subMode
+      checkIntegrityCreateItem (CDGroupRcv g m') msgMeta
+      createInternalChatItem user (CDGroupRcv g m') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
+      let prevLDNMember = if localDisplayName (m' :: GroupMember) /= localDisplayName (m :: GroupMember) then Just m else Nothing
+      toView $ CRNewMemberContactReceivedInv user ct g m' prevLDNMember
       ci_ <- forM mContent_ $ \mc -> saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent mc)
       forM_ ci_ $ \ci -> toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
 

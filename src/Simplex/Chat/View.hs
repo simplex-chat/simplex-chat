@@ -232,7 +232,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRAcceptingGroupJoinRequest _ g c -> [ttyFullContact c <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CRNewMemberContact u Contact {localDisplayName = c} g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " prepared, use " <> highlight ("/invite member contact @" <> c <> " <message>") <> " to send invitation"]
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
-  CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
+  CRNewMemberContactReceivedInv u ct g m prevLDNMember -> ttyUser u $ viewMemberContactReceivedInv ct g m prevLDNMember
   CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
@@ -724,6 +724,15 @@ viewGroupLinkDeleted g =
   [ "Group link is deleted - joined members will remain connected.",
     "To create a new group link use " <> highlight ("/create link #" <> groupName' g)
   ]
+
+viewMemberContactReceivedInv :: Contact -> GroupInfo -> GroupMember -> Maybe GroupMember -> [StyledString]
+viewMemberContactReceivedInv ct g m prevLDNMember =
+  [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
+    <> memberChanged_
+  where
+    memberChanged_ = case prevLDNMember of
+      Nothing -> []
+      Just prevLDNMem -> ["(member " <> ttyMember prevLDNMem <> " is renamed as " <> ttyMember m <> ", contact previously assigned to this member is kept)"]
 
 viewSentInvitation :: Maybe Profile -> Bool -> [StyledString]
 viewSentInvitation incognitoProfile testView =
