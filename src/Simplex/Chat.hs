@@ -1612,8 +1612,8 @@ processChatCommand = \case
         (sndMsg, _) <- sendDirectMessage mConn msg (GroupId $ groupId (g :: GroupInfo))
         withStore' $ \db -> setMemberContactXGrpDirectInvSent db ct True
         let ct' = ct {memberContactXGrpDirectInvSent = True}
-        ci_ <- forM msgContent_ $ \mc -> saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
-        forM_ ci_ $ \ci -> toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+        ci_ <- forM msgContent_ $ \mc -> saveSndChatItem user (CDDirectSnd ct') sndMsg (CISndMsgContent mc)
+        forM_ ci_ $ \ci -> toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct') ci)
         pure $ CRNewMemberContactSentInv user ct' g m
       _ -> throwChatError CEGroupMemberNotActive
   CreateMemberContact gName mName -> withMemberName gName mName APICreateMemberContact
