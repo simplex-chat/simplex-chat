@@ -17,6 +17,7 @@ fun main() {
 @Suppress("UnsafeDynamicallyLoadedCode")
 private fun initHaskell() {
   val libApp = "libapp-lib.${desktopPlatform.libExtension}"
+  val libSimplex = "libsimplex.${desktopPlatform.libExtension}"
   val libsTmpDir = File(tmpDir.absolutePath + File.separator + "libs")
   copyResources(desktopPlatform.libPath, libsTmpDir.toPath())
   if (desktopPlatform == DesktopPlatform.WINDOWS_X86_64) {
