@@ -2980,6 +2980,6 @@ testMemberContactIncognito =
         ]
       cath ?#> "#team hey"
       concurrentlyN_
-        [ alice <# "#team " <> cathIncognito <> "> hey",
-          bob ?<# "#team " <> cathIncognito <> "> hey"
+        [ alice <# ("#team " <> cathIncognito <> "> hey"),
+          bob ?<# ("#team " <> cathIncognito <> "> hey")
         ]
