@@ -26,7 +26,7 @@ actual class RecorderNative: RecorderInterface {
 }
 
 actual object AudioPlayer: AudioPlayerInterface {
-  val player = AudioPlayerComponent().mediaPlayer()
+  val player by lazy { AudioPlayerComponent().mediaPlayer() }
 
   // Filepath: String, onProgressUpdate
   private val currentlyPlaying: MutableState<Pair<CryptoFile, (position: Int?, state: TrackState) -> Unit>?> = mutableStateOf(null)
