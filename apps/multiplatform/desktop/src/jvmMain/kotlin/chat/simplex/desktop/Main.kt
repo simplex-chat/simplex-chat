@@ -27,7 +27,7 @@ private fun initHaskell() {
   //val libXcb = "libvlc_xcb_events.so.0.0.0"
   //System.load(File(File(vlcDir, "vlc"), libXcb).absolutePath)
   System.setProperty("jna.library.path", vlcDir.absolutePath)
-  //discoverVlcLibs(File(File(File(vlcDir, "vlc"), "vlc"), "plugins").absolutePath)
+  discoverVlcLibs(File(File(vlcDir, "vlc"), "plugins").absolutePath)
 
   libsTmpDir.deleteRecursively()
   initHS()
