@@ -1594,6 +1594,7 @@ processChatCommand = \case
     unless (groupFeatureAllowed SGFDirectMessages g) $ throwChatError $ CECommandError "direct messages not allowed"
     case memberConn m of
       Just mConn -> do
+        -- TODO check member version supports this feature
         let GroupMember {memberContactId} = m
         when (isJust memberContactId) $ throwChatError $ CECommandError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
@@ -4540,10 +4541,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             then do
               ownConnReq <- withStore $ \db -> getConnReqInv db connId
               -- in case both members sent x.grp.direct.inv before receiving other's for processing,
-              -- the one who received greater connReq joins
+              -- only the one who received greater connReq joins, the other creates items and waits for confirmation
               if strEncode connReq > strEncode ownConnReq
                 then updateExistingContact subMode mCt
-                else pure ()
+                else createItems mCt m
             else updateExistingContact subMode mCt
       where
         updateExistingContact subMode mCt = do

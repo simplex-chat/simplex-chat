@@ -1373,7 +1373,7 @@ createMemberContact
   GroupMember {groupMemberId, localDisplayName, memberProfile, memberContactProfileId}
   Connection {connLevel, peerChatVRange = peerChatVRange@(JVersionRange (VersionRange minV maxV))}
   subMode = do
-    createdAt <- getCurrentTime
+    currentTs <- getCurrentTime
     let incognitoProfile = if memberIncognito membership then Just membershipProfile else Nothing
         customUserProfileId = localProfileId <$> incognitoProfile
         userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
@@ -1386,9 +1386,13 @@ createMemberContact
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (userId, localDisplayName, memberContactProfileId, True, userPreferences, True)
-          :. (groupMemberId, False, createdAt, createdAt, createdAt)
+          :. (groupMemberId, False, currentTs, currentTs, currentTs)
       )
     contactId <- insertedRowId db
+    DB.execute
+      db
+      "UPDATE group_members SET contact_id = ?, updated_at = ? WHERE group_member_id = ?"
+      (contactId, currentTs, groupMemberId)
     DB.execute
       db
       [sql|
@@ -1398,12 +1402,12 @@ createMemberContact
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (userId, acId, cReq, connLevel, ConnNew, ConnContact, contactId, customUserProfileId)
-          :. (minV, maxV, createdAt, createdAt, subMode == SMOnlyCreate)
+          :. (minV, maxV, currentTs, currentTs, subMode == SMOnlyCreate)
       )
     connId <- insertedRowId db
-    let ctConn = Connection {connId, agentConnId = AgentConnId acId, peerChatVRange, connType = ConnContact, entityId = Just contactId, viaContact = Nothing, viaUserContactLink = Nothing, viaGroupLink = False, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt, connectionCode = Nothing, authErrCounter = 0}
+    let ctConn = Connection {connId, agentConnId = AgentConnId acId, peerChatVRange, connType = ConnContact, entityId = Just contactId, viaContact = Nothing, viaUserContactLink = Nothing, viaGroupLink = False, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure $ Contact {contactId, localDisplayName, profile = memberProfile, activeConn = ctConn, viaGroup = Nothing, contactUsed = True, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, memberContactMemberId = Just groupMemberId, memberContactXGrpDirectInvSent = False}
+    pure $ Contact {contactId, localDisplayName, profile = memberProfile, activeConn = ctConn, viaGroup = Nothing, contactUsed = True, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, memberContactMemberId = Just groupMemberId, memberContactXGrpDirectInvSent = False}
 
 getMemberContact :: DB.Connection -> User -> ContactId -> ExceptT StoreError IO (Contact, ConnReqInvitation, GroupMember, GroupInfo)
 getMemberContact db user contactId = do
