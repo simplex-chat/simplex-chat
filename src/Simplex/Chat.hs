@@ -3201,10 +3201,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             case ct_ of
               Nothing -> do
                 let connectedIncognito = memberIncognito membership
-                when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
+                when (memberCategory m == GCPreMember) $ probeMatchingMemberContact m connectedIncognito
               Just ct -> do
                 let connectedIncognito = contactConnIncognito ct || memberIncognito membership
-                when (memberCategory m == GCPreMember) $ probeMatchingMemberContact m connectedIncognito
+                when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
             --  >>= \case
             --   Nothing -> do
             --     notifyMemberConnected gInfo m Nothing

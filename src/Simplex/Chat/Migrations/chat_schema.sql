@@ -82,6 +82,8 @@ CREATE TABLE sent_probes(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
+  probe_contact_id INTEGER REFERENCES contacts(contact_id) ON DELETE CASCADE,
+  probe_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   UNIQUE(user_id, probe)
 );
 CREATE TABLE sent_probe_hashes(
@@ -101,7 +103,9 @@ CREATE TABLE received_probes(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE
   ,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL)
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  probe_contact_id INTEGER REFERENCES contacts(contact_id) ON DELETE CASCADE,
+  probe_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE
 );
 CREATE TABLE known_servers(
   server_id INTEGER PRIMARY KEY,
@@ -625,7 +629,6 @@ CREATE INDEX idx_pending_group_messages_group_member_id ON pending_group_message
 CREATE INDEX idx_rcv_file_chunks_file_id ON rcv_file_chunks(file_id);
 CREATE INDEX idx_rcv_files_group_member_id ON rcv_files(group_member_id);
 CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
-CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
 CREATE INDEX idx_sent_probe_hashes_user_id ON sent_probe_hashes(user_id);
 CREATE INDEX idx_sent_probe_hashes_contact_id ON sent_probe_hashes(contact_id);
 CREATE INDEX idx_settings_user_id ON settings(user_id);
@@ -713,3 +716,18 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   item_status
 );
 CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
+CREATE INDEX idx_sent_probes_user_id ON sent_probes(user_id);
+CREATE UNIQUE INDEX idx_sent_probes_probe_contact_id ON sent_probes(
+  probe_contact_id
+);
+CREATE UNIQUE INDEX idx_sent_probes_probe_group_member_id ON sent_probes(
+  probe_group_member_id
+);
+CREATE INDEX idx_sent_probes_probe ON sent_probes(probe);
+CREATE UNIQUE INDEX idx_received_probes_probe_contact_id ON received_probes(
+  probe_contact_id
+);
+CREATE UNIQUE INDEX idx_received_probes_probe_group_member_id ON received_probes(
+  probe_group_member_id
+);
+CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);
