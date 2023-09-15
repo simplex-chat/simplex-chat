@@ -102,7 +102,7 @@
 
                     <li class="nav-link relative {% if active_jobs %}active{% endif %}">
                         <a href="/jobs" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Jobs</span>
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">{{ "jobs" | i18n({}, lang ) | safe }}</span>
                         </a>                        
                     </li>
 
