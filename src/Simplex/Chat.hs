@@ -3196,15 +3196,26 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
-            withStore' (\db -> getViaGroupContact db user m) >>= \case
+            ct_ <- withStore' (\db -> getViaGroupContact db user m)
+            notifyMemberConnected gInfo m ct_
+            case ct_ of
               Nothing -> do
-                notifyMemberConnected gInfo m Nothing
-                messageWarning "connected member does not have contact"
-              Just ct@Contact {activeConn = Connection {connStatus}} ->
-                when (connStatus == ConnReady) $ do
-                  notifyMemberConnected gInfo m $ Just ct
-                  let connectedIncognito = contactConnIncognito ct || memberIncognito membership
-                  when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
+                let connectedIncognito = memberIncognito membership
+                when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
+              Just ct -> do
+                let connectedIncognito = contactConnIncognito ct || memberIncognito membership
+                when (memberCategory m == GCPreMember) $ probeMatchingMemberContact m connectedIncognito
+            --  >>= \case
+            --   Nothing -> do
+            --     notifyMemberConnected gInfo m Nothing
+            --     let connectedIncognito = memberIncognito membership
+            --     probeMatchingMemberContact m connectedIncognito
+            --     messageWarning "connected member does not have contact"
+            --   Just ct@Contact {activeConn = Connection {connStatus}} ->
+            --     when (connStatus == ConnReady) $ do
+            --       notifyMemberConnected gInfo m $ Just ct
+            --       let connectedIncognito = contactConnIncognito ct || memberIncognito membership
+            --       when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
         withAckMessage agentConnId cmdId msgMeta $ do
@@ -3609,6 +3620,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         sendProbeHash c probeHash probeId = do
           void . sendDirectContactMessage c $ XInfoProbeCheck probeHash
           withStore' $ \db -> createSentProbeHash db userId probeId c
+
+    probeMatchingMemberContact :: GroupMember -> IncognitoEnabled -> m ()
+    probeMatchingMemberContact m connectedIncognito = do
+      pure ()
 
     messageWarning :: Text -> m ()
     messageWarning = toView . CRMessageError user "warning"
