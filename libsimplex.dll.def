@@ -8,3 +8,9 @@ EXPORTS
     chat_parse_markdown
     chat_parse_server
     chat_password_hash
+    chat_encrypt_media
+    chat_decrypt_media
+    chat_write_file
+    chat_read_file
+    chat_encrypt_file
+    chat_decrypt_file
