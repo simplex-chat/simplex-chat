@@ -213,13 +213,16 @@ jobs:
 
       # * In powershell multiline commands do not fail if individual commands fail - https://github.community/t/multiline-commands-on-windows-do-not-fail-if-individual-commands-fail/16753
       # * And GitHub Actions does not support parameterizing shell in a matrix job - https://github.community/t/using-matrix-to-specify-shell-is-it-possible/17065
+      # * echo y | rmdir /s dist-newstyle\src is here because of the bug in cabal's dependency which prevents second build from finishing
 
       - name: Windows build
         id: windows_build
         if: matrix.os == 'windows-latest'
         shell: cmd
         run: |
+          echo y | rmdir /s dist-newstyle\src
           cabal build --enable-tests
+          echo y | rmdir /s dist-newstyle\src
           cabal list-bin simplex-chat > tmp_bin_path
           set /p bin_path= < tmp_bin_path
           echo ::set-output name=bin_path::%bin_path%
