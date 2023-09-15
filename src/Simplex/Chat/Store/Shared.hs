@@ -305,6 +305,14 @@ toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, Mayb
 toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, viaUserContactLink, groupLinkId, customUserProfileId, connReqInv, localAlias, createdAt, updatedAt) =
   PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, viaUserContactLink, groupLinkId, customUserProfileId, connReqInv, localAlias, createdAt, updatedAt}
 
+getConnReqInv :: DB.Connection -> Int64 -> ExceptT StoreError IO ConnReqInvitation
+getConnReqInv db connId =
+  ExceptT . firstRow fromOnly (SEConnectionNotFoundById connId) $
+    DB.query
+      db
+      "SELECT conn_req_inv FROM connections WHERE connection_id = ?"
+      (Only connId)
+
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
 withLocalDisplayName :: forall a. DB.Connection -> UserId -> Text -> (Text -> IO (Either StoreError a)) -> IO (Either StoreError a)

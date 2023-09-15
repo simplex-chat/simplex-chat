@@ -3022,8 +3022,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO update member profile
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn' confId XOk
-            XOk ->
+            XOk -> do
               allowAgentConnectionAsync user conn' confId XOk
+              void $ withStore' $ \db -> resetMemberContactFields db ct
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.ok"
         INFO connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
@@ -4528,17 +4529,45 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> MsgMeta -> m ()
     xGrpDirectInv g m mConn connReq mContent_ msg msgMeta = do
       unless (groupFeatureAllowed SGFDirectMessages g) $ messageError "x.grp.direct.inv: direct messages not allowed"
-      dm <- directMessage XOk
+      let GroupMember {memberContactId} = m
       subMode <- chatReadVar subscriptionMode
-      connIds <- joinAgentConnectionAsync user True connReq dm subMode
-      -- [incognito] reuse membership incognito profile
-      (ct, m') <- withStore $ \db -> createMemberContactInvited db user connIds g m mConn subMode
-      checkIntegrityCreateItem (CDGroupRcv g m') msgMeta
-      createInternalChatItem user (CDGroupRcv g m') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
-      let prevLDNMember = if localDisplayName (m' :: GroupMember) /= localDisplayName (m :: GroupMember) then Just m else Nothing
-      toView $ CRNewMemberContactReceivedInv user ct g m' prevLDNMember
-      ci_ <- forM mContent_ $ \mc -> saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent mc)
-      forM_ ci_ $ \ci -> toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
+      case memberContactId of
+        Nothing -> createNewContact subMode
+        Just mContactId -> do
+          mCt <- withStore $ \db -> getContact db user mContactId
+          let Contact {activeConn = Connection {connId}, memberContactXGrpDirectInvSent} = mCt
+          if memberContactXGrpDirectInvSent
+            then do
+              ownConnReq <- withStore $ \db -> getConnReqInv db connId
+              -- in case both members sent x.grp.direct.inv before receiving other's for processing,
+              -- the one who received greater connReq joins
+              if strEncode connReq > strEncode ownConnReq
+                then updateExistingContact subMode mCt
+                else pure ()
+            else updateExistingContact subMode mCt
+      where
+        updateExistingContact subMode mCt = do
+          connIds <- joinConn subMode
+          mCt' <- withStore' $ \db -> updateMemberContactInvited db user connIds g mConn mCt subMode
+          createItems mCt' m
+          securityCodeChanged mCt'
+        createNewContact subMode = do
+          connIds <- joinConn subMode
+          -- [incognito] reuse membership incognito profile
+          (mCt', m') <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode
+          createItems mCt' m'
+        joinConn subMode = do
+          dm <- directMessage XOk
+          joinAgentConnectionAsync user True connReq dm subMode
+        createItems mCt' m' = do
+          checkIntegrityCreateItem (CDGroupRcv g m') msgMeta
+          createInternalChatItem user (CDGroupRcv g m') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
+          toView $ CRNewMemberContactReceivedInv user mCt' g m'
+          ci_ <- forM mContent_ $ \mc -> saveRcvChatItem user (CDDirectRcv mCt') msg msgMeta (CIRcvMsgContent mc)
+          forM_ ci_ $ \ci -> toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat mCt') ci)
+        securityCodeChanged ct = do
+          toView $ CRContactVerificationReset user ct
+          createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
