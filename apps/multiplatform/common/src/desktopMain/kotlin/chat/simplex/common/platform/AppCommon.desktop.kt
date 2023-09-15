@@ -25,6 +25,8 @@ fun initApp() {
     initChatController()
     runMigrations()
   }
+  // LALAL
+  //testCrypto()
 }
 
 private fun applyAppLocale() {

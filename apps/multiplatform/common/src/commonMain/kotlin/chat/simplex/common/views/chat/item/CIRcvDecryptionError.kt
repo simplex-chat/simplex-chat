@@ -166,7 +166,7 @@ fun DecryptionErrorItemFixButton(
           Text(
             buildAnnotatedString {
               append(generalGetString(MR.strings.fix_connection))
-              withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null)) }
+              withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null)) }
               withStyle(reserveTimestampStyle) { append("    ") } // for icon
             },
             color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
@@ -196,7 +196,7 @@ fun DecryptionErrorItem(
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-          withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null)) }
+          withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null)) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
       )

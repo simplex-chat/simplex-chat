@@ -178,7 +178,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRRcvFileStart u ci -> ttyUser u $ receivingFile_' "started" ci
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' "completed" ci
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRRcvFileError u ci -> ttyUser u $ receivingFile_' "error" ci
+  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' "error" ci <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP {} -> []
@@ -985,8 +985,8 @@ viewConnectionVerified :: Maybe SecurityCode -> StyledString
 viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
 viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
 
-viewPeerChatVRange :: VersionRange -> StyledString
-viewPeerChatVRange (VersionRange minVer maxVer) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
+viewPeerChatVRange :: JVersionRange -> StyledString
+viewPeerChatVRange (JVersionRange (VersionRange minVer maxVer)) = "peer chat protocol version range: (" <> sShow minVer <> ", " <> sShow maxVer <> ")"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =

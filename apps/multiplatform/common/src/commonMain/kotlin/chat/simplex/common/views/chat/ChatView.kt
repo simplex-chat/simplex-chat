@@ -1117,7 +1117,7 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
 }
 
 sealed class ProviderMedia {
-  data class Image(val uri: URI, val image: ImageBitmap): ProviderMedia()
+  data class Image(val data: ByteArray, val image: ImageBitmap): ProviderMedia()
   data class Video(val uri: URI, val preview: String): ProviderMedia()
 }
 
@@ -1155,11 +1155,11 @@ private fun providerForGallery(
       val item = item(internalIndex, initialChatId)?.second ?: return null
       return when (item.content.msgContent) {
         is MsgContent.MCImage -> {
-          val imageBitmap: ImageBitmap? = getLoadedImage(item.file)
+          val res = getLoadedImage(item.file)
           val filePath = getLoadedFilePath(item.file)
-          if (imageBitmap != null && filePath != null) {
-            val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
-            ProviderMedia.Image(uri, imageBitmap)
+          if (res != null && filePath != null) {
+            val (imageBitmap: ImageBitmap, data: ByteArray) = res
+            ProviderMedia.Image(data, imageBitmap)
           } else null
         }
         is MsgContent.MCVideo -> {

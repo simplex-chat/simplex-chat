@@ -57,6 +57,8 @@ chatDirectTests = do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
     it "encrypt/decrypt database" testDatabaseEncryption
+  describe "coordination between app and NSE" $ do
+    it "should not subscribe in NSE and subscribe in the app" testSubscribeAppNSE
   describe "mute/unmute messages" $ do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
@@ -969,6 +971,35 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
     withTestChat tmp "alice" $ \alice -> do
       testChatWorking alice bob
+
+testSubscribeAppNSE :: HasCallStack => FilePath -> IO ()
+testSubscribeAppNSE tmp =
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+      withTestChatOpts tmp testOpts {maintenance = True} "alice" $ \nseAlice -> do
+        alice ##> "/_app suspend 1"
+        alice <## "ok"
+        alice <## "chat suspended"
+        nseAlice ##> "/_start subscribe=off expire=off xftp=off"
+        nseAlice <## "chat started"
+        nseAlice ##> "/ad"
+        cLink <- getContactLink nseAlice True
+        bob ##> ("/c " <> cLink)
+        bob <## "connection request sent!"
+        (nseAlice </)
+        alice ##> "/_app activate"
+        alice <## "ok"
+        alice <## "Your address is active! To show: /sa"
+        alice <## "bob (Bob) wants to connect to you!"
+        alice <## "to accept: /ac bob"
+        alice <## "to reject: /rc bob (the sender will NOT be notified)"
+        alice ##> "/ac bob"
+        alice <## "bob (Bob): accepting contact request..."
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        threadDelay 100000
+        alice <##> bob
 
 testMuteContact :: HasCallStack => FilePath -> IO ()
 testMuteContact =

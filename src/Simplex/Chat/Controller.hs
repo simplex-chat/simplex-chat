@@ -62,7 +62,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, UserProtocol, XFTPServerWithAuth)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -176,6 +176,7 @@ data ChatController = ChatController
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
+    subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
@@ -505,7 +506,7 @@ data ChatResponse
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
   | CRRcvFileCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileError {user :: User, chatItem :: AChatItem}
+  | CRRcvFileError {user :: User, chatItem :: AChatItem, agentError :: AgentErrorType}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
@@ -959,6 +960,14 @@ throwDBError = throwError . ChatErrorDatabase
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
+
+chatReadVar :: ChatMonad' m => (ChatController -> TVar a) -> m a
+chatReadVar f = asks f >>= readTVarIO
+{-# INLINE chatReadVar #-}
+
+chatWriteVar :: ChatMonad' m => (ChatController -> TVar a) -> a -> m ()
+chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
+{-# INLINE chatWriteVar #-}
 
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError

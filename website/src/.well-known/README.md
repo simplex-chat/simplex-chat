@@ -12,4 +12,6 @@ File `assetlinks.json` includes certificate hashes for:
 
 ## iOS
 
-`apple-app-site-association` currently does not work, as it needs to be served with `Content-type: application/json; charset=utf-8` and GitHub pages do not support adding this header to files without JSON extension.
+`apple-app-site-association` needs to be served with `Content-type: application/json; charset=utf-8` and GitHub pages do not support adding this header to files without JSON extension.
+
+To workaround this (thanks to [StackOverflow - Serve json data from github pages](https://stackoverflow.com/questions/39199042/serve-json-data-from-github-pages)) we're creating directory named `apple-app-site-association` with `index.json` file that contains all the necessary configs.

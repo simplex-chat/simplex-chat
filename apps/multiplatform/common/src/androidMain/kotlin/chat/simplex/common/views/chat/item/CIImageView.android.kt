@@ -19,7 +19,7 @@ import java.net.URI
 
 @Composable
 actual fun SimpleAndAnimatedImageView(
-  uri: URI,
+  data: ByteArray,
   imageBitmap: ImageBitmap,
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
@@ -27,7 +27,7 @@ actual fun SimpleAndAnimatedImageView(
 ) {
   val context = LocalContext.current
   val imagePainter = rememberAsyncImagePainter(
-    ImageRequest.Builder(context).data(data = uri.toUri()).size(coil.size.Size.ORIGINAL).build(),
+    ImageRequest.Builder(context).data(data = data).size(coil.size.Size.ORIGINAL).build(),
     placeholder = BitmapPainter(imageBitmap), // show original image while it's still loading by coil
     imageLoader = imageLoader
   )

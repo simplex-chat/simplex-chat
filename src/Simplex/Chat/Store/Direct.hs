@@ -75,6 +75,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId, InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Version
 
 getPendingContactConnection :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO PendingContactConnection
@@ -109,8 +110,8 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> IO PendingContactConnection
-createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId = do
+createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> IO PendingContactConnection
+createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId subMode = do
   createdAt <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   let pccConnStatus = ConnJoined
@@ -119,10 +120,10 @@ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile grou
     [sql|
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type,
-        via_contact_uri_hash, xcontact_id, custom_user_profile_id, via_group_link, group_link_id, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        via_contact_uri_hash, xcontact_id, custom_user_profile_id, via_group_link, group_link_id, created_at, updated_at, to_subscribe
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((userId, acId, pccConnStatus, ConnContact, cReqHash, xContactId) :. (customUserProfileId, isJust groupLinkId, groupLinkId, createdAt, createdAt))
+    ((userId, acId, pccConnStatus, ConnContact, cReqHash, xContactId) :. (customUserProfileId, isJust groupLinkId, groupLinkId, createdAt, createdAt, subMode == SMOnlyCreate))
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connReqInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
 
@@ -162,17 +163,17 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
           "SELECT xcontact_id FROM connections WHERE user_id = ? AND via_contact_uri_hash = ? LIMIT 1"
           (userId, cReqHash)
 
-createDirectConnection :: DB.Connection -> User -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> IO PendingContactConnection
-createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile = do
+createDirectConnection :: DB.Connection -> User -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> SubscriptionMode -> IO PendingContactConnection
+createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile subMode = do
   createdAt <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   DB.execute
     db
     [sql|
       INSERT INTO connections
-        (user_id, agent_conn_id, conn_req_inv, conn_status, conn_type, custom_user_profile_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)
+        (user_id, agent_conn_id, conn_req_inv, conn_status, conn_type, custom_user_profile_id, created_at, updated_at, to_subscribe) VALUES (?,?,?,?,?,?,?,?,?)
     |]
-    (userId, acId, cReq, pccConnStatus, ConnContact, customUserProfileId, createdAt, createdAt)
+    (userId, acId, cReq, pccConnStatus, ConnContact, customUserProfileId, createdAt, createdAt, subMode == SMOnlyCreate)
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, groupLinkId = Nothing, customUserProfileId, connReqInv = Just cReq, localAlias = "", createdAt, updatedAt = createdAt}
 
@@ -587,8 +588,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionRange -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> IO Contact
-createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
+createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionRange -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> IO Contact
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
@@ -600,7 +601,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id) VALUES (?,?,?,?,?,?,?,?,?)"
     (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
-  activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
+  activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
   pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt}
 
@@ -616,7 +617,7 @@ getContact_ :: DB.Connection -> User -> Int64 -> Bool -> ExceptT StoreError IO C
 getContact_ db user@User {userId} contactId deleted =
   ExceptT . fmap join . firstRow (toContactOrError user) (SEContactNotFound contactId) $
     DB.query
-      db
+      db 
       [sql|
         SELECT
           -- Contact

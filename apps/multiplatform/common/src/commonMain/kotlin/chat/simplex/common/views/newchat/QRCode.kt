@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import boofcv.alg.drawing.FiducialImageEngine
 import boofcv.alg.fiducial.qrcode.*
+import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.helpers.*
@@ -45,7 +46,7 @@ fun QRCode(
               .let { if (withLogo) it.addLogo() else it }
             val file = saveTempImageUncompressed(image, false)
             if (file != null) {
-              shareFile("", file.absolutePath)
+              shareFile("", CryptoFile.plain(file.absolutePath))
             }
           }
         }

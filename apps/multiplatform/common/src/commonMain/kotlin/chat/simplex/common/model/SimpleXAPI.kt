@@ -5,7 +5,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
-import chat.simplex.common.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -94,6 +93,7 @@ class AppPreferences {
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
+  val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -249,6 +249,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
+    private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
@@ -1413,8 +1414,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          // TODO encrypt images and voice
-          withApi { receiveFile(r.user, file.fileId, encrypted = false, auto = true) }
+          withApi { receiveFile(r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs.privacyEncryptLocalFiles.get(), auto = true) }
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -3911,6 +3911,7 @@ sealed class StoreError {
       is UserNotFoundByContactRequestId -> "userNotFoundByContactRequestId"
       is ContactNotFound -> "contactNotFound"
       is ContactNotFoundByName -> "contactNotFoundByName"
+      is ContactNotFoundByMemberId -> "contactNotFoundByMemberId"
       is ContactNotReady -> "contactNotReady"
       is DuplicateContactLink -> "duplicateContactLink"
       is UserContactLinkNotFound -> "userContactLinkNotFound"
@@ -3938,6 +3939,7 @@ sealed class StoreError {
       is RcvFileNotFoundXFTP -> "rcvFileNotFoundXFTP"
       is ConnectionNotFound -> "connectionNotFound"
       is ConnectionNotFoundById -> "connectionNotFoundById"
+      is ConnectionNotFoundByMemberId -> "connectionNotFoundByMemberId"
       is PendingConnectionNotFound -> "pendingConnectionNotFound"
       is IntroNotFound -> "introNotFound"
       is UniqueID -> "uniqueID"
@@ -3966,6 +3968,7 @@ sealed class StoreError {
   @Serializable @SerialName("userNotFoundByContactRequestId") class UserNotFoundByContactRequestId(val contactRequestId: Long): StoreError()
   @Serializable @SerialName("contactNotFound") class ContactNotFound(val contactId: Long): StoreError()
   @Serializable @SerialName("contactNotFoundByName") class ContactNotFoundByName(val contactName: String): StoreError()
+  @Serializable @SerialName("contactNotFoundByMemberId") class ContactNotFoundByMemberId(val groupMemberId: Long): StoreError()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contactName: String): StoreError()
   @Serializable @SerialName("duplicateContactLink") object DuplicateContactLink: StoreError()
   @Serializable @SerialName("userContactLinkNotFound") object UserContactLinkNotFound: StoreError()
@@ -3993,6 +3996,7 @@ sealed class StoreError {
   @Serializable @SerialName("rcvFileNotFoundXFTP") class RcvFileNotFoundXFTP(val agentRcvFileId: String): StoreError()
   @Serializable @SerialName("connectionNotFound") class ConnectionNotFound(val agentConnId: String): StoreError()
   @Serializable @SerialName("connectionNotFoundById") class ConnectionNotFoundById(val connId: Long): StoreError()
+  @Serializable @SerialName("connectionNotFoundByMemberId") class ConnectionNotFoundByMemberId(val groupMemberId: Long): StoreError()
   @Serializable @SerialName("pendingConnectionNotFound") class PendingConnectionNotFound(val connId: Long): StoreError()
   @Serializable @SerialName("introNotFound") object IntroNotFound: StoreError()
   @Serializable @SerialName("uniqueID") object UniqueID: StoreError()
