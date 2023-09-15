@@ -14,6 +14,13 @@
 
 module Simplex.Chat where
 
+import Debug.Trace
+import Data.String (IsString)
+import qualified Network.Socket as N
+import qualified Network.Socket.ByteString as NSB
+import qualified Network.UDP as UDP
+import Simplex.Messaging.Transport.Server (runTCPServer)
+
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry, stateTVar)
 import qualified Control.Exception as E
@@ -35,7 +42,7 @@ import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl', isSuffixOf, partition, sortOn)
+import Data.List (find, foldl', intercalate, isSuffixOf, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -185,6 +192,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
+  announcer <- newTVarIO Nothing
+  discoverer <- newTVarIO Nothing
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
   servers <- agentServers config
@@ -208,7 +217,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  pure ChatController {announcer, discoverer, activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -356,8 +365,85 @@ toView event = do
   q <- asks outputQ
   atomically $ writeTBQueue q (Nothing, event)
 
+runAnnouncer :: ChatMonad m => m ()
+runAnnouncer = do
+  started <- newEmptyTMVarIO
+  -- TODO: the broadcaster should stop when the server has a connection
+  race_ (broadcaster started) (server started)
+  where
+    broadcaster started = do
+      atomically (takeTMVar started) >>= \case
+        False ->
+          error "Server not started?.."
+        True -> liftIO $ do
+          traceM $ "TCP server started at " <> partyPort
+          sock <- UDP.clientSocket broadcastAddr partyPort False
+          N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
+          traceM $ "UDP server started at " <> partyPort <> " " <> show sock
+          let invite = "let's have a party\n"
+          forever $ do
+            UDP.send sock invite
+            threadDelay 1000000
+
+    server started =
+      liftIO $ runTCPServer started partyPort $ \socket -> do
+        traceShowM socket
+        _ <- NSB.send socket "Hi! I'm announcer. Who are you?\n"
+        party <- NSB.recv socket 1024
+        _ <- NSB.send socket $ "Hi " <> party <> "! Let's have a party!\n"
+        forM_ [1..5] $ \i -> do
+          _ <- NSB.send socket "Party!\n"
+          threadDelay (1000000 * i)
+        _ <- NSB.send socket "I'm tired, bye.\n"
+        traceM "Announcer: party finished."
+
+-- | Link-local broadcast address.
+broadcastAddr :: IsString a => a
+broadcastAddr = "255.255.255.255"
+
+partyPort :: IsString a => a
+partyPort = "5226" -- XXX: should be `0` or something, to get a random port and announce it
+
+runDiscoverer :: ChatMonad m => m ()
+runDiscoverer = liftIO $ do
+  traceM "runDiscoverer: start"
+  sock <- UDP.serverSocket (broadcastAddr, read partyPort)
+  N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
+  traceM $ "runDiscoverer: " <> show sock
+
+  (invite, UDP.ClientSockAddr source _cmsg) <- UDP.recvFrom sock
+  traceShowM (invite, source)
+  case source of
+    N.SockAddrInet _port addr -> do
+      let (a, b, c, d) = N.hostAddressToTuple addr
+      let v4 = intercalate "." $ map show [a, b, c, d]
+      traceM $ "Discoverer: go connect " <> show v4
+      party <- connectTCPClient v4 partyPort
+      traceM "Discoverer: connected"
+      NSB.recv party 1024 >>= traceShowM
+      _ <- NSB.send party "Discoverer"
+      replicateM_ 10 $ NSB.recv party 1024 >>= traceShowM
+      traceM "Discoverer: done"
+    unexpected ->
+      -- XXX: actually, Apple mandates IPv6 support
+      traceM $ "Discoverer: expected an IPv4 party, got " <> show unexpected
+
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
+  Announce -> do
+    chatReadVar announcer >>= \case
+      Nothing -> do
+        async runAnnouncer >>= chatWriteVar announcer . Just
+      Just old ->
+        cancel old
+    pure $ CRCmdOk Nothing
+  Discover -> do
+    chatReadVar discoverer >>= \case
+      Nothing -> do
+        async runDiscoverer >>= chatWriteVar discoverer . Just
+      Just old ->
+        cancel old
+    pure $ CRCmdOk Nothing
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
@@ -5164,7 +5250,9 @@ withStoreCtx ctx_ action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
-    [ "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
+    [ "/announce" $> Announce,
+      "/discover" $> Discover,
+      "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` True) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
       "/_create user " *> (CreateActiveUser <$> jsonP),
@@ -5535,3 +5623,19 @@ timeItToView s action = do
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView $ CRTimedAction s diff
   pure a
+
+-- XXX: ripped from Simplex.Messaging.Transport.Client (not published)
+connectTCPClient :: N.HostName -> N.ServiceName -> IO N.Socket
+connectTCPClient host port = do
+  let hints = N.defaultHints {N.addrSocketType = N.Stream}
+  ai <- N.getAddrInfo (Just hints) (Just host) (Just port)
+  tryOpen ai
+  where
+    tryOpen [] = error "oops"
+    tryOpen (addr : as) =
+      E.try (open addr) >>= either (\E.SomeException{} -> tryOpen as) pure
+
+    open addr = do
+      sock <- N.socket (N.addrFamily addr) (N.addrSocketType addr) (N.addrProtocol addr)
+      N.connect sock $ N.addrAddress addr
+      pure sock

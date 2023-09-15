@@ -165,6 +165,8 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
+    announcer :: TVar (Maybe (Async ())),
+    discoverer :: TVar (Maybe (Async ())),
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
@@ -202,6 +204,8 @@ instance ToJSON HelpSection where
 
 data ChatCommand
   = ShowActiveUser
+  | Announce
+  | Discover
   | CreateActiveUser NewUser
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
