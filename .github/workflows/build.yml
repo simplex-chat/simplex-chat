@@ -210,19 +210,18 @@ jobs:
       # Unix /
 
       # / Windows
-
-      # * In powershell multiline commands do not fail if individual commands fail - https://github.community/t/multiline-commands-on-windows-do-not-fail-if-individual-commands-fail/16753
-      # * And GitHub Actions does not support parameterizing shell in a matrix job - https://github.community/t/using-matrix-to-specify-shell-is-it-possible/17065
+      # rm -rf dist-newstyle/src/direct-sq* is here because of the bug in cabal's dependency which prevents second build from finishing
 
       - name: Windows build
         id: windows_build
         if: matrix.os == 'windows-latest'
-        shell: cmd
+        shell: bash
         run: |
+          rm -rf dist-newstyle/src/direct-sq*
+          sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build --enable-tests
-          cabal list-bin simplex-chat > tmp_bin_path
-          set /p bin_path= < tmp_bin_path
-          echo ::set-output name=bin_path::%bin_path%
+          rm -rf dist-newstyle/src/direct-sq*
+          echo "::set-output name=bin_path::$(cabal list-bin simplex-chat | tail -n 1)"
 
       - name: Windows upload binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
