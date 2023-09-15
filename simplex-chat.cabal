@@ -32,6 +32,7 @@ library
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Core
+      Simplex.Chat.Credentials
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
@@ -163,10 +164,12 @@ library
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , hourglass ==0.2.*
     , http-types ==0.12.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -180,6 +183,7 @@ library
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -211,10 +215,12 @@ executable simplex-bot
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , hourglass ==0.2.*
     , http-types ==0.12.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -229,6 +235,7 @@ executable simplex-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -260,10 +267,12 @@ executable simplex-bot-advanced
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , hourglass ==0.2.*
     , http-types ==0.12.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -278,6 +287,7 @@ executable simplex-bot-advanced
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -311,10 +321,12 @@ executable simplex-broadcast-bot
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , hourglass ==0.2.*
     , http-types ==0.12.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -329,6 +341,7 @@ executable simplex-broadcast-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -361,10 +374,12 @@ executable simplex-chat
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , hourglass ==0.2.*
     , http-types ==0.12.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*
+    , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -379,6 +394,7 @@ executable simplex-chat
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
@@ -415,10 +431,12 @@ executable simplex-directory-service
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , hourglass ==0.2.*
     , http-types ==0.12.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -433,6 +451,7 @@ executable simplex-directory-service
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -494,6 +513,7 @@ test-suite simplex-chat-test
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*
+    , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -509,6 +529,7 @@ test-suite simplex-chat-test
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
