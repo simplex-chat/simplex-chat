@@ -443,8 +443,8 @@ runDiscoverer = liftIO $ do
           E.handle (\E.SomeException{} -> pure ()) . forever $
             Transport.getLn c >>= traceShowM
           traceM "Discoverer finished"
-+      unexpected ->
-        -- XXX: actually, Apple mandates IPv6 support
+      unexpected ->
+        -- TODO: actually, Apple mandates IPv6 support
         traceM $ "Discoverer: expected an IPv4 party, got " <> show unexpected
 
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
@@ -5270,7 +5270,10 @@ chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
     [ "/announce" $> Announce,
+      "/a" $> Announce,
       "/discover" $> Discover,
+      "/d" $> Discover,
+      -- "/d " *> (Discover <$> fmap Just textP), -- TODO: oob data
       "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` True) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
@@ -5642,19 +5645,3 @@ timeItToView s action = do
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView $ CRTimedAction s diff
   pure a
-
--- XXX: ripped from Simplex.Messaging.Transport.Client (not published)
-connectTCPClient :: N.HostName -> N.ServiceName -> IO N.Socket
-connectTCPClient host port = do
-  let hints = N.defaultHints {N.addrSocketType = N.Stream}
-  ai <- N.getAddrInfo (Just hints) (Just host) (Just port)
-  tryOpen ai
-  where
-    tryOpen [] = error "oops"
-    tryOpen (addr : as) =
-      E.try (open addr) >>= either (\E.SomeException{} -> tryOpen as) pure
-
-    open addr = do
-      sock <- N.socket (N.addrFamily addr) (N.addrSocketType addr) (N.addrProtocol addr)
-      N.connect sock $ N.addrAddress addr
-      pure sock
