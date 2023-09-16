@@ -18,8 +18,13 @@ import Debug.Trace
 import Data.String (IsString)
 import qualified Network.Socket as N
 import qualified Network.Socket.ByteString as NSB
+import qualified Network.TLS as TLS
 import qualified Network.UDP as UDP
-import Simplex.Messaging.Transport.Server (runTCPServer)
+import Simplex.Messaging.Transport (supportedParameters)
+import qualified Simplex.Messaging.Transport as Transport
+import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServer)
+import Simplex.Chat.Credentials (genTlsCredentials)
+import Data.Default (def)
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry, stateTVar)
@@ -367,39 +372,47 @@ toView event = do
 
 runAnnouncer :: ChatMonad m => m ()
 runAnnouncer = do
+  (fingerprint, credentials) <- liftIO genTlsCredentials
+  traceM $ "Server fingerprint: " <> show fingerprint -- TODO: move to OOB
   started <- newEmptyTMVarIO
-  -- TODO: the broadcaster should stop when the server has a connection
-  race_ (broadcaster started) (server started)
+  aPid <- async $ announcer started
+  let serverParams = def
+        { TLS.serverWantClientCert = False,
+          TLS.serverShared = def {TLS.sharedCredentials = credentials},
+          TLS.serverHooks = def,
+          TLS.serverSupported = supportedParameters
+        }
+  liftIO $ runTransportServer started partyPort serverParams defaultTransportServerConfig (handler aPid)
   where
-    broadcaster started = do
+    announcer started = do
       atomically (takeTMVar started) >>= \case
         False ->
           error "Server not started?.."
         True -> liftIO $ do
           traceM $ "TCP server started at " <> partyPort
-          sock <- UDP.clientSocket broadcastAddr partyPort False
+          sock <- UDP.clientSocket broadcastAddrV4 partyPort False
           N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
           traceM $ "UDP server started at " <> partyPort <> " " <> show sock
-          let invite = "let's have a party\n"
+          let invite = "let's have a party\n" -- XXX: only used for source IP (that can be spoofed, btw). A fingerprint may be broadcasted here, or someting else.
           forever $ do
             UDP.send sock invite
             threadDelay 1000000
 
-    server started =
-      liftIO $ runTCPServer started partyPort $ \socket -> do
-        traceShowM socket
-        _ <- NSB.send socket "Hi! I'm announcer. Who are you?\n"
-        party <- NSB.recv socket 1024
-        _ <- NSB.send socket $ "Hi " <> party <> "! Let's have a party!\n"
-        forM_ [1..5] $ \i -> do
-          _ <- NSB.send socket "Party!\n"
-          threadDelay (1000000 * i)
-        _ <- NSB.send socket "I'm tired, bye.\n"
-        traceM "Announcer: party finished."
+    handler aPid c@Transport.TLS{} = do
+      cancel aPid
+      traceM "Announcer did its thing right."
+      Transport.putLn c "Hi! I'm the announced handler. Who are you?"
+      party <- Transport.getLn c
+      Transport.putLn c $ "Hi " <> party <> "! Let's have a party!"
+      forM_ [1..5] $ \i -> do
+        Transport.putLn c "Party!"
+        threadDelay (1000000 * i)
+      Transport.putLn c "I'm tired, bye."
+      traceM "Handler: party finished."
 
 -- | Link-local broadcast address.
-broadcastAddr :: IsString a => a
-broadcastAddr = "255.255.255.255"
+broadcastAddrV4 :: IsString a => a
+broadcastAddrV4 = "255.255.255.255"
 
 partyPort :: IsString a => a
 partyPort = "5226" -- XXX: should be `0` or something, to get a random port and announce it
@@ -407,7 +420,7 @@ partyPort = "5226" -- XXX: should be `0` or something, to get a random port and 
 runDiscoverer :: ChatMonad m => m ()
 runDiscoverer = liftIO $ do
   traceM "runDiscoverer: start"
-  sock <- UDP.serverSocket (broadcastAddr, read partyPort)
+  sock <- UDP.serverSocket (broadcastAddrV4, read partyPort)
   N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
   traceM $ "runDiscoverer: " <> show sock
 
