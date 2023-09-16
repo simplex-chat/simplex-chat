@@ -237,8 +237,12 @@ testGroupShared alice bob cath checkMessages = do
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
-  alice ##> "@bob hey"
-  alice <## "no contact bob"
+  alice `send` "@bob hey"
+  alice
+    <### [ "@bob hey",
+           "member #team bob does not have associated contact, creating contact",
+           "peer chat protocol version range incompatible"
+         ]
   when checkMessages $ threadDelay 1000000
   alice #> "#team checking connection"
   bob <# "#team alice> checking connection"
@@ -650,11 +654,22 @@ testGroupDeleteInvitedContact =
       bob <# "#team alice> hello"
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
-      alice ##> "@bob hey"
-      alice <## "no contact bob"
-      bob #> "@alice hey"
-      bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
-      (alice </)
+      alice `send` "@bob hey"
+      alice
+        <### [ WithTime "@bob hey",
+               "member #team bob does not have associated contact, creating contact",
+               "contact for member #team bob is created",
+               "sent invitation to connect directly to member #team bob"
+             ]
+      bob
+        <### [ "#team alice is creating direct contact alice with you",
+               WithTime "alice> hey",
+               "alice: security code changed"
+             ]
+      concurrently_
+        (alice <## "bob (Bob): contact is connected")
+        (bob <## "alice (Alice): contact is connected")
+      alice <##> bob
 
 testDeleteGroupMemberProfileKept :: HasCallStack => FilePath -> IO ()
 testDeleteGroupMemberProfileKept =
@@ -703,7 +718,7 @@ testDeleteGroupMemberProfileKept =
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
       alice ##> "@bob hey"
-      alice <## "no contact bob"
+      alice <## "no contact bob, use @#club bob <your message>"
       bob #> "@alice hey"
       bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       (alice </)
@@ -2706,12 +2721,11 @@ testMemberContactMessage =
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
 
-      alice ##> "/contact member #team bob"
-      alice <## "contact for member #team bob prepared, use /invite member contact @bob <message> to send invitation"
-
-      alice ##> "/invite member contact @bob hi"
+      alice ##> "@#team bob hi"
       alice
-        <### [ "sent invitation to connect directly to member #team bob",
+        <### [ "member #team bob does not have associated contact, creating contact",
+               "contact for member #team bob is created",
+               "sent invitation to connect directly to member #team bob",
                WithTime "@bob hi"
              ]
       bob
@@ -2736,10 +2750,10 @@ testMemberContactNoMessage =
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
 
-      alice ##> "/contact member #team bob"
-      alice <## "contact for member #team bob prepared, use /invite member contact @bob <message> to send invitation"
+      alice ##> "/_create member contact #1 2"
+      alice <## "contact for member #team bob is created"
 
-      alice ##> "/invite member contact @bob"
+      alice ##> "/_invite member contact @4" -- cath is 3, new bob contact is 4
       alice <## "sent invitation to connect directly to member #team bob"
       bob <## "#team alice is creating direct contact alice with you"
       concurrently_
@@ -2755,8 +2769,12 @@ testMemberContactProhibitedContactExists =
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
-      alice ##> "/contact member #team bob"
+      alice ##> "/_create member contact #1 2"
       alice <## "bad chat command: member contact already exists"
+
+      alice ##> "@#team bob hi"
+      alice <# "@bob hi"
+      bob <# "alice> hi"
 
 testMemberContactProhibitedRepeatInv :: HasCallStack => FilePath -> IO ()
 testMemberContactProhibitedRepeatInv =
@@ -2769,15 +2787,15 @@ testMemberContactProhibitedRepeatInv =
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
 
-      alice ##> "/contact member #team bob"
-      alice <## "contact for member #team bob prepared, use /invite member contact @bob <message> to send invitation"
+      alice ##> "/_create member contact #1 2"
+      alice <## "contact for member #team bob is created"
 
-      alice ##> "/invite member contact @bob hi"
+      alice ##> "/_invite member contact @4 text hi" -- cath is 3, new bob contact is 4
       alice
         <### [ "sent invitation to connect directly to member #team bob",
                WithTime "@bob hi"
              ]
-      alice ##> "/invite member contact @bob hey"
+      alice ##> "/_invite member contact @4 text hey"
       alice <## "bad chat command: x.grp.direct.inv already sent"
       bob
         <### [ "#team alice is creating direct contact alice with you",
@@ -2799,12 +2817,11 @@ testMemberContactInvitedConnectionReplaced tmp = do
         alice ##> "/d bob"
         alice <## "bob: contact is deleted"
 
-        alice ##> "/contact member #team bob"
-        alice <## "contact for member #team bob prepared, use /invite member contact @bob <message> to send invitation"
-
-        alice ##> "/invite member contact @bob hi"
+        alice ##> "@#team bob hi"
         alice
-          <### [ "sent invitation to connect directly to member #team bob",
+          <### [ "member #team bob does not have associated contact, creating contact",
+                 "contact for member #team bob is created",
+                 "sent invitation to connect directly to member #team bob",
                  WithTime "@bob hi"
                ]
         bob
@@ -2912,12 +2929,11 @@ testMemberContactIncognito =
       cath ##> ("/d " <> bobIncognito)
       cath <## (bobIncognito <> ": contact is deleted")
 
-      bob ##> ("/contact member #team " <> cathIncognito)
-      bob <## ("contact for member #team " <> cathIncognito <> " prepared, use /invite member contact @" <> cathIncognito <> " <message> to send invitation")
-
-      bob ##> ("/invite member contact @" <> cathIncognito <> " hi")
+      bob ##> ("@#team " <> cathIncognito <> " hi")
       bob
-        <### [ ConsoleString ("sent invitation to connect directly to member #team " <> cathIncognito),
+        <### [ ConsoleString ("member #team " <> cathIncognito <> " does not have associated contact, creating contact"),
+               ConsoleString ("contact for member #team " <> cathIncognito <> " is created"),
+               ConsoleString ("sent invitation to connect directly to member #team " <> cathIncognito),
                WithTime ("i @" <> cathIncognito <> " hi")
              ]
       cath
