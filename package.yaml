@@ -52,10 +52,12 @@ dependencies:
   - zip == 1.7.*
 
   # TODO: for genTlsCredentials, move to simplexmq
+  - asn1-types
   - data-default
   - hourglass == 0.2.*
   - tls >= 1.6.0 && < 1.7
   - x509 == 1.7.*
+  - x509-store == 1.6.*
   - x509-validation == 1.6.*
 
 flags:

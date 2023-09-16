@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 -- TODO: move to simplexmq
 
 module Simplex.Chat.Credentials where
 
 import qualified Crypto.PubKey.Ed25519 as Ed25519
+import Data.ASN1.Types (getObjectID)
 import qualified Data.ByteArray as Memory
 import Data.Hourglass (Hours(..), timeAdd)
 import qualified Data.X509 as X509
@@ -12,9 +15,6 @@ import qualified Time.System as Hourglass
 
 genTlsCredentials :: IO (Fingerprint, TLS.Credentials)
 genTlsCredentials = do
-  secret <- Ed25519.generateSecretKey
-  let public = Ed25519.toPublic secret
-
   today <- Hourglass.dateCurrent
   let
     validity =
@@ -22,32 +22,66 @@ genTlsCredentials = do
       , timeAdd today (365 * 24 :: Hours)
       )
 
+  rootSecret <- Ed25519.generateSecretKey
   let
-    certificate = X509.Certificate
-      { X509.certVersion      = 1
+    rootPublic = Ed25519.toPublic rootSecret
+    rootDN = X509.DistinguishedName
+      [ (getObjectID X509.DnCommonName, "Root")
+      ]
+    root = X509.Certificate
+      { X509.certVersion      = 2
       , X509.certSerial       = 1
       , X509.certSignatureAlg = X509.SignatureALG_IntrinsicHash X509.PubKeyALG_Ed25519
-      , X509.certIssuerDN     = mempty
+      , X509.certIssuerDN     = rootDN
       , X509.certValidity     = validity
-      , X509.certSubjectDN    = mempty
-      , X509.certPubKey       = X509.PubKeyEd25519 public
+      , X509.certSubjectDN    = rootDN
+      , X509.certPubKey       = X509.PubKeyEd25519 rootPublic
       , X509.certExtensions   = X509.Extensions Nothing
       }
-    (signed, ()) =
+    (signedRoot, _rootBytes) =
       X509.objectToSignedExact
         ( \bytes ->
-            ( Memory.convert $ Ed25519.sign secret public bytes
+            ( Memory.convert $ Ed25519.sign rootSecret rootPublic bytes
             , X509.SignatureALG_IntrinsicHash X509.PubKeyALG_Ed25519
-            , ()
+            , bytes
             )
         )
-        certificate
+        root
+
+  entitySecret <- Ed25519.generateSecretKey
+  let
+    entityPublic = Ed25519.toPublic entitySecret
+    entityDN = X509.DistinguishedName
+      [ (getObjectID X509.DnCommonName, "Entity")
+      ]
+    entity = X509.Certificate
+      { X509.certVersion      = 2
+      , X509.certSerial       = 1
+      , X509.certSignatureAlg = X509.SignatureALG_IntrinsicHash X509.PubKeyALG_Ed25519
+      , X509.certIssuerDN     = rootDN
+      , X509.certValidity     = validity
+      , X509.certSubjectDN    = entityDN
+      , X509.certPubKey       = X509.PubKeyEd25519 entityPublic
+      , X509.certExtensions   = X509.Extensions Nothing
+      }
+    (signedEntity, _entityBytes) =
+      X509.objectToSignedExact
+        ( \bytes ->
+            ( Memory.convert $ Ed25519.sign rootSecret rootPublic bytes
+            , X509.SignatureALG_IntrinsicHash X509.PubKeyALG_Ed25519
+            , bytes
+            )
+        )
+        entity
+
+  let rootFingerprint = getFingerprint signedRoot X509.HashSHA256
+  let chain = X509.CertificateChain [signedEntity, signedRoot]
 
   pure
-    ( getFingerprint signed X509.HashSHA256
+    ( rootFingerprint
     , TLS.Credentials
-        [ ( X509.CertificateChain [signed] -- BUG: Client.validateCertificateChain enforces 2-certificate chain of [_, caCert]
-          , X509.PrivKeyEd25519 secret
+        [ ( chain
+          , X509.PrivKeyEd25519 entitySecret
           )
         ]
     )
