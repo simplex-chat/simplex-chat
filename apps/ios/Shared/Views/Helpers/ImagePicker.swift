@@ -133,7 +133,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
         config.filter = .any(of: [.images, .videos])
         config.selectionLimit = selectionLimit
         config.selection = .ordered
-        //config.preferredAssetRepresentationMode = .current
+        config.preferredAssetRepresentationMode = .current
         let controller = PHPickerViewController(configuration: config)
         controller.delegate = context.coordinator
         return controller

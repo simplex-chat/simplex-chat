@@ -136,7 +136,7 @@ public func chatResponse(_ s: String) -> ChatResponse {
             type = jResp.allKeys[0] as? String
             if type == "apiChats" {
                 if let jApiChats = jResp["apiChats"] as? NSDictionary,
-                   let user: User = try? decodeObject(jApiChats["user"] as Any),
+                   let user: UserRef = try? decodeObject(jApiChats["user"] as Any),
                    let jChats = jApiChats["chats"] as? NSArray {
                     let chats = jChats.map { jChat in
                         if let chatData = try? parseChatData(jChat) {
@@ -148,15 +148,20 @@ public func chatResponse(_ s: String) -> ChatResponse {
                 }
             } else if type == "apiChat" {
                 if let jApiChat = jResp["apiChat"] as? NSDictionary,
-                   let user: User = try? decodeObject(jApiChat["user"] as Any),
+                   let user: UserRef = try? decodeObject(jApiChat["user"] as Any),
                    let jChat = jApiChat["chat"] as? NSDictionary,
                    let chat = try? parseChatData(jChat) {
                     return .apiChat(user: user, chat: chat)
                 }
             } else if type == "chatCmdError" {
                 if let jError = jResp["chatCmdError"] as? NSDictionary {
-                    let user: User? = try? decodeObject(jError["user_"] as Any)
+                    let user: UserRef? = try? decodeObject(jError["user_"] as Any)
                     return .chatCmdError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                }
+            } else if type == "chatError" {
+                if let jError = jResp["chatError"] as? NSDictionary {
+                    let user: UserRef? = try? decodeObject(jError["user_"] as Any)
+                    return .chatError(user_: user, chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
                 }
             }
         }

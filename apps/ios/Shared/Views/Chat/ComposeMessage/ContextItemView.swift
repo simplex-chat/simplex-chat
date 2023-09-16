@@ -22,13 +22,14 @@ struct ContextItemView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 16, height: 16)
                 .foregroundColor(.secondary)
-            MsgContentView(
-                text: contextItem.text,
-                formattedText: contextItem.formattedText,
-                sender: contextItem.memberDisplayName
-            )
-            .multilineTextAlignment(isRightToLeft(contextItem.text) ? .trailing : .leading)
-            .lineLimit(3)
+            if let sender = contextItem.memberDisplayName {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(sender).font(.caption).foregroundColor(.secondary)
+                    msgContentView(lines: 2)
+                }
+            } else {
+                msgContentView(lines: 3)
+            }
             Spacer()
             Button {
                 withAnimation {
@@ -43,6 +44,15 @@ struct ContextItemView: View {
         .frame(maxWidth: .infinity)
         .background(chatItemFrameColor(contextItem, colorScheme))
         .padding(.top, 8)
+    }
+
+    private func msgContentView(lines: Int) -> some View {
+        MsgContentView(
+            text: contextItem.text,
+            formattedText: contextItem.formattedText
+        )
+        .multilineTextAlignment(isRightToLeft(contextItem.text) ? .trailing : .leading)
+        .lineLimit(lines)
     }
 }
 

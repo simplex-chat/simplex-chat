@@ -18,7 +18,7 @@ import chat.simplex.common.model.getTimestampText
 import chat.simplex.res.MR
 
 @Composable
-fun ContactRequestView(chatModelIncognito: Boolean, contactRequest: ChatInfo.ContactRequest) {
+fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
   Row {
     ChatInfoImage(contactRequest, size = 72.dp)
     Column(
@@ -32,7 +32,7 @@ fun ContactRequestView(chatModelIncognito: Boolean, contactRequest: ChatInfo.Con
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Bold,
-        color = if (chatModelIncognito) Indigo else MaterialTheme.colors.primary
+        color = MaterialTheme.colors.primary
       )
       val height = with(LocalDensity.current) { 46.sp.toDp() }
       Text(stringResource(MR.strings.contact_wants_to_connect_with_you), Modifier.heightIn(min = height), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)

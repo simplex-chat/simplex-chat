@@ -1,7 +1,10 @@
 package chat.simplex.common.views.helpers
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -48,19 +51,20 @@ fun TextEditor(
     Modifier
       .fillMaxWidth()
       .padding(contentPadding)
-      .heightIn(min = 52.dp),
-    //      .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(26.dp)),
+      .heightIn(min = 52.dp)
+      .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(14.dp)),
     contentAlignment = Alignment.Center,
   ) {
-    val modifier = modifier
+    val textFieldModifier = modifier
       .fillMaxWidth()
       .navigationBarsWithImePadding()
       .onFocusChanged { focused = it.isFocused }
+      .padding(10.dp)
 
     BasicTextField(
       value = value.value,
       onValueChange = { value.value = it },
-      modifier = if (focusRequester == null) modifier else modifier.focusRequester(focusRequester),
+      modifier = if (focusRequester == null) textFieldModifier else textFieldModifier.focusRequester(focusRequester),
       textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
       keyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.None,

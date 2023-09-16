@@ -12,7 +12,9 @@ import android.os.PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK
 import android.view.ViewGroup
 import android.webkit.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,11 +35,10 @@ import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.helpers.ProfileImage
-import chat.simplex.common.views.helpers.withApi
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.Contact
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dev.icerock.moko.resources.StringResource
@@ -267,7 +268,9 @@ private fun ActiveCallOverlayLayout(
     when (call.peerMedia ?: call.localMedia) {
       CallMediaType.Video -> {
         CallInfoView(call, alignment = Alignment.Start)
-        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
+          DisabledBackgroundCallsButton()
+        }
         Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
           ToggleAudioButton(call, toggleAudio)
           Spacer(Modifier.size(40.dp))
@@ -293,7 +296,9 @@ private fun ActiveCallOverlayLayout(
           ProfileImage(size = 192.dp, image = call.contact.profile.image)
           CallInfoView(call, alignment = Alignment.CenterHorizontally)
         }
-        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Box(Modifier.fillMaxWidth().fillMaxHeight().weight(1f), contentAlignment = Alignment.BottomCenter) {
+          DisabledBackgroundCallsButton()
+        }
         Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_BOTTOM_PADDING), contentAlignment = Alignment.CenterStart) {
           Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             IconButton(onClick = dismiss) {
@@ -355,6 +360,31 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
     //    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
     val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
     InfoText(call.encryptionStatus + connInfoText)
+  }
+}
+
+@Composable
+private fun DisabledBackgroundCallsButton() {
+  var show by remember { mutableStateOf(!platform.androidIsBackgroundCallAllowed()) }
+  if (show) {
+    Row(
+      Modifier
+        .padding(bottom = 24.dp)
+        .clickable {
+          withBGApi {
+            show = !platform.androidAskToAllowBackgroundCalls()
+          }
+        }
+        .background(WarningOrange.copy(0.3f), RoundedCornerShape(50))
+        .padding(start = 14.dp, top = 4.dp, end = 8.dp, bottom = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(stringResource(MR.strings.system_restricted_background_in_call_title), color = WarningOrange)
+      Spacer(Modifier.width(8.dp))
+      IconButton(onClick = { show = false }, Modifier.size(24.dp)) {
+        Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
+      }
+    }
   }
 }
 

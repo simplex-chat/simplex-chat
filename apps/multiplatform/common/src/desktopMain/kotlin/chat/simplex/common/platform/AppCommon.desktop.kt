@@ -15,7 +15,7 @@ fun initApp() {
     override fun notifyCallInvitation(invitation: RcvCallInvitation) = chat.simplex.common.model.NtfManager.notifyCallInvitation(invitation)
     override fun hasNotificationsForChat(chatId: String): Boolean = chat.simplex.common.model.NtfManager.hasNotificationsForChat(chatId)
     override fun cancelNotificationsForChat(chatId: String) = chat.simplex.common.model.NtfManager.cancelNotificationsForChat(chatId)
-    override fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = chat.simplex.common.model.NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
+    override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = chat.simplex.common.model.NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions)
     override fun androidCreateNtfChannelsMaybeShowAlert() {}
     override fun cancelCallNotification() {}
     override fun cancelAllNotifications() = chat.simplex.common.model.NtfManager.cancelAllNotifications()
@@ -25,6 +25,8 @@ fun initApp() {
     initChatController()
     runMigrations()
   }
+  // LALAL
+  //testCrypto()
 }
 
 private fun applyAppLocale() {

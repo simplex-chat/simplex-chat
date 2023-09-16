@@ -10,34 +10,38 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 enum class NotificationAction {
-  ACCEPT_CONTACT_REQUEST
+  ACCEPT_CONTACT_REQUEST,
+  ACCEPT_CONTACT_REQUEST_INCOGNITO
 }
 
 lateinit var ntfManager: NtfManager
 
 abstract class NtfManager {
-  fun notifyContactConnected(user: User, contact: Contact) = displayNotification(
+  fun notifyContactConnected(user: UserLike, contact: Contact) = displayNotification(
     user = user,
     chatId = contact.id,
     displayName = contact.displayName,
     msgText = generalGetString(MR.strings.notification_contact_connected)
   )
 
-  fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) = displayNotification(
+  fun notifyContactRequestReceived(user: UserLike, cInfo: ChatInfo.ContactRequest) = displayNotification(
     user = user,
     chatId = cInfo.id,
     displayName = cInfo.displayName,
     msgText = generalGetString(MR.strings.notification_new_contact_request),
     image = cInfo.image,
-    listOf(NotificationAction.ACCEPT_CONTACT_REQUEST to { acceptContactRequestAction(user.userId, cInfo.id) })
+    listOf(
+      NotificationAction.ACCEPT_CONTACT_REQUEST to { acceptContactRequestAction(user.userId, incognito = false, cInfo.id) },
+      NotificationAction.ACCEPT_CONTACT_REQUEST_INCOGNITO to { acceptContactRequestAction(user.userId, incognito = true, cInfo.id) }
+    )
   )
 
-  fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) {
+  fun notifyMessageReceived(user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
     if (!cInfo.ntfsEnabled) return
     displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
   }
 
-  fun acceptContactRequestAction(userId: Long?, chatId: ChatId) {
+  fun acceptContactRequestAction(userId: Long?, incognito: Boolean, chatId: ChatId) {
     val isCurrentUser = ChatModel.currentUser.value?.userId == userId
     val cInfo: ChatInfo.ContactRequest? = if (isCurrentUser) {
       (ChatModel.getChat(chatId)?.chatInfo as? ChatInfo.ContactRequest) ?: return
@@ -45,7 +49,7 @@ abstract class NtfManager {
       null
     }
     val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
-    acceptContactRequest(apiId, cInfo, isCurrentUser, ChatModel)
+    acceptContactRequest(incognito, apiId, cInfo, isCurrentUser, ChatModel)
     cancelNotificationsForChat(chatId)
   }
 
@@ -85,7 +89,7 @@ abstract class NtfManager {
   abstract fun notifyCallInvitation(invitation: RcvCallInvitation)
   abstract fun hasNotificationsForChat(chatId: String): Boolean
   abstract fun cancelNotificationsForChat(chatId: String)
-  abstract fun displayNotification(user: User, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())
+  abstract fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())
   abstract fun cancelCallNotification()
   abstract fun cancelAllNotifications()
   // Android only
@@ -96,7 +100,7 @@ abstract class NtfManager {
     if (chatModel.chatRunning.value == null) {
       val step = 50L
       for (i in 0..(timeout / step)) {
-        if (chatModel.chatRunning.value == true || chatModel.onboardingStage.value == OnboardingStage.Step1_SimpleXInfo) {
+        if (chatModel.chatRunning.value == true || chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.Step1_SimpleXInfo) {
           break
         }
         delay(step)

@@ -212,7 +212,7 @@
 \nPer connetterti, chiedi al tuo contatto di creare un altro link di connessione e controlla di avere una connessione di rete stabile.</string>
     <string name="error_smp_test_certificate">Probabilmente l\'impronta del certificato nell\'indirizzo del server è sbagliata</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Per rispettare la tua privacy, invece delle notifiche push l\'app ha un <b>servizio SimpleX in secondo piano</b>; usa una piccola percentuale di batteria al giorno.]]></string>
-    <string name="turn_off_battery_optimization"><![CDATA[Per poterlo usare, <b>disattiva l\'ottimizzazione della batteria</b> per SimpleX nella prossima schermata. Altrimenti le notifiche saranno disattivate.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Per usarlo, <b>consenti a SimpleX di funzionare in secondo piano</b> nella prossima schermata. Altrimenti le notifiche saranno disattivate.]]></string>
     <string name="simplex_service_notification_title">Servizio SimpleX Chat</string>
     <string name="notifications_mode_service_desc">Servizio in secondo piano sempre attivo. Le notifiche verranno mostrate appena i messaggi saranno disponibili.</string>
     <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
@@ -270,8 +270,6 @@
     <string name="allow_your_contacts_to_send_voice_messages">Permetti ai tuoi contatti di inviare messaggi vocali.</string>
     <string name="chat_database_deleted">Database della chat eliminato</string>
     <string name="settings_section_title_icon">ICONA APP</string>
-    <string name="incognito_random_profile_from_contact_description">Verrà inviato un profilo casuale al contatto da cui hai ricevuto questo link</string>
-    <string name="incognito_random_profile_description">Verrà inviato un profilo casuale al tuo contatto</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Ideale per la batteria</b>. Riceverai notifiche solo quando l\'app è in esecuzione (NO servizio in secondo piano).]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consuma più batteria</b>! Servizio in secondo piano sempre attivo: le notifiche sono mostrate non appena i messaggi sono disponibili.]]></string>
     <string name="callstatus_calling">chiamata…</string>
@@ -422,7 +420,7 @@
     <string name="rcv_group_event_changed_your_role">cambiato il tuo ruolo in %s</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">cambio indirizzo per %s…</string>
-    <string name="rcv_group_event_member_connected">connesso</string>
+    <string name="rcv_group_event_member_connected">connesso/a</string>
     <string name="group_member_status_connected">connesso/a</string>
     <string name="group_member_status_accepted">in connessione (accettato)</string>
     <string name="group_member_status_announced">in connessione (annunciato)</string>
@@ -568,7 +566,7 @@
     <string name="icon_descr_address">Indirizzo di SimpleX</string>
     <string name="icon_descr_simplex_team">Squadra di SimpleX</string>
     <string name="you_accepted_connection">Hai accettato la connessione</string>
-    <string name="you_invited_your_contact">Hai invitato il contatto</string>
+    <string name="you_invited_a_contact">Hai invitato il contatto</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Il tuo profilo di chat verrà inviato
 \nal tuo contatto</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Il tuo contatto deve essere in linea per completare la connessione.
@@ -582,7 +580,6 @@
     <string name="mark_code_verified">Segna come verificato/a</string>
     <string name="one_time_link">Link di invito una tantum</string>
     <string name="paste_button">Incolla</string>
-    <string name="paste_connection_link_below_to_connect">Incolla il link che hai ricevuto nella casella sottostante per connetterti con il tuo contatto.</string>
     <string name="smp_servers_preset_server">Server preimpostato</string>
     <string name="smp_servers_preset_address">Indirizzo server preimpostato</string>
     <string name="smp_servers_save">Salva i server</string>
@@ -606,7 +603,6 @@
     <string name="smp_servers_use_server_for_new_conn">Usa per connessioni nuove</string>
     <string name="smp_servers_use_server">Usa il server</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Puoi anche connetterti cliccando il link. Se si apre nel browser, clicca il pulsante <b>Apri nell\'app mobile</b>.]]></string>
-    <string name="your_profile_will_be_sent">Il tuo profilo di chat verrà inviato al tuo contatto</string>
     <string name="smp_servers_your_server">Il tuo server</string>
     <string name="smp_servers_your_server_address">L\'indirizzo del tuo server</string>
     <string name="your_simplex_contact_address">Il tuo indirizzo SimpleX</string>
@@ -763,14 +759,14 @@
     <string name="wrong_passphrase">Password del database sbagliata</string>
     <string name="wrong_passphrase_title">Password sbagliata!</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Sei stato/a invitato/a al gruppo. Entra per connetterti con i suoi membri.</string>
-    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puoi avviare la chat tramite Impostazioni -&gt; Database o riavviando l\'app.</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puoi avviare la chat tramite Impostazioni / Database o riavviando l\'app.</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Sei entrato/a in questo gruppo. Connessione al membro del gruppo invitante.</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Non riceverai più messaggi da questo gruppo. La cronologia della chat verrà conservata.</string>
     <string name="group_member_status_invited">ha invitato</string>
     <string name="rcv_group_event_invited_via_your_group_link">invitato via link del tuo gruppo</string>
     <string name="rcv_group_event_member_added">ha invitato %1$s</string>
-    <string name="rcv_group_event_member_left">uscito/a</string>
-    <string name="group_member_status_left">è uscito/a</string>
+    <string name="rcv_group_event_member_left">è uscito/a</string>
+    <string name="group_member_status_left">uscito/a</string>
     <string name="group_member_role_member">membro</string>
     <string name="group_member_role_owner">proprietario</string>
     <string name="group_member_status_removed">ha rimosso</string>
@@ -814,8 +810,7 @@
     <string name="invite_prohibited_description">Stai tentando di invitare un contatto con cui hai condiviso un profilo in incognito nel gruppo in cui stai usando il tuo profilo principale</string>
     <string name="group_info_member_you">tu: %1$s</string>
     <string name="incognito">Incognito</string>
-    <string name="group_unsupported_incognito_main_profile_sent">La modalità in incognito non è supportata qui: il tuo profilo principale verrà inviato ai membri del gruppo</string>
-    <string name="incognito_info_protects">La modalità in incognito protegge la privacy del nome e dell\'immagine del tuo profilo principale: per ogni nuovo contatto viene creato un nuovo profilo casuale.</string>
+    <string name="incognito_info_protects">La modalità in incognito protegge la tua privacy usando un nuovo profilo casuale per ogni contatto.</string>
     <string name="conn_level_desc_indirect">indiretta (%1$s)</string>
     <string name="incognito_info_allows">Permette di avere molte connessioni anonime senza dati condivisi tra di loro in un unico profilo di chat.</string>
     <string name="theme_light">Chiaro</string>
@@ -836,7 +831,6 @@
     <string name="group_is_decentralized">Il gruppo è completamente decentralizzato: è visibile solo ai membri.</string>
     <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in \"%s\". Tutti i membri del gruppo riceveranno una notifica.</string>
     <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in \"%s\". Il membro riceverà un nuovo invito.</string>
-    <string name="incognito_info_find">Per trovare il profilo usato per una connessione in incognito, tocca il nome del contatto o del gruppo in cima alla chat.</string>
     <string name="update_network_settings_confirmation">Aggiorna</string>
     <string name="update_network_settings_question">Aggiornare le impostazioni di rete\?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">L\'aggiornamento delle impostazioni riconnetterà il client a tutti i server.</string>
@@ -1325,7 +1319,7 @@
     <string name="receipts_contacts_override_disabled">L\'invio di ricevute è disattivato per %d contatti</string>
     <string name="sync_connection_force_desc">La crittografia funziona e il nuovo accordo sulla crittografia non è richiesto. Potrebbero verificarsi errori di connessione!</string>
     <string name="receipts_section_description">Queste impostazioni sono per il tuo profilo attuale</string>
-    <string name="receipts_section_description_1">Possono essere sovrascritte nelle impostazioni dei contatti</string>
+    <string name="receipts_section_description_1">Possono essere sovrascritte nelle impostazioni dei contatti e dei gruppi.</string>
     <string name="receipts_contacts_enable_for_all">Attiva per tutti</string>
     <string name="receipts_contacts_enable_keep_overrides">Attiva (mantieni sostituzioni)</string>
     <string name="receipts_contacts_override_enabled">L\'invio di ricevute è attivo per %d contatti</string>
@@ -1342,4 +1336,44 @@
     <string name="in_reply_to">In risposta a</string>
     <string name="no_history">Nessuna cronologia</string>
     <string name="sync_connection_force_question">Rinegoziare la crittografia\?</string>
+    <string name="choose_file_title">Scegli un file</string>
+    <string name="no_selected_chat">Nessuna chat selezionata</string>
+    <string name="in_developing_title">Prossimamente!</string>
+    <string name="in_developing_desc">Questa funzione non è ancora supportata. Prova la prossima versione.</string>
+    <string name="no_info_on_delivery">Nessuna informazione sulla consegna</string>
+    <string name="receipts_groups_title_enable">Attivare le ricevute per i gruppi\?</string>
+    <string name="receipts_section_groups">Piccoli gruppi (max 20)</string>
+    <string name="receipts_groups_enable_for_all">Attiva per tutti i gruppi</string>
+    <string name="receipts_groups_override_disabled">L\'invio di ricevute è disattivato per %d gruppi</string>
+    <string name="receipts_groups_override_enabled">L\'invio di ricevute è attivato per %d gruppi</string>
+    <string name="send_receipts_disabled_alert_title">Le ricevute sono disattivate</string>
+    <string name="delivery">Consegna</string>
+    <string name="receipts_groups_enable_keep_overrides">Attiva (mantieni sostituzioni dei gruppi)</string>
+    <string name="send_receipts_disabled">disattivato</string>
+    <string name="receipts_groups_disable_keep_overrides">Disattiva (mantieni sostituzioni dei gruppi)</string>
+    <string name="receipts_groups_title_disable">Disattivare le ricevute per i gruppi\?</string>
+    <string name="receipts_groups_disable_for_all">Disattiva per tutti i gruppi</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="send_receipts_disabled_alert_msg">Questo gruppo ha più di %1$d membri, le ricevute di consegna non vengono inviate.</string>
+    <string name="connect_via_member_address_alert_title">Connettersi direttamente\?</string>
+    <string name="connect_via_member_address_alert_desc">La richiesta di connessione verrà inviata a questo membro del gruppo.</string>
+    <string name="connect_via_link_incognito">Connetti in incognito</string>
+    <string name="connect_use_current_profile">Usa il profilo attuale</string>
+    <string name="connect_use_new_incognito_profile">Usa nuovo profilo in incognito</string>
+    <string name="turn_off_battery_optimization_button">Consenti</string>
+    <string name="turn_off_system_restriction_button">Apri impostazioni app</string>
+    <string name="system_restricted_background_in_call_desc">L\'app potrebbe venire chiusa dopo 1 minuto in secondo piano.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Incolla il link che hai ricevuto per connetterti con il contatto…</string>
+    <string name="connect__your_profile_will_be_shared">Il tuo profilo %1$s verrà condiviso.</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Verrà condiviso un nuovo profilo casuale.</string>
+    <string name="disable_notifications_button">Disattiva le notifiche</string>
+    <string name="system_restricted_background_in_call_title">Nessuna chiamata in secondo piano</string>
+    <string name="system_restricted_background_desc">SimpleX non può funzionare in secondo piano. Riceverai le notifiche solo quando l\'app è aperta.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Per attivare le notifiche, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Per effettuare chiamate in secondo piano, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
+    <string name="rcv_group_event_2_members_connected">%s e %s sono connessi/e</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s e altri %d membri sono connessi</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s e %s sono connessi/e</string>
+    <string name="privacy_message_draft">Bozza</string>
+    <string name="privacy_show_last_messages">Mostra gli ultimi messaggi</string>
 </resources>

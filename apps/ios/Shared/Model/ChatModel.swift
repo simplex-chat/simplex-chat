@@ -11,6 +11,38 @@ import Combine
 import SwiftUI
 import SimpleXChat
 
+actor TerminalItems {
+    private var terminalItems: [TerminalItem] = []
+
+    static let shared = TerminalItems()
+
+    func items() -> [TerminalItem] {
+        terminalItems
+    }
+
+    func add(_ item: TerminalItem) async {
+        addTermItem(&terminalItems, item)
+        let m = ChatModel.shared
+        if m.showingTerminal {
+            await MainActor.run {
+                addTermItem(&m.terminalItems, item)
+            }
+        }
+    }
+
+    func addCommand(_ start: Date, _ cmd: ChatCommand, _ resp: ChatResponse) async {
+        await add(.cmd(start, cmd))
+        await add(.resp(.now, resp))
+    }
+}
+
+private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
+    if items.count >= 200 {
+        items.removeFirst()
+    }
+    items.append(item)
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -33,6 +65,7 @@ final class ChatModel: ObservableObject {
     @Published var chatToTop: String?
     @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
+    @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: UserContactLink?
     @Published var chatItemTTL: ChatItemTTL = .none
@@ -43,9 +76,8 @@ final class ChatModel: ObservableObject {
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
     @Published var notificationPreview: NotificationPreviewMode = ntfPreviewModeGroupDefault.get()
-    @Published var incognito: Bool = incognitoGroupDefault.get()
     // pending notification actions
-    @Published var ntfContactRequest: ChatId?
+    @Published var ntfContactRequest: NTFContactRequest?
     @Published var ntfCallInvitationAction: (ChatId, NtfCallAction)?
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
@@ -463,18 +495,18 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func increaseUnreadCounter(user: User) {
+    func increaseUnreadCounter(user: any UserLike) {
         changeUnreadCounter(user: user, by: 1)
         NtfManager.shared.incNtfBadgeCount()
     }
 
-    func decreaseUnreadCounter(user: User, by: Int = 1) {
+    func decreaseUnreadCounter(user: any UserLike, by: Int = 1) {
         changeUnreadCounter(user: user, by: -by)
         NtfManager.shared.decNtfBadgeCount(by: by)
     }
 
-    private func changeUnreadCounter(user: User, by: Int) {
-        if let i = users.firstIndex(where: { $0.user.id == user.id }) {
+    private func changeUnreadCounter(user: any UserLike, by: Int) {
+        if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
             users[i].unreadCount += by
         }
     }
@@ -484,14 +516,27 @@ final class ChatModel: ObservableObject {
             users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
     }
 
-    func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
-        if let i = getChatItemIndex(ci), i < reversedChatItems.count - 1  {
-            return reversedChatItems[i + 1]
+    func getConnectedMemberNames(_ ci: ChatItem) -> [String] {
+        guard var i = getChatItemIndex(ci) else { return [] }
+        var ns: [String] = []
+        while i < reversedChatItems.count, let m = reversedChatItems[i].memberConnected {
+            ns.append(m.displayName)
+            i += 1
+        }
+        return ns
+    }
+
+    func getChatItemNeighbors(_ ci: ChatItem) -> (ChatItem?, ChatItem?) {
+        if let i = getChatItemIndex(ci)  {
+            return (
+                i + 1 < reversedChatItems.count ? reversedChatItems[i + 1] : nil,
+                i - 1 >= 0 ? reversedChatItems[i - 1] : nil
+            )
         } else {
-            return nil
+            return (nil, nil)
         }
     }
-    
+
     func popChat(_ id: String) {
         if let i = getChatIndex(id) {
             popChat_(i)
@@ -580,13 +625,11 @@ final class ChatModel: ObservableObject {
     func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
         networkStatuses[contact.activeConn.agentConnId] ?? .unknown
     }
+}
 
-    func addTerminalItem(_ item: TerminalItem) {
-        if terminalItems.count >= 500 {
-            terminalItems.remove(at: 0)
-        }
-        terminalItems.append(item)
-    }
+struct NTFContactRequest {
+    var incognito: Bool
+    var chatId: String
 }
 
 struct UnreadChatItemCounts {

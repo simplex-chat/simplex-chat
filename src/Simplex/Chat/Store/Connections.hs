@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -6,25 +7,30 @@
 
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
+    getConnectionsToSubscribe,
+    unsetConnectionToSubscribe,
   )
 where
 
 import Control.Applicative ((<|>))
 import Control.Monad.Except
 import Data.Int (Int64)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..))
-import Database.SQLite.Simple ((:.) (..))
-import qualified Database.SQLite.Simple as DB
+import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
+import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow')
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Util (eitherToMaybe)
 
 getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db user@User {userId, userContactId} agentConnId = do
@@ -49,7 +55,8 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           db
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
-              conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at, auth_err_counter
+              conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at, auth_err_counter,
+              peer_chat_min_version, peer_chat_max_version
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ?
           |]
@@ -141,3 +148,17 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ :: [(ConnReqContact, Maybe GroupId)] -> Either StoreError UserContact
         userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
+
+getConnectionsToSubscribe :: DB.Connection -> IO ([ConnId], [ConnectionEntity])
+getConnectionsToSubscribe db = do
+  aConnIds <- map fromOnly <$> DB.query_ db "SELECT agent_conn_id FROM connections where to_subscribe = 1"
+  entities <- forM aConnIds $ \acId -> do
+    getUserByAConnId db acId >>= \case
+      Just user -> eitherToMaybe <$> runExceptT (getConnectionEntity db user acId)
+      Nothing -> pure Nothing
+  unsetConnectionToSubscribe db
+  let connIds = map (\(AgentConnId connId) -> connId) aConnIds
+  pure (connIds, catMaybes entities)
+
+unsetConnectionToSubscribe :: DB.Connection -> IO ()
+unsetConnectionToSubscribe db = DB.execute_ db "UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1"

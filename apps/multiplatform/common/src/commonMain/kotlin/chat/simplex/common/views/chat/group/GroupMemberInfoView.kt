@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.group
 import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -445,19 +446,42 @@ private fun updateMemberRoleDialog(
 }
 
 fun connectViaMemberAddressAlert(connReqUri: String) {
-  AlertManager.shared.showAlertDialog(
+  AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.connect_via_member_address_alert_title),
-    text = generalGetString(MR.strings.connect_via_member_address_alert_desc),
-    confirmText = generalGetString(MR.strings.connect_via_link_verb),
-    onConfirm = {
-      val uri = URI(connReqUri)
-      withUriAction(uri) { linkType ->
-        withApi {
-          Log.d(TAG, "connectViaUri: connecting")
-          connectViaUri(chatModel, linkType, uri)
+    text = AnnotatedString(generalGetString(MR.strings.connect_via_member_address_alert_desc)),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          val uri = URI(connReqUri)
+          withUriAction(uri) { linkType ->
+            withApi {
+              Log.d(TAG, "connectViaUri: connecting")
+              connectViaUri(chatModel, linkType, uri, incognito = false)
+            }
+          }
+        }) {
+          Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          val uri = URI(connReqUri)
+          withUriAction(uri) { linkType ->
+            withApi {
+              Log.d(TAG, "connectViaUri: connecting incognito")
+              connectViaUri(chatModel, linkType, uri, incognito = true)
+            }
+          }
+        }) {
+          Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
-    },
+    }
   )
 }
 

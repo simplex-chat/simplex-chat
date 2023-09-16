@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import SectionItemView
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -13,9 +14,12 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.deleteGroupDialog
@@ -23,9 +27,7 @@ import chat.simplex.common.views.chat.group.leaveGroupDialog
 import chat.simplex.common.views.chat.item.InvalidJSONView
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.ContactConnectionInfoView
-import chat.simplex.common.platform.appPlatform
-import chat.simplex.common.platform.ntfManager
+import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -42,11 +44,12 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     showMenu.value = false
     delay(500L)
   }
+  val showChatPreviews = chatModel.showChatPreviews.value
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.draft.value, chatModel.draftChatId.value, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode) },
+        chatLinkPreview = { ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode) },
         click = { directChatAction(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -55,7 +58,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     }
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.draft.value, chatModel.draftChatId.value, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode) },
+        chatLinkPreview = { ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode) },
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
         dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -63,7 +66,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       )
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ContactRequestView(chatModel.incognito.value, chat.chatInfo) },
+        chatLinkPreview = { ContactRequestView(chat.chatInfo) },
         click = { contactRequestAlertDialog(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactRequestMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu,
@@ -101,7 +104,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
 
 fun directChatAction(chatInfo: ChatInfo, chatModel: ChatModel) {
   if (chatInfo.ready) {
-    withApi { openChat(chatInfo, chatModel) }
+    withBGApi { openChat(chatInfo, chatModel) }
   } else {
     pendingContactAlertDialog(chatInfo, chatModel)
   }
@@ -111,7 +114,7 @@ fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(groupInfo, chatModel)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert()
-    else -> withApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
+    else -> withBGApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
   }
 }
 
@@ -320,11 +323,20 @@ fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: Mutab
 @Composable
 fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    if (chatModel.incognito.value) stringResource(MR.strings.accept_contact_incognito_button) else stringResource(MR.strings.accept_contact_button),
-    if (chatModel.incognito.value) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_check),
-    color = if (chatModel.incognito.value) Indigo else MaterialTheme.colors.onBackground,
+    stringResource(MR.strings.accept_contact_button),
+    painterResource(MR.images.ic_check),
+    color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(chatInfo.apiId, chatInfo, true, chatModel)
+      acceptContactRequest(incognito = false, chatInfo.apiId, chatInfo, true, chatModel)
+      showMenu.value = false
+    }
+  )
+  ItemAction(
+    stringResource(MR.strings.accept_contact_incognito_button),
+    painterResource(MR.images.ic_theater_comedy),
+    color = MaterialTheme.colors.onBackground,
+    onClick = {
+      acceptContactRequest(incognito = true, chatInfo.apiId, chatInfo, true, chatModel)
       showMenu.value = false
     }
   )
@@ -357,7 +369,12 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     stringResource(MR.strings.delete_verb),
     painterResource(MR.images.ic_delete),
     onClick = {
-      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {}
+      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {
+        if (chatModel.chatId.value == null) {
+          ModalManager.center.closeModals()
+          ModalManager.end.closeModals()
+        }
+      }
       showMenu.value = false
     },
     color = Color.Red
@@ -430,19 +447,37 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
 }
 
 fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
-  AlertManager.shared.showAlertDialog(
+  AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_connection_request__question),
-    text = generalGetString(MR.strings.if_you_choose_to_reject_the_sender_will_not_be_notified),
-    confirmText = if (chatModel.incognito.value) generalGetString(MR.strings.accept_contact_incognito_button) else generalGetString(MR.strings.accept_contact_button),
-    onConfirm = { acceptContactRequest(contactRequest.apiId, contactRequest, true, chatModel) },
-    dismissText = generalGetString(MR.strings.reject_contact_button),
-    onDismiss = { rejectContactRequest(contactRequest, chatModel) }
+    text = AnnotatedString(generalGetString(MR.strings.if_you_choose_to_reject_the_sender_will_not_be_notified)),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          acceptContactRequest(incognito = false, contactRequest.apiId, contactRequest, true, chatModel)
+        }) {
+          Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          acceptContactRequest(incognito = true, contactRequest.apiId, contactRequest, true, chatModel)
+        }) {
+          Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          rejectContactRequest(contactRequest, chatModel)
+        }) {
+          Text(generalGetString(MR.strings.reject_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+      }
+    }
   )
 }
 
-fun acceptContactRequest(apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel) {
+fun acceptContactRequest(incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel) {
   withApi {
-    val contact = chatModel.controller.apiAcceptContactRequest(apiId)
+    val contact = chatModel.controller.apiAcceptContactRequest(incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(ChatInfo.Direct(contact), listOf())
       chatModel.replaceChat(contactRequest.id, chat)
@@ -455,38 +490,6 @@ fun rejectContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: Cha
     chatModel.controller.apiRejectContactRequest(contactRequest.apiId)
     chatModel.removeChat(contactRequest.id)
   }
-}
-
-fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel: ChatModel) {
-  AlertManager.shared.showAlertDialogButtons(
-    title = generalGetString(
-      if (connection.initiated) MR.strings.you_invited_your_contact
-      else MR.strings.you_accepted_connection
-    ),
-    text = generalGetString(
-      if (connection.viaContactUri) MR.strings.you_will_be_connected_when_your_connection_request_is_accepted
-      else MR.strings.you_will_be_connected_when_your_contacts_device_is_online
-    ),
-    buttons = {
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.Center,
-      ) {
-        TextButton(onClick = {
-          AlertManager.shared.hideAlert()
-          deleteContactConnectionAlert(connection, chatModel) {}
-        }) {
-          Text(stringResource(MR.strings.delete_verb))
-        }
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        TextButton(onClick = { AlertManager.shared.hideAlert() }) {
-          Text(stringResource(MR.strings.ok))
-        }
-      }
-    }
-  )
 }
 
 fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
@@ -520,7 +523,10 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
-          chatModel.chatId.value = null
+          if (chatModel.chatId.value == chatInfo.id) {
+            chatModel.chatId.value = null
+            ModalManager.end.closeModals()
+          }
         }
       }
     },
@@ -553,7 +559,10 @@ fun deleteGroup(groupInfo: GroupInfo, chatModel: ChatModel) {
     val r = chatModel.controller.apiDeleteChat(ChatType.Group, groupInfo.apiId)
     if (r) {
       chatModel.removeChat(groupInfo.id)
-      chatModel.chatId.value = null
+      if (chatModel.chatId.value == groupInfo.id) {
+        chatModel.chatId.value = null
+        ModalManager.end.closeModals()
+      }
       ntfManager.cancelNotificationsForChat(groupInfo.id)
     }
   }
@@ -660,9 +669,9 @@ fun PreviewChatListNavLinkDirect() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          true,
           null,
           null,
-          false,
           null,
           null,
           stopped = false,
@@ -700,9 +709,9 @@ fun PreviewChatListNavLinkGroup() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          true,
           null,
           null,
-          false,
           null,
           null,
           stopped = false,
@@ -727,7 +736,7 @@ fun PreviewChatListNavLinkContactRequest() {
   SimpleXTheme {
     ChatListNavLinkLayout(
       chatLinkPreview = {
-        ContactRequestView(false, ChatInfo.ContactRequest.sampleData)
+        ContactRequestView(ChatInfo.ContactRequest.sampleData)
       },
       click = {},
       dropdownMenuItems = null,

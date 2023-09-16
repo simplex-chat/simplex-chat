@@ -17,11 +17,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
@@ -43,7 +43,7 @@ import java.net.URI
 import kotlin.math.sign
 
 @Composable
-fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
+fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: String) -> Unit) {
   val activeChat = remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
   val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
@@ -66,12 +66,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
     launch {
       snapshotFlow { chatModel.chatId.value }
         .distinctUntilChanged()
-        .collect {
-          if (activeChat.value?.id != chatModel.chatId.value && chatModel.chatId.value != null) {
-            // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
-            // Also for situation when chatId changes after clicking in notification, etc
-            activeChat.value = chatModel.getChat(chatModel.chatId.value!!)
-          }
+        .filter { it != null && activeChat.value?.id != it }
+        .collect { chatId ->
+          // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
+          // Also for situation when chatId changes after clicking in notification, etc
+          activeChat.value = chatModel.getChat(chatId!!)
           markUnreadChatAsRead(activeChat, chatModel)
         }
     }
@@ -91,20 +90,21 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       }
         .distinctUntilChanged()
         // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
-        .filter { it?.chatInfo != activeChat.value?.chatInfo && it != null }
+        .filter { it != null && it?.chatInfo != activeChat.value?.chatInfo }
         .collect { activeChat.value = it }
     }
   }
   val view = LocalMultiplatformView()
   if (activeChat.value == null || user == null) {
     chatModel.chatId.value = null
+    ModalManager.end.closeModals()
   } else {
     val chat = activeChat.value!!
     // We need to have real unreadCount value for displaying it inside top right button
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
       derivedStateOf {
-        chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }?.chatStats?.unreadCount ?: 0
+        chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
     val clipboard = LocalClipboardManager.current
@@ -127,34 +127,51 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       searchText,
       useLinkPreviews = useLinkPreviews,
       linkMode = chatModel.simplexLinkMode.value,
-      chatModelIncognito = chatModel.incognito.value,
       back = {
         hideKeyboard(view)
         AudioPlayer.stop()
         chatModel.chatId.value = null
       },
       info = {
+        if (ModalManager.end.hasModalsOpen()) {
+          ModalManager.end.closeModals()
+          return@ChatLayout
+        }
         hideKeyboard(view)
         withApi {
+          // The idea is to preload information before showing a modal because large groups can take time to load all members
+          var preloadedContactInfo: Pair<ConnectionStats, Profile?>? = null
+          var preloadedCode: String? = null
+          var preloadedLink: Pair<String, GroupMemberRole>? = null
           if (chat.chatInfo is ChatInfo.Direct) {
-            val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
-            val (_, code) = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)
-            ModalManager.end.closeModals()
-            ModalManager.end.showModalCloseable(true) { close ->
-              remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.apiId)?.chatInfo as? ChatInfo.Direct)?.contact } }.value?.let { ct ->
-                ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
-              }
-            }
+            preloadedContactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+            preloadedCode = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId).second
           } else if (chat.chatInfo is ChatInfo.Group) {
             setGroupMembers(chat.chatInfo.groupInfo, chatModel)
-            val link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
-            var groupLink = link?.first
-            var groupLinkMemberRole = link?.second
-            ModalManager.end.closeModals()
-            ModalManager.end.showModalCloseable(true) { close ->
-              GroupChatInfoView(chatModel, groupLink, groupLinkMemberRole, {
-                groupLink = it.first;
-                groupLinkMemberRole = it.second
+            preloadedLink = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+          }
+          ModalManager.end.showModalCloseable(true) { close ->
+            val chat = remember { activeChat }.value
+            if (chat?.chatInfo is ChatInfo.Direct) {
+              var contactInfo: Pair<ConnectionStats, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
+              var code: String? by remember { mutableStateOf(preloadedCode) }
+              KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
+                contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+                preloadedContactInfo = contactInfo
+                code = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId).second
+                preloadedCode = code
+              }
+              ChatInfoView(chatModel, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
+            } else if (chat?.chatInfo is ChatInfo.Group) {
+              var link: Pair<String, GroupMemberRole>? by remember(chat.id) { mutableStateOf(preloadedLink) }
+              KeyChangeEffect(chat.id) {
+                setGroupMembers((chat.chatInfo as ChatInfo.Group).groupInfo, chatModel)
+                link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+                preloadedLink = link
+              }
+              GroupChatInfoView(chatModel, link?.first, link?.second, {
+                link = it
+                preloadedLink = it
               }, close)
             }
           }
@@ -227,8 +244,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           }
         }
       },
-      receiveFile = { fileId ->
-        withApi { chatModel.controller.receiveFile(user, fileId) }
+      receiveFile = { fileId, encrypted ->
+        withApi { chatModel.controller.receiveFile(user, fileId, encrypted) }
       },
       cancelFile = { fileId ->
         withApi { chatModel.controller.cancelFile(user, fileId) }
@@ -240,11 +257,13 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         if (appPlatform.isDesktop) {
           return@out showInDevelopingAlert()
         }
-        val cInfo = chat.chatInfo
-        if (cInfo is ChatInfo.Direct) {
-          chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
-          chatModel.showCallView.value = true
-          chatModel.callCommand.value = WCallCommand.Capabilities
+        withBGApi {
+          val cInfo = chat.chatInfo
+          if (cInfo is ChatInfo.Direct) {
+            chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+            chatModel.showCallView.value = true
+            chatModel.callCommand.value = WCallCommand.Capabilities
+          }
         }
       },
       acceptCall = { contact ->
@@ -379,13 +398,12 @@ fun ChatLayout(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
@@ -403,14 +421,15 @@ fun ChatLayout(
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
-  onComposed: () -> Unit,
+  onComposed: suspend (chatId: String) -> Unit,
 ) {
   val scope = rememberCoroutineScope()
+  val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
   Box(
     Modifier
       .fillMaxWidth()
       .desktopOnExternalDrag(
-        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value,
+        enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
         onFiles = { paths ->
           val uris = paths.map { URI.create(it) }
           val groups =  uris.groupBy { isImage(it) }
@@ -465,7 +484,7 @@ fun ChatLayout(
           ) {
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
-              useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
+              useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage,
               receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature,
               updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
               setReaction, showItemDetails, markRead, setFloatingButton, onComposed,
@@ -634,11 +653,10 @@ fun BoxWithConstraintsScope.ChatItemsList(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  chatModelIncognito: Boolean,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit,
+  receiveFile: (Long, Boolean) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -653,7 +671,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   setFloatingButton: (@Composable () -> Unit) -> Unit,
-  onComposed: () -> Unit,
+  onComposed: suspend (chatId: String) -> Unit,
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
@@ -684,13 +702,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
       scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded) }
     }
   }
-  LaunchedEffect(Unit) {
+  LaunchedEffect(chat.id) {
     var stopListening = false
     snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
       .filter { !stopListening }
       .collect {
-        onComposed()
+        onComposed(chat.id)
         stopListening = true
       }
   }
@@ -700,7 +718,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   )
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
-    itemsIndexed(reversedChatItems, key = { _, item -> item.id}) { i, cItem ->
+    itemsIndexed(reversedChatItems, key = { _, item -> item.id }) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
@@ -742,27 +760,73 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (chat.chatInfo is ChatInfo.Group) {
           if (cItem.chatDir is CIDirection.GroupRcv) {
             val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
-            val member = cItem.chatDir.groupMember
-            val showMember = showMemberImage(member, prevItem)
-            Row(Modifier.padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp).then(swipeableModifier)) {
-              if (showMember) {
-                Box(
-                  Modifier
-                    .clip(CircleShape)
-                    .clickable {
-                      showMemberInfo(chat.chatInfo.groupInfo, member)
-                    }
-                ) {
-                  MemberImage(member)
+            val nextItem = if (i - 1 >= 0) reversedChatItems[i - 1] else null
+            fun getConnectedMemberNames(): List<String> {
+              val ns = mutableListOf<String>()
+              var idx = i
+              while (idx < reversedChatItems.size) {
+                val m = reversedChatItems[idx].memberConnected
+                if (m != null) {
+                  ns.add(m.displayName)
+                } else {
+                  break
                 }
-                Spacer(Modifier.size(4.dp))
-              } else {
-                Spacer(Modifier.size(42.dp))
+                idx++
               }
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
+              return ns
+            }
+            if (cItem.memberConnected != null && nextItem?.memberConnected != null) {
+              // memberConnected events are aggregated at the last chat item in a row of such events, see ChatItemView
+              Box(Modifier.size(0.dp)) {}
+            } else {
+              val member = cItem.chatDir.groupMember
+              if (showMemberImage(member, prevItem)) {
+                Column(
+                  Modifier
+                    .padding(top = 8.dp)
+                    .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp),
+                  verticalArrangement = Arrangement.spacedBy(4.dp),
+                  horizontalAlignment = Alignment.Start
+                ) {
+                  if (cItem.content.showMemberName) {
+                    Text(
+                      member.displayName,
+                      Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
+                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+                    )
+                  }
+                  Row(
+                    swipeableModifier,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                  ) {
+                    Box(
+                      Modifier
+                        .clip(CircleShape)
+                        .clickable {
+                          showMemberInfo(chat.chatInfo.groupInfo, member)
+                        }
+                    ) {
+                      MemberImage(member)
+                    }
+                    ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames)
+                  }
+                }
+              } else {
+                Row(
+                  Modifier
+                    .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                    .then(swipeableModifier)
+                ) {
+                  ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames)
+                }
+              }
             }
           } else {
-            Box(Modifier.padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp).then(swipeableModifier)) {
+            Box(
+              Modifier
+                .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
+                .then(swipeableModifier)
+            ) {
               ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
             }
           }
@@ -778,7 +842,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           }
         }
 
-        if (cItem.isRcvNew) {
+        if (cItem.isRcvNew && chat.id == ChatModel.chatId.value) {
           LaunchedEffect(cItem.id) {
             scope.launch {
               delay(600)
@@ -816,7 +880,7 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
       .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
       .collect {
         try {
-          if (listState.firstVisibleItemIndex == 0) {
+          if (listState.firstVisibleItemIndex == 0 || (listState.firstVisibleItemIndex == 1 && listState.layoutInfo.totalItemsCount == chatItems.size)) {
             listState.animateScrollToItem(0)
           } else {
             listState.animateScrollBy(scrollDistance)
@@ -910,17 +974,19 @@ fun BoxWithConstraintsScope.FloatingButtons(
     onLongClick = { showDropDown.value = true }
   )
 
-  DefaultDropdownMenu(showDropDown, offset = DpOffset(maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
-    ItemAction(
-      generalGetString(MR.strings.mark_read),
-      painterResource(MR.images.ic_check),
-      onClick = {
-        markRead(
-          CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
-          bottomUnreadCount
-        )
-        showDropDown.value = false
-      })
+  Box {
+    DefaultDropdownMenu(showDropDown, offset = DpOffset(this@FloatingButtons.maxWidth - DEFAULT_PADDING, 24.dp + fabSize)) {
+      ItemAction(
+        generalGetString(MR.strings.mark_read),
+        painterResource(MR.images.ic_check),
+        onClick = {
+          markRead(
+            CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
+            bottomUnreadCount
+          )
+          showDropDown.value = false
+        })
+    }
   }
 }
 
@@ -955,9 +1021,11 @@ fun showMemberImage(member: GroupMember, prevItem: ChatItem?): Boolean {
       (prevItem.chatDir is CIDirection.GroupRcv && prevItem.chatDir.groupMember.groupMemberId != member.groupMemberId)
 }
 
+val MEMBER_IMAGE_SIZE: Dp = 38.dp
+
 @Composable
 fun MemberImage(member: GroupMember) {
-  ProfileImage(38.dp, member.memberProfile.image)
+  ProfileImage(MEMBER_IMAGE_SIZE, member.memberProfile.image)
 }
 
 @Composable
@@ -1049,7 +1117,7 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
 }
 
 sealed class ProviderMedia {
-  data class Image(val uri: URI, val image: ImageBitmap): ProviderMedia()
+  data class Image(val data: ByteArray, val image: ImageBitmap): ProviderMedia()
   data class Video(val uri: URI, val preview: String): ProviderMedia()
 }
 
@@ -1087,11 +1155,11 @@ private fun providerForGallery(
       val item = item(internalIndex, initialChatId)?.second ?: return null
       return when (item.content.msgContent) {
         is MsgContent.MCImage -> {
-          val imageBitmap: ImageBitmap? = getLoadedImage(item.file)
+          val res = getLoadedImage(item.file)
           val filePath = getLoadedFilePath(item.file)
-          if (imageBitmap != null && filePath != null) {
-            val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
-            ProviderMedia.Image(uri, imageBitmap)
+          if (res != null && filePath != null) {
+            val (imageBitmap: ImageBitmap, data: ByteArray) = res
+            ProviderMedia.Image(data, imageBitmap)
           } else null
         }
         is MsgContent.MCVideo -> {
@@ -1184,13 +1252,12 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      chatModelIncognito = false,
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
-      receiveFile = {},
+      receiveFile = { _, _ -> },
       cancelFile = {},
       joinGroup = {},
       startCall = {},
@@ -1252,13 +1319,12 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
-      chatModelIncognito = false,
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
-      receiveFile = {},
+      receiveFile = { _, _ -> },
       cancelFile = {},
       joinGroup = {},
       startCall = {},

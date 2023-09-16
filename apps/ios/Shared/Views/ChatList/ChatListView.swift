@@ -60,8 +60,6 @@ struct ChatListView: View {
                 chatList
             }
         }
-        .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
-        .onAppear() { connectViaUrl() }
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
@@ -108,11 +106,6 @@ struct ChatListView: View {
             }
             ToolbarItem(placement: .principal) {
                 HStack(spacing: 4) {
-                    if (chatModel.incognito) {
-                        Image(systemName: "theatermasks")
-                            .foregroundColor(.indigo)
-                            .padding(.trailing, 8)
-                    }
                     Text("Chats")
                         .font(.headline)
                     if chatModel.chats.count > 0 {

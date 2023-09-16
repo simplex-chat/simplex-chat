@@ -64,8 +64,27 @@ fun PrivacySettingsView(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
+      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles)
       SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
       SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_chat_bubble),
+        stringResource(MR.strings.privacy_show_last_messages),
+        chatModel.controller.appPrefs.privacyShowChatPreviews,
+        onChange = { showPreviews ->
+          chatModel.showChatPreviews.value = showPreviews
+        }
+      )
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_edit_note),
+        stringResource(MR.strings.privacy_message_draft),
+        chatModel.controller.appPrefs.privacySaveLastDraft,
+        onChange = { saveDraft ->
+          if (!saveDraft) {
+            chatModel.draft.value = null
+            chatModel.draftChatId.value = null
+          }
+        })
       SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it

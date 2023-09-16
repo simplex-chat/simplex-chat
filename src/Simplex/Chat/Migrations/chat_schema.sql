@@ -204,7 +204,9 @@ CREATE TABLE files(
   agent_snd_file_id BLOB NULL,
   private_snd_file_descr TEXT NULL,
   agent_snd_file_deleted INTEGER DEFAULT 0 CHECK(agent_snd_file_deleted NOT NULL),
-  protocol TEXT NOT NULL DEFAULT 'smp'
+  protocol TEXT NOT NULL DEFAULT 'smp',
+  file_crypto_key BLOB,
+  file_crypto_nonce BLOB
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -283,6 +285,9 @@ CREATE TABLE connections(
   security_code TEXT NULL,
   security_code_verified_at TEXT NULL,
   auth_err_counter INTEGER DEFAULT 0 CHECK(auth_err_counter NOT NULL),
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
+  to_subscribe INTEGER DEFAULT 0 NOT NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -316,6 +321,8 @@ CREATE TABLE contact_requests(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -701,3 +708,8 @@ CREATE INDEX idx_group_snd_item_statuses_chat_item_id ON group_snd_item_statuses
 CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statuses(
   group_member_id
 );
+CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
+  user_id,
+  item_status
+);
+CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);

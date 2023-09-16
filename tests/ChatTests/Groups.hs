@@ -10,8 +10,10 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Monad (when)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
+import Simplex.Messaging.Version
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import Test.Hspec
@@ -19,7 +21,7 @@ import Test.Hspec
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
   describe "chat groups" $ do
-    describe "add contacts, create group and send/receive messages" testGroup
+    it "add contacts, create group and send/receive messages" testGroup
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
@@ -64,15 +66,54 @@ chatGroupTests = do
   describe "group delivery receipts" $ do
     it "should send delivery receipts in group" testSendGroupDeliveryReceipts
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
-
-testGroup :: HasCallStack => SpecWith FilePath
-testGroup = versionTestMatrix3 runTestGroup
+  describe "direct connections in group are not established based on chat protocol version" $ do
+    describe "3 members group" $ do
+      testNoDirect _0 _0 False -- True
+      testNoDirect _0 _1 False -- True
+      testNoDirect _1 _0 False
+      testNoDirect _1 _1 False
+    describe "4 members group" $ do
+      testNoDirect4 _0 _0 _0 False False False -- True True True
+      testNoDirect4 _0 _0 _1 False False False -- True True True
+      testNoDirect4 _0 _1 _0 False False False -- True True False
+      testNoDirect4 _0 _1 _1 False False False -- True True False
+      testNoDirect4 _1 _0 _0 False False False -- False False True
+      testNoDirect4 _1 _0 _1 False False False -- False False True
+      testNoDirect4 _1 _1 _0 False False False
+      testNoDirect4 _1 _1 _1 False False False
   where
-    runTestGroup alice bob cath = testGroupShared alice bob cath False
+    _0 = supportedChatVRange -- don't create direct connections
+    _1 = groupCreateDirectVRange
+    -- having host configured with older version doesn't have effect in tests
+    -- because host uses current code and sends version in MemberInfo
+    testNoDirect vrMem2 vrMem3 noConns =
+      it
+        ( "host " <> vRangeStr supportedChatVRange
+            <> (", 2nd mem " <> vRangeStr vrMem2)
+            <> (", 3rd mem " <> vRangeStr vrMem3)
+            <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
+        )
+        $ testNoGroupDirectConns supportedChatVRange vrMem2 vrMem3 noConns
+    testNoDirect4 vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34 =
+      it
+        ( "host " <> vRangeStr supportedChatVRange
+            <> (", 2nd mem " <> vRangeStr vrMem2)
+            <> (", 3rd mem " <> vRangeStr vrMem3)
+            <> (", 4th mem " <> vRangeStr vrMem4)
+            <> (if noConns23 then " : 2 <!!> 3" else " : 2 <##> 3")
+            <> (if noConns24 then " : 2 <!!> 4" else " : 2 <##> 4")
+            <> (if noConns34 then " : 3 <!!> 4" else " : 3 <##> 4")
+        )
+        $ testNoGroupDirectConns4Members supportedChatVRange vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34
+
+testGroup :: HasCallStack => FilePath -> IO ()
+testGroup =
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+    \alice bob cath -> testGroupShared alice bob cath False
 
 testGroupCheckMessages :: HasCallStack => FilePath -> IO ()
 testGroupCheckMessages =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> testGroupShared alice bob cath True
 
 testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> IO ()
@@ -82,7 +123,7 @@ testGroupShared alice bob cath checkMessages = do
   alice ##> "/g team"
   alice <## "group #team is created"
   alice <## "to add members use /a team <name> or /create link #team"
-  alice ##> "/a team bob"
+  alice ##> "/a team bob admin"
   concurrentlyN_
     [ alice <## "invitation to join the group #team sent to bob",
       do
@@ -94,7 +135,7 @@ testGroupShared alice bob cath checkMessages = do
     (alice <## "#team: bob joined the group")
     (bob <## "#team: you joined the group")
   when checkMessages $ threadDelay 1000000 -- for deterministic order of messages and "connected" events
-  alice ##> "/a team cath"
+  alice ##> "/a team cath admin"
   concurrentlyN_
     [ alice <## "invitation to join the group #team sent to cath",
       do
@@ -132,7 +173,7 @@ testGroupShared alice bob cath checkMessages = do
   when checkMessages $ getReadChats msgItem1 msgItem2
   -- list groups
   alice ##> "/gs"
-  alice <## "#team"
+  alice <## "#team (3 members)"
   -- list group members
   alice ##> "/ms team"
   alice
@@ -233,7 +274,7 @@ testGroupShared alice bob cath checkMessages = do
 
 testGroup2 :: HasCallStack => FilePath -> IO ()
 testGroup2 =
-  testChat4 aliceProfile bobProfile cathProfile danProfile $
+  testChatCfg4 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       connectUsers alice bob
       connectUsers alice cath
@@ -242,14 +283,14 @@ testGroup2 =
       alice ##> "/g club"
       alice <## "group #club is created"
       alice <## "to add members use /a club <name> or /create link #club"
-      alice ##> "/a club bob"
+      alice ##> "/a club bob admin"
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to bob",
           do
             bob <## "#club: alice invites you to join the group as admin"
             bob <## "use /j club to accept"
         ]
-      alice ##> "/a club cath"
+      alice ##> "/a club cath admin"
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to cath",
           do
@@ -274,7 +315,7 @@ testGroup2 =
       concurrentlyN_
         [ bob <## "invitation to join the group #club sent to dan",
           do
-            dan <## "#club: bob invites you to join the group as admin"
+            dan <## "#club: bob invites you to join the group as member"
             dan <## "use /j club to accept"
         ]
       dan ##> "/j club"
@@ -486,7 +527,7 @@ testGroupDeleteWhenInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       bob ##> "/d #team"
@@ -497,7 +538,7 @@ testGroupDeleteWhenInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
 
@@ -513,7 +554,7 @@ testGroupReAddInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       -- alice re-adds bob, he sees it as the same group
@@ -521,7 +562,7 @@ testGroupReAddInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       -- if alice removes bob and then re-adds him, she uses a new connection request
@@ -532,7 +573,7 @@ testGroupReAddInvited =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team_1: alice invites you to join the group as admin"
+            bob <## "#team_1: alice invites you to join the group as member"
             bob <## "use /j team_1 to accept"
         ]
 
@@ -548,7 +589,7 @@ testGroupReAddInvitedChangeRole =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       -- alice re-adds bob, he sees it as the same group
@@ -588,7 +629,7 @@ testGroupDeleteInvitedContact =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       threadDelay 500000
@@ -621,7 +662,7 @@ testDeleteGroupMemberProfileKept =
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
           do
-            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
       bob ##> "/j team"
@@ -640,7 +681,7 @@ testDeleteGroupMemberProfileKept =
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to bob",
           do
-            bob <## "#club: alice invites you to join the group as admin"
+            bob <## "#club: alice invites you to join the group as member"
             bob <## "use /j club to accept"
         ]
       bob ##> "/j club"
@@ -679,7 +720,7 @@ testDeleteGroupMemberProfileKept =
 
 testGroupRemoveAdd :: HasCallStack => FilePath -> IO ()
 testGroupRemoveAdd =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       -- remove member
@@ -693,7 +734,7 @@ testGroupRemoveAdd =
         ]
       alice ##> "/a team bob"
       alice <## "invitation to join the group #team sent to bob"
-      bob <## "#team_1: alice invites you to join the group as admin"
+      bob <## "#team_1: alice invites you to join the group as member"
       bob <## "use /j team_1 to accept"
       bob ##> "/j team_1"
       concurrentlyN_
@@ -734,27 +775,27 @@ testGroupList =
       concurrentlyN_
         [ alice <## "invitation to join the group #tennis sent to bob",
           do
-            bob <## "#tennis: alice invites you to join the group as admin"
+            bob <## "#tennis: alice invites you to join the group as member"
             bob <## "use /j tennis to accept"
         ]
       -- alice sees both groups
       alice ##> "/gs"
-      alice <### ["#team", "#tennis"]
+      alice <### ["#team (2 members)", "#tennis (1 member)"]
       -- bob sees #tennis as invitation
       bob ##> "/gs"
       bob
-        <### [ "#team",
+        <### [ "#team (2 members)",
                "#tennis - you are invited (/j tennis to join, /d #tennis to delete invitation)"
              ]
       -- after deleting invitation bob sees only one group
       bob ##> "/d #tennis"
       bob <## "#tennis: you deleted the group"
       bob ##> "/gs"
-      bob <## "#team"
+      bob <## "#team (2 members)"
 
 testGroupMessageQuotedReply :: HasCallStack => FilePath -> IO ()
 testGroupMessageQuotedReply =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -1177,7 +1218,7 @@ testGroupDeleteUnusedContacts =
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to bob",
           do
-            bob <## "#club: alice invites you to join the group as admin"
+            bob <## "#club: alice invites you to join the group as member"
             bob <## "use /j club to accept"
         ]
       bob ##> "/j club"
@@ -1188,7 +1229,7 @@ testGroupDeleteUnusedContacts =
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to cath",
           do
-            cath <## "#club: alice invites you to join the group as admin"
+            cath <## "#club: alice invites you to join the group as member"
             cath <## "use /j club to accept"
         ]
       cath ##> "/j club"
@@ -1232,7 +1273,7 @@ testGroupDeleteUnusedContacts =
       cath <## "alice (Alice)"
       cath `hasContactProfiles` ["alice", "cath"]
   where
-    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
+    cfg = mkCfgCreateGroupDirect $ testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
     deleteGroup :: HasCallStack => TestCC -> TestCC -> TestCC -> String -> IO ()
     deleteGroup alice bob cath group = do
       alice ##> ("/d #" <> group)
@@ -1321,7 +1362,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
 
 testGroupModerate :: HasCallStack => FilePath -> IO ()
 testGroupModerate =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/mr team cath member"
@@ -1352,7 +1393,7 @@ testGroupModerate =
 
 testGroupModerateFullDelete :: HasCallStack => FilePath -> IO ()
 testGroupModerateFullDelete =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/mr team cath member"
@@ -1390,10 +1431,10 @@ testGroupModerateFullDelete =
 
 testGroupDelayedModeration :: HasCallStack => FilePath -> IO ()
 testGroupDelayedModeration tmp = do
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+    withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
       cath ##> "/j team"
@@ -1407,11 +1448,11 @@ testGroupDelayedModeration tmp = do
       alice ##> "\\\\ #team @cath hi"
       alice <## "message marked deleted by you"
       cath <# "#team cath> [marked deleted by alice] hi"
-    withTestChat tmp "bob" $ \bob -> do
+    withTestChatCfg tmp cfg "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
-      withTestChat tmp "cath" $ \cath -> do
+      withTestChatCfg tmp cfg "cath" $ \cath -> do
         cath <## "2 contacts connected (use /cs for the list)"
         cath <## "#team: connected to server(s)"
         cath <## "#team: member bob (Bob) is connected"
@@ -1424,13 +1465,15 @@ testGroupDelayedModeration tmp = do
         bob ##> "/_get chat #1 count=2"
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "connected"), (0, "hi [marked deleted by alice]")]
+  where
+    cfg = testCfgCreateGroupDirect
 
 testGroupDelayedModerationFullDelete :: HasCallStack => FilePath -> IO ()
 testGroupDelayedModerationFullDelete tmp = do
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+    withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
       cath ##> "/j team"
@@ -1452,14 +1495,14 @@ testGroupDelayedModerationFullDelete tmp = do
       cath <## "alice updated group #team:"
       cath <## "updated group preferences:"
       cath <## "Full deletion: on"
-    withTestChat tmp "bob" $ \bob -> do
+    withTestChatCfg tmp cfg "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
-      withTestChat tmp "cath" $ \cath -> do
+      withTestChatCfg tmp cfg "cath" $ \cath -> do
         cath <## "2 contacts connected (use /cs for the list)"
         cath <## "#team: connected to server(s)"
         cath <## "#team: member bob (Bob) is connected"
@@ -1472,6 +1515,8 @@ testGroupDelayedModerationFullDelete tmp = do
         bob ##> "/_get chat #1 count=3"
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "Full deletion: on"), (0, "connected"), (0, "moderated [deleted by alice]")]
+  where
+    cfg = testCfgCreateGroupDirect
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
@@ -1831,7 +1876,7 @@ testGroupLinkIncognitoMembership =
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
       -- alice invites bob
-      alice ##> ("/a team " <> bobIncognito)
+      alice ##> ("/a team " <> bobIncognito <> " admin")
       concurrentlyN_
         [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
           do
@@ -2127,7 +2172,7 @@ testGroupLinkMemberRole =
 
 testGroupLinkLeaveDelete :: HasCallStack => FilePath -> IO ()
 testGroupLinkLeaveDelete =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       connectUsers alice bob
       connectUsers cath bob
@@ -2289,8 +2334,7 @@ testGroupSyncRatchetCodeReset tmp =
       alice <# "#team bob> hey"
       -- connection not verified
       bob ##> "/i #team alice"
-      aliceInfo bob
-      bob <## "connection not verified, use /code command to see security code"
+      aliceInfo bob False
       -- verify connection
       alice ##> "/code #team bob"
       bCode <- getTermLine alice
@@ -2298,8 +2342,7 @@ testGroupSyncRatchetCodeReset tmp =
       bob <## "connection verified"
       -- connection verified
       bob ##> "/i #team alice"
-      aliceInfo bob
-      bob <## "connection verified"
+      aliceInfo bob True
     setupDesynchronizedRatchet tmp alice
     withTestChat tmp "bob_old" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2317,20 +2360,25 @@ testGroupSyncRatchetCodeReset tmp =
 
       -- connection not verified
       bob ##> "/i #team alice"
-      aliceInfo bob
-      bob <## "connection not verified, use /code command to see security code"
+      aliceInfo bob False
 
       alice #> "#team hello again"
       bob <# "#team alice> hello again"
       bob #> "#team received!"
       alice <# "#team bob> received!"
   where
-    aliceInfo :: HasCallStack => TestCC -> IO ()
-    aliceInfo bob = do
+    aliceInfo :: HasCallStack => TestCC -> Bool -> IO ()
+    aliceInfo bob verified = do
       bob <## "group ID: 1"
       bob <## "member ID: 1"
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
+      bob <## connVerified
+      bob <## currentChatVRangeInfo
+      where
+        connVerified
+          | verified = "connection verified"
+          | otherwise = "connection not verified, use /code command to see security code"
 
 testSetGroupMessageReactions :: HasCallStack => FilePath -> IO ()
 testSetGroupMessageReactions =
@@ -2456,7 +2504,7 @@ testConfigureGroupDeliveryReceipts tmp =
         concurrentlyN_
           [ alice <## "invitation to join the group #club sent to bob",
             do
-              bob <## "#club: alice invites you to join the group as admin"
+              bob <## "#club: alice invites you to join the group as member"
               bob <## "use /j club to accept"
           ]
         bob ##> "/j club"
@@ -2467,7 +2515,7 @@ testConfigureGroupDeliveryReceipts tmp =
         concurrentlyN_
           [ alice <## "invitation to join the group #club sent to cath",
             do
-              cath <## "#club: alice invites you to join the group as admin"
+              cath <## "#club: alice invites you to join the group as member"
               cath <## "use /j club to accept"
           ]
         cath ##> "/j club"
@@ -2559,7 +2607,7 @@ testConfigureGroupDeliveryReceipts tmp =
         receipt bob alice cath "team" "25"
         noReceipt bob alice cath "club" "26"
   where
-    cfg = testCfg {showReceipts = True}
+    cfg = mkCfgCreateGroupDirect $ testCfg {showReceipts = True}
     receipt cc1 cc2 cc3 gName msg = do
       name1 <- userName cc1
       cc1 #> ("#" <> gName <> " " <> msg)
@@ -2579,3 +2627,62 @@ testConfigureGroupDeliveryReceipts tmp =
       cc2 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
       cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
       cc1 <// 50000
+
+testNoGroupDirectConns :: HasCallStack => VersionRange -> VersionRange -> VersionRange -> Bool -> FilePath -> IO ()
+testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns tmp =
+  withNewTestChatCfg tmp testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        if noDirectConns
+          then contactsDontExist bob cath
+          else bob <##> cath
+  where
+    contactsDontExist bob cath = do
+      bob ##> "@cath hi"
+      bob <## "no contact cath"
+      cath ##> "@bob hi"
+      cath <## "no contact bob"
+
+testNoGroupDirectConns4Members :: HasCallStack => VersionRange -> VersionRange -> VersionRange -> VersionRange -> Bool -> Bool -> Bool -> FilePath -> IO ()
+testNoGroupDirectConns4Members hostVRange mem2VRange mem3VRange mem4VRange noConns23 noConns24 noConns34 tmp =
+  withNewTestChatCfg tmp testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
+        withNewTestChatCfg tmp testCfg {chatVRange = mem4VRange} "dan" danProfile $ \dan -> do
+          createGroup3 "team" alice bob cath
+          connectUsers alice dan
+          addMember "team" alice dan GRMember
+          dan ##> "/j team"
+          concurrentlyN_
+            [ alice <## "#team: dan joined the group",
+              do
+                dan <## "#team: you joined the group"
+                dan
+                  <### [ "#team: member bob (Bob) is connected",
+                         "#team: member cath (Catherine) is connected"
+                       ],
+              aliceAddedDan bob,
+              aliceAddedDan cath
+            ]
+          if noConns23
+            then contactsDontExist bob cath
+            else bob <##> cath
+          if noConns24
+            then contactsDontExist bob dan
+            else bob <##> dan
+          if noConns34
+            then contactsDontExist cath dan
+            else cath <##> dan
+  where
+    aliceAddedDan :: HasCallStack => TestCC -> IO ()
+    aliceAddedDan cc = do
+      cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
+      cc <## "#team: new member dan is connected"
+    contactsDontExist cc1 cc2 = do
+      name1 <- userName cc1
+      name2 <- userName cc2
+      cc1 ##> ("@" <> name2 <> " hi")
+      cc1 <## ("no contact " <> name2)
+      cc2 ##> ("@" <> name1 <> " hi")
+      cc2 <## ("no contact " <> name1)

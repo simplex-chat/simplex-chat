@@ -4,17 +4,17 @@
     <string name="thousand_abbreviation">k</string>
     <!-- Connect via Link - MainActivity.kt -->
     <string name="connect_via_contact_link">Über den Kontakt-Link verbinden?</string>
-    <string name="connect_via_invitation_link">Über den Einladungs-Link verbinden?</string>
+    <string name="connect_via_invitation_link">Über den Einladungslink verbinden\?</string>
     <string name="connect_via_group_link">Über den Gruppen-Link verbinden?</string>
-    <string name="profile_will_be_sent_to_contact_sending_link">Ihr Profil wird an den Kontakt gesendet von dem Sie diesen Link erhalten haben.</string>
-    <string name="you_will_join_group">Sie werden der Gruppe beitreten, auf die sich dieser Link bezieht und sich mit deren Gruppenmitgliedern verbinden.</string>
+    <string name="profile_will_be_sent_to_contact_sending_link">Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.</string>
+    <string name="you_will_join_group">Sie werden der Gruppe beitreten, auf die sich dieser Link bezieht, und sich mit deren Gruppenmitgliedern verbinden.</string>
     <string name="connect_via_link_verb">Verbinden</string>
     <!-- Server info - ChatModel.kt -->
     <string name="server_connected">Verbunden</string>
     <string name="server_error">Fehler</string>
     <string name="server_connecting">Verbinde</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %1$s).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Beim Versuch, die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Versuche die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">Gelöscht</string>
@@ -30,7 +30,7 @@
     <string name="display_name_invited_to_connect">für eine Verbindung eingeladen</string>
     <string name="display_name_connecting">verbinde…</string>
     <string name="description_you_shared_one_time_link">sie haben einen Einmal-Link geteilt</string>
-    <string name="description_you_shared_one_time_link_incognito">sie haben Inkognito einen Einmal-Link geteilt</string>
+    <string name="description_you_shared_one_time_link_incognito">sie haben einen Einmal-Link inkognito geteilt</string>
     <string name="description_via_group_link">über einen Gruppen-Link</string>
     <string name="description_via_group_link_incognito">Inkognito über einen Gruppen-Link</string>
     <string name="description_via_contact_address_link">über einen Kontaktadressen-Link</string>
@@ -38,18 +38,18 @@
     <string name="description_via_one_time_link">über einen Einmal-Link</string>
     <string name="description_via_one_time_link_incognito">Inkognito über einen Einmal-Link</string>
     <!-- FormattedText, SimpleX links - ChatModel.kt -->
-    <string name="simplex_link_contact">SimpleX Kontaktadressen-Link</string>
-    <string name="simplex_link_invitation">SimpleX Einmal-Link</string>
-    <string name="simplex_link_group">SimpleX Gruppen-Link</string>
+    <string name="simplex_link_contact">SimpleX-Kontaktadressen-Link</string>
+    <string name="simplex_link_invitation">SimpleX-Einmal-Einladung</string>
+    <string name="simplex_link_group">SimpleX-Gruppen-Link</string>
     <string name="simplex_link_connection">über %1$s</string>
     <string name="simplex_link_mode">SimpleX-Links</string>
     <string name="simplex_link_mode_description">Beschreibung</string>
     <string name="simplex_link_mode_full">Vollständiger Link</string>
     <string name="simplex_link_mode_browser">Über den Browser</string>
-    <string name="simplex_link_mode_browser_warning">Das Öffnen des Links über den Browser kann die Privatsphäre und Sicherheit der Verbindung reduzieren. SimpleX-Links, denen nicht vertraut wird, werden Rot sein.</string>
+    <string name="simplex_link_mode_browser_warning">Das Öffnen des Links über den Browser kann die Privatsphäre und Sicherheit der Verbindung reduzieren. SimpleX-Links, denen nicht vertraut wird, werden rot markiert.</string>
     <!-- SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Fehler beim Speichern der SMP-Server</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die SMP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die SMP-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind.</string>
     <string name="error_setting_network_config">Fehler bei der Aktualisierung der Netzwerk-Konfiguration.</string>
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Verbindungszeitüberschreitung</string>
@@ -65,9 +65,10 @@
     <string name="contact_already_exists">Kontakt ist bereits vorhanden</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits mit %1$s verbunden.</string>
     <string name="invalid_connection_link">Ungültiger Verbindungslink</string>
-    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt darum, Ihnen nochmal einen Link zuzusenden.</string>
+    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben, oder bitten Sie Ihren Kontakt darum, Ihnen nochmal einen Link zuzusenden.</string>
     <string name="connection_error_auth">Verbindungsfehler (AUTH)</string>
-    <string name="connection_error_auth_desc">Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melden Sie es uns.\nBitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.</string>
+    <string name="connection_error_auth_desc">Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln – bitte melden Sie ihn uns.
+\nBitten Sie Ihren Kontakt darum, einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können, und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.</string>
     <string name="error_accepting_contact_request">Fehler beim Akzeptieren der Kontaktanfrage</string>
     <string name="sender_may_have_deleted_the_connection_request">Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.</string>
     <string name="error_deleting_contact">Fehler beim Löschen des Kontakts</string>
@@ -76,7 +77,7 @@
     <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der anstehenden Kontaktaufnahme</string>
     <string name="error_changing_address">Fehler beim Wechseln der Adresse</string>
     <string name="error_smp_test_failed_at_step">Der Test ist beim Schritt %s fehlgeschlagen.</string>
-    <string name="error_smp_test_server_auth">Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</string>
+    <string name="error_smp_test_server_auth">Um Warteschlangen zu erzeugen, benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</string>
     <string name="error_smp_test_certificate">Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig.</string>
     <string name="smp_server_test_connect">Verbinde</string>
     <string name="smp_server_test_create_queue">Erzeuge Warteschlange</string>
@@ -87,9 +88,9 @@
     <string name="icon_descr_instant_notifications">Sofortige Benachrichtigungen</string>
     <string name="service_notifications">Sofortige Benachrichtigungen!</string>
     <string name="service_notifications_disabled">Sofortige Benachrichtigungen sind deaktiviert!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Um Ihre Privatsphäre zu schützen kann statt der Push-Benachrichtigung der <b>SimpleX Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.]]></string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Diese können über die Einstellungen deaktiviert werden</b> – Solange die App abläuft werden Benachrichtigungen weiterhin angezeigt.]]></string>
-    <string name="turn_off_battery_optimization"><![CDATA[Um diese Funktion zu nutzen, ist es nötig, die Einstellung <b>Akkuoptimierung</b> für SimpleX im nächsten Dialog zu <b>deaktivieren</b>. Ansonsten werden die Benachrichtigungen deaktiviert.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Um Ihre Privatsphäre zu schützen, kann statt der Push-Benachrichtigung der <b>SimpleX-Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.]]></string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Diese können über die Einstellungen deaktiviert werden</b> – solange die App läuft, werden Benachrichtigungen weiterhin angezeigt.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Um diese Funktion zu nutzen, wählen Sie im nächsten Dialog bitte die Einstellung <b>Erlauben Sie SimpleX im Hintergrund abzulaufen</b>. Ansonsten werden die Benachrichtigungen deaktiviert.]]></string>
     <string name="turning_off_service_and_periodic">Die Akkuoptimierung ist aktiv, der Hintergrunddienst und die periodische Nachfrage nach neuen Nachrichten ist abgeschaltet. Sie können diese Funktion in den Einstellungen wieder aktivieren.</string>
     <string name="periodic_notifications">Periodische Benachrichtigungen</string>
     <string name="periodic_notifications_disabled">Periodische Benachrichtigungen sind deaktiviert!</string>
@@ -99,21 +100,21 @@
     <string name="database_initialization_error_title">Die Datenbank kann nicht initialisiert werden</string>
     <string name="database_initialization_error_desc">Die Datenbank arbeitet nicht richtig. Tippen Sie für weitere Informationen.</string>
     <!-- SimpleX Chat foreground Service -->
-    <string name="simplex_service_notification_title">SimpleX Chat Hintergrunddienst</string>
+    <string name="simplex_service_notification_title">SimpleX-Chat-Hintergrunddienst</string>
     <string name="simplex_service_notification_text">Empfange Nachrichten …</string>
     <string name="hide_notification">Verberge</string>
     <!-- Notification channels -->
-    <string name="ntf_channel_messages">SimpleX Chat Nachrichten</string>
-    <string name="ntf_channel_calls">SimpleX Chat Anrufe</string>
+    <string name="ntf_channel_messages">SimpleX-Chat-Nachrichten</string>
+    <string name="ntf_channel_calls">SimpleX-Chat-Anrufe</string>
     <!-- Notifications -->
     <string name="settings_notifications_mode_title">Benachrichtigungsdienst</string>
     <string name="settings_notification_preview_mode_title">Vorschau anzeigen</string>
     <string name="settings_notification_preview_title">Benachrichtigungsvorschau</string>
-    <string name="notifications_mode_off">Wird ausgeführt, wenn die App geöffnet ist</string>
-    <string name="notifications_mode_periodic">Startet periodisch</string>
+    <string name="notifications_mode_off">Nur bei geöffneter App aktiv</string>
+    <string name="notifications_mode_periodic">Periodisch aktiv</string>
     <string name="notifications_mode_service">Immer aktiv</string>
     <string name="notifications_mode_off_desc">Die App kann Benachrichtigungen nur empfangen, wenn sie ausgeführt wird, es wird kein Hintergrunddienst gestartet.</string>
-    <string name="notifications_mode_periodic_desc">Überprüft alle 10 Minuten auf neue Nachrichten für bis zu einer Minute.</string>
+    <string name="notifications_mode_periodic_desc">Überprüft alle 10 Minuten auf neue Nachrichten für bis zu eine Minute.</string>
     <string name="notifications_mode_service_desc">Der Hintergrunddienst läuft immer – Benachrichtigungen werden angezeigt, sobald Nachrichten verfügbar sind.</string>
     <string name="notification_preview_mode_message">Nachrichtentext</string>
     <string name="notification_preview_mode_contact">Kontaktname</string>
@@ -126,20 +127,20 @@
     <string name="notification_new_contact_request">Neue Kontaktanfrage</string>
     <string name="notification_contact_connected">Verbunden</string>
     <!-- local authentication notice - SimpleXAPI.kt -->
-    <string name="la_notice_title_simplex_lock">SimpleX Sperre</string>
+    <string name="la_notice_title_simplex_lock">SimpleX-Sperre</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Um Ihre Informationen zu schützen, schalten Sie die SimpleX Sperre ein.\nSie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funktion aktiviert wird.</string>
     <string name="la_notice_turn_on">Aktivieren</string>
     <!-- LocalAuthentication.kt -->
-    <string name="auth_simplex_lock_turned_on">SimpleX Sperre aktiviert</string>
+    <string name="auth_simplex_lock_turned_on">SimpleX-Sperre aktiviert</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Sie müssen sich authentifizieren, wenn Sie die im Hintergrund befindliche App nach 30 Sekunden starten oder fortsetzen.</string>
     <string name="auth_unlock">Entsperren</string>
     <string name="auth_log_in_using_credential">Melden Sie sich mit Ihren Zugangsdaten an</string>
-    <string name="auth_enable_simplex_lock">SimpleX Sperre aktivieren</string>
-    <string name="auth_disable_simplex_lock">SimpleX Sperre deaktivieren</string>
+    <string name="auth_enable_simplex_lock">SimpleX-Sperre aktivieren</string>
+    <string name="auth_disable_simplex_lock">SimpleX-Sperre deaktivieren</string>
     <string name="auth_confirm_credential">Bestätigen Sie Ihre Zugangsdaten</string>
     <string name="auth_unavailable">Authentifizierung nicht verfügbar</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Geräteauthentifizierung ist nicht aktiviert. Sie können die SimpleX Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.</string>
-    <string name="auth_device_authentication_is_disabled_turning_off">Geräteauthentifizierung ist deaktiviert. SimpleX Sperre ist abgeschaltet.</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Geräteauthentifizierung ist nicht aktiviert. Sie können die SimpleX-Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">Geräteauthentifizierung ist deaktiviert. SimpleX-Sperre wird ausgeschaltet.</string>
     <string name="auth_stop_chat">Chat beenden</string>
     <string name="auth_open_chat_console">Chat-Konsole öffnen</string>
     <!-- Chat Alerts - ChatItemView.kt -->
@@ -156,7 +157,7 @@
     <string name="hide_verb">Verbergen</string>
     <string name="allow_verb">Erlauben</string>
     <string name="delete_message__question">Die Nachricht löschen?</string>
-    <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht - dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht – dies kann nicht rückgängig gemacht werden!</string>
     <string name="delete_message_mark_deleted_warning">Die Nachricht wird zum Löschen markiert. Der/die Empfänger kann/können diese Nachricht aufdecken.</string>
     <string name="for_me_only">Für mich löschen</string>
     <string name="for_everybody">Für alle</string>
@@ -190,7 +191,7 @@
     <string name="images_limit_title">Zu viele Bilder!</string>
     <string name="images_limit_desc">Es können nur 10 Bilder auf einmal gesendet werden</string>
     <string name="image_decoding_exception_title">Dekodierungsfehler</string>
-    <string name="image_decoding_exception_desc">Das Bild kann nicht dekodiert werden. Bitte versuchen Sie es mit einem anderen Bild oder wenden Sie sich an die Entwickler.</string>
+    <string name="image_decoding_exception_desc">Das Bild kann nicht dekodiert werden. Bitte versuchen Sie es mit einem anderen Bild, oder wenden Sie sich an die Entwickler.</string>
     <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
     <string name="image_descr">Bild</string>
     <string name="icon_descr_waiting_for_image">Warten auf ein Bild</string>
@@ -205,7 +206,7 @@
     <string name="contact_sent_large_file">Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (%1$s).</string>
     <string name="maximum_supported_file_size">Die derzeit maximal unterstützte Dateigröße beträgt %1$s.</string>
     <string name="waiting_for_file">Warte auf Datei</string>
-    <string name="file_will_be_received_when_contact_is_online">Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
+    <string name="file_will_be_received_when_contact_is_online">Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später noch mal nach!</string>
     <string name="file_saved">Datei gespeichert</string>
     <string name="file_not_found">Datei nicht gefunden</string>
     <string name="error_saving_file">Fehler beim Speichern der Datei</string>
@@ -217,7 +218,7 @@
     <string name="notifications">Benachrichtigungen</string>
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact_question">Kontakt löschen?</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Der Kontakt und alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Der Kontakt und alle Nachrichten werden gelöscht – dies kann nicht rückgängig gemacht werden!</string>
     <string name="button_delete_contact">Kontakt löschen</string>
     <string name="text_field_set_contact_placeholder">Kontaktname festlegen…</string>
     <string name="icon_descr_server_status_connected">Verbunden</string>
@@ -245,7 +246,7 @@
     <string name="copied">In die Zwischenablage kopiert</string>
     <!-- NewChatSheet -->
     <string name="add_contact_or_create_group">Neuen Chat starten</string>
-    <string name="share_one_time_link">Erstellen Sie einen einmaligen Einladungslink</string>
+    <string name="share_one_time_link">Einmal-Einladungslink teilen</string>
     <string name="connect_via_link_or_qr">Per Link / QR-Code verbinden</string>
     <string name="scan_QR_code">QR-Code scannen</string>
     <string name="create_group">Geheime Gruppe erstellen</string>
@@ -261,16 +262,16 @@
     <string name="gallery_video_button">Video</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Danke, dass Sie SimpleX Chat installiert haben!</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Sie können sich <font color="#0088ff">mit SimpleX Chat Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Sie können sich <font color=#0088ff>mit SimpleX-Chat-Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.]]></string>
     <string name="to_start_a_new_chat_help_header">Um einen neuen Chat zu starten</string>
     <string name="chat_help_tap_button">Schaltfläche antippen</string>
     <string name="above_then_preposition_continuation">Danach die gewünschte Aktion auswählen:</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Neuen Kontakt hinzufügen</b>: Um Ihren Einmal-QR-Code für Ihren Kontakt zu erstellen.]]></string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR-Code scannen</b>: Um sich mit Ihrem Kontakt zu verbinden, der Ihnen seinen QR-Code zeigt.]]></string>
     <string name="to_connect_via_link_title">Über Link verbinden</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Wenn Sie einen SimpleX Chat Einladungslink erhalten haben, können Sie ihn in Ihrem Browser öffnen:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Wenn Sie einen SimpleX-Chat-Einladungslink erhalten haben, können Sie ihn in Ihrem Browser öffnen:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Desktop: Angezeigten QR-Code aus der App scannen, über <b>QR-Code scannen</b>.]]></string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 Handy: Tippen Sie auf <b>In mobiler App öffnen</b> und dann auf <b>Verbinden</b> in der App.]]></string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 Handy: Tippen Sie in der App auf „<b>In mobiler App öffnen</b>“ und dann auf „<b>Verbinden</b>“.]]></string>
     <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
     <string name="accept_connection_request__question">Die Verbindungsanfrage akzeptieren?</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Wenn Sie ablehnen, wird der Absender NICHT benachrichtigt.</string>
@@ -292,7 +293,7 @@
     <string name="mute_chat">Stummschalten</string>
     <string name="unmute_chat">Stummschaltung aufheben</string>
     <!-- Pending contact connection alert dialogues -->
-    <string name="you_invited_your_contact">Sie haben Ihren Kontakt eingeladen</string>
+    <string name="you_invited_a_contact">Sie haben Ihren Kontakt eingeladen</string>
     <string name="you_accepted_connection">Sie haben die Verbindung akzeptiert</string>
     <string name="delete_pending_connection__question">Ausstehende Verbindung löschen?</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Der Kontakt, mit dem Sie diesen Link geteilt haben, kann sich NICHT verbinden!</string>
@@ -306,15 +307,15 @@
     <string name="icon_descr_profile_image_placeholder">Platzhalter für Profilbild</string>
     <string name="image_descr_profile_image">Profilbild</string>
     <!-- Content Descriptions -->
-    <string name="icon_descr_close_button">Schließen der Schaltfläche</string>
+    <string name="icon_descr_close_button">Schließen-Button</string>
     <string name="image_descr_link_preview">Vorschaubild verlinken</string>
-    <string name="icon_descr_cancel_link_preview">Link Vorschau abbrechen</string>
+    <string name="icon_descr_cancel_link_preview">Linkvorschau abbrechen</string>
     <string name="icon_descr_settings">Einstellungen</string>
-    <string name="image_descr_qr_code">QR Code</string>
-    <string name="icon_descr_address">SimpleX Adresse</string>
+    <string name="image_descr_qr_code">QR-Code</string>
+    <string name="icon_descr_address">SimpleX-Adresse</string>
     <string name="icon_descr_help">Hilfe</string>
-    <string name="icon_descr_simplex_team">SimpleX Team</string>
-    <string name="image_descr_simplex_logo">SimpleX Logo</string>
+    <string name="icon_descr_simplex_team">SimpleX-Team</string>
+    <string name="image_descr_simplex_logo">SimpleX-Logo</string>
     <string name="icon_descr_email">E-Mail</string>
     <string name="icon_descr_more_button">Mehr</string>
     <!-- Connection info - ContactConnectionInfoView.kt -->
@@ -333,28 +334,26 @@
 \nan Ihren Kontakt gesendet</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs scannen</b> oder Ihr Kontakt kann einen Einladungslink über einen anderen Kanal mit Ihnen teilen.]]></string>
     <string name="share_invitation_link">Einmal-Link teilen</string>
-    <string name="paste_connection_link_below_to_connect">Fügen Sie den erhaltenen Link in das Feld unten ein, um sich mit Ihrem Kontakt zu verbinden.</string>
-    <string name="your_profile_will_be_sent">Ihr Chat-Profil wird an Ihren Kontakt gesendet</string>
     <!-- PasteToConnect.kt -->
     <string name="connect_via_link">Über einen Link verbinden</string>
     <string name="connect_button">Verbinden</string>
     <string name="paste_button">Einfügen</string>
     <string name="this_string_is_not_a_connection_link">Diese Zeichenfolge entspricht keinem gültigen Verbindungslink!</string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche <b>In mobiler App öffnen</b>.]]></string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche „<b>In mobiler App öffnen</b>“.]]></string>
     <!-- CreateLinkView.kt -->
-    <string name="create_one_time_link">Link / QR-Code erstellen</string>
-    <string name="one_time_link">Einmaliger Einladungs-Link</string>
+    <string name="create_one_time_link">Einmal-Einladungslink erstellen</string>
+    <string name="one_time_link">Einmal-Einladungslink</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Meine Einstellungen</string>
     <string name="your_simplex_contact_address">Meine SimpleX-Adresse</string>
     <string name="database_passphrase_and_export">Datenbank-Passwort &amp; -Export</string>
     <string name="about_simplex_chat">Über SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Wie man SimpleX nutzt</string>
-    <string name="markdown_help">Markdown Hilfe</string>
+    <string name="markdown_help">Markdown-Hilfe</string>
     <string name="markdown_in_messages">Markdown in Nachrichten</string>
     <string name="chat_with_the_founder">Senden Sie Fragen und Ideen</string>
     <string name="send_us_an_email">Senden Sie uns eine E-Mail</string>
-    <string name="chat_lock">SimpleX Sperre</string>
+    <string name="chat_lock">SimpleX-Sperre</string>
     <string name="chat_console">Chat-Konsole</string>
     <string name="smp_servers">SMP-Server</string>
     <string name="smp_servers_preset_address">Voreingestellte Serveradresse</string>
@@ -363,7 +362,7 @@
     <string name="smp_servers_test_server">Teste Server</string>
     <string name="smp_servers_test_servers">Teste alle Server</string>
     <string name="smp_servers_save">Alle Server speichern</string>
-    <string name="smp_servers_test_failed">Server Test ist fehlgeschlagen!</string>
+    <string name="smp_servers_test_failed">Server-Test ist fehlgeschlagen!</string>
     <string name="smp_servers_test_some_failed">Einige Server haben den Test nicht bestanden:</string>
     <string name="smp_servers_scan_qr">Scannen Sie den QR-Code des Servers</string>
     <string name="smp_servers_enter_manually">Geben Sie den Server manuell ein</string>
@@ -380,17 +379,17 @@
     <string name="star_on_github">Stern auf GitHub vergeben</string>
     <string name="contribute">Unterstützen Sie uns</string>
     <string name="rate_the_app">Bewerten Sie die App</string>
-    <string name="use_simplex_chat_servers__question">Verwenden Sie SimpleX Chat Server?</string>
+    <string name="use_simplex_chat_servers__question">Verwenden Sie SimpleX-Chat-Server\?</string>
     <string name="your_SMP_servers">Ihre SMP-Server</string>
-    <string name="using_simplex_chat_servers">Verwendung von SimpleX Chat Servern.</string>
+    <string name="using_simplex_chat_servers">Verwendung von SimpleX-Chat-Servern.</string>
     <string name="how_to">Anleitung</string>
     <string name="how_to_use_your_servers">Wie Sie Ihre Server nutzen</string>
-    <string name="saved_ICE_servers_will_be_removed">Gespeicherte WebRTC ICE-Server werden entfernt.</string>
+    <string name="saved_ICE_servers_will_be_removed">Gespeicherte WebRTC-ICE-Server werden entfernt.</string>
     <string name="your_ICE_servers">Ihre ICE-Server</string>
     <string name="configure_ICE_servers">ICE-Server konfigurieren</string>
     <string name="enter_one_ICE_server_per_line">ICE-Server (einer pro Zeile)</string>
     <string name="error_saving_ICE_servers">Fehler beim Speichern der ICE-Server</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC-ICE-Server-Adressen das richtige Format haben, zeilenweise separiert und nicht doppelt vorhanden sind.</string>
     <string name="save_servers_button">Speichern</string>
     <string name="network_and_servers">Netzwerk &amp; Server</string>
     <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
@@ -398,7 +397,7 @@
     <string name="network_enable_socks">SOCKS-Proxy verwenden?</string>
     <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port %d? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
     <string name="network_disable_socks">Direkte Internetverbindung verwenden?</string>
-    <string name="network_disable_socks_info">Wenn Sie dies bestätigen, können die Messaging-Server Ihre IP-Adresse und Ihren Provider sehen und mit welchen Servern Sie sich verbinden.</string>
+    <string name="network_disable_socks_info">Wenn Sie dies bestätigen, können die Messaging-Server Ihre IP-Adresse sowie Ihren Provider sehen und mit welchen Servern Sie sich verbinden.</string>
     <string name="update_onion_hosts_settings_question">Einstellung für .onion-Hosts aktualisieren?</string>
     <string name="network_use_onion_hosts">Verwende .onion-Hosts</string>
     <string name="network_use_onion_hosts_prefer">Wenn verfügbar</string>
@@ -432,7 +431,7 @@
     <!-- Welcome Prompts - WelcomeView.kt -->
     <string name="you_control_your_chat">Sie haben volle Kontrolle über Ihren Chat!</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Die Messaging- und Anwendungsplattform zum Schutz Ihrer Privatsphäre und Sicherheit.</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">Wir speichern auf den Servern keinen Ihrer Kontakte oder keine Ihrer Nachrichten (sofern einmal zugestellt).</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">Wir speichern auf den Servern keinen Ihrer Kontakte und keine Ihrer Nachrichten (sobald einmal zugestellt).</string>
     <string name="create_profile">Profil erstellen</string>
     <string name="your_profile_is_stored_on_your_device">Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.</string>
     <string name="profile_is_only_shared_with_your_contacts">Das Profil wird nur mit Ihren Kontakten geteilt.</string>
@@ -471,7 +470,7 @@
     <!-- SimpleXInfo -->
     <string name="next_generation_of_private_messaging">Die nächste Generation von privatem Messaging</string>
     <string name="privacy_redefined">Datenschutz neu definiert</string>
-    <string name="first_platform_without_user_ids">Die erste Plattform ohne Benutzerkennungen – Privat per Design</string>
+    <string name="first_platform_without_user_ids">Die erste Plattform ohne Benutzerkennungen – privat per Design</string>
     <string name="immune_to_spam_and_abuse">Immun gegen Spam und Missbrauch</string>
     <string name="people_can_connect_only_via_links_you_share">Verbindungen mit Kontakten sind nur über Links möglich, die Sie oder Ihre Kontakte untereinander teilen.</string>
     <string name="decentralized">Dezentral</string>
@@ -482,9 +481,9 @@
     <!-- How SimpleX Works -->
     <string name="how_simplex_works">Wie SimpleX funktioniert</string>
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Viele Menschen haben gefragt: <i>Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?</i>]]></string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet SimpleX an Stelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet SimpleX anstelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Sie können selbst festlegen, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b> wollen.]]></string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>2-Schichten Ende-zu-Ende-Verschlüsselung</b> gesendet werden.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>zweischichtige Ende-zu-Ende-Verschlüsselung</b> gesendet werden.]]></string>
     <string name="read_more_in_github">Erfahren Sie in unserem GitHub-Repository mehr dazu.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.]]></string>
     <!-- MakeConnection -->
@@ -493,9 +492,9 @@
     <string name="incoming_video_call">Eingehender Videoanruf</string>
     <string name="incoming_audio_call">Eingehender Audioanruf</string>
     <string name="contact_wants_to_connect_via_call">%1$s möchte sich mit Ihnen verbinden per</string>
-    <string name="video_call_no_encryption">Videoanruf (nicht E2E verschlüsselt)</string>
+    <string name="video_call_no_encryption">Videoanruf (nicht E2E-verschlüsselt)</string>
     <string name="encrypted_video_call">E2E-verschlüsseltem Videoanruf</string>
-    <string name="audio_call_no_encryption">Audioanruf (nicht E2E verschlüsselt)</string>
+    <string name="audio_call_no_encryption">Audioanruf (nicht E2E-verschlüsselt)</string>
     <string name="encrypted_audio_call">E2E-verschlüsseltem Audioanruf</string>
     <string name="accept">Akzeptieren</string>
     <string name="reject">Ablehnen</string>
@@ -512,7 +511,7 @@
     <string name="show_call_on_lock_screen">Anzeigen</string>
     <string name="no_call_on_lock_screen">Deaktivieren</string>
     <string name="your_ice_servers">Ihre ICE-Server</string>
-    <string name="webrtc_ice_servers">WebRTC ICE-Server</string>
+    <string name="webrtc_ice_servers">WebRTC-ICE-Server</string>
     <string name="relay_server_protects_ip">Relais-Server schützen Ihre IP-Adresse, aber sie können die Anrufdauer erfassen.</string>
     <string name="relay_server_if_necessary">Relais-Server werden nur genutzt, wenn sie benötigt werden. Ihre IP-Adresse kann von Anderen erfasst werden.</string>
     <!-- Call Lock Screen -->
@@ -569,11 +568,11 @@
     <string name="settings_developer_tools">Entwicklertools</string>
     <string name="settings_experimental_features">Experimentelle Funktionen</string>
     <string name="settings_section_title_socks">SOCKS-PROXY</string>
-    <string name="settings_section_title_icon">APP ICON</string>
+    <string name="settings_section_title_icon">APP-ICON</string>
     <string name="settings_section_title_themes">DESIGN</string>
     <string name="settings_section_title_messages">NACHRICHTEN und DATEIEN</string>
     <string name="settings_section_title_calls">CALLS</string>
-    <string name="settings_section_title_incognito">Inkognito Modus</string>
+    <string name="settings_section_title_incognito">Inkognito-Modus</string>
     <!-- DatabaseView.kt -->
     <string name="your_chat_database">Chat-Datenbank</string>
     <string name="run_chat_section">CHAT STARTEN</string>
@@ -595,21 +594,21 @@
     <string name="error_stopping_chat">Fehler beim Beenden des Chats</string>
     <string name="error_exporting_chat_database">Fehler beim Exportieren der Chat-Datenbank</string>
     <string name="import_database_question">Chat-Datenbank importieren?</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.
-\nDiese Aktion kann nicht rückgängig gemacht werden - Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die importierte ERSETZT.
+\nDiese Aktion kann nicht rückgängig gemacht werden – Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
     <string name="import_database_confirmation">Importieren</string>
     <string name="error_deleting_database">Fehler beim Löschen der Chat-Datenbank</string>
     <string name="error_importing_database">Fehler beim Importieren der Chat-Datenbank</string>
     <string name="chat_database_imported">Chat-Datenbank importiert</string>
     <string name="restart_the_app_to_use_imported_chat_database">Starten Sie die App neu, um die importierte Chat-Datenbank zu verwenden.</string>
     <string name="delete_chat_profile_question">Chat-Profil löschen?</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">Diese Aktion kann nicht rückgängig gemacht werden - Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">Diese Aktion kann nicht rückgängig gemacht werden – Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
     <string name="chat_database_deleted">Chat-Datenbank gelöscht</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
     <string name="stop_chat_to_enable_database_actions">Chat beenden, um Datenbankaktionen zu erlauben.</string>
     <string name="delete_files_and_media_question">Dateien und Medien löschen?</string>
-    <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
+    <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden – alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
     <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
     <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
     <string name="chat_item_ttl_none">nie</string>
@@ -619,7 +618,7 @@
     <string name="chat_item_ttl_seconds">%s Sekunde(n)</string>
     <string name="delete_messages_after">Löschen der Nachrichten</string>
     <string name="enable_automatic_deletion_question">Automatisches Löschen von Nachrichten aktivieren?</string>
-    <string name="enable_automatic_deletion_message">Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dieser Vorgang kann mehrere Minuten dauern.</string>
+    <string name="enable_automatic_deletion_message">Diese Aktion kann nicht rückgängig gemacht werden – alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dieser Vorgang kann mehrere Minuten dauern.</string>
     <string name="delete_messages">Nachrichten löschen</string>
     <string name="error_changing_message_deletion">Fehler beim Ändern der Einstellung</string>
     <!-- DatabaseEncryptionView.kt -->
@@ -637,10 +636,10 @@
     <string name="update_database_passphrase">Datenbank-Passwort aktualisieren</string>
     <string name="enter_correct_current_passphrase">Bitte geben Sie das korrekte, aktuelle Passwort ein.</string>
     <string name="database_is_not_encrypted">Ihre Chat-Datenbank ist nicht verschlüsselt. Bitte legen Sie ein Passwort fest, um sie zu schützen.</string>
-    <string name="keychain_is_storing_securely">Der Android Keystore wird verwendet, um das Passwort sicher zu speichern. Dies ermöglicht die ordentliche Funktion des Benachrichtigungsdienstes.</string>
+    <string name="keychain_is_storing_securely">Der Android-Keystore wird verwendet, um das Passwort sicher zu speichern. Dies ermöglicht die ordentliche Funktion des Benachrichtigungsdienstes.</string>
     <string name="encrypted_with_random_passphrase">Die Datenbank wird mit einem zufälligen Passwort verschlüsselt, Sie können es ändern.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Bitte beachten Sie</b>: Sie können das Passwort NICHT wiederherstellen oder ändern, wenn Sie es vergessen haben oder verlieren.]]></string>
-    <string name="keychain_allows_to_receive_ntfs">Der Android Keystore wird verwendet, um das Passwort sicher zu speichern, nachdem Sie die App neu gestartet oder das Passwort geändert haben – dies ermöglicht den Empfang von Benachrichtigungen.</string>
+    <string name="keychain_allows_to_receive_ntfs">Der Android-Keystore wird verwendet, um das Passwort sicher zu speichern, nachdem Sie die App neu gestartet oder das Passwort geändert haben – dies ermöglicht den Empfang von Benachrichtigungen.</string>
     <string name="you_have_to_enter_passphrase_every_time">Sie müssen das Passwort jedes Mal eingeben, wenn die App startet. Es wird nicht auf dem Gerät gespeichert.</string>
     <string name="encrypt_database_question">Datenbank verschlüsseln?</string>
     <string name="change_database_passphrase_question">Datenbank-Passwort ändern?</string>
@@ -654,7 +653,7 @@
     <string name="wrong_passphrase">Falsches Datenbank-Passwort</string>
     <string name="encrypted_database">Verschlüsselte Datenbank</string>
     <string name="database_error">Datenbankfehler</string>
-    <string name="keychain_error">Keystore Fehler</string>
+    <string name="keychain_error">Keystore-Fehler</string>
     <string name="passphrase_is_different">Das Datenbank-Passwort unterscheidet sich von dem im Keystore gespeicherten.</string>
     <string name="file_with_path">Datei: %s</string>
     <string name="database_passphrase_is_required">Das Datenbank-Passwort ist erforderlich, um den Chat zu öffnen.</string>
@@ -676,14 +675,14 @@
     <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Das kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Bitte nehmen Sie Kontakt mit den Entwicklern auf, wenn das nicht der Fall ist.</string>
     <!-- ChatModel.chatRunning interactions -->
     <string name="chat_is_stopped_indication">Chat wurde beendet</string>
-    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten.</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Sie können den Chat über die App-Einstellungen/Datenbank oder durch Neustart der App starten.</string>
     <!-- ChatArchiveView.kt -->
-    <string name="chat_archive_header">Datenbank Archiv</string>
-    <string name="chat_archive_section">CHAT ARCHIV</string>
+    <string name="chat_archive_header">Datenbank-Archiv</string>
+    <string name="chat_archive_section">CHAT-ARCHIV</string>
     <string name="save_archive">Archiv speichern</string>
     <string name="delete_archive">Archiv löschen</string>
     <string name="archive_created_on_ts">Erstellt am %1$s</string>
-    <string name="delete_chat_archive_question">Chat Archiv löschen?</string>
+    <string name="delete_chat_archive_question">Chat-Archiv löschen\?</string>
     <!-- Groups -->
     <string name="group_invitation_item_description">Einladung zur Gruppe %1$s</string>
     <string name="join_group_question">Der Gruppe beitreten?</string>
@@ -698,7 +697,7 @@
     <string name="icon_descr_add_members">Mitglieder einladen</string>
     <string name="icon_descr_group_inactive">Gruppe inaktiv</string>
     <string name="alert_title_group_invitation_expired">Einladung abgelaufen!</string>
-    <string name="alert_message_group_invitation_expired">Die Gruppeneinladung ist nicht mehr gültig, sie wurde vom Absender entfernt.</string>
+    <string name="alert_message_group_invitation_expired">Die Gruppeneinladung ist nicht mehr gültig, da sie vom Absender entfernt wurde.</string>
     <string name="alert_title_no_group">Die Gruppe wurde nicht gefunden!</string>
     <string name="alert_message_no_group">Diese Gruppe existiert nicht mehr.</string>
     <string name="alert_title_cant_invite_contacts">Kontakte können nicht eingeladen werden!</string>
@@ -744,7 +743,7 @@
     <string name="group_member_status_group_deleted">Gruppe gelöscht</string>
     <string name="group_member_status_invited">Eingeladen</string>
     <string name="group_member_status_introduced">Verbindung (erstellt)</string>
-    <string name="group_member_status_intro_invitation">Verbindung (eingeladen)</string>
+    <string name="group_member_status_intro_invitation">Verbinde (nach einer Einladung)</string>
     <string name="group_member_status_accepted">Verbindung (akzeptiert)</string>
     <string name="group_member_status_announced">Verbindung (angekündigt)</string>
     <string name="group_member_status_connected">Verbunden</string>
@@ -770,19 +769,19 @@
     <string name="group_info_member_you">Sie: %1$s</string>
     <string name="button_delete_group">Gruppe löschen</string>
     <string name="delete_group_question">Gruppe löschen?</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">Die Gruppe wird für alle Mitglieder gelöscht - dies kann nicht rückgängig gemacht werden!</string>
-    <string name="delete_group_for_self_cannot_undo_warning">Die Gruppe wird für Sie gelöscht - dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Die Gruppe wird für alle Mitglieder gelöscht – dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">Die Gruppe wird für Sie gelöscht – dies kann nicht rückgängig gemacht werden!</string>
     <string name="button_leave_group">Gruppe verlassen</string>
     <string name="button_edit_group_profile">Gruppenprofil bearbeiten</string>
     <string name="group_link">Gruppen-Link</string>
     <string name="button_create_group_link">Link erzeugen</string>
     <string name="delete_link_question">Link löschen?</string>
     <string name="delete_link">Link löschen</string>
-    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Sie können diesen Link oder QR-Code teilen - Damit kann jede Person der Gruppe beitreten. Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Sie können diesen Link oder QR-Code teilen – damit kann jede Person der Gruppe beitreten. Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
     <string name="all_group_members_will_remain_connected">Alle Gruppenmitglieder bleiben verbunden.</string>
     <string name="error_creating_link_for_group">Fehler beim Erzeugen des Gruppen-Links</string>
     <string name="error_deleting_link_for_group">Fehler beim Löschen des Gruppen-Links</string>
-    <string name="only_group_owners_can_change_prefs">Gruppenpräferenzen können nur von Gruppen-Eigentümern geändert werden.</string>
+    <string name="only_group_owners_can_change_prefs">Gruppen-Präferenzen können nur von Gruppen-Eigentümern geändert werden.</string>
     <!-- For Console chat info section -->
     <string name="section_title_for_console">FÜR KONSOLE</string>
     <string name="info_row_local_name">Lokaler Name</string>
@@ -790,7 +789,7 @@
     <!-- GroupMemberInfoView.kt -->
     <string name="button_remove_member">Mitglied entfernen</string>
     <string name="button_send_direct_message">Direktnachricht senden</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">Das Mitglied wird aus der Gruppe entfernt - dies kann nicht rückgängig gemacht werden!</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Das Mitglied wird aus der Gruppe entfernt – dies kann nicht rückgängig gemacht werden!</string>
     <string name="remove_member_confirmation">Entfernen</string>
     <string name="member_info_section_title_member">MITGLIED</string>
     <string name="role_in_group">Rolle</string>
@@ -817,7 +816,6 @@
     <string name="group_is_decentralized">Die Gruppe ist vollständig dezentralisiert – sie ist nur für Mitglieder sichtbar.</string>
     <string name="group_display_name_field">Anzeigename der Gruppe:</string>
     <string name="group_full_name_field">Vollständiger Gruppenname:</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Der Inkognito-Modus wird hier nicht unterstützt - Ihr Hauptprofil wird an die Gruppenmitglieder gesendet</string>
     <string name="group_main_profile_sent">Ihr Chat-Profil wird an die Gruppenmitglieder gesendet</string>
     <!-- GroupProfileView.kt -->
     <string name="group_profile_is_stored_on_members_devices">Das Gruppenprofil wird auf den Geräten der Mitglieder gespeichert, nicht auf den Servern.</string>
@@ -829,7 +827,7 @@
     <string name="network_option_tcp_connection_timeout">Timeout der TCP-Verbindung</string>
     <string name="network_option_protocol_timeout">Protokollzeitüberschreitung</string>
     <string name="network_option_ping_interval">PING-Intervall</string>
-    <string name="network_option_enable_tcp_keep_alive">TCP-Keep-alive aktivieren</string>
+    <string name="network_option_enable_tcp_keep_alive">TCP-Keep-Alive aktivieren</string>
     <string name="network_options_revert">Zurückkehren</string>
     <string name="network_options_save">Speichern</string>
     <string name="update_network_settings_question">Netzwerkeinstellungen aktualisieren?</string>
@@ -838,12 +836,9 @@
     <!-- Incognito mode -->
     <string name="incognito">Inkognito</string>
     <string name="incognito_random_profile">Ihr Zufallsprofil</string>
-    <string name="incognito_random_profile_description">Ein zufälliges Profil wird an Ihren Kontakt gesendet.</string>
-    <string name="incognito_random_profile_from_contact_description">Ein zufälliges Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.</string>
-    <string name="incognito_info_protects">Der Inkognito-Modus schützt die Privatsphäre Ihres Hauptprofilnamens und -bildes – für jeden neuen Kontakt wird ein neues Zufallsprofil erstellt.</string>
-    <string name="incognito_info_allows">Es ermöglicht viele anonyme Verbindungen ohne gemeinsame Daten zwischen diesen in einem einzigen Chat-Profil zu haben.</string>
-    <string name="incognito_info_share">Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil für die Gruppen verwendet, zu denen sie Sie eingeladen haben.</string>
-    <string name="incognito_info_find">Um das für eine Inkognito-Verbindung verwendete Profil zu finden, tippen Sie oben im Chat auf den Kontakt- oder Gruppennamen.</string>
+    <string name="incognito_info_protects">Der Inkognito-Modus schützt Ihre Privatsphäre, indem für jeden Kontakt ein neues Zufallsprofil erstellt wird.</string>
+    <string name="incognito_info_allows">Es ermöglicht, viele anonyme Verbindungen ohne gemeinsame Daten zwischen diesen in einem einzigen Chat-Profil zu haben.</string>
+    <string name="incognito_info_share">Wenn Sie ein Inkognito-Profil mit jemandem teilen, wird dieses Profil für die Gruppen verwendet, zu denen derjenige Sie einlädt.</string>
     <!-- Default themes -->
     <string name="theme_system">System</string>
     <string name="theme_light">Hell</string>
@@ -862,37 +857,37 @@
     <string name="chat_preferences_always">Immer</string>
     <string name="chat_preferences_on">Ein</string>
     <string name="chat_preferences_off">Aus</string>
-    <string name="chat_preferences">Chat Präferenzen</string>
-    <string name="contact_preferences">Kontakt Präferenzen</string>
-    <string name="group_preferences">Gruppen Präferenzen</string>
-    <string name="set_group_preferences">Gruppenpräferenzen einstellen</string>
+    <string name="chat_preferences">Chat-Präferenzen</string>
+    <string name="contact_preferences">Kontakt-Präferenzen</string>
+    <string name="group_preferences">Gruppen-Präferenzen</string>
+    <string name="set_group_preferences">Gruppen-Präferenzen einstellen</string>
     <string name="your_preferences">Ihre Präferenzen</string>
     <string name="direct_messages">Direkte Nachrichten</string>
-    <string name="full_deletion">Für Alle löschen</string>
+    <string name="full_deletion">Für jeden löschen</string>
     <string name="voice_messages">Sprachnachrichten</string>
     <string name="feature_enabled">aktiviert</string>
     <string name="feature_enabled_for_you">Für Sie aktiviert</string>
-    <string name="feature_enabled_for_contact">FÜr Kontakt aktiviert</string>
+    <string name="feature_enabled_for_contact">Für Kontakt aktiviert</string>
     <string name="feature_off">Aus</string>
     <string name="feature_received_prohibited">empfangen, nicht erlaubt</string>
     <string name="allow_your_contacts_irreversibly_delete">Erlauben Sie Ihren Kontakten gesendete Nachrichten unwiederbringlich zu löschen.</string>
-    <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="contacts_can_mark_messages_for_deletion">Ihre Kontakte können Nachrichten zum Löschen markieren. Sie können diese Nachrichten trotzdem anschauen.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Erlauben Sie Ihre Kontakten Sprachnachrichten zu versenden.</string>
-    <string name="allow_voice_messages_only_if">Erlauben Sie Sprachnachrichten nur dann, wenn Ihr Kontakt diese ebenfalls erlaubt.</string>
+    <string name="allow_voice_messages_only_if">Erlauben Sie Sprachnachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="prohibit_sending_voice_messages">Das Senden von Sprachnachrichten nicht erlauben.</string>
-    <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt, als auch Sie können Nachrichten unwiederbringlich löschen.</string>
+    <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt als auch Sie können Nachrichten unwiederbringlich löschen.</string>
     <string name="only_you_can_delete_messages">Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).</string>
     <string name="only_your_contact_can_delete">Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).</string>
     <string name="message_deletion_prohibited">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
-    <string name="both_you_and_your_contact_can_send_voice">Sowohl Ihr Kontakt, als auch Sie können Sprachnachrichten versenden.</string>
+    <string name="both_you_and_your_contact_can_send_voice">Sowohl Ihr Kontakt als auch Sie können Sprachnachrichten versenden.</string>
     <string name="only_you_can_send_voice">Nur Sie können Sprachnachrichten versenden.</string>
     <string name="only_your_contact_can_send_voice">Nur Ihr Kontakt kann Sprachnachrichten versenden.</string>
     <string name="voice_prohibited_in_this_chat">In diesem Chat sind Sprachnachrichten nicht erlaubt.</string>
     <string name="allow_direct_messages">Das Senden von Direktnachrichten an Gruppenmitglieder erlauben.</string>
     <string name="prohibit_direct_messages">Das Senden von Direktnachrichten an Gruppenmitglieder nicht erlauben.</string>
     <string name="allow_to_delete_messages">Unwiederbringliches löschen von gesendeten Nachrichten erlauben.</string>
-    <string name="prohibit_message_deletion">Unwiederbringliches löschen von Nachrichten nicht erlauben.</string>
+    <string name="prohibit_message_deletion">Unwiederbringliches Löschen von Nachrichten nicht erlauben.</string>
     <string name="allow_to_send_voice">Das Senden von Sprachnachrichten erlauben.</string>
     <string name="prohibit_sending_voice">Das Senden von Sprachnachrichten nicht erlauben.</string>
     <string name="group_members_can_send_dms">Gruppenmitglieder können Direktnachrichten versenden.</string>
@@ -905,10 +900,10 @@
     <string name="view_security_code">Schauen Sie sich den Sicherheitscode an</string>
     <string name="onboarding_notifications_mode_service">Sofort</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Gute Option für die Batterieausdauer</b>. Der Hintergrundservice überprüft alle 10 Minuten nach Nachrichten. Sie können eventuell Anrufe oder dringende Nachrichten verpassen.]]></string>
-    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Beste Option für die Batterieausdauer</b>. Sie empfangen Benachrichtigungen nur solange die App abläuft (kein aktiver Hintergrundservice).]]></string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Beste Option für die Akkulaufzeit</b>. Sie empfangen Benachrichtigungen nur, solange die App läuft (kein aktiver Hintergrundservice).]]></string>
     <string name="send_verb">Senden</string>
     <string name="is_verified">%s wurde erfolgreich überprüft</string>
-    <string name="clear_verification">Überprüfung zurücknehmen</string>
+    <string name="clear_verification">Verifikation zurücknehmen</string>
     <string name="onboarding_notifications_mode_off">Solange die App abläuft</string>
     <string name="onboarding_notifications_mode_subtitle">Kann später über die Einstellungen geändert werden.</string>
     <string name="delete_after">Löschen nach</string>
@@ -947,14 +942,14 @@
     <string name="prohibit_sending_disappearing_messages">Das Senden von verschwindenden Nachrichten verbieten.</string>
     <string name="disappearing_messages_are_prohibited">In dieser Gruppe sind verschwindende Nachrichten nicht erlaubt.</string>
     <string name="group_members_can_send_disappearing">Gruppenmitglieder können verschwindende Nachrichten senden.</string>
-    <string name="v4_3_improved_server_configuration_desc">Fügen Sie Server durch Scannen der QR Codes hinzu.</string>
+    <string name="v4_3_improved_server_configuration_desc">Fügen Sie Server durch Scannen der QR-Codes hinzu.</string>
     <string name="v4_4_disappearing_messages">Verschwindende Nachrichten</string>
     <string name="accept_feature">Übernehmen</string>
     <string name="accept_feature_set_1_day">Einen Tag festlegen</string>
     <string name="invalid_chat">Ungültiger Chat</string>
-    <string name="live_message">Live Nachricht!</string>
-    <string name="send_live_message_desc">Eine Live Nachricht senden - der/die Empfänger sieht/sehen Nachrichtenaktualisierungen, während Sie sie eingeben.</string>
-    <string name="send_live_message">Live Nachricht senden</string>
+    <string name="live_message">Live-Nachricht!</string>
+    <string name="send_live_message_desc">Eine Live-Nachricht senden – der/die Empfänger sieht/sehen Nachrichtenaktualisierungen, während Sie sie eingeben.</string>
+    <string name="send_live_message">Live-Nachricht senden</string>
     <string name="verify_security_code">Sicherheitscode überprüfen</string>
     <string name="is_not_verified">%s wurde noch nicht überprüft</string>
     <string name="to_verify_compare">Um die Ende-zu-Ende-Verschlüsselung mit Ihrem Kontakt zu überprüfen, müssen Sie den Sicherheitscode in Ihren Apps vergleichen oder scannen.</string>
@@ -974,13 +969,13 @@
     <string name="v4_3_improved_privacy_and_security_desc">App-Bildschirm in aktuellen Anwendungen verbergen.</string>
     <string name="v4_3_improved_privacy_and_security">Verbesserte Privatsphäre und Sicherheit</string>
     <string name="v4_3_improved_server_configuration">Verbesserte Serverkonfiguration</string>
-    <string name="v4_3_irreversible_message_deletion">Unwiederbringliches löschen einer Nachricht</string>
-    <string name="v4_4_live_messages">Live Nachrichten</string>
+    <string name="v4_3_irreversible_message_deletion">Unwiederbringliches Löschen einer Nachricht</string>
+    <string name="v4_4_live_messages">Live-Nachrichten</string>
     <string name="v4_3_voice_messages_desc">Max. 40 Sekunden, sofort erhalten.</string>
     <string name="v4_4_live_messages_desc">Die Empfänger sehen Nachrichtenaktualisierungen, während Sie sie eingeben.</string>
     <string name="v4_4_disappearing_messages_desc">Gesendete Nachrichten werden nach der eingestellten Zeit gelöscht.</string>
     <string name="v4_3_voice_messages">Sprachnachrichten</string>
-    <string name="allow_disappearing_messages_only_if">Erlauben Sie verschwindende Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</string>
+    <string name="allow_disappearing_messages_only_if">Erlauben Sie verschwindende Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="invalid_data">Ungültige Daten</string>
     <string name="v4_4_verify_connection_security">Sicherheit der Verbindung überprüfen</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Mit optionaler Begrüßungsmeldung.</string>
@@ -993,13 +988,13 @@
     <string name="delete_files_and_media_all">Alle Dateien löschen</string>
     <string name="messages_section_title">Nachrichten</string>
     <string name="app_version_code">App Build: %s</string>
-    <string name="app_version_title">App Version</string>
-    <string name="app_version_name">App Version: v%s</string>
+    <string name="app_version_title">App-Version</string>
+    <string name="app_version_name">App-Version: v%s</string>
     <string name="core_version">Core Version: v%s</string>
     <string name="users_add">Profil hinzufügen</string>
     <string name="users_delete_all_chats_deleted">Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!</string>
     <string name="users_delete_profile_for">Chat-Profil löschen für</string>
-    <string name="network_option_ping_count">PING Zähler</string>
+    <string name="network_option_ping_count">PING-Zähler</string>
     <string name="update_network_session_mode_question">Transport-Isolations-Modus aktualisieren\?</string>
     <string name="smp_servers_per_user">Server der neuen Verbindungen von Ihrem aktuellen Chat-Profil</string>
     <string name="files_and_media_section">Dateien &amp; Medien</string>
@@ -1012,7 +1007,7 @@
     <string name="delete_files_and_media_for_all_users">Dateien für alle Chat-Profile löschen</string>
     <string name="network_session_mode_entity_description"><b>Für jeden Kontakt und jedes Gruppenmitglied</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.
 \n
-\n<b>Bitte beachten Sie</b>: Wenn Sie viele Verbindung haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.</string>
+\n<b>Bitte beachten Sie</b>: Wenn Sie viele Verbindungen haben, können Akkuverbrauch und Datennutzung wesentlich höher ausfallen und einige Verbindungen scheitern.</string>
     <string name="network_session_mode_user_description"><![CDATA[<b>Für jedes von Ihnen in der App genutzte Chat-Profil</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.]]></string>
     <string name="users_delete_data_only">Nur lokale Profildaten</string>
     <string name="users_delete_with_connections">Profil und Serververbindungen</string>
@@ -1022,7 +1017,7 @@
     <string name="failed_to_active_user_title">Fehler beim Umschalten des Profils!</string>
     <string name="failed_to_create_user_duplicate_desc">Sie haben schon ein Chat-Profil mit dem gleichen Anzeigenamen. Bitte wählen Sie einen anderen Namen aus.</string>
     <string name="v4_5_multiple_chat_profiles">Mehrere Chat-Profile</string>
-    <string name="v4_5_reduced_battery_usage">Reduzierter Batterieverbrauch</string>
+    <string name="v4_5_reduced_battery_usage">Reduzierter Akkuverbrauch</string>
     <string name="v4_5_private_filenames">Neutrale Dateinamen</string>
     <string name="v4_5_message_draft_descr">Den letzten Nachrichtenentwurf, auch mit seinen Anhängen, aufbewahren.</string>
     <string name="v4_5_transport_isolation_descr">Per Chat-Profil (Voreinstellung) oder per Verbindung (BETA).</string>
@@ -1067,7 +1062,7 @@
     <string name="enter_password_to_show">Für die Anzeige das Passwort im Suchfeld eingeben</string>
     <string name="make_profile_private">Privates Profil erzeugen!</string>
     <string name="user_mute">Stummschalten</string>
-    <string name="tap_to_activate_profile">Tippen Sie auf das Profil um es zu aktivieren.</string>
+    <string name="tap_to_activate_profile">Tippen Sie auf das Profil, um es zu aktivieren.</string>
     <string name="should_be_at_least_one_profile">Es muss mindestens ein Benutzer-Profil vorhanden sein.</string>
     <string name="should_be_at_least_one_visible_profile">Es muss mindestens ein sichtbares Benutzer-Profil vorhanden sein.</string>
     <string name="user_unmute">Stummschaltung aufheben</string>
@@ -1076,7 +1071,7 @@
     <string name="v4_6_audio_video_calls_descr">Bluetooth-Unterstützung und weitere Verbesserungen.</string>
     <string name="v4_6_group_moderation_descr">Administratoren können nun
 \n- Nachrichten von Gruppenmitgliedern löschen
-\n- Gruppenmitglieder deaktivieren (\"Beobachter\"-Rolle)</string>
+\n- Gruppenmitglieder deaktivieren („Beobachter“-Rolle)</string>
     <string name="v4_6_group_welcome_message">Gruppen-Begrüßungsmeldung</string>
     <string name="v4_6_reduced_battery_usage">Weiter reduzierter Batterieverbrauch</string>
     <string name="v4_6_reduced_battery_usage_descr">Weitere Verbesserungen sind bald verfügbar!</string>
@@ -1088,7 +1083,7 @@
     <string name="save_and_update_group_profile">Gruppen-Profil sichern und aktualisieren</string>
     <string name="you_will_still_receive_calls_and_ntfs">Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.</string>
     <string name="group_welcome_title">Begrüßungsmeldung</string>
-    <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten - für das Menü gedrückt halten.</string>
+    <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten – für das Menü gedrückt halten.</string>
     <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Meine Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
     <string name="invalid_migration_confirmation">Migrations-Bestätigung ungültig</string>
     <string name="upgrade_and_open_chat">Aktualisieren und den Chat öffnen</string>
@@ -1126,11 +1121,11 @@
     <string name="host_verb">Host</string>
     <string name="error_saving_xftp_servers">Fehler beim Speichern der XFTP-Server</string>
     <string name="error_loading_smp_servers">Fehler beim Laden der SMP-Server</string>
-    <string name="error_xftp_test_server_auth">Bitte das Passwort überprüfen - für den Upload benötigt der Server eine Berechtigung</string>
+    <string name="error_xftp_test_server_auth">Bitte das Passwort überprüfen – für den Upload benötigt der Server eine Berechtigung</string>
     <string name="smp_server_test_download_file">Datei herunterladen</string>
     <string name="smp_server_test_compare_file">Datei vergleichen</string>
     <string name="smp_server_test_delete_file">Datei löschen</string>
-    <string name="lock_mode">Sperr-Modus</string>
+    <string name="lock_mode">Sperrmodus</string>
     <string name="authentication_cancelled">Authentifizierung abgebrochen</string>
     <string name="confirm_passcode">Zugangscode bestätigen</string>
     <string name="enable_lock">Sperre aktivieren</string>
@@ -1140,7 +1135,7 @@
     <string name="la_mode_passcode">Zugangscode</string>
     <string name="passcode_changed">Zugangscode wurde geändert!</string>
     <string name="passcode_set">Zugangscode wurde eingestellt!</string>
-    <string name="change_lock_mode">Sperr-Modus ändern</string>
+    <string name="change_lock_mode">Sperrmodus ändern</string>
     <string name="passcode_not_changed">Zugangscode wurde nicht geändert!</string>
     <string name="decryption_error">Entschlüsselungsfehler</string>
     <string name="error_loading_xftp_servers">Fehler beim Laden der XFTP-Server</string>
@@ -1156,38 +1151,38 @@
     <string name="smp_server_test_create_file">Datei erstellen</string>
     <string name="la_current_app_passcode">Aktueller Zugangscode</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Dies kann passieren, falls Sie oder Ihre Verbindung ein altes Datenbank-Backup genutzt haben.</string>
-    <string name="la_please_remember_to_store_password">Es gibt keine Möglichkeit ein vergessenes Passwort wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie es sicher ab!</string>
+    <string name="la_please_remember_to_store_password">Es gibt keine Möglichkeit, ein vergessenes Passwort wiederherzustellen - bitte erinnern Sie sich gut daran oder speichern Sie es sicher ab!</string>
     <string name="alert_text_fragment_please_report_to_developers">Bitte melden Sie es den Entwicklern.</string>
     <string name="la_change_app_passcode">Zugangscode ändern</string>
     <string name="alert_title_msg_bad_hash">Ungültiger Nachrichten-Hash</string>
     <string name="la_auth_failed">Authentifizierung fehlgeschlagen</string>
     <string name="alert_title_msg_bad_id">Falsche Nachrichten-ID</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die XFTP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die XFTP-Server-Adressen das richtige Format haben, zeilenweise separiert und nicht doppelt vorhanden sind.</string>
     <string name="network_socks_toggle_use_socks_proxy">SOCKS-Proxy nutzen</string>
-    <string name="la_lock_mode">SimpleX Sperr-Modus</string>
-    <string name="lock_not_enabled">SimpleX Sperre ist nicht aktiviert!</string>
+    <string name="la_lock_mode">SimpleX-Sperrmodus</string>
+    <string name="lock_not_enabled">SimpleX-Sperre ist nicht aktiviert!</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Setzen Sie <i>Verwende .onion-Hosts</i> auf \"Nein\", wenn der SOCKS-Proxy sie nicht unterstützt.]]></string>
     <string name="submit_passcode">Bestätigen</string>
     <string name="la_mode_system">System</string>
-    <string name="la_could_not_be_verified">Sie können nicht überprüft werden - bitte versuchen Sie es nochmal.</string>
+    <string name="la_could_not_be_verified">Sie können nicht überprüft werden – bitte versuchen Sie es nochmal.</string>
     <string name="xftp_servers">XFTP-Server</string>
-    <string name="alert_text_msg_bad_id">Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der Vorherigen).
+    <string name="alert_text_msg_bad_id">Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der vorherigen).
 \nDies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d Nachrichten konnten nicht entschlüsselt werden.</string>
     <string name="alert_text_msg_bad_hash">Der Hash der vorherigen Nachricht unterscheidet sich.</string>
-    <string name="you_can_turn_on_lock">Sie können die SimpleX Sperre über die Einstellungen aktivieren.</string>
-    <string name="network_socks_proxy_settings">SOCKS-Proxy Einstellungen</string>
+    <string name="you_can_turn_on_lock">Sie können die SimpleX-Sperre über die Einstellungen aktivieren.</string>
+    <string name="network_socks_proxy_settings">SOCKS-Proxy-Einstellungen</string>
     <string name="la_lock_mode_system">System-Authentifizierung</string>
     <string name="smp_server_test_upload_file">Datei hochladen</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d Nachrichten übersprungen.</string>
-    <string name="allow_calls_only_if">Anrufe sind nur erlaubt, wenn Ihr Kontakt das ebenfalls erlaubt.</string>
-    <string name="allow_your_contacts_to_call">Erlaubt Ihren Kontakten Sie anzurufen.</string>
-    <string name="audio_video_calls">Audio/Video Anrufe</string>
+    <string name="allow_calls_only_if">Erlauben Sie Anrufe nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
+    <string name="allow_your_contacts_to_call">Erlaubt es Ihren Kontakten Sie anzurufen.</string>
+    <string name="audio_video_calls">Audio-/Video-Anrufe</string>
     <string name="available_in_v51">"
 \nVerfügbar in v5.1"</string>
-    <string name="both_you_and_your_contact_can_make_calls">Sowohl Sie, als auch Ihr Kontakt können Anrufe tätigen.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Sowohl Sie als auch Ihr Kontakt können Anrufe tätigen.</string>
     <string name="only_you_can_make_calls">Nur Sie können Anrufe tätigen.</string>
-    <string name="prohibit_calls">Audio/Video Anrufe nicht erlauben.</string>
+    <string name="prohibit_calls">Audio-/Video-Anrufe nicht erlauben.</string>
     <string name="stop_rcv_file__title">Den Empfang der Datei beenden\?</string>
     <string name="stop_snd_file__title">Das Senden der Datei beenden\?</string>
     <string name="stop_rcv_file__message">Der Empfang der Datei wird beendet.</string>
@@ -1200,13 +1195,13 @@
     <string name="revoke_file__title">Datei widerrufen\?</string>
     <string name="stop_file__confirm">Beenden</string>
     <string name="v5_0_large_files_support">Videos und Dateien bis zu 1GB</string>
-    <string name="v5_0_large_files_support_descr">Schnell und ohne warten auf den Absender, bis er online ist!</string>
+    <string name="v5_0_large_files_support_descr">Schnell und ohne zu warten, bis der Kontakt online ist!</string>
     <string name="v5_0_polish_interface">Polnische Bedienoberfläche</string>
     <string name="v5_0_app_passcode_descr">Anstelle der System-Authentifizierung festlegen.</string>
     <string name="v5_0_polish_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
     <string name="only_your_contact_can_make_calls">Nur Ihr Kontakt kann Anrufe tätigen.</string>
     <string name="v5_0_app_passcode">App-Zugangscode</string>
-    <string name="calls_prohibited_with_this_contact">Audio/Video Anrufe sind nicht erlaubt.</string>
+    <string name="calls_prohibited_with_this_contact">Audio-/Video-Anrufe sind nicht erlaubt.</string>
     <string name="address_section_title">Adresse</string>
     <string name="share_address">Adresse teilen</string>
     <string name="export_theme">Design exportieren</string>
@@ -1230,9 +1225,9 @@
     <string name="auto_accept_contact">Automatisch akzeptieren</string>
     <string name="enter_welcome_message_optional">Geben Sie eine Begrüßungsmeldung ein … (optional)</string>
     <string name="invite_friends">Freunde einladen</string>
-    <string name="email_invite_subject">Lassen Sie uns in SimpleX Chat kommunizieren</string>
+    <string name="email_invite_subject">Lassen Sie uns über SimpleX Chat schreiben</string>
     <string name="profile_update_will_be_sent_to_contacts">Profil-Aktualisierung wird an Ihre Kontakte gesendet.</string>
-    <string name="save_auto_accept_settings">Einstellungen von \"Automatisch akzeptieren\" speichern</string>
+    <string name="save_auto_accept_settings">Einstellungen von „automatisch akzeptieren“ speichern</string>
     <string name="save_settings_question">Einstellungen speichern\?</string>
     <string name="share_address_with_contacts_question">Die Adresse mit Kontakten teilen\?</string>
     <string name="stop_sharing">Teilen beenden</string>
@@ -1259,9 +1254,9 @@
     <string name="dark_theme">Dunkles Design</string>
     <string name="if_you_cant_meet_in_person">Falls Sie sich nicht persönlich treffen können, zeigen Sie den QR-Code in einem Videoanruf oder teilen Sie den Link.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Lesen Sie mehr dazu in der <font color="#0088ff">Benutzeranleitung</font>.]]></string>
-    <string name="import_theme_error_desc">Stellen Sie sicher, dass die Datei die korrekte YAML-Syntax hat. Exportieren sie das Design, um ein Beispiel für die Dateistruktur des Designs zu erhalten.</string>
+    <string name="import_theme_error_desc">Stellen Sie sicher, dass die Datei die korrekte YAML-Syntax hat. Exportieren Sie das Design, um ein Beispiel für die Dateistruktur des Designs zu erhalten.</string>
     <string name="auth_open_chat_profiles">Offene Chat-Profile</string>
-    <string name="you_can_share_your_address">Sie können Ihre Adresse als Link oder QR-Code teilen - jede Person kann sich mit Ihnen verbinden.</string>
+    <string name="you_can_share_your_address">Sie können Ihre Adresse als Link oder QR-Code teilen – jede Person kann sich mit Ihnen verbinden.</string>
     <string name="your_contacts_will_see_it">Ihre Kontakte in SimpleX werden es sehen.
 \nSie können es in den Einstellungen ändern.</string>
     <string name="all_app_data_will_be_cleared">Werden die App-Daten komplett gelöscht.</string>
@@ -1302,11 +1297,11 @@
     <string name="current_version_timestamp">%s (aktuell)</string>
     <string name="share_text_sent_at">Gesendet um: %s</string>
     <string name="message_reactions">Reaktionen auf Nachrichten</string>
-    <string name="allow_your_contacts_adding_message_reactions">Erlauben Sie Ihren Kontakten Reaktionen auf Nachrichten zu geben.</string>
-    <string name="both_you_and_your_contact_can_add_message_reactions">Sowohl Sie, als auch Ihr Kontakt können Reaktionen auf Nachrichten geben.</string>
+    <string name="allow_your_contacts_adding_message_reactions">Erlauben Sie Ihren Kontakten, Reaktionen auf Nachrichten zu geben.</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Sowohl Sie als auch Ihr Kontakt können Reaktionen auf Nachrichten geben.</string>
     <string name="only_you_can_add_message_reactions">Nur Sie können Reaktionen auf Nachrichten geben.</string>
     <string name="prohibit_message_reactions">Reaktionen auf Nachrichten nicht erlauben.</string>
-    <string name="allow_message_reactions_only_if">Reaktionen auf Nachrichten sind nur möglich, falls Ihr Kontakt dies erlaubt.</string>
+    <string name="allow_message_reactions_only_if">Erlauben Sie Reaktionen auf Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="only_your_contact_can_add_message_reactions">Nur Ihr Kontakt kann Reaktionen auf Nachrichten geben.</string>
     <string name="allow_message_reactions">Reaktionen auf Nachrichten erlauben.</string>
     <string name="prohibit_message_reactions_group">Reaktionen auf Nachrichten nicht erlauben.</string>
@@ -1317,7 +1312,7 @@
     <string name="v5_1_self_destruct_passcode">Selbstzerstörungs-Zugangscode</string>
     <string name="v5_1_self_destruct_passcode_descr">Alle Daten werden gelöscht, sobald dieser eingegeben wird.</string>
     <string name="v5_1_custom_themes">Benutzerdefinierte Designs</string>
-    <string name="v5_1_japanese_portuguese_interface">Japanische und Portugiesische Bedienoberfläche</string>
+    <string name="v5_1_japanese_portuguese_interface">Japanische und portugiesische Bedienoberfläche</string>
     <string name="custom_time_unit_minutes">Minuten</string>
     <string name="custom_time_unit_seconds">Sekunden</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
@@ -1341,7 +1336,7 @@
     <string name="edit_history">Vergangenheit</string>
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="item_info_no_text">Kein Text</string>
-    <string name="non_fatal_errors_occured_during_import">Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten - weitere Details finden Sie in der Chat-Konsole.</string>
+    <string name="non_fatal_errors_occured_during_import">Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten – weitere Details finden Sie in der Chat-Konsole.</string>
     <string name="shutdown_alert_question">Herunterfahren\?</string>
     <string name="shutdown_alert_desc">Bis zum Neustart der App erhalten Sie keine Benachrichtigungen mehr</string>
     <string name="settings_section_title_app">APP</string>
@@ -1363,7 +1358,7 @@
     <string name="favorite_chat">Favorit</string>
     <string name="no_filtered_chats">Keine gefilterten Chats</string>
     <string name="la_mode_off">Aus</string>
-    <string name="network_option_protocol_timeout_per_kb">Protokollzeitüberschreitung pro kB</string>
+    <string name="network_option_protocol_timeout_per_kb">Protokollzeitüberschreitung pro KB</string>
     <string name="conn_event_ratchet_sync_started">Verschlüsselung zustimmen…</string>
     <string name="snd_conn_event_ratchet_sync_started">Verschlüsselung von %s zustimmen</string>
     <string name="conn_event_ratchet_sync_allowed">Neuaushandlung der Verschlüsselung erlaubt</string>
@@ -1390,8 +1385,8 @@
     <string name="fix_connection">Verbindung reparieren</string>
     <string name="delivery_receipts_are_disabled">Empfangsbestätigungen sind deaktiviert!</string>
     <string name="delivery_receipts_title">Empfangsbestätigungen!</string>
-    <string name="error_enabling_delivery_receipts">Fehler beim Aktivieren der Empfangsbestätigungen!</string>
-    <string name="receipts_contacts_disable_for_all">Für Alle deaktivieren</string>
+    <string name="error_enabling_delivery_receipts">Fehler beim Aktivieren von Empfangsbestätigungen!</string>
+    <string name="receipts_contacts_disable_for_all">Für alle deaktivieren</string>
     <string name="enable_receipts_all">Aktivieren</string>
     <string name="v5_2_favourites_filter">Chats schneller finden</string>
     <string name="v5_2_disappear_one_message">Eine verschwindende Nachricht verfassen</string>
@@ -1399,21 +1394,21 @@
     <string name="receipts_contacts_enable_keep_overrides">Aktivieren (vorgenommene Einstellungen bleiben erhalten)</string>
     <string name="v5_2_favourites_filter_descr">Nach ungelesenen und favorisierten Chats filtern.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Das Senden von Empfangsbestätigungen an alle Kontakte in allen sichtbaren Chat-Profilen wird aktiviert.</string>
-    <string name="receipts_contacts_override_disabled">Das Senden von Empfangsbestätigungen an %d Kontakte ist deaktiviert</string>
+    <string name="receipts_contacts_override_disabled">Das Senden von Bestätigungen an %d Kontakte ist deaktiviert</string>
     <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Profil</string>
-    <string name="receipts_section_description_1">Diese können in den Kontakt-Einstellungen überschrieben werden</string>
+    <string name="receipts_section_description_1">Sie können in den Kontakt- und Gruppeneinstellungen überschrieben werden.</string>
     <string name="receipts_section_contacts">Kontakte</string>
-    <string name="receipts_contacts_title_disable">Empfangsbestätigungen deaktivieren\?</string>
-    <string name="receipts_contacts_title_enable">Empfangsbestätigungen aktivieren\?</string>
-    <string name="receipts_contacts_override_enabled">Das Senden von Empfangsbestätigungen an %d Kontakte ist aktiviert</string>
-    <string name="receipts_contacts_enable_for_all">Für Alle aktivieren</string>
+    <string name="receipts_contacts_title_disable">Bestätigungen deaktivieren\?</string>
+    <string name="receipts_contacts_title_enable">Bestätigungen aktivieren\?</string>
+    <string name="receipts_contacts_override_enabled">Das Senden von Bestätigungen an %d Kontakte ist aktiviert</string>
+    <string name="receipts_contacts_enable_for_all">Für alle aktivieren</string>
     <string name="settings_section_title_delivery_receipts">EMPFANGSBESTÄTIGUNGEN SENDEN AN</string>
     <string name="receipts_contacts_disable_keep_overrides">Deaktivieren (vorgenommene Einstellungen bleiben erhalten)</string>
-    <string name="send_receipts">Empfangsbestätigungen senden</string>
+    <string name="send_receipts">Bestätigungen senden</string>
     <string name="v5_2_fix_encryption">Ihre Verbindungen beibehalten</string>
     <string name="v5_2_message_delivery_receipts">Empfangsbestätigungen für Nachrichten!</string>
-    <string name="v5_2_message_delivery_receipts_descr">Das zweite Häkchen, welches wir vermisst haben! ✅</string>
-    <string name="v5_2_fix_encryption_descr">Reparatur der Verschlüsselung nach wiedereinspielen von Backups.</string>
+    <string name="v5_2_message_delivery_receipts_descr">Wir haben das zweite Häkchen vermisst! ✅</string>
+    <string name="v5_2_fix_encryption_descr">Reparatur der Verschlüsselung nach Wiedereinspielen von Backups.</string>
     <string name="v5_2_more_things">Ein paar weitere Dinge</string>
     <string name="v5_2_disappear_one_message_descr">Auch wenn sie im Chat deaktiviert sind.</string>
     <string name="v5_2_more_things_descr">- stabilere Zustellung von Nachrichten.
@@ -1421,5 +1416,45 @@
 \n- und mehr!</string>
     <string name="dont_enable_receipts">Nicht aktivieren</string>
     <string name="sending_delivery_receipts_will_be_enabled">Das Senden von Empfangsbestätigungen an alle Kontakte wird aktiviert.</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Sie können diese später in den Datenschutz &amp; Sicherheits-Einstellungen der App aktivieren.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Sie können diese später in den Datenschutz- und Sicherheits-Einstellungen der App aktivieren.</string>
+    <string name="choose_file_title">Datei auswählen</string>
+    <string name="in_developing_title">Kommt bald!</string>
+    <string name="no_selected_chat">Kein Chat ausgewählt</string>
+    <string name="receipts_groups_title_enable">Bestätigungen für Gruppen aktivieren\?</string>
+    <string name="receipts_section_groups">Kleine Gruppen (max. 20)</string>
+    <string name="receipts_groups_disable_keep_overrides">Deaktivieren (vorgenommene Gruppeneinstellungen bleiben erhalten)</string>
+    <string name="receipts_groups_title_disable">Bestätigungen für Gruppen deaktivieren\?</string>
+    <string name="receipts_groups_enable_for_all">Für alle Gruppen aktivieren</string>
+    <string name="receipts_groups_enable_keep_overrides">Aktivieren (vorgenommene Gruppeneinstellungen bleiben erhalten)</string>
+    <string name="receipts_groups_override_disabled">Das Senden von Bestätigungen ist für %d Gruppen deaktiviert</string>
+    <string name="receipts_groups_override_enabled">Das Senden von Bestätigungen ist für %d Gruppen aktiviert</string>
+    <string name="receipts_groups_disable_for_all">Für alle Gruppen deaktivieren</string>
+    <string name="send_receipts_disabled">deaktiviert</string>
+    <string name="send_receipts_disabled_alert_title">Bestätigungen sind deaktiviert</string>
+    <string name="no_info_on_delivery">Keine Information über die Zustellung</string>
+    <string name="delivery">Zustellung</string>
+    <string name="in_developing_desc">Dieses Feature wird noch nicht unterstützt. Versuchen Sie es mit der nächsten Version.</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="send_receipts_disabled_alert_msg">Es werden keine Empfangsbestätigungen gesendet, da diese Gruppe über %1$d Mitglieder hat.</string>
+    <string name="connect_via_member_address_alert_desc">An dieses Gruppenmitglied wird eine Verbindungsanfrage gesendet.</string>
+    <string name="connect_via_member_address_alert_title">Direkt verbinden\?</string>
+    <string name="connect_via_link_incognito">Inkognito verbinden</string>
+    <string name="connect_use_current_profile">Nutzen Sie das aktuelle Profil</string>
+    <string name="connect_use_new_incognito_profile">Nutzen Sie das neue Inkognito-Profil</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Anrufe im Hintergrund zu führen.]]></string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Fügen Sie den erhaltenen Link ein, um sich mit Ihrem Kontakt zu verbinden…</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Es wird ein neues Zufallsprofil geteilt.</string>
+    <string name="connect__your_profile_will_be_shared">Ihr Profil %1$s wird geteilt.</string>
+    <string name="turn_off_battery_optimization_button">Erlauben</string>
+    <string name="disable_notifications_button">Benachrichtigungen deaktivieren</string>
+    <string name="system_restricted_background_in_call_title">Keine Anrufe im Hintergrund</string>
+    <string name="turn_off_system_restriction_button">App-Einstellungen öffnen</string>
+    <string name="system_restricted_background_desc">SimpleX kann nicht im Hintergrund ablaufen. Sie erhalten Benachrichtigungen nur dann, solange die App läuft.</string>
+    <string name="system_restricted_background_in_call_desc">Die App kann nach einer Minute im Hintergrund geschlossen werden.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Benachrichtigungen zu aktivieren.]]></string>
+    <string name="rcv_group_event_n_members_connected">%s, %s und %d weitere Mitglieder wurden verbunden</string>
+    <string name="rcv_group_event_2_members_connected">%s und %s wurden verbunden</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s und %s wurden verbunden</string>
+    <string name="privacy_message_draft">Nachrichtenentwurf</string>
+    <string name="privacy_show_last_messages">Letzte Nachrichten anzeigen</string>
 </resources>

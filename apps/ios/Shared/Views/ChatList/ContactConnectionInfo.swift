@@ -15,6 +15,7 @@ struct ContactConnectionInfo: View {
     @State var contactConnection: PendingContactConnection
     @State private var alert: CCInfoAlert?
     @State private var localAlias = ""
+    @State private var showIncognitoSheet = false
     @FocusState private var aliasTextFieldFocused: Bool
 
     enum CCInfoAlert: Identifiable {
@@ -31,19 +32,14 @@ struct ContactConnectionInfo: View {
 
     var body: some View {
         NavigationView {
-            List {
+            let v = List {
                 Group {
-                    Text(contactConnection.initiated ? "You invited your contact" : "You accepted connection")
+                    Text(contactConnection.initiated ? "You invited a contact" : "You accepted connection")
                         .font(.largeTitle)
                         .bold()
-                        .padding(.bottom, 16)
+                        .padding(.bottom)
 
                     Text(contactConnectionText(contactConnection))
-                        .padding(.bottom, 16)
-
-                    if let connReqInv = contactConnection.connReqInv {
-                        OneTimeLinkProfileText(contactConnection: contactConnection, connReqInvitation: connReqInv)
-                    }
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -65,10 +61,16 @@ struct ContactConnectionInfo: View {
 
                     if contactConnection.initiated,
                        let connReqInv = contactConnection.connReqInv {
-                        oneTimeLinkSection(contactConnection: contactConnection, connReqInvitation: connReqInv)
+                        QRCode(uri: connReqInv)
+                        incognitoEnabled()
+                        shareLinkButton(connReqInv)
+                        oneTimeLinkLearnMoreButton()
                     } else {
+                        incognitoEnabled()
                         oneTimeLinkLearnMoreButton()
                     }
+                } footer: {
+                    sharedProfileInfo(contactConnection.incognito)
                 }
 
                 Section {
@@ -79,6 +81,14 @@ struct ContactConnectionInfo: View {
                             .foregroundColor(Color.red)
                     }
                 }
+            }
+            if #available(iOS 16, *) {
+                v
+            } else {
+                // navigationBarHidden is added conditionally,
+                // because the view jumps in iOS 17 if this is added,
+                // and on iOS 16+ it is hidden without it.
+                v.navigationBarHidden(true)
             }
         }
         .alert(item: $alert) { _alert in
@@ -127,6 +137,30 @@ struct ContactConnectionInfo: View {
            : "You will be connected when your connection request is accepted, please wait or check later!"
         )
         : "You will be connected when your contact's device is online, please wait or check later!"
+    }
+
+    @ViewBuilder private func incognitoEnabled() -> some View {
+        if contactConnection.incognito {
+            ZStack(alignment: .leading) {
+                Image(systemName: "theatermasks.fill")
+                    .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+                    .foregroundColor(Color.indigo)
+                    .font(.system(size: 14))
+                HStack(spacing: 6) {
+                    Text("Incognito")
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.accentColor)
+                        .font(.system(size: 14))
+                }
+                .onTapGesture {
+                    showIncognitoSheet = true
+                }
+                .padding(.leading, 36)
+            }
+            .sheet(isPresented: $showIncognitoSheet) {
+                IncognitoHelp()
+            }
+        }
     }
 }
 

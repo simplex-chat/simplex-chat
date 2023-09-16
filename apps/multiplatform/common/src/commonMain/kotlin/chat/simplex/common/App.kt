@@ -32,8 +32,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.*
 
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
@@ -64,7 +63,7 @@ fun MainScreen() {
     if (
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && showAdvertiseLAAlert
-      && chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete
+      && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
       && chatModel.chats.isNotEmpty()
       && chatModel.activeCallInvitation.value == null
     ) {
@@ -102,7 +101,10 @@ fun MainScreen() {
   }
 
   Box {
-    val onboarding = chatModel.onboardingStage.value
+    var onboarding by remember { mutableStateOf(chatModel.controller.appPrefs.onboardingStage.get()) }
+    LaunchedEffect(Unit) {
+      snapshotFlow { chatModel.controller.appPrefs.onboardingStage.state.value }.distinctUntilChanged().collect { onboarding = it }
+    }
     val userCreated = chatModel.userCreated.value
     var showInitializationView by remember { mutableStateOf(false) }
     when {
@@ -112,7 +114,7 @@ fun MainScreen() {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
         }
       }
-      onboarding == null || userCreated == null -> SplashView()
+      remember { chatModel.chatDbEncrypted }.value == null || userCreated == null -> SplashView()
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
         Box {
           showAdvertiseLAAlert = true
@@ -134,6 +136,7 @@ fun MainScreen() {
         }
       }
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel) {}
+      onboarding == OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
       onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel)
       onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
@@ -194,24 +197,25 @@ fun AndroidScreen(settingsState: SettingsViewState) {
       StartPartOfScreen(settingsState)
     }
     val scope = rememberCoroutineScope()
-    val onComposed: () -> Unit = {
+    val onComposed: suspend (chatId: String?) -> Unit = { chatId ->
+      // coroutine, scope and join() because:
+      // - it should be run from coroutine to wait until this function finishes
+      // - without using scope.launch it throws CancellationException when changing user
+      // - join allows to wait until completion
       scope.launch {
         offset.animateTo(
-          if (chatModel.chatId.value == null) 0f else maxWidth.value,
+          if (chatId == null) 0f else maxWidth.value,
           chatListAnimationSpec()
         )
-        if (offset.value == 0f) {
-          currentChatId = null
-        }
-      }
+      }.join()
     }
     LaunchedEffect(Unit) {
       launch {
         snapshotFlow { chatModel.chatId.value }
           .distinctUntilChanged()
           .collect {
-            if (it != null) currentChatId = it
-            else onComposed()
+            if (it == null) onComposed(null)
+            currentChatId = it
           }
       }
     }
@@ -311,7 +315,6 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
     }
     ModalManager.fullscreen.showInView()
-    ModalManager.fullscreen.showPasscodeInView()
   }
 }
 

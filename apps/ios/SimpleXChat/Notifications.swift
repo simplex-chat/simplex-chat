@@ -21,7 +21,7 @@ public let appNotificationId = "chat.simplex.app.notification"
 
 let contactHidden = NSLocalizedString("Contact hidden:", comment: "notification")
 
-public func createContactRequestNtf(_ user: User, _ contactRequest: UserContactRequest) -> UNMutableNotificationContent {
+public func createContactRequestNtf(_ user: any UserLike, _ contactRequest: UserContactRequest) -> UNMutableNotificationContent {
     let hideContent = ntfPreviewModeGroupDefault.get() == .hidden
     return createNotification(
         categoryIdentifier: ntfCategoryContactRequest,
@@ -38,7 +38,7 @@ public func createContactRequestNtf(_ user: User, _ contactRequest: UserContactR
     )
 }
 
-public func createContactConnectedNtf(_ user: User, _ contact: Contact) -> UNMutableNotificationContent {
+public func createContactConnectedNtf(_ user: any UserLike, _ contact: Contact) -> UNMutableNotificationContent {
     let hideContent = ntfPreviewModeGroupDefault.get() == .hidden
     return createNotification(
         categoryIdentifier: ntfCategoryContactConnected,
@@ -56,7 +56,7 @@ public func createContactConnectedNtf(_ user: User, _ contact: Contact) -> UNMut
     )
 }
 
-public func createMessageReceivedNtf(_ user: User, _ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutableNotificationContent {
+public func createMessageReceivedNtf(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutableNotificationContent {
     let previewMode = ntfPreviewModeGroupDefault.get()
     var title: String
     if case let .group(groupInfo) = cInfo, case let .groupRcv(groupMember) = cItem.chatDir {

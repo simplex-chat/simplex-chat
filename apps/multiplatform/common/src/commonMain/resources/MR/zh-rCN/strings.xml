@@ -98,10 +98,8 @@
     <string name="app_version_title">应用程序版本</string>
     <string name="full_backup">应用程序数据备份</string>
     <string name="settings_section_title_icon">应用程序图标</string>
-    <string name="incognito_random_profile_from_contact_description">一个随机个人资料将被发送至给予您链接的联系人那里</string>
     <string name="app_version_name">应用程序版本：v%s</string>
     <string name="notifications_mode_off_desc">应用程序仅在运行时可以接受通知，没有后台服务会被启动</string>
-    <string name="incognito_random_profile_description">一个随机资料将发送给您的联系人</string>
     <string name="auth_unavailable">身份验证不可用</string>
     <string name="auto_accept_images">自动接受图像</string>
     <string name="attach">附件</string>
@@ -184,7 +182,6 @@
     <string name="joining_group">加入群组中</string>
     <string name="join_group_incognito_button">加入隐身聊天</string>
     <string name="settings_section_title_incognito">隐身模式</string>
-    <string name="group_unsupported_incognito_main_profile_sent">此处不支持隐身模式——您的主要个人资料将发送给群组成员</string>
     <string name="tap_to_start_new_chat">点击开始一个新聊天</string>
     <string name="incognito_random_profile">您的随机资料</string>
     <string name="description_via_contact_address_link_incognito">通过联系地址链接隐身</string>
@@ -195,14 +192,12 @@
     <string name="invite_prohibited_description">您正在尝试邀请与您共享隐身个人资料的联系人加入您使用主要个人资料的群组</string>
     <string name="incognito_info_protects">隐身模式可以保护你的主要个人资料名称和图像的隐私——对于每个新的联系人，都会创建一个新的随机个人资料。</string>
     <string name="alert_title_cant_invite_contacts_descr">您正在为该群组使用隐身个人资料——为防止共享您的主要个人资料，不允许邀请联系人</string>
-    <string name="your_profile_will_be_sent">您的聊天资料将被发送给您的联系人</string>
     <string name="description_via_one_time_link_incognito">通过一次性链接隐身</string>
     <string name="only_group_owners_can_enable_voice">只有群主可以启用语音信息。</string>
     <string name="your_privacy">您的隐私设置</string>
     <string name="privacy_and_security">隐私和安全</string>
     <string name="smp_servers_save">保存服务器</string>
     <string name="incognito_info_allows">它允许在一个聊天资料中有多个匿名连接，而它们之间没有任何共享数据。</string>
-    <string name="incognito_info_find">要查找用于隐身聊天连接的资料，点击聊天顶部的联系人或群组名。</string>
     <string name="incognito_info_share">当您与某人共享隐身聊天资料时，该资料将用于他们邀请您加入的群组。</string>
     <string name="v4_3_improved_server_configuration">改进的服务器配置</string>
     <string name="icon_descr_email">电邮</string>
@@ -800,7 +795,6 @@
     <string name="v4_5_private_filenames">私密文件名</string>
     <string name="v4_4_french_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
     <string name="v4_5_transport_isolation">传输隔离</string>
-    <string name="paste_connection_link_below_to_connect">将您收到的链接粘贴到下面的框中以与您的联系人联系。</string>
     <string name="share_invitation_link">分享一次性链接</string>
     <string name="this_string_is_not_a_connection_link">此字符串不是连接链接！</string>
     <string name="send_us_an_email">给我们发电子邮件</string>
@@ -902,7 +896,7 @@
     <string name="voice_messages_prohibited">语音消息禁止发送！</string>
     <string name="you_need_to_allow_to_send_voice">您需要允许您的联系人发送语音消息才能发送它们。</string>
     <string name="scan_QR_code">扫描二维码</string>
-    <string name="you_invited_your_contact">您邀请了您的联系人</string>
+    <string name="you_invited_a_contact">您邀请了您的联系人</string>
     <string name="contact_wants_to_connect_with_you">想要与您连接！</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">您的联系人需要在线才能完成连接。
 \n您可以取消此连接并删除联系人（稍后尝试使用新链接）。</string>
@@ -1284,4 +1278,24 @@
     <string name="search_verb">搜索</string>
     <string name="la_mode_off">已关闭</string>
     <string name="network_option_protocol_timeout_per_kb">协议超时每 KB</string>
+    <string name="v5_2_favourites_filter">更快的发起聊天</string>
+    <string name="v5_2_fix_encryption">保持连接</string>
+    <string name="v5_2_more_things">还有更多</string>
+    <string name="v5_2_disappear_one_message">移除一个消息</string>
+    <string name="v5_2_message_delivery_receipts">消息成功送达！</string>
+    <string name="choose_file_title">选择一个文件</string>
+    <string name="receipts_section_contacts">联系人</string>
+    <string name="conn_event_ratchet_sync_started">协调加密中…</string>
+    <string name="v5_2_more_things_descr">- 更稳定的消息送达.
+\n- 更好的群组.
+\n- 还有更多！</string>
+    <string name="connect__a_new_random_profile_will_be_shared">一个新的随机个人档案将被分享。</string>
+    <string name="snd_conn_event_ratchet_sync_started">与 %s 协调加密中…</string>
+    <string name="in_developing_desc">该功能还没支持。请尝试下一个版本。</string>
+    <string name="turn_off_battery_optimization_button">确认</string>
+    <string name="connect_via_link_incognito">隐身连接</string>
+    <string name="connect_via_member_address_alert_title">确认发起私聊？</string>
+    <string name="delivery">发送</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="in_developing_title">敬请期待！</string>
 </resources>

@@ -55,7 +55,6 @@
     <string name="update_network_settings_question">Aktualizovat nastavení sítě\?</string>
     <string name="incognito">Inkognito</string>
     <string name="incognito_random_profile">Váš náhodný profil</string>
-    <string name="incognito_random_profile_description">Vašemu kontaktu bude zaslán náhodný profil</string>
     <string name="save_color">Uložit barvu</string>
     <string name="reset_color">Obnovit barvu</string>
     <string name="color_primary">Zbarvení</string>
@@ -201,7 +200,7 @@
     <string name="mark_unread">Označit jako nepřečteno</string>
     <string name="mute_chat">Ztlumit</string>
     <string name="unmute_chat">Zrušit ztlumení</string>
-    <string name="you_invited_your_contact">Pozvali jste kontakt</string>
+    <string name="you_invited_a_contact">Pozvali jste kontakt</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Kontakt, se kterým jste tento odkaz sdíleli, se NEBUDE moci připojit!</string>
     <string name="connection_you_accepted_will_be_cancelled">Připojení, které jste přijali, bude zrušeno!</string>
     <string name="icon_descr_help">help</string>
@@ -210,7 +209,6 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Ke skupině budete připojeni, až bude zařízení hostitele skupiny online, vyčkejte prosím nebo se podívejte později!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Budete připojeni, jakmile bude vaše žádost o připojení přijata, vyčkejte prosím nebo se podívejte později!</string>
     <string name="connection_request_sent">Požadavek na připojení byl odeslán!</string>
-    <string name="your_profile_will_be_sent">Váš chat profil bude odeslán vašemu kontaktu</string>
     <string name="create_one_time_link">Vytvořit jednorázovou pozvánku</string>
     <string name="one_time_link">Jednorázová pozvánka</string>
     <string name="security_code">Bezpečnostní kód</string>
@@ -875,7 +873,6 @@
     <string name="network_status">Stav sítě</string>
     <string name="switch_receiving_address">Přepínač přijímací adresy</string>
     <string name="group_is_decentralized">Skupina je plně decentralizovaná - viditelná pouze pro členy.</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Zde není podporován režim inkognito - členům skupiny bude zaslán váš hlavní profil.</string>
     <string name="save_group_profile">Uložení profilu skupiny</string>
     <string name="network_options_reset_to_defaults">Obnovit výchozí nastavení</string>
     <string name="network_option_tcp_connection_timeout">Časový limit připojení TCP</string>
@@ -888,9 +885,7 @@
     <string name="users_delete_profile_for">Smazat chat profil pro</string>
     <string name="users_delete_with_connections">Profil a připojení k serveru</string>
     <string name="users_delete_data_only">Pouze místní data profilu</string>
-    <string name="incognito_random_profile_from_contact_description">Náhodný profil bude zaslán kontaktu, od kterého jste obdrželi tento odkaz.</string>
-    <string name="incognito_info_protects">Režim inkognito chrání soukromí vašeho hlavního profilu, jména a obrázku - pro každý nový kontakt je vytvořen nový náhodný profil.</string>
-    <string name="incognito_info_find">Chcete-li najít profil použitý pro inkognito připojení, klepněte na název kontaktu nebo skupiny v horní části.</string>
+    <string name="incognito_info_protects">Režim inkognito chrání vaše soukromí používáním nového náhodného profilu pro každý kontakt.</string>
     <string name="theme_light">Světlé</string>
     <string name="theme_dark">Tmavé</string>
     <string name="theme">Téma</string>
@@ -951,7 +946,6 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">Váš chat profil bude odeslán
 \nvašemu kontaktu</string>
     <string name="your_chats">Konverzace</string>
-    <string name="paste_connection_link_below_to_connect">Do níže uvedeného pole vložte odkaz, který jste obdrželi pro spojení s kontaktem.</string>
     <string name="share_invitation_link">Sdílet jednorázovou pozvánku</string>
     <string name="status_e2e_encrypted">koncově šifrované</string>
     <string name="moderated_description">moderované</string>
@@ -1220,7 +1214,7 @@
     <string name="v5_1_self_destruct_passcode">Samodestrukční heslo</string>
     <string name="v5_1_japanese_portuguese_interface">Japonské a portugalské uživatelské rozhraní</string>
     <string name="custom_time_unit_minutes">minut</string>
-    <string name="custom_time_unit_seconds">vteřiny</string>
+    <string name="custom_time_unit_seconds">vteřin</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Díky uživatelům - překládejte prostřednictvím Weblate!</string>
     <string name="v5_1_better_messages_descr">- 5 minutové hlasové zprávy.
 \n- vlastní čas mizení.
@@ -1338,4 +1332,48 @@
     <string name="files_and_media_prohibited">Soubory a média jsou zakázány!</string>
     <string name="in_reply_to">V odpovědi na</string>
     <string name="no_history">Žádná historie</string>
+    <string name="network_option_protocol_timeout_per_kb">Časový limit protokolu na KB</string>
+    <string name="settings_section_title_delivery_receipts">ZASLAT POTVRZENÍ O DORUČENÍ NA</string>
+    <string name="v5_2_message_delivery_receipts_descr">Druhé zaškrtnutí jsme přehlédli! ✅</string>
+    <string name="switch_receiving_address_desc">Přijímací adresa bude změněna na jiný server. Změna adresy bude dokončena po připojení odesílatele.</string>
+    <string name="choose_file_title">Vybrat soubor</string>
+    <string name="connect_via_link_incognito">Spojit se inkognito</string>
+    <string name="turn_off_battery_optimization_button">Povolit</string>
+    <string name="disable_notifications_button">Vypnout upozornění</string>
+    <string name="turn_off_system_restriction_button">Otevřít nastavení aplikace</string>
+    <string name="system_restricted_background_in_call_title">Žádné volání na pozadí</string>
+    <string name="receipts_groups_enable_keep_overrides">Povolit (zachovat nastavení skupin)</string>
+    <string name="receipts_groups_disable_keep_overrides">Vypnout (zachovat nastavení skupin)</string>
+    <string name="connect_via_member_address_alert_title">Připojit se přímo\?</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Nový náhodný profil bude sdílen.</string>
+    <string name="receipts_groups_enable_for_all">Povolit pro všechny skupiny</string>
+    <string name="no_selected_chat">Žádný vybraný chat</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Vložte odkaz který jste obdrželi, pro spojení se svým kontaktem…</string>
+    <string name="no_info_on_delivery">Žádné informace o doručení</string>
+    <string name="receipts_groups_override_disabled">Odesílání doručenky je zakázáno pro %d skupin</string>
+    <string name="receipts_groups_disable_for_all">Vypnout pro všechny skupiny</string>
+    <string name="send_receipts_disabled">vypnut</string>
+    <string name="send_receipts_disabled_alert_title">Receipts jsou zakázány</string>
+    <string name="in_developing_title">Již brzy!</string>
+    <string name="connect_use_current_profile">Použít aktuální profil</string>
+    <string name="connect_use_new_incognito_profile">Použít nový incognito profil</string>
+    <string name="system_restricted_background_desc">SimpleX nemůže běžet na pozadí. Pouze při spuštěné aplikaci obdržíte upozornění.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Chcete-li povolit oznámení, vyberte prosím <b>Baterii</b> / <b>bez omezení</b> v nastavení aplikace.]]></string>
+    <string name="system_restricted_background_in_call_desc">Aplikace může být uzavřena po 1 minutě na pozadí.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Chcete-li volat na pozadí, vyberte prosím <b>Baterii</b> / <b>bez omezení</b> v nastavení aplikace.]]></string>
+    <string name="connect__your_profile_will_be_shared">Váš profil %1$s bude sdílen.</string>
+    <string name="connect_via_member_address_alert_desc">Požadavek na připojení bude zaslán tomuto členu skupiny.</string>
+    <string name="delivery">Doručenka</string>
+    <string name="receipts_groups_title_disable">Zakázat doručenky pro skupiny\?</string>
+    <string name="receipts_groups_title_enable">Povolit doručenky pro skupiny\?</string>
+    <string name="receipts_groups_override_enabled">Odeslání doručenek je povoleno pro %d skupiny</string>
+    <string name="receipts_section_groups">Malé skupiny (max. 20)</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="rcv_group_event_2_members_connected">%s a %s připojen</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s a %s připojeni</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s a %d dalších členů připojeno</string>
+    <string name="privacy_message_draft">Rozepsáno</string>
+    <string name="privacy_show_last_messages">Zobrazit poslední zprávy</string>
+    <string name="send_receipts_disabled_alert_msg">Tato skupina má více než %1$d členů, doručenky nejsou odeslány.</string>
+    <string name="in_developing_desc">Tato funkce zatím není podporována. Vyzkoušejte další vydání.</string>
 </resources>

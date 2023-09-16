@@ -22,6 +22,7 @@ struct CIVideoView: View {
     @State private var scrollProxy: ScrollViewProxy?
     @State private var preview: UIImage? = nil
     @State private var player: AVPlayer?
+    @State private var fullPlayer: AVPlayer?
     @State private var url: URL?
     @State private var showFullScreenPlayer = false
     @State private var timeObserver: Any? = nil
@@ -36,6 +37,7 @@ struct CIVideoView: View {
         self.scrollProxy = scrollProxy
         if let url = getLoadedVideo(chatItem.file) {
             self._player = State(initialValue: VideoPlayerView.getOrCreatePlayer(url, false))
+            self._fullPlayer = State(initialValue: AVPlayer(url: url))
             self._url = State(initialValue: url)
         }
         if let data = Data(base64Encoded: dropImagePrefix(image)),
@@ -57,7 +59,7 @@ struct CIVideoView: View {
                         if let file = file {
                             switch file.fileStatus {
                             case .rcvInvitation:
-                                receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                                receiveFileIfValidSize(file: file, encrypted: false, receiveFile: receiveFile)
                             case .rcvAccepted:
                                 switch file.fileProtocol {
                                 case .xftp:
@@ -83,7 +85,7 @@ struct CIVideoView: View {
             }
             if let file = file, case .rcvInvitation = file.fileStatus {
                 Button {
-                    receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                    receiveFileIfValidSize(file: file, encrypted: false, receiveFile: receiveFile)
                 } label: {
                     playPauseIcon("play.fill")
                 }
@@ -96,6 +98,7 @@ struct CIVideoView: View {
         DispatchQueue.main.async { videoWidth = w }
         return ZStack(alignment: .topTrailing) {
             ZStack(alignment: .center) {
+                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete
                 VideoPlayerView(player: player, url: url, showControls: false)
                 .frame(width: w, height: w * preview.size.height / preview.size.width)
                 .onChange(of: ChatModel.shared.stopPreviousRecPlay) { playingUrl in
@@ -113,7 +116,9 @@ struct CIVideoView: View {
                         player.pause()
                         videoPlaying = false
                     case .paused:
-                        showFullScreenPlayer = true
+                        if canBePlayed {
+                            showFullScreenPlayer = true
+                        }
                     default: ()
                     }
                 }
@@ -122,8 +127,9 @@ struct CIVideoView: View {
                         ChatModel.shared.stopPreviousRecPlay = url
                         player.play()
                     } label: {
-                        playPauseIcon("play.fill")
+                        playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
                     }
+                    .disabled(!canBePlayed)
                 }
             }
             loadingIndicator()
@@ -247,10 +253,11 @@ struct CIVideoView: View {
         .padding([.trailing, .top], 11)
     }
 
-    private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool) async -> Void) {
+    // TODO encrypt: where file size is checked?
+    private func receiveFileIfValidSize(file: CIFile, encrypted: Bool, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
         Task {
             if let user = ChatModel.shared.currentUser {
-                await receiveFile(user, file.fileId, false)
+                await receiveFile(user, file.fileId, encrypted, false)
             }
         }
     }
@@ -258,8 +265,7 @@ struct CIVideoView: View {
     private func fullScreenPlayer(_ url: URL) -> some View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
-            VideoPlayer(player: createFullScreenPlayerAndPlay(url)) {
-            }
+            VideoPlayer(player: fullPlayer)
             .overlay(alignment: .topLeading, content: {
                 Button(action: { showFullScreenPlayer = false },
                     label: {
@@ -282,26 +288,27 @@ struct CIVideoView: View {
                     }
                 }
             )
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now()) {
+                    ChatModel.shared.stopPreviousRecPlay = url
+                    if let player = fullPlayer {
+                        player.play()
+                        fullScreenTimeObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { _ in
+                            player.seek(to: CMTime.zero)
+                            player.play()
+                        }
+                    }
+                }
+            }
             .onDisappear {
                 if let fullScreenTimeObserver = fullScreenTimeObserver {
                     NotificationCenter.default.removeObserver(fullScreenTimeObserver)
                 }
                 fullScreenTimeObserver = nil
+                fullPlayer?.pause()
+                fullPlayer?.seek(to: CMTime.zero)
             }
         }
-    }
-
-    private func createFullScreenPlayerAndPlay(_ url: URL) -> AVPlayer {
-        let player = AVPlayer(url: url)
-        DispatchQueue.main.asyncAfter(deadline: .now()) {
-            ChatModel.shared.stopPreviousRecPlay = url
-            player.play()
-            fullScreenTimeObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { _ in
-                player.seek(to: CMTime.zero)
-                player.play()
-            }
-        }
-        return player
     }
 
     private func addObserver(_ player: AVPlayer, _ url: URL) {

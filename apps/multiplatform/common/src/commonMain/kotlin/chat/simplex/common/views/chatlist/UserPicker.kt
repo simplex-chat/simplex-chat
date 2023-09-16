@@ -93,7 +93,7 @@ fun UserPicker(
       }
   }
   val xOffset = with(LocalDensity.current) { 10.dp.roundToPx() }
-  val maxWidth = with(LocalDensity.current) { screenWidth() * density }
+  val maxWidth = with(LocalDensity.current) { windowWidth() * density }
   Box(Modifier
     .fillMaxSize()
     .offset { IntOffset(if (newChat.isGone()) -maxWidth.value.roundToInt() else xOffset, 0) }
@@ -201,7 +201,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
 fun UserProfileRow(u: User) {
   Row(
     Modifier
-      .widthIn(max = screenWidth() * 0.7f)
+      .widthIn(max = windowWidth() * 0.7f)
       .padding(vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {

@@ -2,6 +2,7 @@ package chat.simplex.common.platform
 
 import androidx.compose.runtime.Composable
 import chat.simplex.common.model.CIFile
+import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import java.io.*
@@ -22,6 +23,8 @@ expect val agentDatabaseFileName: String
 * Providing [tmpDir] instead crashes the app. Check db export before moving from this path to something else
 * */
 expect val databaseExportDir: File
+
+expect fun desktopOpenDatabaseDir()
 
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
   try {
@@ -60,9 +63,20 @@ fun getAppFilePath(fileName: String): String {
 }
 
 fun getLoadedFilePath(file: CIFile?): String? {
-  return if (file?.filePath != null && file.loaded) {
-    val filePath = getAppFilePath(file.filePath)
+  val f = file?.fileSource?.filePath
+  return if (f != null && file.loaded) {
+    val filePath = getAppFilePath(f)
     if (File(filePath).exists()) filePath else null
+  } else {
+    null
+  }
+}
+
+fun getLoadedFileSource(file: CIFile?): CryptoFile? {
+  val f = file?.fileSource?.filePath
+  return if (f != null && file.loaded) {
+    val filePath = getAppFilePath(f)
+    if (File(filePath).exists()) file.fileSource else null
   } else {
     null
   }

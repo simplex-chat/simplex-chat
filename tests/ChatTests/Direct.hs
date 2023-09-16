@@ -17,9 +17,11 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (authErrDisableCount, sameVerificationCode, verificationCode)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec
@@ -55,6 +57,8 @@ chatDirectTests = do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
     it "encrypt/decrypt database" testDatabaseEncryption
+  describe "coordination between app and NSE" $ do
+    it "should not subscribe in NSE and subscribe in the app" testSubscribeAppNSE
   describe "mute/unmute messages" $ do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
@@ -94,6 +98,21 @@ chatDirectTests = do
   describe "delivery receipts" $ do
     it "should send delivery receipts" testSendDeliveryReceipts
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
+  describe "negotiate connection peer chat protocol version range" $ do
+    describe "peer version range correctly set for new connection via invitation" $ do
+      testInvVRange supportedChatVRange supportedChatVRange
+      testInvVRange supportedChatVRange vr11
+      testInvVRange vr11 supportedChatVRange
+      testInvVRange vr11 vr11
+    describe "peer version range correctly set for new connection via contact request" $ do
+      testReqVRange supportedChatVRange supportedChatVRange
+      testReqVRange supportedChatVRange vr11
+      testReqVRange vr11 supportedChatVRange
+      testReqVRange vr11 vr11
+    it "update peer version range on received messages" testUpdatePeerChatVRange
+  where
+    testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
+    testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
 
 testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -953,6 +972,35 @@ testDatabaseEncryption tmp = do
     withTestChat tmp "alice" $ \alice -> do
       testChatWorking alice bob
 
+testSubscribeAppNSE :: HasCallStack => FilePath -> IO ()
+testSubscribeAppNSE tmp =
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+      withTestChatOpts tmp testOpts {maintenance = True} "alice" $ \nseAlice -> do
+        alice ##> "/_app suspend 1"
+        alice <## "ok"
+        alice <## "chat suspended"
+        nseAlice ##> "/_start subscribe=off expire=off xftp=off"
+        nseAlice <## "chat started"
+        nseAlice ##> "/ad"
+        cLink <- getContactLink nseAlice True
+        bob ##> ("/c " <> cLink)
+        bob <## "connection request sent!"
+        (nseAlice </)
+        alice ##> "/_app activate"
+        alice <## "ok"
+        alice <## "Your address is active! To show: /sa"
+        alice <## "bob (Bob) wants to connect to you!"
+        alice <## "to accept: /ac bob"
+        alice <## "to reject: /rc bob (the sender will NOT be notified)"
+        alice ##> "/ac bob"
+        alice <## "bob (Bob): accepting contact request..."
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        threadDelay 100000
+        alice <##> bob
+
 testMuteContact :: HasCallStack => FilePath -> IO ()
 testMuteContact =
   testChat2 aliceProfile bobProfile $
@@ -990,7 +1038,7 @@ testMuteGroup =
         (bob </)
         (cath <# "#team alice> hi")
       bob ##> "/gs"
-      bob <## "#team (muted, you can /unmute #team)"
+      bob <## "#team (3 members, muted, you can /unmute #team)"
       bob ##> "/unmute #team"
       bob <## "ok"
       alice #> "#team hi again"
@@ -998,7 +1046,7 @@ testMuteGroup =
         (bob <# "#team alice> hi again")
         (cath <# "#team alice> hi again")
       bob ##> "/gs"
-      bob <## "#team"
+      bob <## "#team (3 members)"
 
 testCreateSecondUser :: HasCallStack => FilePath -> IO ()
 testCreateSecondUser =
@@ -1939,8 +1987,7 @@ testMarkContactVerified =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     alice ##> "/i bob"
-    bobInfo alice
-    alice <## "connection not verified, use /code command to see security code"
+    bobInfo alice False
     alice ##> "/code bob"
     bCode <- getTermLine alice
     bob ##> "/code alice"
@@ -1951,28 +1998,31 @@ testMarkContactVerified =
     alice ##> ("/verify bob " <> aCode)
     alice <## "connection verified"
     alice ##> "/i bob"
-    bobInfo alice
-    alice <## "connection verified"
+    bobInfo alice True
     alice ##> "/verify bob"
     alice <##. "connection not verified, current code is "
     alice ##> "/i bob"
-    bobInfo alice
-    alice <## "connection not verified, use /code command to see security code"
+    bobInfo alice False
   where
-    bobInfo :: HasCallStack => TestCC -> IO ()
-    bobInfo alice = do
+    bobInfo :: HasCallStack => TestCC -> Bool -> IO ()
+    bobInfo alice verified = do
       alice <## "contact ID: 2"
       alice <## "receiving messages via: localhost"
       alice <## "sending messages via: localhost"
       alice <## "you've shared main profile with this contact"
+      alice <## connVerified
+      alice <## currentChatVRangeInfo
+      where
+        connVerified
+          | verified = "connection verified"
+          | otherwise = "connection not verified, use /code command to see security code"
 
 testMarkGroupMemberVerified :: HasCallStack => FilePath -> IO ()
 testMarkGroupMemberVerified =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     createGroup2 "team" alice bob
     alice ##> "/i #team bob"
-    bobInfo alice
-    alice <## "connection not verified, use /code command to see security code"
+    bobInfo alice False
     alice ##> "/code #team bob"
     bCode <- getTermLine alice
     bob ##> "/code #team alice"
@@ -1983,20 +2033,24 @@ testMarkGroupMemberVerified =
     alice ##> ("/verify #team bob " <> aCode)
     alice <## "connection verified"
     alice ##> "/i #team bob"
-    bobInfo alice
-    alice <## "connection verified"
+    bobInfo alice True
     alice ##> "/verify #team bob"
     alice <##. "connection not verified, current code is "
     alice ##> "/i #team bob"
-    bobInfo alice
-    alice <## "connection not verified, use /code command to see security code"
+    bobInfo alice False
   where
-    bobInfo :: HasCallStack => TestCC -> IO ()
-    bobInfo alice = do
+    bobInfo :: HasCallStack => TestCC -> Bool -> IO ()
+    bobInfo alice verified = do
       alice <## "group ID: 1"
       alice <## "member ID: 2"
       alice <## "receiving messages via: localhost"
       alice <## "sending messages via: localhost"
+      alice <## connVerified
+      alice <## currentChatVRangeInfo
+      where
+        connVerified
+          | verified = "connection verified"
+          | otherwise = "connection not verified, use /code command to see security code"
 
 testMsgDecryptError :: HasCallStack => FilePath -> IO ()
 testMsgDecryptError tmp =
@@ -2088,8 +2142,7 @@ testSyncRatchetCodeReset tmp =
       alice <# "bob> hey"
       -- connection not verified
       bob ##> "/i alice"
-      aliceInfo bob
-      bob <## "connection not verified, use /code command to see security code"
+      aliceInfo bob False
       -- verify connection
       alice ##> "/code bob"
       bCode <- getTermLine alice
@@ -2097,8 +2150,7 @@ testSyncRatchetCodeReset tmp =
       bob <## "connection verified"
       -- connection verified
       bob ##> "/i alice"
-      aliceInfo bob
-      bob <## "connection verified"
+      aliceInfo bob True
     setupDesynchronizedRatchet tmp alice
     withTestChat tmp "bob_old" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
@@ -2115,20 +2167,25 @@ testSyncRatchetCodeReset tmp =
 
       -- connection not verified
       bob ##> "/i alice"
-      aliceInfo bob
-      bob <## "connection not verified, use /code command to see security code"
+      aliceInfo bob False
 
       alice #> "@bob hello again"
       bob <# "alice> hello again"
       bob #> "@alice received!"
       alice <# "bob> received!"
   where
-    aliceInfo :: HasCallStack => TestCC -> IO ()
-    aliceInfo bob = do
+    aliceInfo :: HasCallStack => TestCC -> Bool -> IO ()
+    aliceInfo bob verified = do
       bob <## "contact ID: 2"
       bob <## "receiving messages via: localhost"
       bob <## "sending messages via: localhost"
       bob <## "you've shared main profile with this contact"
+      bob <## connVerified
+      bob <## currentChatVRangeInfo
+      where
+        connVerified
+          | verified = "connection verified"
+          | otherwise = "connection not verified, use /code command to see security code"
 
 testSetMessageReactions :: HasCallStack => FilePath -> IO ()
 testSetMessageReactions =
@@ -2271,3 +2328,85 @@ testConfigureDeliveryReceipts tmp =
       cc1 #> ("@" <> name2 <> " " <> msg)
       cc2 <# (name1 <> "> " <> msg)
       cc1 <// 50000
+
+testConnInvChatVRange :: HasCallStack => VersionRange -> VersionRange -> FilePath -> IO ()
+testConnInvChatVRange ct1VRange ct2VRange tmp =
+  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+
+      alice ##> "/i bob"
+      contactInfoChatVRange alice ct2VRange
+
+      bob ##> "/i alice"
+      contactInfoChatVRange bob ct1VRange
+
+testConnReqChatVRange :: HasCallStack => VersionRange -> VersionRange -> FilePath -> IO ()
+testConnReqChatVRange ct1VRange ct2VRange tmp =
+  withNewTestChatCfg tmp testCfg {chatVRange = ct1VRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp testCfg {chatVRange = ct2VRange} "bob" bobProfile $ \bob -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+
+      alice ##> "/i bob"
+      contactInfoChatVRange alice ct2VRange
+
+      bob ##> "/i alice"
+      contactInfoChatVRange bob ct1VRange
+
+testUpdatePeerChatVRange :: HasCallStack => FilePath -> IO ()
+testUpdatePeerChatVRange tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg tmp cfg11 "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+
+      alice ##> "/i bob"
+      contactInfoChatVRange alice vr11
+
+      bob ##> "/i alice"
+      contactInfoChatVRange bob supportedChatVRange
+
+    withTestChat tmp "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+
+      bob #> "@alice hello 1"
+      alice <# "bob> hello 1"
+
+      alice ##> "/i bob"
+      contactInfoChatVRange alice supportedChatVRange
+
+      bob ##> "/i alice"
+      contactInfoChatVRange bob supportedChatVRange
+
+    withTestChatCfg tmp cfg11 "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+
+      bob #> "@alice hello 2"
+      alice <# "bob> hello 2"
+
+      alice ##> "/i bob"
+      contactInfoChatVRange alice vr11
+
+      bob ##> "/i alice"
+      contactInfoChatVRange bob supportedChatVRange
+  where
+    cfg11 = testCfg {chatVRange = vr11} :: ChatConfig
+
+vr11 :: VersionRange
+vr11 = mkVersionRange 1 1
+
+contactInfoChatVRange :: TestCC -> VersionRange -> IO ()
+contactInfoChatVRange cc (VersionRange minVer maxVer) = do
+  cc <## "contact ID: 2"
+  cc <## "receiving messages via: localhost"
+  cc <## "sending messages via: localhost"
+  cc <## "you've shared main profile with this contact"
+  cc <## "connection not verified, use /code command to see security code"
+  cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")

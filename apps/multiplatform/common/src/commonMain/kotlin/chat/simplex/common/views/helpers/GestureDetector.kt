@@ -92,6 +92,17 @@ suspend fun PointerInputScope.detectGesture(
   }
 }
 
+suspend fun PointerInputScope.detectCursorMove(onMove: (Offset) -> Unit = {},) = coroutineScope {
+  forEachGesture {
+    awaitPointerEventScope {
+      val event = awaitPointerEvent()
+      if (event.type == PointerEventType.Move) {
+        onMove(event.changes[0].position)
+      }
+    }
+  }
+}
+
 private suspend fun AwaitPointerEventScope.consumeUntilUp() {
   do {
     val event = awaitPointerEvent()

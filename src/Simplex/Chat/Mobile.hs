@@ -30,10 +30,13 @@ import Foreign.C.Types (CInt (..))
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke)
+import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import GHC.Generics (Generic)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
+import Simplex.Chat.Mobile.File
+import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
 import Simplex.Chat.Store
@@ -47,6 +50,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
+import System.IO (utf8)
 import System.Timeout (timeout)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
@@ -67,9 +71,23 @@ foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Wo
 
 foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
+foreign export ccall "chat_write_file" cChatWriteFile :: CString -> Ptr Word8 -> CInt -> IO CJSONString
+
+foreign export ccall "chat_read_file" cChatReadFile :: CString -> CString -> CString -> IO (Ptr Word8)
+
+foreign export ccall "chat_encrypt_file" cChatEncryptFile :: CString -> CString -> IO CJSONString
+
+foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
+
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 cChatMigrateInit fp key conf ctrl = do
+  -- ensure we are set to UTF-8; iOS does not have locale, and will default to
+  -- US-ASCII all the time.
+  setLocaleEncoding utf8
+  setFileSystemEncoding utf8
+  setForeignEncoding utf8
+
   dbPath <- peekCAString fp
   dbKey <- peekCAString key
   confirm <- peekCAString conf
@@ -142,8 +160,6 @@ defaultMobileConfig =
     { confirmMigrations = MCYesUp,
       logLevel = CLLError
     }
-
-type CJSONString = CString
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers

@@ -24,11 +24,11 @@ struct ChatItemInfoView: View {
     }
 
     enum CIInfoViewAlert: Identifiable {
-        case deliveryStatusAlert(status: CIStatus)
+        case alert(title: String, text: String)
 
         var id: String {
             switch self {
-            case .deliveryStatusAlert: return "deliveryStatusAlert"
+            case let .alert(title, text): return "alert \(title) \(text)"
             }
         }
     }
@@ -43,9 +43,9 @@ struct ChatItemInfoView: View {
                         }
                     }
                 }
-                .alert(item: $alert) { alertItem in
-                    switch(alertItem) {
-                    case let .deliveryStatusAlert(status): return deliveryStatusAlert(status)
+                .alert(item: $alert) { a in
+                    switch(a) {
+                    case let .alert(title, text): return Alert(title: Text(title), message: Text(text))
                     }
                 }
         }
@@ -282,7 +282,7 @@ struct ChatItemInfoView: View {
                     memberDeliveryStatusView(memberStatus.0, memberStatus.1)
                 }
             } else {
-                Text("No info on delivery")
+                Text("No delivery information")
                     .foregroundColor(.secondary)
             }
         }
@@ -306,7 +306,7 @@ struct ChatItemInfoView: View {
             Text(member.chatViewName)
                 .lineLimit(1)
             Spacer()
-            Group {
+            let v = Group {
                 if let (icon, statusColor) = status.statusIcon(Color.secondary) {
                     switch status {
                     case .sndRcvd:
@@ -326,17 +326,15 @@ struct ChatItemInfoView: View {
                         .foregroundColor(Color.secondary)
                 }
             }
-            .onTapGesture {
-                alert = .deliveryStatusAlert(status: status)
+
+            if let (title, text) = status.statusInfo {
+                v.onTapGesture {
+                    alert = .alert(title: title, text: text)
+                }
+            } else {
+                v
             }
         }
-    }
-
-    func deliveryStatusAlert(_ status: CIStatus) -> Alert {
-        Alert(
-            title: Text(status.statusText),
-            message: Text(status.statusDescription)
-         )
     }
 
     private func itemInfoShareText() -> String {
@@ -383,20 +381,6 @@ struct ChatItemInfoView: View {
                 )]
             }
             shareText += [t != "" ? t : NSLocalizedString("no text", comment: "copied message info in history")]
-        }
-        if let mdss = chatItemInfo?.memberDeliveryStatuses {
-            let mss = membersStatuses(mdss)
-            if !mss.isEmpty {
-                shareText += ["", NSLocalizedString("## Delivery", comment: "copied message info")]
-                shareText += [""]
-                for (member, status) in mss {
-                    shareText += [String.localizedStringWithFormat(
-                        NSLocalizedString("%@: %@", comment: "copied message info, <recipient>: <message delivery status description>"),
-                        member.chatViewName,
-                        status.statusDescription
-                    )]
-                }
-            }
         }
         if let chatItemInfo = chatItemInfo,
            !chatItemInfo.itemVersions.isEmpty {

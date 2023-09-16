@@ -16,7 +16,7 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.ui.theme.*
 
 @Composable
-fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {
+fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?) {
   val sent = ci.chatDir.sent
   val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
@@ -30,7 +30,6 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = 
     ) {
       Text(
         buildAnnotatedString {
-          appendSender(this, if (showMember) ci.memberDisplayName else null, true)
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),

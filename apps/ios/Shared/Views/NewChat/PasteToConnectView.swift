@@ -7,76 +7,77 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct PasteToConnectView: View {
-    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @State private var connectionLink: String = ""
+    @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
+    @FocusState private var linkEditorFocused: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading) {
-                Text("Connect via link")
-                    .font(.largeTitle)
-                    .bold()
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.vertical)
-                Text("Paste the link you received into the box below to connect with your contact.")
-                    .padding(.bottom, 4)
-                if (chatModel.incognito) {
-                    HStack {
-                        Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("A random profile will be sent to the contact that you received this link from").font(.footnote)
+        List {
+            Text("Connect via link")
+                .font(.largeTitle)
+                .bold()
+                .fixedSize(horizontal: false, vertical: true)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .onTapGesture { linkEditorFocused = false }
+
+            Section {
+                linkEditor()
+
+                Button {
+                    if connectionLink == "" {
+                        connectionLink = UIPasteboard.general.string ?? ""
+                    } else {
+                        connectionLink = ""
                     }
-                    .padding(.bottom)
-                } else {
-                    HStack {
-                        Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("Your profile will be sent to the contact that you received this link from").font(.footnote)
+                } label: {
+                    if connectionLink == "" {
+                        settingsRow("doc.plaintext") { Text("Paste") }
+                    } else {
+                        settingsRow("multiply") { Text("Clear") }
                     }
-                    .padding(.bottom)
+                }
+                
+                Button {
+                    connect()
+                } label: {
+                    settingsRow("link") { Text("Connect") }
+                }
+                .disabled(connectionLink == "" || connectionLink.trimmingCharacters(in: .whitespaces).firstIndex(of: " ") != nil)
+                
+                IncognitoToggle(incognitoEnabled: $incognitoDefault)
+            } footer: {
+                sharedProfileInfo(incognitoDefault)
+                + Text(String("\n\n"))
+                + Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
+            }
+        }
+    }
+
+    private func linkEditor() -> some View {
+        ZStack {
+            Group {
+                if connectionLink.isEmpty {
+                    TextEditor(text: Binding.constant(NSLocalizedString("Paste the link you received to connect with your contact.", comment: "placeholder")))
+                        .foregroundColor(.secondary)
+                        .disabled(true)
                 }
                 TextEditor(text: $connectionLink)
                     .onSubmit(connect)
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
-                    .allowsTightening(false)
-                    .frame(height: 180)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-                    )
-
-                HStack(spacing: 20) {
-                    if connectionLink == "" {
-                        Button {
-                            connectionLink = UIPasteboard.general.string ?? ""
-                        } label: {
-                            Label("Paste", systemImage: "doc.plaintext")
-                        }
-                    } else {
-                        Button {
-                            connectionLink = ""
-                        } label: {
-                            Label("Clear", systemImage: "multiply")
-                        }
-
-                    }
-                    Spacer()
-                    Button(action: connect, label: {
-                        Label("Connect", systemImage: "link")
-                    })
-                    .disabled(connectionLink == "" || connectionLink.trimmingCharacters(in: .whitespaces).firstIndex(of: " ") != nil)
-                }
-                .frame(height: 48)
-                .padding(.bottom)
-
-                Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
+                    .focused($linkEditorFocused)
             }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .allowsTightening(false)
+            .padding(.horizontal, -5)
+            .padding(.top, -8)
+            .frame(height: 180, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -85,9 +86,9 @@ struct PasteToConnectView: View {
         if let crData = parseLinkQueryData(link),
            checkCRDataGroup(crData) {
             dismiss()
-            AlertManager.shared.showAlert(groupLinkAlert(link))
+            AlertManager.shared.showAlert(groupLinkAlert(link, incognito: incognitoDefault))
         } else {
-            connectViaLink(link, dismiss)
+            connectViaLink(link, dismiss: dismiss, incognito: incognitoDefault)
         }
     }
 }

@@ -6,8 +6,10 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import chat.simplex.common.model.CIFile
+import chat.simplex.common.model.readCryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.net.URI
 import javax.imageio.ImageIO
@@ -88,11 +90,12 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
 actual fun getAppFileUri(fileName: String): URI =
   URI("file:" + appFilesDir.absolutePath + File.separator + fileName)
 
-actual fun getLoadedImage(file: CIFile?): ImageBitmap? {
+actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   val filePath = getLoadedFilePath(file)
   return if (filePath != null) {
-    val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
-    getBitmapFromUri(uri, false)
+    val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
+    val bitmap = getBitmapFromByteArray(data, false)
+    if (bitmap != null) bitmap to data else null
   } else {
     null
   }
@@ -106,6 +109,9 @@ actual fun getFileSize(uri: URI): Long? = uri.toPath().toFile().length()
 
 actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitmap? =
   ImageIO.read(uri.inputStream()).toComposeImageBitmap()
+
+actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap? =
+  ImageIO.read(ByteArrayInputStream(data)).toComposeImageBitmap()
 
 // LALAL implement to support animated drawable
 actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? = null

@@ -36,18 +36,15 @@ private val settingsThemesProps =
 actual val settings: Settings = PropertiesSettings(settingsProps) { settingsProps.store(settingsFile.writer(), "") }
 actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) { settingsThemesProps.store(settingsThemesFile.writer(), "") }
 
-actual fun screenOrientation(): ScreenOrientation = ScreenOrientation.UNDEFINED
-
-@Composable // LALAL
-actual fun screenWidth(): Dp {
-  return java.awt.Toolkit.getDefaultToolkit().screenSize.width.dp.also { println("LALAL $it") }
-  /*var width by remember { mutableStateOf(java.awt.Toolkit.getDefaultToolkit().screenSize.width.also { println("LALAL $it") }) }
-  SideEffect {
-    if (width != java.awt.Toolkit.getDefaultToolkit().screenSize.width)
-      width = java.awt.Toolkit.getDefaultToolkit().screenSize.width
+actual fun windowOrientation(): WindowOrientation =
+  if (simplexWindowState.windowState.size.width > simplexWindowState.windowState.size.height) {
+    WindowOrientation.LANDSCAPE
+  } else {
+    WindowOrientation.PORTRAIT
   }
-  return width*/
-}// LALAL java.awt.Desktop.getDesktop()
+
+@Composable
+actual fun windowWidth(): Dp = simplexWindowState.windowState.size.width
 
 actual fun desktopExpandWindowToWidth(width: Dp) {
   if (simplexWindowState.windowState.size.width >= width) return

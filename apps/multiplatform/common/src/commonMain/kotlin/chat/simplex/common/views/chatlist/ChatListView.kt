@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import SectionItemView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -13,9 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
@@ -56,6 +59,13 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     if (url != null) {
       chatModel.appOpenUrl.value = null
       connectIfOpenedViaUri(url, chatModel)
+    }
+  }
+  if (appPlatform.isDesktop) {
+    KeyChangeEffect(chatModel.chatId.value) {
+      if (chatModel.chatId.value != null) {
+        ModalManager.end.closeModalsExceptFirst()
+      }
     }
   }
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
@@ -221,14 +231,6 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
     },
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
-        if (chatModel.incognito.value) {
-          Icon(
-            painterResource(MR.images.ic_theater_comedy_filled),
-            stringResource(MR.strings.incognito),
-            tint = Indigo,
-            modifier = Modifier.padding(10.dp).size(26.dp)
-          )
-        }
         Text(
           stringResource(MR.strings.your_chats),
           color = MaterialTheme.colors.onBackground,
@@ -317,17 +319,37 @@ fun connectIfOpenedViaUri(uri: URI, chatModel: ChatModel) {
         ConnectionLinkType.INVITATION -> generalGetString(MR.strings.connect_via_invitation_link)
         ConnectionLinkType.GROUP -> generalGetString(MR.strings.connect_via_group_link)
       }
-      AlertManager.shared.showAlertDialog(
+      AlertManager.shared.showAlertDialogButtonsColumn(
         title = title,
         text = if (linkType == ConnectionLinkType.GROUP)
-          generalGetString(MR.strings.you_will_join_group)
+          AnnotatedString(generalGetString(MR.strings.you_will_join_group))
         else
-          generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link),
-        confirmText = generalGetString(MR.strings.connect_via_link_verb),
-        onConfirm = {
-          withApi {
-            Log.d(TAG, "connectIfOpenedViaUri: connecting")
-            connectViaUri(chatModel, linkType, uri)
+          AnnotatedString(generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link)),
+        buttons = {
+          Column {
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+              withApi {
+                Log.d(TAG, "connectIfOpenedViaUri: connecting")
+                connectViaUri(chatModel, linkType, uri, incognito = false)
+              }
+            }) {
+              Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+              withApi {
+                Log.d(TAG, "connectIfOpenedViaUri: connecting incognito")
+                connectViaUri(chatModel, linkType, uri, incognito = true)
+              }
+            }) {
+              Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+            }) {
+              Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            }
           }
         }
       )

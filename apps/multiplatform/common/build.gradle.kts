@@ -39,7 +39,7 @@ kotlin {
         api("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2")
         api("com.russhwolf:multiplatform-settings:1.0.0")
         api("com.charleskorn.kaml:kaml:0.43.0")
-        api("dev.icerock.moko:resources-compose:0.22.3")
+        api("dev.icerock.moko:resources-compose:0.23.0")
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
         implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
@@ -48,7 +48,7 @@ kotlin {
         // Link Previews
         implementation("org.jsoup:jsoup:1.13.1")
         // Resources
-        implementation("dev.icerock.moko:resources:0.22.3")
+        implementation("dev.icerock.moko:resources:0.23.0")
       }
     }
     val commonTest by getting {
@@ -62,7 +62,7 @@ kotlin {
         val work_version = "2.7.1"
         implementation("androidx.work:work-runtime-ktx:$work_version")
         implementation("com.google.accompanist:accompanist-insets:0.23.0")
-        implementation("dev.icerock.moko:resources:0.22.3")
+        implementation("dev.icerock.moko:resources:0.23.0")
 
         // Video support
         implementation("com.google.android.exoplayer:exoplayer:2.17.1")
@@ -114,6 +114,15 @@ android {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
   }
+  val isAndroid = gradle.startParameter.taskNames.find {
+    val lower = it.toLowerCase()
+    lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")
+  } != null
+  if (isAndroid) {
+    // This is not needed on Android but can't be moved to desktopMain because MR lib don't support this.
+    // No other ways to exclude a file work but it's large and should be excluded
+    kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
+  }
 }
 
 multiplatformResources {
@@ -126,5 +135,99 @@ buildConfig {
     buildConfigField("String", "ANDROID_VERSION_NAME", "\"${extra["android.version_name"]}\"")
     buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
+  }
+}
+
+afterEvaluate {
+  tasks.named("generateMRcommonMain") {
+    dependsOn("adjustFormatting")
+  }
+  tasks.create("adjustFormatting") {
+    doLast {
+      val debug = false
+      val stringRegex = Regex(".*<string .*</string>.*")
+      val startStringRegex = Regex("<string [^>]*>")
+      val endStringRegex = Regex("</string>[ ]*")
+      val endTagRegex = Regex("</")
+      val anyHtmlRegex = Regex("[^>]*>.*(<|>).*</string>|[^>]*>.*(&lt;|&gt;).*</string>")
+      val correctHtmlRegex = Regex("[^>]*>.*<b>.*</b>.*</string>|[^>]*>.*<i>.*</i>.*</string>|[^>]*>.*<u>.*</u>.*</string>|[^>]*>.*<font[^>]*>.*</font>.*</string>")
+
+      fun String.removeCDATA(): String =
+        if (contains("<![CDATA")) {
+          replace("<![CDATA[", "").replace("]]></string>", "</string>")
+        } else {
+          this
+        }
+
+      fun String.addCDATA(filepath: String): String {
+        //return this
+        if (anyHtmlRegex.matches(this)) {
+          val countOfStartTag = count { it == '<' }
+          val countOfEndTag = count { it == '>' }
+          if (countOfStartTag != countOfEndTag || countOfStartTag != endTagRegex.findAll(this).count() * 2 || !correctHtmlRegex.matches(this)) {
+            if (debug) {
+              println("Wrong string:")
+              println(this)
+              println("in $filepath")
+              println("   ")
+            } else {
+              throw Exception("Wrong string: $this \nin $filepath")
+            }
+          }
+          val res = replace(startStringRegex) { it.value + "<![CDATA[" }.replace(endStringRegex) { "]]>" + it.value }
+          if (debug) {
+            println("Changed string:")
+            println(this)
+            println(res)
+            println("   ")
+          }
+          return res
+        }
+        if (debug) {
+          println("Correct string:")
+          println(this)
+          println("   ")
+        }
+        return this
+      }
+      val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
+      kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath) }.asFileTree.forEach { file ->
+        val initialLines = ArrayList<String>()
+        val finalLines = ArrayList<String>()
+        file.useLines { lines ->
+          val multiline = ArrayList<String>()
+          lines.forEach { line ->
+            initialLines.add(line)
+            if (stringRegex.matches(line)) {
+              finalLines.add(line.removeCDATA().addCDATA(file.absolutePath))
+            } else if (multiline.isEmpty() && startStringRegex.containsMatchIn(line)) {
+              multiline.add(line)
+            } else if (multiline.isNotEmpty() && endStringRegex.containsMatchIn(line)) {
+              multiline.add(line)
+              finalLines.addAll(multiline.joinToString("\n").removeCDATA().addCDATA(file.absolutePath).split("\n"))
+              multiline.clear()
+            } else if (multiline.isNotEmpty()) {
+              multiline.add(line)
+            } else {
+              finalLines.add(line)
+            }
+          }
+          if (multiline.isNotEmpty()) {
+            throw Exception("Unclosed string tag: ${multiline.joinToString("\n")} \nin ${file.absolutePath}")
+          }
+        }
+
+        if (!debug && finalLines != initialLines) {
+          file.writer().use {
+            finalLines.forEachIndexed { index, line ->
+              it.write(line)
+              if (index != finalLines.lastIndex) {
+                it.write("\n")
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

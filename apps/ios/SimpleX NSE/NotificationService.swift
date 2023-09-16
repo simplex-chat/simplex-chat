@@ -127,7 +127,7 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
                     setBestAttemptNtf(
-                        ntfMsgInfo.user.showNotifications
+                        ntfMsgInfo.ntfsEnabled
                         ? .nse(notification: createConnectionEventNtf(ntfMsgInfo.user, connEntity))
                         : .empty
                     )
@@ -219,7 +219,6 @@ func startChat() -> DBMigrationResult? {
             let justStarted = try apiStartChat()
             chatStarted = true
             if justStarted {
-                try apiSetIncognito(incognito: incognitoGroupDefault.get())
                 chatLastStartGroupDefault.set(Date.now)
                 Task { await receiveMessages() }
             }
@@ -272,7 +271,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
             ntfBadgeCountGroupDefault.set(max(0, ntfBadgeCountGroupDefault.get() - 1))
         }
         if let file = cItem.autoReceiveFile() {
-            cItem = autoReceiveFile(file) ?? cItem
+            cItem = autoReceiveFile(file, encrypted: cItem.encryptLocalFile) ?? cItem
         }
         let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(notification: createMessageReceivedNtf(user, cInfo, cItem)) : .empty
         return cItem.showNotification ? (aChatItem.chatId, ntf) : nil
@@ -352,12 +351,6 @@ func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
     throw r
 }
 
-func apiSetIncognito(incognito: Bool) throws {
-    let r = sendSimpleXCmd(.setIncognito(incognito: incognito))
-    if case .cmdOk = r { return }
-    throw r
-}
-
 func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     guard apiGetActiveUser() != nil else {
         logger.debug("no active user")
@@ -374,25 +367,25 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     return nil
 }
 
-func apiReceiveFile(fileId: Int64, inline: Bool? = nil) -> AChatItem? {
-    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, inline: inline))
+func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil) -> AChatItem? {
+    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, encrypted: encrypted, inline: inline))
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
 }
 
-func apiSetFileToReceive(fileId: Int64) {
-    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId))
+func apiSetFileToReceive(fileId: Int64, encrypted: Bool) {
+    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId, encrypted: encrypted))
     if case .cmdOk = r { return }
     logger.error("setFileToReceive error: \(responseError(r))")
 }
 
-func autoReceiveFile(_ file: CIFile) -> ChatItem? {
+func autoReceiveFile(_ file: CIFile, encrypted: Bool) -> ChatItem? {
     switch file.fileProtocol {
     case .smp:
-        return apiReceiveFile(fileId: file.fileId)?.chatItem
+        return apiReceiveFile(fileId: file.fileId, encrypted: false)?.chatItem
     case .xftp:
-        apiSetFileToReceive(fileId: file.fileId)
+        apiSetFileToReceive(fileId: file.fileId, encrypted: encrypted)
         return nil
     }
 }
@@ -408,4 +401,8 @@ struct NtfMessages {
     var connEntity: ConnectionEntity?
     var msgTs: Date?
     var ntfMessages: [NtfMsgInfo]
+
+    var ntfsEnabled: Bool {
+        user.showNotifications && (connEntity?.ntfsEnabled ?? false)
+    }
 }

@@ -66,7 +66,6 @@ import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
-import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
 import Simplex.Chat.Call
@@ -78,9 +77,10 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..))
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..), SubscriptionMode)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
@@ -293,8 +293,8 @@ getUserContactProfiles db User {userId} =
     toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnReqContact, Maybe Preferences) -> (Profile)
     toContactProfile (displayName, fullName, image, contactLink, preferences) = Profile {displayName, fullName, image, contactLink, preferences}
 
-createUserContactLink :: DB.Connection -> User -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
-createUserContactLink db User {userId} agentConnId cReq =
+createUserContactLink :: DB.Connection -> User -> ConnId -> ConnReqContact -> SubscriptionMode -> ExceptT StoreError IO ()
+createUserContactLink db User {userId} agentConnId cReq subMode =
   checkConstraint SEDuplicateContactLink . liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
@@ -302,7 +302,7 @@ createUserContactLink db User {userId} agentConnId cReq =
       "INSERT INTO user_contact_links (user_id, conn_req_contact, created_at, updated_at) VALUES (?,?,?,?)"
       (userId, cReq, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId Nothing Nothing Nothing 0 currentTs
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode
 
 getUserAddressConnections :: DB.Connection -> User -> ExceptT StoreError IO [Connection]
 getUserAddressConnections db User {userId} = do
@@ -316,7 +316,8 @@ getUserAddressConnections db User {userId} = do
           db
           [sql|
             SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-              c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
+              c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+              c.peer_chat_min_version, c.peer_chat_max_version
             FROM connections c
             JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
             WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
@@ -331,6 +332,7 @@ getUserContactLinks db User {userId} =
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
+          c.peer_chat_min_version, c.peer_chat_max_version,
           uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id

@@ -143,7 +143,12 @@ struct ChatInfoView: View {
 
                 if let customUserProfile = customUserProfile {
                     Section("Incognito") {
-                        infoRow("Your random profile", customUserProfile.chatViewName)
+                        HStack {
+                            Text("Your random profile")
+                            Spacer()
+                            Text(customUserProfile.chatViewName)
+                                .foregroundStyle(.indigo)
+                        }
                     }
                 }
 

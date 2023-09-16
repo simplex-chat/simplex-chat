@@ -121,14 +121,6 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
-        if (chatModel.incognito.value) {
-          Icon(
-            painterResource(MR.images.ic_theater_comedy_filled),
-            stringResource(MR.strings.incognito),
-            tint = Indigo,
-            modifier = Modifier.padding(10.dp).size(26.dp)
-          )
-        }
       }
     },
     onTitleClick = null,

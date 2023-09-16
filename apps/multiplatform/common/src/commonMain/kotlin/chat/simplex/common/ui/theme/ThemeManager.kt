@@ -12,6 +12,7 @@ import chat.simplex.common.views.helpers.generalGetString
 // https://github.com/rsms/inter
 // I place it here because IDEA shows an error (but still works anyway) when this declaration inside Type.kt
 expect val Inter: FontFamily
+expect val EmojiFont: FontFamily
 
 object ThemeManager {
   private val appPrefs: AppPreferences = ChatController.appPrefs

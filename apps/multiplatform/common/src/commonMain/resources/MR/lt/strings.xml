@@ -21,7 +21,6 @@
     <string name="allow_your_contacts_irreversibly_delete">Leisti jūsų adresatams negrįžtamai ištrinti išsiųstas žinutes.</string>
     <string name="back">Atgal</string>
     <string name="settings_section_title_icon">PROGRAMĖLĖS PIKTOGRAMA</string>
-    <string name="incognito_random_profile_from_contact_description">Adresatui, iš kurio gavote šią nuorodą, bus išsiųstas atsitiktinis profilis</string>
     <string name="chat_preferences_always">visada</string>
     <string name="allow_your_contacts_to_send_voice_messages">Leisti jūsų adresatams siųsti balso žinutes.</string>
     <string name="allow_irreversible_message_deletion_only_if">Leisti negrįžtamą žinučių ištrynimą tik tuo atveju, jei jūsų adresatas jums tai leidžia.</string>
@@ -34,7 +33,6 @@
     <string name="settings_audio_video_calls">Garso ir vaizdo skambučiai</string>
     <string name="integrity_msg_bad_hash">bloga žinutės maiša</string>
     <string name="integrity_msg_bad_id">blogas žinutės ID</string>
-    <string name="incognito_random_profile_description">Jūsų adresatui bus išsiųstas atsitiktinis profilis</string>
     <string name="allow_disappearing_messages_only_if">Leisti išnykstančias žinutes tik tuo atveju, jei jūsų adresatas jas leidžia.</string>
     <string name="clear_chat_warning">Visos žinutės bus ištrintos – to neįmanoma bus atšaukti! Žinutės bus ištrintos TIK jums.</string>
     <string name="allow_to_delete_messages">Leisti negrįžtamai ištrinti išsiųstas žinutes.</string>
@@ -403,7 +401,6 @@
     <string name="save_archive">Įrašyti archyvą</string>
     <string name="button_send_direct_message">Siųsti tiesioginę žinutę</string>
     <string name="button_remove_member">Šalinti narį</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Inkognito veiksena čia nepalaikoma – grupės nariams bus išsiųstas jūsų pagrindinis profilis</string>
     <string name="theme_light">Šviesus</string>
     <string name="feature_enabled_for_you">įjungta jums</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Tiek jūs, tiek ir jūsų adresatas gali siųsti išnykstančias žinutes.</string>
@@ -530,7 +527,7 @@
     <string name="v5_0_large_files_support">Vaizdo įrašai ir failai iki 1GB</string>
     <string name="search_verb">Ieškoti</string>
     <string name="la_mode_off">Išjungta</string>
-    <string name="network_session_mode_user_description">Atskiras TCP ryšys (ir SOCKS kredencialas) bus naudojamas <b>kiekvienam pokalbių profiliui, kurį turite programoje</b>.</string>
+    <string name="network_session_mode_user_description"><![CDATA[Atskiras TCP ryšys (ir SOCKS kredencialas) bus naudojamas <b>kiekvienam pokalbių profiliui, kurį turite programoje</b>.]]></string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">Nepavyko iššifruoti %1$d pranešimų.</string>
     <string name="button_add_welcome_message">Pridėti sveikinimo pranešimą</string>
     <string name="v5_2_more_things">Dar keletas dalykų</string>
@@ -539,7 +536,7 @@
     <string name="always_use_relay">Visada naudoti relę</string>
     <string name="icon_descr_asked_to_receive">Paprašė leidimo gauti nuotrauką</string>
     <string name="send_disappearing_message_5_minutes">5 minučių</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Mažiausiai bateriją eikvojantis variantas</b>. Jūs gausite sistemos pranešimus tik kai bus atidaryta programėlė (NEBUS fone veikiančios paslaugos).</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Mažiausiai bateriją eikvojantis variantas</b>. Jūs gausite sistemos pranešimus tik kai bus atidaryta programėlė (NEBUS fone veikiančios paslaugos).]]></string>
     <string name="abort_switch_receiving_address">Atšaukti adreso keitimą</string>
     <string name="v4_2_auto_accept_contact_requests">Automatiškai priimti susisiekimo užklausas</string>
     <string name="v5_1_self_destruct_passcode_descr">Kai jį suvedate visi duomenys yra pašalinami.</string>
@@ -603,4 +600,20 @@
     <string name="one_time_link_short">vienkartinė nuoroda</string>
     <string name="accept_call_on_lock_screen">Priimti</string>
     <string name="auto_accept_contact">Automatiškai priimti</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Geriau baterijai</b>. Fono paslauga tikrina pranešimus kas 10 minučių. Galite praleisti skambučius arba skubius pranešimus.]]></string>
+    <string name="callstatus_in_progress">vyksta skambutis</string>
+    <string name="icon_descr_cancel_live_message">Atšaukti tiesioginę žinutę</string>
+    <string name="alert_title_cant_invite_contacts">Nepavyko pakviesti kontaktų!</string>
+    <string name="icon_descr_call_progress">Vyksta skambutis</string>
+    <string name="feature_cancelled_item">atšaukta %s</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Galima išjungti nustatymuose</b> - pranešimai vis tiek bus rodomi kol programėlė veikia.]]></string>
+    <string name="icon_descr_cancel_link_preview">atšaukti nuorodos peržiūrą</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Jūs ir jūsų kontaktas galite pridėti reakcijas į žinutę.</string>
+    <string name="call_on_lock_screen">Skambučiai užrakinimo ekrane:</string>
+    <string name="invite_prohibited">Nepavyko pakviesti kontakto!</string>
+    <string name="v4_5_transport_isolation_descr">Pagal pokalbių profilį (numatytieji nustatymai) arba pagal ryšį (BETA).</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Naudoja daugiau baterijos</b>! Fono paslauga veikia visada - pranešimai rodomi, kai tik atsiranda žinučių.]]></string>
+    <string name="cannot_access_keychain">Negalima pasiekti \"Keystore\", kad išsaugotumėte duomenų bazės slaptažodį</string>
+    <string name="icon_descr_cancel_file_preview">Atšaukti failo peržiūrą</string>
+    <string name="icon_descr_cancel_image_preview">Atšaukti vaizdo peržiūrą</string>
 </resources>

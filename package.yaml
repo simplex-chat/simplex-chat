@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 5.3.0.1
+version: 5.3.0.7
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -10,6 +10,7 @@ copyright: 2020-22 simplex.chat
 category: Web, System, Services, Cryptography
 extra-source-files:
   - README.md
+  - cabal.project
 
 dependencies:
   - aeson == 2.0.*
@@ -91,8 +92,16 @@ executables:
       - -threaded
 
   simplex-broadcast-bot:
-    source-dirs: apps/simplex-broadcast-bot
-    main: Main.hs
+    source-dirs: apps/simplex-broadcast-bot/src
+    main: ../Main.hs
+    dependencies:
+      - simplex-chat
+    ghc-options:
+      - -threaded
+
+  simplex-directory-service:
+    source-dirs: apps/simplex-directory-service/src
+    main: ../Main.hs
     dependencies:
       - simplex-chat
     ghc-options:
@@ -100,7 +109,10 @@ executables:
 
 tests:
   simplex-chat-test:
-    source-dirs: tests
+    source-dirs:
+      - tests
+      - apps/simplex-broadcast-bot/src
+      - apps/simplex-directory-service/src
     main: Test.hs
     dependencies:
       - simplex-chat

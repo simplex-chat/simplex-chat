@@ -32,7 +32,6 @@ fun CIRcvDecryptionError(
   syncMemberConnection: (GroupInfo, GroupMember) -> Unit,
   findModelChat: (String) -> Chat?,
   findModelMember: (String) -> GroupMember?,
-  showMember: Boolean
 ) {
   LaunchedEffect(Unit) {
     if (cInfo is ChatInfo.Direct) {
@@ -46,7 +45,6 @@ fun CIRcvDecryptionError(
   fun BasicDecryptionErrorItem() {
     DecryptionErrorItem(
       ci,
-      showMember,
       onClick = {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.decryption_error),
@@ -64,7 +62,6 @@ fun CIRcvDecryptionError(
         if (modelContactStats.ratchetSyncAllowed) {
           DecryptionErrorItemFixButton(
             ci,
-            showMember,
             onClick = {
               AlertManager.shared.showAlertDialog(
                 title = generalGetString(MR.strings.fix_connection_question),
@@ -78,7 +75,6 @@ fun CIRcvDecryptionError(
         } else if (!modelContactStats.ratchetSyncSupported) {
           DecryptionErrorItemFixButton(
             ci,
-            showMember,
             onClick = {
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(MR.strings.fix_connection_not_supported_by_contact),
@@ -103,7 +99,6 @@ fun CIRcvDecryptionError(
       if (modelMemberStats.ratchetSyncAllowed) {
         DecryptionErrorItemFixButton(
           ci,
-          showMember,
           onClick = {
             AlertManager.shared.showAlertDialog(
               title = generalGetString(MR.strings.fix_connection_question),
@@ -117,7 +112,6 @@ fun CIRcvDecryptionError(
       } else if (!modelMemberStats.ratchetSyncSupported) {
         DecryptionErrorItemFixButton(
           ci,
-          showMember,
           onClick = {
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.fix_connection_not_supported_by_group_member),
@@ -140,7 +134,6 @@ fun CIRcvDecryptionError(
 @Composable
 fun DecryptionErrorItemFixButton(
   ci: ChatItem,
-  showMember: Boolean,
   onClick: () -> Unit,
   syncSupported: Boolean
 ) {
@@ -159,7 +152,6 @@ fun DecryptionErrorItemFixButton(
       ) {
         Text(
           buildAnnotatedString {
-            appendSender(this, if (showMember) ci.memberDisplayName else null, true)
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
           },
           style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
@@ -174,7 +166,7 @@ fun DecryptionErrorItemFixButton(
           Text(
             buildAnnotatedString {
               append(generalGetString(MR.strings.fix_connection))
-              withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null)) }
+              withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null)) }
               withStyle(reserveTimestampStyle) { append("    ") } // for icon
             },
             color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
@@ -189,7 +181,6 @@ fun DecryptionErrorItemFixButton(
 @Composable
 fun DecryptionErrorItem(
   ci: ChatItem,
-  showMember: Boolean,
   onClick: () -> Unit
 ) {
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
@@ -204,9 +195,8 @@ fun DecryptionErrorItem(
     ) {
       Text(
         buildAnnotatedString {
-          appendSender(this, if (showMember) ci.memberDisplayName else null, true)
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-          withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null)) }
+          withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null)) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
       )

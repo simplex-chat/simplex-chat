@@ -90,7 +90,7 @@
     <string name="service_notifications_disabled">Мгновенные уведомления выключены!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Чтобы защитить Ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис SimpleX</b>, который потребляет несколько процентов батареи в день.]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Он может быть выключен через Настройки</b> – Вы продолжите получать уведомления о сообщениях пока приложение запущено.]]></string>
-    <string name="turn_off_battery_optimization">Для использования этой функции, пожалуйста, отключите оптимизацию батареи для SimpleX в следующем диалоге. Иначе уведомления будут выключены.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Для использования этой функции, <b>разрешите SimpleX выполняться в фоне</b> в следующем диалоге. Иначе уведомления будут выключены.]]></string>
     <string name="turning_off_service_and_periodic">Оптимизация батареи включена, поэтому сервис уведомлений выключен. Вы можете снова включить его через Настройки.</string>
     <string name="periodic_notifications">Периодические уведомления</string>
     <string name="periodic_notifications_disabled">Периодические уведомления выключены!</string>
@@ -294,7 +294,7 @@
     <string name="mute_chat">Без звука</string>
     <string name="unmute_chat">Уведомлять</string>
     <!-- Pending contact connection alert dialogues -->
-    <string name="you_invited_your_contact">Вы пригласили Ваш контакт</string>
+    <string name="you_invited_a_contact">Вы пригласили Ваш контакт</string>
     <string name="you_accepted_connection">Вы приняли приглашение соединиться</string>
     <string name="delete_pending_connection__question">Удалить ожидаемое соединение?</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Контакт, которому Вы отправили эту ссылку, не сможет соединиться!</string>
@@ -314,7 +314,7 @@
     <string name="icon_descr_settings">Настройки</string>
     <string name="image_descr_qr_code">QR код</string>
     <string name="icon_descr_address">SimpleX адрес</string>
-    <string name="icon_descr_help">Помощь</string>
+    <string name="icon_descr_help">помощь</string>
     <string name="icon_descr_simplex_team">SimpleX команда</string>
     <string name="image_descr_simplex_logo">SimpleX логотип</string>
     <string name="icon_descr_email">Email</string>
@@ -335,8 +335,6 @@
 \nВашему контакту</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Если Вы не можете встретиться лично, Вы можете <b>сосканировать QR код во время видеозвонка</b>, или Ваш контакт может отправить Вам ссылку.]]></string>
     <string name="share_invitation_link">Поделиться одноразовой ссылкой</string>
-    <string name="paste_connection_link_below_to_connect">Чтобы соединиться, вставьте в это поле ссылку, полученную от Вашего контакта.</string>
-    <string name="your_profile_will_be_sent">Ваш профиль будет отправлен Вашему контакту</string>
     <!-- PasteToConnect.kt -->
     <string name="connect_button">Соединиться</string>
     <string name="paste_button">Вставить</string>
@@ -823,7 +821,6 @@
     <string name="group_is_decentralized">Группа полностью децентрализована — она видна только членам.</string>
     <string name="group_display_name_field">Имя группы:</string>
     <string name="group_full_name_field">Полное имя:</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Режим Инкогнито здесь не поддерживается - Ваш основной профиль будет отправлен членам группы</string>
     <string name="group_main_profile_sent">Ваш профиль чата будет отправлен членам группы</string>
     <!-- GroupProfileView.kt -->
     <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов, а не на серверах.</string>
@@ -844,12 +841,9 @@
     <!-- Incognito mode -->
     <string name="incognito">Инкогнито</string>
     <string name="incognito_random_profile">Случайный профиль</string>
-    <string name="incognito_random_profile_description">Вашему контакту будет отправлен случайный профиль</string>
-    <string name="incognito_random_profile_from_contact_description">Контакту, от которого Вы получили эту ссылку, будет отправлен случайный профиль</string>
-    <string name="incognito_info_protects">Режим Инкогнито защищает конфиденциальность имени и изображения Вашего основного профиля — для каждого нового контакта создается новый случайный профиль.</string>
+    <string name="incognito_info_protects">Режим Инкогнито защищает Вашу конфиденциальность — для каждого контакта создается новый случайный профиль.</string>
     <string name="incognito_info_allows">Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.</string>
     <string name="incognito_info_share">Когда Вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.</string>
-    <string name="incognito_info_find">Чтобы найти инкогнито профиль, используемый в разговоре, нажмите на имя контакта или группы в верхней части чата.</string>
     <!-- Default themes -->
     <string name="theme_system">Системная</string>
     <string name="theme_light">Светлая</string>
@@ -1345,7 +1339,7 @@
     <string name="item_info_no_text">нет текста</string>
     <string name="search_verb">Поиск</string>
     <string name="la_mode_off">Отключено</string>
-    <string name="receipts_section_description_1">Они могут быть переопределены в настройках контактов</string>
+    <string name="receipts_section_description_1">Они могут быть изменены в настройках контактов и групп.</string>
     <string name="delivery_receipts_are_disabled">Отчёты о доставке выключены!</string>
     <string name="snd_conn_event_ratchet_sync_ok">шифрование работает для %s</string>
     <string name="snd_conn_event_ratchet_sync_required">требуется новое соглашение о шифровании для %s</string>
@@ -1424,4 +1418,44 @@
     <string name="sync_connection_force_confirm">Пересогласовать</string>
     <string name="sync_connection_force_question">Пересогласовать шифрование\?</string>
     <string name="prohibit_sending_files">Запретить слать файлы и медиа.</string>
+    <string name="connect_via_link_incognito">Соединиться Инкогнито</string>
+    <string name="turn_off_battery_optimization_button">Разрешить</string>
+    <string name="turn_off_system_restriction_button">Открыть настройки приложения</string>
+    <string name="disable_notifications_button">Выключить уведомления</string>
+    <string name="system_restricted_background_desc">SimpleX не может выполняться в фоне. Вы получите уведомления только когда приложение запущено.</string>
+    <string name="system_restricted_background_in_call_title">Звонки в фоне невозможны</string>
+    <string name="system_restricted_background_in_call_desc">Приложение может быть выключено после 1 минуты в фоне.</string>
+    <string name="no_info_on_delivery">Нет информации от доставке</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Вставьте полученную ссылку, чтобы соединиться с Вашим контактом…</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Будет отправлен новый случайный профиль.</string>
+    <string name="connect__your_profile_will_be_shared">Ваш профиль %1$s будет отправлен.</string>
+    <string name="receipts_groups_title_disable">Выключить отчёты о доставке для групп\?</string>
+    <string name="receipts_section_groups">Маленькие группы (до 20)</string>
+    <string name="receipts_groups_title_enable">Включить отчёты о доставке для групп\?</string>
+    <string name="receipts_groups_disable_for_all">Выключить для всех групп</string>
+    <string name="delivery">Доставка</string>
+    <string name="no_selected_chat">Чат не выбран</string>
+    <string name="choose_file_title">Выберите файл</string>
+    <string name="receipts_groups_disable_keep_overrides">Выключить (кроме исключений)</string>
+    <string name="receipts_groups_enable_for_all">Включить для всех групп</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="send_receipts_disabled_alert_msg">В этой группе более %1$d членов, отчёты о доставке не отправляются.</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s и %d других членов соединены</string>
+    <string name="send_receipts_disabled">выключено</string>
+    <string name="in_developing_desc">Эта функция ещё не поддерживается. Проверьте в следующем релизе.</string>
+    <string name="connect_via_member_address_alert_title">Соединиться напрямую\?</string>
+    <string name="connect_via_member_address_alert_desc">Этому члену группы будет отправлен запрос на соединение.</string>
+    <string name="receipts_groups_override_enabled">Отчёты о доставке включены для %d групп</string>
+    <string name="privacy_show_last_messages">Показывать последние сообщения</string>
+    <string name="in_developing_title">Скоро!</string>
+    <string name="receipts_groups_enable_keep_overrides">Включить (кроме исключений)</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s и %s соединены</string>
+    <string name="send_receipts_disabled_alert_title">Отчёты о доставке выключены</string>
+    <string name="receipts_groups_override_disabled">Отчёты о доставке выключены для %d групп</string>
+    <string name="rcv_group_event_2_members_connected">%s и %s соединены</string>
+    <string name="privacy_message_draft">Черновик сообщения</string>
+    <string name="system_restricted_background_warn"><![CDATA[Чтобы включить нотификации, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
+    <string name="connect_use_current_profile">Использовать активный профиль</string>
+    <string name="connect_use_new_incognito_profile">Использовать новый Инкогнито профиль</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
 </resources>

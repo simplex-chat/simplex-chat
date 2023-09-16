@@ -7,11 +7,12 @@
 //
 
 import SwiftUI
+import SimpleXChat
 import CodeScanner
 
 struct ScanToConnectView: View {
-    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
+    @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
     var body: some View {
         ScrollView {
@@ -19,34 +20,35 @@ struct ScanToConnectView: View {
                 Text("Scan QR code")
                     .font(.largeTitle)
                     .bold()
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical)
-                if (chatModel.incognito) {
-                    HStack {
-                        Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("A random profile will be sent to your contact").font(.footnote)
-                    }
-                    .padding(.bottom)
-                } else {
-                    HStack {
-                        Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
-                        Spacer().frame(width: 8)
-                        Text("Your chat profile will be sent to your contact").font(.footnote)
-                    }
-                    .padding(.bottom)
+
+                CodeScannerView(codeTypes: [.qr], completion: processQRCode)
+                    .aspectRatio(1, contentMode: .fit)
+                    .cornerRadius(12)
+
+                IncognitoToggle(incognitoEnabled: $incognitoDefault)
+                    .padding(.horizontal)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(uiColor: .systemBackground))
+                    )
+                    .padding(.top)
+
+                Group {
+                    sharedProfileInfo(incognitoDefault)
+                    + Text(String("\n\n"))
+                    + Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
                 }
-                ZStack {
-                    CodeScannerView(codeTypes: [.qr], completion: processQRCode)
-                        .aspectRatio(1, contentMode: .fit)
-                        .border(.gray)
-                }
-                .padding(.bottom)
-                Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
-                    .padding(.bottom)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .background(Color(.systemGroupedBackground))
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
@@ -55,9 +57,9 @@ struct ScanToConnectView: View {
             if let crData = parseLinkQueryData(r.string),
                checkCRDataGroup(crData) {
                 dismiss()
-                AlertManager.shared.showAlert(groupLinkAlert(r.string))
+                AlertManager.shared.showAlert(groupLinkAlert(r.string, incognito: incognitoDefault))
             } else {
-                Task { connectViaLink(r.string, dismiss) }
+                Task { connectViaLink(r.string, dismiss: dismiss, incognito: incognitoDefault) }
             }
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")

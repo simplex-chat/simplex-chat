@@ -205,8 +205,8 @@
     "comparison-section-list-point-1": "Généralement basé sur un numéro de téléphone, dans certains cas sur des noms d'utilisateur",
     "comparison-section-list-point-2": "Adresses basées sur le DNS",
     "comparison-section-list-point-3": "Clé publique ou tout autre identifiant global unique",
-    "comparison-section-list-point-4": "Si les serveurs de l'opérateur sont compromis",
-    "comparison-section-list-point-5": "Ne protège pas les métadonnées des utilisateurs",
+    "comparison-section-list-point-4": "Si les serveurs de l'opérateur sont compromis. Vérifier les codes de sécurités sur Signal et d'autres applications pour limiter les risques",
+    "comparison-section-list-point-5": "Ne protège pas la confidentialité des métadonnées des utilisateurs",
     "comparison-section-list-point-6": "Bien que les P2P soient distribués, ils ne sont pas fédérés - ils fonctionnent comme un seul réseau",
     "comparison-section-list-point-7": "Les réseaux P2P ont soit une autorité centrale, soit l'ensemble du réseau peut être compromis",
     "voir-ici": "voir ici",
@@ -233,5 +233,16 @@
     "guide": "Guide",
     "docs-dropdown-4": "Hébergement d'un serveur SMP",
     "on-this-page": "Sur cette page",
-    "glossary": "Glossaire"
+    "glossary": "Glossaire",
+    "releases-to-this-repo-are-done-1-2-days-later": "Les mises à jour de ce dépôt sont faites 1 à 2 jours plus tard",
+    "f-droid-page-f-droid-org-repo-section-text": "Les dépôts SimpleX Chat et F-Droid.org signent les builds avec des clés différentes. Pour changer, veuillez <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exporter</a> la base de données des chats et réinstaller l'application.",
+    "docs-dropdown-8": "Service de répertoire SimpleX",
+    "simplex-chat-via-f-droid": "SimpleX Chat via F-Droid",
+    "simplex-chat-repo": "Dépot SimpleX Chat",
+    "stable-and-beta-versions-built-by-developers": "Versions stables et bêta crées par les développeurs",
+    "f-droid-page-simplex-chat-repo-section-text": "Pour l'ajouter à votre client F-Droid <span class='hide-on-mobile'>scannez le code QR ou</span> utilisez cette URL :",
+    "signing-key-fingerprint": "Empreinte de signature numérique (SHA-256)",
+    "f-droid-org-repo": "Dépot F-Droid.org",
+    "stable-versions-built-by-f-droid-org": "Versions stables créées par F-Droid.org",
+    "comparison-section-list-point-4a": "Les relais SimpleX ne peuvent pas compromettre le chiffrement e2e. Vérifier le code de sécurité pour limiter les attaques sur le canal hors bande"
 }

@@ -19,6 +19,7 @@ struct GroupMemberInfoView: View {
     @State private var connectionCode: String? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
+    @State private var connectToMemberDialog: Bool = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var justOpened = true
 
@@ -28,7 +29,6 @@ struct GroupMemberInfoView: View {
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
-        case connectViaMemberAddressAlert(contactLink: String)
         case connRequestSentAlert(type: ConnReqType)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
         case other(alert: Alert)
@@ -40,7 +40,6 @@ struct GroupMemberInfoView: View {
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
-            case .connectViaMemberAddressAlert: return "connectViaMemberAddressAlert"
             case .connRequestSentAlert: return "connRequestSentAlert"
             case let .error(title, _): return "error \(title)"
             case let .other(alert): return "other \(alert)"
@@ -144,7 +143,7 @@ struct GroupMemberInfoView: View {
                             connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
                             || connStats.ratchetSyncSendProhibited
                         )
-                        if connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil } {
+                        if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
                             Button("Abort changing address") {
                                 alert = .abortSwitchAddressAlert
                             }
@@ -203,7 +202,6 @@ struct GroupMemberInfoView: View {
             case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
-            case let .connectViaMemberAddressAlert(contactLink): return connectViaMemberAddressAlert(contactLink)
             case let .connRequestSentAlert(type): return connReqSentAlert(type)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             case let .other(alert): return alert
@@ -213,26 +211,19 @@ struct GroupMemberInfoView: View {
 
     func connectViaAddressButton(_ contactLink: String) -> some View {
         Button {
-            alert = .connectViaMemberAddressAlert(contactLink: contactLink)
+            connectToMemberDialog = true
         } label: {
             Label("Connect", systemImage: "link")
         }
+        .confirmationDialog("Connect directly", isPresented: $connectToMemberDialog, titleVisibility: .visible) {
+            Button("Use current profile") { connectViaAddress(incognito: false, contactLink: contactLink) }
+            Button("Use new incognito profile") { connectViaAddress(incognito: true, contactLink: contactLink) }
+        }
     }
 
-    func connectViaMemberAddressAlert(_ contactLink: String) -> Alert {
-        return Alert(
-            title: Text("Connect directly?"),
-            message: Text("Сonnection request will be sent to this group member."),
-            primaryButton: .default(Text("Connect")) {
-                connectViaAddress(contactLink)
-            },
-            secondaryButton: .cancel()
-        )
-    }
-
-    func connectViaAddress(_ contactLink: String) {
+    func connectViaAddress(incognito: Bool, contactLink: String) {
         Task {
-            let (connReqType, connectAlert) = await apiConnect_(connReq: contactLink)
+            let (connReqType, connectAlert) = await apiConnect_(incognito: incognito, connReq: contactLink)
             if let connReqType = connReqType {
                 alert = .connRequestSentAlert(type: connReqType)
             } else if let connectAlert = connectAlert {
