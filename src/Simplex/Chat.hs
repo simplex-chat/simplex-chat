@@ -3262,7 +3262,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
           _ -> do
-            -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
@@ -3274,14 +3273,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   notifyMemberConnected gInfo m $ Just ct
                   let connectedIncognito = contactConnIncognito ct || memberIncognito membership
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
-            -- notifyMemberConnected gInfo m ct_
-            -- case ct_ of
-            --   Nothing -> do
-            --     let connectedIncognito = memberIncognito membership
-            --     when (memberCategory m == GCPreMember) $ probeMatchingMemberContact m connectedIncognito
-            --   Just ct -> do
-            --     let connectedIncognito = contactConnIncognito ct || memberIncognito membership
-            --     when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
         withAckMessage agentConnId cmdId msgMeta $ do
@@ -4311,7 +4302,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Just (CGMContact c2@Contact {contactId = cId2})
           | cId1 /= cId2 -> mergeContacts c1 c2
           | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
-        Just (CGMGroupMember _m2) -> pure ()
+        Just (CGMGroupMember m2@GroupMember {memberContactId})
+          | isNothing memberContactId -> connectContactToMember c1 m2
+          | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
         _ -> pure ()
 
     -- to party accepting call
