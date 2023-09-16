@@ -205,7 +205,7 @@ instance ToJSON HelpSection where
 data ChatCommand
   = ShowActiveUser
   | Announce
-  | Discover
+  | Discover Text
   | CreateActiveUser NewUser
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
@@ -421,7 +421,8 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRActiveUser {user :: User}
+  = CRAnnounce {oobData :: Text}
+  | CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
   | CRChatStarted
   | CRChatRunning

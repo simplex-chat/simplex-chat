@@ -57,7 +57,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
@@ -372,13 +372,10 @@ toView event = do
   q <- asks outputQ
   atomically $ writeTBQueue q (Nothing, event)
 
-runAnnouncer :: ChatMonad m => m ()
-runAnnouncer = do
-  (Fingerprint fingerprint, credentials) <- liftIO genTlsCredentials
-  let keyHash = KeyHash fingerprint
-  traceM $ "Server fingerprint: " <> show (strEncode keyHash) -- TODO: move to OOB
+runAnnouncer :: (StrEncoding invite, ChatMonad m) => invite -> TLS.Credentials -> m ()
+runAnnouncer invite credentials = do
   started <- newEmptyTMVarIO
-  aPid <- async $ announcer started keyHash
+  aPid <- async $ announcer started (strEncode invite)
   let serverParams = def
         { TLS.serverWantClientCert = False,
           TLS.serverShared = def {TLS.sharedCredentials = credentials},
@@ -387,7 +384,7 @@ runAnnouncer = do
         }
   liftIO $ runTransportServer started partyPort serverParams defaultTransportServerConfig (handler aPid)
   where
-    announcer started keyHash = do
+    announcer started invite = do
       atomically (takeTMVar started) >>= \case
         False ->
           error "Server not started?.."
@@ -395,9 +392,8 @@ runAnnouncer = do
           traceM $ "TCP server started at " <> partyPort
           sock <- UDP.clientSocket broadcastAddrV4 partyPort False
           N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
-          traceM $ "UDP server started at " <> partyPort <> " " <> show sock
-          let invite = strEncode keyHash -- XXX: for demonstration only, until OOB is implemented in discoverer
-          -- let invite = "let's have a party\n" -- XXX: only used for source IP (that can be spoofed, btw). A fingerprint may be broadcasted here, or someting else.
+          traceM $ "UDP announce started at " <> broadcastAddrV4 <> ":" <> partyPort
+          traceM $ "Server invite: " <> show invite
           forever $ do
             UDP.send sock invite
             threadDelay 1000000
@@ -421,45 +417,66 @@ broadcastAddrV4 = "255.255.255.255"
 partyPort :: IsString a => a
 partyPort = "5226" -- XXX: should be `0` or something, to get a random port and announce it
 
-runDiscoverer :: ChatMonad m => m ()
-runDiscoverer = liftIO $ do
-  traceM "runDiscoverer: start"
-  sock <- UDP.serverSocket (broadcastAddrV4, read partyPort)
-  N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
-  traceM $ "runDiscoverer: " <> show sock
-
-  (invite, UDP.ClientSockAddr source _cmsg) <- UDP.recvFrom sock
-  traceShowM (invite, source)
-  case strDecode invite of
-    Left err -> traceM $ "Inivite decode error: " <> err
-    Right keyHash -> case source of
-      N.SockAddrInet _port addr -> do
-        let host = THIPv4 $ N.hostAddressToTuple addr
-        traceM $ "Discoverer: go connect " <> show host
-
-        runTransportClient defaultTransportClientConfig Nothing host partyPort (Just keyHash) $ \c@Transport.TLS{} -> do
-          Transport.getLn c >>= traceShowM
-          Transport.putLn c "Discoverer"
-          E.handle (\E.SomeException{} -> pure ()) . forever $
+runDiscoverer :: ChatMonad m => Text -> m ()
+runDiscoverer oobData =
+  case strDecode (encodeUtf8 oobData) of
+    Left err -> traceM $ "oobData decode error: " <> err
+    Right expected -> liftIO $ do
+      traceM $ "runDiscoverer: locating " <> show oobData
+      sock <- UDP.serverSocket (broadcastAddrV4, read partyPort)
+      N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
+      traceM $ "runDiscoverer: " <> show sock
+      go sock expected
+  where
+    go sock expected = do
+      (invite, UDP.ClientSockAddr source _cmsg) <- UDP.recvFrom sock
+      traceShowM (invite, source)
+      case strDecode invite of
+        Right inviteHash | inviteHash == expected -> do
+          host <- case source of
+            N.SockAddrInet _port addr -> do
+              pure $ THIPv4 (N.hostAddressToTuple addr)
+            unexpected ->
+              -- TODO: actually, Apple mandates IPv6 support
+              fail $ "Discoverer: expected an IPv4 party, got " <> show unexpected
+          traceM $ "Discoverer: go connect " <> show host
+          runTransportClient defaultTransportClientConfig Nothing host partyPort (Just expected) $ \c@Transport.TLS{} -> do
             Transport.getLn c >>= traceShowM
-          traceM "Discoverer finished"
-      unexpected ->
-        -- TODO: actually, Apple mandates IPv6 support
-        traceM $ "Discoverer: expected an IPv4 party, got " <> show unexpected
+            Transport.putLn c "Discoverer"
+            E.handle (\E.SomeException{} -> pure ()) . forever $
+              Transport.getLn c >>= traceShowM
+            traceM "Discoverer finished"
+        Left err -> do
+          traceM $ "Inivite decode error: " <> err
+          go sock expected
+        Right unexpected -> do
+          traceM $ "Skipping unexpected invite " <> show (strEncode unexpected)
+          go sock expected
 
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   Announce -> do
     chatReadVar announcer >>= \case
       Nothing -> do
-        async runAnnouncer >>= chatWriteVar announcer . Just
-      Just old ->
+        (Fingerprint fingerprint, credentials) <- liftIO genTlsCredentials
+        let keyHash = KeyHash fingerprint
+        let invite = keyHash
+        let oobData = keyHash
+        traceM $ "OOB data: " <> show (strEncode keyHash)
+        pid <- async (runAnnouncer keyHash credentials)
+        forkIO $ waitCatch pid >> chatWriteVar announcer Nothing
+        chatWriteVar announcer (Just pid)
+        pure $ CRAnnounce (decodeUtf8 $ strEncode oobData)
+      Just old -> do
         cancel old
-    pure $ CRCmdOk Nothing
-  Discover -> do
+        pure $ CRCmdOk Nothing
+
+  Discover oobData -> do
     chatReadVar discoverer >>= \case
       Nothing -> do
-        async runDiscoverer >>= chatWriteVar discoverer . Just
+        pid <- async (runDiscoverer oobData)
+        forkIO $ waitCatch pid >> chatWriteVar discoverer Nothing
+        chatWriteVar discoverer (Just pid)
       Just old ->
         cancel old
     pure $ CRCmdOk Nothing
@@ -5271,9 +5288,8 @@ chatCommandP =
   choice
     [ "/announce" $> Announce,
       "/a" $> Announce,
-      "/discover" $> Discover,
-      "/d" $> Discover,
-      -- "/d " *> (Discover <$> fmap Just textP), -- TODO: oob data
+      "/discover " *> (Discover <$> textP),
+      "/d " *> (Discover <$> textP),
       "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` True) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),

@@ -69,6 +69,7 @@ serializeChatResponse user_ ts tz = unlines . map unStyle . responseToView user_
 
 responseToView :: Maybe User -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> ChatResponse -> [StyledString]
 responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz = \case
+  CRAnnounce oobData -> ["discover this", plain oobData]
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
