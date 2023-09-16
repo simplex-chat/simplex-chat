@@ -73,13 +73,17 @@ module Simplex.Chat.Store.Groups
     getViaGroupMember,
     getViaGroupContact,
     getMatchingContacts,
+    getMatchingMemberContacts,
     createSentProbe,
+    createSentMemberProbe,
     createSentProbeHash,
     deleteSentProbe,
     matchReceivedProbe,
+    matchReceivedMemberProbe,
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
+    updateMemberContact,
     updateGroupSettings,
     getXGrpMemIntroContDirect,
     getXGrpMemIntroContGroup,
@@ -89,6 +93,7 @@ where
 
 import Control.Monad.Except
 import Crypto.Random (ChaChaDRG)
+import Data.ByteString.Char8 (ByteString)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isNothing)
@@ -1124,20 +1129,39 @@ getGroupMemberIdByName db User {userId} groupId groupMemberName =
 getMatchingContacts :: DB.Connection -> User -> Contact -> IO [Contact]
 getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do
   contactIds <-
-    map fromOnly
-      <$> DB.query
-        db
-        [sql|
-          SELECT ct.contact_id
-          FROM contacts ct
-          JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
-          WHERE ct.user_id = ? AND ct.contact_id != ?
-            AND ct.deleted = 0
-            AND p.display_name = ? AND p.full_name = ?
-            AND ((p.image IS NULL AND ? IS NULL) OR p.image = ?)
-        |]
-        (userId, contactId, displayName, fullName, image, image)
+    map fromOnly <$> case image of
+      Just img -> DB.query db (q <> " AND p.image = ?") (userId, contactId, displayName, fullName, img)
+      Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, contactId, displayName, fullName)
   rights <$> mapM (runExceptT . getContact db user) contactIds
+  where
+    q =
+      [sql|
+        SELECT ct.contact_id
+        FROM contacts ct
+        JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
+        WHERE ct.user_id = ? AND ct.contact_id != ?
+          AND ct.deleted = 0
+          AND p.display_name = ? AND p.full_name = ?
+      |]
+
+getMatchingMemberContacts :: DB.Connection -> User -> GroupMember -> IO [Contact]
+getMatchingMemberContacts _ _ GroupMember {memberContactId = Just _} = pure []
+getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} = do
+  contactIds <-
+    map fromOnly <$> case image of
+      Just img -> DB.query db (q <> " AND p.image = ?") (userId, displayName, fullName, img)
+      Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, displayName, fullName)
+  rights <$> mapM (runExceptT . getContact db user) contactIds
+  where
+    q =
+      [sql|
+        SELECT ct.contact_id
+        FROM contacts ct
+        JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
+        WHERE ct.user_id = ?
+          AND ct.deleted = 0
+          AND p.display_name = ? AND p.full_name = ?
+      |]
 
 createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> Contact -> ExceptT StoreError IO (Probe, Int64)
 createSentProbe db gVar userId _to@Contact {contactId} =
@@ -1147,6 +1171,16 @@ createSentProbe db gVar userId _to@Contact {contactId} =
       db
       "INSERT INTO sent_probes (contact_id, probe, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
       (contactId, probe, userId, currentTs, currentTs)
+    (Probe probe,) <$> insertedRowId db
+
+createSentMemberProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> GroupMember -> ExceptT StoreError IO (Probe, Int64)
+createSentMemberProbe db gVar userId _to@GroupMember {groupMemberId} =
+  createWithRandomBytes 32 gVar $ \probe -> do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      "UPDATE group_members SET sent_probe = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
+      (probe, currentTs, userId, groupMemberId)
     (Probe probe,) <$> insertedRowId db
 
 createSentProbeHash :: DB.Connection -> UserId -> Int64 -> Contact -> IO ()
@@ -1165,7 +1199,16 @@ deleteSentProbe db userId probeId =
     (userId, probeId)
 
 matchReceivedProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe Contact)
-matchReceivedProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = do
+matchReceivedProbe db user@User {userId} _from@(Contact {contactId}) p@(Probe probe) =
+  matchReceivedProbe_ db user p $ \probeHash -> do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      "INSERT INTO received_probes (contact_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      (contactId, probe, probeHash, userId, currentTs, currentTs)
+
+matchReceivedProbe_ :: DB.Connection -> User -> Probe -> (ByteString -> IO ()) -> IO (Maybe Contact)
+matchReceivedProbe_ db user@User {userId} (Probe probe) addProbe = do
   let probeHash = C.sha256Hash probe
   contactIds <-
     map fromOnly
@@ -1178,39 +1221,60 @@ matchReceivedProbe db user@User {userId} _from@Contact {contactId} (Probe probe)
           WHERE c.user_id = ? AND c.deleted = 0 AND r.probe_hash = ? AND r.probe IS NULL
         |]
         (userId, probeHash)
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    "INSERT INTO received_probes (contact_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-    (contactId, probe, probeHash, userId, currentTs, currentTs)
+  addProbe probeHash
   case contactIds of
     [] -> pure Nothing
     cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
 
-matchReceivedProbeHash :: DB.Connection -> User -> Contact -> ProbeHash -> IO (Maybe (Contact, Probe))
-matchReceivedProbeHash db user@User {userId} _from@Contact {contactId} (ProbeHash probeHash) = do
-  namesAndProbes <-
-    DB.query
+matchReceivedMemberProbe :: DB.Connection -> User -> GroupMember -> Probe -> IO (Maybe Contact)
+matchReceivedMemberProbe db user@User {userId} _from@(GroupMember {groupMemberId}) p@(Probe probe) =
+  matchReceivedProbe_ db user p $ \probeHash -> do
+    currentTs <- getCurrentTime
+    DB.execute
       db
-      [sql|
-        SELECT c.contact_id, r.probe
-        FROM contacts c
-        JOIN received_probes r ON r.contact_id = c.contact_id
-        WHERE c.user_id = ? AND c.deleted = 0 AND r.probe_hash = ? AND r.probe IS NOT NULL
-      |]
-      (userId, probeHash)
+      "UPDATE group_members SET received_probe = ?, received_probe_hash = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
+      (probe, probeHash, currentTs, userId, groupMemberId)
+
+matchReceivedProbeHash :: DB.Connection -> User -> Contact -> ProbeHash -> IO (Maybe (ContactOrGroupMember, Probe))
+matchReceivedProbeHash db user@User {userId} _from@Contact {contactId} (ProbeHash probeHash) = do
+  r <- getContacts >>= \case
+    [] ->
+      getMembers >>= \case
+        [] -> pure Nothing
+        (gId, mId, probe) : _ -> get CGMGroupMember probe $ getGroupMember db user gId mId
+    (cId, probe) : _ -> get CGMContact probe $ getContact db user cId
   currentTs <- getCurrentTime
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
     (contactId, probeHash, userId, currentTs, currentTs)
-  case namesAndProbes of
-    [] -> pure Nothing
-    (cId, probe) : _ ->
-      either (const Nothing) (Just . (,Probe probe))
-        <$> runExceptT (getContact db user cId)
+  pure r
+  where
+    getContacts :: IO [(ContactId, ByteString)]
+    getContacts =
+      DB.query
+        db
+        [sql|
+          SELECT c.contact_id, r.probe
+          FROM contacts c
+          JOIN received_probes r ON r.contact_id = c.contact_id
+          WHERE c.user_id = ? AND c.deleted = 0 AND r.probe_hash = ? AND r.probe IS NOT NULL
+        |]
+        (userId, probeHash)
+    getMembers :: IO [(ContactId, GroupMemberId, ByteString)]
+    getMembers =
+      DB.query
+        db
+        [sql|
+          SELECT group_id, group_member_id, received_probe
+          FROM group_members
+          WHERE user_id = ? AND received_probe_hash = ? AND received_probe IS NOT NULL
+        |]
+        (userId, probeHash)
+    get :: (a -> ContactOrGroupMember) -> ByteString -> ExceptT StoreError IO a -> IO (Maybe (ContactOrGroupMember, Probe))
+    get cgm probe a = either (const Nothing) (Just . (,Probe probe) . cgm) <$> runExceptT a
 
-matchSentProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe Contact)
+matchSentProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe ContactOrGroupMember)
 matchSentProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = do
   contactIds <-
     map fromOnly
@@ -1226,7 +1290,7 @@ matchSentProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = d
         (userId, probe, contactId)
   case contactIds of
     [] -> pure Nothing
-    cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
+    cId : _ -> eitherToMaybe <$> runExceptT (CGMContact <$> getContact db user cId)
 
 mergeContactRecords :: DB.Connection -> UserId -> Contact -> Contact -> IO ()
 mergeContactRecords db userId ct1 ct2 = do
@@ -1274,7 +1338,7 @@ mergeContactRecords db userId ct1 ct2 = do
     ]
   deleteContactProfile_ db userId fromContactId
   DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
-  DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
+  deleteUnusedDisplayName_ db userId localDisplayName
   where
     toFromContacts :: Contact -> Contact -> (Contact, Contact)
     toFromContacts c1 c2
@@ -1286,6 +1350,63 @@ mergeContactRecords db userId ct1 ct2 = do
         d1 = directOrUsed c1
         d2 = directOrUsed c2
         ctCreatedAt Contact {createdAt} = createdAt
+
+updateMemberContact :: DB.Connection -> User -> Contact -> GroupMember -> IO ()
+updateMemberContact
+  db
+  User {userId}
+  Contact {contactId, localDisplayName, profile = LocalProfile {profileId}}
+  GroupMember {groupId, groupMemberId, localDisplayName = memLDN, memberProfile = LocalProfile {profileId = memProfileId}} = do
+    -- TODO possibly, we should update profiles and local_display_names of all members linked to the same remote user,
+    -- once we decide on how we identify it, either based on shared contact_profile_id or on local_display_name
+    DB.execute
+      db
+      [sql|
+        UPDATE group_members
+        SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
+        WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+      |]
+      (contactId, localDisplayName, profileId, userId, groupId, groupMemberId)
+    when (memProfileId /= profileId) $ deleteUnusedProfile_ db userId memProfileId
+    when (memLDN /= localDisplayName) $ deleteUnusedDisplayName_ db userId memLDN
+
+deleteUnusedDisplayName_ :: DB.Connection -> UserId -> ContactName -> IO ()
+deleteUnusedDisplayName_ db userId localDisplayName =
+  DB.executeNamed
+    db
+    [sql|
+      DELETE FROM display_names
+      WHERE user_id = :user_id AND local_display_name = :local_display_name
+        AND 1 NOT IN (
+          SELECT 1 FROM users
+          WHERE local_display_name = :local_display_name LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM contacts
+          WHERE user_id = :user_id AND local_display_name = :local_display_name LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM groups
+          WHERE user_id = :user_id AND local_display_name = :local_display_name LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM group_members
+          WHERE user_id = :user_id AND local_display_name = :local_display_name LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM user_contact_links
+          WHERE user_id = :user_id AND local_display_name = :local_display_name LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM contact_requests
+          WHERE user_id = :user_id AND local_display_name = :local_display_name LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM contact_requests
+          WHERE user_id = :user_id AND local_display_name = :local_display_name LIMIT 1
+        )
+    |]
+    [":user_id" := userId, ":local_display_name" := localDisplayName]
 
 updateGroupSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()
 updateGroupSettings db User {userId} groupId ChatSettings {enableNtfs, sendRcpts, favorite} =

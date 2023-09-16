@@ -214,6 +214,8 @@ data ContactRef = ContactRef
 
 instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
 
+data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupMember
+
 data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact,
@@ -425,10 +427,10 @@ instance ToJSON Profile where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 -- check if profiles match ignoring preferences
-profilesMatch :: Profile -> Profile -> Bool
+profilesMatch :: LocalProfile -> LocalProfile -> Bool
 profilesMatch
-  Profile {displayName = n1, fullName = fn1, image = i1}
-  Profile {displayName = n2, fullName = fn2, image = i2} =
+  LocalProfile {displayName = n1, fullName = fn1, image = i1}
+  LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
