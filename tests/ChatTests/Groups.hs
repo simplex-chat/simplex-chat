@@ -68,19 +68,20 @@ chatGroupTests = do
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
   describe "direct connections in group are not established based on chat protocol version" $ do
     describe "3 members group" $ do
-      testNoDirect _0 _0 False -- True
-      testNoDirect _0 _1 False -- True
+      testNoDirect _0 _0 True -- False -- True
+      testNoDirect _0 _1 True -- False -- True
       testNoDirect _1 _0 False
       testNoDirect _1 _1 False
     describe "4 members group" $ do
-      testNoDirect4 _0 _0 _0 False False False -- True True True
-      testNoDirect4 _0 _0 _1 False False False -- True True True
-      testNoDirect4 _0 _1 _0 False False False -- True True False
-      testNoDirect4 _0 _1 _1 False False False -- True True False
-      testNoDirect4 _1 _0 _0 False False False -- False False True
-      testNoDirect4 _1 _0 _1 False False False -- False False True
+      testNoDirect4 _0 _0 _0 True True True -- False False False -- True True True
+      testNoDirect4 _0 _0 _1 True True True -- False False False -- True True True
+      testNoDirect4 _0 _1 _0 True True False -- False False False -- True True False
+      testNoDirect4 _0 _1 _1 True True False -- False False False -- True True False
+      testNoDirect4 _1 _0 _0 False False True -- False False False -- False False True
+      testNoDirect4 _1 _0 _1 False False True -- False False False -- False False True
       testNoDirect4 _1 _1 _0 False False False
       testNoDirect4 _1 _1 _1 False False False
+    it "members have different local display names in different groups" testNoDirectDifferentLDNs
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage
@@ -2709,12 +2710,81 @@ testNoGroupDirectConns4Members hostVRange mem2VRange mem3VRange mem4VRange noCon
       cc2 ##> ("@" <> name1 <> " hi")
       cc2 <## ("no contact " <> name1)
 
+testNoDirectDifferentLDNs :: HasCallStack => FilePath -> IO ()
+testNoDirectDifferentLDNs =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice ##> "/g club"
+      alice <## "group #club is created"
+      alice <## "to add members use /a club <name> or /create link #club"
+      addMember "club" alice bob GRAdmin
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob joined the group")
+        (bob <## "#club: you joined the group")
+      addMember "club" alice cath GRAdmin
+      cath ##> "/j club"
+      concurrentlyN_
+        [ alice <## "#club: cath joined the group",
+          do
+            cath <## "#club: you joined the group"
+            cath <## "#club: member bob_1 (Bob) is connected",
+          do
+            bob <## "#club: alice added cath_1 (Catherine) to the group (connecting...)"
+            bob <## "#club: new member cath_1 is connected"
+        ]
+
+      testGroupLDNs alice bob cath "team" "bob" "cath"
+      testGroupLDNs alice bob cath "club" "bob_1" "cath_1"
+
+      alice `hasContactProfiles` ["alice", "bob", "cath"]
+      bob `hasContactProfiles` ["bob", "alice", "cath", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob", "bob"]
+  where
+    testGroupLDNs alice bob cath gName bobLDN cathLDN = do
+      alice ##> ("/ms " <> gName)
+      alice
+        <### [ "alice (Alice): owner, you, created group",
+               "bob (Bob): admin, invited, connected",
+               "cath (Catherine): admin, invited, connected"
+             ]
+
+      bob ##> ("/ms " <> gName)
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               ConsoleString (cathLDN <> " (Catherine): admin, connected")
+             ]
+
+      cath ##> ("/ms " <> gName)
+      cath
+        <### [ "alice (Alice): owner, host, connected",
+               ConsoleString (bobLDN <> " (Bob): admin, connected"),
+               "cath (Catherine): admin, you, connected"
+             ]
+
+      alice #> ("#" <> gName <> " hello")
+      concurrentlyN_
+        [ bob <# ("#" <> gName <> " alice> hello"),
+          cath <# ("#" <> gName <> " alice> hello")
+        ]
+      bob #> ("#" <> gName <> " hi there")
+      concurrentlyN_
+        [ alice <# ("#" <> gName <> " bob> hi there"),
+          cath <# ("#" <> gName <> " " <> bobLDN <> "> hi there")
+        ]
+      cath #> ("#" <> gName <> " hey")
+      concurrentlyN_
+        [ alice <# ("#" <> gName <> " cath> hey"),
+          bob <# ("#" <> gName <> " " <> cathLDN <> "> hey")
+        ]
+
 testMemberContactMessage :: HasCallStack => FilePath -> IO ()
 testMemberContactMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-
       -- TODO here and in following tests there would be no direct contacts initially, after "no direct conns" functionality is uncommented
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
