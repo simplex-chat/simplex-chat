@@ -8,20 +8,20 @@ import Database.SQLite.Simple.QQ (sql)
 m20230913_member_contacts :: Query
 m20230913_member_contacts =
   [sql|
-ALTER TABLE contacts ADD COLUMN member_contact_member_id INTEGER
+ALTER TABLE contacts ADD COLUMN contact_group_member_id INTEGER
   REFERENCES group_members(group_member_id) ON DELETE SET NULL;
 
-CREATE INDEX idx_contacts_member_contact_member_id ON contacts(member_contact_member_id);
+CREATE INDEX idx_contacts_contact_group_member_id ON contacts(contact_group_member_id);
 
-ALTER TABLE contacts ADD COLUMN member_contact_xgrpdirectinv_sent INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE contacts ADD COLUMN contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0;
 |]
 
 down_m20230913_member_contacts :: Query
 down_m20230913_member_contacts =
   [sql|
-ALTER TABLE contacts DROP COLUMN member_contact_xgrpdirectinv_sent;
+ALTER TABLE contacts DROP COLUMN contact_grp_inv_sent;
 
-DROP INDEX idx_contacts_member_contact_member_id;
+DROP INDEX idx_contacts_contact_group_member_id;
 
-ALTER TABLE contacts DROP COLUMN member_contact_member_id;
+ALTER TABLE contacts DROP COLUMN contact_group_member_id;
 |]

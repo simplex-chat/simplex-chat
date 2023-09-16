@@ -1595,8 +1595,7 @@ processChatCommand = \case
     case memberConn m of
       Just mConn@Connection {peerChatVRange} -> do
         unless (isCompatibleRange (fromJVersionRange peerChatVRange) xGrpDirectInvVRange) $ throwChatError CEPeerChatVRangeIncompatible
-        let GroupMember {memberContactId} = m
-        when (isJust memberContactId) $ throwChatError $ CECommandError "member contact already exists"
+        when (isJust $ memberContactId m) $ throwChatError $ CECommandError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
         (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing subMode
         -- [incognito] reuse membership incognito profile
@@ -1604,17 +1603,17 @@ processChatCommand = \case
         pure $ CRNewMemberContact user ct g m
       _ -> throwChatError CEGroupMemberNotActive
   APISendMemberContactInvitation contactId msgContent_ -> withUser $ \user -> do
-    (ct, cReq, m, g) <- withStore $ \db -> getMemberContact db user contactId
-    let Contact {memberContactXGrpDirectInvSent} = ct
-    when memberContactXGrpDirectInvSent $ throwChatError $ CECommandError "x.grp.direct.inv already sent"
+    (g, m, ct, cReq) <- withStore $ \db -> getMemberContact db user contactId
+    when (contactGrpInvSent ct) $ throwChatError $ CECommandError "x.grp.direct.inv already sent"
     case memberConn m of
       Just mConn -> do
         let msg = XGrpDirectInv cReq msgContent_
         (sndMsg, _) <- sendDirectMessage mConn msg (GroupId $ groupId (g :: GroupInfo))
-        withStore' $ \db -> setMemberContactXGrpDirectInvSent db ct True
-        let ct' = ct {memberContactXGrpDirectInvSent = True}
-        ci_ <- forM msgContent_ $ \mc -> saveSndChatItem user (CDDirectSnd ct') sndMsg (CISndMsgContent mc)
-        forM_ ci_ $ \ci -> toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct') ci)
+        withStore' $ \db -> setContactGrpInvSent db ct True
+        let ct' = ct {contactGrpInvSent = True}
+        forM_ msgContent_ $ \mc -> do
+          ci <- saveSndChatItem user (CDDirectSnd ct') sndMsg (CISndMsgContent mc)
+          toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct') ci)
         pure $ CRNewMemberContactSentInv user ct' g m
       _ -> throwChatError CEGroupMemberNotActive
   CreateMemberContact gName mName -> withMemberName gName mName APICreateMemberContact
@@ -4536,18 +4535,18 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Nothing -> createNewContact subMode
         Just mContactId -> do
           mCt <- withStore $ \db -> getContact db user mContactId
-          let Contact {activeConn = Connection {connId}, memberContactXGrpDirectInvSent} = mCt
-          if memberContactXGrpDirectInvSent
+          let Contact {activeConn = Connection {connId}, contactGrpInvSent} = mCt
+          if contactGrpInvSent
             then do
               ownConnReq <- withStore $ \db -> getConnReqInv db connId
               -- in case both members sent x.grp.direct.inv before receiving other's for processing,
               -- only the one who received greater connReq joins, the other creates items and waits for confirmation
               if strEncode connReq > strEncode ownConnReq
-                then updateExistingContact subMode mCt
+                then joinExistingContact subMode mCt
                 else createItems mCt m
-            else updateExistingContact subMode mCt
+            else joinExistingContact subMode mCt
       where
-        updateExistingContact subMode mCt = do
+        joinExistingContact subMode mCt = do
           connIds <- joinConn subMode
           mCt' <- withStore' $ \db -> updateMemberContactInvited db user connIds g mConn mCt subMode
           createItems mCt' m
@@ -4564,8 +4563,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           checkIntegrityCreateItem (CDGroupRcv g m') msgMeta
           createInternalChatItem user (CDGroupRcv g m') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
           toView $ CRNewMemberContactReceivedInv user mCt' g m'
-          ci_ <- forM mContent_ $ \mc -> saveRcvChatItem user (CDDirectRcv mCt') msg msgMeta (CIRcvMsgContent mc)
-          forM_ ci_ $ \ci -> toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat mCt') ci)
+          forM_ mContent_ $ \mc -> do
+            ci <- saveRcvChatItem user (CDDirectRcv mCt') msg msgMeta (CIRcvMsgContent mc)
+            toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat mCt') ci)
         securityCodeChanged ct = do
           toView $ CRContactVerificationReset user ct
           createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
@@ -5418,8 +5418,8 @@ chatCommandP =
       "/set link role #" *> (GroupLinkMemberRole <$> displayName <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayName),
       "/show link #" *> (ShowGroupLink <$> displayName),
-      "/_member_contact #" *> (APICreateMemberContact <$> A.decimal <* A.space <*> A.decimal),
-      "/_invite_member_contact @" *> (APISendMemberContactInvitation <$> A.decimal <*> optional (A.space *> msgContentP)),
+      "/_create member contact #" *> (APICreateMemberContact <$> A.decimal <* A.space <*> A.decimal),
+      "/_invite member contact @" *> (APISendMemberContactInvitation <$> A.decimal <*> optional (A.space *> msgContentP)),
       "/contact member #" *> (CreateMemberContact <$> displayName <* A.space <*> displayName),
       "/invite member contact @" *> (SendMemberContactInvitation <$> displayName <*> optional (A.space *> msgTextP)),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),

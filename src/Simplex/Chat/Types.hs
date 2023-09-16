@@ -173,8 +173,8 @@ data Contact = Contact
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
-    memberContactMemberId :: Maybe GroupMemberId,
-    memberContactXGrpDirectInvSent :: Bool
+    contactGroupMemberId :: Maybe GroupMemberId,
+    contactGrpInvSent :: Bool
   }
   deriving (Eq, Show, Generic)
 
