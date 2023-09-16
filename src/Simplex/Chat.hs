@@ -1368,9 +1368,8 @@ processChatCommand = \case
   RejectContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIRejectContact connReqId
-  SendMessage chatName msg -> withUser $ \user -> do
-    let (ChatName cType name) = chatName
-        mc = MCText msg
+  SendMessage (ChatName cType name) msg -> withUser $ \user -> do
+    let mc = MCText msg
     case cType of
       CTDirect ->
         withStore' (\db -> runExceptT $ getContactIdByName db user name) >>= \case
