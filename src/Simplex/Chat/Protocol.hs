@@ -58,6 +58,10 @@ supportedChatVRange = mkVersionRange 1 currentChatVersion
 groupNoDirectVRange :: VersionRange
 groupNoDirectVRange = mkVersionRange 2 currentChatVersion
 
+-- version range that supports establishing direct connection via x.grp.direct.inv with a group member
+xGrpDirectInvVRange :: VersionRange
+xGrpDirectInvVRange = mkVersionRange 2 currentChatVersion
+
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}

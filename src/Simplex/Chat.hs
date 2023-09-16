@@ -1593,8 +1593,8 @@ processChatCommand = \case
     assertUserGroupRole g GRAuthor
     unless (groupFeatureAllowed SGFDirectMessages g) $ throwChatError $ CECommandError "direct messages not allowed"
     case memberConn m of
-      Just mConn -> do
-        -- TODO check member version supports this feature
+      Just mConn@Connection {peerChatVRange} -> do
+        unless (isCompatibleRange (fromJVersionRange peerChatVRange) xGrpDirectInvVRange) $ throwChatError CEPeerChatVRangeIncompatible
         let GroupMember {memberContactId} = m
         when (isJust memberContactId) $ throwChatError $ CECommandError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
