@@ -15,16 +15,18 @@
 module Simplex.Chat where
 
 import Debug.Trace
+import Data.Default (def)
 import Data.String (IsString)
+import Data.X509.Validation (Fingerprint(..))
 import qualified Network.Socket as N
 import qualified Network.Socket.ByteString as NSB
 import qualified Network.TLS as TLS
 import qualified Network.UDP as UDP
+import Simplex.Messaging.Crypto (KeyHash(..))
 import Simplex.Messaging.Transport (supportedParameters)
 import qualified Simplex.Messaging.Transport as Transport
 import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServer)
 import Simplex.Chat.Credentials (genTlsCredentials)
-import Data.Default (def)
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry, stateTVar)
@@ -104,7 +106,7 @@ import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Transport.Client (defaultSocksProxy)
+import Simplex.Messaging.Transport.Client (TransportHost(..), defaultSocksProxy, defaultTransportClientConfig, runTransportClient)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import System.Exit (exitFailure, exitSuccess)
@@ -372,10 +374,11 @@ toView event = do
 
 runAnnouncer :: ChatMonad m => m ()
 runAnnouncer = do
-  (fingerprint, credentials) <- liftIO genTlsCredentials
-  traceM $ "Server fingerprint: " <> show fingerprint -- TODO: move to OOB
+  (Fingerprint fingerprint, credentials) <- liftIO genTlsCredentials
+  let keyHash = KeyHash fingerprint
+  traceM $ "Server fingerprint: " <> show (strEncode keyHash) -- TODO: move to OOB
   started <- newEmptyTMVarIO
-  aPid <- async $ announcer started
+  aPid <- async $ announcer started keyHash
   let serverParams = def
         { TLS.serverWantClientCert = False,
           TLS.serverShared = def {TLS.sharedCredentials = credentials},
@@ -384,7 +387,7 @@ runAnnouncer = do
         }
   liftIO $ runTransportServer started partyPort serverParams defaultTransportServerConfig (handler aPid)
   where
-    announcer started = do
+    announcer started keyHash = do
       atomically (takeTMVar started) >>= \case
         False ->
           error "Server not started?.."
@@ -393,7 +396,8 @@ runAnnouncer = do
           sock <- UDP.clientSocket broadcastAddrV4 partyPort False
           N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
           traceM $ "UDP server started at " <> partyPort <> " " <> show sock
-          let invite = "let's have a party\n" -- XXX: only used for source IP (that can be spoofed, btw). A fingerprint may be broadcasted here, or someting else.
+          let invite = strEncode keyHash -- XXX: for demonstration only, until OOB is implemented in discoverer
+          -- let invite = "let's have a party\n" -- XXX: only used for source IP (that can be spoofed, btw). A fingerprint may be broadcasted here, or someting else.
           forever $ do
             UDP.send sock invite
             threadDelay 1000000
@@ -426,20 +430,22 @@ runDiscoverer = liftIO $ do
 
   (invite, UDP.ClientSockAddr source _cmsg) <- UDP.recvFrom sock
   traceShowM (invite, source)
-  case source of
-    N.SockAddrInet _port addr -> do
-      let (a, b, c, d) = N.hostAddressToTuple addr
-      let v4 = intercalate "." $ map show [a, b, c, d]
-      traceM $ "Discoverer: go connect " <> show v4
-      party <- connectTCPClient v4 partyPort
-      traceM "Discoverer: connected"
-      NSB.recv party 1024 >>= traceShowM
-      _ <- NSB.send party "Discoverer"
-      replicateM_ 10 $ NSB.recv party 1024 >>= traceShowM
-      traceM "Discoverer: done"
-    unexpected ->
-      -- XXX: actually, Apple mandates IPv6 support
-      traceM $ "Discoverer: expected an IPv4 party, got " <> show unexpected
+  case strDecode invite of
+    Left err -> traceM $ "Inivite decode error: " <> err
+    Right keyHash -> case source of
+      N.SockAddrInet _port addr -> do
+        let host = THIPv4 $ N.hostAddressToTuple addr
+        traceM $ "Discoverer: go connect " <> show host
+
+        runTransportClient defaultTransportClientConfig Nothing host partyPort (Just keyHash) $ \c@Transport.TLS{} -> do
+          Transport.getLn c >>= traceShowM
+          Transport.putLn c "Discoverer"
+          E.handle (\E.SomeException{} -> pure ()) . forever $
+            Transport.getLn c >>= traceShowM
+          traceM "Discoverer finished"
++      unexpected ->
+        -- XXX: actually, Apple mandates IPv6 support
+        traceM $ "Discoverer: expected an IPv4 party, got " <> show unexpected
 
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case

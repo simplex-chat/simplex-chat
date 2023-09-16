@@ -46,7 +46,7 @@ genTlsCredentials = do
   pure
     ( getFingerprint signed X509.HashSHA256
     , TLS.Credentials
-        [ ( X509.CertificateChain [signed]
+        [ ( X509.CertificateChain [signed] -- BUG: Client.validateCertificateChain enforces 2-certificate chain of [_, caCert]
           , X509.PrivKeyEd25519 secret
           )
         ]
