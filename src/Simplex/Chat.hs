@@ -4269,11 +4269,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         forM_ r $ \c1 -> probeMatch c1 (CGMContact c2) probe
 
     xInfoProbeMember :: GroupInfo -> GroupMember -> Probe -> m ()
-    xInfoProbeMember GroupInfo {membership} m2 probe =
+    xInfoProbeMember g m2 probe =
       -- [incognito] unless connected incognito
       unless (memberIncognito m2) $ do
         r <- withStore' $ \db -> matchReceivedMemberProbe db user m2 probe
-        forM_ r $ \c1 -> probeMatch c1 (CGMGroupMember m2) probe
+        forM_ r $ \c1 -> probeMatch c1 (CGMGroupMember g m2) probe
 
     xInfoProbeCheck :: Contact -> ProbeHash -> m ()
     xInfoProbeCheck c1 probeHash =
@@ -4290,10 +4290,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             void . sendDirectContactMessage c1 $ XInfoProbeOk probe
             mergeContacts c1 c2
           | otherwise -> messageWarning "probeMatch ignored: profiles don't match or same contact id"
-        CGMGroupMember m2@GroupMember {groupMemberId = mId2, memberProfile = p2, memberContactId}
+        CGMGroupMember g m2@GroupMember {memberProfile = p2, memberContactId}
           | isNothing memberContactId && profilesMatch p1 p2 -> do
             void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-            connectContactToMember c1 m2
+            connectContactToMember c1 g m2
           | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact"
 
     xInfoProbeOk :: Contact -> Probe -> m ()
@@ -4302,8 +4302,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Just (CGMContact c2@Contact {contactId = cId2})
           | cId1 /= cId2 -> mergeContacts c1 c2
           | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
-        Just (CGMGroupMember m2@GroupMember {memberContactId})
-          | isNothing memberContactId -> connectContactToMember c1 m2
+        Just (CGMGroupMember g m2@GroupMember {memberContactId})
+          | isNothing memberContactId -> connectContactToMember c1 g m2
           | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
         _ -> pure ()
 
@@ -4417,10 +4417,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       withStore' $ \db -> mergeContactRecords db userId c1 c2
       toView $ CRContactsMerged user c1 c2
 
-    connectContactToMember :: Contact -> GroupMember -> m ()
-    connectContactToMember c1 m2 = do
+    connectContactToMember :: Contact -> GroupInfo -> GroupMember -> m ()
+    connectContactToMember c1 g m2 = do
       withStore' $ \db -> updateMemberContact db user c1 m2
-      -- TODO a new event that possibly already exists in member-contact branch
+      toView $ CRMemberContactConnected user c1 g m2
 
     saveConnInfo :: Connection -> ConnInfo -> m Connection
     saveConnInfo activeConn connInfo = do

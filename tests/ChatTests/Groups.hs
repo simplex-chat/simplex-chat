@@ -84,7 +84,7 @@ chatGroupTests = do
       testNoDirect4 _1 _1 _0 False False False
       testNoDirect4 _1 _1 _1 False False False
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
-    -- it "member should connect to contact when profile match" testConnectMemberToContact
+    it "member should connect to contact when profile match" testConnectMemberToContact
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage
@@ -2783,15 +2783,38 @@ testNoDirectDifferentLDNs =
           bob <# ("#" <> gName <> " " <> cathLDN <> "> hey")
         ]
 
--- testConnectMemberToContact :: HasCallStack => FilePath -> IO ()
--- testConnectMemberToContact =
---   testChat3 aliceProfile bobProfile cathProfile $
---     \alice bob cath -> do
---       connectUsers alice bob
---       connectUsers alice cath
---       alice ##> "/g team"
---       alice <## "group #team is created"
---       alice ##> "/a team bob"
+testConnectMemberToContact :: HasCallStack => FilePath -> IO ()
+testConnectMemberToContact =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+      createGroup2 "team" bob cath
+      bob ##> "/a #team alice"
+      bob <## "invitation to join the group #team sent to alice"
+      alice <## "#team: bob invites you to join the group as member"
+      alice <## "use /j team to accept"
+      alice ##> "/j team"
+      concurrentlyN_
+        [ do
+            alice <## "#team: you joined the group"
+            alice <## "#team: member cath_1 (Catherine) is connected"
+            alice <## "#team cath_1 is connected to contact cath",
+          do
+            bob <## "#team: alice joined the group",
+          do
+            cath <## "#team: bob added alice_1 (Alice) to the group (connecting...)"
+            cath <## "#team: new member alice_1 is connected"
+            cath <## "#team alice_1 is connected to contact alice"
+        ]
+      alice #> "@cath hi"
+      cath <# "alice> hi"
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      cath <# "#team alice> hello"
+      cath #> "#team hello too"
+      bob <# "#team cath> hello too"
+      alice <# "#team cath> hello too"
 
 testMemberContactMessage :: HasCallStack => FilePath -> IO ()
 testMemberContactMessage =

@@ -216,7 +216,7 @@ data ContactRef = ContactRef
 
 instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
 
-data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupMember
+data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
 
 data UserContact = UserContact
   { userContactLinkId :: Int64,

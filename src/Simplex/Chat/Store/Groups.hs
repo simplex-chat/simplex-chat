@@ -1271,7 +1271,8 @@ matchReceivedProbeHash db user@User {userId} _from@Contact {contactId} (ProbeHas
     [] ->
       getMembers >>= \case
         [] -> pure Nothing
-        (gId, mId, probe) : _ -> get CGMGroupMember probe $ getGroupMember db user gId mId
+        (gId, mId, probe) : _ ->
+          get (uncurry CGMGroupMember) probe $ (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId mId
     (cId, probe) : _ -> get CGMContact probe $ getContact db user cId
   currentTs <- getCurrentTime
   DB.execute
@@ -1389,6 +1390,7 @@ updateMemberContact
   GroupMember {groupId, groupMemberId, localDisplayName = memLDN, memberProfile = LocalProfile {profileId = memProfileId}} = do
     -- TODO possibly, we should update profiles and local_display_names of all members linked to the same remote user,
     -- once we decide on how we identify it, either based on shared contact_profile_id or on local_display_name
+    currentTs <- getCurrentTime
     DB.execute
       db
       [sql|
@@ -1396,7 +1398,7 @@ updateMemberContact
         SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
         WHERE user_id = ? AND group_id = ? AND group_member_id = ?
       |]
-      (contactId, localDisplayName, profileId, userId, groupId, groupMemberId)
+      (contactId, localDisplayName, profileId, currentTs, userId, groupId, groupMemberId)
     when (memProfileId /= profileId) $ deleteUnusedProfile_ db userId memProfileId
     when (memLDN /= localDisplayName) $ deleteUnusedDisplayName_ db userId memLDN
 

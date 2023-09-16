@@ -234,6 +234,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
   CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
+  CRMemberContactConnected u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is connected to contact " <> ttyContact' ct]
   CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
