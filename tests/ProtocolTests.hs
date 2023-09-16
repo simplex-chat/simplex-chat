@@ -270,6 +270,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.grp.del" $
     "{\"v\":\"1\",\"event\":\"x.grp.del\",\"params\":{}}"
       ==# XGrpDel
+  it "x.grp.direct.inv" $
+    "{\"v\":\"1\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D1-2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
+      #==# XGrpDirectInv testConnReq (Just $ MCText "hello")
+  it "x.grp.direct.inv without content" $
+    "{\"v\":\"1\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D1-2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
+      #==# XGrpDirectInv testConnReq Nothing
   it "x.info.probe" $
     "{\"v\":\"1\",\"event\":\"x.info.probe\",\"params\":{\"probe\":\"AQIDBA==\"}}"
       #==# XInfoProbe (Probe "\1\2\3\4")
