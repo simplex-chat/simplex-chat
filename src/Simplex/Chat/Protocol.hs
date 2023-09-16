@@ -58,6 +58,10 @@ supportedChatVRange = mkVersionRange 1 currentChatVersion
 groupNoDirectVRange :: VersionRange
 groupNoDirectVRange = mkVersionRange 2 currentChatVersion
 
+-- version range that supports establishing direct connection via x.grp.direct.inv with a group member
+xGrpDirectInvVRange :: VersionRange
+xGrpDirectInvVRange = mkVersionRange 2 currentChatVersion
+
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
@@ -223,6 +227,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
+  XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -557,6 +562,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpLeave_ :: CMEventTag 'Json
   XGrpDel_ :: CMEventTag 'Json
   XGrpInfo_ :: CMEventTag 'Json
+  XGrpDirectInv_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
   XInfoProbeOk_ :: CMEventTag 'Json
@@ -602,6 +608,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpLeave_ -> "x.grp.leave"
     XGrpDel_ -> "x.grp.del"
     XGrpInfo_ -> "x.grp.info"
+    XGrpDirectInv_ -> "x.grp.direct.inv"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
@@ -648,6 +655,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.leave" -> XGrpLeave_
         "x.grp.del" -> XGrpDel_
         "x.grp.info" -> XGrpInfo_
+        "x.grp.direct.inv" -> XGrpDirectInv_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
         "x.info.probe.ok" -> XInfoProbeOk_
@@ -690,6 +698,7 @@ toCMEventTag msg = case msg of
   XGrpLeave -> XGrpLeave_
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
+  XGrpDirectInv _ _ -> XGrpDirectInv_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
@@ -785,6 +794,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
+      XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -841,6 +851,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
+      XGrpDirectInv connReq content -> o $ ("content" .=? content) ["connReq" .= connReq]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
