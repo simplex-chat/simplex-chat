@@ -34,6 +34,7 @@ module Simplex.Chat.Store.Groups
     updateGroupProfile,
     getGroupIdByName,
     getGroupMemberIdByName,
+    getActiveMembersByName,
     getGroupInfoByName,
     getGroupMember,
     getGroupMemberById,
@@ -97,7 +98,9 @@ import Control.Monad.Except
 import Crypto.Random (ChaChaDRG)
 import Data.Either (rights)
 import Data.Int (Int64)
+import Data.List (sortOn)
 import Data.Maybe (fromMaybe, isNothing)
+import Data.Ord (Down (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), (:.) (..))
@@ -1126,6 +1129,27 @@ getGroupMemberIdByName :: DB.Connection -> User -> GroupId -> ContactName -> Exc
 getGroupMemberIdByName db User {userId} groupId groupMemberName =
   ExceptT . firstRow fromOnly (SEGroupMemberNameNotFound groupId groupMemberName) $
     DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?" (userId, groupId, groupMemberName)
+
+getActiveMembersByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO [(GroupInfo, GroupMember)]
+getActiveMembersByName db user@User {userId} groupMemberName = do
+  groupMemberIds :: [(GroupId, GroupMemberId)] <-
+    liftIO $
+      DB.query
+        db
+        [sql|
+          SELECT group_id, group_member_id
+          FROM group_members
+          WHERE user_id = ? AND local_display_name = ?
+            AND member_status IN (?,?) AND member_category != ?
+        |]
+        (userId, groupMemberName, GSMemConnected, GSMemComplete, GCUserMember)
+  possibleMembers <- forM groupMemberIds $ \(groupId, groupMemberId) -> do
+    groupInfo <- getGroupInfo db user groupId
+    groupMember <- getGroupMember db user groupId groupMemberId
+    pure (groupInfo, groupMember)
+  pure $ sortOn (Down . ts . fst) possibleMembers
+  where
+    ts GroupInfo {chatTs, updatedAt} = fromMaybe updatedAt chatTs
 
 getMatchingContacts :: DB.Connection -> User -> Contact -> IO [Contact]
 getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do

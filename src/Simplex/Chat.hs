@@ -1368,8 +1368,49 @@ processChatCommand = \case
   RejectContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIRejectContact connReqId
-  SendMessage chatName msg -> sendTextMessage chatName msg False
-  SendLiveMessage chatName msg -> sendTextMessage chatName msg True
+  SendMessage (ChatName cType name) msg -> withUser $ \user -> do
+    let mc = MCText msg
+    case cType of
+      CTDirect ->
+        withStore' (\db -> runExceptT $ getContactIdByName db user name) >>= \case
+          Right ctId -> do
+            let chatRef = ChatRef CTDirect ctId
+            processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage Nothing Nothing mc
+          Left _ ->
+            withStore' (\db -> runExceptT $ getActiveMembersByName db user name) >>= \case
+              Right [(gInfo, member)] -> do
+                let GroupInfo {localDisplayName = gName} = gInfo
+                    GroupMember {localDisplayName = mName} = member
+                processChatCommand $ SendMemberContactMessage gName mName msg
+              Right (suspectedMember : _) ->
+                throwChatError $ CEContactNotFound name (Just suspectedMember)
+              _ ->
+                throwChatError $ CEContactNotFound name Nothing
+      CTGroup -> do
+        gId <- withStore $ \db -> getGroupIdByName db user name
+        let chatRef = ChatRef CTGroup gId
+        processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage Nothing Nothing mc
+      _ -> throwChatError $ CECommandError "not supported"
+  SendMemberContactMessage gName mName msg -> withUser $ \user -> do
+    (gId, mId) <- getGroupAndMemberId user gName mName
+    m <- withStore $ \db -> getGroupMember db user gId mId
+    let mc = MCText msg
+    case memberContactId m of
+      Nothing -> do
+        gInfo <- withStore $ \db -> getGroupInfo db user gId
+        toView $ CRNoMemberContactCreating user gInfo m
+        processChatCommand (APICreateMemberContact gId mId) >>= \case
+          cr@(CRNewMemberContact _ Contact {contactId} _ _) -> do
+            toView cr
+            processChatCommand $ APISendMemberContactInvitation contactId (Just mc)
+          cr -> pure cr
+      Just ctId -> do
+        let chatRef = ChatRef CTDirect ctId
+        processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage Nothing Nothing mc
+  SendLiveMessage chatName msg -> withUser $ \user -> do
+    chatRef <- getChatRef user chatName
+    let mc = MCText msg
+    processChatCommand . APISendMessage chatRef True Nothing $ ComposedMessage Nothing Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore' (`getUserContacts` user)
     let cts = filter (\ct -> isReady ct && directOrUsed ct) contacts
@@ -1616,11 +1657,6 @@ processChatCommand = \case
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct') ci)
         pure $ CRNewMemberContactSentInv user ct' g m
       _ -> throwChatError CEGroupMemberNotActive
-  CreateMemberContact gName mName -> withMemberName gName mName APICreateMemberContact
-  SendMemberContactInvitation cName msg_ -> withUser $ \user -> do
-    contactId <- withStore $ \db -> getContactIdByName db user cName
-    let mc = MCText <$> msg_
-    processChatCommand $ APISendMemberContactInvitation contactId mc
   CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APICreateGroupLink groupId mRole
@@ -2052,10 +2088,6 @@ processChatCommand = \case
       ci <- saveSndChatItem user (CDDirectSnd ct) msg content
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
       setActive $ ActiveG localDisplayName
-    sendTextMessage chatName msg live = withUser $ \user -> do
-      chatRef <- getChatRef user chatName
-      let mc = MCText msg
-      processChatCommand . APISendMessage chatRef live Nothing $ ComposedMessage Nothing Nothing mc
     sndContactCITimed :: Bool -> Contact -> Maybe Int -> m (Maybe CITimed)
     sndContactCITimed live = sndCITimed_ live . contactTimedTTL
     sndGroupCITimed :: Bool -> GroupInfo -> Maybe Int -> m (Maybe CITimed)
@@ -5420,8 +5452,6 @@ chatCommandP =
       "/show link #" *> (ShowGroupLink <$> displayName),
       "/_create member contact #" *> (APICreateMemberContact <$> A.decimal <* A.space <*> A.decimal),
       "/_invite member contact @" *> (APISendMemberContactInvitation <$> A.decimal <*> optional (A.space *> msgContentP)),
-      "/contact member #" *> (CreateMemberContact <$> displayName <* A.space <*> displayName),
-      "/invite member contact @" *> (SendMemberContactInvitation <$> displayName <*> optional (A.space *> msgTextP)),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
@@ -5432,6 +5462,7 @@ chatCommandP =
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
+      "@#" *> (SendMemberContactMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> msgTextP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),
