@@ -5361,7 +5361,7 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <source>Your contact needs to be online for the connection to complete.
 You can cancel this connection and remove the contact (and try later with a new link).</source>
         <target state="translated">Uw contact moet online zijn om de verbinding te voltooien.
-U kunt deze verbinding verbreken en het contact verwijderen (en later proberen met een nieuwe link).</target>
+U kunt deze verbinding verbreken en het contact verwijderen en later proberen met een nieuwe link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve" approved="no">
@@ -5808,9 +5808,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>iOS-keychain wordt gebruikt om het wachtwoord veilig op te slaan nadat u de app opnieuw hebt opgestart of het wachtwoord hebt gewijzigd, hiermee kunt u push meldingen ontvangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="incognito via contact address link" xml:space="preserve">
+      <trans-unit id="incognito via contact address link" xml:space="preserve" approved="no">
         <source>incognito via contact address link</source>
-        <target>incognito via contact adres link</target>
+        <target state="translated">incognito via contactadres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via group link" xml:space="preserve">
@@ -6074,9 +6074,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="via contact address link" xml:space="preserve">
+      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
         <source>via contact address link</source>
-        <target>via contact adres link</target>
+        <target state="translated">via contactadres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve">
