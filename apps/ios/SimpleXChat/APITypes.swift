@@ -1468,6 +1468,7 @@ public enum StoreError: Decodable {
     case userNotFoundByContactRequestId(contactRequestId: Int64)
     case contactNotFound(contactId: Int64)
     case contactNotFoundByName(contactName: ContactName)
+    case contactNotFoundByMemberId(groupMemberId: Int64)
     case contactNotReady(contactName: ContactName)
     case duplicateContactLink
     case userContactLinkNotFound
@@ -1495,6 +1496,7 @@ public enum StoreError: Decodable {
     case rcvFileNotFoundXFTP(agentRcvFileId: String)
     case connectionNotFound(agentConnId: String)
     case connectionNotFoundById(connId: Int64)
+    case connectionNotFoundByMemberId(groupMemberId: Int64)
     case pendingConnectionNotFound(connId: Int64)
     case introNotFound
     case uniqueID
