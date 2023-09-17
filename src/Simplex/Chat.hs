@@ -31,7 +31,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace, toLower)
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, rights)
+import Data.Either (fromRight, lefts, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -4373,7 +4373,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Just reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
+              sendGroupMemberMessage user reMember (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
                 withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
@@ -4759,37 +4759,81 @@ deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
   agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgFlags msgBody
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-  withStoreCtx'
-    (Just $ "createSndMsgDelivery, sndMsgDelivery: " <> show sndMsgDelivery <> ", msgId: " <> show msgId <> ", cmEventTag: " <> show cmEventTag <> ", msgDeliveryStatus: MDSSndAgent")
-    $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
+  withStore' $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
 
-sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
-sendGroupMessage user GroupInfo {groupId} members chatMsgEvent =
-  sendGroupMessage' user members chatMsgEvent groupId Nothing $ pure ()
-
-sendGroupMessage' :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> [GroupMember] -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> m () -> m (SndMessage, [GroupMember])
-sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
-  msg <- createSndMessage chatMsgEvent (GroupId groupId)
-  -- TODO collect failed deliveries into a single error
-  rs <- forM (filter memberCurrent members) $ \m ->
-    messageMember m msg `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
-  let sentToMembers = catMaybes rs
-  pure (msg, sentToMembers)
+deliverMessageBroadcast :: ChatMonad m => [Connection] -> CMEventTag e -> MsgBody -> MessageId -> m [Either ChatError Int64]
+deliverMessageBroadcast conns cmEventTag msgBody msgId = do
+  let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
+  rs :: Map ConnId (Either AgentErrorType AgentMsgId) <-
+    withAgent' (\a -> broadcastMessage a (map aConnId conns) msgFlags msgBody)
+  let (errs :: Map Int64 ChatError, msgIds :: Map Int64 AgentMsgId) = M.mapEither id $ M.fromList $ map (sendResults rs) conns
+      errs' = M.map Left errs
+      msgIds' = M.assocs msgIds
+  rs' :: Map Int64 (Either ChatError Int64) <-
+    M.fromList . zipWith createResult msgIds' <$> withStoreBatch' (\db -> map (createDelivery db) msgIds')
+  pure $ map (results $ M.union rs' errs') conns
   where
-    messageMember :: GroupMember -> SndMessage -> m (Maybe GroupMember)
-    messageMember m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
-      Nothing -> do
-        withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
-        pure $ Just m
-      Just conn@Connection {connStatus}
-        | connDisabled conn || connStatus == ConnDeleted -> pure Nothing
-        | connStatus == ConnSndReady || connStatus == ConnReady -> do
-          let tag = toCMEventTag chatMsgEvent
-          deliverMessage conn tag msgBody msgId >> postDeliver
-          pure $ Just m
-        | otherwise -> do
-          withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
-          pure $ Just m
+    sendResults :: Map ConnId (Either AgentErrorType AgentMsgId) -> Connection -> (Int64, Either ChatError AgentMsgId)
+    sendResults rs conn@Connection {connId} =
+      (connId,) . first (`ChatErrorAgent` Nothing) $
+        fromMaybe (Left $ CONN NOT_FOUND) $
+          M.lookup (aConnId conn) rs
+    createResult :: (Int64, AgentMsgId) -> Either ChatError Int64 -> (Int64, Either ChatError Int64)
+    createResult (connId, _) r = (connId, r)
+    results :: Map Int64 (Either ChatError Int64) -> Connection -> Either ChatError Int64
+    results rs Connection {connId} =
+      fromMaybe (Left $ ChatErrorAgent (CONN NOT_FOUND) Nothing) $
+        M.lookup connId rs
+    createDelivery :: DB.Connection -> (Int64, AgentMsgId) -> IO Int64
+    createDelivery db (connId, agentMsgId) = do
+      let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
+      liftIO $ createSndMsgDelivery db sndMsgDelivery msgId
+
+-- when Connection is not returned, the message will be saved as pending
+memberToSend :: GroupMember -> Maybe (GroupMember, Maybe Connection)
+memberToSend m = case memberConn m of
+  Nothing -> Just (m, Nothing)
+  Just conn@Connection {connStatus}
+    | not (memberCurrent m) || connDisabled conn || connStatus == ConnDeleted -> Nothing
+    | connStatus == ConnSndReady || connStatus == ConnReady -> Just (m, Just conn)
+    | otherwise -> Just (m, Nothing)
+
+sendGroupMessage :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
+sendGroupMessage user GroupInfo {groupId} ms chatMsgEvent = do
+  msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
+  -- TODO collect failed deliveries into a single error
+  let ms' = mapMaybe memberToSend ms
+      (sendMs, pendingMs) = partition (isJust . snd) ms'
+      (sendMs', sendConns) = unzip $ mapMaybe (\(m, c_) -> (m,) <$> c_) sendMs
+      pendingMs' = map fst pendingMs
+  sendRs <- processWith sendMs' =<< deliverMessageBroadcast sendConns (toCMEventTag chatMsgEvent) msgBody msgId
+  pendingRs <- processWith pendingMs' =<< withStoreBatch' (\db -> map (createPending db msgId) pendingMs')
+  let sent = sendRs <> pendingRs
+  -- sent <- forM ms' $ \m ->
+  --   messageMember m msg `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
+  pure (msg, catMaybes sent)
+  where
+    createPending db msgId GroupMember {groupMemberId} = createPendingGroupMessage db groupMemberId msgId Nothing
+    processWith :: [GroupMember] -> [Either ChatError a] -> m [Maybe GroupMember]
+    processWith ms' = mapM processResult . zip ms'
+    processResult :: (GroupMember, Either ChatError a) -> m (Maybe GroupMember)
+    processResult (m, r) = case r of
+      Left e -> toView (CRChatError (Just user) e) $> Nothing
+      Right _ -> pure $ Just m
+    -- messageMember :: (GroupMember, Maybe Connection) -> SndMessage -> m (Maybe GroupMember)
+    -- messageMember (m@GroupMember {groupMemberId}, conn_) SndMessage {msgId, msgBody} = Just m <$ case conn_ of
+    --   Just conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
+    --   Nothing -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId Nothing
+
+sendGroupMemberMessage :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> GroupMember -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> m () -> m ()
+sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId introId_ postDeliver = do
+  msg <- createSndMessage chatMsgEvent (GroupId groupId)
+  messageMember msg `catchChatError` (\e -> toView (CRChatError (Just user) e))
+  where
+    messageMember :: SndMessage -> m ()
+    messageMember SndMessage {msgId, msgBody} = forM_ (snd <$> memberToSend m) $ \case
+      Just conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
+      Nothing -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
 
 sendPendingGroupMessages :: ChatMonad m => User -> GroupMember -> Connection -> m ()
 sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn = do
@@ -5134,6 +5178,9 @@ withAgent action =
     >>= runExceptT . action
     >>= liftEither . first (`ChatErrorAgent` Nothing)
 
+withAgent' :: ChatMonad m => (AgentClient -> m a) -> m a
+withAgent' action = asks smpAgent >>= action
+
 withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
 withStore' action = withStore $ liftIO . action
 
@@ -5160,6 +5207,18 @@ withStoreCtx ctx_ action = do
   where
     handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
+
+withStoreBatch :: ChatMonad m => (DB.Connection -> [ExceptT StoreError IO a]) -> m [Either ChatError a]
+withStoreBatch actions = do
+  ChatController {chatStore} <- ask
+  rs <- liftIO $ withTransaction chatStore $ mapM (\a -> runExceptT a `E.catch` handleInternal) . actions
+  pure $ map (first ChatErrorStore) rs
+  where
+    handleInternal :: E.SomeException -> IO (Either StoreError a)
+    handleInternal = pure . Left . SEInternalError . show
+
+withStoreBatch' :: ChatMonad m => (DB.Connection -> [IO a]) -> m [Either ChatError a]
+withStoreBatch' actions = withStoreBatch $ map liftIO . actions
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
