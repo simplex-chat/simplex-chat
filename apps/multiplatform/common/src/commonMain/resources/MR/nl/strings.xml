@@ -527,7 +527,7 @@
     <string name="rcv_group_event_invited_via_your_group_link">uitgenodigd via je groep link</string>
     <string name="incognito">Incognito</string>
     <string name="icon_descr_call_missed">Gemiste oproep</string>
-    <string name="description_via_contact_address_link_incognito">incognito via contact adres link</string>
+    <string name="description_via_contact_address_link_incognito">incognito via contactadres link</string>
     <string name="description_via_group_link_incognito">incognito via groep link</string>
     <string name="description_via_one_time_link_incognito">incognito via eenmalige link</string>
     <string name="invalid_chat">ongeldige gesprek</string>
@@ -680,7 +680,7 @@
     <string name="you_accepted_connection">Je hebt de verbinding geaccepteerd</string>
     <string name="you_invited_a_contact">Je hebt je contact uitgenodigd</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Uw contact moet online zijn om de verbinding te voltooien.
-\nU kunt deze verbinding verbreken en het contact verwijderen (en later proberen met een nieuwe link).</string>
+\nU kunt deze verbinding verbreken en het contact verwijderen en later proberen met een nieuwe link.</string>
     <string name="image_descr_qr_code">QR code</string>
     <string name="icon_descr_settings">Instellingen</string>
     <string name="contact_wants_to_connect_with_you">wil met je in contact komen!</string>
@@ -937,7 +937,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Er wordt geprobeerd verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %1$s).</string>
     <string name="unknown_message_format">onbekend berichtformaat</string>
     <string name="simplex_link_mode_browser">Via browser</string>
-    <string name="description_via_contact_address_link">via contact adres link</string>
+    <string name="description_via_contact_address_link">via contactadres link</string>
     <string name="description_via_group_link">via groep link</string>
     <string name="description_via_one_time_link">via een eenmalige link</string>
     <string name="simplex_link_connection">via %1$s</string>
