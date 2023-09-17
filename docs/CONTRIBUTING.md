@@ -63,23 +63,24 @@ You will have to add `/opt/homebrew/opt/openssl@1.1/bin` to your PATH in order t
 
 1. The main difference is related to `DuplicateRecordFields` extension.
 
-It is no longer possible in GHC 9.6.2 to specify type when using selectors, instead use OverloadedRecordDot extension and syntax:
+It is no longer possible in GHC 9.6.2 to specify type when using selectors, instead OverloadedRecordDot extension and syntax are used that need to be removed in GHC 8.10.7:
 
 ```haskell
 {-# LANGUAGE DuplicateRecordFields #-}
--- add this
+-- use this in GHC 9.6.2 when needed
 {-# LANGUAGE OverloadedRecordDot #-}
 
--- and instead of
--- let x = field (record :: Record)
-
--- use
+-- GHC 9.6.2 syntax
 let x = record.field
+
+-- GHC 8.10.7 syntax removed in GHC 9.6.2
+let x = field (record :: Record)
 ```
 
 It is still possible to specify type when using record update syntax, use this pragma to suppress compiler warning:
 
 ```haskell
+-- use this in GHC 9.6.2 when needed
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 let r' = (record :: Record) {field = value}
@@ -88,6 +89,7 @@ let r' = (record :: Record) {field = value}
 2. Most monad functions now have to be imported from `Control.Monad`, and not from specific monad modules (e.g. `Control.Monad.Except`).
 
 ```haskell
+-- use this in GHC 9.6.2 when needed
 import Control.Monad
 ```
 
