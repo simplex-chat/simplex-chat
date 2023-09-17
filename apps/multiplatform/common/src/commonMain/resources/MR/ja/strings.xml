@@ -530,7 +530,8 @@
     <string name="how_to_use_simplex_chat">使い方</string>
     <string name="markdown_help">マークダウン (書式編集) ガイド</string>
     <string name="smp_servers_enter_manually">サーバを手動で入力</string>
-    <string name="network_use_onion_hosts_required_desc">接続にオニオンのホストが必要となります。</string>
+    <string name="network_use_onion_hosts_required_desc">接続にオニオンのホストが必要となります。
+\n注意: .onion アドレスがないとサーバーに接続できません。</string>
     <string name="create_address">アドレスを作成</string>
     <string name="delete_address__question">アドレスを削除しますか？</string>
     <string name="display_name__field">表示の名前：</string>
@@ -1388,4 +1389,6 @@
     <string name="open_database_folder">データベースフォルダを開く</string>
     <string name="passphrase_will_be_saved_in_settings">パスフレーズを変更するかアプリを再起動すると、平文として設定に保存されます。</string>
     <string name="settings_is_storing_in_clear_text">パスフレーズは平文として設定に保存されます。</string>
+    <string name="socks_proxy_setting_limitations"><b>注意</b>: メッセージとファイルのリレーは SOCKS プロキシ経由で接続されます。 通話とリンク プレビューの送信には直接接続が使用されます。</string>
+    <string name="encrypt_local_files">ローカルファイルを暗号化する</string>
 </resources>
