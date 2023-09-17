@@ -22,11 +22,19 @@ import qualified Network.Socket as N
 import qualified Network.Socket.ByteString as NSB
 import qualified Network.TLS as TLS
 import qualified Network.UDP as UDP
+import Simplex.Chat.Credentials (genTlsCredentials)
 import Simplex.Messaging.Crypto (KeyHash(..))
 import Simplex.Messaging.Transport (supportedParameters)
-import qualified Simplex.Messaging.Transport as Transport
+import Simplex.Messaging.Transport.HTTP2 (defaultHTTP2BufferSize, getHTTP2Body)
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response(..), attachHTTP2Client, defaultHTTP2ClientConfig, sendRequest)
+import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request(..), runHTTP2ServerWith)
 import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServer)
-import Simplex.Chat.Credentials (genTlsCredentials)
+import qualified Simplex.Messaging.Transport as Transport
+
+import Data.ByteString.Builder (Builder, intDec)
+import qualified Network.HTTP.Types as HTTP
+import qualified Network.HTTP2.Server as HTTP2
+import Network.HTTP2.Client (requestNoBody)
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry, stateTVar)
@@ -382,7 +390,7 @@ runAnnouncer invite credentials = do
           TLS.serverHooks = def,
           TLS.serverSupported = supportedParameters
         }
-  liftIO $ runTransportServer started partyPort serverParams defaultTransportServerConfig (handler aPid)
+  liftIO $ runTransportServer started partyPort serverParams defaultTransportServerConfig (run aPid)
   where
     announcer started invite = do
       atomically (takeTMVar started) >>= \case
@@ -398,17 +406,29 @@ runAnnouncer invite credentials = do
             UDP.send sock invite
             threadDelay 1000000
 
-    handler aPid c@Transport.TLS{} = do
+    run :: Async () -> Transport.TLS -> IO ()
+    run aPid tls = do
       cancel aPid
-      traceM "Announcer did its thing right."
-      Transport.putLn c "Hi! I'm the announced handler. Who are you?"
-      party <- Transport.getLn c
-      Transport.putLn c $ "Hi " <> party <> "! Let's have a party!"
-      forM_ [1..5] $ \i -> do
-        Transport.putLn c "Party!"
-        threadDelay (1000000 * i)
-      Transport.putLn c "I'm tired, bye."
-      traceM "Handler: party finished."
+      finished <- newEmptyTMVarIO
+      let partyHost = "255.255.255.255" -- XXX: get from tls somehow?
+      res <- attachHTTP2Client defaultHTTP2ClientConfig partyHost partyPort (atomically $ putTMVar finished ()) defaultHTTP2BufferSize tls
+      case res of
+        Left clientError -> do
+          traceM $ "attachHTTP2Client client error: " <> show clientError
+        Right client -> do
+          traceM "Party connected, have 2ptth client"
+          let exampleRequest = requestNoBody HTTP.methodGet "/example/events" [(HTTP.hAccept, "text/event-stream")]
+          sendRequest client exampleRequest (Just 10000000) >>= \case
+            Left clientError -> do
+              traceM $ "attachHTTP2Client client error (request): " <> show clientError
+            Right HTTP2Response {response, respBody} -> do
+              traceM "attachHTTP2Client: got response"
+              traceShowM response
+              -- TODO: read events
+              -- TODO: receive push
+          -- TODO: start pumping events
+          atomically $ takeTMVar finished
+          traceM "Party disconnected"
 
 -- | Link-local broadcast address.
 broadcastAddrV4 :: IsString a => a
@@ -431,8 +451,15 @@ runDiscoverer oobData =
     go sock expected = do
       (invite, UDP.ClientSockAddr source _cmsg) <- UDP.recvFrom sock
       traceShowM (invite, source)
+      let expect hash = hash `elem` [expected] -- XXX: can be a callback to fetch actual invite list just in time
       case strDecode invite of
-        Right inviteHash | inviteHash == expected -> do
+        Left err -> do
+          traceM $ "Inivite decode error: " <> err
+          go sock expected
+        Right inviteHash | not (expect inviteHash) -> do
+          traceM $ "Skipping unexpected invite " <> show (strEncode inviteHash)
+          go sock expected
+        Right inviteHash -> do
           host <- case source of
             N.SockAddrInet _port addr -> do
               pure $ THIPv4 (N.hostAddressToTuple addr)
@@ -440,18 +467,29 @@ runDiscoverer oobData =
               -- TODO: actually, Apple mandates IPv6 support
               fail $ "Discoverer: expected an IPv4 party, got " <> show unexpected
           traceM $ "Discoverer: go connect " <> show host
-          runTransportClient defaultTransportClientConfig Nothing host partyPort (Just expected) $ \c@Transport.TLS{} -> do
-            Transport.getLn c >>= traceShowM
-            Transport.putLn c "Discoverer"
-            E.handle (\E.SomeException{} -> pure ()) . forever $
-              Transport.getLn c >>= traceShowM
-            traceM "Discoverer finished"
-        Left err -> do
-          traceM $ "Inivite decode error: " <> err
-          go sock expected
-        Right unexpected -> do
-          traceM $ "Skipping unexpected invite " <> show (strEncode unexpected)
-          go sock expected
+          runTransportClient defaultTransportClientConfig Nothing host partyPort (Just expected) $ \tls -> do
+            traceM "2PTTH server starting"
+            run tls
+            traceM "2PTTH server finished"
+
+    run tls = runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
+      reqBody <- getHTTP2Body r 16384
+      processRequest HTTP2Request {sessionId, request = r, reqBody, sendResponse}
+
+    processRequest req = do
+      traceM $ "Got request: " <> show (request req)
+      -- TODO: sendResponse req . HTTP2.promiseResponse $ HTTP2.pushPromise path response weight
+      sendResponse req $ HTTP2.responseStreaming HTTP.ok200 sseHeaders sseExample
+
+    sseHeaders = [(HTTP.hContentType, "text/event-stream")]
+
+    sseExample :: (Builder -> IO ()) -> IO () -> IO ()
+    sseExample write flush = forM_ [1..10] $ \i -> do
+      write "event: message\n" -- XXX: SSE header line
+      write $ "data: " <> "[" <> intDec i <> ", \"blah\"]" <> "\n" -- XXX: SSE payload line
+      write "\n" -- XXX: SSE delimiter
+      flush
+      threadDelay 1000000
 
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case

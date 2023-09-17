@@ -55,6 +55,8 @@ dependencies:
   - asn1-types
   - data-default
   - hourglass == 0.2.*
+  - http2
+  - http-types
   - tls >= 1.6.0 && < 1.7
   - x509 == 1.7.*
   - x509-store == 1.6.*

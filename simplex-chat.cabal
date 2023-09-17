@@ -163,7 +163,8 @@ library
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , hourglass ==0.2.*
-    , http-types ==0.12.*
+    , http-types
+    , http2
     , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
@@ -219,7 +220,8 @@ executable simplex-bot
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , hourglass ==0.2.*
-    , http-types ==0.12.*
+    , http-types
+    , http2
     , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
@@ -276,7 +278,8 @@ executable simplex-bot-advanced
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , hourglass ==0.2.*
-    , http-types ==0.12.*
+    , http-types
+    , http2
     , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
@@ -335,7 +338,8 @@ executable simplex-broadcast-bot
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , hourglass ==0.2.*
-    , http-types ==0.12.*
+    , http-types
+    , http2
     , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
@@ -393,7 +397,8 @@ executable simplex-chat
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , hourglass ==0.2.*
-    , http-types ==0.12.*
+    , http-types
+    , http2
     , memory ==0.15.*
     , mtl ==2.2.*
     , network ==3.1.*
@@ -455,7 +460,8 @@ executable simplex-directory-service
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , hourglass ==0.2.*
-    , http-types ==0.12.*
+    , http-types
+    , http2
     , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
@@ -538,7 +544,8 @@ test-suite simplex-chat-test
     , filepath ==1.4.*
     , hourglass ==0.2.*
     , hspec ==2.7.*
-    , http-types ==0.12.*
+    , http-types
+    , http2
     , memory ==0.15.*
     , mtl ==2.2.*
     , network ==3.1.*
