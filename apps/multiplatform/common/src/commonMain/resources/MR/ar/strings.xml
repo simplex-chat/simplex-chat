@@ -114,7 +114,7 @@
     <string name="v4_5_transport_isolation_descr">عن طريق ملف تعريف الدردشة (افتراضي) أو عن طريق الاتصال (تجريبي).</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> يمكن تعطيله عبر الإعدادات</b> - سيستمر عرض الإشعارات أثناء تشغيل التطبيق.]]></string>
     <string name="settings_audio_video_calls">مكالمات الصوت والفيديو</string>
-    <string name="impossible_to_recover_passphrase"><b>يُرجى الملاحظة</b>: لن تتمكن من استعادة عبارة المرور أو تغييرها في حالة فقدها.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>يُرجى الملاحظة</b>: لن تتمكن من استعادة عبارة المرور أو تغييرها في حالة فقدها.]]></string>
     <string name="both_you_and_your_contacts_can_delete">يمكنك أنت وجهة اتصالك حذف الرسائل المرسلة بشكل لا رجعة فيه.</string>
     <string name="v4_2_auto_accept_contact_requests">قبول طلبات الاتصال تلقائيًا</string>
     <string name="la_auth_failed">فشلت المصادقة</string>
@@ -1387,6 +1387,6 @@
     <string name="open_database_folder">افتح مجلد قاعدة البيانات</string>
     <string name="passphrase_will_be_saved_in_settings">سيتم تخزين عبارة المرور في الإعدادات كنص عادي بعد تغييرها أو إعادة تشغيل التطبيق.</string>
     <string name="settings_is_storing_in_clear_text">يُخزين عبارة المرور في الإعدادات كنص عادي.</string>
-    <string name="socks_proxy_setting_limitations"><b>يُرجى الملاحظة</b>: يتم توصيل مرحلات الرسائل والملفات عبر وكيل SOCKS. تستخدم المكالمات وإرسال معاينات الارتباط الاتصال المباشر.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>يُرجى الملاحظة</b>: يتم توصيل مرحلات الرسائل والملفات عبر وكيل SOCKS. تستخدم المكالمات وإرسال معاينات الارتباط الاتصال المباشر.]]></string>
     <string name="encrypt_local_files">تشفير الملفات المحلية</string>
 </resources>

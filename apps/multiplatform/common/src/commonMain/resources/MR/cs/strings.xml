@@ -1377,7 +1377,7 @@
     <string name="send_receipts_disabled_alert_msg">Tato skupina má více než %1$d členů, doručenky nejsou odeslány.</string>
     <string name="in_developing_desc">Tato funkce zatím není podporována. Vyzkoušejte další vydání.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Databáze bude zašifrována a heslo bude uloženo v klíčence.</string>
-    <string name="socks_proxy_setting_limitations"><b>Všimněte si prosím</b>: zprávy a relé souborů jsou spojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů pomocí přímého připojení.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Všimněte si prosím</b>: zprávy a relé souborů jsou spojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů pomocí přímého připojení.]]></string>
     <string name="encrypt_local_files">Šifrovat místní soubory</string>
     <string name="you_can_change_it_later">Náhodné heslo je uloženo v nastavení jako prostý text.
 \nMůžete jej změnit později.</string>

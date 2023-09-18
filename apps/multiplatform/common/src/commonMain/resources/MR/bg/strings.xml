@@ -1386,6 +1386,6 @@
     <string name="open_database_folder">Отвори папката за база данни</string>
     <string name="passphrase_will_be_saved_in_settings">Паролата ще бъде съхранена в настройките като обикновен текст, след като я промените или рестартирате приложението.</string>
     <string name="settings_is_storing_in_clear_text">Паролата се съхранява в настройките като обикновен текст.</string>
-    <string name="socks_proxy_setting_limitations"><b>Моля, обърнете внимание</b>: релетата за съобщения и файлове са свързани чрез SOCKS прокси. Обажданията и изпращането на визуализации на линкове използват директна връзка.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Моля, обърнете внимание</b>: релетата за съобщения и файлове са свързани чрез SOCKS прокси. Обажданията и изпращането на визуализации на линкове използват директна връзка.]]></string>
     <string name="encrypt_local_files">Криптиране на локални файлове</string>
 </resources>

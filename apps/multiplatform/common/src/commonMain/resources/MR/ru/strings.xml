@@ -343,7 +343,7 @@
     <string name="one_time_link">Одноразовая ссылка</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
-    <string name="your_simplex_contact_address">Мой SimpleX адрес</string>
+    <string name="your_simplex_contact_address">Ваш SimpleX адрес</string>
     <string name="database_passphrase_and_export">База данных</string>
     <string name="about_simplex_chat">Информация о SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
@@ -1000,7 +1000,7 @@
     <string name="users_delete_data_only">Только локальные данные профиля</string>
     <string name="messages_section_title">Сообщения</string>
     <string name="smp_servers_per_user">Серверы для новых соединений Вашего текущего профиля чата</string>
-    <string name="your_chat_profiles">Мои профили</string>
+    <string name="your_chat_profiles">Ваши профили</string>
     <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
     <string name="app_version_code">Сборка приложения: %s</string>
     <string name="app_version_name">Версия приложения: v%s</string>
@@ -1049,7 +1049,7 @@
     <string name="smp_save_servers_question">Сохранить серверы\?</string>
     <string name="should_be_at_least_one_profile">Должен быть хотя бы один профиль пользователя.</string>
     <string name="should_be_at_least_one_visible_profile">Должен быть хотя бы один открытый профиль пользователя.</string>
-    <string name="to_reveal_profile_enter_password">Чтобы показать Ваш скрытый профиль, введите пароль в поле поиска на странице мои профили.</string>
+    <string name="to_reveal_profile_enter_password">Чтобы показать Ваш скрытый профиль, введите пароль в поле поиска на странице Ваши профили.</string>
     <string name="user_unmute">Уведомлять</string>
     <string name="group_welcome_title">Приветственное сообщение</string>
     <string name="confirm_password">Подтвердить пароль</string>
@@ -1082,10 +1082,10 @@
     <string name="v4_6_audio_video_calls_descr">Поддержка bluetooth и другие улучшения.</string>
     <string name="save_welcome_message_question">Сохранить приветственное сообщение\?</string>
     <string name="v4_6_group_welcome_message_descr">Установить сообщение для новых членов группы!</string>
-    <string name="tap_to_activate_profile">Нажмите на профиль что бы переключиться на него.</string>
-    <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="tap_to_activate_profile">Нажмите на профиль, чтобы переключиться на него.</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям - добавьте переводы через Weblate!</string>
     <string name="you_will_still_receive_calls_and_ntfs">Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
-    <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть или отключить звук профиля - нажмите на него и удерживайте для отображения меню.</string>
+    <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть или отключить уведомления профиля - нажмите и удерживайте профиль, чтобы открыть меню.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Изображение будет принято когда Ваш контакт его загрузит.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Файл будет принят когда Ваш контакт загрузит его.</string>
     <string name="database_upgrade">Обновление базы данных</string>
@@ -1362,7 +1362,7 @@
     <string name="receipts_section_description">Установки для Вашего активного профиля</string>
     <string name="receipts_contacts_override_disabled">Отправка отчётов о доставке выключена для %d контактов.</string>
     <string name="sync_connection_force_desc">Шифрование работает, и новое соглашение не требуется. Это может привести к ошибкам соединения!</string>
-    <string name="v5_2_message_delivery_receipts_descr">Вторая галочка позволяет - знать, что сообщение было доставлено! ✅</string>
+    <string name="v5_2_message_delivery_receipts_descr">Вторая галочка, когда сообщение доставлено! ✅</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Вы можете включить их позже в настройках Конфиденциальности.</string>
     <string name="error_aborting_address_change">Ошибка при прекращении изменения адреса</string>
     <string name="abort_switch_receiving_address_confirm">Прекратить</string>

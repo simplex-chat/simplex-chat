@@ -1389,6 +1389,6 @@
     <string name="open_database_folder">データベースフォルダを開く</string>
     <string name="passphrase_will_be_saved_in_settings">パスフレーズを変更するかアプリを再起動すると、平文として設定に保存されます。</string>
     <string name="settings_is_storing_in_clear_text">パスフレーズは平文として設定に保存されます。</string>
-    <string name="socks_proxy_setting_limitations"><b>注意</b>: メッセージとファイルのリレーは SOCKS プロキシ経由で接続されます。 通話とリンク プレビューの送信には直接接続が使用されます。</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>注意</b>: メッセージとファイルのリレーは SOCKS プロキシ経由で接続されます。 通話とリンク プレビューの送信には直接接続が使用されます。]]></string>
     <string name="encrypt_local_files">ローカルファイルを暗号化する</string>
 </resources>

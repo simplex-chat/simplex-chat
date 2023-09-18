@@ -1378,7 +1378,7 @@
     <string name="rcv_group_event_n_members_connected">%s, %s i %d innych członków połączeni</string>
     <string name="rcv_group_event_3_members_connected">%s, %s i %s połączeni</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Baza danych zostanie zaszyfrowana, a hasło zapisane w ustawieniach.</string>
-    <string name="socks_proxy_setting_limitations"><b>Uwaga</b>: przekaźniki wiadomości i plików są połączone za pośrednictwem serwera proxy SOCKS. Połączenia i wysyłanie podglądów linków korzystają z połączenia bezpośredniego.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Uwaga</b>: przekaźniki wiadomości i plików są połączone za pośrednictwem serwera proxy SOCKS. Połączenia i wysyłanie podglądów linków korzystają z połączenia bezpośredniego.]]></string>
     <string name="encrypt_local_files">Zaszyfruj lokalne pliki</string>
     <string name="you_can_change_it_later">Losowe hasło jest trzymane w ustawieniach w czystym tekście.
 \nMożesz zmienić je później.</string>

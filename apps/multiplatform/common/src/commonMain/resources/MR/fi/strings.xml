@@ -1387,6 +1387,6 @@
     <string name="open_database_folder">Avaa tietokantakansio</string>
     <string name="passphrase_will_be_saved_in_settings">Tunnuslause tallennetaan asetuksiin selkokielisenä sen jälkeen, kun olet vaihtanut sen tai käynnistänyt sovelluksen uudelleen.</string>
     <string name="settings_is_storing_in_clear_text">Tunnuslause on tallennettu asetuksiin selkokielisenä.</string>
-    <string name="socks_proxy_setting_limitations"><b> Huomioi </b>: Viesti- ja tiedostovälittimet yhdistetään SOCKS-proxyn kautta. Puhelut ja linkin esikatselut käyttävät suoraa yhteyttä.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b> Huomioi </b>: Viesti- ja tiedostovälittimet yhdistetään SOCKS-proxyn kautta. Puhelut ja linkin esikatselut käyttävät suoraa yhteyttä.]]></string>
     <string name="encrypt_local_files">Salaa paikalliset tiedostot</string>
 </resources>

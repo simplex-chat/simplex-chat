@@ -66,7 +66,7 @@
     <string name="allow_voice_messages_question">Spraak berichten toestaan\?</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Goed voor de batterij</b>. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.]]></string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scan QR-code</b>: om verbinding te maken met uw contact die u de QR-code laat zien.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scan QR-code</b>: om verbinding te maken met uw contact die u de QR-code laat zien.]]></string>
     <string name="integrity_msg_bad_id">Onjuiste bericht-ID</string>
     <string name="call_already_ended">Oproep al beëindigd!</string>
     <string name="chat_item_ttl_month">1 maand</string>
@@ -420,7 +420,7 @@
     <string name="mark_read">Markeer gelezen</string>
     <string name="mark_unread">Markeer als ongelezen</string>
     <string name="mute_chat">Dempen</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Als u elkaar niet persoonlijk kunt ontmoeten, kunt u <b> de QR-code scannen in het video gesprek </b>, of uw contact kan een uitnodiging link delen.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Als u elkaar niet persoonlijk kunt ontmoeten, kunt u <b> de QR-code scannen in het video gesprek </b>, of uw contact kan een uitnodiging link delen.]]></string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Als je elkaar niet persoonlijk kunt ontmoeten, <b>toon je de QR-code in het video gesprek</b> of deel je de link.]]></string>
     <string name="invalid_QR_code">Ongeldige QR-code</string>
     <string name="icon_descr_more_button">Meer</string>
@@ -1387,6 +1387,6 @@
     <string name="open_database_folder">Database map openen</string>
     <string name="passphrase_will_be_saved_in_settings">Het wachtwoord wordt als platte tekst in de instellingen opgeslagen nadat u deze hebt gewijzigd of de app opnieuw hebt opgestart.</string>
     <string name="settings_is_storing_in_clear_text">Het wachtwoord wordt als leesbare tekst in de instellingen opgeslagen.</string>
-    <string name="socks_proxy_setting_limitations"><b>Let op</b>: bericht en bestands relais zijn verbonden via SOCKS-proxy. Voor oproepen en het verzenden van link voorbeelden wordt gebruik gemaakt van een directe verbinding.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Let op</b>: bericht en bestands relais zijn verbonden via SOCKS-proxy. Voor oproepen en het verzenden van link voorbeelden wordt gebruik gemaakt van een directe verbinding.]]></string>
     <string name="encrypt_local_files">Versleutel lokale bestanden</string>
 </resources>

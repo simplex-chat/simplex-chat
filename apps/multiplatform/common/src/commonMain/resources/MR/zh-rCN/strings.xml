@@ -531,7 +531,7 @@
     <string name="enter_passphrase_notification_desc">要接收通知，请输入数据库密码</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[为了保护您的隐私，该应用程序没有推送通知，而是具有 <b>SimpleX 后台服务 </b>——它每天使用百分之几的电池。]]></string>
     <string name="your_settings">您的设置</string>
-    <string name="turn_off_battery_optimization">要使用它，请在下一个对话框中<b>允许 SimpleX 在后台运行</b>。 否则，通知将被禁用。</string>
+    <string name="turn_off_battery_optimization"><![CDATA[要使用它，请在下一个对话框中<b>允许 SimpleX 在后台运行</b>。 否则，通知将被禁用。]]></string>
     <string name="settings_notification_preview_title">通知预览</string>
     <string name="enter_passphrase_notification_title">需要密码</string>
     <string name="periodic_notifications_disabled">定期通知被禁用！</string>
@@ -1316,7 +1316,7 @@
     <string name="v5_2_favourites_filter_descr">过滤未读和收藏的聊天记录。</string>
     <string name="rcv_conn_event_verification_code_reset">已更改安全密码</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">将为所有可见聊天配置文件中的所有联系人启用送达回执功能。</string>
-    <string name="system_restricted_background_in_call_warn">要在后台拨打电话，请在应用设置中选择<b>应用电池使用情况</b> / <b>无限制</b>。</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[要在后台拨打电话，请在应用设置中选择<b>应用电池使用情况</b> / <b>无限制</b>。]]></string>
     <string name="sender_at_ts">%s 在 %s</string>
     <string name="receipts_contacts_title_disable">禁用回执？</string>
     <string name="sync_connection_force_question">重新协商加密？</string>
@@ -1354,7 +1354,7 @@
     <string name="set_database_passphrase">设置数据库密码</string>
     <string name="receipts_contacts_override_disabled">已禁用 %d 联系人的送达回执功能</string>
     <string name="receipts_groups_enable_keep_overrides">启用（保留组覆盖）</string>
-    <string name="system_restricted_background_warn">要启用通知，请在应用设置中选择<b>应用电池使用情况</b> / <b>无限制</b>。</string>
+    <string name="system_restricted_background_warn"><![CDATA[要启用通知，请在应用设置中选择<b>应用电池使用情况</b> / <b>无限制</b>。]]></string>
     <string name="send_receipts_disabled_alert_title">送达回执已禁用</string>
     <string name="open_database_folder">打开数据库文件夹</string>
     <string name="no_history">无历史记录</string>
@@ -1389,6 +1389,6 @@
     <string name="receipts_contacts_enable_for_all">为所有人启用</string>
     <string name="conn_event_ratchet_sync_required">需要重新协商加密</string>
     <string name="delivery_receipts_are_disabled">已关闭送达回执！</string>
-    <string name="socks_proxy_setting_limitations"><b>请注意</b>：消息和文件中继通过 SOCKS 代理连接。呼叫和发送链接预览使用直接连接。</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>请注意</b>：消息和文件中继通过 SOCKS 代理连接。呼叫和发送链接预览使用直接连接。]]></string>
     <string name="encrypt_local_files">加密本地文件</string>
 </resources>
