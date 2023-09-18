@@ -44,7 +44,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
@@ -58,9 +58,9 @@ supportedChatVRange = mkVersionRange 1 currentChatVersion
 groupNoDirectVRange :: VersionRange
 groupNoDirectVRange = mkVersionRange 2 currentChatVersion
 
--- version range that supports private messages from members in a group
-groupPrivateMessagesVRange :: VersionRange
-groupPrivateMessagesVRange = mkVersionRange 2 currentChatVersion
+-- version range that supports establishing direct connection via x.grp.direct.inv with a group member
+xGrpDirectInvVRange :: VersionRange
+xGrpDirectInvVRange = mkVersionRange 2 currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -162,28 +162,11 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data MessageScope = MSGroup | MSDirect
-  deriving (Eq, Show, Generic)
-
-instance FromJSON MessageScope where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MS"
-
-instance ToJSON MessageScope where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MS"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MS"
-
-instance ToField MessageScope where
-  toField = toField . encodeJSON
-
-instance FromField MessageScope where
-  fromField = fromTextField_ decodeJSON
-
 data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
     sent :: Bool,
-    memberId :: Maybe MemberId, -- must be present in all group message references, both referencing sent and received
-    msgScope :: Maybe MessageScope
+    memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
   }
   deriving (Eq, Show, Generic)
 
@@ -244,6 +227,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
+  XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -468,13 +452,7 @@ msgContentTag = \case
   MCFile {} -> MCFile_
   MCUnknown {tag} -> MCUnknown_ tag
 
-data ExtMsgContent = ExtMsgContent
-  { content :: MsgContent,
-    file :: Maybe FileInvitation,
-    ttl :: Maybe Int,
-    live :: Maybe Bool,
-    scope :: Maybe MessageScope
-  }
+data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
   deriving (Eq, Show)
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
@@ -483,10 +461,10 @@ parseMsgContainer v =
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
     <|> MCSimple <$> mc
   where
-    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live" <*> v .:? "scope"
+    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
 
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc file Nothing Nothing Nothing
+extMsgContent mc file = ExtMsgContent mc file Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -530,7 +508,7 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    msgContent (ExtMsgContent c file ttl live scope) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) ["content" .= c]
+    msgContent (ExtMsgContent c file ttl live) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= c]
 
 instance ToJSON MsgContent where
   toJSON = \case
@@ -584,6 +562,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpLeave_ :: CMEventTag 'Json
   XGrpDel_ :: CMEventTag 'Json
   XGrpInfo_ :: CMEventTag 'Json
+  XGrpDirectInv_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
   XInfoProbeOk_ :: CMEventTag 'Json
@@ -629,6 +608,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpLeave_ -> "x.grp.leave"
     XGrpDel_ -> "x.grp.del"
     XGrpInfo_ -> "x.grp.info"
+    XGrpDirectInv_ -> "x.grp.direct.inv"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
@@ -675,6 +655,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.leave" -> XGrpLeave_
         "x.grp.del" -> XGrpDel_
         "x.grp.info" -> XGrpInfo_
+        "x.grp.direct.inv" -> XGrpDirectInv_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
         "x.info.probe.ok" -> XInfoProbeOk_
@@ -717,6 +698,7 @@ toCMEventTag msg = case msg of
   XGrpLeave -> XGrpLeave_
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
+  XGrpDirectInv _ _ -> XGrpDirectInv_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
@@ -812,6 +794,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
+      XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -868,6 +851,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
+      XGrpDirectInv connReq content -> o $ ("content" .=? content) ["connReq" .= connReq]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]

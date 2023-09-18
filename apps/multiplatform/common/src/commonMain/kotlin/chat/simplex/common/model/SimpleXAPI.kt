@@ -3911,6 +3911,7 @@ sealed class StoreError {
       is UserNotFoundByContactRequestId -> "userNotFoundByContactRequestId"
       is ContactNotFound -> "contactNotFound"
       is ContactNotFoundByName -> "contactNotFoundByName"
+      is ContactNotFoundByMemberId -> "contactNotFoundByMemberId"
       is ContactNotReady -> "contactNotReady"
       is DuplicateContactLink -> "duplicateContactLink"
       is UserContactLinkNotFound -> "userContactLinkNotFound"
@@ -3938,6 +3939,7 @@ sealed class StoreError {
       is RcvFileNotFoundXFTP -> "rcvFileNotFoundXFTP"
       is ConnectionNotFound -> "connectionNotFound"
       is ConnectionNotFoundById -> "connectionNotFoundById"
+      is ConnectionNotFoundByMemberId -> "connectionNotFoundByMemberId"
       is PendingConnectionNotFound -> "pendingConnectionNotFound"
       is IntroNotFound -> "introNotFound"
       is UniqueID -> "uniqueID"
@@ -3966,6 +3968,7 @@ sealed class StoreError {
   @Serializable @SerialName("userNotFoundByContactRequestId") class UserNotFoundByContactRequestId(val contactRequestId: Long): StoreError()
   @Serializable @SerialName("contactNotFound") class ContactNotFound(val contactId: Long): StoreError()
   @Serializable @SerialName("contactNotFoundByName") class ContactNotFoundByName(val contactName: String): StoreError()
+  @Serializable @SerialName("contactNotFoundByMemberId") class ContactNotFoundByMemberId(val groupMemberId: Long): StoreError()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contactName: String): StoreError()
   @Serializable @SerialName("duplicateContactLink") object DuplicateContactLink: StoreError()
   @Serializable @SerialName("userContactLinkNotFound") object UserContactLinkNotFound: StoreError()
@@ -3993,6 +3996,7 @@ sealed class StoreError {
   @Serializable @SerialName("rcvFileNotFoundXFTP") class RcvFileNotFoundXFTP(val agentRcvFileId: String): StoreError()
   @Serializable @SerialName("connectionNotFound") class ConnectionNotFound(val agentConnId: String): StoreError()
   @Serializable @SerialName("connectionNotFoundById") class ConnectionNotFoundById(val connId: Long): StoreError()
+  @Serializable @SerialName("connectionNotFoundByMemberId") class ConnectionNotFoundByMemberId(val groupMemberId: Long): StoreError()
   @Serializable @SerialName("pendingConnectionNotFound") class PendingConnectionNotFound(val connId: Long): StoreError()
   @Serializable @SerialName("introNotFound") object IntroNotFound: StoreError()
   @Serializable @SerialName("uniqueID") object UniqueID: StoreError()

@@ -57,7 +57,7 @@ testConnReq = CRInvitationUri connReqData testE2ERatchetParams
 quotedMsg :: QuotedMsg
 quotedMsg =
   QuotedMsg
-    (MsgRef (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True Nothing Nothing)
+    (MsgRef (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True Nothing)
     $ MCText "hello there!"
 
 (==##) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
@@ -105,13 +105,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XMsgNew (MCSimple (extMsgContent (MCText "hello") Nothing))
   it "x.msg.new simple text - timed message TTL" $
     "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"ttl\":3600}}"
-      #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing (Just 3600) Nothing Nothing))
+      #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing (Just 3600) Nothing))
   it "x.msg.new simple text - live message" $
     "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"live\":true}}"
-      #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing Nothing (Just True) Nothing))
-  it "x.msg.new simple text - direct message scope" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"scope\":\"direct\"}}"
-      #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing Nothing Nothing (Just MSDirect)))
+      #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing Nothing (Just True)))
   it "x.msg.new simple link" $
     "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
       #==# XMsgNew (MCSimple (extMsgContent (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}) Nothing))
@@ -133,41 +130,27 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (MCQuote quotedMsg (extMsgContent (MCText "hello to you too") Nothing)))
-  it "x.msg.new quote - direct referenced message scope" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\",\"msgScope\":\"direct\"}}}}"
-      ##==## ChatMessage
-        chatInitialVRange
-        (Just $ SharedMsgId "\1\2\3\4")
-        ( XMsgNew
-            ( MCQuote
-                ( QuotedMsg
-                    (MsgRef (Just $ SharedMsgId "\5\6\7\8") (systemToUTCTime $ MkSystemTime 1 1) True Nothing (Just MSDirect))
-                    $ MCText "hello there!"
-                )
-                (extMsgContent (MCText "hello to you too") Nothing)
-            )
-        )
   it "x.msg.new quote - timed message TTL" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"ttl\":3600}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
-        (XMsgNew (MCQuote quotedMsg (ExtMsgContent (MCText "hello to you too") Nothing (Just 3600) Nothing Nothing)))
+        (XMsgNew (MCQuote quotedMsg (ExtMsgContent (MCText "hello to you too") Nothing (Just 3600) Nothing)))
   it "x.msg.new quote - live message" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"live\":true}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
-        (XMsgNew (MCQuote quotedMsg (ExtMsgContent (MCText "hello to you too") Nothing Nothing (Just True) Nothing)))
+        (XMsgNew (MCQuote quotedMsg (ExtMsgContent (MCText "hello to you too") Nothing Nothing (Just True))))
   it "x.msg.new forward" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (extMsgContent (MCText "hello") Nothing))
   it "x.msg.new forward - timed message TTL" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"ttl\":3600}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing (Just 3600) Nothing Nothing))
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing (Just 3600) Nothing))
   it "x.msg.new forward - live message" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"live\":true}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing Nothing (Just True) Nothing))
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing Nothing (Just True)))
   it "x.msg.new simple text with file" $
     "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       #==# XMsgNew (MCSimple (extMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing})))
@@ -287,6 +270,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.grp.del" $
     "{\"v\":\"1\",\"event\":\"x.grp.del\",\"params\":{}}"
       ==# XGrpDel
+  it "x.grp.direct.inv" $
+    "{\"v\":\"1\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D1-2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
+      #==# XGrpDirectInv testConnReq (Just $ MCText "hello")
+  it "x.grp.direct.inv without content" $
+    "{\"v\":\"1\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D1-2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
+      #==# XGrpDirectInv testConnReq Nothing
   it "x.info.probe" $
     "{\"v\":\"1\",\"event\":\"x.info.probe\",\"params\":{\"probe\":\"AQIDBA==\"}}"
       #==# XInfoProbe (Probe "\1\2\3\4")

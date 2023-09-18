@@ -79,7 +79,7 @@ import Simplex.Chat.Migrations.M20230814_indexes
 import Simplex.Chat.Migrations.M20230827_file_encryption
 import Simplex.Chat.Migrations.M20230829_connections_chat_vrange
 import Simplex.Chat.Migrations.M20230903_connections_to_subscribe
-import Simplex.Chat.Migrations.M20230904_item_direct_group_member_id
+import Simplex.Chat.Migrations.M20230913_member_contacts
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -159,7 +159,7 @@ schemaMigrations =
     ("20230827_file_encryption", m20230827_file_encryption, Just down_m20230827_file_encryption),
     ("20230829_connections_chat_vrange", m20230829_connections_chat_vrange, Just down_m20230829_connections_chat_vrange),
     ("20230903_connections_to_subscribe", m20230903_connections_to_subscribe, Just down_m20230903_connections_to_subscribe),
-    ("20230904_item_direct_group_member_id", m20230904_item_direct_group_member_id, Just down_m20230904_item_direct_group_member_id)
+    ("20230913_member_contacts", m20230913_member_contacts, Just down_m20230913_member_contacts)
   ]
 
 -- | The list of migrations in ascending order by date

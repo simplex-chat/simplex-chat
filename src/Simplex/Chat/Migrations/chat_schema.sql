@@ -68,6 +68,9 @@ CREATE TABLE contacts(
   deleted INTEGER NOT NULL DEFAULT 0,
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
+  contact_group_member_id INTEGER
+  REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -392,9 +395,7 @@ CREATE TABLE chat_items(
   timed_delete_at TEXT,
   item_live INTEGER,
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  item_deleted_ts TEXT,
-  item_direct_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  quoted_message_scope TEXT
+  item_deleted_ts TEXT
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -715,6 +716,6 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   item_status
 );
 CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
-CREATE INDEX idx_chat_items_item_direct_group_member_id ON chat_items(
-  item_direct_group_member_id
+CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
+  contact_group_member_id
 );

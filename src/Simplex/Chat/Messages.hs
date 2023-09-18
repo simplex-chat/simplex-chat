@@ -50,6 +50,16 @@ data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
 data ChatName = ChatName ChatType Text
   deriving (Show)
 
+chatTypeStr :: ChatType -> String
+chatTypeStr = \case
+  CTDirect -> "@"
+  CTGroup -> "#"
+  CTContactRequest -> "<@"
+  CTContactConnection -> ":"
+
+chatNameStr :: ChatName -> String
+chatNameStr (ChatName cType name) = chatTypeStr cType <> T.unpack name
+
 data ChatRef = ChatRef ChatType Int64
   deriving (Eq, Show, Ord)
 
@@ -138,16 +148,16 @@ instance MsgDirectionI d => ToJSON (ChatItem c d) where
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
-  CIGroupSnd :: Maybe GroupMember -> CIDirection 'CTGroup 'MDSnd
-  CIGroupRcv :: GroupMember -> MessageScope -> CIDirection 'CTGroup 'MDRcv
+  CIGroupSnd :: CIDirection 'CTGroup 'MDSnd
+  CIGroupRcv :: GroupMember -> CIDirection 'CTGroup 'MDRcv
 
 deriving instance Show (CIDirection c d)
 
 data JSONCIDirection
   = JCIDirectSnd
   | JCIDirectRcv
-  | JCIGroupSnd {directMember :: Maybe GroupMember}
-  | JCIGroupRcv {groupMember :: GroupMember, messageScope :: MessageScope}
+  | JCIGroupSnd
+  | JCIGroupRcv {groupMember :: GroupMember}
   deriving (Generic, Show)
 
 instance ToJSON JSONCIDirection where
@@ -162,19 +172,8 @@ jsonCIDirection :: CIDirection c d -> JSONCIDirection
 jsonCIDirection = \case
   CIDirectSnd -> JCIDirectSnd
   CIDirectRcv -> JCIDirectRcv
-  CIGroupSnd dm -> JCIGroupSnd dm
-  CIGroupRcv m ms -> JCIGroupRcv m ms
-
-ciDirDirectMember :: CIDirection 'CTGroup d -> Maybe GroupMember
-ciDirDirectMember = \case
-  CIGroupSnd dm -> dm
-  CIGroupRcv _ MSGroup -> Nothing
-  CIGroupRcv m MSDirect -> Just m
-
-directMemberToMsgScope :: Maybe GroupMember -> MessageScope
-directMemberToMsgScope = \case
-  Nothing -> MSGroup
-  Just _ -> MSDirect
+  CIGroupSnd -> JCIGroupSnd
+  CIGroupRcv m -> JCIGroupRcv m
 
 data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
   deriving (Show, Generic)
@@ -209,8 +208,8 @@ timedDeleteAt' CITimed {deleteAt} = deleteAt
 
 chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
 chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
-  CIGroupSnd _ -> membership
-  CIGroupRcv m _ -> m
+  CIGroupSnd -> membership
+  CIGroupRcv m -> m
 
 ciReactionAllowed :: ChatItem c d -> Bool
 ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
@@ -239,22 +238,22 @@ chatItemDeletedState ChatItem {meta = CIMeta {itemDeleted}, content} =
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
-  CDGroupSnd :: GroupInfo -> Maybe GroupMember -> ChatDirection 'CTGroup 'MDSnd
-  CDGroupRcv :: GroupInfo -> GroupMember -> MessageScope -> ChatDirection 'CTGroup 'MDRcv
+  CDGroupSnd :: GroupInfo -> ChatDirection 'CTGroup 'MDSnd
+  CDGroupRcv :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
 
 toCIDirection :: ChatDirection c d -> CIDirection c d
 toCIDirection = \case
   CDDirectSnd _ -> CIDirectSnd
   CDDirectRcv _ -> CIDirectRcv
-  CDGroupSnd _ dm -> CIGroupSnd dm
-  CDGroupRcv _ m ms -> CIGroupRcv m ms
+  CDGroupSnd _ -> CIGroupSnd
+  CDGroupRcv _ m -> CIGroupRcv m
 
 toChatInfo :: ChatDirection c d -> ChatInfo c
 toChatInfo = \case
   CDDirectSnd c -> DirectChat c
   CDDirectRcv c -> DirectChat c
-  CDGroupSnd g _ -> GroupChat g
-  CDGroupRcv g _ _ -> GroupChat g
+  CDGroupSnd g -> GroupChat g
+  CDGroupRcv g _ -> GroupChat g
 
 data NewChatItem d = NewChatItem
   { createdByMsgId :: Maybe MessageId,
@@ -434,39 +433,29 @@ instance ToJSON (JSONCIReaction c d) where
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
   CIQDirectRcv :: CIQDirection 'CTDirect
-  CIQGroupSnd :: MessageScope -> CIQDirection 'CTGroup
-  CIQGroupRcv :: Maybe GroupMember -> MessageScope -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
+  CIQGroupSnd :: CIQDirection 'CTGroup
+  CIQGroupRcv :: Maybe GroupMember -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
 
 deriving instance Show (CIQDirection c)
-
-data JSONCIQDirection
-  = JCIQDirectSnd
-  | JCIQDirectRcv
-  | JCIQGroupSnd {messageScope :: MessageScope}
-  | JCIQGroupRcv {groupMember :: Maybe GroupMember, messageScope :: MessageScope}
-  deriving (Generic, Show)
-
-instance ToJSON JSONCIQDirection where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIQ"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIQ"
 
 instance ToJSON (CIQDirection c) where
   toJSON = J.toJSON . jsonCIQDirection
   toEncoding = J.toEncoding . jsonCIQDirection
 
-jsonCIQDirection :: CIQDirection c -> JSONCIQDirection
+jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
 jsonCIQDirection = \case
-  CIQDirectSnd -> JCIQDirectSnd
-  CIQDirectRcv -> JCIQDirectRcv
-  CIQGroupSnd ms -> JCIQGroupSnd ms
-  CIQGroupRcv m ms -> JCIQGroupRcv m ms
+  CIQDirectSnd -> Just JCIDirectSnd
+  CIQDirectRcv -> Just JCIDirectRcv
+  CIQGroupSnd -> Just JCIGroupSnd
+  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
+  CIQGroupRcv Nothing -> Nothing
 
 quoteMsgDirection :: CIQDirection c -> MsgDirection
 quoteMsgDirection = \case
   CIQDirectSnd -> MDSnd
   CIQDirectRcv -> MDRcv
-  CIQGroupSnd _ -> MDSnd
-  CIQGroupRcv _ _ -> MDRcv
+  CIQGroupSnd -> MDSnd
+  CIQGroupRcv _ -> MDRcv
 
 data CIFile (d :: MsgDirection) = CIFile
   { fileId :: Int64,
