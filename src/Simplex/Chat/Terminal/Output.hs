@@ -9,6 +9,7 @@
 module Simplex.Chat.Terminal.Output where
 
 import Control.Concurrent (ThreadId)
+import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.Except
 import Control.Monad.Reader
