@@ -111,6 +111,7 @@ library
       Simplex.Chat.Migrations.M20230827_file_encryption
       Simplex.Chat.Migrations.M20230829_connections_chat_vrange
       Simplex.Chat.Migrations.M20230903_connections_to_subscribe
+      Simplex.Chat.Migrations.M20230913_member_contacts
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

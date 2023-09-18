@@ -25,7 +25,7 @@
 module Simplex.Chat.Types where
 
 import Crypto.Number.Serialize (os2ip)
-import Data.Aeson (FromJSON (..), ToJSON (..))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.Types as JT
@@ -174,7 +174,9 @@ data Contact = Contact
     mergedPreferences :: ContactUserPreferences,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    chatTs :: Maybe UTCTime
+    chatTs :: Maybe UTCTime,
+    contactGroupMemberId :: Maybe GroupMemberId,
+    contactGrpInvSent :: Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -235,7 +237,7 @@ data UserContactRequest = UserContactRequest
     agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
-    cReqChatVRange :: VersionRange,
+    cReqChatVRange :: JVersionRange,
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile,
@@ -566,7 +568,7 @@ memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
   MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
   where
-    memberChatVRange = ChatVersionRange . peerChatVRange <$> activeConn
+    memberChatVRange = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -1169,7 +1171,7 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
-    peerChatVRange :: VersionRange,
+    peerChatVRange :: JVersionRange,
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
@@ -1492,3 +1494,9 @@ instance FromJSON ChatVersionRange where
 instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
+
+newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRange} deriving (Eq, Show)
+
+instance ToJSON JVersionRange where
+  toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minVersion" .= minV, "maxVersion" .= maxV]
+  toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minVersion" .= minV <> "maxVersion" .= maxV

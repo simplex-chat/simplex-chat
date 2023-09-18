@@ -405,7 +405,8 @@
     <string name="network_use_onion_hosts_required">Erforderlich</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion-Hosts werden verwendet, wenn sie verfügbar sind.</string>
     <string name="network_use_onion_hosts_no_desc">Onion-Hosts werden nicht verwendet.</string>
-    <string name="network_use_onion_hosts_required_desc">Für die Verbindung werden Onion-Hosts benötigt.</string>
+    <string name="network_use_onion_hosts_required_desc">Für die Verbindung werden Onion-Hosts benötigt.
+\nBitte beachten Sie: Ohne .onion-Adresse können Sie keine Verbindung mit den Servern herstellen.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion-Hosts werden verwendet, wenn sie verfügbar sind.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion-Hosts werden nicht verwendet.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Für die Verbindung werden Onion-Hosts benötigt.</string>
@@ -1457,4 +1458,18 @@
     <string name="rcv_group_event_3_members_connected">%s, %s und %s wurden verbunden</string>
     <string name="privacy_message_draft">Nachrichtenentwurf</string>
     <string name="privacy_show_last_messages">Letzte Nachrichten anzeigen</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Die Datenbank wird verschlüsselt und das Passwort in den Einstellungen gespeichert.</string>
+    <string name="you_can_change_it_later">Das zufällige Passwort wird in Klartext in den Einstellungen gespeichert.
+\nSie können es später ändern.</string>
+    <string name="database_encryption_will_be_updated_in_settings">Das Passwort für die Datenbankverschlüsselung wird aktualisiert und in den Einstellungen gespeichert.</string>
+    <string name="remove_passphrase_from_settings">Passwort aus den Einstellungen entfernen\?</string>
+    <string name="use_random_passphrase">Zufälliges Passwort verwenden</string>
+    <string name="save_passphrase_in_settings">Passwort in den Einstellungen sichern</string>
+    <string name="setup_database_passphrase">Datenbank-Passwort einrichten</string>
+    <string name="set_database_passphrase">Datenbank-Passwort festlegen</string>
+    <string name="open_database_folder">Datenbank-Ordner öffnen</string>
+    <string name="passphrase_will_be_saved_in_settings">Das Passwort wird in Klartext in den Einstellungen gespeichert, nachdem Sie es geändert oder die App neu gestartet haben.</string>
+    <string name="settings_is_storing_in_clear_text">Das Passwort wurde in Klartext in den Einstellungen gespeichert.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Dateirelais sind per SOCKS Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.]]></string>
+    <string name="encrypt_local_files">Lokale Dateien verschlüsseln</string>
 </resources>
