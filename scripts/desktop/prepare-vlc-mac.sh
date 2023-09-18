@@ -5,8 +5,6 @@ set -e
 ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
 if [ "$ARCH" == "arm64" ]; then
     ARCH=aarch64
-fi
-if [ "$ARCH" == "arm64" ]; then
     vlc_arch=arm64
 else
     vlc_arch=intel64
