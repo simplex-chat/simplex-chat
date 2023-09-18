@@ -1552,6 +1552,16 @@
   <string name="v5_2_disappear_one_message_descr">Even when disabled in the conversation.</string>
   <string name="v5_2_more_things">A few more things</string>
   <string name="v5_2_more_things_descr">- more stable message delivery.\n- a bit better groups.\n- and more!</string>
+  <string name="v5_3_new_desktop_app">New desktop app!</string>
+  <string name="v5_3_new_desktop_app_descr">Create new profile in desktop app. 💻</string>
+  <string name="v5_3_encrypt_local_files">Encrypt stored files &amp; media</string>
+  <string name="v5_3_encrypt_local_files_descr">App encrypts new local files (except videos).</string>
+  <string name="v5_3_discover_join_groups">Discover and join groups</string>
+  <string name="v5_3_discover_join_groups_descr">- connect to directory service (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable.</string>
+  <string name="v5_3_simpler_incognito_mode">Simplified incognito mode</string>
+  <string name="v5_3_simpler_incognito_mode_descr">Toggle incognito when connecting.</string>
+  <string name="v5_3_new_interface_languages">6 new interface languages</string>
+  <string name="v5_3_new_interface_languages_descr">Arabic, Bulgarian, Finnish, Hebrew, Thai and Ukrainian - thanks to the users and Weblate.</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
