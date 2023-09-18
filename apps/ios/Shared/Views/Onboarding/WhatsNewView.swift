@@ -254,7 +254,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v5.3",
-        post: URL(string: "https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption.html"),
+        post: URL(string: "https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"),
         features: [
             FeatureDescription(
                 icon: "desktopcomputer",
@@ -262,7 +262,7 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻"
             ),
             FeatureDescription(
-                icon: "lock.doc",
+                icon: "lock",
                 title: "Encrypt stored files & media",
                 description: "App encrypts new local files (except videos)."
             ),
@@ -273,13 +273,13 @@ private let versionDescriptions: [VersionDescription] = [
             ),
             FeatureDescription(
                 icon: "theatermasks",
-                title: "Simpler incognito mode",
+                title: "Simplified incognito mode",
                 description: "Toggle incognito when connecting."
             ),
             FeatureDescription(
                 icon: "character",
                 title: "\(4) new interface languages",
-                description: "Bulgarian, Finnish, Thai and Ukrainian – thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
+                description: "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
             ),
         ]
     ),
