@@ -68,6 +68,9 @@ CREATE TABLE contacts(
   deleted INTEGER NOT NULL DEFAULT 0,
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
+  contact_group_member_id INTEGER
+  REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -713,3 +716,6 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   item_status
 );
 CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
+CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
+  contact_group_member_id
+);
