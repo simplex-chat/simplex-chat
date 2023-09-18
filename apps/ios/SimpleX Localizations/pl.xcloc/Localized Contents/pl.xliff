@@ -197,8 +197,9 @@
         <target>%lld minut</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld new interface languages" xml:space="preserve">
+      <trans-unit id="%lld new interface languages" xml:space="preserve" approved="no">
         <source>%lld new interface languages</source>
+        <target state="translated">%lld nowe języki interfejsu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">
@@ -331,10 +332,13 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
+      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve" approved="no">
         <source>- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
 - delivery receipts (up to 20 members).
 - faster and more stable.</source>
+        <target state="translated">- połącz do [serwera katalogowego](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
+- potwierdzenie dostarczenia (do 20 członków).
+- szybszy i bardziej stabilny.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve">
@@ -710,8 +714,9 @@
         <target>Kompilacja aplikacji: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
+      <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve" approved="no">
         <source>App encrypts new local files (except videos).</source>
+        <target state="translated">Aplikacja szyfruje nowe lokalne pliki (bez filmów).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
@@ -849,8 +854,9 @@
         <target>Zarówno Ty, jak i Twój kontakt możecie wysyłać wiadomości głosowe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve">
+      <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve" approved="no">
         <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
+        <target state="translated">Bułgarski, fiński, tajski i ukraiński – dzięki użytkownikom i [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1249,8 +1255,9 @@
         <target>Utwórz link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
+        <target state="translated">Utwórz nowy profil w [aplikacji desktopowej](https://simplex.chat/downloads/). 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create one-time invitation link" xml:space="preserve">
@@ -1706,8 +1713,9 @@
         <target>Rozłącz</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Discover and join groups" xml:space="preserve">
+      <trans-unit id="Discover and join groups" xml:space="preserve" approved="no">
         <source>Discover and join groups</source>
+        <target state="translated">Odkrywaj i dołączaj do grup</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
@@ -1850,8 +1858,9 @@
         <target>Zaszyfruj lokalne pliki</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve">
+      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve" approved="no">
         <source>Encrypt stored files &amp; media</source>
+        <target state="translated">Szyfruj przechowywane pliki i media</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
@@ -3122,8 +3131,9 @@
         <target>Nowe archiwum bazy danych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New desktop app!" xml:space="preserve">
+      <trans-unit id="New desktop app!" xml:space="preserve" approved="no">
         <source>New desktop app!</source>
+        <target state="translated">Nowa aplikacja desktopowa!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New display name" xml:space="preserve">
@@ -4375,8 +4385,9 @@
         <target>Zaproszenie jednorazowe SimpleX</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="Simplified incognito mode" xml:space="preserve">
+      <trans-unit id="Simplified incognito mode" xml:space="preserve" approved="no">
         <source>Simplified incognito mode</source>
+        <target state="translated">Uproszczony tryb incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Skip" xml:space="preserve">
@@ -4773,8 +4784,9 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
         <target>Aby zweryfikować szyfrowanie end-to-end z Twoim kontaktem porównaj (lub zeskanuj) kod na waszych urządzeniach.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
+      <trans-unit id="Toggle incognito when connecting." xml:space="preserve" approved="no">
         <source>Toggle incognito when connecting.</source>
+        <target state="translated">Przełącz incognito przy połączeniu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transport isolation" xml:space="preserve">
