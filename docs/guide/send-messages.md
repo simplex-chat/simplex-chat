@@ -1,3 +1,6 @@
+---
+title: Sending messages
+---
 # Sending, editing, deleting, and quoting messages
 
 After you have created your first chat profile on SimpleX Chat, you can start communicating privately with other SimpleX Chat users.  

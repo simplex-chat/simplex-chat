@@ -1,3 +1,6 @@
+---
+title: Chat profiles
+---
 # Your chat profiles
 
 In order to use SimpleX Chat, you have to create one or more chat profiles.

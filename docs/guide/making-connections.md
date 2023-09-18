@@ -1,3 +1,6 @@
+---
+title: Making connections
+---
 # Making connections
 
 Because you have no user ID on the SimpleX platform, nobody can connect with you unless you share either a one-time invitation or a SimpleX address. Both can be shared as a link or QR code. 

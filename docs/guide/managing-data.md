@@ -1,3 +1,6 @@
+---
+title: Managing data
+---
 # Managing Your Data
 
 SimpleX Chat stores all your messages, contacts, groups, files, and media on your device, providing you with sovereign control of your data. 
