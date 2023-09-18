@@ -258,7 +258,7 @@ private let versionDescriptions: [VersionDescription] = [
         features: [
             FeatureDescription(
                 icon: "desktopcomputer",
-                title: "Use desktop app!",
+                title: "New desktop app!",
                 description: "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻"
             ),
             FeatureDescription(
