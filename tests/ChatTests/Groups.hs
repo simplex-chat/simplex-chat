@@ -2752,7 +2752,7 @@ testConnectMemberToContact =
           do
             cath <## "#team: bob added alice_1 (Alice) to the group (connecting...)"
             cath <## "#team: new member alice_1 is connected"
-            cath <## "member #team alice_1 is is merged into alice"
+            cath <## "member #team alice_1 is merged into alice"
         ]
       alice <##> cath
       alice #> "#team hello"
