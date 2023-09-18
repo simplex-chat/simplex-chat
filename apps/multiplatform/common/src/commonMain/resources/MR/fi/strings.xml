@@ -872,7 +872,8 @@
     <string name="network_use_onion_hosts_prefer_desc">Onion-isäntiä käytetään, kun niitä on saatavilla.</string>
     <string name="network_use_onion_hosts_no_desc">Onion-isäntiä ei käytetä.</string>
     <string name="network_use_onion_hosts_required">Pakollinen</string>
-    <string name="network_use_onion_hosts_required_desc">Yhteyden muodostamiseen tarvitaan Onion-isäntiä.</string>
+    <string name="network_use_onion_hosts_required_desc">Yhteyden muodostamiseen tarvitaan Onion-isäntiä.
+\nHuomioi: et voi muodostaa yhteyttä palvelimiin ilman .onion-osoitetta.</string>
     <string name="callstate_received_answer">vastaus saatu…</string>
     <string name="icon_descr_call_rejected">Hylätty puhelu</string>
     <string name="v4_6_chinese_spanish_interface_descr">Kiitos käyttäjille – osallistu Weblaten kautta!</string>
@@ -1374,4 +1375,18 @@
     <string name="v5_2_message_delivery_receipts_descr">Toinen kuittaus, joka uupui! ✅</string>
     <string name="error_synchronizing_connection">Virhe yhteyden synkronoinnissa</string>
     <string name="no_history">Ei historiaa</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Tietokanta salataan ja tunnuslause tallennetaan asetuksiin.</string>
+    <string name="you_can_change_it_later">Satunnainen tunnuslause on tallennettu asetuksiin selkokielisenä.
+\nVoit muuttaa sen myöhemmin.</string>
+    <string name="database_encryption_will_be_updated_in_settings">Tietokannan salaustunnuslause päivitetään ja tallennetaan asetuksiin.</string>
+    <string name="remove_passphrase_from_settings">Poista tunnuslause asetuksista\?</string>
+    <string name="use_random_passphrase">Käytä satunnaista tunnuslausetta</string>
+    <string name="save_passphrase_in_settings">Tallenna tunnuslause asetuksiin</string>
+    <string name="setup_database_passphrase">Aseta tietokannan tunnuslause</string>
+    <string name="set_database_passphrase">Aseta tietokannan tunnuslause</string>
+    <string name="open_database_folder">Avaa tietokantakansio</string>
+    <string name="passphrase_will_be_saved_in_settings">Tunnuslause tallennetaan asetuksiin selkokielisenä sen jälkeen, kun olet vaihtanut sen tai käynnistänyt sovelluksen uudelleen.</string>
+    <string name="settings_is_storing_in_clear_text">Tunnuslause on tallennettu asetuksiin selkokielisenä.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b> Huomioi </b>: Viesti- ja tiedostovälittimet yhdistetään SOCKS-proxyn kautta. Puhelut ja linkin esikatselut käyttävät suoraa yhteyttä.]]></string>
+    <string name="encrypt_local_files">Salaa paikalliset tiedostot</string>
 </resources>

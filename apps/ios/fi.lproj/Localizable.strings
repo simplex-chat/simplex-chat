@@ -1246,6 +1246,9 @@
 "Encrypt database?" = "Salaa tietokanta?";
 
 /* No comment provided by engineer. */
+"Encrypt local files" = "Salaa paikalliset tiedostot";
+
+/* No comment provided by engineer. */
 "Encrypted database" = "Salattu tietokanta";
 
 /* notification */
@@ -1355,6 +1358,9 @@
 
 /* No comment provided by engineer. */
 "Error creating profile!" = "Virhe profiilin luomisessa!";
+
+/* No comment provided by engineer. */
+"Error decrypting file" = "Virhe tiedoston salauksen purussa";
 
 /* No comment provided by engineer. */
 "Error deleting chat database" = "Virhe keskustelujen tietokannan poistamisessa";

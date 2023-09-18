@@ -114,7 +114,7 @@
     <string name="v4_5_transport_isolation_descr">عن طريق ملف تعريف الدردشة (افتراضي) أو عن طريق الاتصال (تجريبي).</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> يمكن تعطيله عبر الإعدادات</b> - سيستمر عرض الإشعارات أثناء تشغيل التطبيق.]]></string>
     <string name="settings_audio_video_calls">مكالمات الصوت والفيديو</string>
-    <string name="impossible_to_recover_passphrase"><![CDATA[<b> الرجاء ملاحظة </b>: لن تتمكن من استعادة عبارة المرور أو تغييرها في حالة فقدها.]]></string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>يُرجى الملاحظة</b>: لن تتمكن من استعادة عبارة المرور أو تغييرها في حالة فقدها.]]></string>
     <string name="both_you_and_your_contacts_can_delete">يمكنك أنت وجهة اتصالك حذف الرسائل المرسلة بشكل لا رجعة فيه.</string>
     <string name="v4_2_auto_accept_contact_requests">قبول طلبات الاتصال تلقائيًا</string>
     <string name="la_auth_failed">فشلت المصادقة</string>
@@ -794,7 +794,8 @@
     <string name="videos_limit_desc">يمكن إرسال 10 فيديوهات فقط في نفس الوقت</string>
     <string name="add_contact">رابط دعوة لمرة واحدة</string>
     <string name="network_use_onion_hosts_no">لا</string>
-    <string name="network_use_onion_hosts_required_desc">سوف تكون مضيفات البصل مطلوبة للاتصال.</string>
+    <string name="network_use_onion_hosts_required_desc">سوف تكون مضيفات البصل مطلوبة للاتصال.
+\nيُرجى ملاحظة: أنك لن تتمكن من الاتصال بالخوادم بدون عنوان onion.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">سيتم استخدام مضيفات البصل عند توفرها.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">لن يتم استخدام مضيفات البصل.</string>
     <string name="self_destruct_new_display_name">اسم عرض جديد:</string>
@@ -1374,4 +1375,18 @@
     <string name="privacy_show_last_messages">إظهار الرسائل الأخيرة</string>
     <string name="rcv_group_event_n_members_connected">%s، %s و %d أعضاء آخرين متصلون</string>
     <string name="rcv_group_event_3_members_connected">%s، %s و %s متصل</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">سيتم تشفير قاعدة البيانات وتخزين عبارة المرور في الإعدادات.</string>
+    <string name="you_can_change_it_later">يُخزين عبارة المرور العشوائية في الإعدادات كنص عادي.
+\nيمكنك تغييره لاحقا.</string>
+    <string name="database_encryption_will_be_updated_in_settings">سيتم تحديث عبارة مرور تشفير قاعدة البيانات وتخزينها في الإعدادات.</string>
+    <string name="remove_passphrase_from_settings">هل تريد إزالة عبارة المرور من الإعدادات؟</string>
+    <string name="use_random_passphrase">استخدم عبارة مرور عشوائية</string>
+    <string name="save_passphrase_in_settings">حفظ عبارة المرور في الإعدادات</string>
+    <string name="setup_database_passphrase">إعداد كلمة المرور لقاعدة البيانات</string>
+    <string name="set_database_passphrase">تعيين عبارة مرور قاعدة البيانات</string>
+    <string name="open_database_folder">افتح مجلد قاعدة البيانات</string>
+    <string name="passphrase_will_be_saved_in_settings">سيتم تخزين عبارة المرور في الإعدادات كنص عادي بعد تغييرها أو إعادة تشغيل التطبيق.</string>
+    <string name="settings_is_storing_in_clear_text">يُخزين عبارة المرور في الإعدادات كنص عادي.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>يُرجى الملاحظة</b>: يتم توصيل مرحلات الرسائل والملفات عبر وكيل SOCKS. تستخدم المكالمات وإرسال معاينات الارتباط الاتصال المباشر.]]></string>
+    <string name="encrypt_local_files">تشفير الملفات المحلية</string>
 </resources>

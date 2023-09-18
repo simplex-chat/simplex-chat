@@ -16,6 +16,8 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
@@ -56,21 +58,21 @@ class IsContact a where
   preferences' :: a -> Maybe Preferences
 
 instance IsContact User where
-  contactId' = userContactId
+  contactId' u = u.userContactId
   {-# INLINE contactId' #-}
-  profile' = profile
+  profile' u = u.profile
   {-# INLINE profile' #-}
-  localDisplayName' = localDisplayName
+  localDisplayName' u = u.localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' User {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
 
 instance IsContact Contact where
-  contactId' = contactId
+  contactId' c = c.contactId
   {-# INLINE contactId' #-}
-  profile' = profile
+  profile' c = c.profile
   {-# INLINE profile' #-}
-  localDisplayName' = localDisplayName
+  localDisplayName' c = c.localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' Contact {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
@@ -183,7 +185,7 @@ instance ToJSON Contact where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 contactConn :: Contact -> Connection
-contactConn = activeConn
+contactConn Contact{activeConn} = activeConn
 
 contactConnId :: Contact -> ConnId
 contactConnId = aConnId . contactConn
@@ -465,7 +467,7 @@ instance ToJSON LocalProfile where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 localProfileId :: LocalProfile -> ProfileId
-localProfileId = profileId
+localProfileId LocalProfile{profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, image, contactLink, preferences} localAlias =
@@ -621,7 +623,7 @@ groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
 memberConn :: GroupMember -> Maybe Connection
-memberConn = activeConn
+memberConn GroupMember{activeConn} = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
