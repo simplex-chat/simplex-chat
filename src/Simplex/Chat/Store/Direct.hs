@@ -276,6 +276,10 @@ deleteUnusedProfile_ db userId profileId =
       DELETE FROM contact_profiles
       WHERE user_id = :user_id AND contact_profile_id = :profile_id
         AND 1 NOT IN (
+          SELECT 1 FROM connections
+          WHERE user_id = :user_id AND custom_user_profile_id = :profile_id LIMIT 1
+        )
+        AND 1 NOT IN (
           SELECT 1 FROM contacts
           WHERE user_id = :user_id AND contact_profile_id = :profile_id LIMIT 1
         )
