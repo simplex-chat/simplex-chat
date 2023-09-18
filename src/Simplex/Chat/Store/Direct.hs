@@ -254,12 +254,6 @@ getDeletedContacts db user@User {userId} = do
 getDeletedContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
 getDeletedContact db user contactId = getContact_ db user contactId True
 
--- deleteContactProfile_ :: DB.Connection -> UserId -> Contact -> IO ()
--- deleteContactProfile_ db userId Contact {contactId} = do
---   -- TODO not quite clear why there is more than one profile in this case
---   profileIds <- map fromOnly <$> DB.query db "SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
---   mapM_ (deleteUnusedProfile_ db userId) profileIds
-
 deleteContactProfile_ :: DB.Connection -> UserId -> ContactId -> IO ()
 deleteContactProfile_ db userId contactId =
   DB.execute
