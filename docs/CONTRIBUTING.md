@@ -28,6 +28,8 @@ You will have to add `/opt/homebrew/opt/openssl@1.1/bin` to your PATH in order t
 
 ## Project branches
 
+**In simplex-chat repo**
+
 - `stable` - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.2).
 
 - `stable-android` - used to build stable Android core library with Nix (GHC 8.10.7).
@@ -40,23 +42,36 @@ You will have to add `/opt/homebrew/opt/openssl@1.1/bin` to your PATH in order t
 
 - `master-ios` - used to build beta iOS core library with Nix (GHC 8.10.7) – this branch should be the same as `master-android` except Nix configuration files.
 
+**In simplexmq repo**
+
+- `master` - uses GHC 9.6.2 its commit should be used in `master` branch of simplex-chat repo.
+
+- `master-ghc8107` - its commit should be used in `master-android` (and `master-ios`) branch of simplex-chat repo.
 
 ## Development & release process
 
-1. Make PRs to `master` branch _only_.
+1. Make PRs to `master` branch _only_ for both simplex-chat and simplexmq repos.
 
-2. To build Android core library, merge `master` branch to `master-android` branch, update code to be compatible with GHC 8.10.7, and push to GitHub.
+2. If simplexmq repo was changed, to build mobile core libraries you need to merge its `master` branch into `master-ghc8107` branch.
 
-3. To build iOS core library, merge `master-android` branch to `master-ios` branch, and push to GitHub.
+3. To build Android core library:
+- merge `master` branch to `master-android` branch.
+- update code to be compatible with GHC 8.10.7 (see below).
+- update `simplexmq` commit in `master-android` branch to the commit in `master-ghc8107` branch.
+- push to GitHub.
 
-4. To build Desktop and CLI apps, make tag in `master` branch, APK files should be attached to the release.
+4. To build iOS core library, merge `master-android` branch to `master-ios` branch, and push to GitHub.
 
-5. After the public release to App Store and Play Store, merge:
+5. To build Desktop and CLI apps, make tag in `master` branch, APK files should be attached to the release.
+
+6. After the public release to App Store and Play Store, merge:
 - `master` to `stable`
 - `master` to `master-android` (and compile/update code)
 - `master-android` to `master-ios`
 - `master-android` to `stable-android`
 - `master-ios` to `stable-ios`
+
+7. Independently, `master` branch of simplexmq repo should be merged to `stable` branch on stable releases.
 
 
 ## Differences between GHC 8.10.7 and GHC 9.6.2
