@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="accept_contact_button">اقبل</string>
-    <string name="about_simplex_chat">عن  ٍSimpleX </string>
+    <string name="about_simplex_chat">عن SimpleX Chat</string>
     <string name="a_plus_b">a + b</string>
     <string name="accept">اقبل</string>
     <string name="chat_item_ttl_week">اسبوع 1</string>
@@ -10,7 +10,7 @@
     <string name="chat_item_ttl_day">يوم 1</string>
     <string name="accept_feature">اقبل</string>
     <string name="about_simplex">عن SimpleX</string>
-    <string name="above_then_preposition_continuation">أعلاه ، ثم:</string>
+    <string name="above_then_preposition_continuation">أعلاه، ثم:</string>
     <string name="accept_call_on_lock_screen">اقبل</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل والملفات الخاصة بك بشكل نهائي.</string>
     <string name="alert_message_no_group">هذه المجموعة لم تعد موجودة.</string>
@@ -584,7 +584,7 @@
     <string name="large_file">الملف كبير!</string>
     <string name="learn_more">معرفة المزيد</string>
     <string name="v4_3_irreversible_message_deletion">حذف رسالة لا رجعة فيه</string>
-    <string name="v4_4_live_messages">رسائل مباشرة</string>
+    <string name="v4_4_live_messages">رسائل حيّة</string>
     <string name="smp_servers_invalid_address">عنوان الخادم غير صالح!</string>
     <string name="invalid_migration_confirmation">تأكيد الترحيل غير صالح</string>
     <string name="group_member_status_invited">مدعو</string>
@@ -882,7 +882,7 @@
     <string name="restore_database_alert_title">استعادة النسخة الاحتياطية لقاعدة البيانات؟</string>
     <string name="network_options_save">حفظ</string>
     <string name="users_delete_with_connections">اتصالات الملف الشخصي والخادم</string>
-    <string name="prohibit_message_reactions">منع ردود فعل الرسائل.</string>
+    <string name="prohibit_message_reactions">منع ردود فعل الرسالة.</string>
     <string name="prohibit_sending_voice">منع إرسال الرسائل الصوتية.</string>
     <string name="prohibit_message_reactions_group">منع ردود فعل الرسائل.</string>
     <string name="whats_new_read_more">قراءة المزيد</string>
@@ -1085,7 +1085,7 @@
     <string name="notifications_mode_periodic">يبدأ بشكل دوري</string>
     <string name="stop_file__confirm">إيقاف</string>
     <string name="stop_file__action">إيقاف الملف</string>
-    <string name="stop_snd_file__title">التوقف عن استلام الملف؟</string>
+    <string name="stop_snd_file__title">التوقف عن إرسال الملف؟</string>
     <string name="icon_descr_address">عنوان SimpleX</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[اضبط <i>استخدم مضيفي .onion</i> إلى \"لا\" إذا كان وكيل SOCKS لا يدعمها.]]></string>
     <string name="share_with_contacts">مشاركة مع جهات الاتصال</string>
@@ -1389,4 +1389,14 @@
     <string name="settings_is_storing_in_clear_text">يُخزين عبارة المرور في الإعدادات كنص عادي.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>يُرجى الملاحظة</b>: يتم توصيل مرحلات الرسائل والملفات عبر وكيل SOCKS. تستخدم المكالمات وإرسال معاينات الارتباط الاتصال المباشر.]]></string>
     <string name="encrypt_local_files">تشفير الملفات المحلية</string>
+    <string name="v5_3_encrypt_local_files">تشفير الملفات والوسائط المخزنة</string>
+    <string name="v5_3_new_desktop_app">تطبيق سطح المكتب الجديد!</string>
+    <string name="v5_3_new_interface_languages">6 لغات واجهة جديدة</string>
+    <string name="v5_3_encrypt_local_files_descr">يقوم التطبيق بتشفير الملفات المحلية الجديدة (باستثناء مقاطع الفيديو).</string>
+    <string name="v5_3_discover_join_groups">اكتشاف والانضمام إلى المجموعات</string>
+    <string name="v5_3_new_interface_languages_descr">العربية والبلغارية والفنلندية والعبرية والتايلاندية والأوكرانية - شكرًا للمستخدمين و Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">إنشاء ملف تعريف جديد في تطبيق سطح المكتب. 💻</string>
+    <string name="v5_3_discover_join_groups_descr">- الاتصال بخدمة الدليل (تجريبي)!
+\n- إيصالات التسليم (ما يصل إلى 20 عضوا).
+\n- أسرع وأكثر استقرارًا.</string>
 </resources>
