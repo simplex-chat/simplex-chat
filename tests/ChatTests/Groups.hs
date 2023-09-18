@@ -9,6 +9,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (when)
 import qualified Data.Text as T
+import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
 import System.Directory (copyFile)
@@ -39,8 +40,10 @@ chatGroupTests = do
     it "update member role" testUpdateMemberRole
     it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
     it "group description is shown as the first message to new members" testGroupDescription
-    it "delete message of another group member" testGroupMemberMessageDelete
-    it "full delete message of another group member" testGroupMemberMessageFullDelete
+    it "moderate message of another group member" testGroupModerate
+    it "moderate message of another group member (full delete)" testGroupModerateFullDelete
+    it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
+    it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -53,7 +56,9 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
   describe "group message errors" $ do
-    it "show message decryption error and update count" testGroupMsgDecryptError
+    it "show message decryption error" testGroupMsgDecryptError
+    it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
+    it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
   describe "message reactions" $ do
     it "set group message reactions" testSetGroupMessageReactions
 
@@ -420,7 +425,7 @@ testGroup2 =
 
 testGroupDelete :: HasCallStack => FilePath -> IO ()
 testGroupDelete =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/d #team"
@@ -444,12 +449,15 @@ testGroupDelete =
       alice <##> bob
       alice <##> cath
       -- unused group contacts are deleted
+      threadDelay 3000000
       bob ##> "@cath hi"
       bob <## "no contact cath"
       (cath </)
       cath ##> "@bob hi"
       cath <## "no contact bob"
       (bob </)
+  where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testGroupSameName :: HasCallStack => FilePath -> IO ()
 testGroupSameName =
@@ -579,6 +587,7 @@ testGroupDeleteInvitedContact =
             bob <## "#team: alice invites you to join the group as admin"
             bob <## "use /j team to accept"
         ]
+      threadDelay 500000
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
       bob ##> "/j team"
@@ -1151,7 +1160,7 @@ testUpdateMemberRole =
 
 testGroupDeleteUnusedContacts :: HasCallStack => FilePath -> IO ()
 testGroupDeleteUnusedContacts =
-  testChat3 aliceProfile bobProfile cathProfile $
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       -- create group 1
       createGroup3 "team" alice bob cath
@@ -1210,6 +1219,7 @@ testGroupDeleteUnusedContacts =
       cath `hasContactProfiles` ["alice", "bob", "cath"]
       -- delete group 2, unused contacts and profiles are deleted
       deleteGroup alice bob cath "club"
+      threadDelay 3000000
       bob ##> "/contacts"
       bob <## "alice (Alice)"
       bob `hasContactProfiles` ["alice", "bob"]
@@ -1217,6 +1227,7 @@ testGroupDeleteUnusedContacts =
       cath <## "alice (Alice)"
       cath `hasContactProfiles` ["alice", "cath"]
   where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
     deleteGroup :: HasCallStack => TestCC -> TestCC -> TestCC -> String -> IO ()
     deleteGroup alice bob cath group = do
       alice ##> ("/d #" <> group)
@@ -1297,13 +1308,14 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Full deletion: off"
       alice <## "Message reactions: on"
       alice <## "Voice messages: on"
+      alice <## "Files and media: on"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
 
-testGroupMemberMessageDelete :: HasCallStack => FilePath -> IO ()
-testGroupMemberMessageDelete =
+testGroupModerate :: HasCallStack => FilePath -> IO ()
+testGroupModerate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
@@ -1333,8 +1345,8 @@ testGroupMemberMessageDelete =
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
       cath #$> ("/_get chat #1 count=1", chat, [(1, "hi [marked deleted by bob]")])
 
-testGroupMemberMessageFullDelete :: HasCallStack => FilePath -> IO ()
-testGroupMemberMessageFullDelete =
+testGroupModerateFullDelete :: HasCallStack => FilePath -> IO ()
+testGroupModerateFullDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
@@ -1370,6 +1382,91 @@ testGroupMemberMessageFullDelete =
       alice #$> ("/_get chat #1 count=1", chat, [(0, "moderated [deleted by bob]")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "moderated [deleted by you]")])
       cath #$> ("/_get chat #1 count=1", chat, [(1, "moderated [deleted by bob]")])
+
+testGroupDelayedModeration :: HasCallStack => FilePath -> IO ()
+testGroupDelayedModeration tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+      connectUsers alice cath
+      addMember "team" alice cath GRMember
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath <## "#team: you joined the group"
+        ]
+      threadDelay 1000000
+      cath #> "#team hi" -- message is pending for bob
+      alice <# "#team cath> hi"
+      alice ##> "\\\\ #team @cath hi"
+      alice <## "message marked deleted by you"
+      cath <# "#team cath> [marked deleted by alice] hi"
+    withTestChat tmp "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "#team: connected to server(s)"
+      bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+      withTestChat tmp "cath" $ \cath -> do
+        cath <## "2 contacts connected (use /cs for the list)"
+        cath <## "#team: connected to server(s)"
+        cath <## "#team: member bob (Bob) is connected"
+        bob
+          <### [ "#team: new member cath is connected",
+                 EndsWith "#team cath> [marked deleted by alice] hi"
+               ]
+        alice #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
+        cath #$> ("/_get chat #1 count=2", chat, [(1, "hi [marked deleted by alice]"), (0, "connected")])
+        bob ##> "/_get chat #1 count=2"
+        r <- chat <$> getTermLine bob
+        r `shouldMatchList` [(0, "connected"), (0, "hi [marked deleted by alice]")]
+
+testGroupDelayedModerationFullDelete :: HasCallStack => FilePath -> IO ()
+testGroupDelayedModerationFullDelete tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      createGroup2 "team" alice bob
+    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+      connectUsers alice cath
+      addMember "team" alice cath GRMember
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath <## "#team: you joined the group"
+        ]
+      threadDelay 1000000
+      cath #> "#team hi" -- message is pending for bob
+      alice <# "#team cath> hi"
+      alice ##> "\\\\ #team @cath hi"
+      alice <## "message marked deleted by you"
+      cath <# "#team cath> [marked deleted by alice] hi"
+      -- if full deletion was enabled at time of moderation, cath would delete pending message as well,
+      -- that's why we set it afterwards to test delayed moderation for bob
+      alice ##> "/set delete #team on"
+      alice <## "updated group preferences:"
+      alice <## "Full deletion: on"
+      cath <## "alice updated group #team:"
+      cath <## "updated group preferences:"
+      cath <## "Full deletion: on"
+    withTestChat tmp "bob" $ \bob -> do
+      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "#team: connected to server(s)"
+      bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Full deletion: on"
+      withTestChat tmp "cath" $ \cath -> do
+        cath <## "2 contacts connected (use /cs for the list)"
+        cath <## "#team: connected to server(s)"
+        cath <## "#team: member bob (Bob) is connected"
+        bob
+          <### [ "#team: new member cath is connected",
+                 EndsWith "#team cath> moderated [deleted by alice]"
+               ]
+        alice #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by you]"), (1, "Full deletion: on")])
+        cath #$> ("/_get chat #1 count=3", chat, [(1, "hi [marked deleted by alice]"), (0, "Full deletion: on"), (0, "connected")])
+        bob ##> "/_get chat #1 count=3"
+        r <- chat <$> getTermLine bob
+        r `shouldMatchList` [(0, "Full deletion: on"), (0, "connected"), (0, "moderated [deleted by alice]")]
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
@@ -1702,6 +1799,7 @@ testGroupLinkContactUsed =
       bob @@@ [("#team", "connected")]
       alice #> "@bob hello"
       bob <# "alice> hello"
+      threadDelay 500000
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
       alice @@@ [("@bob", ""), ("#team", "connected")]
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
@@ -1827,7 +1925,7 @@ testGroupLinkIncognitoMembership =
 
 testGroupLinkUnusedHostContactDeleted :: HasCallStack => FilePath -> IO ()
 testGroupLinkUnusedHostContactDeleted =
-  testChat2 aliceProfile bobProfile $
+  testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       -- create group 1
       alice ##> "/g team"
@@ -1881,10 +1979,12 @@ testGroupLinkUnusedHostContactDeleted =
       bob `hasContactProfiles` ["alice", "bob"]
       -- delete group 2, unused host contact and profile are deleted
       bobLeaveDeleteGroup alice bob "club"
+      threadDelay 3000000
       bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
   where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
     bobLeaveDeleteGroup :: HasCallStack => TestCC -> TestCC -> String -> IO ()
     bobLeaveDeleteGroup alice bob group = do
       bob ##> ("/l " <> group)
@@ -1899,7 +1999,7 @@ testGroupLinkUnusedHostContactDeleted =
 
 testGroupLinkIncognitoUnusedHostContactsDeleted :: HasCallStack => FilePath -> IO ()
 testGroupLinkIncognitoUnusedHostContactsDeleted =
-  testChat2 aliceProfile bobProfile $
+  testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       bob #$> ("/incognito on", id, "ok")
       bobIncognitoTeam <- createGroupBobIncognito alice bob "team" "alice"
@@ -1912,15 +2012,18 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
       bob `hasContactProfiles` ["alice", "alice", "bob", T.pack bobIncognitoTeam, T.pack bobIncognitoClub]
       -- delete group 1, unused host contact and profile are deleted
       bobLeaveDeleteGroup alice bob "team" bobIncognitoTeam
+      threadDelay 3000000
       bob ##> "/contacts"
       bob <## "i alice_1 (Alice)"
       bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognitoClub]
       -- delete group 2, unused host contact and profile are deleted
       bobLeaveDeleteGroup alice bob "club" bobIncognitoClub
+      threadDelay 3000000
       bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
   where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
     createGroupBobIncognito :: HasCallStack => TestCC -> TestCC -> String -> String -> IO String
     createGroupBobIncognito alice bob group bobsAliceContact = do
       alice ##> ("/g " <> group)
@@ -2101,67 +2204,151 @@ testGroupMsgDecryptError tmp =
         [bob, cath] *<# "#team alice> hi"
         bob #> "#team hey"
         [alice, cath] *<# "#team bob> hey"
-      copyDb "bob" "bob_old"
-      withTestChat tmp "bob" $ \bob -> do
-        bob <## "2 contacts connected (use /cs for the list)"
-        bob <## "#team: connected to server(s)"
-        alice #> "#team hello"
-        [bob, cath] *<# "#team alice> hello"
-        bob #> "#team hello too"
-        [alice, cath] *<# "#team bob> hello too"
-      withTestChat tmp "bob_old" $ \bob -> do
-        bob <## "2 contacts connected (use /cs for the list)"
-        bob <## "#team: connected to server(s)"
-        alice #> "#team 1"
-        bob <# "#team alice> decryption error, possibly due to the device change (header)"
-        cath <# "#team alice> 1"
-        alice #> "#team 2"
-        cath <# "#team alice> 2"
-        alice #> "#team 3"
-        cath <# "#team alice> 3"
-        (bob </)
-        bob ##> "/tail #team 1"
-        bob <# "#team alice> decryption error, possibly due to the device change (header, 3 messages)"
-        bob #> "#team 1"
-        alice <# "#team bob> decryption error, possibly due to the device change (header)"
-        -- cath <# "#team bob> 1"
-        bob #> "#team 2"
-        cath <# "#team bob> incorrect message hash"
-        cath <# "#team bob> 2"
-        bob #> "#team 3"
-        cath <# "#team bob> 3"
-        (alice </)
-        alice ##> "/tail #team 1"
-        alice <# "#team bob> decryption error, possibly due to the device change (header, 3 messages)"
-        alice #> "#team 4"
-        (bob </)
-        cath <# "#team alice> 4"
-        bob ##> "/tail #team 4"
-        bob
-          <##? [ "#team alice> decryption error, possibly due to the device change (header, 4 messages)",
-                 "#team 1",
-                 "#team 2",
-                 "#team 3"
-               ]
+      setupDesynchronizedRatchet tmp alice cath
       withTestChat tmp "bob" $ \bob -> do
         bob <## "2 contacts connected (use /cs for the list)"
         bob <## "#team: connected to server(s)"
         alice #> "#team hello again"
-        bob <# "#team alice> skipped message ID 8..11"
+        bob <# "#team alice> skipped message ID 8..10"
         [bob, cath] *<# "#team alice> hello again"
         bob #> "#team received!"
         alice <# "#team bob> received!"
-        bob #> "#team 4"
-        alice <# "#team bob> 4"
-        bob #> "#team 5"
-        cath <# "#team bob> incorrect message hash"
-        [alice, cath] *<# "#team bob> 5"
-        bob #> "#team 6"
-        [alice, cath] *<# "#team bob> 6"
+        cath <# "#team bob> received!"
+
+setupDesynchronizedRatchet :: HasCallStack => FilePath -> TestCC -> TestCC -> IO ()
+setupDesynchronizedRatchet tmp alice cath = do
+  copyDb "bob" "bob_old"
+  withTestChat tmp "bob" $ \bob -> do
+    bob <## "2 contacts connected (use /cs for the list)"
+    bob <## "#team: connected to server(s)"
+    alice #> "#team hello"
+    [bob, cath] *<# "#team alice> hello"
+    bob #> "#team hello too"
+    [alice, cath] *<# "#team bob> hello too"
+  withTestChat tmp "bob_old" $ \bob -> do
+    bob <## "2 contacts connected (use /cs for the list)"
+    bob <## "#team: connected to server(s)"
+    bob ##> "/sync #team alice"
+    bob <## "error: command is prohibited"
+    alice #> "#team 1"
+    bob <## "#team alice: decryption error (connection out of sync), synchronization required"
+    bob <## "use /sync #team alice to synchronize"
+    cath <# "#team alice> 1"
+    alice #> "#team 2"
+    cath <# "#team alice> 2"
+    alice #> "#team 3"
+    cath <# "#team alice> 3"
+    (bob </)
+    bob ##> "/tail #team 1"
+    bob <# "#team alice> decryption error, possibly due to the device change (header, 3 messages)"
   where
     copyDb from to = do
       copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
       copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+
+testGroupSyncRatchet :: HasCallStack => FilePath -> IO ()
+testGroupSyncRatchet tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+      withNewTestChat tmp "bob" bobProfile $ \bob -> do
+        createGroup3 "team" alice bob cath
+        alice #> "#team hi"
+        [bob, cath] *<# "#team alice> hi"
+        bob #> "#team hey"
+        [alice, cath] *<# "#team bob> hey"
+      setupDesynchronizedRatchet tmp alice cath
+      withTestChat tmp "bob_old" $ \bob -> do
+        bob <## "2 contacts connected (use /cs for the list)"
+        bob <## "#team: connected to server(s)"
+        -- cath and bob are not fully de-synchronized
+        bob `send` "#team 1"
+        bob <## "error: command is prohibited" -- silence?
+        bob <# "#team 1"
+        (alice </)
+        (cath </)
+        cath #> "#team 1"
+        [alice, bob] *<# "#team cath> 1"
+        bob `send` "#team 2"
+        bob <## "error: command is prohibited"
+        bob <# "#team 2"
+        cath <# "#team bob> incorrect message hash"
+        cath <# "#team bob> 2"
+        bob `send` "#team 3"
+        bob <## "error: command is prohibited"
+        bob <# "#team 3"
+        cath <# "#team bob> 3"
+        -- synchronize bob and alice
+        bob ##> "/sync #team alice"
+        bob <## "connection synchronization started"
+        alice <## "#team bob: connection synchronization agreed"
+        bob <## "#team alice: connection synchronization agreed"
+        alice <## "#team bob: connection synchronized"
+        bob <## "#team alice: connection synchronized"
+
+        bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
+        alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+
+        alice #> "#team hello again"
+        [bob, cath] *<# "#team alice> hello again"
+        bob #> "#team received!"
+        alice <# "#team bob> received!"
+        cath <# "#team bob> received!"
+
+testGroupSyncRatchetCodeReset :: HasCallStack => FilePath -> IO ()
+testGroupSyncRatchetCodeReset tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+      withNewTestChat tmp "bob" bobProfile $ \bob -> do
+        createGroup3 "team" alice bob cath
+        alice #> "#team hi"
+        [bob, cath] *<# "#team alice> hi"
+        bob #> "#team hey"
+        [alice, cath] *<# "#team bob> hey"
+        -- connection not verified
+        bob ##> "/i #team alice"
+        aliceInfo bob
+        bob <## "connection not verified, use /code command to see security code"
+        -- verify connection
+        alice ##> "/code #team bob"
+        bCode <- getTermLine alice
+        bob ##> ("/verify #team alice " <> bCode)
+        bob <## "connection verified"
+        -- connection verified
+        bob ##> "/i #team alice"
+        aliceInfo bob
+        bob <## "connection verified"
+      setupDesynchronizedRatchet tmp alice cath
+      withTestChat tmp "bob_old" $ \bob -> do
+        bob <## "2 contacts connected (use /cs for the list)"
+        bob <## "#team: connected to server(s)"
+        bob ##> "/sync #team alice"
+        bob <## "connection synchronization started"
+        alice <## "#team bob: connection synchronization agreed"
+        bob <## "#team alice: connection synchronization agreed"
+        bob <## "#team alice: security code changed"
+        alice <## "#team bob: connection synchronized"
+        bob <## "#team alice: connection synchronized"
+
+        bob #$> ("/_get chat #1 count=4", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
+        alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
+
+        -- connection not verified
+        bob ##> "/i #team alice"
+        aliceInfo bob
+        bob <## "connection not verified, use /code command to see security code"
+
+        alice #> "#team hello again"
+        [bob, cath] *<# "#team alice> hello again"
+        bob #> "#team received!"
+        alice <# "#team bob> received!"
+        (cath </) -- bob is partially de-synchronized with cath - see test above
+  where
+    aliceInfo :: HasCallStack => TestCC -> IO ()
+    aliceInfo bob = do
+      bob <## "group ID: 1"
+      bob <## "member ID: 1"
+      bob <## "receiving messages via: localhost"
+      bob <## "sending messages via: localhost"
 
 testSetGroupMessageReactions :: HasCallStack => FilePath -> IO ()
 testSetGroupMessageReactions =

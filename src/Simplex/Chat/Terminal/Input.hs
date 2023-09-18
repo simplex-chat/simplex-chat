@@ -31,7 +31,7 @@ import GHC.Weak (deRefWeak)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.ChatItemContent
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
 import Simplex.Chat.Types (User (..))

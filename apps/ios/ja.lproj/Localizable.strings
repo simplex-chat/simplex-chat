@@ -570,12 +570,6 @@
 /* rcv group event chat item */
 "changed your role to %@" = "あなたの役割を %@ に変更しました";
 
-/* chat item text */
-"changing address for %@..." = "%@ のアドレスを変更しています...";
-
-/* chat item text */
-"changing address..." = "アドレスを変更しています…";
-
 /* No comment provided by engineer. */
 "Chat archive" = "チャットのアーカイブ";
 
@@ -894,7 +888,7 @@
 /* No comment provided by engineer. */
 "Decentralized" = "分散型";
 
-/* No comment provided by engineer. */
+/* message decrypt error item */
 "Decryption error" = "復号化エラー";
 
 /* pref value */
@@ -1363,7 +1357,7 @@
 "Exported database archive." = "データベースのアーカイブをエクスポートします。";
 
 /* No comment provided by engineer. */
-"Exporting database archive..." = "データベース アーカイブをエクスポートしています...";
+"Exporting database archive…" = "データベース アーカイブをエクスポートしています…";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "パスフレーズの削除に失敗";
@@ -1861,7 +1855,7 @@
 "Messages & files" = "メッセージ & ファイル";
 
 /* No comment provided by engineer. */
-"Migrating database archive..." = "データベースのアーカイブを移行しています...";
+"Migrating database archive…" = "データベースのアーカイブを移行しています…";
 
 /* No comment provided by engineer. */
 "Migration error:" = "移行エラー：";
@@ -2265,9 +2259,6 @@
 
 /* No comment provided by engineer. */
 "Rate the app" = "アプリを評価";
-
-/* chat item menu */
-"React..." = "リアクション...";
 
 /* No comment provided by engineer. */
 "Read" = "読む";
@@ -2870,12 +2861,6 @@
 "this contact" = "この連絡先";
 
 /* No comment provided by engineer. */
-"This error is permanent for this connection, please re-connect." = "このエラーはこの接続では永続的なものです。再接続してください。";
-
-/* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "開発中の機能です！相手のクライアントが4.2でなければ機能しません。アドレス変更が完了すると、会話にメッセージが出ます。連絡相手 (またはグループのメンバー) からメッセージを受信できないかをご確認ください。";
-
-/* No comment provided by engineer. */
 "This group no longer exists." = "このグループはもう存在しません。";
 
 /* No comment provided by engineer. */
@@ -3194,7 +3179,7 @@
 "You can create it later" = "後からでも作成できます";
 
 /* No comment provided by engineer. */
-"You can hide or mute a user profile - swipe it to the right.\nSimpleX Lock must be enabled." = "ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。\nSimpleXロックが有効になっている必要があります。";
+"You can hide or mute a user profile - swipe it to the right." = "ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。";
 
 /* notification body */
 "You can now send messages to %@" = "%@ にメッセージを送信できるようになりました";
@@ -3333,9 +3318,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "あなたのチャットプロフィール";
-
-/* No comment provided by engineer. */
-"Your chats" = "あなたのチャット";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "接続を完了するには、連絡相手がオンラインになる必要があります。\nこの接続をキャンセルして、連絡先を削除をすることもできます (後でやり直すこともできます)。";

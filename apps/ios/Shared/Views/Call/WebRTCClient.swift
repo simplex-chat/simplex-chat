@@ -13,6 +13,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         RTCInitializeSSL()
         let videoEncoderFactory = RTCDefaultVideoEncoderFactory()
         let videoDecoderFactory = RTCDefaultVideoDecoderFactory()
+        videoEncoderFactory.preferredCodec = RTCVideoCodecInfo(name: kRTCVp8CodecName)
         return RTCPeerConnectionFactory(encoderFactory: videoEncoderFactory, decoderFactory: videoDecoderFactory)
     }()
     private static let ivTagBytes: Int = 28
@@ -301,6 +302,17 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     func startCaptureLocalVideo(_ activeCall: Call) {
+#if targetEnvironment(simulator)
+        guard
+            let capturer = activeCall.localCamera as? RTCFileVideoCapturer
+        else {
+            logger.error("Unable to work with a file capturer")
+            return
+        }
+        capturer.stopCapture()
+        // Drag video file named `video.mp4` to `sounds` directory in the project from any other path in filesystem
+        capturer.startCapturing(fromFileNamed: "sounds/video.mp4")
+#else
         guard
             let capturer = activeCall.localCamera as? RTCCameraVideoCapturer,
             let camera = (RTCCameraVideoCapturer.captureDevices().first { $0.position == activeCall.device })
@@ -328,6 +340,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         capturer.startCapture(with: camera,
             format: format,
             fps: Int(min(24, fps.maxFrameRate)))
+#endif
     }
 
     private func createAudioSender(_ connection: RTCPeerConnection) {

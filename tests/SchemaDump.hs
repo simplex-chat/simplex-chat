@@ -10,7 +10,7 @@ import Data.List (dropWhileEnd)
 import Data.Maybe (fromJust, isJust)
 import Simplex.Chat.Store (createChatStore)
 import qualified Simplex.Chat.Store as Store
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore, createSQLiteStore, withConnection)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore, createSQLiteStore)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..), MigrationsToRun (..), toDownMigration)
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Util (ifM, whenM)
@@ -53,19 +53,24 @@ testSchemaMigrations = withTmpFiles $ do
       putStrLn $ "down migration " <> name m
       let downMigr = fromJust $ toDownMigration m
       schema <- getSchema testDB testSchema
-      withConnection st (`Migrations.run` MTRUp [m])
+      Migrations.run st $ MTRUp [m]
       schema' <- getSchema testDB testSchema
       schema' `shouldNotBe` schema
-      withConnection st (`Migrations.run` MTRDown [downMigr])
+      Migrations.run st $ MTRDown [downMigr]
       unless (name m `elem` skipComparisonForDownMigrations) $ do
         schema'' <- getSchema testDB testSchema
         schema'' `shouldBe` schema
-      withConnection st (`Migrations.run` MTRUp [m])
+      Migrations.run st $ MTRUp [m]
       schema''' <- getSchema testDB testSchema
       schema''' `shouldBe` schema'
 
 skipComparisonForDownMigrations :: [String]
-skipComparisonForDownMigrations = ["20230504_recreate_msg_delivery_events_cleanup_messages"]
+skipComparisonForDownMigrations =
+  [ -- on down migration msg_delivery_events table moves down to the end of the file
+    "20230504_recreate_msg_delivery_events_cleanup_messages",
+    -- on down migration idx_chat_items_timed_delete_at index moves down to the end of the file
+    "20230529_indexes"
+  ]
 
 getSchema :: FilePath -> FilePath -> IO String
 getSchema dpPath schemaPath = do

@@ -136,6 +136,9 @@ struct ContentView: View {
             .sheet(isPresented: $showWhatsNew) {
                 WhatsNewView()
             }
+            if chatModel.setDeliveryReceipts {
+                SetDeliveryReceiptsView()
+            }
             IncomingCallView()
         }
         .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
@@ -176,10 +179,13 @@ struct ContentView: View {
     }
 
     private func runAuthenticate() {
+        logger.debug("DEBUGGING: runAuthenticate")
         if !prefPerformLA {
             userAuthorized = true
         } else {
+            logger.debug("DEBUGGING: before dismissAllSheets")
             dismissAllSheets(animated: false) {
+                logger.debug("DEBUGGING: in dismissAllSheets callback")
                 chatModel.chatId = nil
                 justAuthenticate()
             }
@@ -190,7 +196,7 @@ struct ContentView: View {
         userAuthorized = false
         let laMode = privacyLocalAuthModeDefault.get()
         authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
-            logger.debug("authenticate callback: \(String(describing: laResult))")
+            logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
             switch (laResult) {
             case .success:
                 userAuthorized = true

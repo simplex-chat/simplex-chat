@@ -18,7 +18,7 @@ struct TerminalView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State var composeState: ComposeState = ComposeState()
-    @FocusState private var keyboardVisible: Bool
+    @State private var keyboardVisible = false
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
     @State private var scrolled = false

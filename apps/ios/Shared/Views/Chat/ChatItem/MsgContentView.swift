@@ -87,7 +87,7 @@ struct MsgContentView: View {
 func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false) -> Text {
     let s = text
     var res: Text
-    if let ft = formattedText, ft.count > 0 {
+    if let ft = formattedText, ft.count > 0 && ft.count <= 200 {
         res = formatText(ft[0], preview)
         var i = 1
         while i < ft.count {

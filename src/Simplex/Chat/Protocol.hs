@@ -41,6 +41,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -709,6 +710,13 @@ hasNotification = \case
   XGrpInv_ -> True
   XGrpMemFwd_ -> True
   XGrpDel_ -> True
+  XCallInv_ -> True
+  _ -> False
+
+hasDeliveryReceipt :: CMEventTag e -> Bool
+hasDeliveryReceipt = \case
+  XMsgNew_ -> True
+  XGrpInv_ -> True
   XCallInv_ -> True
   _ -> False
 

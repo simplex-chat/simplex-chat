@@ -14,9 +14,18 @@ struct ChatListView: View {
     @Binding var showSettings: Bool
     @State private var searchText = ""
     @State private var showAddChat = false
-    @State var userPickerVisible = false
+    @State private var userPickerVisible = false
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
+        if #available(iOS 16.0, *) {
+            viewBody.scrollDismissesKeyboard(.immediately)
+        } else {
+            viewBody
+        }
+    }
+
+    private var viewBody: some View {
         ZStack(alignment: .topLeading) {
             NavStackCompat(
                 isActive: Binding(
@@ -54,13 +63,40 @@ struct ChatListView: View {
         .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
         .onAppear() { connectViaUrl() }
         .onDisappear() { withAnimation { userPickerVisible = false } }
+        .refreshable {
+            AlertManager.shared.showAlert(Alert(
+                title: Text("Reconnect servers?"),
+                message: Text("Reconnect all connected servers to force message delivery. It uses additional traffic."),
+                primaryButton: .default(Text("Ok")) {
+                    Task {
+                        do {
+                            try await reconnectAllServers()
+                        } catch let error {
+                            AlertManager.shared.showAlertMsg(title: "Error", message: "\(responseError(error))")
+                        }
+                    }
+                },
+                secondaryButton: .cancel()
+            ))
+        }
         .offset(x: -8)
         .listStyle(.plain)
-        .navigationTitle("Your chats")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
+                let user = chatModel.currentUser ?? User.sampleData
+                ZStack(alignment: .topTrailing) {
+                    ProfileImage(imageStr: user.image, color: Color(uiColor: .quaternaryLabel))
+                        .frame(width: 32, height: 32)
+                        .padding(.trailing, 4)
+                    let allRead = chatModel.users
+                        .filter { u in !u.user.activeUser && !u.user.hidden }
+                        .allSatisfy { u in u.unreadCount == 0 }
+                    if !allRead {
+                        unreadBadge(size: 12)
+                    }
+                }
+                .onTapGesture {
                     if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
                         withAnimation {
                             userPickerVisible.toggle()
@@ -68,33 +104,22 @@ struct ChatListView: View {
                     } else {
                         showSettings = true
                     }
-                } label: {
-                    let user = chatModel.currentUser ?? User.sampleData
-                    ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: user.image, color: Color(uiColor: .quaternaryLabel))
-                            .frame(width: 32, height: 32)
-                            .padding(.trailing, 4)
-                        let allRead = chatModel.users
-                            .filter { u in !u.user.activeUser && !u.user.hidden }
-                            .allSatisfy { u in u.unreadCount == 0 }
-                        if !allRead {
-                            unreadBadge(size: 12)
-                        }
-                    }
                 }
             }
             ToolbarItem(placement: .principal) {
-                if (chatModel.incognito) {
-                    HStack {
-                        if (chatModel.chats.count > 8) {
-                            Text("Your chats").font(.headline)
-                            Spacer().frame(width: 16)
-                        }
-                        Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
+                HStack(spacing: 4) {
+                    if (chatModel.incognito) {
+                        Image(systemName: "theatermasks")
+                            .foregroundColor(.indigo)
+                            .padding(.trailing, 8)
                     }
-                } else {
-                    Text("Your chats").font(.headline)
+                    Text("Chats")
+                        .font(.headline)
+                    if chatModel.chats.count > 0 {
+                        toggleFilterButton()
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 switch chatModel.chatRunning {
@@ -106,18 +131,33 @@ struct ChatListView: View {
         }
     }
 
-    private var chatList: some View {
-        List {
-            ForEach(filteredChats(), id: \.viewId) { chat in
-                ChatListNavLink(chat: chat)
-                    .padding(.trailing, -16)
-                    .disabled(chatModel.chatRunning != true)
-            }
+    private func toggleFilterButton() -> some View {
+        Button {
+            showUnreadAndFavorites = !showUnreadAndFavorites
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
+                .foregroundColor(.accentColor)
         }
-        .onChange(of: chatModel.chatId) { _ in
-            if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
-                chatModel.chatToTop = nil
-                chatModel.popChat(chatId)
+    }
+
+    @ViewBuilder private var chatList: some View {
+        let cs = filteredChats()
+        ZStack {
+            List {
+                ForEach(cs, id: \.viewId) { chat in
+                    ChatListNavLink(chat: chat)
+                        .padding(.trailing, -16)
+                        .disabled(chatModel.chatRunning != true)
+                }
+            }
+            .onChange(of: chatModel.chatId) { _ in
+                if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
+                    chatModel.chatToTop = nil
+                    chatModel.popChat(chatId)
+                }
+            }
+            if cs.isEmpty && !chatModel.chats.isEmpty {
+                Text("No filtered chats").foregroundColor(.secondary)
             }
         }
     }
@@ -181,19 +221,37 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return s == ""
+        return s == "" && !showUnreadAndFavorites
             ? chatModel.chats
             : chatModel.chats.filter { chat in
-                let contains = chat.chatInfo.chatViewName.localizedLowercase.contains(s)
-                switch chat.chatInfo {
+                let cInfo = chat.chatInfo
+                switch cInfo {
                 case let .direct(contact):
-                    return contains
-                    || contact.profile.displayName.localizedLowercase.contains(s)
-                    || contact.fullName.localizedLowercase.contains(s)
-                case .contactConnection: return false
-                default: return contains
+                    return s == ""
+                            ? filtered(chat)
+                            : (viewNameContains(cInfo, s) ||
+                               contact.profile.displayName.localizedLowercase.contains(s) ||
+                               contact.fullName.localizedLowercase.contains(s))
+                case let .group(gInfo):
+                    return s == ""
+                            ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
+                            : viewNameContains(cInfo, s)
+                case .contactRequest:
+                    return s == "" || viewNameContains(cInfo, s)
+                case let .contactConnection(conn):
+                    return s != "" && conn.localAlias.localizedLowercase.contains(s)
+                case .invalidJSON:
+                    return false
                 }
             }
+
+        func filtered(_ chat: Chat) -> Bool {
+            (chat.chatInfo.chatSettings?.favorite ?? false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+        }
+
+        func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
+            cInfo.chatViewName.localizedLowercase.contains(s)
+        }
     }
 }
 

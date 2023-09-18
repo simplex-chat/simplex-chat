@@ -65,7 +65,7 @@ struct MigrateToAppGroupView: View {
             case .exporting:
                 center {
                     ProgressView(value: 0.33)
-                    Text("Exporting database archive...")
+                    Text("Exporting database archive…")
                 }
                 migrationProgress()
             case .export_error:
@@ -82,7 +82,7 @@ struct MigrateToAppGroupView: View {
             case .migrating:
                 center {
                     ProgressView(value: 0.67)
-                    Text("Migrating database archive...")
+                    Text("Migrating database archive…")
                 }
                 migrationProgress()
             case .migration_error:

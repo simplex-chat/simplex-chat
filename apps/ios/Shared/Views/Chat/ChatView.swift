@@ -22,7 +22,7 @@ struct ChatView: View {
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
-    @FocusState private var keyboardVisible: Bool
+    @State private var keyboardVisible = false
     @State private var showDeleteMessage = false
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
@@ -39,6 +39,16 @@ struct ChatView: View {
     @State private var selectedMember: GroupMember? = nil
 
     var body: some View {
+        if #available(iOS 16.0, *) {
+            viewBody
+            .scrollDismissesKeyboard(.immediately)
+            .keyboardPadding()
+        } else {
+            viewBody
+        }
+    }
+
+    private var viewBody: some View {
         let cInfo = chat.chatInfo
         return VStack(spacing: 0) {
             if searchMode {
@@ -65,17 +75,14 @@ struct ChatView: View {
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
-                composeState = draft
-            }
-            if chat.chatStats.unreadChat {
-                Task {
-                    await markChatUnread(chat, unreadChat: false)
-                }
-            }
+            initChatView()
         }
-        .onChange(of: chatModel.chatId) { _ in
-            if chatModel.chatId == nil { dismiss() }
+        .onChange(of: chatModel.chatId) { cId in
+            if cId != nil {
+                initChatView()
+            } else {
+                dismiss()
+            }
         }
         .onDisappear {
             VideoPlayerView.players.removeAll()
@@ -185,6 +192,32 @@ struct ChatView: View {
         }
     }
 
+    private func initChatView() {
+        let cInfo = chat.chatInfo
+        if case let .direct(contact) = cInfo {
+            Task {
+                do {
+                    let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
+                    await MainActor.run {
+                        if let s = stats {
+                            chatModel.updateContactConnectionStats(contact, s)
+                        }
+                    }
+                } catch let error {
+                    logger.error("apiContactInfo error: \(responseError(error))")
+                }
+            }
+        }
+        if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+            composeState = draft
+        }
+        if chat.chatStats.unreadChat {
+            Task {
+                await markChatUnread(chat, unreadChat: false)
+            }
+        }
+    }
+
     private func searchToolbar() -> some View {
         HStack {
             HStack {
@@ -193,7 +226,7 @@ struct ChatView: View {
                     .focused($searchFocussed)
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity)
-                
+
                 Button {
                     searchText = ""
                 } label: {
@@ -204,7 +237,7 @@ struct ChatView: View {
             .foregroundColor(.secondary)
             .background(Color(.secondarySystemBackground))
             .cornerRadius(10.0)
-            
+
             Button ("Cancel") {
                 searchText = ""
                 searchMode = false
@@ -537,8 +570,20 @@ struct ChatView: View {
         private func menu(live: Bool) -> [UIMenuElement] {
             var menu: [UIMenuElement] = []
             if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+                let rs = allReactions()
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
-                   let rm = reactionUIMenu() {
+                   rs.count > 0 {
+                    var rm: UIMenu
+                    if #available(iOS 16, *) {
+                        var children: [UIMenuElement] = Array(rs.prefix(topReactionsCount(rs)))
+                        if let sm = reactionUIMenu(rs) {
+                            children.append(sm)
+                        }
+                        rm = UIMenu(title: "", options: .displayInline, children: children)
+                        rm.preferredElementSize = .small
+                    } else {
+                        rm = reactionUIMenuPreiOS16(rs)
+                    }
                     menu.append(rm)
                 }
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
@@ -582,6 +627,7 @@ struct ChatView: View {
                 menu.append(viewInfoUIAction())
                 menu.append(deleteUIAction())
             } else if ci.isDeletedContent {
+                menu.append(viewInfoUIAction())
                 menu.append(deleteUIAction())
             }
             return menu
@@ -602,20 +648,36 @@ struct ChatView: View {
             }
         }
 
-        private func reactionUIMenu() -> UIMenu? {
-            let rs = MsgReaction.values.compactMap { r in
+        private func reactionUIMenuPreiOS16(_ rs: [UIAction]) -> UIMenu {
+            UIMenu(
+                title: NSLocalizedString("React…", comment: "chat item menu"),
+                image: UIImage(systemName: "face.smiling"),
+                children: rs
+            )
+        }
+
+        @available(iOS 16.0, *)
+        private func reactionUIMenu(_ rs: [UIAction]) -> UIMenu? {
+            var children = rs
+            children.removeFirst(min(rs.count, topReactionsCount(rs)))
+            if children.count == 0 { return nil }
+            return UIMenu(
+                title: "",
+                image: UIImage(systemName: "ellipsis"),
+                children: children
+            )
+        }
+
+        private func allReactions() -> [UIAction] {
+            MsgReaction.values.compactMap { r in
                 ci.reactions.contains(where: { $0.userReacted && $0.reaction == r })
                 ? nil
                 : UIAction(title: r.text) { _ in setReaction(add: true, reaction: r) }
             }
-            if rs.count > 0 {
-                return UIMenu(
-                    title: NSLocalizedString("React...", comment: "chat item menu"),
-                    image: UIImage(systemName: "face.smiling"),
-                    children: rs
-                )
-            }
-            return nil
+        }
+
+        private func topReactionsCount(_ rs: [UIAction]) -> Int {
+            rs.count > 4 ? 3 : 4
         }
 
         private func setReaction(add: Bool, reaction: MsgReaction) {
@@ -869,9 +931,20 @@ struct ChatView: View {
 }
 
 func toggleNotifications(_ chat: Chat, enableNtfs: Bool) {
+    var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
+    chatSettings.enableNtfs = enableNtfs
+    updateChatSettings(chat, chatSettings: chatSettings)
+}
+
+func toggleChatFavorite(_ chat: Chat, favorite: Bool) {
+    var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
+    chatSettings.favorite = favorite
+    updateChatSettings(chat, chatSettings: chatSettings)
+}
+
+func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
     Task {
         do {
-            let chatSettings = ChatSettings(enableNtfs: enableNtfs)
             try await apiSetChatSettings(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, chatSettings: chatSettings)
             await MainActor.run {
                 switch chat.chatInfo {
