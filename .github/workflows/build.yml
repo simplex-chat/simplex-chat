@@ -78,10 +78,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup Haskell
-        uses: haskell/actions/setup@v2
+        uses: haskell-actions/setup@v2
         with:
-          ghc-version: "8.10.7"
-          cabal-version: "latest"
+          ghc-version: "9.6.2"
+          cabal-version: "3.10.1.0"
 
       - name: Cache dependencies
         uses: actions/cache@v3
@@ -171,8 +171,8 @@ jobs:
           APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
           APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
         run: |
-          scripts/desktop/build-desktop-mac-ci.sh
-          echo "::set-output name=package_path::$(echo $PWD/release/main/dmg/SimpleX-*.dmg)"
+          scripts/ci/build-desktop-mac.sh
+          echo "::set-output name=package_path::$(echo $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg)"
 
       - name: Linux upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
@@ -210,19 +210,18 @@ jobs:
       # Unix /
 
       # / Windows
-
-      # * In powershell multiline commands do not fail if individual commands fail - https://github.community/t/multiline-commands-on-windows-do-not-fail-if-individual-commands-fail/16753
-      # * And GitHub Actions does not support parameterizing shell in a matrix job - https://github.community/t/using-matrix-to-specify-shell-is-it-possible/17065
+      # rm -rf dist-newstyle/src/direct-sq* is here because of the bug in cabal's dependency which prevents second build from finishing
 
       - name: Windows build
         id: windows_build
         if: matrix.os == 'windows-latest'
-        shell: cmd
+        shell: bash
         run: |
+          rm -rf dist-newstyle/src/direct-sq*
+          sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build --enable-tests
-          cabal list-bin simplex-chat > tmp_bin_path
-          set /p bin_path= < tmp_bin_path
-          echo ::set-output name=bin_path::%bin_path%
+          rm -rf dist-newstyle/src/direct-sq*
+          echo "::set-output name=bin_path::$(cabal list-bin simplex-chat | tail -n 1)"
 
       - name: Windows upload binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'

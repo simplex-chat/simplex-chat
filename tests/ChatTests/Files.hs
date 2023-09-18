@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+
 module ChatTests.Files where
 
 import ChatClient
@@ -1368,6 +1370,7 @@ testXFTPRcvError tmp = do
                "started receiving file 1 (test.pdf) from alice"
              ]
       bob <## "error receiving file 1 (test.pdf) from alice"
+      _ <- getTermLine bob
 
       bob ##> "/fs 1"
       bob <## "receiving file 1 (test.pdf) error"

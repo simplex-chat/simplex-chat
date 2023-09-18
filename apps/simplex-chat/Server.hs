@@ -8,6 +8,7 @@
 
 module Server where
 
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson (FromJSON, ToJSON)
