@@ -15,7 +15,7 @@ The first messaging platform that has no user identifiers of any kind — 100% p
 - [Audio & video calls](./audio-video-calls.md)
 - [Privacy & security](./privacy-security.md)
 - [App settings](./app-settings.md)
-- [Managing connections](./making-connections.md)
+- [Making connections](./making-connections.md)
 
 ## Quick start
 
