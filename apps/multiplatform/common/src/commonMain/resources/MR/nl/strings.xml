@@ -1389,4 +1389,16 @@
     <string name="settings_is_storing_in_clear_text">Het wachtwoord wordt als leesbare tekst in de instellingen opgeslagen.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Let op</b>: bericht en bestands relais zijn verbonden via SOCKS-proxy. Voor oproepen en het verzenden van link voorbeelden wordt gebruik gemaakt van een directe verbinding.]]></string>
     <string name="encrypt_local_files">Versleutel lokale bestanden</string>
+    <string name="v5_3_encrypt_local_files">Versleutel opgeslagen bestanden en media</string>
+    <string name="v5_3_new_desktop_app">Nieuwe desktop app!</string>
+    <string name="v5_3_new_interface_languages">6 nieuwe interfacetalen</string>
+    <string name="v5_3_encrypt_local_files_descr">App versleutelt nieuwe lokale bestanden (behalve video\'s)</string>
+    <string name="v5_3_discover_join_groups">Ontdek en sluit je aan bij groepen</string>
+    <string name="v5_3_simpler_incognito_mode">Vereenvoudigde incognitomodus</string>
+    <string name="v5_3_new_interface_languages_descr">Arabisch, Bulgaars, Fins, Hebreeuws, Thais en Oekraïens - dankzij de gebruikers en Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Maak een nieuw profiel in de desktop-app. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Schakel incognito in tijdens het verbinden.</string>
+    <string name="v5_3_discover_join_groups_descr">- maak verbinding met de directoryservice (BETA)!
+\n- ontvangst bevestiging (tot 20 leden).
+\n- sneller en stabieler.</string>
 </resources>
