@@ -218,6 +218,16 @@ instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptio
 
 data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
 
+contactOrGroupMemberIds :: ContactOrGroupMember -> (Maybe ContactId, Maybe GroupMemberId)
+contactOrGroupMemberIds = \case
+  CGMContact Contact {contactId} -> (Just contactId, Nothing)
+  CGMGroupMember _ GroupMember {groupMemberId} -> (Nothing, Just groupMemberId)
+
+contactOrGroupMemberIncognito :: ContactOrGroupMember -> IncognitoEnabled
+contactOrGroupMemberIncognito = \case
+  CGMContact ct -> contactConnIncognito ct
+  CGMGroupMember _ m -> memberIncognito m
+
 data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact,

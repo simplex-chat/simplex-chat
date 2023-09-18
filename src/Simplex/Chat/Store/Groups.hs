@@ -76,10 +76,8 @@ module Simplex.Chat.Store.Groups
     getMatchingContacts,
     getMatchingMemberContacts,
     createSentProbe,
-    createSentMemberProbe,
     createSentProbeHash,
     matchReceivedProbe,
-    matchReceivedMemberProbe,
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
@@ -99,7 +97,6 @@ where
 
 import Control.Monad.Except
 import Crypto.Random (ChaChaDRG)
-import Data.ByteString.Char8 (ByteString)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (sortOn)
@@ -119,7 +116,7 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (eitherToMaybe)
+import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 
@@ -1163,6 +1160,8 @@ getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalPro
       Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, contactId, displayName, fullName)
   rights <$> mapM (runExceptT . getContact db user) contactIds
   where
+    -- this query is different from one in getMatchingMemberContacts
+    -- it checks that it's not the same contact
     q =
       [sql|
         SELECT ct.contact_id
@@ -1192,128 +1191,100 @@ getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = Loc
           AND p.display_name = ? AND p.full_name = ?
       |]
 
-createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> Contact -> ExceptT StoreError IO (Probe, Int64)
-createSentProbe db gVar userId _to@Contact {contactId} =
+createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> ContactOrGroupMember -> ExceptT StoreError IO (Probe, Int64)
+createSentProbe db gVar userId _to =
   createWithRandomBytes 32 gVar $ \probe -> do
     currentTs <- getCurrentTime
+    let (ctId, gmId) = contactOrGroupMemberIds _to
     DB.execute
       db
-      "INSERT INTO sent_probes (contact_id, probe, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (contactId, probe, userId, currentTs, currentTs)
-    (Probe probe,) <$> insertedRowId db
+      "INSERT INTO sent_probes (contact_id, group_member_id, probe, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+      (ctId, gmId, probe, userId, currentTs, currentTs)
+    (Probe probe,) <$> insertedRowId db    
 
-createSentMemberProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> GroupMember -> ExceptT StoreError IO (Probe, Int64)
-createSentMemberProbe db gVar userId _to@GroupMember {groupMemberId} =
-  createWithRandomBytes 32 gVar $ \probe -> do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "UPDATE group_members SET sent_probe = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
-      (probe, currentTs, userId, groupMemberId)
-    (Probe probe,) <$> insertedRowId db
-
-createSentProbeHash :: DB.Connection -> UserId -> Int64 -> Contact -> IO ()
-createSentProbeHash db userId probeId _to@Contact {contactId} = do
+createSentProbeHash :: DB.Connection -> UserId -> Int64 -> ContactOrGroupMember -> IO ()
+createSentProbeHash db userId probeId _to = do
   currentTs <- getCurrentTime
+  let (ctId, gmId) = contactOrGroupMemberIds _to
   DB.execute
     db
-    "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-    (probeId, contactId, userId, currentTs, currentTs)
+    "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, group_member_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+    (probeId, ctId, gmId, userId, currentTs, currentTs)
 
-matchReceivedProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe Contact)
-matchReceivedProbe db user@User {userId} _from@(Contact {contactId}) p@(Probe probe) =
-  matchReceivedProbe_ db user p $ \probeHash -> do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "INSERT INTO received_probes (contact_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (contactId, probe, probeHash, userId, currentTs, currentTs)
-
-matchReceivedProbe_ :: DB.Connection -> User -> Probe -> (ByteString -> IO ()) -> IO (Maybe Contact)
-matchReceivedProbe_ db user@User {userId} (Probe probe) addProbe = do
+matchReceivedProbe :: DB.Connection -> User -> ContactOrGroupMember -> Probe -> IO (Maybe ContactOrGroupMember)
+matchReceivedProbe db user@User {userId} _from (Probe probe) = do
   let probeHash = C.sha256Hash probe
-  contactIds <-
-    map fromOnly
-      <$> DB.query
+  cgmIds <-
+    maybeFirstRow id $
+      DB.query
         db
         [sql|
-          SELECT c.contact_id
-          FROM contacts c
-          JOIN received_probes r ON r.contact_id = c.contact_id
-          WHERE c.user_id = ? AND c.deleted = 0 AND r.probe_hash = ? AND r.probe IS NULL
+          SELECT r.contact_id, g.group_id, r.group_member_id
+          FROM received_probes r
+          LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
+          LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
+          LEFT JOIN groups g ON g.group_id = m.group_id
+          WHERE c.user_id = ? AND r.probe_hash = ? AND r.probe IS NULL
         |]
         (userId, probeHash)
-  addProbe probeHash
-  case contactIds of
-    [] -> pure Nothing
-    cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
-
-matchReceivedMemberProbe :: DB.Connection -> User -> GroupMember -> Probe -> IO (Maybe Contact)
-matchReceivedMemberProbe db user@User {userId} _from@(GroupMember {groupMemberId}) p@(Probe probe) =
-  matchReceivedProbe_ db user p $ \probeHash -> do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "UPDATE group_members SET received_probe = ?, received_probe_hash = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
-      (probe, probeHash, currentTs, userId, groupMemberId)
-
-matchReceivedProbeHash :: DB.Connection -> User -> Contact -> ProbeHash -> IO (Maybe (ContactOrGroupMember, Probe))
-matchReceivedProbeHash db user@User {userId} _from@Contact {contactId} (ProbeHash probeHash) = do
-  r <- getContacts >>= \case
-    [] ->
-      getMembers >>= \case
-        [] -> pure Nothing
-        (gId, mId, probe) : _ ->
-          get (uncurry CGMGroupMember) probe $ (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId mId
-    (cId, probe) : _ -> get CGMContact probe $ getContact db user cId
   currentTs <- getCurrentTime
+  let (ctId, gmId) = contactOrGroupMemberIds _from
   DB.execute
     db
-    "INSERT INTO received_probes (contact_id, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-    (contactId, probeHash, userId, currentTs, currentTs)
-  pure r
-  where
-    getContacts :: IO [(ContactId, ByteString)]
-    getContacts =
-      DB.query
-        db
-        [sql|
-          SELECT c.contact_id, r.probe
-          FROM contacts c
-          JOIN received_probes r ON r.contact_id = c.contact_id
-          WHERE c.user_id = ? AND c.deleted = 0 AND r.probe_hash = ? AND r.probe IS NOT NULL
-        |]
-        (userId, probeHash)
-    getMembers :: IO [(ContactId, GroupMemberId, ByteString)]
-    getMembers =
-      DB.query
-        db
-        [sql|
-          SELECT group_id, group_member_id, received_probe
-          FROM group_members
-          WHERE user_id = ? AND received_probe_hash = ? AND received_probe IS NOT NULL
-        |]
-        (userId, probeHash)
-    get :: (a -> ContactOrGroupMember) -> ByteString -> ExceptT StoreError IO a -> IO (Maybe (ContactOrGroupMember, Probe))
-    get cgm probe a = either (const Nothing) (Just . (,Probe probe) . cgm) <$> runExceptT a
+    "INSERT INTO received_probes (contact_id, group_member_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+    (ctId, gmId, probe, probeHash, userId, currentTs, currentTs)
+  pure cgmIds $>>= getContactOrGroupMember_ db user
 
-matchSentProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe ContactOrGroupMember)
-matchSentProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = do
-  contactIds <-
-    map fromOnly
-      <$> DB.query
+matchReceivedProbeHash :: DB.Connection -> User -> ContactOrGroupMember -> ProbeHash -> IO (Maybe (ContactOrGroupMember, Probe))
+matchReceivedProbeHash db user@User {userId} _from (ProbeHash probeHash) = do
+  probeIds <-
+    maybeFirstRow id $
+      DB.query
         db
         [sql|
-          SELECT c.contact_id
-          FROM contacts c
-          JOIN sent_probes s ON s.contact_id = c.contact_id
-          JOIN sent_probe_hashes h ON h.sent_probe_id = s.sent_probe_id
-          WHERE c.user_id = ? AND c.deleted = 0 AND s.probe = ? AND h.contact_id = ?
+          SELECT r.probe, r.contact_id, g.group_id, r.group_member_id
+          FROM received_probes r
+          LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
+          LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
+          LEFT JOIN groups g ON g.group_id = m.group_id
+          WHERE c.user_id = ? AND r.probe_hash = ? AND r.probe IS NOT NULL
         |]
-        (userId, probe, contactId)
-  case contactIds of
-    [] -> pure Nothing
-    cId : _ -> eitherToMaybe <$> runExceptT (CGMContact <$> getContact db user cId)
+        (userId, probeHash)
+  currentTs <- getCurrentTime
+  let (ctId, gmId) = contactOrGroupMemberIds _from
+  DB.execute
+    db
+    "INSERT INTO received_probes (contact_id, group_member_id, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+    (ctId, gmId, probeHash, userId, currentTs, currentTs)
+  pure probeIds $>>= \(Only probe :. cgmIds) -> (,Probe probe) <$$> getContactOrGroupMember_ db user cgmIds
+
+matchSentProbe :: DB.Connection -> User -> ContactOrGroupMember -> Probe -> IO (Maybe ContactOrGroupMember)
+matchSentProbe db user@User {userId} _from (Probe probe) =  
+  cgmIds $>>= getContactOrGroupMember_ db user
+  where
+    (ctId, gmId) = contactOrGroupMemberIds _from
+    cgmIds =
+      maybeFirstRow id $
+        DB.query
+          db
+          [sql|
+            SELECT s.contact_id, g.group_id, s.group_member_id
+            FROM sent_probes s
+            LEFT JOIN contacts c ON s.contact_id = c.contact_id AND c.deleted = 0
+            LEFT JOIN group_members m ON s.group_member_id = m.group_member_id
+            LEFT JOIN groups g ON g.group_id = m.group_id
+            JOIN sent_probe_hashes h ON h.sent_probe_id = s.sent_probe_id
+            WHERE c.user_id = ? AND c.deleted = 0 AND s.probe = ?
+              AND (h.contact_id = ? OR h.group_member_id = ?)
+          |]
+          (userId, probe, ctId, gmId)
+
+getContactOrGroupMember_ :: DB.Connection -> User -> (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId) -> IO (Maybe ContactOrGroupMember)
+getContactOrGroupMember_ db user ids =
+  fmap eitherToMaybe . runExceptT $ case ids of
+    (Just ctId, _, _) -> CGMContact <$> getContact db user ctId
+    (_, Just gId, Just gmId) -> CGMGroupMember <$> getGroupInfo db user gId <*> getGroupMember db user gId gmId
+    _ -> throwError $ SEInternalError ""
 
 mergeContactRecords :: DB.Connection -> UserId -> Contact -> Contact -> IO ()
 mergeContactRecords db userId ct1 ct2 = do
