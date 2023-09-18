@@ -1,9 +1,12 @@
----
-title: App settings
----
-# App settings
+# App Settings
 
-## Opening app settings 
+## Contents
+
+- [Opening app settings](#opening-app-settings)
+- [Your chat profile settings](#your-chat-profile-settings)
+- [Your app settings](#your-app-settings)
+
+## Opening app settings
 
 #### To open app settings:
 
@@ -11,7 +14,7 @@ title: App settings
 2. Tap on your profile picture in the top-left corner of the screen.
 3. If you have more than one chat profile, tap on your selected chat profile or choose **Settings**.
 
-## Your profile settings
+## Your chat profile settings
 
 This section is labelled **"You"** in the app settings.
 
@@ -19,59 +22,52 @@ This section is labelled **"You"** in the app settings.
 
 Tap on your avatar/name to update your current display name, full name, and profile picture.
 
-Display names cannot have any spaces. It is recommended to use Latin characters and numbers to make it easier for users who use [SimpleX Chat for the terminal](../CLI.md) (CLI) to type them.
+Display names cannot have any spaces. It is recommended to use Latin characters and numbers to make it easier for users who use [SimpleX Chat for the terminal (CLI)](../CLI.md) to type them.
 
 **Please note**: When you save edits to your chat profile, they will be sent to all your contacts (excluding those you've shared your incognito profiles with). If you have a large number of contacts, this can take several seconds.
 
 ### Your chat profiles
 
-This screen allows you to add and configure your chat profiles. Please visit the [Your chat profiles](./chat-profiles.md) page for more details.
+This screen allows you to manage your chat profiles and configure them. Please visit the [Your chat profiles](./chat-profiles.md) page for more details.
 
-### Incognito mode
-
-This feature is unique to SimpleX Chat – it is independent from chat profiles.
-
-When **Incognito mode** is toggled on, your current profile name and picture are NOT shared with your new contacts. Instead a new random profile name is generated for each connection you make or group you join via link, allowing you to have as many anonymous connections with other people without any shared data between them.
-
-Please read [this blog post](../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode) for more details.
-
-### Your SimpleX contact address
+### Your SimpleX address
 
 <img src="../../blog/images/20221108-address1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-address2.png" width="288">
 
-This screen allows you to create a long-term contact address that can be used by other people to connect with you. Unlike one-time invitations, it can be used multiple times.  Please note that you can only create one contact address per chat profile. You can publish it on your personal website or social media platforms for example.
-
-When people connect with you via your contact address, you will receive a connection request that you can either accept or reject. Optionally, you can configure your contact address to automatically accept future connection requests with a welcome message that will be sent to new contacts when they connect with you.
-
-If you start receiving too many connection requests via your contact address, you can always delete it. All connections made via your contact address will remain active, as it is not used to send messages.
-
-Please read [this blog post](../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#auto-accept-contact-requests) for more details. 
+This screen allows you to create a temporary SimpleX address that can be used by other people to connect with you. Please visit the [Making connections](./making-connections.md#simplex-address) page for more details.
 
 ### Chat preferences
 
-This screen allows you to configure your default set of chat preferences for all your contacts. These can also be adjusted individually for each contact.
+This screen allows you to configure your default set of chat preferences for all your contacts. 
 
-- `disappearing messages` - to allow disappearing messages in your conversation as long as your contacts allow them.
-- `delete for everyone` - to allow irreversible message deletion (messages are marked as deleted by default). 
-- `voice messages` - to allow sending voice messages.
+#### Disappearing messages
 
-#### To set chat preferences for each contact:
+- `on` - to allow your contact to send you disappearing messages only if they allow it to you
+- `off (default)` - to prohibit you and your contact from sending each other disappearing messages
 
-1. Tap on your contact.
-2. Tap on your contact's name at the top of the screen
-3. Tap **Contact preferences**.
-4. Set your chat preferences.
-5. Tap **Save and notify contact**.
+#### Delete for everyone
 
-Group owners can set similar preferences for their groups. 
+- `always` - to allow your contact to irreversibly delete their messages
+- `yes` - to allow your contact to irreversibly delete their messages only if they allow it to you
+- `no (default)` - To prohibit your contact from irreversibly deleting their messages. Instead they will be allowed to only mark their messages as deleted, allowing you to reveal them. 
 
-#### To set chat preferences for your group:
+#### Message reactions
 
-1. Tap on your group.
-2. Tap on your group's name at the top of the screen.
-3. Tap **Group preferences**.
-4. Set your group preferences.
-5. Tap **Save and notify group members**.
+- `always` - to allow your contact to react to your messages
+- `yes (default)` - to allow your contact to react to your messages only if they allow it to you
+- `no` - to prohibit your contact from reacting to your messages
+
+#### Voice messages
+
+- `always` - to allow your contact to send you voice messages. 
+- `yes (default)` - to allow your contact to send you voice messages only if they allow it to you
+- `no` - to prohibit your contact from sending you voice messages.
+
+#### Audio/Video Calls
+
+- `always` - to allow your contact to make audio/video calls.
+- `yes (default)` - to allow your contact to make audio/video calls only if they allow it to you. 
+- `no`  - to prohibit your contact from making audio/video calls. 
 
 ## Your app settings
 
@@ -83,19 +79,17 @@ This screen allows you to configure how you want to receive push notifications: 
 
 You can also configure how notifications look when a new message arrives via the following options:
 
-- `message text` - show contact name and message.
+- `message text (default)` - show both contact name and message.
 - `contact name` - show only contact name.
 - `hidden` - hide both contact name and message.
 
-**Please note**: For instant and periodic notifications to work on Android, you need to disable power optimization when prompted by the app, or later via the app settings. Also, some variants of Android require additional settings. For example, MIUI on Xiaomi phones require you to enable "Auto start" for the notification service to work. Please read the [Don't kill my app](https://dontkillmyapp.com/) guide for any additional settings that may be required on your device.
-
-Also, instant notifications have the highest battery consumption - we are working to reduce it to be less or the same as for periodic notifications.
+**Please note**: For instant and periodic notifications to work on Android, you need to disable power optimization when prompted by the app, or later via the app settings. Also, some variants of Android require additional settings. For example, MIUI on Xiaomi phones require you to enable "Auto start" for the notification service to work. Please read the [Don't kill my app](https://dontkillmyapp.com/) guide for any additional settings that may be required on your device. Also, instant notifications have the highest battery consumption - we are working to reduce it to be less or the same as for periodic notifications.
 
 ### Network & servers
 
-This screen allows you to configure your own SMP relays and change other network settings.
-
 <img src="../../blog/images/20230204-transport.png" width="288">
+
+This screen allows you to configure your own SMP servers, XFTP servers, WebRTC ICE servers, and other network settings.
 
 #### SMP servers
 
@@ -104,6 +98,8 @@ This screen allows you to configure your own SMP relays and change other network
 By default, the app has preset relays configured – you can change them to your own. You can also test your connection to your configured servers. Please read [this blog post](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#smp-servers-configuration-and-password) for more details.
 
 #### Use SOCKS proxy (Android only)
+
+<img src="../../blog/images/20220808-tor2.png" width="288">
 
 This option allows the app to connect via a SOCKS proxy that should be provided by some other app running on your device. The most typical use case for this is to run Orbot app that provides a SOCKS proxy to connect via Tor network, but it can be some other app that can proxy connections via some other overlay network.
 
@@ -145,18 +141,21 @@ If your network is slow, and your connections to the servers keep failing (you w
 
 #### SimpleX Lock
 
-When toggled on, SimpleX Lock requires you to confirm your device credentials when you open the app or use some security- or privacy-sensitive features.
-
-You will be offered to enable it after you open the app a few times.
+SimpleX Lock protects your chats from unauthorised access. You can secure the app either with your device credentials or a separate app passcode altogether. When toggled on, SimpleX Lock requires you to confirm your device credentials or app passcode when you open or resume the app after the lockout timeout expires in the background, or use some security- or privacy-sensitive features. If you've installed the app for the first time, you will be offered to enable SimpleX Lock after you open the app a few times.
 
 To enable it later:
 
 1. [Open app settings](#opening-app-settings).
-2. Tap on **Privacy & security**.
-3. Toggle **SimpleX Lock** on.
-4. Confirm your device credentials.
+2. Tap **Privacy & security**.
+3. Tap **SimpleX Lock**.
+4. Choose the lock mode:
+   - System
+   - Passcode 
+6. Toggle **SimpleX Lock** on.
+7. If you've set the lock mode to **System**, you'll be prompted to confirm your device credentials. If you've set the lock mode to **Passcode**, you'll be prompted to create and confirm your app passcode.
+8. (Optional) From the **Lock after** drop-down menu, choose how long until the app remains unlocked in the background. 
 
-Done! Now you will be required to authenticate when you start or resume the app after 30 seconds in background.
+Done! Now you will be required to authenticate when you start or resume the app after the lockout timer expires in background.
 
 #### Protect app screen
 
@@ -164,21 +163,21 @@ Done! Now you will be required to authenticate when you start or resume the app 
 
 This option hides the app's screen in the recent apps list - it's enabled by default. It also prevents screenshots on Android.
 
-#### Auto Accept Images
+#### Auto-accept Images
 
-Auto-accepting images may reduce privacy – your contacts will know you are online.
-
-1. [Open app settings](#opening-app-settings).
-2. Tap on **Privacy & security**.
-3. Toggle **Auto-accept images** on.
+As the name implies, you automatically accept images when you receive them from your contacts. However, enabling this option may reduce privacy because it will inform your contacts that you are online.
 
 #### Send Link Previews
 
-Enabling sending link previews may reduce privacy – your app will be loading link preview from the website.
+When you send a link to your contact or group, it will generate a preview of the website. However, enabling this option may reduce privacy because it might expose your IP address to your contacts. 
 
-1. [Open app settings](#opening-app-settings).
-2. Tap **Privacy & security**.
-3. Toggle **Send link previews** on.
+#### Show last messages
+
+Your last messages are shown in your chats. However, enabling this option may reduce privacy because someone could be shoulder-surfing your device and see them without your consent. 
+
+#### Message draft
+
+However, enabling this option may reduce privacy because someone could be shoulder-surfing your device and see your message draft without your consent. 
 
 #### SimpleX Links
 
@@ -189,6 +188,14 @@ This option affects how the links to connect to other SimpleX users or to join g
 - `via browser` - The full link is shown, and it will be opened in the browser. In this case, if the link domain is different from simplex.chat, the link will be shown in red color, as it might be malicious.
 
 Please read [this blog post](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#privacy-and-security-of-simplex-invitation-links) for more details.
+
+#### Send Delivery Receipts to Contacts
+
+Enabling this option allows you to send delivery receipts to your contacts. 
+
+#### Send Delivery Receipts to Small Groups (Max 20)
+
+Enabling this option allows you to send delivery receipts to your groups with 20 members or less. 
 
 ### Appearance
 

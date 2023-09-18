@@ -1,25 +1,33 @@
----
-title: Privacy & security
----
 # Privacy and Security
 
-SimpleX Chat's default configuration aims to balance privacy, security, and convenience. You may want to change the default options to suit your specific needs.
+SimpleX Chat's default configuration aims to balance privacy, security, and convenience. You may want to change the default options to suit your specific needs. This page lists all the features and options that affect privacy and security.
 
-This page lists all the features and options that affect privacy and security.
+## Contents
+
+- [Privacy and security settings](#privacy-and-security-settings)
+- [Security code verification](#security-code-verification)
+- [Database passphrase](#database-passphrase)
+- [Incognito mode](#incognito-mode)
+- [Hidden profiles](#hidden-profiles)
+- [Network settings](#network-settings)
+- [Using Tor](#using-tor)
+- [Self-destruct passcode](#self-destruct-passcode)
 
 ## Privacy and Security settings
 
-These settings are available in the [Privacy & Security settings](./app-settings.md#privacy-and-security).
+More information of these settings can be found in the [Privacy & Security settings](./app-settings.md#privacy-and-security) section of the **App Settings** page.
 
 ## Security code verification
 
 <img src="../../blog/images/20230103-verification.png" width="288">
 
-While SimpleX Chat always establishes connection via link passed via an independent channel, so it is already more protected than other apps, there are scenarios when the invitation links can be substituted in transit (MITM attack). To protect against such attacks, you should verify your security code with your contacts.
+While SimpleX Chat always establishes connection via link passed via an independent channel, so it is already more protected than other apps, there are scenarios when the invitation links can be substituted in transit (MITM attack). To protect against such attacks, you should verify your security code with your contacts. 
+
+Please visit the Making connections page for more details on how to verify
 
 #### To verify security code:
 
-1. Tap on your contact. 
+1. Tap on your contact in your list of chats. 
 2. Tap on your contact's name at the top of the screen.
 3. Tap **Verify security code**.
 4. Ask your contact to follow the first three steps and compare your security code with theirs. 
@@ -34,15 +42,15 @@ Please read [this blog post](../../blog/20230103-simplex-chat-v4.4-disappearing-
 
 ## Database passphrase
 
-When installed, the app generates a random passphrase for the chat database and stores it securely in KeyChain (iOS) or using KeyStore (Android, TPM module is used when available). You can set your own passphrase and also remove it from the device, in which case you will need to enter it every time you start the app, and notifications may be limited, in the [Database passphrase & export](./managing-data.md#database-passphrase) settings.
+When installed, SimpleX Chat generates a random passphrase for your chat database and stores it securely in KeyChain (iOS) or using KeyStore (Android, TPM module is used when available). You can set your own passphrase and also remove it from the device, in which case you will need to enter it every time you start the app, and notifications may be limited, in the [Database passphrase & export](./managing-data.md#database-passphrase) settings.
 
 ## Incognito mode
 
-This feature generates a random profile name for each new contact. Please read the [Incognito](./app-settings.md#incognito) section for more details.
+This feature generates a random profile name for each new contact. Please read the [Incognito mode](./chat-profiles.md#incognito-mode) section for more details.
 
 ## Hidden profiles
 
-This feature allows to hide some of your chat profiles with a password. Please read the [Hiding and muting chat profiles](./chat-profiles.md#hiding-and-muting-chat-profiles) section for more details.
+This feature allows you to hide some of your chat profiles with a password. Please read the [Hiding and muting chat profiles](./chat-profiles.md#hiding-and-muting-chat-profiles) section for more details.
 
 ## Network settings
 
@@ -59,3 +67,18 @@ To connect to SMP relays (messaging servers) via Tor, you need to install Orbot 
 **iOS:** use Orbot app as VPN provider and enable VPN.
 
 You can also change which server addresses are used with [Use .onion hosts option](./app-settings.md#use-onion-hosts).
+
+## Self-destruct passcode
+
+Need to quickly delete all your data from your device before it ends up in someone else's hands? SimpleX Chat allows you to configure a self-destruct passcode to do just that. 
+
+1. [Open app settings](./app-settings.md#opening-app-settings).
+2. Tap **Privacy and Security**.
+3. Tap **SimpleX Lock**.
+4. Toggle **Enable lock** on.
+5. From the **Lock mode** drop-down menu, choose **Passcode**. 
+6. Create and confirm your app passcode. 
+7. Toggle **Enable self-destruct** on.
+8. Enter your app passcode.
+9. Create and confirm a self-destruct passcode.
+10. (Optional) Set a new display name of the profile that will be created after the app self-destructs. If left blank, a new empty profile with a chosen random name will be created instead. 
