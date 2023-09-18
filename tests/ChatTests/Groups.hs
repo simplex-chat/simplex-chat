@@ -222,7 +222,7 @@ testGroupShared alice bob cath checkMessages = do
   alice `send` "@bob hey"
   alice
     <### [ "@bob hey",
-           "member #team bob does not have associated contact, creating contact",
+           "member #team bob does not have direct connection, creating",
            "peer chat protocol version range incompatible"
          ]
   when checkMessages $ threadDelay 1000000
@@ -639,7 +639,7 @@ testGroupDeleteInvitedContact =
       alice `send` "@bob hey"
       alice
         <### [ WithTime "@bob hey",
-               "member #team bob does not have associated contact, creating contact",
+               "member #team bob does not have direct connection, creating",
                "contact for member #team bob is created",
                "sent invitation to connect directly to member #team bob"
              ]
@@ -2746,13 +2746,13 @@ testConnectMemberToContact =
         [ do
             alice <## "#team: you joined the group"
             alice <## "#team: member cath_1 (Catherine) is connected"
-            alice <## "#team cath_1 is connected to contact cath",
+            alice <## "member #team cath_1 is merged into cath",
           do
             bob <## "#team: alice joined the group",
           do
             cath <## "#team: bob added alice_1 (Alice) to the group (connecting...)"
             cath <## "#team: new member alice_1 is connected"
-            cath <## "#team alice_1 is connected to contact alice"
+            cath <## "member #team alice_1 is is merged into alice"
         ]
       alice <##> cath
       alice #> "#team hello"
@@ -2789,7 +2789,7 @@ testMemberContactMessage =
 
       alice ##> "@#team bob hi"
       alice
-        <### [ "member #team bob does not have associated contact, creating contact",
+        <### [ "member #team bob does not have direct connection, creating",
                "contact for member #team bob is created",
                "sent invitation to connect directly to member #team bob",
                WithTime "@bob hi"
@@ -2808,7 +2808,7 @@ testMemberContactMessage =
       -- bob and cath connect
       bob ##> "@#team cath hi"
       bob
-        <### [ "member #team cath does not have associated contact, creating contact",
+        <### [ "member #team cath does not have direct connection, creating",
                "contact for member #team cath is created",
                "sent invitation to connect directly to member #team cath",
                WithTime "@cath hi"
@@ -2895,7 +2895,7 @@ testMemberContactInvitedConnectionReplaced tmp = do
 
         alice ##> "@#team bob hi"
         alice
-          <### [ "member #team bob does not have associated contact, creating contact",
+          <### [ "member #team bob does not have direct connection, creating",
                  "contact for member #team bob is created",
                  "sent invitation to connect directly to member #team bob",
                  WithTime "@bob hi"
@@ -3003,7 +3003,7 @@ testMemberContactIncognito =
       -- bob creates member contact with cath - both share incognito profile
       bob ##> ("@#team " <> cathIncognito <> " hi")
       bob
-        <### [ ConsoleString ("member #team " <> cathIncognito <> " does not have associated contact, creating contact"),
+        <### [ ConsoleString ("member #team " <> cathIncognito <> " does not have direct connection, creating"),
                ConsoleString ("contact for member #team " <> cathIncognito <> " is created"),
                ConsoleString ("sent invitation to connect directly to member #team " <> cathIncognito),
                WithTime ("i @" <> cathIncognito <> " hi")
