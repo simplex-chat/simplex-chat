@@ -1246,6 +1246,9 @@
 "Encrypt database?" = "Datenbank verschlüsseln?";
 
 /* No comment provided by engineer. */
+"Encrypt local files" = "Lokale Dateien verschlüsseln";
+
+/* No comment provided by engineer. */
 "Encrypted database" = "Verschlüsselte Datenbank";
 
 /* notification */
@@ -1355,6 +1358,9 @@
 
 /* No comment provided by engineer. */
 "Error creating profile!" = "Fehler beim Erstellen des Profils!";
+
+/* No comment provided by engineer. */
+"Error decrypting file" = "Fehler beim Entschlüsseln der Datei";
 
 /* No comment provided by engineer. */
 "Error deleting chat database" = "Fehler beim Löschen der Chat-Datenbank";
