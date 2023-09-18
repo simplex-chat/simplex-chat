@@ -78,7 +78,6 @@ module Simplex.Chat.Store.Groups
     createSentProbe,
     createSentMemberProbe,
     createSentProbeHash,
-    deleteSentProbe,
     matchReceivedProbe,
     matchReceivedMemberProbe,
     matchReceivedProbeHash,
@@ -1220,13 +1219,6 @@ createSentProbeHash db userId probeId _to@Contact {contactId} = do
     db
     "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
     (probeId, contactId, userId, currentTs, currentTs)
-
-deleteSentProbe :: DB.Connection -> UserId -> Int64 -> IO ()
-deleteSentProbe db userId probeId =
-  DB.execute
-    db
-    "DELETE FROM sent_probes WHERE user_id = ? AND sent_probe_id = ?"
-    (userId, probeId)
 
 matchReceivedProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe Contact)
 matchReceivedProbe db user@User {userId} _from@(Contact {contactId}) p@(Probe probe) =
