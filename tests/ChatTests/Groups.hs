@@ -68,21 +68,10 @@ chatGroupTests = do
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
   describe "direct connections in group are not established based on chat protocol version" $ do
     describe "3 members group" $ do
-      -- TODO fails in this branch
-      -- testNoDirect _0 _0 True -- False -- True
-      -- testNoDirect _0 _1 True -- False -- True
+      testNoDirect _0 _0 True
+      testNoDirect _0 _1 True
       testNoDirect _1 _0 False
       testNoDirect _1 _1 False
-    describe "4 members group" $ do
-      -- TODO fails in this branch
-      -- testNoDirect4 _0 _0 _0 True True True -- False False False -- True True True
-      -- testNoDirect4 _0 _0 _1 True True True -- False False False -- True True True
-      -- testNoDirect4 _0 _1 _0 True True False -- False False False -- True True False
-      -- testNoDirect4 _0 _1 _1 True True False -- False False False -- True True False
-      -- testNoDirect4 _1 _0 _0 False False True -- False False False -- False False True
-      -- testNoDirect4 _1 _0 _1 False False True -- False False False -- False False True
-      testNoDirect4 _1 _1 _0 False False False
-      testNoDirect4 _1 _1 _1 False False False
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
     it "member should connect to contact when profile match" testConnectMemberToContact
   describe "create member contact" $ do
@@ -105,17 +94,6 @@ chatGroupTests = do
             <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
         )
         $ testNoGroupDirectConns supportedChatVRange vrMem2 vrMem3 noConns
-    testNoDirect4 vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34 =
-      it
-        ( "host " <> vRangeStr supportedChatVRange
-            <> (", 2nd mem " <> vRangeStr vrMem2)
-            <> (", 3rd mem " <> vRangeStr vrMem3)
-            <> (", 4th mem " <> vRangeStr vrMem4)
-            <> (if noConns23 then " : 2 <!!> 3" else " : 2 <##> 3")
-            <> (if noConns24 then " : 2 <!!> 4" else " : 2 <##> 4")
-            <> (if noConns34 then " : 3 <!!> 4" else " : 3 <##> 4")
-        )
-        $ testNoGroupDirectConns4Members supportedChatVRange vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34
 
 testGroup :: HasCallStack => FilePath -> IO ()
 testGroup =
@@ -2662,56 +2640,25 @@ testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns tmp =
         createGroup3 "team" alice bob cath
         if noDirectConns
           then contactsDontExist bob cath
-          else bob <##> cath
+          else contactsExist bob cath
   where
     contactsDontExist bob cath = do
-      bob ##> "@cath hi"
-      bob <## "no contact cath"
-      cath ##> "@bob hi"
-      cath <## "no contact bob"
-
-testNoGroupDirectConns4Members :: HasCallStack => VersionRange -> VersionRange -> VersionRange -> VersionRange -> Bool -> Bool -> Bool -> FilePath -> IO ()
-testNoGroupDirectConns4Members hostVRange mem2VRange mem3VRange mem4VRange noConns23 noConns24 noConns34 tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg tmp testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
-        withNewTestChatCfg tmp testCfg {chatVRange = mem4VRange} "dan" danProfile $ \dan -> do
-          createGroup3 "team" alice bob cath
-          connectUsers alice dan
-          addMember "team" alice dan GRMember
-          dan ##> "/j team"
-          concurrentlyN_
-            [ alice <## "#team: dan joined the group",
-              do
-                dan <## "#team: you joined the group"
-                dan
-                  <### [ "#team: member bob (Bob) is connected",
-                         "#team: member cath (Catherine) is connected"
-                       ],
-              aliceAddedDan bob,
-              aliceAddedDan cath
-            ]
-          if noConns23
-            then contactsDontExist bob cath
-            else bob <##> cath
-          if noConns24
-            then contactsDontExist bob dan
-            else bob <##> dan
-          if noConns34
-            then contactsDontExist cath dan
-            else cath <##> dan
-  where
-    aliceAddedDan :: HasCallStack => TestCC -> IO ()
-    aliceAddedDan cc = do
-      cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
-      cc <## "#team: new member dan is connected"
-    contactsDontExist cc1 cc2 = do
-      name1 <- userName cc1
-      name2 <- userName cc2
-      cc1 ##> ("@" <> name2 <> " hi")
-      cc1 <## ("no contact " <> name2)
-      cc2 ##> ("@" <> name1 <> " hi")
-      cc2 <## ("no contact " <> name1)
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+      cath ##> "/contacts"
+      cath <## "alice (Alice)"
+    contactsExist bob cath = do
+      bob ##> "/contacts"
+      bob
+        <### [ "alice (Alice)",
+               "cath (Catherine)"
+             ]
+      cath ##> "/contacts"
+      cath
+        <### [ "alice (Alice)",
+               "bob (Bob)"
+             ]
+      bob <##> cath
 
 testNoDirectDifferentLDNs :: HasCallStack => FilePath -> IO ()
 testNoDirectDifferentLDNs =

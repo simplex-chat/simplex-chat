@@ -3161,7 +3161,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
               CFCreateConnGrpMemInv
-                | isCompatibleRange (fromJVersionRange $ peerChatVRange conn) groupNoDirectVRange -> sendWithoutDirectCReq -- sendWithDirectCReq -- sendWithoutDirectCReq
+                | isCompatibleRange (fromJVersionRange $ peerChatVRange conn) groupNoDirectVRange -> sendWithoutDirectCReq
                 | otherwise -> sendWithDirectCReq
                 where
                   sendWithoutDirectCReq = do
@@ -3697,7 +3697,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       forM_ cs $ \c -> sendProbeHash c `catchChatError` \_ -> pure ()
       where
         probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
-        sendProbeHash :: Contact  -> m ()
+        sendProbeHash :: Contact -> m ()
         sendProbeHash c = do
           void . sendDirectContactMessage c $ XInfoProbeCheck probeHash
           withStore' $ \db -> createSentProbeHash db userId probeId c
@@ -4462,7 +4462,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               directConnIds <- case memberChatVRange of
                 Nothing -> Just <$> createConn subMode
                 Just mcvr
-                  | isCompatibleRange (fromChatVRange mcvr) groupNoDirectVRange -> pure Nothing -- Just <$> createConn subMode -- pure Nothing
+                  | isCompatibleRange (fromChatVRange mcvr) groupNoDirectVRange -> pure Nothing
                   | otherwise -> Just <$> createConn subMode
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId subMode
