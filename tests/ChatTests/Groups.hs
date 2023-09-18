@@ -2754,8 +2754,7 @@ testConnectMemberToContact =
             cath <## "#team: new member alice_1 is connected"
             cath <## "#team alice_1 is connected to contact alice"
         ]
-      alice #> "@cath hi"
-      cath <# "alice> hi"
+      alice <##> cath
       alice #> "#team hello"
       bob <# "#team alice> hello"
       cath <# "#team alice> hello"
@@ -2763,12 +2762,26 @@ testConnectMemberToContact =
       bob <# "#team cath> hello too"
       alice <# "#team cath> hello too"
 
+      alice ##> "/contacts"
+      alice
+        <### [ "bob (Bob)",
+               "cath (Catherine)"
+             ]
+      cath ##> "/contacts"
+      cath
+        <### [ "alice (Alice)",
+               "bob (Bob)"
+             ]
+      alice `hasContactProfiles` ["alice", "bob", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+
 testMemberContactMessage :: HasCallStack => FilePath -> IO ()
 testMemberContactMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      -- TODO here and in following tests there would be no direct contacts initially, after "no direct conns" functionality is uncommented
+
+      -- alice and bob delete contacts, connect
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
       bob ##> "/d alice"
@@ -2792,29 +2805,44 @@ testMemberContactMessage =
       bob #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
       alice <##> bob
 
+      -- bob and cath connect
+      bob ##> "@#team cath hi"
+      bob
+        <### [ "member #team cath does not have associated contact, creating contact",
+               "contact for member #team cath is created",
+               "sent invitation to connect directly to member #team cath",
+               WithTime "@cath hi"
+             ]
+      cath
+        <### [ "#team bob is creating direct contact bob with you",
+               WithTime "bob> hi"
+             ]
+      concurrently_
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
+
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
+      bob <##> cath
+
 testMemberContactNoMessage :: HasCallStack => FilePath -> IO ()
 testMemberContactNoMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
-      alice ##> "/d bob"
-      alice <## "bob: contact is deleted"
-      bob ##> "/d alice"
-      bob <## "alice: contact is deleted"
+      -- bob and cath connect
+      bob ##> "/_create member contact #1 3"
+      bob <## "contact for member #team cath is created"
 
-      alice ##> "/_create member contact #1 2"
-      alice <## "contact for member #team bob is created"
-
-      alice ##> "/_invite member contact @4" -- cath is 3, new bob contact is 4
-      alice <## "sent invitation to connect directly to member #team bob"
-      bob <## "#team alice is creating direct contact alice with you"
+      bob ##> "/_invite member contact @3"
+      bob <## "sent invitation to connect directly to member #team cath"
+      cath <## "#team bob is creating direct contact bob with you"
       concurrently_
-        (alice <## "bob (Bob): contact is connected")
-        (bob <## "alice (Alice): contact is connected")
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
 
-      bob #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
-      alice <##> bob
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
+      bob <##> cath
 
 testMemberContactProhibitedContactExists :: HasCallStack => FilePath -> IO ()
 testMemberContactProhibitedContactExists =
@@ -2835,30 +2863,25 @@ testMemberContactProhibitedRepeatInv =
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
-      alice ##> "/d bob"
-      alice <## "bob: contact is deleted"
-      bob ##> "/d alice"
-      bob <## "alice: contact is deleted"
+      bob ##> "/_create member contact #1 3"
+      bob <## "contact for member #team cath is created"
 
-      alice ##> "/_create member contact #1 2"
-      alice <## "contact for member #team bob is created"
-
-      alice ##> "/_invite member contact @4 text hi" -- cath is 3, new bob contact is 4
-      alice
-        <### [ "sent invitation to connect directly to member #team bob",
-               WithTime "@bob hi"
-             ]
-      alice ##> "/_invite member contact @4 text hey"
-      alice <## "bad chat command: x.grp.direct.inv already sent"
+      bob ##> "/_invite member contact @3 text hi"
       bob
-        <### [ "#team alice is creating direct contact alice with you",
-               WithTime "alice> hi"
+        <### [ "sent invitation to connect directly to member #team cath",
+               WithTime "@cath hi"
+             ]
+      bob ##> "/_invite member contact @3 text hey"
+      bob <## "bad chat command: x.grp.direct.inv already sent"
+      cath
+        <### [ "#team bob is creating direct contact bob with you",
+               WithTime "bob> hi"
              ]
       concurrently_
-        (alice <## "bob (Bob): contact is connected")
-        (bob <## "alice (Alice): contact is connected")
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
 
-      alice <##> bob
+      bob <##> cath
 
 testMemberContactInvitedConnectionReplaced :: HasCallStack => FilePath -> IO ()
 testMemberContactInvitedConnectionReplaced tmp = do
@@ -2978,11 +3001,6 @@ testMemberContactIncognito =
       cath `hasContactProfiles` ["cath", "alice", T.pack bobIncognito, T.pack cathIncognito]
 
       -- bob creates member contact with cath - both share incognito profile
-      bob ##> ("/d " <> cathIncognito)
-      bob <## ("no contact " <> cathIncognito)
-      cath ##> ("/d " <> bobIncognito)
-      cath <## ("no contact " <> bobIncognito)
-
       bob ##> ("@#team " <> cathIncognito <> " hi")
       bob
         <### [ ConsoleString ("member #team " <> cathIncognito <> " does not have associated contact, creating contact"),
