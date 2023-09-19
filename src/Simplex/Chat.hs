@@ -3062,10 +3062,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO update member profile
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn' confId XOk
-            XOk -> do
-              allowAgentConnectionAsync user conn' confId XOk
-              void $ withStore' $ \db -> resetMemberContactFields db ct
+            XInfo p' -> confXInfo ct conn' $ Just p'
+            XOk -> confXInfo ct conn' Nothing
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.ok"
+          where
+            confXInfo ct@Contact {activeConn = Connection {customUserProfileId}} conn' p_ = do
+              incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
+              let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
+              allowAgentConnectionAsync user conn' confId $ XInfo p
+              withStore $ \db -> do
+                liftIO $ void $ resetMemberContactFields db ct
+                mapM_ (updateContactProfile db user ct) p_
         INFO connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           _conn' <- updatePeerChatVRange conn chatVRange
@@ -4642,8 +4649,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           (mCt', m') <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode
           createItems mCt' m'
         joinConn subMode = do
-          -- TODO send user's profile for this group membership
-          dm <- directMessage XOk
+          let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing
+          dm <- directMessage $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
           checkIntegrityCreateItem (CDGroupRcv g m') msgMeta
