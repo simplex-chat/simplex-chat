@@ -421,13 +421,12 @@ deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
   DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
-deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = do
+deleteGroupItemsAndMembers db user@User {userId} g@GroupInfo {groupId} members = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
   void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  forM_ members $ \m@GroupMember {memberProfile = LocalProfile {profileId}} -> do
-    cleanupMemberProfileAndName_ db user m
-    when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user profileId
+  forM_ members $ cleanupMemberProfileAndName_ db user
+  forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
   where
     cleanupHostGroupLinkConn_ = do
       hostId <- getHostMemberId_ db user groupId
@@ -445,11 +444,11 @@ deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = d
           (userId, userId, hostId)
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
-deleteGroup db user@User {userId} GroupInfo {groupId, localDisplayName, membership = membership@GroupMember {memberProfile = LocalProfile {profileId}}} = do
+deleteGroup db user@User {userId} g@GroupInfo {groupId, localDisplayName} = do
   deleteGroupProfile_ db userId groupId
   DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  when (memberIncognito membership) $ deleteUnusedIncognitoProfileById_ db user profileId
+  forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
 deleteGroupProfile_ db userId groupId =
@@ -816,12 +815,12 @@ checkGroupMemberHasItems db User {userId} GroupMember {groupMemberId, groupId} =
   maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ? LIMIT 1" (userId, groupId, groupMemberId)
 
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
-deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, memberProfile = LocalProfile {profileId}} = do
+deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, memberProfile} = do
   deleteGroupMemberConnection db user m
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?" (userId, groupId, groupMemberId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
   cleanupMemberProfileAndName_ db user m
-  when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user profileId
+  when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user $ localProfileId memberProfile
 
 cleanupMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
 cleanupMemberProfileAndName_ db User {userId} GroupMember {groupMemberId, memberContactId, memberContactProfileId, localDisplayName} =
@@ -1484,12 +1483,12 @@ createMemberContact
   user@User {userId, profile = LocalProfile {preferences}}
   acId
   cReq
-  GroupInfo {membership = membership@GroupMember {memberProfile = membershipProfile}}
+  gInfo
   GroupMember {groupMemberId, localDisplayName, memberProfile, memberContactProfileId}
   Connection {connLevel, peerChatVRange = peerChatVRange@(JVersionRange (VersionRange minV maxV))}
   subMode = do
     currentTs <- getCurrentTime
-    let incognitoProfile = if memberIncognito membership then Just membershipProfile else Nothing
+    let incognitoProfile = incognitoMembershipProfile gInfo
         customUserProfileId = localProfileId <$> incognitoProfile
         userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
     DB.execute
@@ -1550,13 +1549,12 @@ createMemberContactInvited
   db
   user@User {userId, profile = LocalProfile {preferences}}
   connIds
-  gInfo@GroupInfo {membership = membership@GroupMember {memberProfile = membershipProfile}}
+  gInfo
   m@GroupMember {groupMemberId, localDisplayName = memberLDN, memberProfile, memberContactProfileId}
   mConn
   subMode = do
     currentTs <- liftIO getCurrentTime
-    let incognitoProfile = if memberIncognito membership then Just membershipProfile else Nothing
-        userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
+    let userPreferences = fromMaybe emptyChatPrefs $ incognitoMembershipProfile gInfo >> preferences
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
@@ -1609,13 +1607,12 @@ createMemberContactConn_
   db
   user@User {userId}
   (cmdId, acId)
-  GroupInfo {membership = membership@GroupMember {memberProfile = membershipProfile}}
+  gInfo
   _memberConn@Connection {connLevel, peerChatVRange = peerChatVRange@(JVersionRange (VersionRange minV maxV))}
   contactId
   subMode = do
     currentTs <- liftIO getCurrentTime
-    let incognitoProfile = if memberIncognito membership then Just membershipProfile else Nothing
-        customUserProfileId = localProfileId <$> incognitoProfile
+    let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
     DB.execute
       db
       [sql|

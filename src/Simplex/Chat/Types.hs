@@ -603,8 +603,13 @@ data GroupMember = GroupMember
     memberStatus :: GroupMemberStatus,
     invitedBy :: InvitedBy,
     localDisplayName :: ContactName,
+    -- for membership, memberProfile can be either user's profile or incognito profile, based on memberIncognito test.
+    -- for other members it's whatever profile the local user can see (there is no info about whether it's main or incognito profile for remote users).
     memberProfile :: LocalProfile,
+    -- this is the ID of the associated contact (it will be used to send direct messages to the member)
     memberContactId :: Maybe ContactId,
+    -- for membership it would always point to user's contact
+    -- it is used to test for incognito status by comparing with ID in memberProfile
     memberContactProfileId :: ProfileId,
     activeConn :: Maybe Connection
   }
@@ -634,6 +639,15 @@ groupMemberId' GroupMember {groupMemberId} = groupMemberId
 
 memberIncognito :: GroupMember -> IncognitoEnabled
 memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
+
+incognitoMembership :: GroupInfo -> IncognitoEnabled
+incognitoMembership GroupInfo {membership} = memberIncognito membership
+
+-- returns profile when membership is incognito, otherwise Nothing
+incognitoMembershipProfile :: GroupInfo -> Maybe LocalProfile
+incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}}
+  | memberIncognito m = Just memberProfile
+  | otherwise = Nothing
 
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
