@@ -37,6 +37,7 @@ fun SendMsgView(
   recState: MutableState<RecordingState>,
   isDirectChat: Boolean,
   liveMessageAlertShown: SharedPreference<Boolean>,
+  nextSendGrpInv: Boolean,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
   userIsObserver: Boolean,
@@ -74,7 +75,7 @@ fun SendMsgView(
         false
       }
     }
-    val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
+    val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage) {
@@ -159,7 +160,7 @@ fun SendMsgView(
           fun MenuItems(): List<@Composable () -> Unit> {
             val menuItems = mutableListOf<@Composable () -> Unit>()
 
-            if (cs.liveMessage == null && !cs.editing) {
+            if (cs.liveMessage == null && !cs.editing && !nextSendGrpInv) {
               if (
                 cs.preview !is ComposePreview.VoicePreview &&
                 cs.contextItem is ComposeContextItem.NoContextItem &&
@@ -599,6 +600,7 @@ fun PreviewSendMsgView() {
       recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
+      nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       userIsObserver = false,
@@ -630,6 +632,7 @@ fun PreviewSendMsgViewEditing() {
       recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
+      nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       userIsObserver = false,
@@ -661,6 +664,7 @@ fun PreviewSendMsgViewInProgress() {
       recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
+      nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       userIsObserver = false,

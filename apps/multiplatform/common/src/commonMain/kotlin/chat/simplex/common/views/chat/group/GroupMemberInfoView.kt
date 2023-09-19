@@ -76,6 +76,17 @@ fun GroupMemberInfoView(
           }
         }
       },
+      createMemberContact = {
+        withApi {
+          val memberContact = chatModel.controller.apiCreateMemberContact(groupInfo.apiId, member.groupMemberId)
+          if (memberContact != null) {
+            chatModel.addChat(Chat(ChatInfo.Direct(memberContact), chatItems = arrayListOf()))
+            chatModel.chatItems.clear()
+            chatModel.chatId.value = memberContact.id
+            closeAll()
+          }
+        }
+      },
       connectViaAddress = { connReqUri ->
         connectViaMemberAddressAlert(connReqUri)
       },
@@ -201,6 +212,7 @@ fun GroupMemberInfoLayout(
   connectionCode: String?,
   getContactChat: (Long) -> Chat?,
   openDirectChat: (Long) -> Unit,
+  createMemberContact: () -> Unit,
   connectViaAddress: (String) -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
@@ -237,9 +249,13 @@ fun GroupMemberInfoLayout(
 
     if (member.memberActive) {
       SectionView {
-        if (contactId != null) {
-          if (knownDirectChat(contactId) != null || groupInfo.fullGroupPreferences.directMessages.on) {
+        if (contactId != null && knownDirectChat(contactId) != null) {
+          OpenChatButton(onClick = { openDirectChat(contactId) })
+        } else if (groupInfo.fullGroupPreferences.directMessages.on) {
+          if (contactId != null) {
             OpenChatButton(onClick = { openDirectChat(contactId) })
+          } else if (member.activeConn?.peerChatVRange?.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) == true) {
+            OpenChatButton(onClick = { createMemberContact() })
           }
         }
         if (connectionCode != null) {
@@ -498,6 +514,7 @@ fun PreviewGroupMemberInfoLayout() {
       connectionCode = "123",
       getContactChat = { Chat.sampleData },
       openDirectChat = {},
+      createMemberContact = {},
       connectViaAddress = {},
       removeMember = {},
       onRoleSelected = {},

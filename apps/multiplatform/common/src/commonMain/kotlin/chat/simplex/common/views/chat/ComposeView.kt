@@ -335,8 +335,6 @@ fun ComposeView(
     return null
   }
 
-
-
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): ChatItem? {
     val cInfo = chat.chatInfo
     val cs = composeState.value
@@ -358,6 +356,7 @@ fun ComposeView(
             MsgContent.MCText(msgText)
           }
         }
+
         else -> MsgContent.MCText(msgText)
       }
     }
@@ -371,6 +370,14 @@ fun ComposeView(
         is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
         is MsgContent.MCFile -> MsgContent.MCFile(msgText)
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
+      }
+    }
+
+    suspend fun sendMemberContactInvitation() {
+      val mc = checkLinkPreview()
+      val contact = chatModel.controller.apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+      if (contact != null) {
+        chatModel.updateContact(contact)
       }
     }
 
@@ -397,7 +404,9 @@ fun ComposeView(
     }
     clearCurrentDraft()
 
-    if (cs.contextItem is ComposeContextItem.EditingItem) {
+    if (chat.nextSendGrpInv) {
+      sendMemberContactInvitation()
+    } else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
       sent = updateMessage(ei, cInfo, live)
     } else if (liveMessage != null && liveMessage.sent) {
@@ -656,8 +665,12 @@ fun ComposeView(
 
   val userCanSend = rememberUpdatedState(chat.userCanSend)
   val userIsObserver = rememberUpdatedState(chat.userIsObserver)
+  val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   Column {
+    if (nextSendGrpInv.value) {
+      ComposeContextInvitingContactMemberView()
+    }
     if (composeState.value.preview !is ComposePreview.VoicePreview || composeState.value.editing) {
       contextItemView()
       when {
@@ -693,7 +706,7 @@ fun ComposeView(
       IconButton(
         attachmentClicked,
         Modifier.padding(bottom = if (appPlatform.isAndroid) 0.dp else 7.dp),
-        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value
+        enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value && !nextSendGrpInv.value
       ) {
         Icon(
           painterResource(MR.images.ic_attach_file_filled_500),
@@ -774,6 +787,7 @@ fun ComposeView(
         recState,
         chat.chatInfo is ChatInfo.Direct,
         liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
+        nextSendGrpInv = nextSendGrpInv.value,
         needToAllowVoiceToContact,
         allowedVoiceByPrefs,
         allowVoiceToContact = ::allowVoiceToContact,

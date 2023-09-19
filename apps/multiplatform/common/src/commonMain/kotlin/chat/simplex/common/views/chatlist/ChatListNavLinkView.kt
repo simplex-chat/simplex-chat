@@ -103,11 +103,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
 }
 
 fun directChatAction(chatInfo: ChatInfo, chatModel: ChatModel) {
-  if (chatInfo.ready) {
-    withBGApi { openChat(chatInfo, chatModel) }
-  } else {
-    pendingContactAlertDialog(chatInfo, chatModel)
-  }
+  withBGApi { openChat(chatInfo, chatModel) }
 }
 
 fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
