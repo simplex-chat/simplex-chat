@@ -1470,13 +1470,13 @@ processChatCommand = \case
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db user contactId
     assertDirectAllowed user MDSnd contact XGrpInv_
-    let Group gInfo@GroupInfo {membership} members = group
+    let Group gInfo members = group
         Contact {localDisplayName = cName} = contact
     assertUserGroupRole gInfo $ max GRAdmin memRole
     -- [incognito] forbid to invite contact to whom user is connected incognito
     when (contactConnIncognito contact) $ throwChatError CEContactIncognitoCantInvite
     -- [incognito] forbid to invite contacts if user joined the group using an incognito profile
-    when (memberIncognito membership) $ throwChatError CEGroupIncognitoCantInvite
+    when (incognitoMembership gInfo) $ throwChatError CEGroupIncognitoCantInvite
     let sendInvitation = sendGrpInvitation user contact gInfo
     case contactMember contact members of
       Nothing -> do
@@ -3103,10 +3103,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                       groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
                       withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds (fromJVersionRange peerChatVRange) subMode
                   _ -> pure ()
-            Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
+            Just (gInfo, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m $ Just ct
-                let connectedIncognito = contactConnIncognito ct || memberIncognito membership
+                let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
         SENT msgId -> do
           sentMsgDeliveryEvent conn msgId
@@ -3279,7 +3279,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               Just ct@Contact {activeConn = Connection {connStatus}} ->
                 when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m $ Just ct
-                  let connectedIncognito = contactConnIncognito ct || memberIncognito membership
+                  let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
@@ -3565,8 +3565,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                         ct <- acceptContactRequestAsync user cReq incognitoProfile
                         toView $ CRAcceptingContactRequest user ct
                       Just groupId -> do
-                        gInfo@GroupInfo {membership = membership@GroupMember {memberProfile}} <- withStore $ \db -> getGroupInfo db user groupId
-                        let profileMode = if memberIncognito membership then Just $ ExistingIncognito memberProfile else Nothing
+                        gInfo <- withStore $ \db -> getGroupInfo db user groupId
+                        let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                         ct <- acceptContactRequestAsync user cReq profileMode
                         toView $ CRAcceptingGroupJoinRequest user gInfo ct
                     _ -> do
@@ -4413,7 +4413,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             toView $ CRJoinedGroupMemberConnecting user gInfo m newMember
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memberChatVRange _) = do
+    xGrpMemIntro gInfo@GroupInfo {chatSettings = ChatSettings {enableNtfs}} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memberChatVRange _) = do
       case memberCategory m of
         GCHostMember -> do
           members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -4429,7 +4429,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 Just mcvr
                   | isCompatibleRange (fromChatVRange mcvr) groupNoDirectVRange -> pure Nothing -- Just <$> createConn subMode -- pure Nothing
                   | otherwise -> Just <$> createConn subMode
-              let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
+              let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
@@ -4473,7 +4473,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user enableNtfs groupConnReq dm subMode
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user enableNtfs dcr dm subMode
-      let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
+      let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memberChatVRange
       withStore' $ \db -> createIntroToMemberContact db user m toMember mcvr groupConnIds directConnIds customUserProfileId subMode
 
@@ -4598,6 +4598,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           (mCt', m') <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode
           createItems mCt' m'
         joinConn subMode = do
+          -- TODO send user's profile for this group membership
           dm <- directMessage XOk
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
