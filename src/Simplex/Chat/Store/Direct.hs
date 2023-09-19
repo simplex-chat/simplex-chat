@@ -15,6 +15,7 @@ module Simplex.Chat.Store.Direct
     updateContactProfile_,
     updateContactProfile_',
     deleteContactProfile_,
+    deleteUnusedProfile_,
 
     -- * Contacts and connections functions
     getPendingContactConnection,
@@ -271,6 +272,34 @@ deleteContactProfile_ db userId contactId =
       )
     |]
     (userId, contactId)
+
+deleteUnusedProfile_ :: DB.Connection -> UserId -> ProfileId -> IO ()
+deleteUnusedProfile_ db userId profileId =
+  DB.executeNamed
+    db
+    [sql|
+      DELETE FROM contact_profiles
+      WHERE user_id = :user_id AND contact_profile_id = :profile_id
+        AND 1 NOT IN (
+          SELECT 1 FROM connections
+          WHERE user_id = :user_id AND custom_user_profile_id = :profile_id LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM contacts
+          WHERE user_id = :user_id AND contact_profile_id = :profile_id LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM contact_requests
+          WHERE user_id = :user_id AND contact_profile_id = :profile_id LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM group_members
+          WHERE user_id = :user_id
+            AND (member_profile_id = :profile_id OR contact_profile_id = :profile_id)
+          LIMIT 1
+        )
+    |]
+    [":user_id" := userId, ":profile_id" := profileId]
 
 updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db user@User {userId} c p'
