@@ -1391,4 +1391,16 @@
     <string name="settings_is_storing_in_clear_text">La password viene conservata nelle impostazioni come testo normale.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Nota bene</b>: i relay di messaggi e file sono connessi via proxy SOCKS. Le chiamate e l\'invio di anteprime dei link usano una connessione diretta.]]></string>
     <string name="encrypt_local_files">Cripta i file locali</string>
+    <string name="v5_3_encrypt_local_files">Crittografia di file e media memorizzati</string>
+    <string name="v5_3_new_desktop_app">Nuova app desktop!</string>
+    <string name="v5_3_new_interface_languages">6 nuove lingue dell\'interfaccia</string>
+    <string name="v5_3_encrypt_local_files_descr">L\'app cripta i nuovi file locali (eccetto i video).</string>
+    <string name="v5_3_discover_join_groups">Scopri ed unisciti ai gruppi</string>
+    <string name="v5_3_simpler_incognito_mode">Modalità incognito semplificata</string>
+    <string name="v5_3_new_interface_languages_descr">Arabo, bulgaro, finlandese, ebraico, tailandese e ucraino - grazie agli utenti e a Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Crea un nuovo profilo nell\'app desktop. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Attiva/disattiva l\'incognito quando ti colleghi.</string>
+    <string name="v5_3_discover_join_groups_descr">- connessione al servizio directory (BETA)!
+\n- ricevute di consegna (fino a 20 membri).
+\n- più veloce e più stabile.</string>
 </resources>
