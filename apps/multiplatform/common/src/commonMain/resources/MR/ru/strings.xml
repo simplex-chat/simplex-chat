@@ -403,7 +403,8 @@
     <string name="network_use_onion_hosts_required">Обязательно</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion хосты используются, если возможно.</string>
     <string name="network_use_onion_hosts_no_desc">Onion хосты не используются.</string>
-    <string name="network_use_onion_hosts_required_desc">Подключаться только к onion хостам.</string>
+    <string name="network_use_onion_hosts_required_desc">Подключаться только к onion хостам.
+\nОбратите внимание: Вы не сможете соединиться с серверами, у которых нет .onion адреса.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion хосты используются, если возможно.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion хосты не используются.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Подключаться только к onion хостам.</string>
@@ -1458,4 +1459,30 @@
     <string name="connect_use_current_profile">Использовать активный профиль</string>
     <string name="connect_use_new_incognito_profile">Использовать новый Инкогнито профиль</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранен в настройках.</string>
+    <string name="v5_3_encrypt_local_files">Шифруйте сохраненные файлы и медиа</string>
+    <string name="socks_proxy_setting_limitations"><b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS прокси. Звонки и картинки ссылок используют прямое соединение.</string>
+    <string name="encrypt_local_files">Шифровать локальные файлы</string>
+    <string name="v5_3_new_desktop_app">Приложение для компьютера!</string>
+    <string name="v5_3_new_interface_languages">6 новых языков интерфейса</string>
+    <string name="v5_3_encrypt_local_files_descr">Приложение шифрует новые локальные файлы (кроме видео).</string>
+    <string name="you_can_change_it_later">Случайный пароль хранится в настройках как открытый текст.
+\nВы можете изменить его позже.</string>
+    <string name="v5_3_discover_join_groups">Найдите и вступите в группы</string>
+    <string name="database_encryption_will_be_updated_in_settings">Пароль шифрования базы данных будет обновлён и сохранён в настройках.</string>
+    <string name="remove_passphrase_from_settings">Удалить пароль из настроек\?</string>
+    <string name="use_random_passphrase">Использовать случайный пароль</string>
+    <string name="save_passphrase_in_settings">Сохранить пароль в настройках</string>
+    <string name="v5_3_simpler_incognito_mode">Упрощенный режим Инкогнито</string>
+    <string name="setup_database_passphrase">Установить пароль базы данных</string>
+    <string name="set_database_passphrase">Установить пароль базы данных</string>
+    <string name="open_database_folder">Открыть директорию базы данных</string>
+    <string name="v5_3_new_interface_languages_descr">Арабский, болгарский, финский, иврит, тайский и украинский - благодаря пользователям и Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Создайте новый профиль в приложении для компьютера. 💻</string>
+    <string name="passphrase_will_be_saved_in_settings">Пароль будет сохранён в настройках как простой текст после того, как вы его измените или перезапустите приложение.</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Установите режим Инкогнито при соединении.</string>
+    <string name="v5_3_discover_join_groups_descr">- соединиться с каталогом групп (BETA)!
+\n- отчеты о доставке (до 20 членов).
+\n- быстрее и стабильнее.</string>
+    <string name="settings_is_storing_in_clear_text">Пароль хранится в настройках, как открытый текст.</string>
 </resources>
