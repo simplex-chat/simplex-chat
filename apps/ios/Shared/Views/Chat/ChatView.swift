@@ -211,9 +211,6 @@ struct ChatView: View {
                     logger.error("apiContactInfo error: \(responseError(error))")
                 }
             }
-            if contact.nextSendGrpInv {
-                composeState = ComposeState(invitingMemberContact: true)
-            }
         }
         if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
             composeState = draft

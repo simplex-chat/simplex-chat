@@ -17,6 +17,7 @@ struct SendMessageView: View {
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
     var cancelLiveMessage: (() -> Void)? = nil
+    var nextSendGrpInv: Bool = false
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
@@ -118,7 +119,7 @@ struct SendMessageView: View {
 
     @ViewBuilder private func composeActionButtons() -> some View {
         let vmrs = composeState.voiceMessageRecordingState
-        if composeState.invitingMemberContact {
+        if nextSendGrpInv {
             inviteMemberContactButton()
         } else if showVoiceMessageButton
             && composeState.message.isEmpty

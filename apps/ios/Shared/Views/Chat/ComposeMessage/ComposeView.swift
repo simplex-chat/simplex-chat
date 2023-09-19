@@ -43,7 +43,6 @@ struct ComposeState {
     var preview: ComposePreview
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
-    var invitingMemberContact = false
     var inProgress = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
@@ -52,15 +51,13 @@ struct ComposeState {
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
-        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
-        invitingMemberContact: Bool = false
+        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording
     ) {
         self.message = message
         self.liveMessage = liveMessage
         self.preview = preview
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
-        self.invitingMemberContact = invitingMemberContact
     }
 
     init(editingItem: ChatItem) {
@@ -80,16 +77,14 @@ struct ComposeState {
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
-        voiceMessageRecordingState: VoiceMessageRecordingState? = nil,
-        invitingMemberContact: Bool? = nil
+        voiceMessageRecordingState: VoiceMessageRecordingState? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
             liveMessage: liveMessage ?? self.liveMessage,
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
-            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState,
-            invitingMemberContact: invitingMemberContact ?? self.invitingMemberContact
+            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
         )
     }
 
@@ -158,7 +153,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if invitingMemberContact || editing || liveMessage != nil || inProgress { return true }
+        if editing || liveMessage != nil || inProgress { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
@@ -262,7 +257,7 @@ struct ComposeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if composeState.invitingMemberContact {
+            if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
             }
             contextItemView()
@@ -278,7 +273,7 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.attachmentDisabled || !chat.userCanSend)
+                .disabled(composeState.attachmentDisabled || !chat.userCanSend || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
@@ -306,6 +301,7 @@ struct ComposeView: View {
                             composeState.liveMessage = nil
                             chatModel.removeLiveDummy()
                         },
+                        nextSendGrpInv: chat.chatInfo.contact?.nextSendGrpInv ?? false,
                         voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
                         showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
                         startVoiceMessageRecording: {
@@ -625,7 +621,7 @@ struct ComposeView: View {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
         }
-        if composeState.invitingMemberContact {
+        if chat.chatInfo.contact?.nextSendGrpInv ?? false {
             await sendMemberContactInvitation()
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
