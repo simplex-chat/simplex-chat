@@ -30,7 +30,7 @@ actual class VideoPlayer actual constructor(
   override val preview: MutableState<ImageBitmap> = mutableStateOf(defaultPreview)
 
   val mediaPlayerComponent = initializeMediaPlayerComponent()
-  val player = mediaPlayerComponent.mediaPlayer()
+  val player by lazy { mediaPlayerComponent.mediaPlayer() }
 
   init {
     withBGApi {
@@ -38,7 +38,7 @@ actual class VideoPlayer actual constructor(
     }
   }
 
-  private val currentVolume: Int = player.audio().volume()
+  private val currentVolume: Int by lazy { player.audio().volume() }
   private var isReleased: Boolean = false
 
   private val listener: MutableState<((position: Long?, state: TrackState) -> Unit)?> = mutableStateOf(null)
@@ -107,7 +107,7 @@ actual class VideoPlayer actual constructor(
   }
 
   override fun stop() {
-    if (isReleased) return
+    if (isReleased || !videoPlaying.value) return
     player.controls().stop()
     stopListener()
   }
