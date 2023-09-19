@@ -112,6 +112,7 @@ library
       Simplex.Chat.Migrations.M20230827_file_encryption
       Simplex.Chat.Migrations.M20230829_connections_chat_vrange
       Simplex.Chat.Migrations.M20230903_connections_to_subscribe
+      Simplex.Chat.Migrations.M20230913_member_contacts
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -144,18 +145,18 @@ library
       src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , asn1-types
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -165,8 +166,8 @@ library
     , hourglass ==0.2.*
     , http-types
     , http2
-    , memory ==0.15.*
-    , mtl ==2.2.*
+    , memory ==0.18.*
+    , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
@@ -178,17 +179,18 @@ library
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.16.*
+    , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==1.2.*
+    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , x509 ==1.7.*
     , x509-store ==1.6.*
     , x509-validation ==1.6.*
-    , zip ==1.7.*
+    , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -201,18 +203,18 @@ executable simplex-bot
       apps/simplex-bot
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , asn1-types
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -222,8 +224,8 @@ executable simplex-bot
     , hourglass ==0.2.*
     , http-types
     , http2
-    , memory ==0.15.*
-    , mtl ==2.2.*
+    , memory ==0.18.*
+    , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
@@ -236,17 +238,18 @@ executable simplex-bot
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.16.*
+    , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==1.2.*
+    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , x509 ==1.7.*
     , x509-store ==1.6.*
     , x509-validation ==1.6.*
-    , zip ==1.7.*
+    , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -259,18 +262,18 @@ executable simplex-bot-advanced
       apps/simplex-bot-advanced
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , asn1-types
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -280,8 +283,8 @@ executable simplex-bot-advanced
     , hourglass ==0.2.*
     , http-types
     , http2
-    , memory ==0.15.*
-    , mtl ==2.2.*
+    , memory ==0.18.*
+    , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
@@ -294,17 +297,18 @@ executable simplex-bot-advanced
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.16.*
+    , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==1.2.*
+    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , x509 ==1.7.*
     , x509-store ==1.6.*
     , x509-validation ==1.6.*
-    , zip ==1.7.*
+    , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -319,18 +323,18 @@ executable simplex-broadcast-bot
       apps/simplex-broadcast-bot/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , asn1-types
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -340,8 +344,8 @@ executable simplex-broadcast-bot
     , hourglass ==0.2.*
     , http-types
     , http2
-    , memory ==0.15.*
-    , mtl ==2.2.*
+    , memory ==0.18.*
+    , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
@@ -354,17 +358,18 @@ executable simplex-broadcast-bot
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.16.*
+    , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==1.2.*
+    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , x509 ==1.7.*
     , x509-store ==1.6.*
     , x509-validation ==1.6.*
-    , zip ==1.7.*
+    , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -378,18 +383,18 @@ executable simplex-chat
       apps/simplex-chat
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , asn1-types
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -399,8 +404,8 @@ executable simplex-chat
     , hourglass ==0.2.*
     , http-types
     , http2
-    , memory ==0.15.*
-    , mtl ==2.2.*
+    , memory ==0.18.*
+    , mtl ==2.3.*
     , network ==3.1.*
     , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
@@ -413,18 +418,19 @@ executable simplex-chat
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.16.*
+    , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==1.2.*
+    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
     , x509 ==1.7.*
     , x509-store ==1.6.*
     , x509-validation ==1.6.*
-    , zip ==1.7.*
+    , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -441,18 +447,18 @@ executable simplex-directory-service
       apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , asn1-types
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -462,8 +468,8 @@ executable simplex-directory-service
     , hourglass ==0.2.*
     , http-types
     , http2
-    , memory ==0.15.*
-    , mtl ==2.2.*
+    , memory ==0.18.*
+    , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
@@ -476,17 +482,18 @@ executable simplex-directory-service
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.16.*
+    , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==1.2.*
+    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , x509 ==1.7.*
     , x509-store ==1.6.*
     , x509-validation ==1.6.*
-    , zip ==1.7.*
+    , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
@@ -523,18 +530,18 @@ test-suite simplex-chat-test
       apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , asn1-types
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default
     , deepseq ==1.4.*
     , direct-sqlcipher ==2.3.*
@@ -543,11 +550,11 @@ test-suite simplex-chat-test
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , hourglass ==0.2.*
-    , hspec ==2.7.*
+    , hspec ==2.11.*
     , http-types
     , http2
-    , memory ==0.15.*
-    , mtl ==2.2.*
+    , memory ==0.18.*
+    , mtl ==2.3.*
     , network ==3.1.*
     , network-udp ==0.0.0
     , optparse-applicative >=0.15 && <0.17
@@ -561,17 +568,18 @@ test-suite simplex-chat-test
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.16.*
+    , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==1.2.*
+    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
+    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , x509 ==1.7.*
     , x509-store ==1.6.*
     , x509-validation ==1.6.*
-    , zip ==1.7.*
+    , zip ==2.0.*
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON

@@ -12,6 +12,7 @@ module Simplex.Chat.Terminal.Input where
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, threadDelay)
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
 import qualified Data.Attoparsec.ByteString.Char8 as A

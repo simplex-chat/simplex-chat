@@ -334,12 +334,6 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
-  // Also in v5.1
-  // preference to disable calls per contact
-  // configurable SOCKS proxy port
-  // access welcome message via a group profile
-  // improve calls on lock screen
-  // better formatting of times and dates
   VersionDescription(
     version = "v5.1",
     post = "https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html",
@@ -370,7 +364,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
         link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
-    ),
+    )
   ),
   VersionDescription(
     version = "v5.2",
@@ -401,8 +395,42 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         titleId = MR.strings.v5_2_more_things,
         descrId = MR.strings.v5_2_more_things_descr
       )
-    ),
-  )
+    )
+  ),
+  VersionDescription(
+    version = "v5.3",
+    post = "https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_desktop,
+        titleId = MR.strings.v5_3_new_desktop_app,
+        descrId = MR.strings.v5_3_new_desktop_app_descr,
+        link = "https://simplex.chat/downloads/"
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_lock,
+        titleId = MR.strings.v5_3_encrypt_local_files,
+        descrId = MR.strings.v5_3_encrypt_local_files_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_search,
+        titleId = MR.strings.v5_3_discover_join_groups,
+        descrId = MR.strings.v5_3_discover_join_groups_descr,
+        link = "simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_theater_comedy,
+        titleId = MR.strings.v5_3_simpler_incognito_mode,
+        descrId = MR.strings.v5_3_simpler_incognito_mode_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v5_3_new_interface_languages,
+        descrId = MR.strings.v5_3_new_interface_languages_descr,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
+      )
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version
