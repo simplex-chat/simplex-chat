@@ -28,11 +28,18 @@
 
         <section id="doc" class="bg-white dark:bg-[#17203D] mt-[66px]">
             <main class="container px-4 lg:px-7 py-10 md:py-16">
-                <div>{{ content | safe }}</div>
+                <div>{{ content | wrapH3s(page) | safe }}</div>
             </main>
         </section>
 
         {% include "footer.html" %}
     </body>
 
+    <script>
+        window.addEventListener('click', (e) => {
+            if (e.target.closest('.job-tab-btn')) {
+                e.target.closest('.job-tab').classList.toggle('active')
+            }
+        })
+    </script>
 </html>
