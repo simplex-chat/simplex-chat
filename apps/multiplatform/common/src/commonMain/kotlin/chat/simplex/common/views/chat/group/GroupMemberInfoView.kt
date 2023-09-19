@@ -84,6 +84,7 @@ fun GroupMemberInfoView(
             chatModel.chatItems.clear()
             chatModel.chatId.value = memberContact.id
             closeAll()
+            chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
           }
         }
       },
