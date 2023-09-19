@@ -292,7 +292,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       },
       openDirectChat = { contactId ->
         withApi {
-          chatModel.chatId.value = "@$contactId"
+          openDirectChat(contactId, chatModel)
         }
 //        withApi {
 //          val c = chatModel.controller.apiGetChat(ChatType.Direct, contactId)

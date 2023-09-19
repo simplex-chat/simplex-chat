@@ -40,7 +40,7 @@ fun CIMemberCreatedContactView(
     if (chatItem.chatDir is CIDirection.GroupRcv && chatItem.chatDir.groupMember.memberContactId != null) {
       val openChatStyle = SpanStyle(color = MaterialTheme.colors.primary, fontSize = 12.sp)
       val annotatedText = buildAnnotatedString {
-        eventText()
+        append(eventText())
         append("  ")
         withAnnotation(tag = "Open", annotation = "Open") {
           withStyle(openChatStyle) { append(generalGetString(MR.strings.rcv_group_event_open_chat) + "  ") }
@@ -60,7 +60,7 @@ fun CIMemberCreatedContactView(
       )
     } else {
       val annotatedText = buildAnnotatedString {
-        eventText()
+        append(eventText())
         append("  ")
         withStyle(chatEventStyle) { append(chatItem.timestampText) }
       }

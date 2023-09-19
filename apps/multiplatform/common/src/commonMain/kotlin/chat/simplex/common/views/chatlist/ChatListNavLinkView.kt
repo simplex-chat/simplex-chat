@@ -114,6 +114,15 @@ fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
   }
 }
 
+suspend fun openDirectChat(contactId: Long, chatModel: ChatModel) {
+  val chat = chatModel.controller.apiGetChat(ChatType.Direct, contactId)
+  if (chat != null) {
+    chatModel.chatItems.clear()
+    chatModel.chatItems.addAll(chat.chatItems)
+    chatModel.chatId.value = "@$contactId"
+  }
+}
+
 suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
   if (chat != null) {

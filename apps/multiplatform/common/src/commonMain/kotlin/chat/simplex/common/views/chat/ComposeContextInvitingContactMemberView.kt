@@ -9,8 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.item.*
-import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 
@@ -23,7 +21,8 @@ fun ComposeContextInvitingContactMemberView() {
       .fillMaxWidth()
       .padding(top = 8.dp)
       .background(sentColor),
-    verticalAlignment = Alignment.CenterVertically
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.Center
   ) {
     Text(generalGetString(MR.strings.compose_send_invitation_to_connect_directly))
   }

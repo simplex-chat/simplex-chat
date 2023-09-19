@@ -1964,7 +1964,7 @@ sealed class CC {
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
     is APICreateMemberContact -> "/_create member contact #$groupId $groupMemberId"
-    is APISendMemberContactInvitation -> "/_invite member contact $contactId ${mc.cmdString}"
+    is APISendMemberContactInvitation -> "/_invite member contact @$contactId ${mc.cmdString}"
     is APIGetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()}"
     is APISetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()} ${protoServersStr(servers)}"
     is APITestProtoServer -> "/_server test $userId $server"
