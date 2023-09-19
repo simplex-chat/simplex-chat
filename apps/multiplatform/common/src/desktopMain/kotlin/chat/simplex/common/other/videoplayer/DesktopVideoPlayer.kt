@@ -73,7 +73,7 @@ private fun Float.toPercentage(): Int = (this * 100).roundToInt()
  * for why we're using CallbackMediaPlayerComponent for macOS.
  */
 fun initializeMediaPlayerComponent(): Component {
-  NativeDiscovery().discover()
+  //NativeDiscovery().discover()
   return if (isMacOS()) {
     CallbackMediaPlayerComponent()
   } else {

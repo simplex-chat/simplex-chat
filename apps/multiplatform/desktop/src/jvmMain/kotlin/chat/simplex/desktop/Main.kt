@@ -5,6 +5,8 @@ import chat.simplex.common.showApp
 import java.io.File
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.FileTime
+import kotlin.io.path.setLastModifiedTime
 
 fun main() {
   initHaskell()
@@ -27,7 +29,7 @@ private fun initHaskell() {
   //val libXcb = "libvlc_xcb_events.so.0.0.0"
   //System.load(File(File(vlcDir, "vlc"), libXcb).absolutePath)
   System.setProperty("jna.library.path", vlcDir.absolutePath)
-  discoverVlcLibs(File(File(vlcDir, "vlc"), "plugins").absolutePath)
+  //discoverVlcLibs(File(File(vlcDir, "vlc"), "plugins").absolutePath)
 
   libsTmpDir.deleteRecursively()
   initHS()
@@ -43,7 +45,12 @@ private fun copyResources(from: String, to: Path) {
       return FileVisitResult.CONTINUE
     }
     override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-      Files.copy(file, to.resolve(resPath.relativize(file).toString()), StandardCopyOption.REPLACE_EXISTING)
+      val dest = to.resolve(resPath.relativize(file).toString())
+      Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING)
+      // Setting the same time on file as the time set in script that generates VLC libs
+      if (dest.toString().contains("." + desktopPlatform.libExtension)) {
+        dest.setLastModifiedTime(FileTime.fromMillis(0))
+      }
       return FileVisitResult.CONTINUE
     }
   })
