@@ -665,6 +665,7 @@ fun ComposeView(
   }
 
   val userCanSend = rememberUpdatedState(chat.userCanSend)
+  val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
   val userIsObserver = rememberUpdatedState(chat.userIsObserver)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
@@ -706,6 +707,7 @@ fun ComposeView(
       }
       val attachmentEnabled =
         !composeState.value.attachmentDisabled
+            && sendMsgEnabled.value
             && userCanSend.value
             && !isGroupAndProhibitedFiles
             && !nextSendGrpInv.value
@@ -793,6 +795,7 @@ fun ComposeView(
         recState,
         chat.chatInfo is ChatInfo.Direct,
         liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
+        sendMsgEnabled = sendMsgEnabled.value,
         nextSendGrpInv = nextSendGrpInv.value,
         needToAllowVoiceToContact,
         allowedVoiceByPrefs,

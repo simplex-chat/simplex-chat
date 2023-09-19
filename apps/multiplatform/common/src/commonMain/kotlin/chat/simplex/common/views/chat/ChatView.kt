@@ -114,21 +114,22 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       unreadCount,
       composeState,
       composeView = {
-        Column {
+        Column(
+          Modifier.fillMaxWidth(),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
           if (chat.chatInfo is ChatInfo.Direct && !chat.chatInfo.contact.ready && !chat.chatInfo.contact.nextSendGrpInv) {
             Text(
               generalGetString(MR.strings.compose_disabled_establishing_connection),
-              Modifier.padding(vertical = 6.dp),
-              fontSize = 12.sp,
+              Modifier.padding(top = 4.dp),
+              fontSize = 14.sp,
               color = MaterialTheme.colors.secondary
             )
           }
-          if (chat.chatInfo.sendMsgEnabled) {
-            ComposeView(
-              chatModel, chat, composeState, attachmentOption,
-              showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
-            )
-          }
+          ComposeView(
+            chatModel, chat, composeState, attachmentOption,
+            showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
+          )
         }
       },
       attachmentOption,
@@ -294,17 +295,6 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         withApi {
           openDirectChat(contactId, chatModel)
         }
-//        withApi {
-//          val c = chatModel.controller.apiGetChat(ChatType.Direct, contactId)
-//          if (c != null) {
-//            if (chatModel.getContactChat(contactId) == null) {
-//              chatModel.addChat(c)
-//            }
-//            chatModel.chatItems.clear()
-//            chatModel.chatItems.addAll(c.chatItems)
-//            chatModel.chatId.value = c.id
-//          }
-//        }
       },
       updateContactStats = { contact ->
         withApi {
