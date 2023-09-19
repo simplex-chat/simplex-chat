@@ -3037,7 +3037,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInv ct' sharedMsgId fileConnReq_ fName msgMeta
               XInfo p -> xInfo ct' p
               XGrpInv gInv -> processGroupInvitation ct' gInv msg msgMeta
-              XInfoProbe probe -> xInfoProbe ct' probe
+              XInfoProbe probe -> xInfoProbe (CGMContact ct') probe
               XInfoProbeCheck probeHash -> xInfoProbeCheck ct' probeHash
               XInfoProbeOk probe -> xInfoProbeOk ct' probe
               XCallInv callId invitation -> xCallInv ct' callId invitation msg msgMeta
@@ -3169,7 +3169,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
               CFCreateConnGrpMemInv
-                | isCompatibleRange (fromJVersionRange $ peerChatVRange conn) groupNoDirectVRange -> sendWithDirectCReq -- sendWithoutDirectCReq
+                | isCompatibleRange (fromJVersionRange $ peerChatVRange conn) groupNoDirectVRange -> sendWithoutDirectCReq
                 | otherwise -> sendWithDirectCReq
                 where
                   sendWithoutDirectCReq = do
@@ -3270,12 +3270,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
           _ -> do
-            -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
                 notifyMemberConnected gInfo m Nothing
-                messageWarning "connected member does not have contact"
+                let connectedIncognito = memberIncognito membership
+                when (memberCategory m == GCPreMember) $ probeMatchingMemberContact gInfo m connectedIncognito
               Just ct@Contact {activeConn = Connection {connStatus}} ->
                 when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m $ Just ct
@@ -3308,6 +3308,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpDel -> xGrpDel gInfo m' msg msgMeta
             XGrpInfo p' -> xGrpInfo gInfo m' p' msg msgMeta
             XGrpDirectInv connReq mContent_ -> canSend m' $ xGrpDirectInv gInfo m' conn' connReq mContent_ msg msgMeta
+            XInfoProbe probe -> xInfoProbe (CGMGroupMember gInfo m') probe
+            -- XInfoProbeCheck -- TODO merge members?
+            -- XInfoProbeOk -- TODO merge members?
             BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
           currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
@@ -3674,19 +3677,42 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     probeMatchingContacts :: Contact -> IncognitoEnabled -> m ()
     probeMatchingContacts ct connectedIncognito = do
       gVar <- asks idsDrg
-      (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId ct
-      void . sendDirectContactMessage ct $ XInfoProbe probe
       if connectedIncognito
-        then withStore' $ \db -> deleteSentProbe db userId probeId
+        then sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
         else do
+          (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId (CGMContact ct)
+          sendProbe probe
           cs <- withStore' $ \db -> getMatchingContacts db user ct
-          let probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
-          forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchChatError` \_ -> pure ()
+          sendProbeHashes cs probe probeId
       where
-        sendProbeHash :: Contact -> ProbeHash -> Int64 -> m ()
-        sendProbeHash c probeHash probeId = do
+        sendProbe :: Probe -> m ()
+        sendProbe probe = void . sendDirectContactMessage ct $ XInfoProbe probe
+
+    probeMatchingMemberContact :: GroupInfo -> GroupMember -> IncognitoEnabled -> m ()
+    probeMatchingMemberContact _ GroupMember {activeConn = Nothing} _ = pure ()
+    probeMatchingMemberContact g m@GroupMember {groupId, activeConn = Just conn} connectedIncognito = do
+      gVar <- asks idsDrg
+      if connectedIncognito
+        then sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
+        else do
+          (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId $ CGMGroupMember g m
+          sendProbe probe
+          cs <- withStore' $ \db -> getMatchingMemberContacts db user m
+          sendProbeHashes cs probe probeId
+      where
+        sendProbe :: Probe -> m ()
+        sendProbe probe = void $ sendDirectMessage conn (XInfoProbe probe) (GroupId groupId)
+
+    -- TODO currently we only send probe hashes to contacts
+    sendProbeHashes :: [Contact] -> Probe -> Int64 -> m ()
+    sendProbeHashes cs probe probeId =
+      forM_ cs $ \c -> sendProbeHash c `catchChatError` \_ -> pure ()
+      where
+        probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
+        sendProbeHash :: Contact -> m ()
+        sendProbeHash c = do
           void . sendDirectContactMessage c $ XInfoProbeCheck probeHash
-          withStore' $ \db -> createSentProbeHash db userId probeId c
+          withStore' $ \db -> createSentProbeHash db userId probeId $ CGMContact c
 
     messageWarning :: Text -> m ()
     messageWarning = toView . CRMessageError user "warning"
@@ -4247,35 +4273,48 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             (_, param) = groupFeatureState p
         createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) param) Nothing
 
-    xInfoProbe :: Contact -> Probe -> m ()
-    xInfoProbe c2 probe =
+    xInfoProbe :: ContactOrGroupMember -> Probe -> m ()
+    xInfoProbe cgm2 probe =
       -- [incognito] unless connected incognito
-      unless (contactConnIncognito c2) $ do
-        r <- withStore' $ \db -> matchReceivedProbe db user c2 probe
-        forM_ r $ \c1 -> probeMatch c1 c2 probe
+      unless (contactOrGroupMemberIncognito cgm2) $ do
+        r <- withStore' $ \db -> matchReceivedProbe db user cgm2 probe
+        forM_ r $ \case
+          CGMContact c1 -> probeMatch c1 cgm2 probe
+          CGMGroupMember _ _ -> messageWarning "xInfoProbe ignored: matched member (no probe hashes sent to members)"
 
+    -- TODO currently we send probe hashes only to contacts
     xInfoProbeCheck :: Contact -> ProbeHash -> m ()
     xInfoProbeCheck c1 probeHash =
       -- [incognito] unless connected incognito
       unless (contactConnIncognito c1) $ do
-        r <- withStore' $ \db -> matchReceivedProbeHash db user c1 probeHash
+        r <- withStore' $ \db -> matchReceivedProbeHash db user (CGMContact c1) probeHash
         forM_ r . uncurry $ probeMatch c1
 
-    probeMatch :: Contact -> Contact -> Probe -> m ()
-    probeMatch c1@Contact {contactId = cId1, profile = p1} c2@Contact {contactId = cId2, profile = p2} probe =
-      if profilesMatch (fromLocalProfile p1) (fromLocalProfile p2) && cId1 /= cId2
-        then do
-          void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-          mergeContacts c1 c2
-        else messageWarning "probeMatch ignored: profiles don't match or same contact id"
+    probeMatch :: Contact -> ContactOrGroupMember -> Probe -> m ()
+    probeMatch c1@Contact {contactId = cId1, profile = p1} cgm2 probe =
+      case cgm2 of
+        CGMContact c2@Contact {contactId = cId2, profile = p2}
+          | cId1 /= cId2 && profilesMatch p1 p2 -> do
+            void . sendDirectContactMessage c1 $ XInfoProbeOk probe
+            mergeContacts c1 c2
+          | otherwise -> messageWarning "probeMatch ignored: profiles don't match or same contact id"
+        CGMGroupMember g m2@GroupMember {memberProfile = p2, memberContactId}
+          | isNothing memberContactId && profilesMatch p1 p2 -> do
+            void . sendDirectContactMessage c1 $ XInfoProbeOk probe
+            connectContactToMember c1 g m2
+          | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact"
 
+    -- TODO currently we send probe hashes only to contacts
     xInfoProbeOk :: Contact -> Probe -> m ()
-    xInfoProbeOk c1@Contact {contactId = cId1} probe = do
-      r <- withStore' $ \db -> matchSentProbe db user c1 probe
-      forM_ r $ \c2@Contact {contactId = cId2} ->
-        if cId1 /= cId2
-          then mergeContacts c1 c2
-          else messageWarning "xInfoProbeOk ignored: same contact id"
+    xInfoProbeOk c1@Contact {contactId = cId1} probe =
+      withStore' (\db -> matchSentProbe db user (CGMContact c1) probe) >>= \case
+        Just (CGMContact c2@Contact {contactId = cId2})
+          | cId1 /= cId2 -> mergeContacts c1 c2
+          | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
+        Just (CGMGroupMember g m2@GroupMember {memberContactId})
+          | isNothing memberContactId -> connectContactToMember c1 g m2
+          | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
+        _ -> pure ()
 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
@@ -4387,6 +4426,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       withStore' $ \db -> mergeContactRecords db userId c1 c2
       toView $ CRContactsMerged user c1 c2
 
+    connectContactToMember :: Contact -> GroupInfo -> GroupMember -> m ()
+    connectContactToMember c1 g m2 = do
+      withStore' $ \db -> updateMemberContact db user c1 m2
+      toView $ CRMemberContactConnected user c1 g m2
+
     saveConnInfo :: Connection -> ConnInfo -> m Connection
     saveConnInfo activeConn connInfo = do
       ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage activeConn connInfo
@@ -4427,7 +4471,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               directConnIds <- case memberChatVRange of
                 Nothing -> Just <$> createConn subMode
                 Just mcvr
-                  | isCompatibleRange (fromChatVRange mcvr) groupNoDirectVRange -> Just <$> createConn subMode -- pure Nothing
+                  | isCompatibleRange (fromChatVRange mcvr) groupNoDirectVRange -> pure Nothing
                   | otherwise -> Just <$> createConn subMode
               let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId subMode
