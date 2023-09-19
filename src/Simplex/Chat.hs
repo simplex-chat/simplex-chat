@@ -93,7 +93,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, ZoneId, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
@@ -355,10 +355,16 @@ execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processCha
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 
+-- XXX: assuming `toView` only used for local sessions. Most likely false.
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
   q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, event)
+  atomically $ writeTBQueue q (Nothing, Nothing, event)
+
+toZoneView :: ChatMonad' m => ZoneId -> ChatResponse -> m ()
+toZoneView zoneId event = do
+  q <- asks outputQ
+  atomically $ writeTBQueue q (Nothing, Just zoneId, event)
 
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case

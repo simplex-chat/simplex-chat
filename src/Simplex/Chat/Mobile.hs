@@ -48,7 +48,7 @@ import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..), ZoneId (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
@@ -56,6 +56,8 @@ import System.Timeout (timeout)
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
+
+foreign export ccall "chat_send_cmd_ex" cChatSendCmdEx :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
 
 foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
 
@@ -99,10 +101,14 @@ cChatMigrateInit fp key conf ctrl = do
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
-cChatSendCmd cPtr cCmd = do
+cChatSendCmd cPtr = cChatSendCmdEx cPtr 0
+
+-- | send command to chat (same syntax as in terminal for now)
+cChatSendCmdEx :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
+cChatSendCmdEx cPtr cZone cCmd = do
   c <- deRefStablePtr cPtr
   cmd <- peekCAString cCmd
-  newCAString =<< chatSendCmd c cmd
+  newCAString =<< chatSendCmd c (fromIntegral cZone) cmd
 
 -- | receive message from chat (blocking)
 cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
@@ -197,13 +203,15 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
           _ -> dbError e
         dbError e = Left . DBMErrorSQL dbFile $ show e
 
-chatSendCmd :: ChatController -> String -> IO JSONString
-chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc
+chatSendCmd :: ChatController -> Int -> String -> IO JSONString
+chatSendCmd cc z s = LB.unpack . J.encode . APIResponse Nothing zoneId <$> runReaderT (execChatCommand $ B.pack s) cc
+  where
+    zoneId = if z == 0 then Nothing else Just (ZoneId z)
 
 chatRecvMsg :: ChatController -> IO JSONString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
   where
-    json (corr, resp) = LB.unpack $ J.encode APIResponse {corr, resp}
+    json (corr, zone, resp) = LB.unpack $ J.encode APIResponse {corr, zone, resp}
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)
@@ -229,7 +237,7 @@ chatPasswordHash pwd salt = either (const "") passwordHash salt'
     salt' = U.decode $ B.pack salt
     passwordHash = B.unpack . U.encode . C.sha512Hash . (encodeUtf8 (T.pack pwd) <>)
 
-data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: ChatResponse}
+data APIResponse = APIResponse {corr :: Maybe CorrId, zone :: Maybe ZoneId, resp :: ChatResponse}
   deriving (Generic)
 
 instance ToJSON APIResponse where

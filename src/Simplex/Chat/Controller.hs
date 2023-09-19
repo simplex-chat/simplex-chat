@@ -62,7 +62,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, ZoneId (..))
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -173,7 +173,7 @@ data ChatController = ChatController
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
-    outputQ :: TBQueue (Maybe CorrId, ChatResponse),
+    outputQ :: TBQueue (Maybe CorrId, Maybe ZoneId, ChatResponse),
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
     subscriptionMode :: TVar SubscriptionMode,
