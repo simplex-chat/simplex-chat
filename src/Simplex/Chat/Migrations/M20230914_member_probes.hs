@@ -74,7 +74,6 @@ ALTER TABLE new__received_probes RENAME TO received_probes;
 CREATE INDEX idx_sent_probes_user_id ON sent_probes(user_id);
 CREATE INDEX idx_sent_probes_contact_id ON sent_probes(contact_id);
 CREATE INDEX idx_sent_probes_group_member_id ON sent_probes(group_member_id);
-CREATE INDEX idx_sent_probes_probe ON sent_probes(probe);
 
 CREATE INDEX idx_sent_probe_hashes_user_id ON sent_probe_hashes(user_id);
 CREATE INDEX idx_sent_probe_hashes_sent_probe_id ON sent_probe_hashes(sent_probe_id);
@@ -144,7 +143,6 @@ SELECT
 DROP INDEX idx_sent_probes_user_id;
 DROP INDEX idx_sent_probes_contact_id;
 DROP INDEX idx_sent_probes_group_member_id;
-DROP INDEX idx_sent_probes_probe;
 
 DROP INDEX idx_sent_probe_hashes_user_id;
 DROP INDEX idx_sent_probe_hashes_sent_probe_id;

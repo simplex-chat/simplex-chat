@@ -2746,14 +2746,12 @@ testConnectMemberToContact =
         [ do
             alice <## "#team: you joined the group"
             alice <## "#team: member cath_1 (Catherine) is connected"
-            -- threadDelay 10000000000
             alice <## "member #team cath_1 is merged into cath",
           do
             bob <## "#team: alice joined the group",
           do
             cath <## "#team: bob added alice_1 (Alice) to the group (connecting...)"
             cath <## "#team: new member alice_1 is connected"
-            -- threadDelay 10000000000
             cath <## "member #team alice_1 is merged into alice"
         ]
       alice <##> cath

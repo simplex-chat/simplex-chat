@@ -1197,10 +1197,10 @@ getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = Loc
       |]
 
 createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> ContactOrGroupMember -> ExceptT StoreError IO (Probe, Int64)
-createSentProbe db gVar userId _to =
+createSentProbe db gVar userId to =
   createWithRandomBytes 32 gVar $ \probe -> do
     currentTs <- getCurrentTime
-    let (ctId, gmId) = contactOrGroupMemberIds _to
+    let (ctId, gmId) = contactOrGroupMemberIds to
     DB.execute
       db
       "INSERT INTO sent_probes (contact_id, group_member_id, probe, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
@@ -1208,16 +1208,16 @@ createSentProbe db gVar userId _to =
     (Probe probe,) <$> insertedRowId db    
 
 createSentProbeHash :: DB.Connection -> UserId -> Int64 -> ContactOrGroupMember -> IO ()
-createSentProbeHash db userId probeId _to = do
+createSentProbeHash db userId probeId to = do
   currentTs <- getCurrentTime
-  let (ctId, gmId) = contactOrGroupMemberIds _to
+  let (ctId, gmId) = contactOrGroupMemberIds to
   DB.execute
     db
     "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, group_member_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (probeId, ctId, gmId, userId, currentTs, currentTs)
 
 matchReceivedProbe :: DB.Connection -> User -> ContactOrGroupMember -> Probe -> IO (Maybe ContactOrGroupMember)
-matchReceivedProbe db user@User {userId} _from (Probe probe) = do
+matchReceivedProbe db user@User {userId} from (Probe probe) = do
   let probeHash = C.sha256Hash probe
   cgmIds <-
     maybeFirstRow id $
@@ -1233,7 +1233,7 @@ matchReceivedProbe db user@User {userId} _from (Probe probe) = do
         |]
         (userId, probeHash)
   currentTs <- getCurrentTime
-  let (ctId, gmId) = contactOrGroupMemberIds _from
+  let (ctId, gmId) = contactOrGroupMemberIds from
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
@@ -1241,7 +1241,7 @@ matchReceivedProbe db user@User {userId} _from (Probe probe) = do
   pure cgmIds $>>= getContactOrGroupMember_ db user
 
 matchReceivedProbeHash :: DB.Connection -> User -> ContactOrGroupMember -> ProbeHash -> IO (Maybe (ContactOrGroupMember, Probe))
-matchReceivedProbeHash db user@User {userId} _from (ProbeHash probeHash) = do
+matchReceivedProbeHash db user@User {userId} from (ProbeHash probeHash) = do
   probeIds <-
     maybeFirstRow id $
       DB.query
@@ -1256,7 +1256,7 @@ matchReceivedProbeHash db user@User {userId} _from (ProbeHash probeHash) = do
         |]
         (userId, probeHash)
   currentTs <- getCurrentTime
-  let (ctId, gmId) = contactOrGroupMemberIds _from
+  let (ctId, gmId) = contactOrGroupMemberIds from
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
