@@ -93,7 +93,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, ZoneId, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
@@ -190,6 +190,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
+  satellites <- newTVarIO M.empty
+  host <- newEmptyTMVarIO
   currentUser <- newTVarIO user
   servers <- agentServers config
   smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
@@ -212,7 +214,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  pure ChatController {satellites, host, activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =

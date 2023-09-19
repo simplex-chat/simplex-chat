@@ -62,7 +62,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, ZoneId (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -165,6 +165,8 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
+    satellites :: TVar (Map ZoneId SatelliteZone), -- All the active satellite zones
+    host :: TMVar (Async ()), -- A host supervisor process
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
@@ -193,6 +195,15 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath
   }
 
+data SatelliteZone = SatelliteZone
+  { -- | The process, when active, that broadcasts the satellite presence on the local link
+    announcer :: TMVar (Async ()),
+    -- | A process that relays the commands to its host
+    handler :: TMVar (TBQueue (Maybe CorrId, ChatCommand), Async ()),
+    -- | Path for local resources to be synchronized with host
+    path :: FilePath
+  }
+
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase
   deriving (Show, Generic)
 
@@ -201,7 +212,24 @@ instance ToJSON HelpSection where
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "HS"
 
 data ChatCommand
-  = ShowActiveUser
+  = APIZoneNew -- ^ Prepare a new "empty" zone. Use Setup to install configuration there.
+  | APIZoneList
+  | APIZoneDetails ZoneId
+  | APIZoneStart ZoneId -- ^ Start and announce a new zone
+  | APIZoneStop ZoneId -- ^ Temporarily shut down a running zone
+  | APIZoneDispose ZoneId -- ^ Remove zone data and unregister it
+  | APISatelliteSetup ZoneId -- ^ Configure zone as a satellite uplink to a host
+  | APISatelliteStore ZoneId FilePath -- ^ Store a file at host for `SendFile`
+  | APISatelliteFetch ZoneId FilePath -- ^ Fetch a file from host after `ReceiveFile`
+  | APISatellite'todo -- TBD: something else?
+  | APIHostRegister Text -- ^ Register OOB data for satellite discovery and handshake
+  | APIHostStart -- ^ Start listening for satellite announcements
+  | APIHostConfirmDiscovery -- ^ Confirm discovered data and store confirmation
+  | APIHostRejectDiscovery -- ^ Reject discovered data (and blacklist?)
+  | APIHostStop -- ^ Stop listening for announcements or terminate an active session
+  | APIHostDispose Text -- ^ Remove all local data associated with a satellite session
+  | APIHost'todo -- TBD: something else?
+  | ShowActiveUser
   | CreateActiveUser NewUser
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
@@ -420,7 +448,15 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRActiveUser {user :: User}
+  = CRZoneCreated {ident :: ZoneId}
+  | CRZoneList {zones :: [ZoneId]}
+  | CRZoneDetails {ident :: ZoneId, title :: Text, active :: Bool, kind :: ZoneKind}
+  | CRZoneStarted {ident :: ZoneId}
+  | CRZoneStopped {ident :: ZoneId}
+  | CRZoneDisposed {ident :: ZoneId}
+  | CRSatelliteSetup {ident :: ZoneId, oobData :: Text}
+  | CRHost
+  | CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
   | CRChatStarted
   | CRChatRunning
@@ -857,6 +893,9 @@ data ChatError
   | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
+  | ChatErrorZone {zoneError :: ZoneError}
+  | ChatErrorSatellite {satelliteError :: SatelliteError}
+  | ChatErrorHost {hostError :: HostError}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
@@ -965,6 +1004,40 @@ instance ToJSON SQLiteError where
 
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
+
+data ZoneError
+  = ZEMissing {ident :: ZoneId} -- ^ No zone matches this identifier
+  | ZERunning {ident :: ZoneId} -- ^ A zone is already running or still running
+  deriving (Show, Exception, Generic)
+
+instance ToJSON ZoneError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "ZE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "ZE"
+
+throwZoneError :: ChatMonad m => ZoneError -> m a
+throwZoneError = throwError . ChatErrorZone
+
+data SatelliteError
+  = SE'todo
+  deriving (Show, Exception, Generic)
+
+instance ToJSON SatelliteError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
+
+throwSatelliteError :: ChatMonad m => SatelliteError -> m a
+throwSatelliteError = throwError . ChatErrorSatellite
+
+data HostError
+  = HE'todo
+  deriving (Show, Exception, Generic)
+
+instance ToJSON HostError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "HE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "HE"
+
+throwHostError :: ChatMonad m => HostError -> m a
+throwHostError = throwError . ChatErrorHost
 
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 

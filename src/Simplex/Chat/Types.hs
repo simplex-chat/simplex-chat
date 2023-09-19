@@ -3,20 +3,22 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
@@ -1500,3 +1502,16 @@ newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRange} derivi
 instance ToJSON JVersionRange where
   toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minVersion" .= minV, "maxVersion" .= maxV]
   toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minVersion" .= minV <> "maxVersion" .= maxV
+
+newtype ZoneId = ZoneId Int
+  deriving stock (Show)
+  deriving newtype (Eq, Ord, FromJSON, ToJSON, StrEncoding)
+
+data ZoneKind
+  = ZoneUnconfigured
+  | ZoneSatellite
+  deriving (Eq, Ord, Show, Generic)
+
+instance ToJSON ZoneKind where
+  toJSON = J.genericToJSON $ sumTypeJSON id
+  toEncoding = J.genericToEncoding $ sumTypeJSON id
