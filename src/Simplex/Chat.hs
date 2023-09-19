@@ -33,6 +33,7 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toLower)
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
@@ -1734,22 +1735,15 @@ processChatCommand = \case
       ft' <- if encrypted then encryptLocalFile ft else pure ft
       receiveFile' user ft' rcvInline_ filePath_
     where
-      encryptLocalFile ft@RcvFileTransfer {xftpRcvFile} = case xftpRcvFile of
-        Nothing -> throwChatError $ CEFileInternal "locally encrypted files can't be received via SMP"
-        Just f -> do
-          cfArgs <- liftIO $ CF.randomArgs
-          withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
-          pure ft {xftpRcvFile = Just ((f :: XFTPRcvFile) {cryptoArgs = Just cfArgs})}
+      encryptLocalFile ft = do
+        cfArgs <- liftIO $ CF.randomArgs
+        withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
+        pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
   SetFileToReceive fileId encrypted -> withUser $ \_ -> do
     withChatLock "setFileToReceive" . procCmd $ do
-      cfArgs <- if encrypted then fileCryptoArgs else pure Nothing
+      cfArgs <- if encrypted then Just <$> liftIO CF.randomArgs else pure Nothing
       withStore' $ \db -> setRcvFileToReceive db fileId cfArgs
       ok_
-    where
-      fileCryptoArgs = do
-        (_, RcvFileTransfer {xftpRcvFile = f}) <- withStore (`getRcvFileTransferById` fileId)
-        unless (isJust f) $ throwChatError $ CEFileInternal "locally encrypted files can't be received via SMP"
-        liftIO $ Just <$> CF.randomArgs
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
       withStore (\db -> getFileTransfer db user fileId) >>= \case
@@ -2319,7 +2313,7 @@ receiveFile' user ft rcvInline_ filePath_ = do
       e -> throwError e
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId, cryptoArgs} rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
@@ -2332,7 +2326,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
       filePath <- getRcvFilePath fileId filePath_ fName True
       withStoreCtx (Just "acceptFileReceive, acceptRcvFileTransfer") $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath subMode
     -- XFTP
-    (Just XFTPRcvFile {cryptoArgs}, _) -> do
+    (Just XFTPRcvFile {}, _) -> do
       filePath <- getRcvFilePath fileId filePath_ fName False
       (ci, rfd) <- withStoreCtx (Just "acceptFileReceive, xftpAcceptRcvFT ...") $ \db -> do
         -- marking file as accepted and reading description in the same transaction
@@ -3513,12 +3507,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           RcvChunkOk ->
             if B.length chunk /= fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
-              else ack $ appendFileChunk ft chunkNo chunk
+              else ack $ appendFileChunk ft chunkNo chunk False
           RcvChunkFinal ->
             if B.length chunk > fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
               else do
-                appendFileChunk ft chunkNo chunk
+                appendFileChunk ft chunkNo chunk True
                 ci <- withStore $ \db -> do
                   liftIO $ do
                     updateRcvFileStatus db fileId FSComplete
@@ -3526,7 +3520,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     deleteRcvFileChunks db ft
                   getChatItemByFileId db user fileId
                 toView $ CRRcvFileComplete user ci
-                closeFileHandle fileId rcvFiles
                 forM_ conn_ $ \conn -> deleteAgentConnectionAsync user (aConnId conn)
           RcvChunkDuplicate -> ack $ pure ()
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
@@ -3772,14 +3765,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processFDMessage fileId fileDescr = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
-        (rfd, RcvFileTransfer {fileStatus, xftpRcvFile}) <- withStore $ \db -> do
+        (rfd, RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs}) <- withStore $ \db -> do
           rfd <- appendRcvFD db userId fileId fileDescr
           -- reading second time in the same transaction as appending description
           -- to prevent race condition with accept
           ft' <- getRcvFileTransfer db user fileId
           pure (rfd, ft')
         case (fileStatus, xftpRcvFile) of
-          (RFSAccepted _, Just XFTPRcvFile {cryptoArgs}) -> receiveViaCompleteFD user fileId rfd cryptoArgs
+          (RFSAccepted _, Just XFTPRcvFile {}) -> receiveViaCompleteFD user fileId rfd cryptoArgs
           _ -> pure ()
 
     cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
@@ -4787,8 +4780,8 @@ readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo = do
 parseFileChunk :: ChatMonad m => ByteString -> m FileChunk
 parseFileChunk = liftEither . first (ChatError . CEFileRcvChunk) . smpDecode
 
-appendFileChunk :: ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> m ()
-appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
+appendFileChunk :: forall m. ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> Bool -> m ()
+appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs} chunkNo chunk final =
   case fileStatus of
     RFSConnected RcvFileInfo {filePath} -> append_ filePath
     -- sometimes update of file transfer status to FSConnected
@@ -4797,11 +4790,23 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
     RFSCancelled _ -> pure ()
     _ -> throwChatError $ CEFileInternal "receiving file transfer not in progress"
   where
+    append_ :: FilePath -> m ()
     append_ filePath = do
       fsFilePath <- toFSFilePath filePath
       h <- getFileHandle fileId fsFilePath rcvFiles AppendMode
-      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` (ChatError . CEFileWrite filePath . show)
+      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` fileErr
       withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
+      when final $ do
+        closeFileHandle fileId rcvFiles
+        when (isJust cryptoArgs) $ do
+          let f = CryptoFile fsFilePath cryptoArgs
+          -- TODO write file to another name and move after success
+          s <- liftIO (LB.readFile fsFilePath)
+          removeFile fsFilePath
+          liftError fileErr $ CF.writeFile f s
+      where
+        fileErr :: Show e => e -> ChatError
+        fileErr = ChatError . CEFileWrite filePath . show
 
 getFileHandle :: ChatMonad m => Int64 -> FilePath -> (ChatController -> TVar (Map Int64 Handle)) -> IOMode -> m Handle
 getFileHandle fileId filePath files ioMode = do

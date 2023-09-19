@@ -487,7 +487,7 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (\RcvFileDescr {fileDescrId} -> fileDescrId) <$> rfd_
       -- cryptoArgs = Nothing here, the decision to encrypt is made when receiving it
-      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False, cryptoArgs = Nothing}) <$> rfd_
+      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
   fileId <- liftIO $ do
     DB.execute
@@ -500,7 +500,7 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
+  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing, cryptoArgs = Nothing}
 
 createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupMember -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
 createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
@@ -508,7 +508,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (\RcvFileDescr {fileDescrId} -> fileDescrId) <$> rfd_
       -- cryptoArgs = Nothing here, the decision to encrypt is made when receiving it
-      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False, cryptoArgs = Nothing}) <$> rfd_
+      xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
   fileId <- liftIO $ do
     DB.execute
@@ -521,7 +521,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, rfdId, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
+  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId, cryptoArgs = Nothing}
 
 createRcvFD_ :: DB.Connection -> UserId -> UTCTime -> FileDescr -> ExceptT StoreError IO RcvFileDescr
 createRcvFD_ db userId currentTs FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
@@ -639,8 +639,8 @@ getRcvFileTransfer db User {userId} fileId = do
         ft senderDisplayName fileStatus =
           let fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
               cryptoArgs = CFArgs <$> fileKey <*> fileNonce
-              xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted, cryptoArgs}) <$> rfd_
-           in RcvFileTransfer {fileId, xftpRcvFile, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId}
+              xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted}) <$> rfd_
+           in RcvFileTransfer {fileId, xftpRcvFile, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId, cryptoArgs}
         rfi = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_
         rfi_ = case (filePath_, connId_, agentConnId_) of
           (Just filePath, connId, agentConnId) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
