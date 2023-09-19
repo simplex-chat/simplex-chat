@@ -19,7 +19,7 @@
     <string name="add_address_to_your_profile">Добавете адрес към вашия профил, така че вашите контакти да могат да го споделят с други хора. Актуализацията на профила ще бъде изпратена до вашите контакти.</string>
     <string name="color_secondary_variant">Допълнителен вторичен</string>
     <string name="users_add">Добави профил</string>
-    <string name="one_time_link_short">1-кратен линк</string>
+    <string name="one_time_link_short">Еднократен линк</string>
     <string name="chat_item_ttl_week">1 седмица</string>
     <string name="send_disappearing_message_5_minutes">5 минути</string>
     <string name="integrity_msg_skipped">%1$d пропуснато(и) съобщение(я)</string>
@@ -62,7 +62,7 @@
     <string name="cannot_access_keychain">Не може да се осъществи достъп до Keystore, за да се запази паролата на базата данни</string>
     <string name="cannot_receive_file">Файлът не може да бъде получен</string>
     <string name="alert_title_cant_invite_contacts">Не може да поканят контактите!</string>
-    <string name="settings_notification_preview_title">Визуализация на известието</string>
+    <string name="settings_notification_preview_title">Визуализация на известията</string>
     <string name="notification_preview_mode_message">Текст на съобщението</string>
     <string name="notification_preview_new_message">ново съобщение</string>
     <string name="group_welcome_preview">Визуализация</string>
@@ -177,7 +177,7 @@
     <string name="app_passcode_replaced_with_self_destruct">Кода за достъп до приложение се заменя с код за самоунищожение.</string>
     <string name="auto_accept_images">Автоматично приемане на изображения</string>
     <string name="authentication_cancelled">Идентификацията е отменена</string>
-    <string name="send_link_previews">Изпрати визуализация на линка</string>
+    <string name="send_link_previews">Изпрати визуализация на линковете</string>
     <string name="settings_section_title_calls">ОБАЖДАНИЯ</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore ще се използва за сигурно съхраняване на паролата, след като рестартирате приложението или промените паролата - това ще позволи получаването на известия.</string>
     <string name="change_database_passphrase_question">Промяна на паролата на базата данни\?</string>
@@ -327,14 +327,14 @@
     <string name="share_text_database_id">ID в базата данни: %d</string>
     <string name="receipts_section_contacts">Контакти</string>
     <string name="settings_section_title_themes">ТЕМИ</string>
-    <string name="set_password_to_export_desc">Базата данни е криптирана с произволна парола. Моля, променете я преди експортиране.</string>
+    <string name="set_password_to_export_desc">Базата данни е криптирана с автоматично генерирана парола. Моля, променете я преди експортиране.</string>
     <string name="database_passphrase">Парола за базата данни</string>
     <string name="delete_database">Изтрий базата данни</string>
     <string name="delete_chat_profile_question">Изтриване на чат профила\?</string>
     <string name="delete_files_and_media_question">Изтрий файлове и медия\?</string>
     <string name="current_passphrase">Текуща парола…</string>
     <string name="database_encrypted">Базата данни е криптирана!</string>
-    <string name="encrypted_with_random_passphrase">Базата данни е криптирана с произволна парола, можете да я промените.</string>
+    <string name="encrypted_with_random_passphrase">Базата данни е криптирана с автоматично генерирана парола, можете да я промените.</string>
     <string name="database_encryption_will_be_updated">Паролата за крптиране на базата данни ще бъде актуализирана и съхранена в Keystore.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">Базата данни ще бъде криптирана и паролата ще бъде съхранена в Keystore.</string>
     <string name="database_passphrase_will_be_updated">Паролата за криптиране на базата данни ще бъде актуализирана.</string>
@@ -752,7 +752,7 @@
     <string name="user_unhide">Покажи</string>
     <string name="you_can_hide_or_mute_user_profile">Можете да скриете или заглушите потребителски профил - задръжте върху него за менюто.</string>
     <string name="incognito">Инкогнито</string>
-    <string name="incognito_info_protects">Режимът инкогнито защитава вашата поверителност, като използва нов произволен профил за всеки контакт.</string>
+    <string name="incognito_info_protects">Режимът инкогнито защитава вашата поверителност, като използва нов автоматично генериран профил за всеки контакт.</string>
     <string name="incognito_info_allows">Позволява да имате много анонимни връзки без споделени данни между тях в един чат профил .</string>
     <string name="v4_5_italian_interface">Италиански интерфейс</string>
     <string name="description_via_contact_address_link_incognito">инкогнито чрез линк с адрес за контакт</string>
@@ -808,7 +808,8 @@
     <string name="network_use_onion_hosts_no_desc_in_alert">Няма се използват Onion хостове.</string>
     <string name="network_use_onion_hosts_required">Задължително</string>
     <string name="network_use_onion_hosts_no">Не</string>
-    <string name="network_use_onion_hosts_required_desc">За свързване ще са необходими Onion хостове.</string>
+    <string name="network_use_onion_hosts_required_desc">За свързване ще са необходими Onion хостове.
+\nМоля, обърнете внимание: няма да можете да се свържете със сървърите без .onion адрес.</string>
     <string name="network_use_onion_hosts_prefer_desc">Ще се използват Onion хостове, когато са налични.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Ще се използват Onion хостове, когато са налични.</string>
     <string name="network_use_onion_hosts_no_desc">Няма се използват Onion хостове.</string>
@@ -928,7 +929,7 @@
     <string name="button_remove_member">Острани член</string>
     <string name="member_role_will_be_changed_with_notification">Ролята ще бъде променена на \"%s\". Всички в групата ще бъдат уведомени.</string>
     <string name="users_delete_data_only">Само данни за локален профил</string>
-    <string name="users_delete_with_connections">Profile and server connections</string>
+    <string name="users_delete_with_connections">Профилни и сървърни връзки</string>
     <string name="user_mute">Без звук</string>
     <string name="make_profile_private">Направи профила поверителен!</string>
     <string name="muted_when_inactive">Без звук при неактивност!</string>
@@ -1032,7 +1033,7 @@
     <string name="save_auto_accept_settings">Запази настройките за автоматично приемане</string>
     <string name="save_settings_question">Запази настройките\?</string>
     <string name="save_profile_password">Запази паролата на профила</string>
-    <string name="stop_chat_question">Спри чат\?</string>
+    <string name="stop_chat_question">Спри чата\?</string>
     <string name="set_password_to_export">Задай парола за експортиране</string>
     <string name="stop_chat_confirmation">Спри</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Спрете чата, за да експортирате, импортирате или изтриете чат базата данни. Няма да можете да получавате и изпращате съобщения, докато чатът е спрян.</string>
@@ -1057,7 +1058,7 @@
     <string name="smp_servers">SMP сървъри</string>
     <string name="share_address_with_contacts_question">Сподели адреса с контактите\?</string>
     <string name="share_link">Сподели линк</string>
-    <string name="share_with_contacts">Сподели с контакти</string>
+    <string name="share_with_contacts">Сподели с контактите</string>
     <string name="stop_sharing">Спри споделянето</string>
     <string name="stop_sharing_address">Спри споделянето на адреса\?</string>
     <string name="settings_section_title_settings">НАСТРОЙКИ</string>
@@ -1137,7 +1138,7 @@
     <string name="search_verb">Търсене</string>
     <string name="sent_message">Изпратено съобщение</string>
     <string name="share_verb">Сподели</string>
-    <string name="auth_stop_chat">Спри чат</string>
+    <string name="auth_stop_chat">Спри чата</string>
     <string name="reveal_verb">Покажи</string>
     <string name="stop_file__action">Спри файл</string>
     <string name="icon_descr_settings">Настройки</string>
@@ -1146,7 +1147,7 @@
     <string name="show_dev_options">Покажи:</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="save_and_notify_contact">Запази и уведоми контакта</string>
-    <string name="save_and_notify_group_members">Запази и уведоми контактите</string>
+    <string name="save_and_notify_group_members">Запази и уведоми членовете на групата</string>
     <string name="save_preferences_question">Запази настройките\?</string>
     <string name="icon_descr_speaker_on">Високоговорителят е включен</string>
     <string name="icon_descr_speaker_off">Високоговорителят е изключен</string>
@@ -1287,14 +1288,14 @@
     <string name="wrong_passphrase_title">Грешна парола!</string>
     <string name="voice_messages">Гласови съобщения</string>
     <string name="your_preferences">Вашите настройки</string>
-    <string name="whats_new">Какво е ново</string>
+    <string name="whats_new">Какво е новото</string>
     <string name="v4_3_irreversible_message_deletion_desc">Вашите контакти могат да позволят пълното изтриване на съобщението.</string>
     <string name="update_database_passphrase">Актуализирай паролата на базата данни</string>
     <string name="snd_group_event_changed_role_for_yourself">променихте ролята си на %s</string>
     <string name="snd_group_event_user_left">вие напуснахте</string>
     <string name="snd_group_event_changed_member_role">променихте ролята на %s на %s</string>
     <string name="snd_group_event_member_deleted">премахнахте %1$s</string>
-    <string name="incognito_random_profile">Вашият случаен профил</string>
+    <string name="incognito_random_profile">Вашият автоматично генериран профил</string>
     <string name="user_unmute">Уведомявай</string>
     <string name="you_can_share_your_address">Можете да споделите адреса си като линк или QR код - всеки може да се свърже с вас.</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">променихте адреса за %s</string>
@@ -1354,7 +1355,7 @@
     <string name="connect_via_link_incognito">Свързване инкогнито</string>
     <string name="turn_off_system_restriction_button">Отвори настройките на приложението</string>
     <string name="turn_off_battery_optimization_button">Позволи</string>
-    <string name="connect__a_new_random_profile_will_be_shared">Нов произволен профил ще бъде споделен.</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Нов автоматично генериран профил ще бъде споделен.</string>
     <string name="disable_notifications_button">Деактивирай известията</string>
     <string name="system_restricted_background_in_call_title">Без фонови разговори</string>
     <string name="connect_via_member_address_alert_title">Свързване директно\?</string>
@@ -1372,5 +1373,19 @@
     <string name="rcv_group_event_n_members_connected">%s, %s и %d други членове са свързани</string>
     <string name="rcv_group_event_3_members_connected">%s, %s и %s са свързани</string>
     <string name="privacy_message_draft">Чернова на съобщение</string>
-    <string name="privacy_show_last_messages">Показване на последните съобщения</string>
+    <string name="privacy_show_last_messages">Показване на последните съобщения в листа с чатовете</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Базата данни ще бъде криптирана и паролата ще бъде съхранена в настройките.</string>
+    <string name="you_can_change_it_later">Автоматично генерирана парола се съхранява в настройките като обикновен текст.
+\nМожете да я промените по-късно.</string>
+    <string name="database_encryption_will_be_updated_in_settings">Паролата за криптиране на базата данни ще бъде актуализирана и съхранена в настройките.</string>
+    <string name="remove_passphrase_from_settings">Премахване на паролата от настройките\?</string>
+    <string name="use_random_passphrase">Използвай автоматично генерирана парола</string>
+    <string name="save_passphrase_in_settings">Запази паролата в настройките</string>
+    <string name="setup_database_passphrase">Задай парола за базата данни</string>
+    <string name="set_database_passphrase">Задай парола за базата данни</string>
+    <string name="open_database_folder">Отвори папката за база данни</string>
+    <string name="passphrase_will_be_saved_in_settings">Паролата ще бъде съхранена в настройките като обикновен текст, след като я промените или рестартирате приложението.</string>
+    <string name="settings_is_storing_in_clear_text">Паролата се съхранява в настройките като обикновен текст.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Моля, обърнете внимание</b>: релетата за съобщения и файлове са свързани чрез SOCKS прокси. Обажданията и изпращането на визуализации на линкове използват директна връзка.]]></string>
+    <string name="encrypt_local_files">Криптиране на локални файлове</string>
 </resources>

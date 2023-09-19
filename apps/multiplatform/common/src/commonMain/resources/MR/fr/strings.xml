@@ -253,7 +253,7 @@
     <string name="icon_descr_server_status_pending">En attente</string>
     <string name="accept_connection_request__question">Accepter la demande de connexion \?</string>
     <string name="clear_verb">Effacer</string>
-    <string name="clear_chat_button">Effacer la conversation</string>
+    <string name="clear_chat_button">Effacer le chat</string>
     <string name="connect_via_link">Se connecter via un lien</string>
     <string name="clear_verification">Retirer la vérification</string>
     <string name="one_time_link">Lien d\'invitation unique</string>
@@ -1376,4 +1376,16 @@
     <string name="rcv_group_event_2_members_connected">%s et %s sont connecté.es</string>
     <string name="rcv_group_event_n_members_connected">%s, %s et %d autres membres sont connectés</string>
     <string name="rcv_group_event_3_members_connected">%s, %s et %s sont connecté.es</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">La base de données sera chiffrée et la phrase de passe sera stockée dans les paramètres.</string>
+    <string name="you_can_change_it_later">La phrase secrète aléatoire est stockée en clair dans les paramètres.
+\nVous pouvez la modifier ultérieurement.</string>
+    <string name="database_encryption_will_be_updated_in_settings">La phrase de chiffrement de la base de données sera mise à jour et stockée dans les paramètres.</string>
+    <string name="remove_passphrase_from_settings">Supprimer la phrase secrète des paramètres \?</string>
+    <string name="use_random_passphrase">Utiliser une phrase secrète aléatoire</string>
+    <string name="save_passphrase_in_settings">Enregistrer la phrase secrète dans les paramètres</string>
+    <string name="setup_database_passphrase">Configurer la phrase secrète de la base de données</string>
+    <string name="set_database_passphrase">Définir la phrase secrète de la base de données</string>
+    <string name="open_database_folder">Ouvrir le dossier de la base de données</string>
+    <string name="passphrase_will_be_saved_in_settings">La phrase secrète sera stockée en clair dans les paramètres après que vous la modifiez ou que vous redémarrez l\'application.</string>
+    <string name="settings_is_storing_in_clear_text">La phrase secrète est stockée en clair dans les paramètres.</string>
 </resources>

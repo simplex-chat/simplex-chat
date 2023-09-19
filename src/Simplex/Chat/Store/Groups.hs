@@ -8,6 +8,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Groups
   ( -- * Util methods
@@ -94,7 +97,9 @@ module Simplex.Chat.Store.Groups
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Either (rights)
 import Data.Int (Int64)
@@ -885,7 +890,7 @@ saveIntroInvitation db reMember toMember introInv = do
         WHERE group_member_intro_id = :intro_id
       |]
       [ ":intro_status" := GMIntroInvReceived,
-        ":group_queue_info" := groupConnReq (introInv :: IntroInvitation),
+        ":group_queue_info" := introInv.groupConnReq,
         ":direct_queue_info" := directConnReq introInv,
         ":updated_at" := currentTs,
         ":intro_id" := introId intro
@@ -933,7 +938,7 @@ getIntroduction_ db reMember toMember = ExceptT $ do
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberChatVRange memberProfile) (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
   let mcvr = maybe chatInitialVRange fromChatVRange memberChatVRange
-      cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
+      cLevel = 1 + maybe 0 (\Connection {connLevel} -> connLevel) activeConn
   currentTs <- liftIO getCurrentTime
   newMember <- case directConnIds of
     Just (directCmdId, directAgentConnId) -> do
@@ -952,7 +957,7 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
 
 createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionRange -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> IO ()
 createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} mcvr (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
-  let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
+  let cLevel = 1 + maybe 0 (\Connection {connLevel} -> connLevel) activeConn
   currentTs <- getCurrentTime
   Connection {connId = groupConnId} <- createMemberConnection_ db userId groupMemberId groupAgentConnId mcvr viaContactId cLevel currentTs subMode
   setCommandConnId db user groupCmdId groupConnId

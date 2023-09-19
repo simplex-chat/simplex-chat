@@ -15,7 +15,7 @@ where
 import Control.Concurrent (forkIO)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import Control.Monad.Reader
+import Control.Monad
 import qualified Data.ByteString.Char8 as B
 import Data.List (sortOn)
 import Data.Maybe (fromMaybe, maybeToList)
