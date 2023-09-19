@@ -406,6 +406,7 @@ fun ComposeView(
 
     if (chat.nextSendGrpInv) {
       sendMemberContactInvitation()
+      sent = null
     } else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
       sent = updateMessage(ei, cInfo, live)

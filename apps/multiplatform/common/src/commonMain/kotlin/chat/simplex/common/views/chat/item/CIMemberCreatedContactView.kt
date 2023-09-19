@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
+import chat.simplex.res.MR
 
 @Composable
 fun CIMemberCreatedContactView(
@@ -42,7 +43,7 @@ fun CIMemberCreatedContactView(
         eventText()
         append("  ")
         withAnnotation(tag = "Open", annotation = "Open") {
-          withStyle(openChatStyle) { append(generalGetString(rcv_group_event_open_chat) + "  ") }
+          withStyle(openChatStyle) { append(generalGetString(MR.strings.rcv_group_event_open_chat) + "  ") }
         }
         withStyle(chatEventStyle) { append(chatItem.timestampText) }
       }
