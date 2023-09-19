@@ -21,7 +21,7 @@ CREATE TABLE sent_probes_v2(
 
 CREATE TABLE sent_probe_hashes_v2(
   sent_probe_hash_id INTEGER PRIMARY KEY,
-  sent_probe_id INTEGER NOT NULL REFERENCES sent_probes ON DELETE CASCADE,
+  sent_probe_id INTEGER NOT NULL REFERENCES sent_probes_v2 ON DELETE CASCADE,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,

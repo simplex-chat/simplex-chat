@@ -3,6 +3,7 @@ import Bots.DirectoryTests
 import ChatClient
 import ChatTests
 import ChatTests.Utils (xdescribe'')
+import Control.Concurrent (threadDelay)
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import MarkdownTests

@@ -4306,7 +4306,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     -- TODO currently we send probe hashes only to contacts
     xInfoProbeOk :: Contact -> Probe -> m ()
-    xInfoProbeOk c1@Contact {contactId = cId1} probe = do
+    xInfoProbeOk c1@Contact {contactId = cId1} probe =
       withStore' (\db -> matchSentProbe db user (CGMContact c1) probe) >>= \case
         Just (CGMContact c2@Contact {contactId = cId2})
           | cId1 /= cId2 -> mergeContacts c1 c2

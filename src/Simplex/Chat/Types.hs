@@ -219,6 +219,7 @@ data ContactRef = ContactRef
 instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
+  deriving (Show)
 
 contactOrGroupMemberIds :: ContactOrGroupMember -> (Maybe ContactId, Maybe GroupMemberId)
 contactOrGroupMemberIds = \case
