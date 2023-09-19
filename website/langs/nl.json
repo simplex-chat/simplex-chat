@@ -58,7 +58,7 @@
     "simplex-explained-tab-2-p-1": "Voor elke verbinding gebruikt u twee afzonderlijke berichten wachtrijen om berichten via verschillende servers te verzenden en te ontvangen.",
     "simplex-explained-tab-2-p-2": "Servers geven berichten slechts in één richting door, zonder een volledig beeld te hebben van het gesprek of de connecties van de gebruiker.",
     "hero-p-1": "Andere apps hebben gebruikers-ID's: Signal, Matrix, Session, Briar, Jami, Cwtch, enz.<br> SimpleX niet, <strong>zelfs geen willekeurige getallen</strong>.<br> Dit verbetert uw privacy.",
-    "hero-2-header-desc": "De video laat zien hoe je verbinding maakt met een vriend via een persoonlijk of video link eenmalige gedeelde QR-code. U kunt ook verbinding maken door een uitnodigingslink te delen.",
+    "hero-2-header-desc": "De video laat zien hoe je verbinding maakt met een vriend via een persoonlijk of videolink gedeelde eenmalige QR-code. U kunt ook verbinding maken door een uitnodigingslink te delen.",
     "hero-header": "Privacy opnieuw gedefinieerd",
     "feature-7-title": "Portable versleutelde database &mdash; verplaats je profiel naar een ander apparaat",
     "simplex-private-card-1-point-1": "Protocol met double-ratchet -<br>OTR-berichten met perfecte voorwaartse geheimhouding en inbraak herstel.",
