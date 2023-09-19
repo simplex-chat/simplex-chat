@@ -606,10 +606,7 @@ data class Chat (
   val userCanSend: Boolean
     get() = when (chatInfo) {
       is ChatInfo.Direct -> true
-      is ChatInfo.Group -> {
-        val m = chatInfo.groupInfo.membership
-        m.memberActive && m.memberRole >= GroupMemberRole.Member
-      }
+      is ChatInfo.Group -> chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Member
       else -> false
     }
 
