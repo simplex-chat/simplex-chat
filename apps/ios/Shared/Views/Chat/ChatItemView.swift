@@ -74,6 +74,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case .rcvGroupEvent(.memberConnected): CIEventView(eventText: membersConnectedItemText)
+        case .rcvGroupEvent(.memberCreatedContact): CIMemberCreatedContactView(chatItem: chatItem)
         case .rcvGroupEvent: eventItemView()
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()

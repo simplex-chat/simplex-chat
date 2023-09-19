@@ -72,11 +72,13 @@ struct GroupMemberInfoView: View {
 
                 if member.memberActive {
                     Section {
-                        if let contactId = member.memberContactId {
-                            if let chat = knownDirectChat(contactId) {
+                        if let contactId = member.memberContactId, let chat = knownDirectChat(contactId) {
                                 knownDirectChatButton(chat)
-                            } else if groupInfo.fullGroupPreferences.directMessages.on {
+                        } else if groupInfo.fullGroupPreferences.directMessages.on {
+                            if let contactId = member.memberContactId {
                                 newDirectChatButton(contactId)
+                            } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
+                                createMemberContactButton()
                             }
                         }
                         if let code = connectionCode { verifyCodeButton(code) }
@@ -254,6 +256,29 @@ struct GroupMemberInfoView: View {
                 }
             } catch let error {
                 logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
+            }
+        } label: {
+            Label("Send direct message", systemImage: "message")
+        }
+    }
+
+    func createMemberContactButton() -> some View {
+        Button {
+            Task {
+                do {
+                    let memberContact = try await apiCreateMemberContact(groupInfo.apiId, member.groupMemberId)
+                    await MainActor.run {
+                        chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
+                        dismissAllSheets(animated: true)
+                        chatModel.chatId = memberContact.id
+                    }
+                } catch let error {
+                    logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
+                    let a = getErrorAlert(error, "Error creating member contact")
+                    await MainActor.run {
+                        alert = .error(title: a.title, error: a.message)
+                    }
+                }
             }
         } label: {
             Label("Send direct message", systemImage: "message")

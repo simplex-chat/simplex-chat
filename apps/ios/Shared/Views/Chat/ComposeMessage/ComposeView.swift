@@ -43,6 +43,7 @@ struct ComposeState {
     var preview: ComposePreview
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
+    var invitingMemberContact = false
     var inProgress = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
@@ -51,13 +52,15 @@ struct ComposeState {
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
-        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording
+        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
+        invitingMemberContact: Bool = false
     ) {
         self.message = message
         self.liveMessage = liveMessage
         self.preview = preview
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
+        self.invitingMemberContact = invitingMemberContact
     }
 
     init(editingItem: ChatItem) {
@@ -77,14 +80,16 @@ struct ComposeState {
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
-        voiceMessageRecordingState: VoiceMessageRecordingState? = nil
+        voiceMessageRecordingState: VoiceMessageRecordingState? = nil,
+        invitingMemberContact: Bool? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
             liveMessage: liveMessage ?? self.liveMessage,
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
-            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
+            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState,
+            invitingMemberContact: invitingMemberContact ?? self.invitingMemberContact
         )
     }
 
@@ -153,7 +158,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || liveMessage != nil || inProgress { return true }
+        if invitingMemberContact || editing || liveMessage != nil || inProgress { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
@@ -257,6 +262,9 @@ struct ComposeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if composeState.invitingMemberContact {
+                ContextInvitingContactMemberView()
+            }
             contextItemView()
             switch (composeState.editing, composeState.preview) {
             case (true, .filePreview): EmptyView()
@@ -617,7 +625,9 @@ struct ComposeView: View {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
         }
-        if case let .editingItem(ci) = composeState.contextItem {
+        if composeState.invitingMemberContact {
+            await sendMemberContactInvitation()
+        } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
@@ -667,6 +677,19 @@ struct ComposeView: View {
 
         func sending() async {
             await MainActor.run { composeState.inProgress = true }
+        }
+
+        func sendMemberContactInvitation() async {
+            do {
+                let mc = checkLinkPreview()
+                let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+                await MainActor.run {
+                    self.chatModel.updateContact(contact)
+                }
+            } catch {
+                logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
+            }
         }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {

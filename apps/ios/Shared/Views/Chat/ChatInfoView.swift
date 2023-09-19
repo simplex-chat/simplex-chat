@@ -164,6 +164,7 @@ struct ChatInfoView: View {
 //                        synchronizeConnectionButtonForce()
 //                    }
                 }
+                .disabled(!contact.ready)
 
                 if let contactLink = contact.contactLink {
                     Section {
@@ -190,7 +191,8 @@ struct ChatInfoView: View {
                             alert = .switchAddressAlert
                         }
                         .disabled(
-                            connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
+                            !contact.ready
+                            || connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
                             || connStats.ratchetSyncSendProhibited
                         )
                         if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {

@@ -118,7 +118,9 @@ struct SendMessageView: View {
 
     @ViewBuilder private func composeActionButtons() -> some View {
         let vmrs = composeState.voiceMessageRecordingState
-        if showVoiceMessageButton
+        if composeState.invitingMemberContact {
+            inviteMemberContactButton()
+        } else if showVoiceMessageButton
             && composeState.message.isEmpty
             && !composeState.editing
             && composeState.liveMessage == nil
@@ -160,6 +162,24 @@ struct SendMessageView: View {
         }
         .foregroundColor(Color(uiColor: .tertiaryLabel))
         .padding([.top, .trailing], 4)
+    }
+
+    private func inviteMemberContactButton() -> some View {
+        Button {
+            sendMessage(nil)
+        } label: {
+            Image(systemName: "arrow.up.circle.fill")
+                .resizable()
+                .foregroundColor(sendButtonColor)
+                .frame(width: sendButtonSize, height: sendButtonSize)
+                .opacity(sendButtonOpacity)
+        }
+        .disabled(
+            !composeState.sendEnabled ||
+            composeState.inProgress
+        )
+        .frame(width: 29, height: 29)
+        .padding([.bottom, .trailing], 4)
     }
 
     private func sendMessageButton() -> some View {
