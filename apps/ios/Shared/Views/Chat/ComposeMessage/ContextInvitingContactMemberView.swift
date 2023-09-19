@@ -13,7 +13,7 @@ struct ContextInvitingContactMemberView: View {
 
     var body: some View {
         HStack {
-            Text("Send an invitation to join directly")
+            Text("Send an invitation to connect directly")
         }
         .padding(12)
         .frame(minHeight: 50)
