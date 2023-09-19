@@ -182,10 +182,14 @@ struct ChatInfoView: View {
                 }
 
                 Section("Servers") {
-                    networkStatusRow()
-                        .onTapGesture {
-                            alert = .networkStatusAlert
-                        }
+                    if contact.ready {
+                        networkStatusRow()
+                            .onTapGesture {
+                                alert = .networkStatusAlert
+                            }
+                    } else {
+                        networkStatusRowConnecting()
+                    }
                     if let connStats = connectionStats {
                         Button("Change receiving address") {
                             alert = .switchAddressAlert
@@ -401,6 +405,15 @@ struct ChatInfoView: View {
             Text(chatModel.contactNetworkStatus(contact).statusString)
                 .foregroundColor(.secondary)
             serverImage()
+        }
+    }
+
+    private func networkStatusRowConnecting() -> some View {
+        HStack {
+            Text("Network status")
+            Spacer()
+            Text("connecting…")
+                .foregroundColor(.secondary)
         }
     }
 
