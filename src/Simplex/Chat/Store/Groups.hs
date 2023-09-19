@@ -1203,7 +1203,7 @@ createSentProbe db gVar userId _to =
     let (ctId, gmId) = contactOrGroupMemberIds _to
     DB.execute
       db
-      "INSERT INTO sent_probes_v2 (contact_id, group_member_id, probe, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      "INSERT INTO sent_probes (contact_id, group_member_id, probe, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
       (ctId, gmId, probe, userId, currentTs, currentTs)
     (Probe probe,) <$> insertedRowId db    
 
@@ -1213,7 +1213,7 @@ createSentProbeHash db userId probeId _to = do
   let (ctId, gmId) = contactOrGroupMemberIds _to
   DB.execute
     db
-    "INSERT INTO sent_probe_hashes_v2 (sent_probe_id, contact_id, group_member_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+    "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, group_member_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (probeId, ctId, gmId, userId, currentTs, currentTs)
 
 matchReceivedProbe :: DB.Connection -> User -> ContactOrGroupMember -> Probe -> IO (Maybe ContactOrGroupMember)
@@ -1225,7 +1225,7 @@ matchReceivedProbe db user@User {userId} _from (Probe probe) = do
         db
         [sql|
           SELECT r.contact_id, g.group_id, r.group_member_id
-          FROM received_probes_v2 r
+          FROM received_probes r
           LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
           LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
           LEFT JOIN groups g ON g.group_id = m.group_id
@@ -1236,7 +1236,7 @@ matchReceivedProbe db user@User {userId} _from (Probe probe) = do
   let (ctId, gmId) = contactOrGroupMemberIds _from
   DB.execute
     db
-    "INSERT INTO received_probes_v2 (contact_id, group_member_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+    "INSERT INTO received_probes (contact_id, group_member_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (ctId, gmId, probe, probeHash, userId, currentTs, currentTs)
   pure cgmIds $>>= getContactOrGroupMember_ db user
 
@@ -1248,7 +1248,7 @@ matchReceivedProbeHash db user@User {userId} _from (ProbeHash probeHash) = do
         db
         [sql|
           SELECT r.probe, r.contact_id, g.group_id, r.group_member_id
-          FROM received_probes_v2 r
+          FROM received_probes r
           LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
           LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
           LEFT JOIN groups g ON g.group_id = m.group_id
@@ -1259,7 +1259,7 @@ matchReceivedProbeHash db user@User {userId} _from (ProbeHash probeHash) = do
   let (ctId, gmId) = contactOrGroupMemberIds _from
   DB.execute
     db
-    "INSERT INTO received_probes_v2 (contact_id, group_member_id, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+    "INSERT INTO received_probes (contact_id, group_member_id, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (ctId, gmId, probeHash, userId, currentTs, currentTs)
   pure probeIds $>>= \(Only probe :. cgmIds) -> (,Probe probe) <$$> getContactOrGroupMember_ db user cgmIds
 
@@ -1274,11 +1274,11 @@ matchSentProbe db user@User {userId} _from (Probe probe) =
           db
           [sql|
             SELECT s.contact_id, g.group_id, s.group_member_id
-            FROM sent_probes_v2 s
+            FROM sent_probes s
             LEFT JOIN contacts c ON s.contact_id = c.contact_id AND c.deleted = 0
             LEFT JOIN group_members m ON s.group_member_id = m.group_member_id
             LEFT JOIN groups g ON g.group_id = m.group_id
-            JOIN sent_probe_hashes_v2 h ON h.sent_probe_id = s.sent_probe_id
+            JOIN sent_probe_hashes h ON h.sent_probe_id = s.sent_probe_id
             WHERE s.user_id = ? AND s.probe = ?
               AND (h.contact_id = ? OR h.group_member_id = ?)
           |]
