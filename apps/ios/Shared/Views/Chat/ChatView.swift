@@ -325,6 +325,7 @@ struct ChatView: View {
             Text("establishing connection")
                 .font(.caption)
                 .foregroundColor(.secondary)
+                .padding(.top)
         } else {
             EmptyView()
         }
