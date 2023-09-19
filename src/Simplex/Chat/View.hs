@@ -775,21 +775,21 @@ viewDirectMessagesProhibited MDSnd c = ["direct messages to indirect contact " <
 viewDirectMessagesProhibited MDRcv c = ["received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
 
 viewUserJoinedGroup :: GroupInfo -> [StyledString]
-viewUserJoinedGroup g@GroupInfo {membership = membership@GroupMember {memberProfile}} =
-  if memberIncognito membership
-    then [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
-    else [ttyGroup' g <> ": you joined the group"]
+viewUserJoinedGroup g =
+  case incognitoMembershipProfile g of
+    Just mp -> [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' (fromLocalProfile mp)]
+    Nothing -> [ttyGroup' g <> ": you joined the group"]
 
 viewJoinedGroupMember :: GroupInfo -> GroupMember -> [StyledString]
 viewJoinedGroupMember g m =
   [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
-viewReceivedGroupInvitation g@GroupInfo {membership = membership@GroupMember {memberProfile}} c role =
+viewReceivedGroupInvitation g c role =
   ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role) :
-  if memberIncognito membership
-    then ["use " <> highlight ("/j " <> groupName' g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
-    else ["use " <> highlight ("/j " <> groupName' g) <> " to accept"]
+  case incognitoMembershipProfile g of
+    Just mp -> ["use " <> highlight ("/j " <> groupName' g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile mp)]
+    Nothing -> ["use " <> highlight ("/j " <> groupName' g) <> " to accept"]
 
 groupPreserved :: GroupInfo -> [StyledString]
 groupPreserved g = ["use " <> highlight ("/d #" <> groupName' g) <> " to delete the group"]
@@ -879,7 +879,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
         memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
 
 groupInvitation' :: GroupInfo -> StyledString
-groupInvitation' GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership = membership@GroupMember {memberProfile}} =
+groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
   highlight ("#" <> ldn)
     <> optFullName ldn fullName
     <> " - you are invited ("
@@ -888,10 +888,9 @@ groupInvitation' GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile 
     <> highlight ("/d #" <> ldn)
     <> " to delete invitation)"
   where
-    joinText =
-      if memberIncognito membership
-        then " to join as " <> incognitoProfile' (fromLocalProfile memberProfile) <> ", "
-        else " to join, "
+    joinText = case incognitoMembershipProfile g of
+      Just mp -> " to join as " <> incognitoProfile' (fromLocalProfile mp) <> ", "
+      Nothing -> " to join, "
 
 viewContactsMerged :: Contact -> Contact -> [StyledString]
 viewContactsMerged _into@Contact {localDisplayName = c1} _merged@Contact {localDisplayName = c2} =
