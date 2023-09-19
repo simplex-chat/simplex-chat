@@ -719,7 +719,6 @@ CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
 CREATE INDEX idx_sent_probes_user_id ON sent_probes(user_id);
 CREATE INDEX idx_sent_probes_contact_id ON sent_probes(contact_id);
 CREATE INDEX idx_sent_probes_group_member_id ON sent_probes(group_member_id);
-CREATE INDEX idx_sent_probes_probe ON sent_probes(probe);
 CREATE INDEX idx_sent_probe_hashes_user_id ON sent_probe_hashes(user_id);
 CREATE INDEX idx_sent_probe_hashes_sent_probe_id ON sent_probe_hashes(
   sent_probe_id
