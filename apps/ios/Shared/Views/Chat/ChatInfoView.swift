@@ -181,35 +181,33 @@ struct ChatInfoView: View {
                     }
                 }
 
-                Section("Servers") {
-                    if contact.ready {
+                if contact.ready {
+                    Section("Servers") {
                         networkStatusRow()
                             .onTapGesture {
                                 alert = .networkStatusAlert
                             }
-                    } else {
-                        networkStatusRowConnecting()
-                    }
-                    if let connStats = connectionStats {
-                        Button("Change receiving address") {
-                            alert = .switchAddressAlert
-                        }
-                        .disabled(
-                            !contact.ready
-                            || connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
-                            || connStats.ratchetSyncSendProhibited
-                        )
-                        if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
-                            Button("Abort changing address") {
-                                alert = .abortSwitchAddressAlert
+                        if let connStats = connectionStats {
+                            Button("Change receiving address") {
+                                alert = .switchAddressAlert
                             }
                             .disabled(
-                                connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                !contact.ready
+                                || connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
                                 || connStats.ratchetSyncSendProhibited
                             )
+                            if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
+                                Button("Abort changing address") {
+                                    alert = .abortSwitchAddressAlert
+                                }
+                                .disabled(
+                                    connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                    || connStats.ratchetSyncSendProhibited
+                                )
+                            }
+                            smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
+                            smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
                         }
-                        smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
-                        smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
                     }
                 }
 
@@ -405,15 +403,6 @@ struct ChatInfoView: View {
             Text(chatModel.contactNetworkStatus(contact).statusString)
                 .foregroundColor(.secondary)
             serverImage()
-        }
-    }
-
-    private func networkStatusRowConnecting() -> some View {
-        HStack {
-            Text("Network status")
-            Spacer()
-            Text("connecting…")
-                .foregroundColor(.secondary)
         }
     }
 
