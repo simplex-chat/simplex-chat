@@ -12,7 +12,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat where
@@ -3062,17 +3061,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO update member profile
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn' confId XOk
-            XInfo p' -> confXInfo ct conn' $ Just p'
-            XOk -> confXInfo ct conn' Nothing
-            _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.ok"
-          where
-            confXInfo ct@Contact {activeConn = Connection {customUserProfileId}} conn' p_ = do
+            XInfo profile -> do
+              ct' <- processContactProfileUpdate False ct profile `catchChatError` const (pure ct)
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-              let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
+              let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
               allowAgentConnectionAsync user conn' confId $ XInfo p
-              withStore $ \db -> do
-                liftIO $ void $ resetMemberContactFields db ct
-                mapM_ (updateContactProfile db user ct) p_
+              void $ withStore' $ \db -> resetMemberContactFields db ct'
+            _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           _conn' <- updatePeerChatVRange conn chatVRange
@@ -3081,9 +3076,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO check member ID
               -- TODO update member profile
               pure ()
-            XInfo _profile -> do
-              -- TODO update contact profile
-              pure ()
+            XInfo profile ->
+              void $ processContactProfileUpdate False ct profile
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
@@ -4243,15 +4237,22 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
     xInfo :: Contact -> Profile -> m ()
-    xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <- withStore $ \db ->
-        if userTTL == rcvTTL
-          then updateContactProfile db user c p'
-          else do
-            c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
-            updateContactProfile db user c' p'
-      when (directOrUsed c') $ createRcvFeatureItems user c c'
-      toView $ CRContactUpdated user c c'
+    xInfo c p' = void $ processContactProfileUpdate True c p'
+
+    processContactProfileUpdate :: Bool -> Contact -> Profile -> m Contact
+    processContactProfileUpdate createItems c@Contact {profile = p} p'
+      | fromLocalProfile p /= p' = do
+        c' <- withStore $ \db ->
+          if userTTL == rcvTTL
+            then updateContactProfile db user c p'
+            else do
+              c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
+              updateContactProfile db user c' p'
+        when (directOrUsed c' && createItems) $ createRcvFeatureItems user c c'
+        toView $ CRContactUpdated user c c'
+        pure c'
+      | otherwise =
+        pure c
       where
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs

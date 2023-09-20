@@ -81,7 +81,7 @@ chatGroupTests = do
     it "prohibited to repeat sending x.grp.direct.inv" testMemberContactProhibitedRepeatInv
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
-    fit "sends and updates profile when creating contact" testMemberContactProfileUpdate
+    it "sends and updates profile when creating contact" testMemberContactProfileUpdate
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -3053,60 +3053,62 @@ testMemberContactProfileUpdate :: HasCallStack => FilePath -> IO ()
 testMemberContactProfileUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      connectUsers alice bob
-      createGroup2 "team" bob cath
-      bob ##> "/a #team alice"
-      bob <## "invitation to join the group #team sent to alice"
-      alice <## "#team: bob invites you to join the group as member"
-      alice <## "use /j team to accept"
-      alice ##> "/j team"
-      concurrentlyN_
-        [ do
-            alice <## "#team: you joined the group"
-            alice <## "#team: member cath (Catherine) is connected",
-          do
-            bob <## "#team: alice joined the group",
-          do
-            cath <## "#team: bob added alice (Alice) to the group (connecting...)"
-            cath <## "#team: new member alice is connected"
-        ]
+      createGroup3 "team" alice bob cath
+
+      bob ##> "/p rob Rob"
+      bob <## "user profile is changed to rob (Rob) (your 1 contacts are notified)"
+      alice <## "contact bob changed to rob (Rob)"
+      alice <## "use @rob <message> to send messages"
+
+      cath ##> "/p kate Kate"
+      cath <## "user profile is changed to kate (Kate) (your 1 contacts are notified)"
+      alice <## "contact cath changed to kate (Kate)"
+      alice <## "use @kate <message> to send messages"
+
       alice #> "#team hello"
       bob <# "#team alice> hello"
       cath <# "#team alice> hello"
-      cath #> "#team hello too"
-      bob <# "#team cath> hello too"
-      alice <# "#team cath> hello too"
 
-      alice ##> "/p alisa Alisa"
-      alice <## "user profile is changed to alisa (Alisa) (your 1 contacts are notified)"
-      bob <## "contact alice changed to alisa (Alisa)"
-      bob <## "use @alisa <message> to send messages"
+      bob #> "#team hello too"
+      alice <# "#team rob> hello too"
+      cath <# "#team bob> hello too" -- not updated profile
 
-      alice `send` "@cath hello"
-      -- TODO too many outputs here, and maybe should follow the output of the message?
-      -- two lines - connecting..., connected would be ok
-      alice <## "member #team cath does not have direct connection, creating"
-      alice <## "contact for member #team cath is created"
-      alice <## "sent invitation to connect directly to member #team cath"
-      alice <# "@cath hello"
-      alice <## "cath (Catherine): contact is connected"
+      cath #> "#team hello there"
+      alice <# "#team kate> hello there"
+      bob <# "#team cath> hello there" -- not updated profile
 
-      -- TODO it did not pick up profile update in any of the messages below
-      cath <## "#team alice is creating direct contact alice with you"
-      cath <# "alice> hello"
-      cath <## "alice (Alice): contact is connected"
+      bob `send` "@cath hi"
+      bob
+        <### [ "member #team cath does not have direct connection, creating",
+               "contact for member #team cath is created",
+               "sent invitation to connect directly to member #team cath",
+               WithTime "@cath hi"
+             ]
+      cath
+        <### [ "#team bob is creating direct contact bob with you",
+               WithTime "bob> hi"
+             ]
+      concurrentlyN_
+        [ do
+            bob <## "contact cath changed to kate (Kate)"
+            bob <## "use @kate <message> to send messages"
+            bob <## "kate (Kate): contact is connected",
+          do
+            cath <## "contact bob changed to rob (Rob)"
+            cath <## "use @rob <message> to send messages"
+            cath <## "rob (Rob): contact is connected"
+        ]
 
-      alice ##> "/contacts"
-      alice
-        <### [ "bob (Bob)",
-              "cath (Catherine)"
-            ]
+      bob ##> "/contacts"
+      bob
+        <### [ "alice (Alice)",
+               "kate (Kate)"
+             ]
       cath ##> "/contacts"
       cath
-        <### [ "alice (Alice)", -- this should be "alisa" here
-              "bob (Bob)"
-            ]
-      alice `hasContactProfiles` ["alisa", "bob", "cath"]
-      bob `hasContactProfiles` ["bob", "alisa", "cath"]
-      -- this should be "alisa" here
-      cath `hasContactProfiles` ["cath", "alice", "bob"]
+        <### [ "alice (Alice)",
+               "rob (Rob)"
+             ]
+      alice `hasContactProfiles` ["alice", "rob", "kate"]
+      bob `hasContactProfiles` ["rob", "alice", "kate"]
+      cath `hasContactProfiles` ["kate", "alice", "rob"]
