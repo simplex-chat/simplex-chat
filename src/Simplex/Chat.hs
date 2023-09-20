@@ -3062,7 +3062,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn' confId XOk
             XInfo profile -> do
-              ct' <- processContactProfileUpdate False ct profile `catchChatError` const (pure ct)
+              ct' <- processContactProfileUpdate ct profile False `catchChatError` const (pure ct)
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
               let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
               allowAgentConnectionAsync user conn' confId $ XInfo p
@@ -3077,7 +3077,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO update member profile
               pure ()
             XInfo profile ->
-              void $ processContactProfileUpdate False ct profile
+              void $ processContactProfileUpdate ct profile False
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
@@ -4237,10 +4237,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
     xInfo :: Contact -> Profile -> m ()
-    xInfo c p' = void $ processContactProfileUpdate True c p'
+    xInfo c p' = void $ processContactProfileUpdate c p' True
 
-    processContactProfileUpdate :: Bool -> Contact -> Profile -> m Contact
-    processContactProfileUpdate createItems c@Contact {profile = p} p'
+    processContactProfileUpdate :: Contact -> Profile -> Bool -> m Contact
+    processContactProfileUpdate c@Contact {profile = p} p' createItems
       | fromLocalProfile p /= p' = do
         c' <- withStore $ \db ->
           if userTTL == rcvTTL
