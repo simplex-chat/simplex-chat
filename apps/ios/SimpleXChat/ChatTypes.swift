@@ -1378,11 +1378,17 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var mergedPreferences: ContactUserPreferences
     var createdAt: Date
     var updatedAt: Date
+    var contactGroupMemberId: Int64?
+    var contactGrpInvSent: Bool
 
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn.connStatus == .ready } }
-    public var sendMsgEnabled: Bool { get { !(activeConn.connectionStats?.ratchetSyncSendProhibited ?? false) } }
+    public var sendMsgEnabled: Bool { get {
+        (ready && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?? false))
+        || nextSendGrpInv
+    } }
+    public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
@@ -1428,7 +1434,8 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         userPreferences: Preferences.sampleData,
         mergedPreferences: ContactUserPreferences.sampleData,
         createdAt: .now,
-        updatedAt: .now
+        updatedAt: .now,
+        contactGrpInvSent: false
     )
 }
 
@@ -1449,6 +1456,7 @@ public struct ContactSubStatus: Decodable {
 public struct Connection: Decodable {
     public var connId: Int64
     public var agentConnId: String
+    public var peerChatVRange: VersionRange
     var connStatus: ConnStatus
     public var connLevel: Int
     public var viaGroupLink: Bool
@@ -1458,7 +1466,7 @@ public struct Connection: Decodable {
     public var connectionStats: ConnectionStats? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case connId, agentConnId, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode
+        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode
     }
 
     public var id: ChatId { get { ":\(connId)" } }
@@ -1466,10 +1474,25 @@ public struct Connection: Decodable {
     static let sampleData = Connection(
         connId: 1,
         agentConnId: "abc",
+        peerChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
         connStatus: .ready,
         connLevel: 0,
         viaGroupLink: false
     )
+}
+
+public struct VersionRange: Decodable {
+    public init(minVersion: Int, maxVersion: Int) {
+        self.minVersion = minVersion
+        self.maxVersion = maxVersion
+    }
+
+    public var minVersion: Int
+    public var maxVersion: Int
+
+    public func isCompatibleRange(_ vRange: VersionRange) -> Bool {
+        self.minVersion <= vRange.maxVersion && vRange.minVersion <= self.maxVersion
+    }
 }
 
 public struct SecurityCode: Decodable, Equatable {
@@ -1503,6 +1526,7 @@ public struct UserContact: Decodable {
 public struct UserContactRequest: Decodable, NamedChat {
     var contactRequestId: Int64
     public var userContactLinkId: Int64
+    public var cReqChatVRange: VersionRange
     var localDisplayName: ContactName
     var profile: Profile
     var createdAt: Date
@@ -1520,6 +1544,7 @@ public struct UserContactRequest: Decodable, NamedChat {
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
         userContactLinkId: 1,
+        cReqChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
         localDisplayName: "alice",
         profile: Profile.sampleData,
         createdAt: .now,
@@ -2078,6 +2103,7 @@ public struct ChatItem: Identifiable, Decodable {
             case .memberLeft: return false
             case .memberDeleted: return false
             case .invitedViaGroupLink: return false
+            case .memberCreatedContact: return false
             }
         case .sndGroupEvent: return showNtfDir
         case .rcvConnEvent: return false
@@ -3181,6 +3207,7 @@ public enum RcvGroupEvent: Decodable {
     case groupDeleted
     case groupUpdated(groupProfile: GroupProfile)
     case invitedViaGroupLink
+    case memberCreatedContact
 
     var text: String {
         switch self {
@@ -3198,6 +3225,7 @@ public enum RcvGroupEvent: Decodable {
         case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
         case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
         case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
+        case .memberCreatedContact: return NSLocalizedString("connected directly", comment: "rcv group event chat item")
         }
     }
 }
