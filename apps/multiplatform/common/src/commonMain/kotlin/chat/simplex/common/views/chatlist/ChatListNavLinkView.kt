@@ -126,10 +126,14 @@ suspend fun openDirectChat(contactId: Long, chatModel: ChatModel) {
 suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
   if (chat != null) {
-    chatModel.chatItems.clear()
-    chatModel.chatItems.addAll(chat.chatItems)
-    chatModel.chatId.value = chatInfo.id
+    openChat(chat, chatModel)
   }
+}
+
+suspend fun openChat(chat: Chat, chatModel: ChatModel) {
+  chatModel.chatItems.clear()
+  chatModel.chatItems.addAll(chat.chatItems)
+  chatModel.chatId.value = chat.chatInfo.id
 }
 
 suspend fun apiLoadPrevMessages(chatInfo: ChatInfo, chatModel: ChatModel, beforeChatItemId: Long, search: String) {

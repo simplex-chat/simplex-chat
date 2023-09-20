@@ -35,6 +35,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
@@ -83,9 +84,9 @@ fun GroupMemberInfoView(
           progressIndicator = true
           val memberContact = chatModel.controller.apiCreateMemberContact(groupInfo.apiId, member.groupMemberId)
           if (memberContact != null) {
-            chatModel.addChat(Chat(ChatInfo.Direct(memberContact), chatItems = arrayListOf()))
-            chatModel.chatItems.clear()
-            chatModel.chatId.value = memberContact.id
+            val memberChat = Chat(ChatInfo.Direct(memberContact), chatItems = arrayListOf())
+            chatModel.addChat(memberChat)
+            openChat(memberChat, chatModel)
             closeAll()
             chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
           }
