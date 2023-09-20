@@ -389,14 +389,12 @@ processChatCommand = \case
   APISatelliteSetup zoneId -> withZone zoneId $ \zone -> error "TODO: APISatelliteSetup"
   APISatelliteStore zoneId todo'file -> withZone zoneId $ \zone -> error "TODO: APISatelliteStore"
   APISatelliteFetch zoneId todo'file -> withZone zoneId $ \zone -> error "TODO: APISatelliteFetch"
-  APISatellite'todo -> error "TODO: APISatellite'todo"
   APIHostRegister todo'oobData -> error "TODO: APIHostRegister"
   APIHostStart -> error "TODO: APIHostStart"
   APIHostConfirmDiscovery -> error "TODO: APIHostConfirmDiscovery"
   APIHostRejectDiscovery -> error "TODO: APIHostRejectDiscovery"
   APIHostStop -> error "TODO: APIHostStop"
   APIHostDispose todo'oobData -> error "TODO: APIHostDispose"
-  APIHost'todo -> error "TODO: APIHost'todo"
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
@@ -5327,7 +5325,22 @@ withStoreCtx ctx_ action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
-    [ "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
+    [ "/_zone new" $> APIZoneNew,
+      "/_zone list" $> APIZoneList,
+      "/_zone details " *> (APIZoneDetails <$> zoneIdP),
+      "/_zone start " *> (APIZoneStart <$> zoneIdP),
+      "/_zone stop " *> (APIZoneStop <$> zoneIdP),
+      "/_zone dispose " *> (APIZoneDispose <$> zoneIdP),
+      "/_satellite setup " *> (APISatelliteSetup <$> zoneIdP),
+      "/_satellite store " *> (APISatelliteStore <$> zoneIdP <*> strP),
+      "/_satellite fetch " *> (APISatelliteFetch <$> zoneIdP <*> strP),
+      "/_host register " *> (APIHostRegister <$> textP),
+      "/_host start " $> APIHostStart,
+      "/_host confirm " $> APIHostConfirmDiscovery,
+      "/_host reject " $> APIHostRejectDiscovery,
+      "/_host stop " $> APIHostStop,
+      "/_host dispose " *> (APIHostDispose <$> textP),
+      "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` True) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
       "/_create user " *> (CreateActiveUser <$> jsonP),
@@ -5688,6 +5701,7 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
+    zoneIdP = ZoneId <$> A.decimal
 
 adminContactReq :: ConnReqContact
 adminContactReq =

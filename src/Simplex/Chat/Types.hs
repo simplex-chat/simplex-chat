@@ -1511,6 +1511,14 @@ pattern LOCAL_ZONE :: Maybe ZoneId
 pattern LOCAL_ZONE = Nothing
 {-# COMPLETE LOCAL_ZONE, Just #-}
 
+data ZoneInfo = ZoneInfo
+  { zoneId :: ZoneId,
+    displayName :: Text,
+    kind :: ZoneKind,
+    properties :: J.Value -- XXX: schema depends on the zone kind
+  }
+  deriving (Eq, Ord, Show, Generic)
+
 data ZoneKind
   = ZoneUnconfigured
   | ZoneSatellite

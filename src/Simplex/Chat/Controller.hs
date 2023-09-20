@@ -221,14 +221,12 @@ data ChatCommand
   | APISatelliteSetup ZoneId -- ^ Configure zone as a satellite uplink to a host
   | APISatelliteStore ZoneId FilePath -- ^ Store a file at host for `SendFile`
   | APISatelliteFetch ZoneId FilePath -- ^ Fetch a file from host after `ReceiveFile`
-  | APISatellite'todo -- TBD: something else?
   | APIHostRegister Text -- ^ Register OOB data for satellite discovery and handshake
   | APIHostStart -- ^ Start listening for satellite announcements
   | APIHostConfirmDiscovery -- ^ Confirm discovered data and store confirmation
   | APIHostRejectDiscovery -- ^ Reject discovered data (and blacklist?)
   | APIHostStop -- ^ Stop listening for announcements or terminate an active session
   | APIHostDispose Text -- ^ Remove all local data associated with a satellite session
-  | APIHost'todo -- TBD: something else?
   | ShowActiveUser
   | CreateActiveUser NewUser
   | ListUsers
