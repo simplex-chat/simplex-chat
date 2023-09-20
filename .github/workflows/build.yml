@@ -125,7 +125,9 @@ jobs:
         shell: bash
         run: |
           cabal build --enable-tests
-          echo "::set-output name=bin_path::$(cabal list-bin simplex-chat)"
+          path=$(cabal list-bin simplex-chat)
+          echo "bin_path=$path" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(openssl sha512 $path)" >> $GITHUB_OUTPUT
 
       - name: Unix upload CLI binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
@@ -135,6 +137,16 @@ jobs:
           file: ${{ steps.unix_cli_build.outputs.bin_path }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
+
+      - name: Unix update CLI binary hash
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          append_body: true
+          body: |
+            ${{ steps.unix_cli_build.outputs.bin_hash }}
 
       - name: Setup Java
         if: startsWith(github.ref, 'refs/tags/v')
@@ -152,7 +164,9 @@ jobs:
           scripts/desktop/build-lib-linux.sh
           cd apps/multiplatform
           ./gradlew packageDeb
-          echo "::set-output name=package_path::$(echo $PWD/release/main/deb/simplex_*_amd64.deb)"
+          path=$(echo $PWD/release/main/deb/simplex_*_amd64.deb)
+          echo "package_path=$path" >> $GITHUB_OUTPUT
+          echo "package_hash=$(openssl sha512 $path)" >> $GITHUB_OUTPUT
       
       - name: Linux make AppImage
         id: linux_appimage_build
@@ -160,7 +174,9 @@ jobs:
         shell: bash
         run: |
           scripts/desktop/make-appimage-linux.sh
-          echo "::set-output name=appimage_path::$(echo $PWD/apps/multiplatform/release/main/*imple*.AppImage)"
+          path=$(echo $PWD/apps/multiplatform/release/main/*imple*.AppImage)
+          echo "appimage_path=$path" >> $GITHUB_OUTPUT
+          echo "appimage_hash=$(openssl sha512 $path)" >> $GITHUB_OUTPUT
 
       - name: Mac build desktop
         id: mac_desktop_build
@@ -172,7 +188,9 @@ jobs:
           APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
         run: |
           scripts/ci/build-desktop-mac.sh
-          echo "::set-output name=package_path::$(echo $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg)"
+          path=$(echo $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg)
+          echo "package_path=$path" >> $GITHUB_OUTPUT
+          echo "package_hash=$(openssl sha512 $path)" >> $GITHUB_OUTPUT
 
       - name: Linux upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
@@ -183,6 +201,16 @@ jobs:
           asset_name: ${{ matrix.desktop_asset_name }}
           tag: ${{ github.ref }}
 
+      - name: Linux update desktop package hash
+        if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          append_body: true
+          body: |
+            ${{ steps.linux_desktop_build.outputs.package_hash }}
+
       - name: Linux upload AppImage to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-20.04'
         uses: svenstaro/upload-release-action@v2
@@ -192,6 +220,16 @@ jobs:
           asset_name: simplex-desktop-x86_64.AppImage
           tag: ${{ github.ref }}
 
+      - name: Linux update AppImage hash
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-20.04'
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          append_body: true
+          body: |
+            ${{ steps.linux_appimage_build.outputs.appimage_hash }}
+
       - name: Mac upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'macos-latest'
         uses: svenstaro/upload-release-action@v2
@@ -200,6 +238,16 @@ jobs:
           file: ${{ steps.mac_desktop_build.outputs.package_path }}
           asset_name: ${{ matrix.desktop_asset_name }}
           tag: ${{ github.ref }}
+
+      - name: Mac update desktop package hash
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'macos-latest'
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          append_body: true
+          body: |
+            ${{ steps.mac_desktop_build.outputs.package_hash }}
 
       - name: Unix test
         if: matrix.os != 'windows-latest'
@@ -221,9 +269,11 @@ jobs:
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build --enable-tests
           rm -rf dist-newstyle/src/direct-sq*
-          echo "::set-output name=bin_path::$(cabal list-bin simplex-chat | tail -n 1)"
+          path=$(cabal list-bin simplex-chat | tail -n 1)
+          echo "bin_path=$path" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(openssl sha512 $path)" >> $GITHUB_OUTPUT
 
-      - name: Windows upload binary to release
+      - name: Windows upload CLI binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
@@ -231,5 +281,15 @@ jobs:
           file: ${{ steps.windows_build.outputs.bin_path }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
+
+      - name: Windows update CLI binary hash
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          append_body: true
+          body: |
+            ${{ steps.windows_build.outputs.bin_hash }}
 
       # Windows /
