@@ -43,6 +43,7 @@ actual fun PlatformTextField(
 ) {
   val cs = composeState.value
   val focusRequester = remember { FocusRequester() }
+  val focusManager = LocalFocusManager.current
   val keyboard = LocalSoftwareKeyboardController.current
   val padding = PaddingValues(12.dp, 12.dp, 45.dp, 0.dp)
   LaunchedEffect(cs.contextItem) {
@@ -54,8 +55,7 @@ actual fun PlatformTextField(
   }
   LaunchedEffect(sendMsgEnabled) {
     if (!sendMsgEnabled) {
-      focusRequester.freeFocus()
-      delay(50)
+      focusManager.clearFocus()
       keyboard?.hide()
     }
   }
@@ -121,7 +121,8 @@ actual fun PlatformTextField(
           }
         }
       }
-    }
+    },
+
   )
   showDeleteTextButton.value = cs.message.split("\n").size >= 4 && !cs.inProgress
   if (composeState.value.preview is ComposePreview.VoicePreview) {
