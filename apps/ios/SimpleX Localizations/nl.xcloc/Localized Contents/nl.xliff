@@ -1988,8 +1988,9 @@
         <target>Fout bij maken van groep link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating member contact" xml:space="preserve">
+      <trans-unit id="Error creating member contact" xml:space="preserve" approved="no">
         <source>Error creating member contact</source>
+        <target state="translated">Fout bij aanmaken contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating profile!" xml:space="preserve">
@@ -2122,8 +2123,9 @@
         <target>Fout bij het verzenden van e-mail</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sending member contact invitation" xml:space="preserve">
+      <trans-unit id="Error sending member contact invitation" xml:space="preserve" approved="no">
         <source>Error sending member contact invitation</source>
+        <target state="translated">Fout bij verzenden van contact uitnodiging</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -2768,19 +2770,19 @@
         <target>Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chat profiel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
+      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve" approved="no">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target>Het kan gebeuren wanneer u of de ander een oude databaseback-up gebruikt.</target>
+        <target state="translated">Het kan gebeuren wanneer u of de ander een oude database back-up gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
         <source>It can happen when:
 1. The messages expired in the sending client after 2 days or on the server after 30 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
-        <target>Het kan gebeuren wanneer:
+        <target state="translated">Het kan gebeuren wanneer:
 1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.
-2. Decodering van het bericht is mislukt, omdat u of uw contact een oude databaseback-up heeft gebruikt.
+2. Decodering van het bericht is mislukt, omdat u of uw contact een oude database back-up heeft gebruikt.
 3. De verbinding is verbroken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3358,8 +3360,9 @@
         <target>Alleen uw contact kan spraak berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open" xml:space="preserve">
+      <trans-unit id="Open" xml:space="preserve" approved="no">
         <source>Open</source>
+        <target state="translated">Open</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
@@ -4097,8 +4100,9 @@
         <target>Direct bericht sturen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send direct message to connect" xml:space="preserve">
+      <trans-unit id="Send direct message to connect" xml:space="preserve" approved="no">
         <source>Send direct message to connect</source>
+        <target state="translated">Stuur een direct bericht om verbinding te maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">
@@ -5653,8 +5657,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>verbonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connected directly" xml:space="preserve">
+      <trans-unit id="connected directly" xml:space="preserve" approved="no">
         <source>connected directly</source>
+        <target state="translated">direct verbonden</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
@@ -6118,8 +6123,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>beveiligingscode gewijzigd</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
+      <trans-unit id="send direct message" xml:space="preserve" approved="no">
         <source>send direct message</source>
+        <target state="translated">stuur een direct bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
