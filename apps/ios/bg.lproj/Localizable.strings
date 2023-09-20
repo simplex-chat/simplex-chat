@@ -20,6 +20,9 @@
 "_italic_" = "\\_курсив_";
 
 /* No comment provided by engineer. */
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- свържете се с [директория за услуги](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjd LW3%23%2F%3Fv%3D1-2%26dh %3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (БЕТА)!\n- потвърждениe за доставка (до 20 члена).\n- по-бързо и по-стабилно.";
+
+/* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- по-стабилна доставка на съобщения.\n- малко по-добри групи.\n- и още!";
 
 /* No comment provided by engineer. */
@@ -180,6 +183,9 @@
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld минути";
+
+/* No comment provided by engineer. */
+"%lld new interface languages" = "%lld нови езици на интерфейса";
 
 /* No comment provided by engineer. */
 "%lld second(s)" = "%lld секунда(и)";
@@ -444,6 +450,9 @@
 "App build: %@" = "Компилация на приложението: %@";
 
 /* No comment provided by engineer. */
+"App encrypts new local files (except videos)." = "Приложението криптира нови локални файлове (с изключение на видеоклипове).";
+
+/* No comment provided by engineer. */
 "App icon" = "Икона на приложението";
 
 /* No comment provided by engineer. */
@@ -535,6 +544,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "И вие, и вашият контакт можете да изпращате гласови съобщения.";
+
+/* No comment provided by engineer. */
+"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Български, финландски, тайландски и украински - благодарение на потребителите и [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Чрез чат профил (по подразбиране) или [чрез връзка](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (БЕТА).";
@@ -844,6 +856,9 @@
 "Create link" = "Създай линк";
 
 /* No comment provided by engineer. */
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Създайте нов профил в [настолното приложение](https://simplex.chat/downloads/). 💻";
+
+/* No comment provided by engineer. */
 "Create one-time invitation link" = "Създай линк за еднократна покана";
 
 /* server test step */
@@ -1150,6 +1165,9 @@
 "Disconnect" = "Прекъсни връзката";
 
 /* No comment provided by engineer. */
+"Discover and join groups" = "Открийте и се присъединете към групи";
+
+/* No comment provided by engineer. */
 "Display name" = "Показвано Име";
 
 /* No comment provided by engineer. */
@@ -1247,6 +1265,9 @@
 
 /* No comment provided by engineer. */
 "Encrypt local files" = "Криптирай локални файлове";
+
+/* No comment provided by engineer. */
+"Encrypt stored files & media" = "Криптиране на съхранените файлове и медия";
 
 /* No comment provided by engineer. */
 "Encrypted database" = "Криптирана база данни";
@@ -1573,7 +1594,7 @@
 "Full name:" = "Пълно име:";
 
 /* No comment provided by engineer. */
-"Fully re-implemented - work in background!" = "Напълно преработено - работi във фонов режим!";
+"Fully re-implemented - work in background!" = "Напълно преработено - работи във фонов режим!";
 
 /* No comment provided by engineer. */
 "Further reduced battery usage" = "Допълнително намален разход на батерията";
@@ -2126,6 +2147,9 @@
 
 /* No comment provided by engineer. */
 "New database archive" = "Нов архив на база данни";
+
+/* No comment provided by engineer. */
+"New desktop app!" = "Ново настолно приложение!";
 
 /* No comment provided by engineer. */
 "New display name" = "Ново показвано име";
@@ -2942,6 +2966,9 @@
 "SimpleX one-time invitation" = "Еднократна покана за SimpleX";
 
 /* No comment provided by engineer. */
+"Simplified incognito mode" = "Опростен режим инкогнито";
+
+/* No comment provided by engineer. */
 "Skip" = "Пропускане";
 
 /* No comment provided by engineer. */
@@ -3186,6 +3213,9 @@
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "За да проверите криптирането от край до край с вашия контакт, сравнете (или сканирайте) кода на вашите устройства.";
+
+/* No comment provided by engineer. */
+"Toggle incognito when connecting." = "Избор на инкогнито при свързване.";
 
 /* No comment provided by engineer. */
 "Transport isolation" = "Транспортна изолация";
