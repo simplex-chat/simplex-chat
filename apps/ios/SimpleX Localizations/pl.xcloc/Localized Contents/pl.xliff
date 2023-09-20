@@ -1979,6 +1979,10 @@
         <target>Błąd tworzenia linku grupy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error creating member contact" xml:space="preserve">
+        <source>Error creating member contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error creating profile!" xml:space="preserve">
         <source>Error creating profile!</source>
         <target>Błąd tworzenia profilu!</target>
@@ -2107,6 +2111,10 @@
       <trans-unit id="Error sending email" xml:space="preserve">
         <source>Error sending email</source>
         <target>Błąd wysyłania e-mail</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error sending member contact invitation" xml:space="preserve">
+        <source>Error sending member contact invitation</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -3340,6 +3348,10 @@
         <target>Tylko Twój kontakt może wysyłać wiadomości głosowe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Open" xml:space="preserve">
+        <source>Open</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
         <target>Otwórz Ustawienia</target>
@@ -4073,6 +4085,10 @@
       <trans-unit id="Send direct message" xml:space="preserve">
         <source>Send direct message</source>
         <target>Wyślij wiadomość bezpośrednią</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send direct message to connect" xml:space="preserve">
+        <source>Send direct message to connect</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">
@@ -5625,6 +5641,10 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
         <target>połączony</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="connected directly" xml:space="preserve">
+        <source>connected directly</source>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
         <source>connecting</source>
         <target>łączenie</target>
@@ -6085,6 +6105,10 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
         <source>security code changed</source>
         <target>kod bezpieczeństwa zmieniony</target>
         <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="send direct message" xml:space="preserve">
+        <source>send direct message</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
         <source>starting…</source>

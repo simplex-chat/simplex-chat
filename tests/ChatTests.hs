@@ -8,7 +8,7 @@ import Test.Hspec
 
 chatTests :: SpecWith FilePath
 chatTests = do
-  chatDirectTests
-  chatGroupTests
-  chatFileTests
-  chatProfileTests
+  describe "direct tests" chatDirectTests
+  describe "group tests" chatGroupTests
+  describe "file tests" chatFileTests
+  describe "profile tests" chatProfileTests

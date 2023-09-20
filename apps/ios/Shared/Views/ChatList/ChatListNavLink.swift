@@ -49,11 +49,10 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
-        let v = NavLinkPlain(
+        NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
-            label: { ChatPreviewView(chat: chat) },
-            disabled: !contact.ready
+            label: { ChatPreviewView(chat: chat) }
         )
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
@@ -76,14 +75,6 @@ struct ChatListNavLink: View {
             .tint(.red)
         }
         .frame(height: rowHeights[dynamicTypeSize])
-
-        if contact.ready {
-            v
-        } else {
-            v.onTapGesture {
-                AlertManager.shared.showAlert(pendingContactAlert(chat, contact))
-            }
-        }
     }
 
     @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
