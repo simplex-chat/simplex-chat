@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="fr" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A5229m"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A240d"/>
     </header>
     <body>
       <trans-unit id="&#10;" xml:space="preserve">
@@ -1978,6 +1978,10 @@
         <target>Erreur lors de la création du lien du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error creating member contact" xml:space="preserve">
+        <source>Error creating member contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error creating profile!" xml:space="preserve">
         <source>Error creating profile!</source>
         <target>Erreur lors de la création du profil !</target>
@@ -2105,6 +2109,10 @@
       <trans-unit id="Error sending email" xml:space="preserve">
         <source>Error sending email</source>
         <target>Erreur lors de l'envoi de l'e-mail</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error sending member contact invitation" xml:space="preserve">
+        <source>Error sending member contact invitation</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -3338,6 +3346,10 @@
         <target>Seul votre contact peut envoyer des messages vocaux.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Open" xml:space="preserve">
+        <source>Open</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
         <target>Ouvrir les Paramètres</target>
@@ -4071,6 +4083,10 @@
       <trans-unit id="Send direct message" xml:space="preserve">
         <source>Send direct message</source>
         <target>Envoi de message direct</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send direct message to connect" xml:space="preserve">
+        <source>Send direct message to connect</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">
@@ -5623,6 +5639,10 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>connecté</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="connected directly" xml:space="preserve">
+        <source>connected directly</source>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
         <source>connecting</source>
         <target>connexion</target>
@@ -6084,6 +6104,10 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>code de sécurité modifié</target>
         <note>chat item text</note>
       </trans-unit>
+      <trans-unit id="send direct message" xml:space="preserve">
+        <source>send direct message</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
         <source>starting…</source>
         <target>lancement…</target>
@@ -6228,7 +6252,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="fr" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A5229m"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A240d"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -6260,7 +6284,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="fr" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A5229m"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A240d"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
