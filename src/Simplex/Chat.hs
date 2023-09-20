@@ -3060,10 +3060,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO update member profile
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn' confId XOk
-            XOk -> do
-              allowAgentConnectionAsync user conn' confId XOk
-              void $ withStore' $ \db -> resetMemberContactFields db ct
-            _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.ok"
+            XInfo profile -> do
+              ct' <- processContactProfileUpdate ct profile False `catchChatError` const (pure ct)
+              -- [incognito] send incognito profile
+              incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
+              let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
+              allowAgentConnectionAsync user conn' confId $ XInfo p
+              void $ withStore' $ \db -> resetMemberContactFields db ct'
+            _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           _conn' <- updatePeerChatVRange conn chatVRange
@@ -3072,9 +3076,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO check member ID
               -- TODO update member profile
               pure ()
-            XInfo _profile -> do
-              -- TODO update contact profile
-              pure ()
+            XInfo profile ->
+              void $ processContactProfileUpdate ct profile False
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
@@ -4233,15 +4236,22 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
     xInfo :: Contact -> Profile -> m ()
-    xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <- withStore $ \db ->
-        if userTTL == rcvTTL
-          then updateContactProfile db user c p'
-          else do
-            c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
-            updateContactProfile db user c' p'
-      when (directOrUsed c') $ createRcvFeatureItems user c c'
-      toView $ CRContactUpdated user c c'
+    xInfo c p' = void $ processContactProfileUpdate c p' True
+
+    processContactProfileUpdate :: Contact -> Profile -> Bool -> m Contact
+    processContactProfileUpdate c@Contact {profile = p} p' createItems
+      | fromLocalProfile p /= p' = do
+        c' <- withStore $ \db ->
+          if userTTL == rcvTTL
+            then updateContactProfile db user c p'
+            else do
+              c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
+              updateContactProfile db user c' p'
+        when (directOrUsed c' && createItems) $ createRcvFeatureItems user c c'
+        toView $ CRContactUpdated user c c'
+        pure c'
+      | otherwise =
+        pure c
       where
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
@@ -4639,8 +4649,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           (mCt', m') <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode
           createItems mCt' m'
         joinConn subMode = do
-          -- TODO send user's profile for this group membership
-          dm <- directMessage XOk
+          -- [incognito] send membership incognito profile
+          let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing
+          dm <- directMessage $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
           checkIntegrityCreateItem (CDGroupRcv g m') msgMeta

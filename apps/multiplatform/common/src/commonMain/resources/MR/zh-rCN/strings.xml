@@ -21,7 +21,7 @@
     <string name="v4_3_improved_server_configuration_desc">扫描二维码来添加服务器。</string>
     <string name="network_settings">高级网络设置</string>
     <string name="accept_connection_request__question">接受连接请求？</string>
-    <string name="accept_contact_incognito_button">接受匿名聊天</string>
+    <string name="accept_contact_incognito_button">接受隐身聊天</string>
     <string name="v4_2_group_links_desc">管理员可以创建链接以加入群组。</string>
     <string name="smp_servers_preset_add">添加预设服务器</string>
     <string name="connect_via_link">通过链接连接</string>
@@ -67,7 +67,7 @@
     <string name="connect_via_group_link">通过群组链接连接？</string>
     <string name="connect_via_link_or_qr">通过群组链接/二维码连接</string>
     <string name="always_use_relay">总是通过中继连接</string>
-    <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不可逆地删除已发送消息。</string>
+    <string name="allow_your_contacts_irreversibly_delete">允许您的联系人永久删除已发送消息。</string>
     <string name="chat_preferences_contact_allows">联系人允许</string>
     <string name="allow_voice_messages_only_if">仅有您的联系人许可后才允许语音消息。</string>
     <string name="group_info_member_you">您: %1$s</string>
@@ -106,7 +106,7 @@
     <string name="icon_descr_audio_call">语音通话</string>
     <string name="audio_call_no_encryption">语音通话（非端到端加密）</string>
     <string name="v4_2_auto_accept_contact_requests">自动接受联系人请求</string>
-    <string name="integrity_msg_bad_hash">错误消息散列</string>
+    <string name="integrity_msg_bad_hash">消息散列值错误</string>
     <string name="integrity_msg_bad_id">错误消息 ID</string>
     <string name="settings_audio_video_calls">语音和视频通话</string>
     <string name="turning_off_service_and_periodic">启用电池优化，关闭了后台服务和对新消息的定期请求。您可以在设置里重新启用它们。</string>
@@ -123,7 +123,7 @@
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。后台服务每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
     <string name="bold_text">加粗</string>
     <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以永久删除已发送的消息。</string>
-    <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送定时自毁消息。</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送限时消息。</string>
     <string name="both_you_and_your_contact_can_send_voice">您和您的联系人都可以发送语音消息。</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> 可以在设置里禁用它 </b> - 应用程序运行时仍会显示通知。]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> 使用更多电量 </b>！后台服务始终运行——一旦收到消息，就会显示通知。]]></string>
@@ -285,7 +285,7 @@
     <string name="incoming_video_call">视频通话来电</string>
     <string name="no_call_on_lock_screen">禁用</string>
     <string name="status_e2e_encrypted">端到端加密</string>
-    <string name="status_contact_has_e2e_encryption">联系人开启端到端加密</string>
+    <string name="status_contact_has_e2e_encryption">联系人已开启端到端加密</string>
     <string name="allow_accepting_calls_from_lock_screen">通过设置启用在锁定屏幕上通话。</string>
     <string name="icon_descr_call_connecting">连接通话中</string>
     <string name="status_contact_has_no_e2e_encryption">联系人没有端到端加密</string>
@@ -1005,7 +1005,7 @@
     <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>
     <string name="you_can_hide_or_mute_user_profile">您可以隐藏或静音用户配置文件——长按以显示菜单。</string>
     <string name="group_welcome_title">欢迎消息</string>
-    <string name="confirm_database_upgrades">确定升级数据库</string>
+    <string name="confirm_database_upgrades">确认数据库升级</string>
     <string name="settings_section_title_experimenta">实验性</string>
     <string name="database_upgrade">数据库升级</string>
     <string name="mtr_error_different">应用程序/数据库中的不同迁移：%s / %s</string>
@@ -1108,7 +1108,7 @@
     <string name="revoke_file__confirm">撤销</string>
     <string name="audio_video_calls">音频/视频通话</string>
     <string name="available_in_v51">"
-\n在 v5.1 中可用"</string>
+\n在 v5.1 版本中可用"</string>
     <string name="v5_0_app_passcode">应用程序密码</string>
     <string name="v5_0_polish_interface">波兰语界面</string>
     <string name="v5_0_polish_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
@@ -1120,7 +1120,7 @@
     <string name="only_you_can_make_calls">只有您可以拨打电话。</string>
     <string name="only_your_contact_can_make_calls">只有您的联系人可以拨打电话。</string>
     <string name="allow_your_contacts_to_call">允许您的联系人与您进行语音通话。</string>
-    <string name="allow_calls_only_if">仅当您的联系人同意才允许呼叫。</string>
+    <string name="allow_calls_only_if">仅当您的联系人允许时才允许呼叫。</string>
     <string name="calls_prohibited_with_this_contact">禁止音频/视频通话。</string>
     <string name="send_disappearing_message_1_minute">1分钟</string>
     <string name="one_time_link_short">一次性链接</string>
@@ -1293,7 +1293,7 @@
     <string name="connect__a_new_random_profile_will_be_shared">一个新的随机个人档案将被分享。</string>
     <string name="snd_conn_event_ratchet_sync_started">与 %s 协调加密中…</string>
     <string name="in_developing_desc">该功能还没支持。请尝试下一个版本。</string>
-    <string name="turn_off_battery_optimization_button">确认</string>
+    <string name="turn_off_battery_optimization_button">允许</string>
     <string name="connect_via_link_incognito">隐身连接</string>
     <string name="connect_via_member_address_alert_title">确认发起私聊？</string>
     <string name="delivery">发送</string>
@@ -1391,4 +1391,16 @@
     <string name="delivery_receipts_are_disabled">已关闭送达回执！</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>请注意</b>：消息和文件中继通过 SOCKS 代理连接。呼叫和发送链接预览使用直接连接。]]></string>
     <string name="encrypt_local_files">加密本地文件</string>
+    <string name="v5_3_encrypt_local_files">为存储的文件和媒体加密</string>
+    <string name="v5_3_new_desktop_app">全新桌面应用！</string>
+    <string name="v5_3_new_interface_languages">6种全新的界面语言</string>
+    <string name="v5_3_encrypt_local_files_descr">应用程序为新的本地文件（视频除外）加密。</string>
+    <string name="v5_3_discover_join_groups">发现和加入群组</string>
+    <string name="v5_3_simpler_incognito_mode">简化的隐身模式</string>
+    <string name="v5_3_new_interface_languages_descr">阿拉伯语、保加利亚语、芬兰语、希伯莱语、泰国语和乌克兰语——得益于用户和Weblate。</string>
+    <string name="v5_3_new_desktop_app_descr">在桌面应用里创建新的账号。💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">在连接时切换隐身模式。</string>
+    <string name="v5_3_discover_join_groups_descr">- 连接到目录服务（BETA）！
+\n- 发送回执（至多20名成员）。
+\n- 更快，更稳定。</string>
 </resources>

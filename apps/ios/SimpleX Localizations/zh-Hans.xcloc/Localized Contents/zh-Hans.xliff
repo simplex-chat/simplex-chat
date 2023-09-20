@@ -199,6 +199,7 @@
       </trans-unit>
       <trans-unit id="%lld new interface languages" xml:space="preserve">
         <source>%lld new interface languages</source>
+        <target>%lld 种新的界面语言</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">

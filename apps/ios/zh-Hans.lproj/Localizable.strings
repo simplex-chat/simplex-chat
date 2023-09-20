@@ -182,6 +182,9 @@
 "%lld minutes" = "%lld 分钟";
 
 /* No comment provided by engineer. */
+"%lld new interface languages" = "%lld 种新的界面语言";
+
+/* No comment provided by engineer. */
 "%lld second(s)" = "%lld 秒";
 
 /* No comment provided by engineer. */

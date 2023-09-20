@@ -20,6 +20,9 @@
 "_italic_" = "\\_cursief_";
 
 /* No comment provided by engineer. */
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- verbinding maken met [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)! \n- ontvangst bevestiging(tot 20 leden). \n- sneller en stabieler.";
+
+/* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- stabielere berichtbezorging.\n- een beetje betere groepen.\n- en meer!";
 
 /* No comment provided by engineer. */
@@ -180,6 +183,9 @@
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld minuten";
+
+/* No comment provided by engineer. */
+"%lld new interface languages" = "%lld nieuwe interface-talen";
 
 /* No comment provided by engineer. */
 "%lld second(s)" = "%lld seconde(n)";
@@ -444,6 +450,9 @@
 "App build: %@" = "App build: %@";
 
 /* No comment provided by engineer. */
+"App encrypts new local files (except videos)." = "App versleutelt nieuwe lokale bestanden (behalve video's).";
+
+/* No comment provided by engineer. */
 "App icon" = "App icon";
 
 /* No comment provided by engineer. */
@@ -535,6 +544,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Zowel jij als je contact kunnen spraak berichten verzenden.";
+
+/* No comment provided by engineer. */
+"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulgaars, Fins, Thais en Oekraïens - dankzij de gebruikers en [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Via chat profiel (standaard) of [via verbinding](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
@@ -844,6 +856,9 @@
 "Create link" = "Maak link";
 
 /* No comment provided by engineer. */
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Maak een nieuw profiel aan in [desktop-app](https://simplex.chat/downloads/). 💻";
+
+/* No comment provided by engineer. */
 "Create one-time invitation link" = "Maak een eenmalige uitnodiging link";
 
 /* server test step */
@@ -1150,6 +1165,9 @@
 "Disconnect" = "verbinding verbreken";
 
 /* No comment provided by engineer. */
+"Discover and join groups" = "Ontdek en sluit je aan bij groepen";
+
+/* No comment provided by engineer. */
 "Display name" = "Weergavenaam";
 
 /* No comment provided by engineer. */
@@ -1247,6 +1265,9 @@
 
 /* No comment provided by engineer. */
 "Encrypt local files" = "Versleutel lokale bestanden";
+
+/* No comment provided by engineer. */
+"Encrypt stored files & media" = "Versleutel opgeslagen bestanden en media";
 
 /* No comment provided by engineer. */
 "Encrypted database" = "Versleutelde database";
@@ -2128,6 +2149,9 @@
 "New database archive" = "Nieuw database archief";
 
 /* No comment provided by engineer. */
+"New desktop app!" = "Nieuwe desktop app!";
+
+/* No comment provided by engineer. */
 "New display name" = "Nieuwe weergavenaam";
 
 /* No comment provided by engineer. */
@@ -2942,6 +2966,9 @@
 "SimpleX one-time invitation" = "Eenmalige SimpleX uitnodiging";
 
 /* No comment provided by engineer. */
+"Simplified incognito mode" = "Vereenvoudigde incognitomodus";
+
+/* No comment provided by engineer. */
 "Skip" = "Overslaan";
 
 /* No comment provided by engineer. */
@@ -3186,6 +3213,9 @@
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contact te verifiëren.";
+
+/* No comment provided by engineer. */
+"Toggle incognito when connecting." = "Schakel incognito in tijdens het verbinden.";
 
 /* No comment provided by engineer. */
 "Transport isolation" = "Transport isolation";
