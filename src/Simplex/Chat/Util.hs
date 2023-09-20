@@ -15,6 +15,8 @@ week = 7 * 86400
 encryptFile :: FilePath -> FilePath -> CryptoFileArgs -> ExceptT String IO ()
 encryptFile fromPath toPath cfArgs = do
   let toFile = CryptoFile toPath $ Just cfArgs
+  -- uncomment to test encryption error in runTestFileTransferEncrypted
+  -- throwError "test error"
   withExceptT show $
     withFile fromPath ReadMode $ \r -> CF.withFile toFile WriteMode $ \w -> do
       encryptChunks r w

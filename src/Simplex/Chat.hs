@@ -4798,22 +4798,23 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs} chunkNo chun
     append_ filePath = do
       fsFilePath <- toFSFilePath filePath
       h <- getFileHandle fileId fsFilePath rcvFiles AppendMode
-      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` fileErr
+      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` (fileErr  . show)
       withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
       when final $ do
         closeFileHandle fileId rcvFiles
         forM_ cryptoArgs $ \cfArgs -> do
           tmpFile <- getChatTempDirectory >>= (`uniqueCombine` ft.fileInvitation.fileName)
-          liftError fileErr (encryptFile fsFilePath tmpFile cfArgs) `catchChatError` keepUnencrypted tmpFile
-          removeFile fsFilePath `catchChatError` \_ -> pure ()
-          renameFile tmpFile fsFilePath
+          tryChatError (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
+            Right () -> do
+              removeFile fsFilePath `catchChatError` \_ -> pure ()
+              renameFile tmpFile fsFilePath
+            Left e -> do
+              toView $ CRChatError Nothing e
+              removeFile tmpFile `catchChatError` \_ -> pure ()
+              withStore' (`removeFileCryptoArgs` fileId)
       where
-        keepUnencrypted tmpFile e = do
-          toView $ CRChatError Nothing $ fileErr e
-          removeFile tmpFile `catchChatError` \_ -> pure ()
-          withStore' (`removeFileCryptoArgs` fileId)
-        fileErr :: Show e => e -> ChatError
-        fileErr = ChatError . CEFileWrite filePath . show
+        encryptErr e = fileErr $ e <> ", received file not encrypted"
+        fileErr = ChatError . CEFileWrite filePath
 
 getFileHandle :: ChatMonad m => Int64 -> FilePath -> (ChatController -> TVar (Map Int64 Handle)) -> IOMode -> m Handle
 getFileHandle fileId filePath files ioMode = do

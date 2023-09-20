@@ -115,6 +115,8 @@ runTestFileTransferEncrypted alice bob = do
   concurrentlyN_
     [ do
         bob #> "@alice receiving here..."
+        -- uncomment this and below to test encryption error in encryptFile
+        -- bob <## "cannot write file ./tests/tmp/test.pdf: test error, received file not encrypted"
         bob <## "completed receiving file 1 (test.pdf) from alice",
       alice
         <### [ WithTime "bob> receiving here...",
@@ -122,6 +124,8 @@ runTestFileTransferEncrypted alice bob = do
              ]
     ]
   src <- B.readFile "./tests/fixtures/test.pdf"
+  -- dest <- B.readFile "./tests/tmp/test.pdf"
+  -- dest `shouldBe` src
   Right dest <- chatReadFile "./tests/tmp/test.pdf" (strEncode key) (strEncode nonce)
   LB.toStrict dest `shouldBe` src
 
