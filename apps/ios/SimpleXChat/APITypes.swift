@@ -61,6 +61,8 @@ public enum ChatCommand {
     case apiGroupLinkMemberRole(groupId: Int64, memberRole: GroupMemberRole)
     case apiDeleteGroupLink(groupId: Int64)
     case apiGetGroupLink(groupId: Int64)
+    case apiCreateMemberContact(groupId: Int64, groupMemberId: Int64)
+    case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
     case apiGetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol)
     case apiSetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol, servers: [ServerCfg])
     case apiTestProtoServer(userId: Int64, server: String)
@@ -181,6 +183,8 @@ public enum ChatCommand {
             case let .apiGroupLinkMemberRole(groupId, memberRole): return "/_set link role #\(groupId) \(memberRole)"
             case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
+            case let .apiCreateMemberContact(groupId, groupMemberId): return "/_create member contact #\(groupId) \(groupMemberId)"
+            case let .apiSendMemberContactInvitation(contactId, mc): return "/_invite member contact @\(contactId) \(mc.cmdString)"
             case let .apiGetUserProtoServers(userId, serverProtocol): return "/_servers \(userId) \(serverProtocol)"
             case let .apiSetUserProtoServers(userId, serverProtocol, servers): return "/_servers \(userId) \(serverProtocol) \(protoServersStr(servers))"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
@@ -304,6 +308,8 @@ public enum ChatCommand {
             case .apiGroupLinkMemberRole: return "apiGroupLinkMemberRole"
             case .apiDeleteGroupLink: return "apiDeleteGroupLink"
             case .apiGetGroupLink: return "apiGetGroupLink"
+            case .apiCreateMemberContact: return "apiCreateMemberContact"
+            case .apiSendMemberContactInvitation: return "apiSendMemberContactInvitation"
             case .apiGetUserProtoServers: return "apiGetUserProtoServers"
             case .apiSetUserProtoServers: return "apiSetUserProtoServers"
             case .apiTestProtoServer: return "apiTestProtoServer"
@@ -514,6 +520,9 @@ public enum ChatResponse: Decodable, Error {
     case groupLinkCreated(user: UserRef, groupInfo: GroupInfo, connReqContact: String, memberRole: GroupMemberRole)
     case groupLink(user: UserRef, groupInfo: GroupInfo, connReqContact: String, memberRole: GroupMemberRole)
     case groupLinkDeleted(user: UserRef, groupInfo: GroupInfo)
+    case newMemberContact(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
+    case newMemberContactSentInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
+    case newMemberContactReceivedInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
     // receiving file events
     case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
     case rcvFileAcceptedSndCancelled(user: UserRef, rcvFileTransfer: RcvFileTransfer)
@@ -647,6 +656,9 @@ public enum ChatResponse: Decodable, Error {
             case .groupLinkCreated: return "groupLinkCreated"
             case .groupLink: return "groupLink"
             case .groupLinkDeleted: return "groupLinkDeleted"
+            case .newMemberContact: return "newMemberContact"
+            case .newMemberContactSentInv: return "newMemberContactSentInv"
+            case .newMemberContactReceivedInv: return "newMemberContactReceivedInv"
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileAcceptedSndCancelled: return "rcvFileAcceptedSndCancelled"
             case .rcvFileStart: return "rcvFileStart"
@@ -780,6 +792,9 @@ public enum ChatResponse: Decodable, Error {
             case let .groupLinkCreated(u, groupInfo, connReqContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)\nmemberRole: \(memberRole)")
             case let .groupLink(u, groupInfo, connReqContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)\nmemberRole: \(memberRole)")
             case let .groupLinkDeleted(u, groupInfo): return withUser(u, String(describing: groupInfo))
+            case let .newMemberContact(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
+            case let .newMemberContactSentInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
+            case let .newMemberContactReceivedInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
             case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
             case .rcvFileAcceptedSndCancelled: return noDetails
             case let .rcvFileStart(u, chatItem): return withUser(u, String(describing: chatItem))
@@ -1454,6 +1469,7 @@ public enum ChatErrorType: Decodable {
     case agentCommandError(message: String)
     case invalidFileDescription(message: String)
     case connectionIncognitoChangeProhibited
+    case peerChatVRangeIncompatible
     case internalError(message: String)
     case exception(message: String)
 }
@@ -1479,6 +1495,7 @@ public enum StoreError: Decodable {
     case groupMemberNameNotFound(groupId: Int64, groupMemberName: ContactName)
     case groupMemberNotFound(groupMemberId: Int64)
     case groupMemberNotFoundByMemberId(memberId: String)
+    case memberContactGroupMemberNotFound(contactId: Int64)
     case groupWithoutUser
     case duplicateGroupMember
     case groupAlreadyJoined

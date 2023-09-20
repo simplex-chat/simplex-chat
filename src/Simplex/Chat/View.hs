@@ -231,10 +231,11 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRGroupLink u g cReq mRole -> ttyUser u $ groupLink_ "Group link:" g cReq mRole
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRAcceptingGroupJoinRequest _ g c -> [ttyFullContact c <> ": accepting request to join group " <> ttyGroup' g <> "..."]
-  CRNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have associated contact, creating contact"]
+  CRNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have direct connection, creating"]
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
   CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
+  CRMemberContactConnected u ct g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " is merged into " <> ttyContact' ct]
   CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
@@ -1591,8 +1592,8 @@ viewChatError logLevel = \case
     CEFileCancelled f -> ["file cancelled: " <> plain f]
     CEFileCancel fileId e -> ["error cancelling file " <> sShow fileId <> ": " <> sShow e]
     CEFileAlreadyExists f -> ["file already exists: " <> plain f]
-    CEFileRead f e -> ["cannot read file " <> plain f, sShow e]
-    CEFileWrite f e -> ["cannot write file " <> plain f, sShow e]
+    CEFileRead f e -> ["cannot read file " <> plain f <> ": " <> plain e]
+    CEFileWrite f e -> ["cannot write file " <> plain f <> ": " <> plain e]
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]

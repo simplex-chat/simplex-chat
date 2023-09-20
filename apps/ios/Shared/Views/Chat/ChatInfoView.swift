@@ -164,6 +164,7 @@ struct ChatInfoView: View {
 //                        synchronizeConnectionButtonForce()
 //                    }
                 }
+                .disabled(!contact.ready)
 
                 if let contactLink = contact.contactLink {
                     Section {
@@ -180,30 +181,33 @@ struct ChatInfoView: View {
                     }
                 }
 
-                Section("Servers") {
-                    networkStatusRow()
-                        .onTapGesture {
-                            alert = .networkStatusAlert
-                        }
-                    if let connStats = connectionStats {
-                        Button("Change receiving address") {
-                            alert = .switchAddressAlert
-                        }
-                        .disabled(
-                            connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
-                            || connStats.ratchetSyncSendProhibited
-                        )
-                        if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
-                            Button("Abort changing address") {
-                                alert = .abortSwitchAddressAlert
+                if contact.ready {
+                    Section("Servers") {
+                        networkStatusRow()
+                            .onTapGesture {
+                                alert = .networkStatusAlert
+                            }
+                        if let connStats = connectionStats {
+                            Button("Change receiving address") {
+                                alert = .switchAddressAlert
                             }
                             .disabled(
-                                connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                !contact.ready
+                                || connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
                                 || connStats.ratchetSyncSendProhibited
                             )
+                            if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
+                                Button("Abort changing address") {
+                                    alert = .abortSwitchAddressAlert
+                                }
+                                .disabled(
+                                    connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
+                                    || connStats.ratchetSyncSendProhibited
+                                )
+                            }
+                            smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
+                            smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
                         }
-                        smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
-                        smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
                     }
                 }
 

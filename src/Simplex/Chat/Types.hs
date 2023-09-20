@@ -218,6 +218,19 @@ data ContactRef = ContactRef
 
 instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
 
+data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
+  deriving (Show)
+
+contactOrGroupMemberIds :: ContactOrGroupMember -> (Maybe ContactId, Maybe GroupMemberId)
+contactOrGroupMemberIds = \case
+  CGMContact Contact {contactId} -> (Just contactId, Nothing)
+  CGMGroupMember _ GroupMember {groupMemberId} -> (Nothing, Just groupMemberId)
+
+contactOrGroupMemberIncognito :: ContactOrGroupMember -> IncognitoEnabled
+contactOrGroupMemberIncognito = \case
+  CGMContact ct -> contactConnIncognito ct
+  CGMGroupMember _ m -> memberIncognito m
+
 data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact,
@@ -429,10 +442,10 @@ instance ToJSON Profile where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 -- check if profiles match ignoring preferences
-profilesMatch :: Profile -> Profile -> Bool
+profilesMatch :: LocalProfile -> LocalProfile -> Bool
 profilesMatch
-  Profile {displayName = n1, fullName = fn1, image = i1}
-  Profile {displayName = n2, fullName = fn2, image = i2} =
+  LocalProfile {displayName = n1, fullName = fn1, image = i1}
+  LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
@@ -973,7 +986,10 @@ data RcvFileTransfer = RcvFileTransfer
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
-    grpMemberId :: Maybe Int64
+    grpMemberId :: Maybe Int64,
+    -- XFTP files are encrypted as they are received, they are never stored unecrypted
+    -- SMP files are encrypted after all chunks are received
+    cryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show, Generic)
 
@@ -982,8 +998,7 @@ instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.default
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool,
-    cryptoArgs :: Maybe CryptoFileArgs
+    agentRcvFileDeleted :: Bool
   }
   deriving (Eq, Show, Generic)
 

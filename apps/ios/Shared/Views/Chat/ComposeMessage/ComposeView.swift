@@ -257,6 +257,9 @@ struct ComposeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if chat.chatInfo.contact?.nextSendGrpInv ?? false {
+                ContextInvitingContactMemberView()
+            }
             contextItemView()
             switch (composeState.editing, composeState.preview) {
             case (true, .filePreview): EmptyView()
@@ -270,7 +273,7 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.attachmentDisabled || !chat.userCanSend)
+                .disabled(composeState.attachmentDisabled || !chat.userCanSend || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
@@ -298,6 +301,7 @@ struct ComposeView: View {
                             composeState.liveMessage = nil
                             chatModel.removeLiveDummy()
                         },
+                        nextSendGrpInv: chat.chatInfo.contact?.nextSendGrpInv ?? false,
                         voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
                         showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
                         startVoiceMessageRecording: {
@@ -617,7 +621,9 @@ struct ComposeView: View {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
         }
-        if case let .editingItem(ci) = composeState.contextItem {
+        if chat.chatInfo.contact?.nextSendGrpInv ?? false {
+            await sendMemberContactInvitation()
+        } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
@@ -667,6 +673,19 @@ struct ComposeView: View {
 
         func sending() async {
             await MainActor.run { composeState.inProgress = true }
+        }
+
+        func sendMemberContactInvitation() async {
+            do {
+                let mc = checkLinkPreview()
+                let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+                await MainActor.run {
+                    self.chatModel.updateContact(contact)
+                }
+            } catch {
+                logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
+            }
         }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
