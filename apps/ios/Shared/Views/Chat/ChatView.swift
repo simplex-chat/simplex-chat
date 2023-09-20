@@ -322,7 +322,7 @@ struct ChatView: View {
         if case let .direct(contact) = chat.chatInfo,
            !contact.ready,
            !contact.nextSendGrpInv {
-            Text("establishing connection")
+            Text("connecting…")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.top)

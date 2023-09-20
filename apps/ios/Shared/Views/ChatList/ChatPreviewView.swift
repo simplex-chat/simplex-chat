@@ -182,7 +182,7 @@ struct ChatPreviewView: View {
             case let .direct(contact):
                 if !contact.ready {
                     if contact.nextSendGrpInv {
-                        chatPreviewInfoText("send invitation")
+                        chatPreviewInfoText("send direct message")
                     } else {
                         chatPreviewInfoText("connecting…")
                     }
