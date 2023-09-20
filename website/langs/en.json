@@ -244,5 +244,5 @@
     "stable-versions-built-by-f-droid-org": "Stable versions built by F-Droid.org",
     "releases-to-this-repo-are-done-1-2-days-later": "The releases to this repo are done 1-2 days later",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat and F-Droid.org repositories sign builds with the different keys. To switch, please <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>export</a> the chat database and re-install the app.",
-    "jobs": "Jobs"
+    "jobs": "Join team"
 }
