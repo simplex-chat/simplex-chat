@@ -3225,7 +3225,7 @@ public enum RcvGroupEvent: Decodable {
         case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
         case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
         case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
-        case .memberCreatedContact: return NSLocalizedString("connects directly", comment: "rcv group event chat item")
+        case .memberCreatedContact: return NSLocalizedString("connected directly", comment: "rcv group event chat item")
         }
     }
 }
