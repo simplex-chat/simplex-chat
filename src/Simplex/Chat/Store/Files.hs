@@ -57,6 +57,7 @@ module Simplex.Chat.Store.Files
     xftpAcceptRcvFT,
     setRcvFileToReceive,
     setFileCryptoArgs,
+    removeFileCryptoArgs,
     getRcvFilesToReceive,
     setRcvFTAgentDeleted,
     updateRcvFileStatus,
@@ -708,6 +709,11 @@ setFileCryptoArgs_ db fileId (CFArgs key nonce) currentTs =
     db
     "UPDATE files SET file_crypto_key = ?, file_crypto_nonce = ?, updated_at = ? WHERE file_id = ?"
     (key, nonce, currentTs, fileId)
+
+removeFileCryptoArgs :: DB.Connection -> FileTransferId -> IO ()
+removeFileCryptoArgs db fileId = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE files SET file_crypto_key = NULL, file_crypto_nonce = NULL, updated_at = ? WHERE file_id = ?" (currentTs, fileId)
 
 getRcvFilesToReceive :: DB.Connection -> User -> IO [RcvFileTransfer]
 getRcvFilesToReceive db user@User {userId} = do

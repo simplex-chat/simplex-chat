@@ -33,7 +33,6 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toLower)
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
@@ -74,6 +73,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
+import Simplex.Chat.Util (encryptFile)
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
@@ -2400,7 +2400,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
     asks filesFolder >>= readTVarIO >>= \case
       Nothing -> do
         dir <- (`combine` "Downloads") <$> getHomeDirectory
-        ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
+        ifM (doesDirectoryExist dir) (pure dir) getChatTempDirectory
           >>= (`uniqueCombine` fn)
           >>= createEmptyFile
       Just filesFolder ->
@@ -2428,14 +2428,18 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
       pure fPath
     getTmpHandle :: FilePath -> m Handle
     getTmpHandle fPath = openFile fPath AppendMode `catchThrow` (ChatError . CEFileInternal . show)
-    uniqueCombine :: FilePath -> String -> m FilePath
-    uniqueCombine filePath fileName = tryCombine (0 :: Int)
-      where
-        tryCombine n =
-          let (name, ext) = splitExtensions fileName
-              suffix = if n == 0 then "" else "_" <> show n
-              f = filePath `combine` (name <> suffix <> ext)
-           in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
+
+uniqueCombine :: MonadIO m => FilePath -> String -> m FilePath
+uniqueCombine filePath fileName = tryCombine (0 :: Int)
+  where
+    tryCombine n =
+      let (name, ext) = splitExtensions fileName
+          suffix = if n == 0 then "" else "_" <> show n
+          f = filePath `combine` (name <> suffix <> ext)
+       in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
+
+getChatTempDirectory :: ChatMonad m => m FilePath
+getChatTempDirectory = chatReadVar tempDirectory >>= maybe getTemporaryDirectory pure
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
 acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
@@ -4798,13 +4802,16 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs} chunkNo chun
       withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
       when final $ do
         closeFileHandle fileId rcvFiles
-        when (isJust cryptoArgs) $ do
-          let f = CryptoFile fsFilePath cryptoArgs
-          -- TODO write file to another name and move after success
-          s <- liftIO (LB.readFile fsFilePath)
-          removeFile fsFilePath
-          liftError fileErr $ CF.writeFile f s
+        forM_ cryptoArgs $ \cfArgs -> do
+          tmpFile <- getChatTempDirectory >>= (`uniqueCombine` ft.fileInvitation.fileName)
+          liftError fileErr (encryptFile fsFilePath tmpFile cfArgs) `catchChatError` keepUnencrypted tmpFile
+          removeFile fsFilePath `catchChatError` \_ -> pure ()
+          renameFile tmpFile fsFilePath
       where
+        keepUnencrypted tmpFile e = do
+          toView $ CRChatError Nothing $ fileErr e
+          removeFile tmpFile `catchChatError` \_ -> pure ()
+          withStore' (`removeFileCryptoArgs` fileId)
         fileErr :: Show e => e -> ChatError
         fileErr = ChatError . CEFileWrite filePath . show
 
