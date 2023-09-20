@@ -2516,6 +2516,11 @@ video {
     padding-right: 2.5rem;
   }
 
+  .md\:py-16 {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
   .md\:py-7 {
     padding-top: 1.75rem;
     padding-bottom: 1.75rem;
