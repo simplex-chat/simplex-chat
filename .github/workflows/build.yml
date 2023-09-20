@@ -166,7 +166,7 @@ jobs:
           ./gradlew packageDeb
           path=$(echo $PWD/release/main/deb/simplex_*_amd64.deb)
           echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-512\(${{ matrix.asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
       
       - name: Linux make AppImage
         id: linux_appimage_build
@@ -176,7 +176,7 @@ jobs:
           scripts/desktop/make-appimage-linux.sh
           path=$(echo $PWD/apps/multiplatform/release/main/*imple*.AppImage)
           echo "appimage_path=$path" >> $GITHUB_OUTPUT
-          echo "appimage_hash=$(echo SHA2-512\(${{ matrix.asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "appimage_hash=$(echo SHA2-512\(simplex-desktop-x86_64.AppImage\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Mac build desktop
         id: mac_desktop_build
@@ -190,7 +190,7 @@ jobs:
           scripts/ci/build-desktop-mac.sh
           path=$(echo $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg)
           echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-512\(${{ matrix.asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Linux upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
