@@ -3064,6 +3064,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               allowAgentConnectionAsync user conn' confId XOk
             XInfo profile -> do
               ct' <- processContactProfileUpdate ct profile False `catchChatError` const (pure ct)
+              -- [incognito] send incognito profile
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
               let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
               allowAgentConnectionAsync user conn' confId $ XInfo p
@@ -4651,6 +4652,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           (mCt', m') <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode
           createItems mCt' m'
         joinConn subMode = do
+          -- [incognito] send membership incognito profile
           let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing
           dm <- directMessage $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
