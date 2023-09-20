@@ -199,6 +199,7 @@
       </trans-unit>
       <trans-unit id="%lld new interface languages" xml:space="preserve">
         <source>%lld new interface languages</source>
+        <target>%lld nieuwe interface-talen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">
@@ -335,6 +336,9 @@
         <source>- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
 - delivery receipts (up to 20 members).
 - faster and more stable.</source>
+        <target>- verbinding maken met [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)! 
+- ontvangst bevestiging(tot 20 leden). 
+- sneller en stabieler.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve">
@@ -712,6 +716,7 @@
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
         <source>App encrypts new local files (except videos).</source>
+        <target>App versleutelt nieuwe lokale bestanden (behalve video's).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
@@ -851,6 +856,7 @@
       </trans-unit>
       <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve">
         <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
+        <target>Bulgaars, Fins, Thais en Oekraïens - dankzij de gebruikers en [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1251,6 +1257,7 @@
       </trans-unit>
       <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
+        <target>Maak een nieuw profiel aan in [desktop-app](https://simplex.chat/downloads/). 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create one-time invitation link" xml:space="preserve">
@@ -1708,6 +1715,7 @@
       </trans-unit>
       <trans-unit id="Discover and join groups" xml:space="preserve">
         <source>Discover and join groups</source>
+        <target>Ontdek en sluit je aan bij groepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
@@ -1852,6 +1860,7 @@
       </trans-unit>
       <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve">
         <source>Encrypt stored files &amp; media</source>
+        <target>Versleutel opgeslagen bestanden en media</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
@@ -3132,6 +3141,7 @@
       </trans-unit>
       <trans-unit id="New desktop app!" xml:space="preserve">
         <source>New desktop app!</source>
+        <target>Nieuwe desktop app!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New display name" xml:space="preserve">
@@ -4393,6 +4403,7 @@
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
         <source>Simplified incognito mode</source>
+        <target>Vereenvoudigde incognitomodus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Skip" xml:space="preserve">
@@ -4791,6 +4802,7 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
+        <target>Schakel incognito in tijdens het verbinden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transport isolation" xml:space="preserve">
