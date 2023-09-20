@@ -76,12 +76,8 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
           val r = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
           val (_, code) = if (member.memberActive) {
-            try {
-              chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
-            } catch (e: Exception) {
-              Log.e(TAG, e.stackTraceToString())
-              member to null
-            }
+            val r2 = chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
+            member to r2?.second
           } else {
             member to null
           }

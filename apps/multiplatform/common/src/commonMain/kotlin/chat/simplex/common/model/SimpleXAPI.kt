@@ -790,16 +790,18 @@ object ChatController {
     return null
   }
 
-  suspend fun apiGetContactCode(contactId: Long): Pair<Contact, String> {
+  suspend fun apiGetContactCode(contactId: Long): Pair<Contact, String>? {
     val r = sendCmd(CC.APIGetContactCode(contactId))
     if (r is CR.ContactCode) return r.contact to r.connectionCode
-    throw Exception("failed to get contact code: ${r.responseType} ${r.details}")
+    Log.e(TAG,"failed to get contact code: ${r.responseType} ${r.details}")
+    return null
   }
 
-  suspend fun apiGetGroupMemberCode(groupId: Long, groupMemberId: Long): Pair<GroupMember, String> {
+  suspend fun apiGetGroupMemberCode(groupId: Long, groupMemberId: Long): Pair<GroupMember, String>? {
     val r = sendCmd(CC.APIGetGroupMemberCode(groupId, groupMemberId))
     if (r is CR.GroupMemberCode) return r.member to r.connectionCode
-    throw Exception("failed to get group member code: ${r.responseType} ${r.details}")
+    Log.e(TAG,"failed to get group member code: ${r.responseType} ${r.details}")
+    return null
   }
 
   suspend fun apiVerifyContact(contactId: Long, connectionCode: String?): Pair<Boolean, String>? {

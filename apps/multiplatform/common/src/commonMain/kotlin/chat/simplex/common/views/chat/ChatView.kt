@@ -156,7 +156,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           var preloadedLink: Pair<String, GroupMemberRole>? = null
           if (chat.chatInfo is ChatInfo.Direct) {
             preloadedContactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
-            preloadedCode = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId).second
+            preloadedCode = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)?.second
           } else if (chat.chatInfo is ChatInfo.Group) {
             setGroupMembers(chat.chatInfo.groupInfo, chatModel)
             preloadedLink = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
@@ -169,7 +169,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
                 contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
                 preloadedContactInfo = contactInfo
-                code = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId).second
+                code = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)?.second
                 preloadedCode = code
               }
               ChatInfoView(chatModel, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
@@ -194,12 +194,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           val r = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
           val (_, code) = if (member.memberActive) {
-            try {
-              chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
-            } catch (e: Exception) {
-              Log.e(TAG, e.stackTraceToString())
-              member to null
-            }
+            val r2 = chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
+            member to r2?.second
           } else {
             member to null
           }
