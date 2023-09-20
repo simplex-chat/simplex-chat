@@ -370,7 +370,7 @@ execZoneCommand zoneId s = either (CRChatCmdError Nothing) id <$> runExceptT pro
       satZone -> processSatelliteCommand satZone s
 
 processSatelliteCommand :: ChatMonad m => SatelliteZone -> B.ByteString -> m ChatResponse
-processSatelliteCommand satZone s = error "TODO: processSatelliteCommand"
+processSatelliteCommand SatelliteZone {relay} cmd = atomically (writeTBQueue relay cmd) $> CRSatelliteRelayed
 
 toZoneView :: ChatMonad' m => ZoneId -> ChatResponse -> m ()
 toZoneView zoneId event = do

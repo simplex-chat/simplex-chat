@@ -196,10 +196,10 @@ data ChatController = ChatController
   }
 
 data SatelliteZone = SatelliteZone
-  { -- | The process, when active, that broadcasts the satellite presence on the local link
-    announcer :: TMVar (Async ()),
-    -- | A process that relays the commands to its host
-    handler :: TMVar (TBQueue (Maybe CorrId, ByteString), Async ()),
+  { -- | A process that relays the commands to its host
+    handler :: Async (),
+    -- | Commands to be relayed to host
+    relay :: TBQueue ByteString,
     -- | Path for local resources to be synchronized with host
     path :: FilePath
   }
@@ -455,6 +455,7 @@ data ChatResponse
   | CRZoneStopped {ident :: ZoneId}
   | CRZoneDisposed {ident :: ZoneId}
   | CRSatelliteSetup {ident :: ZoneId, oobData :: Text}
+  | CRSatelliteRelayed
   | CRHost
   | CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
