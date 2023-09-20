@@ -32,6 +32,7 @@ import Foreign.Ptr
 import Foreign.Storable (poke)
 import GHC.Generics (Generic)
 import Simplex.Chat.Mobile.Shared
+import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
@@ -103,16 +104,8 @@ chatEncryptFile fromPath toPath =
   where
     encrypt = do
       cfArgs <- liftIO $ CF.randomArgs
-      let toFile = CryptoFile toPath $ Just cfArgs
-      withExceptT show $
-        withFile fromPath ReadMode $ \r -> CF.withFile toFile WriteMode $ \w -> do
-          encryptChunks r w
-          liftIO $ CF.hPutTag w
+      encryptFile fromPath toPath cfArgs
       pure cfArgs
-    encryptChunks r w = do
-      ch <- liftIO $ LB.hGet r chunkSize
-      unless (LB.null ch) $ liftIO $ CF.hPut w ch
-      unless (LB.length ch < chunkSize) $ encryptChunks r w
 
 cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 cChatDecryptFile cFromPath cKey cNonce cToPath = do
@@ -147,7 +140,3 @@ chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runCatchExcept
 
 runCatchExceptT :: ExceptT String IO a -> IO (Either String a)
 runCatchExceptT action = runExceptT action `catchAll` (pure . Left . show)
-
-chunkSize :: Num a => a
-chunkSize = 65536
-{-# INLINE chunkSize #-}
