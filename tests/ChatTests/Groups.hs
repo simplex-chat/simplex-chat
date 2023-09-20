@@ -3112,3 +3112,11 @@ testMemberContactProfileUpdate =
       alice `hasContactProfiles` ["alice", "rob", "kate"]
       bob `hasContactProfiles` ["rob", "alice", "kate"]
       cath `hasContactProfiles` ["kate", "alice", "rob"]
+
+      bob #> "#team hello too"
+      alice <# "#team rob> hello too"
+      cath <# "#team rob> hello too" -- updated profile
+
+      cath #> "#team hello there"
+      alice <# "#team kate> hello there"
+      bob <# "#team kate> hello there" -- updated profile
