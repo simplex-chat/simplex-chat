@@ -1461,7 +1461,7 @@
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранен в настройках.</string>
     <string name="v5_3_encrypt_local_files">Шифруйте сохраненные файлы и медиа</string>
-    <string name="socks_proxy_setting_limitations"><b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS прокси. Звонки и картинки ссылок используют прямое соединение.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS прокси. Звонки и картинки ссылок используют прямое соединение.]]></string>
     <string name="encrypt_local_files">Шифровать локальные файлы</string>
     <string name="v5_3_new_desktop_app">Приложение для компьютера!</string>
     <string name="v5_3_new_interface_languages">6 новых языков интерфейса</string>
