@@ -68,40 +68,15 @@ CREATE TABLE contacts(
   deleted INTEGER NOT NULL DEFAULT 0,
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
+  contact_group_member_id INTEGER
+  REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
   ON UPDATE CASCADE,
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, contact_profile_id)
-);
-CREATE TABLE sent_probes(
-  sent_probe_id INTEGER PRIMARY KEY,
-  contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE CASCADE,
-  probe BLOB NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL),
-  UNIQUE(user_id, probe)
-);
-CREATE TABLE sent_probe_hashes(
-  sent_probe_hash_id INTEGER PRIMARY KEY,
-  sent_probe_id INTEGER NOT NULL REFERENCES sent_probes ON DELETE CASCADE,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL),
-  UNIQUE(sent_probe_id, contact_id)
-);
-CREATE TABLE received_probes(
-  received_probe_id INTEGER PRIMARY KEY,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
-  probe BLOB,
-  probe_hash BLOB NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE
-  ,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL)
 );
 CREATE TABLE known_servers(
   server_id INTEGER PRIMARY KEY,
@@ -511,6 +486,35 @@ CREATE TABLE group_snd_item_statuses(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS "sent_probes"(
+  sent_probe_id INTEGER PRIMARY KEY,
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  probe BLOB NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT CHECK(created_at NOT NULL),
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  UNIQUE(user_id, probe)
+);
+CREATE TABLE IF NOT EXISTS "sent_probe_hashes"(
+  sent_probe_hash_id INTEGER PRIMARY KEY,
+  sent_probe_id INTEGER NOT NULL REFERENCES "sent_probes" ON DELETE CASCADE,
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT CHECK(created_at NOT NULL),
+  updated_at TEXT CHECK(updated_at NOT NULL)
+);
+CREATE TABLE IF NOT EXISTS "received_probes"(
+  received_probe_id INTEGER PRIMARY KEY,
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  probe BLOB,
+  probe_hash BLOB NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT CHECK(created_at NOT NULL),
+  updated_at TEXT CHECK(updated_at NOT NULL)
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -624,10 +628,6 @@ CREATE INDEX idx_pending_group_messages_group_member_id ON pending_group_message
 );
 CREATE INDEX idx_rcv_file_chunks_file_id ON rcv_file_chunks(file_id);
 CREATE INDEX idx_rcv_files_group_member_id ON rcv_files(group_member_id);
-CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
-CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
-CREATE INDEX idx_sent_probe_hashes_user_id ON sent_probe_hashes(user_id);
-CREATE INDEX idx_sent_probe_hashes_contact_id ON sent_probe_hashes(contact_id);
 CREATE INDEX idx_settings_user_id ON settings(user_id);
 CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
   file_id,
@@ -713,3 +713,21 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   item_status
 );
 CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
+CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
+  contact_group_member_id
+);
+CREATE INDEX idx_sent_probes_user_id ON sent_probes(user_id);
+CREATE INDEX idx_sent_probes_contact_id ON sent_probes(contact_id);
+CREATE INDEX idx_sent_probes_group_member_id ON sent_probes(group_member_id);
+CREATE INDEX idx_sent_probe_hashes_user_id ON sent_probe_hashes(user_id);
+CREATE INDEX idx_sent_probe_hashes_sent_probe_id ON sent_probe_hashes(
+  sent_probe_id
+);
+CREATE INDEX idx_sent_probe_hashes_contact_id ON sent_probe_hashes(contact_id);
+CREATE INDEX idx_sent_probe_hashes_group_member_id ON sent_probe_hashes(
+  group_member_id
+);
+CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
+CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
+CREATE INDEX idx_received_probes_probe ON received_probes(probe);
+CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);

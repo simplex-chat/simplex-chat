@@ -272,6 +272,7 @@
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Chats</string>
   <string name="contact_connection_pending">connecting…</string>
+  <string name="member_contact_send_direct_message">send direct message</string>
   <string name="group_preview_you_are_invited">you are invited to group</string>
   <string name="group_preview_join_as">join as %s</string>
   <string name="group_connection_pending">connecting…</string>
@@ -304,6 +305,7 @@
   <string name="observer_cant_send_message_desc">Please contact group admin.</string>
   <string name="files_and_media_prohibited">Files and media prohibited!</string>
   <string name="only_owners_can_enable_files_and_media">Only group owners can enable files and media.</string>
+  <string name="compose_send_direct_message_to_connect">Send direct message to connect</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -1114,6 +1116,7 @@
   <string name="rcv_group_event_group_deleted">deleted group</string>
   <string name="rcv_group_event_updated_group_profile">updated group profile</string>
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
+  <string name="rcv_group_event_member_created_contact">connected directly</string>
   <string name="snd_group_event_changed_member_role">you changed role of %s to %s</string>
   <string name="snd_group_event_changed_role_for_yourself">you changed role for yourself to %s</string>
   <string name="snd_group_event_member_deleted">you removed %1$s</string>
@@ -1123,6 +1126,8 @@
   <string name="rcv_group_event_2_members_connected">%s and %s connected</string>
   <string name="rcv_group_event_3_members_connected">%s, %s and %s connected</string>
   <string name="rcv_group_event_n_members_connected">%s, %s and %d other members connected</string>
+
+  <string name="rcv_group_event_open_chat">Open</string>
 
   <!-- Conn event chat items -->
   <string name="rcv_conn_event_switch_queue_phase_completed">changed address for you</string>
@@ -1201,6 +1206,8 @@
   <string name="error_creating_link_for_group">Error creating group link</string>
   <string name="error_updating_link_for_group">Error updating group link</string>
   <string name="error_deleting_link_for_group">Error deleting group link</string>
+  <string name="error_creating_member_contact">Error creating member contact</string>
+  <string name="error_sending_message_contact_invitation">Sending message contact invitation</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
@@ -1552,6 +1559,16 @@
   <string name="v5_2_disappear_one_message_descr">Even when disabled in the conversation.</string>
   <string name="v5_2_more_things">A few more things</string>
   <string name="v5_2_more_things_descr">- more stable message delivery.\n- a bit better groups.\n- and more!</string>
+  <string name="v5_3_new_desktop_app">New desktop app!</string>
+  <string name="v5_3_new_desktop_app_descr">Create new profile in desktop app. 💻</string>
+  <string name="v5_3_encrypt_local_files">Encrypt stored files &amp; media</string>
+  <string name="v5_3_encrypt_local_files_descr">App encrypts new local files (except videos).</string>
+  <string name="v5_3_discover_join_groups">Discover and join groups</string>
+  <string name="v5_3_discover_join_groups_descr">- connect to directory service (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable.</string>
+  <string name="v5_3_simpler_incognito_mode">Simplified incognito mode</string>
+  <string name="v5_3_simpler_incognito_mode_descr">Toggle incognito when connecting.</string>
+  <string name="v5_3_new_interface_languages">6 new interface languages</string>
+  <string name="v5_3_new_interface_languages_descr">Arabic, Bulgarian, Finnish, Hebrew, Thai and Ukrainian - thanks to the users and Weblate.</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>

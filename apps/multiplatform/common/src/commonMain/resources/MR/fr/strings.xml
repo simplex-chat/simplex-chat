@@ -253,7 +253,7 @@
     <string name="icon_descr_server_status_pending">En attente</string>
     <string name="accept_connection_request__question">Accepter la demande de connexion \?</string>
     <string name="clear_verb">Effacer</string>
-    <string name="clear_chat_button">Effacer la conversation</string>
+    <string name="clear_chat_button">Effacer le chat</string>
     <string name="connect_via_link">Se connecter via un lien</string>
     <string name="clear_verification">Retirer la vérification</string>
     <string name="one_time_link">Lien d\'invitation unique</string>
@@ -421,7 +421,8 @@
     <string name="update_onion_hosts_settings_question">Mettre à jour le paramètre des hôtes .onion \?</string>
     <string name="network_use_onion_hosts_prefer">Quand disponible</string>
     <string name="network_use_onion_hosts_no_desc">Les hôtes .onion ne seront pas utilisés.</string>
-    <string name="network_use_onion_hosts_required_desc">Les hôtes .onion seront nécessaires pour la connexion.</string>
+    <string name="network_use_onion_hosts_required_desc">Les hôtes .onion seront nécessaires pour la connexion.
+\nAttention : vous ne pourrez pas vous connecter aux serveurs sans adresse .onion.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Les hôtes .onion ne seront pas utilisés.</string>
     <string name="delete_address__question">Supprimer l\'adresse \?</string>
     <string name="all_your_contacts_will_remain_connected">Tous vos contacts resteront connectés.</string>
@@ -1376,4 +1377,30 @@
     <string name="rcv_group_event_2_members_connected">%s et %s sont connecté.es</string>
     <string name="rcv_group_event_n_members_connected">%s, %s et %d autres membres sont connectés</string>
     <string name="rcv_group_event_3_members_connected">%s, %s et %s sont connecté.es</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">La base de données sera chiffrée et la phrase de passe sera stockée dans les paramètres.</string>
+    <string name="you_can_change_it_later">La phrase secrète aléatoire est stockée en clair dans les paramètres.
+\nVous pouvez la modifier ultérieurement.</string>
+    <string name="database_encryption_will_be_updated_in_settings">La phrase de chiffrement de la base de données sera mise à jour et stockée dans les paramètres.</string>
+    <string name="remove_passphrase_from_settings">Supprimer la phrase secrète des paramètres \?</string>
+    <string name="use_random_passphrase">Utiliser une phrase secrète aléatoire</string>
+    <string name="save_passphrase_in_settings">Enregistrer la phrase secrète dans les paramètres</string>
+    <string name="setup_database_passphrase">Configurer la phrase secrète de la base de données</string>
+    <string name="set_database_passphrase">Définir la phrase secrète de la base de données</string>
+    <string name="open_database_folder">Ouvrir le dossier de la base de données</string>
+    <string name="passphrase_will_be_saved_in_settings">La phrase secrète sera stockée en clair dans les paramètres après que vous la modifiez ou que vous redémarrez l\'application.</string>
+    <string name="settings_is_storing_in_clear_text">La phrase secrète est stockée en clair dans les paramètres.</string>
+    <string name="v5_3_encrypt_local_files">Chiffrement des fichiers et des médias stockés</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Remarque</b> : Les relais de messages et de fichiers sont connectés par le biais d\'un proxy SOCKS. Les appels et l\'envoi d\'aperçus de liens utilisent une connexion directe.]]></string>
+    <string name="encrypt_local_files">Chiffrer les fichiers locaux</string>
+    <string name="v5_3_new_desktop_app">Nouvelle application de bureau !</string>
+    <string name="v5_3_new_interface_languages">6 nouvelles langues d\'interface</string>
+    <string name="v5_3_encrypt_local_files_descr">L\'application chiffre les nouveaux fichiers locaux (sauf les vidéos).</string>
+    <string name="v5_3_discover_join_groups">Découvrir et rejoindre des groupes</string>
+    <string name="v5_3_simpler_incognito_mode">Mode incognito simplifié</string>
+    <string name="v5_3_new_interface_languages_descr">Arabe, bulgare, finnois, hébreu, thaï et ukrainien - grâce aux utilisateurs et à Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Créer un nouveau profil sur l\'application de bureau. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Basculer en mode incognito lors de la connexion.</string>
+    <string name="v5_3_discover_join_groups_descr">- connexion au service d\'annuaire (BETA) !
+\n- accusés de réception (jusqu\'à 20 membres).
+\n- plus rapide et plus stable.</string>
 </resources>

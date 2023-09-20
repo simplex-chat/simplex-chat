@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -7,11 +8,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+
 module Simplex.Chat.Store.Direct
   ( updateContact_,
     updateContactProfile_,
     updateContactProfile_',
     deleteContactProfile_,
+    deleteUnusedProfile_,
 
     -- * Contacts and connections functions
     getPendingContactConnection,
@@ -60,7 +64,9 @@ module Simplex.Chat.Store.Direct
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Data.Either (rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -142,7 +148,7 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
             SELECT
               -- Contact
               ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
+              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
@@ -200,7 +206,7 @@ createDirectContact db user@User {userId} activeConn@Connection {connId, localAl
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt}
+  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
 
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContactConnectionsAndFiles db userId Contact {contactId} = do
@@ -266,6 +272,34 @@ deleteContactProfile_ db userId contactId =
       )
     |]
     (userId, contactId)
+
+deleteUnusedProfile_ :: DB.Connection -> UserId -> ProfileId -> IO ()
+deleteUnusedProfile_ db userId profileId =
+  DB.executeNamed
+    db
+    [sql|
+      DELETE FROM contact_profiles
+      WHERE user_id = :user_id AND contact_profile_id = :profile_id
+        AND 1 NOT IN (
+          SELECT 1 FROM connections
+          WHERE user_id = :user_id AND custom_user_profile_id = :profile_id LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM contacts
+          WHERE user_id = :user_id AND contact_profile_id = :profile_id LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM contact_requests
+          WHERE user_id = :user_id AND contact_profile_id = :profile_id LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT 1 FROM group_members
+          WHERE user_id = :user_id
+            AND (member_profile_id = :profile_id OR contact_profile_id = :profile_id)
+          LIMIT 1
+        )
+    |]
+    [":user_id" := userId, ":profile_id" := profileId]
 
 updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db user@User {userId} c p'
@@ -427,7 +461,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
         ExceptT $
           maybeM getContactRequestByXContactId xContactId_ >>= \case
             Nothing -> createContactRequest
-            Just cr -> updateContactRequest cr $> Right (contactRequestId (cr :: UserContactRequest))
+            Just cr -> updateContactRequest cr $> Right cr.contactRequestId
       getContactRequest db user cReqId
     createContactRequest :: IO (Either StoreError Int64)
     createContactRequest = do
@@ -458,7 +492,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
             SELECT
               -- Contact
               ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
+              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
@@ -603,7 +637,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
 
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =
@@ -622,7 +656,7 @@ getContact_ db user@User {userId} contactId deleted =
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,

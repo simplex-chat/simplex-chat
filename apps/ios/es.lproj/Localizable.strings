@@ -1117,7 +1117,7 @@
 "Direct messages between members are prohibited in this group." = "Los mensajes directos entre miembros del grupo no están permitidos.";
 
 /* No comment provided by engineer. */
-"Disable (keep overrides)" = "Desactivar (conservar anulaciones)";
+"Disable (keep overrides)" = "Desactivar (conservando anulaciones)";
 
 /* No comment provided by engineer. */
 "Disable for all" = "Desactivar para todos";
@@ -1472,6 +1472,9 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Incluso si está desactivado para la conversación.";
+
+/* No comment provided by engineer. */
+"event happened" = "evento ocurrido";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Salir sin guardar";

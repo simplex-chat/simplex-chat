@@ -606,10 +606,13 @@ data class Chat (
   val userCanSend: Boolean
     get() = when (chatInfo) {
       is ChatInfo.Direct -> true
-      is ChatInfo.Group -> {
-        val m = chatInfo.groupInfo.membership
-        m.memberActive && m.memberRole >= GroupMemberRole.Member
-      }
+      is ChatInfo.Group -> chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Member
+      else -> false
+    }
+
+  val nextSendGrpInv: Boolean
+    get() = when (chatInfo) {
+      is ChatInfo.Direct -> chatInfo.contact.nextSendGrpInv
       else -> false
     }
 
@@ -799,13 +802,18 @@ data class Contact(
   val userPreferences: ChatPreferences,
   val mergedPreferences: ContactUserPreferences,
   override val createdAt: Instant,
-  override val updatedAt: Instant
+  override val updatedAt: Instant,
+  val contactGroupMemberId: Long? = null,
+  val contactGrpInvSent: Boolean
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
   override val apiId get() = contactId
   override val ready get() = activeConn.connStatus == ConnStatus.Ready
-  override val sendMsgEnabled get() = !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false)
+  override val sendMsgEnabled get() =
+    (ready && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false))
+        || nextSendGrpInv
+  val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   override val ntfsEnabled get() = chatSettings.enableNtfs
   override val incognito get() = contactConnIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
@@ -856,7 +864,8 @@ data class Contact(
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
-      updatedAt = Clock.System.now()
+      updatedAt = Clock.System.now(),
+      contactGrpInvSent = false
     )
   }
 }
@@ -881,6 +890,7 @@ class ContactSubStatus(
 data class Connection(
   val connId: Long,
   val agentConnId: String,
+  val peerChatVRange: VersionRange,
   val connStatus: ConnStatus,
   val connLevel: Int,
   val viaGroupLink: Boolean,
@@ -890,8 +900,15 @@ data class Connection(
 ) {
   val id: ChatId get() = ":$connId"
   companion object {
-    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, customUserProfileId = null)
+    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null)
   }
+}
+
+@Serializable
+data class VersionRange(val minVersion: Int, val maxVersion: Int) {
+
+  fun isCompatibleRange(vRange: VersionRange): Boolean =
+    this.minVersion <= vRange.maxVersion && vRange.minVersion <= this.maxVersion
 }
 
 @Serializable
@@ -1224,6 +1241,7 @@ class MemberSubError (
 @Serializable
 class UserContactRequest (
   val contactRequestId: Long,
+  val cReqChatVRange: VersionRange,
   override val localDisplayName: String,
   val profile: Profile,
   override val createdAt: Instant,
@@ -1246,6 +1264,7 @@ class UserContactRequest (
   companion object {
     val sampleData = UserContactRequest(
       contactRequestId = 1,
+      cReqChatVRange = VersionRange(1, 1),
       localDisplayName = "alice",
       profile = Profile.sampleData,
       createdAt = Clock.System.now(),
@@ -1465,6 +1484,7 @@ data class ChatItem (
         is RcvGroupEvent.GroupDeleted -> showNtfDir
         is RcvGroupEvent.GroupUpdated -> false
         is RcvGroupEvent.InvitedViaGroupLink -> false
+        is RcvGroupEvent.MemberCreatedContact -> false
       }
       is CIContent.SndGroupEventContent -> showNtfDir
       is CIContent.RcvConnEventContent -> false
@@ -2464,6 +2484,7 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("groupDeleted") class GroupDeleted(): RcvGroupEvent()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): RcvGroupEvent()
   @Serializable @SerialName("invitedViaGroupLink") class InvitedViaGroupLink(): RcvGroupEvent()
+  @Serializable @SerialName("memberCreatedContact") class MemberCreatedContact(): RcvGroupEvent()
 
   val text: String get() = when (this) {
     is MemberAdded -> String.format(generalGetString(MR.strings.rcv_group_event_member_added), profile.profileViewName)
@@ -2476,6 +2497,7 @@ sealed class RcvGroupEvent() {
     is GroupDeleted -> generalGetString(MR.strings.rcv_group_event_group_deleted)
     is GroupUpdated -> generalGetString(MR.strings.rcv_group_event_updated_group_profile)
     is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
+    is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
   }
 }
 
