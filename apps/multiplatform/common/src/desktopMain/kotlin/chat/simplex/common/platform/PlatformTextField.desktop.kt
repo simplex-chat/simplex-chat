@@ -56,6 +56,7 @@ actual fun PlatformTextField(
   LaunchedEffect(sendMsgEnabled) {
     if (!sendMsgEnabled) {
       focusManager.clearFocus()
+      delay(50)
       keyboard?.hide()
     }
   }
