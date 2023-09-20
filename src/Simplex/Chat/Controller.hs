@@ -166,7 +166,7 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
     satellites :: TVar (Map ZoneId SatelliteZone), -- All the active satellite zones
-    host :: TMVar (Async ()), -- A host supervisor process
+    satelliteHost :: TMVar (Async ()), -- A host supervisor process
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
@@ -199,7 +199,7 @@ data SatelliteZone = SatelliteZone
   { -- | The process, when active, that broadcasts the satellite presence on the local link
     announcer :: TMVar (Async ()),
     -- | A process that relays the commands to its host
-    handler :: TMVar (TBQueue (Maybe CorrId, ChatCommand), Async ()),
+    handler :: TMVar (TBQueue (Maybe CorrId, ByteString), Async ()),
     -- | Path for local resources to be synchronized with host
     path :: FilePath
   }

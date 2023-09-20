@@ -296,6 +296,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRChatError u e -> ttyUser' u $ viewChatError logLevel e
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRTimedAction _ _ -> []
+  todo'cr -> ["TODO" <> sShow todo'cr]
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser} ss
@@ -1677,6 +1678,9 @@ viewChatError logLevel = \case
         Nothing -> ""
       cId :: Connection -> StyledString
       cId conn = sShow conn.connId
+  ChatErrorZone todo'ze -> [sShow todo'ze]
+  ChatErrorSatellite todo'se -> [sShow todo'se]
+  ChatErrorHost todo'he -> [sShow todo'he]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case

@@ -23,7 +23,8 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Options
-import Simplex.Messaging.Protocol (CorrId (..), ZoneId (..))
+import Simplex.Chat.Types (ZoneId (..))
+import Simplex.Messaging.Protocol (CorrId (..))
 import Simplex.Messaging.Transport.Server (runTCPServer)
 import Simplex.Messaging.Util (raceAny_)
 import UnliftIO.Exception

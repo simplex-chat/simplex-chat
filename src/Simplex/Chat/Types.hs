@@ -1507,6 +1507,10 @@ newtype ZoneId = ZoneId Int
   deriving stock (Show)
   deriving newtype (Eq, Ord, FromJSON, ToJSON, StrEncoding)
 
+pattern LOCAL_ZONE :: Maybe ZoneId
+pattern LOCAL_ZONE = Nothing
+{-# COMPLETE LOCAL_ZONE, Just #-}
+
 data ZoneKind
   = ZoneUnconfigured
   | ZoneSatellite

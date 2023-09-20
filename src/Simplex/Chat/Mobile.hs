@@ -48,7 +48,7 @@ import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..), ZoneId (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
@@ -108,7 +108,11 @@ cChatSendCmdEx :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
 cChatSendCmdEx cPtr cZone cCmd = do
   c <- deRefStablePtr cPtr
   cmd <- peekCAString cCmd
-  newCAString =<< chatSendCmd c (fromIntegral cZone) cmd
+  newCAString =<< chatSendCmd c zoneId cmd
+  where
+    zoneId
+      | cZone == 0 = LOCAL_ZONE
+      | otherwise = Just (ZoneId $ fromIntegral cZone)
 
 -- | receive message from chat (blocking)
 cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
@@ -203,10 +207,14 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
           _ -> dbError e
         dbError e = Left . DBMErrorSQL dbFile $ show e
 
-chatSendCmd :: ChatController -> Int -> String -> IO JSONString
-chatSendCmd cc z s = LB.unpack . J.encode . APIResponse Nothing zoneId <$> runReaderT (execChatCommand $ B.pack s) cc
+-- XXX: duplicated multiple times in different APIs
+chatSendCmd :: ChatController -> Maybe ZoneId -> String -> IO JSONString
+chatSendCmd cc z s = LB.unpack . J.encode . APIResponse Nothing z <$> runReaderT (handler $ B.pack s) cc
   where
-    zoneId = if z == 0 then Nothing else Just (ZoneId z)
+    handler :: B.ByteString -> ReaderT ChatController IO ChatResponse
+    handler = case z of
+      LOCAL_ZONE -> execChatCommand
+      Just zoneId -> execZoneCommand zoneId
 
 chatRecvMsg :: ChatController -> IO JSONString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)

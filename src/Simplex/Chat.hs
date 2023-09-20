@@ -191,7 +191,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   satellites <- newTVarIO M.empty
-  host <- newEmptyTMVarIO
+  satelliteHost <- newEmptyTMVarIO
   currentUser <- newTVarIO user
   servers <- agentServers config
   smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
@@ -214,7 +214,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {satellites, host, activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  pure ChatController {satellites, satelliteHost, activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -361,15 +361,42 @@ parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
   q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, Nothing, event)
+  atomically $ writeTBQueue q (Nothing, LOCAL_ZONE, event)
+
+execZoneCommand :: ChatMonad' m => ZoneId -> B.ByteString -> m ChatResponse
+execZoneCommand zoneId s = either (CRChatCmdError Nothing) id <$> runExceptT processZoneCommand
+  where
+    processZoneCommand = withZone zoneId $ \case
+      satZone -> processSatelliteCommand satZone s
+
+processSatelliteCommand :: ChatMonad m => SatelliteZone -> B.ByteString -> m ChatResponse
+processSatelliteCommand satZone s = error "TODO: processSatelliteCommand"
 
 toZoneView :: ChatMonad' m => ZoneId -> ChatResponse -> m ()
 toZoneView zoneId event = do
   q <- asks outputQ
   atomically $ writeTBQueue q (Nothing, Just zoneId, event)
 
+-- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
+  APIZoneNew -> error "TODO: APIZoneNew"
+  APIZoneList -> error "TODO: APIZoneList"
+  APIZoneDetails zoneId -> withZone zoneId $ \zone -> error "TODO: APIZoneDetails"
+  APIZoneStart zoneId -> withZone zoneId $ \zone -> error "TODO: APIZoneStart"
+  APIZoneStop zoneId -> withZone zoneId $ \zone -> error "TODO: APIZoneStop"
+  APIZoneDispose zoneId -> withZone zoneId $ \zone -> error "TODO: APIZoneDispose"
+  APISatelliteSetup zoneId -> withZone zoneId $ \zone -> error "TODO: APISatelliteSetup"
+  APISatelliteStore zoneId todo'file -> withZone zoneId $ \zone -> error "TODO: APISatelliteStore"
+  APISatelliteFetch zoneId todo'file -> withZone zoneId $ \zone -> error "TODO: APISatelliteFetch"
+  APISatellite'todo -> error "TODO: APISatellite'todo"
+  APIHostRegister todo'oobData -> error "TODO: APIHostRegister"
+  APIHostStart -> error "TODO: APIHostStart"
+  APIHostConfirmDiscovery -> error "TODO: APIHostConfirmDiscovery"
+  APIHostRejectDiscovery -> error "TODO: APIHostRejectDiscovery"
+  APIHostStop -> error "TODO: APIHostStop"
+  APIHostDispose todo'oobData -> error "TODO: APIHostDispose"
+  APIHost'todo -> error "TODO: APIHost'todo"
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
@@ -5246,6 +5273,12 @@ withUserId :: ChatMonad m => UserId -> (User -> m ChatResponse) -> m ChatRespons
 withUserId userId action = withUser $ \user -> do
   checkSameUser userId user
   action user
+
+withZone :: ChatMonad m => ZoneId -> (SatelliteZone -> m ChatResponse) -> m ChatResponse
+withZone zoneId action = do
+  M.lookup zoneId <$> chatReadVar satellites >>= \case
+    Nothing -> throwZoneError $ ZEMissing zoneId
+    Just zone -> action zone
 
 checkSameUser :: ChatMonad m => UserId -> User -> m ()
 checkSameUser userId User {userId = activeUserId} = when (userId /= activeUserId) $ throwChatError (CEDifferentActiveUser userId activeUserId)
