@@ -69,6 +69,13 @@ struct ChatListView: View {
                     Task {
                         do {
                             try await reconnectAllServers()
+                            await MainActor.run {
+                                chatModel.chats.removeAll()
+                            }
+                            let chats = try apiGetChats()
+                            await MainActor.run {
+                                chatModel.chats = chats.map { Chat.init($0) }
+                            }
                         } catch let error {
                             AlertManager.shared.showAlertMsg(title: "Error", message: "\(responseError(error))")
                         }
