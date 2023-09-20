@@ -295,6 +295,9 @@
 		5C55A92D283D0FDE00C4E99E /* sounds */ = {isa = PBXFileReference; lastKnownFileType = folder; path = sounds; sourceTree = "<group>"; };
 		5C577F7C27C83AA10006112D /* MarkdownHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownHelp.swift; sourceTree = "<group>"; };
 		5C58BCD5292BEBE600AF9E4F /* CIChatFeatureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatFeatureView.swift; sourceTree = "<group>"; };
+		5C5B67912ABAF4B500DA9412 /* bg */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = bg; path = bg.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5C5B67922ABAF56000DA9412 /* bg */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = bg; path = "bg.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5C5B67932ABAF56000DA9412 /* bg */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = bg; path = bg.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5C5DB70D289ABDD200730FFF /* AppearanceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceSettings.swift; sourceTree = "<group>"; };
 		5C5E5D3A2824468B00B0488A /* ActiveCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCallView.swift; sourceTree = "<group>"; };
 		5C5E5D3C282447AB00B0488A /* CallTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallTypes.swift; sourceTree = "<group>"; };
@@ -1020,6 +1023,7 @@
 				th,
 				fi,
 				uk,
+				bg,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -1305,6 +1309,7 @@
 				5CA3ED502A9422D1005D71E2 /* th */,
 				5C136D8F2AAB3D14006DE2FC /* fi */,
 				5C636F672AAB3D2400751C84 /* uk */,
+				5C5B67932ABAF56000DA9412 /* bg */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -1326,6 +1331,7 @@
 				5CA3ED4D2A942170005D71E2 /* th */,
 				5CE6C7B32AAB1515007F345C /* fi */,
 				5CE6C7B42AAB1527007F345C /* uk */,
+				5C5B67912ABAF4B500DA9412 /* bg */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1346,6 +1352,7 @@
 				5CA3ED4F2A9422D1005D71E2 /* th */,
 				5C136D8E2AAB3D14006DE2FC /* fi */,
 				5C636F662AAB3D2400751C84 /* uk */,
+				5C5B67922ABAF56000DA9412 /* bg */,
 			);
 			name = "SimpleX--iOS--InfoPlist.strings";
 			sourceTree = "<group>";
