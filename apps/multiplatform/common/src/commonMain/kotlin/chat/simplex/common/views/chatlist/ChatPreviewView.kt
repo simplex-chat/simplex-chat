@@ -173,7 +173,7 @@ fun ChatPreviewView(
       when (cInfo) {
         is ChatInfo.Direct ->
           if (cInfo.contact.nextSendGrpInv) {
-            Text(stringResource(MR.strings.member_contact_send_invitation), color = MaterialTheme.colors.secondary)
+            Text(stringResource(MR.strings.member_contact_send_direct_message), color = MaterialTheme.colors.secondary)
           } else if (!cInfo.ready) {
             Text(stringResource(MR.strings.contact_connection_pending), color = MaterialTheme.colors.secondary)
           }

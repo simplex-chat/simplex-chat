@@ -120,7 +120,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         ) {
           if (chat.chatInfo is ChatInfo.Direct && !chat.chatInfo.contact.ready && !chat.chatInfo.contact.nextSendGrpInv) {
             Text(
-              generalGetString(MR.strings.compose_disabled_establishing_connection),
+              generalGetString(MR.strings.contact_connection_pending),
               Modifier.padding(top = 4.dp),
               fontSize = 14.sp,
               color = MaterialTheme.colors.secondary

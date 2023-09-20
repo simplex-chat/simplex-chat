@@ -11,6 +11,8 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun ComposeContextInvitingContactMemberView() {
@@ -21,9 +23,17 @@ fun ComposeContextInvitingContactMemberView() {
       .fillMaxWidth()
       .padding(top = 8.dp)
       .background(sentColor),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.Center
+    verticalAlignment = Alignment.CenterVertically
   ) {
-    Text(generalGetString(MR.strings.compose_send_invitation_to_connect_directly))
+    Icon(
+      painterResource(MR.images.ic_chat),
+      stringResource(MR.strings.button_send_direct_message),
+      modifier = Modifier
+        .padding(start = 12.dp, end = 8.dp)
+        .height(20.dp)
+        .width(20.dp),
+      tint = MaterialTheme.colors.secondary
+    )
+    Text(generalGetString(MR.strings.compose_send_direct_message_to_connect))
   }
 }

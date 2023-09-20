@@ -52,6 +52,8 @@ fun GroupMemberInfoView(
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
+  var progressIndicator by remember { mutableStateOf(false) }
+
   if (chat != null) {
     val newRole = remember { mutableStateOf(member.memberRole) }
     GroupMemberInfoLayout(
@@ -78,6 +80,7 @@ fun GroupMemberInfoView(
       },
       createMemberContact = {
         withApi {
+          progressIndicator = true
           val memberContact = chatModel.controller.apiCreateMemberContact(groupInfo.apiId, member.groupMemberId)
           if (memberContact != null) {
             chatModel.addChat(Chat(ChatInfo.Direct(memberContact), chatItems = arrayListOf()))
@@ -86,6 +89,7 @@ fun GroupMemberInfoView(
             closeAll()
             chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
           }
+          progressIndicator = false
         }
       },
       connectViaAddress = { connReqUri ->
@@ -182,6 +186,10 @@ fun GroupMemberInfoView(
         }
       }
     )
+
+    if (progressIndicator) {
+      ProgressIndicator()
+    }
   }
 }
 
