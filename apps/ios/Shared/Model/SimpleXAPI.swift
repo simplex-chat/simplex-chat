@@ -15,6 +15,12 @@ import SimpleXChat
 
 private var chatController: chat_ctrl?
 
+// currentChatVersion in core
+public let CURRENT_CHAT_VERSION: Int = 2
+
+// version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
+public let CREATE_MEMBER_CONTACT_VRANGE = VersionRange(minVersion: 2, maxVersion: CURRENT_CHAT_VERSION)
+
 enum TerminalItem: Identifiable {
     case cmd(Date, ChatCommand)
     case resp(Date, ChatResponse)
@@ -1090,6 +1096,18 @@ func apiGetGroupLink(_ groupId: Int64) throws -> (String, GroupMemberRole)? {
     }
 }
 
+func apiCreateMemberContact(_ groupId: Int64, _ groupMemberId: Int64) async throws -> Contact {
+    let r = await chatSendCmd(.apiCreateMemberContact(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .newMemberContact(_, contact, _, _) = r { return contact }
+    throw r
+}
+
+func apiSendMemberContactInvitation(_ contactId: Int64, _ msg: MsgContent) async throws -> Contact {
+    let r = await chatSendCmd(.apiSendMemberContactInvitation(contactId: contactId, msg: msg), bgDelay: msgDelay)
+    if case let .newMemberContactSentInv(_, contact, _, _) = r { return contact }
+    throw r
+}
+
 func apiGetVersion() throws -> CoreVersionInfo {
     let r = chatSendCmdSync(.showVersion)
     if case let .versionInfo(info, _, _) = r { return info }
@@ -1485,6 +1503,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
+            }
+        }
+    case let .newMemberContactReceivedInv(user, contact, _, _):
+        if active(user) {
+            await MainActor.run {
+                m.updateContact(contact)
             }
         }
     case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
