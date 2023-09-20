@@ -13,11 +13,13 @@ struct ContextInvitingContactMemberView: View {
 
     var body: some View {
         HStack {
+            Image(systemName: "arrow.up")
+                .foregroundColor(.secondary)
             Text("Send direct message to connect")
         }
         .padding(12)
         .frame(minHeight: 50)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(colorScheme == .light ? sentColorLight : sentColorDark)
         .padding(.top, 8)
     }
