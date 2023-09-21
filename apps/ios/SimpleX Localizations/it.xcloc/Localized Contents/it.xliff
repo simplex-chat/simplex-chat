@@ -1988,8 +1988,9 @@
         <target>Errore nella creazione del link del gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating member contact" xml:space="preserve">
+      <trans-unit id="Error creating member contact" xml:space="preserve" approved="no">
         <source>Error creating member contact</source>
+        <target state="translated">Errore di creazione del contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating profile!" xml:space="preserve">
@@ -2122,8 +2123,9 @@
         <target>Errore nell'invio dell'email</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sending member contact invitation" xml:space="preserve">
+      <trans-unit id="Error sending member contact invitation" xml:space="preserve" approved="no">
         <source>Error sending member contact invitation</source>
+        <target state="translated">Errore di invio dell'invito al contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -3358,8 +3360,9 @@
         <target>Solo il tuo contatto può inviare messaggi vocali.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open" xml:space="preserve">
+      <trans-unit id="Open" xml:space="preserve" approved="no">
         <source>Open</source>
+        <target state="translated">Apri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
@@ -4097,8 +4100,9 @@
         <target>Invia messaggio diretto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send direct message to connect" xml:space="preserve">
+      <trans-unit id="Send direct message to connect" xml:space="preserve" approved="no">
         <source>Send direct message to connect</source>
+        <target state="translated">Invia messaggio diretto per connetterti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">
@@ -5653,8 +5657,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>connesso/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connected directly" xml:space="preserve">
+      <trans-unit id="connected directly" xml:space="preserve" approved="no">
         <source>connected directly</source>
+        <target state="translated">si è connesso/a direttamente</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
@@ -6118,8 +6123,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>codice di sicurezza modificato</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
+      <trans-unit id="send direct message" xml:space="preserve" approved="no">
         <source>send direct message</source>
+        <target state="translated">invia messaggio diretto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
