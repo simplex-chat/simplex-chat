@@ -7,7 +7,7 @@ revision: 20.09.2023
 | Updated 20.09.2023 | Languages: EN |
 # Download SimpleX apps
 
-## Desktop apps
+## Desktop apps
 
 These are the latest beta version (v5.3-beta.8) of SimpleX Chat desktop apps.
 
@@ -19,7 +19,7 @@ Using the same profile as on mobile device is not yet supported – you need to 
 
 **Windows**: coming soon.
 
-## Mobile apps
+## Mobile apps
 
 **iOS**: [App store](https://apps.apple.com/us/app/simplex-chat/id1605771084) (v5.2.3), [TestFlight](https://testflight.apple.com/join/DWuT2LQu) (v5.3-beta.8).
 
