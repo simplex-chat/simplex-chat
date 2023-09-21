@@ -76,6 +76,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
+    drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
       if (searchInList.isEmpty()) {
         FloatingActionButton(

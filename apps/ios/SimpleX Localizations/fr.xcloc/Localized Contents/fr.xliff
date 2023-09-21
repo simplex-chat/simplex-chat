@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="fr" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A5219j"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A240d"/>
     </header>
     <body>
       <trans-unit id="&#10;" xml:space="preserve">
@@ -197,6 +197,11 @@
         <target>%lld minutes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lld new interface languages" xml:space="preserve">
+        <source>%lld new interface languages</source>
+        <target>%lld nouvelles langues d'interface</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">
         <source>%lld second(s)</source>
         <target>%lld seconde·s</target>
@@ -325,6 +330,15 @@
       <trans-unit id=", " xml:space="preserve">
         <source>, </source>
         <target>, </target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
+        <source>- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
+- delivery receipts (up to 20 members).
+- faster and more stable.</source>
+        <target>- connexion au [service d'annuaire](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA) !
+- les accusés de réception (jusqu'à 20 membres).
+- plus rapide et plus stable.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve">
@@ -700,6 +714,11 @@
         <target>Build de l'app : %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
+        <source>App encrypts new local files (except videos).</source>
+        <target>L'application chiffre les nouveaux fichiers locaux (sauf les vidéos).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
         <source>App icon</source>
         <target>Icône de l'app</target>
@@ -833,6 +852,11 @@
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
         <source>Both you and your contact can send voice messages.</source>
         <target>Vous et votre contact êtes tous deux en mesure d'envoyer des messages vocaux.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve">
+        <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
+        <target>Bulgare, finnois, thaïlandais et ukrainien - grâce aux utilisateurs et à [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat) !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1229,6 +1253,11 @@
       <trans-unit id="Create link" xml:space="preserve">
         <source>Create link</source>
         <target>Créer un lien</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
+        <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
+        <target>Créer un nouveau profil sur [l'application de bureau](https://simplex.chat/downloads/). 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create one-time invitation link" xml:space="preserve">
@@ -1684,6 +1713,11 @@
         <target>Se déconnecter</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Discover and join groups" xml:space="preserve">
+        <source>Discover and join groups</source>
+        <target>Découvrir et rejoindre des groupes</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
         <source>Display name</source>
         <target>Nom affiché</target>
@@ -1821,6 +1855,12 @@
       </trans-unit>
       <trans-unit id="Encrypt local files" xml:space="preserve">
         <source>Encrypt local files</source>
+        <target>Chiffrer les fichiers locaux</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve">
+        <source>Encrypt stored files &amp; media</source>
+        <target>Chiffrement des fichiers et des médias stockés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
@@ -1948,6 +1988,10 @@
         <target>Erreur lors de la création du lien du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error creating member contact" xml:space="preserve">
+        <source>Error creating member contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error creating profile!" xml:space="preserve">
         <source>Error creating profile!</source>
         <target>Erreur lors de la création du profil !</target>
@@ -1955,6 +1999,7 @@
       </trans-unit>
       <trans-unit id="Error decrypting file" xml:space="preserve">
         <source>Error decrypting file</source>
+        <target>Erreur lors du déchiffrement du fichier</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
@@ -2075,6 +2120,10 @@
       <trans-unit id="Error sending email" xml:space="preserve">
         <source>Error sending email</source>
         <target>Erreur lors de l'envoi de l'e-mail</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error sending member contact invitation" xml:space="preserve">
+        <source>Error sending member contact invitation</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -3090,6 +3139,11 @@
         <target>Nouvelle archive de base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New desktop app!" xml:space="preserve">
+        <source>New desktop app!</source>
+        <target>Nouvelle application de bureau !</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New display name" xml:space="preserve">
         <source>New display name</source>
         <target>Nouveau nom d'affichage</target>
@@ -3302,6 +3356,10 @@
       <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
         <source>Only your contact can send voice messages.</source>
         <target>Seul votre contact peut envoyer des messages vocaux.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open" xml:space="preserve">
+        <source>Open</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
@@ -4039,6 +4097,10 @@
         <target>Envoi de message direct</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send direct message to connect" xml:space="preserve">
+        <source>Send direct message to connect</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">
         <source>Send disappearing message</source>
         <target>Envoyer un message éphémère</target>
@@ -4338,6 +4400,11 @@
         <source>SimpleX one-time invitation</source>
         <target>Invitation unique SimpleX</target>
         <note>simplex link type</note>
+      </trans-unit>
+      <trans-unit id="Simplified incognito mode" xml:space="preserve">
+        <source>Simplified incognito mode</source>
+        <target>Mode incognito simplifié</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Skip" xml:space="preserve">
         <source>Skip</source>
@@ -4731,6 +4798,11 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
       <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
         <target>Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
+        <source>Toggle incognito when connecting.</source>
+        <target>Basculer en mode incognito lors de la connexion.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transport isolation" xml:space="preserve">
@@ -5581,6 +5653,10 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>connecté</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="connected directly" xml:space="preserve">
+        <source>connected directly</source>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
         <source>connecting</source>
         <target>connexion</target>
@@ -6042,6 +6118,10 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>code de sécurité modifié</target>
         <note>chat item text</note>
       </trans-unit>
+      <trans-unit id="send direct message" xml:space="preserve">
+        <source>send direct message</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
         <source>starting…</source>
         <target>lancement…</target>
@@ -6186,7 +6266,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="fr" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A5219j"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A240d"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -6218,7 +6298,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="fr" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A5219j"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A240d"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">

@@ -114,7 +114,18 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       unreadCount,
       composeState,
       composeView = {
-        if (chat.chatInfo.sendMsgEnabled) {
+        Column(
+          Modifier.fillMaxWidth(),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+          if (chat.chatInfo is ChatInfo.Direct && !chat.chatInfo.contact.ready && !chat.chatInfo.contact.nextSendGrpInv) {
+            Text(
+              generalGetString(MR.strings.contact_connection_pending),
+              Modifier.padding(top = 4.dp),
+              fontSize = 14.sp,
+              color = MaterialTheme.colors.secondary
+            )
+          }
           ComposeView(
             chatModel, chat, composeState, attachmentOption,
             showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
@@ -145,7 +156,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           var preloadedLink: Pair<String, GroupMemberRole>? = null
           if (chat.chatInfo is ChatInfo.Direct) {
             preloadedContactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
-            preloadedCode = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId).second
+            preloadedCode = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)?.second
           } else if (chat.chatInfo is ChatInfo.Group) {
             setGroupMembers(chat.chatInfo.groupInfo, chatModel)
             preloadedLink = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
@@ -158,7 +169,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
                 contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
                 preloadedContactInfo = contactInfo
-                code = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId).second
+                code = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)?.second
                 preloadedCode = code
               }
               ChatInfoView(chatModel, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
@@ -183,12 +194,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           val r = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
           val (_, code) = if (member.memberActive) {
-            try {
-              chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
-            } catch (e: Exception) {
-              Log.e(TAG, e.stackTraceToString())
-              member to null
-            }
+            val memCode = chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
+            member to memCode?.second
           } else {
             member to null
           }
@@ -278,6 +285,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       acceptFeature = { contact, feature, param ->
         withApi {
           chatModel.controller.allowFeatureToContact(contact, feature, param)
+        }
+      },
+      openDirectChat = { contactId ->
+        withApi {
+          openDirectChat(contactId, chatModel)
         }
       },
       updateContactStats = { contact ->
@@ -409,6 +421,7 @@ fun ChatLayout(
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
+  openDirectChat: (Long) -> Unit,
   updateContactStats: (Contact) -> Unit,
   updateMemberStats: (GroupInfo, GroupMember) -> Unit,
   syncContactConnection: (Contact) -> Unit,
@@ -485,7 +498,7 @@ fun ChatLayout(
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage,
-              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature,
+              receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat,
               updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
               setReaction, showItemDetails, markRead, setFloatingButton, onComposed,
             )
@@ -534,15 +547,22 @@ fun ChatInfoToolbar(
       IconButton({
         showMenu.value = false
         startCall(CallMediaType.Audio)
-      }) {
-        Icon(painterResource(MR.images.ic_call_500), stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+      },
+      enabled = chat.chatInfo.contact.ready) {
+        Icon(
+          painterResource(MR.images.ic_call_500),
+          stringResource(MR.strings.icon_descr_more_button),
+          tint = if (chat.chatInfo.contact.ready) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+        )
       }
     }
-    menuItems.add {
-      ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
-        showMenu.value = false
-        startCall(CallMediaType.Video)
-      })
+    if (chat.chatInfo.contact.ready) {
+      menuItems.add {
+        ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+          showMenu.value = false
+          startCall(CallMediaType.Video)
+        })
+      }
     }
   } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers && !chat.chatInfo.incognito) {
     barButtons.add {
@@ -554,20 +574,22 @@ fun ChatInfoToolbar(
       }
     }
   }
-  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
-  menuItems.add {
-    ItemAction(
-      if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
-      if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
-      onClick = {
-        showMenu.value = false
-        // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
-        scope.launch {
-          delay(200)
-          changeNtfsState(!ntfsEnabled.value, ntfsEnabled)
+  if ((chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.ready) || chat.chatInfo is ChatInfo.Group) {
+    val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+    menuItems.add {
+      ItemAction(
+        if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+        if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+        onClick = {
+          showMenu.value = false
+          // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
+          scope.launch {
+            delay(200)
+            changeNtfsState(!ntfsEnabled.value, ntfsEnabled)
+          }
         }
-      }
-    )
+      )
+    }
   }
 
   barButtons.add {
@@ -661,6 +683,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
+  openDirectChat: (Long) -> Unit,
   updateContactStats: (Contact) -> Unit,
   updateMemberStats: (GroupInfo, GroupMember) -> Unit,
   syncContactConnection: (Contact) -> Unit,
@@ -808,7 +831,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     ) {
                       MemberImage(member)
                     }
-                    ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames)
+                    ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames)
                   }
                 }
               } else {
@@ -817,7 +840,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
                     .then(swipeableModifier)
                 ) {
-                  ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames)
+                  ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames)
                 }
               }
             }
@@ -827,7 +850,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                 .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
                 .then(swipeableModifier)
             ) {
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
             }
           }
         } else { // direct message
@@ -838,7 +861,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
+            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails)
           }
         }
 
@@ -1263,6 +1286,7 @@ fun PreviewChatLayout() {
       startCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
+      openDirectChat = { _ -> },
       updateContactStats = { },
       updateMemberStats = { _, _ -> },
       syncContactConnection = { },
@@ -1330,6 +1354,7 @@ fun PreviewGroupChatLayout() {
       startCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
+      openDirectChat = { _ -> },
       updateContactStats = { },
       updateMemberStats = { _, _ -> },
       syncContactConnection = { },

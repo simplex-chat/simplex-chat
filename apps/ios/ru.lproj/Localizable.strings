@@ -20,6 +20,9 @@
 "_italic_" = "\\_курсив_";
 
 /* No comment provided by engineer. */
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- соединиться с [каталогом групп](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- отчеты о доставке (до 20 членов).\n- быстрее и стабильнее.";
+
+/* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- более стабильная доставка сообщений.\n- немного улучшенные группы.\n- и прочее!";
 
 /* No comment provided by engineer. */
@@ -180,6 +183,9 @@
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld минуты";
+
+/* No comment provided by engineer. */
+"%lld new interface languages" = "%lld новых языков интерфейса";
 
 /* No comment provided by engineer. */
 "%lld second(s)" = "%lld секунд";
@@ -444,6 +450,9 @@
 "App build: %@" = "Сборка приложения: %@";
 
 /* No comment provided by engineer. */
+"App encrypts new local files (except videos)." = "Приложение шифрует новые локальные файлы (кроме видео).";
+
+/* No comment provided by engineer. */
 "App icon" = "Иконка";
 
 /* No comment provided by engineer. */
@@ -535,6 +544,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Вы и Ваш контакт можете отправлять голосовые сообщения.";
+
+/* No comment provided by engineer. */
+"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Болгарский, финский, тайский и украинский - благодаря пользователям и [Weblate] (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "По профилю чата или [по соединению](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (БЕТА).";
@@ -844,6 +856,9 @@
 "Create link" = "Создать ссылку";
 
 /* No comment provided by engineer. */
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Создайте новый профиль в [приложении для компьютера](https://simplex.chat/downloads/). 💻";
+
+/* No comment provided by engineer. */
 "Create one-time invitation link" = "Создать ссылку-приглашение";
 
 /* server test step */
@@ -1150,6 +1165,9 @@
 "Disconnect" = "Разрыв соединения";
 
 /* No comment provided by engineer. */
+"Discover and join groups" = "Найдите и вступите в группы";
+
+/* No comment provided by engineer. */
 "Display name" = "Имя профиля";
 
 /* No comment provided by engineer. */
@@ -1244,6 +1262,12 @@
 
 /* No comment provided by engineer. */
 "Encrypt database?" = "Зашифровать базу данных?";
+
+/* No comment provided by engineer. */
+"Encrypt local files" = "Шифровать локальные файлы";
+
+/* No comment provided by engineer. */
+"Encrypt stored files & media" = "Шифруйте сохраненные файлы и медиа";
 
 /* No comment provided by engineer. */
 "Encrypted database" = "База данных зашифрована";
@@ -1355,6 +1379,9 @@
 
 /* No comment provided by engineer. */
 "Error creating profile!" = "Ошибка создания профиля!";
+
+/* No comment provided by engineer. */
+"Error decrypting file" = "Ошибка расшифровки файла";
 
 /* No comment provided by engineer. */
 "Error deleting chat database" = "Ошибка при удалении данных чата";
@@ -2120,6 +2147,9 @@
 
 /* No comment provided by engineer. */
 "New database archive" = "Новый архив чата";
+
+/* No comment provided by engineer. */
+"New desktop app!" = "Приложение для компьютера!";
 
 /* No comment provided by engineer. */
 "New display name" = "Новое имя";
@@ -2936,6 +2966,9 @@
 "SimpleX one-time invitation" = "SimpleX одноразовая ссылка";
 
 /* No comment provided by engineer. */
+"Simplified incognito mode" = "Упрощенный режим Инкогнито";
+
+/* No comment provided by engineer. */
 "Skip" = "Пропустить";
 
 /* No comment provided by engineer. */
@@ -3180,6 +3213,9 @@
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Чтобы подтвердить end-to-end шифрование с Вашим контактом сравните (или сканируйте) код безопасности на Ваших устройствах.";
+
+/* No comment provided by engineer. */
+"Toggle incognito when connecting." = "Установите режим Инкогнито при соединении.";
 
 /* No comment provided by engineer. */
 "Transport isolation" = "Отдельные сессии для";

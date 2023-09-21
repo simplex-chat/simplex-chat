@@ -8,6 +8,7 @@ import chat.simplex.common.views.chat.ComposeState
 @Composable
 expect fun PlatformTextField(
   composeState: MutableState<ComposeState>,
+  sendMsgEnabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
