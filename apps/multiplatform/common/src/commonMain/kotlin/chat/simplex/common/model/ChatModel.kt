@@ -1416,8 +1416,7 @@ data class ChatItem (
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
 
   val encryptLocalFile: Boolean
-    get() = file?.fileProtocol == FileProtocol.XFTP &&
-        content.msgContent !is MsgContent.MCVideo &&
+    get() = content.msgContent !is MsgContent.MCVideo &&
         chatController.appPrefs.privacyEncryptLocalFiles.get()
 
   val memberDisplayName: String? get() =
