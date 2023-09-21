@@ -18,15 +18,13 @@ fun main() {
 
 @Suppress("UnsafeDynamicallyLoadedCode")
 private fun initHaskell() {
-  val libApp = "libapp-lib.${desktopPlatform.libExtension}"
-  val libSimplex = "libsimplex.${desktopPlatform.libExtension}"
   val libsTmpDir = File(tmpDir.absolutePath + File.separator + "libs")
   copyResources(desktopPlatform.libPath, libsTmpDir.toPath())
   if (desktopPlatform == DesktopPlatform.WINDOWS_X86_64) {
-    val libSimplex = "libsimplex.${desktopPlatform.libExtension}"
-    System.load(File(libsTmpDir, libSimplex).absolutePath)
+    windowsLoadRequiredLibs(libsTmpDir)
+  } else {
+    System.load(File(libsTmpDir, "libapp-lib.${desktopPlatform.libExtension}").absolutePath)
   }
-  System.load(File(libsTmpDir, libApp).absolutePath)
 
   vlcDir.deleteRecursively()
   Files.move(File(libsTmpDir, "vlc").toPath(), vlcDir.toPath(), StandardCopyOption.REPLACE_EXISTING)
@@ -59,4 +57,26 @@ private fun copyResources(from: String, to: Path) {
       return FileVisitResult.CONTINUE
     }
   })
+}
+
+private fun windowsLoadRequiredLibs(libsTmpDir: File) {
+  val mainLibs = arrayOf(
+    "libcrypto-3-x64.dll",
+    "libffi-8.dll",
+    "libgmp-10.dll",
+    "libsimplex.dll",
+    "libapp-lib.dll"
+  )
+  mainLibs.forEach {
+    System.load(File(libsTmpDir, it).absolutePath)
+  }
+  val vlcLibs = arrayOf(
+    "axvlc.dll",
+    "npvlc.dll",
+    "libvlccore.dll",
+    "libvlc.dll"
+  )
+  vlcLibs.forEach {
+    System.load(File(File(libsTmpDir, "vlc"), it).absolutePath)
+  }
 }
