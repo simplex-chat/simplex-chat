@@ -177,7 +177,7 @@ library
     , template-haskell ==2.20.*
     , terminal ==0.2.*
     , text ==2.0.*
-    , time ==1.9.*
+    , time ==1.12.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -226,7 +226,7 @@ executable simplex-bot
     , template-haskell ==2.20.*
     , terminal ==0.2.*
     , text ==2.0.*
-    , time ==1.9.*
+    , time ==1.12.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -275,7 +275,7 @@ executable simplex-bot-advanced
     , template-haskell ==2.20.*
     , terminal ==0.2.*
     , text ==2.0.*
-    , time ==1.9.*
+    , time ==1.12.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -326,7 +326,7 @@ executable simplex-broadcast-bot
     , template-haskell ==2.20.*
     , terminal ==0.2.*
     , text ==2.0.*
-    , time ==1.9.*
+    , time ==1.12.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -376,7 +376,7 @@ executable simplex-chat
     , template-haskell ==2.20.*
     , terminal ==0.2.*
     , text ==2.0.*
-    , time ==1.9.*
+    , time ==1.12.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
@@ -430,7 +430,7 @@ executable simplex-directory-service
     , template-haskell ==2.20.*
     , terminal ==0.2.*
     , text ==2.0.*
-    , time ==1.9.*
+    , time ==1.12.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -506,7 +506,7 @@ test-suite simplex-chat-test
     , template-haskell ==2.20.*
     , terminal ==0.2.*
     , text ==2.0.*
-    , time ==1.9.*
+    , time ==1.12.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
