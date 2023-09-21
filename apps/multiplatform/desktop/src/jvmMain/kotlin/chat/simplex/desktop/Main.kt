@@ -18,10 +18,16 @@ fun main() {
 
 @Suppress("UnsafeDynamicallyLoadedCode")
 private fun initHaskell() {
+  val libApp = "libapp-lib.${desktopPlatform.libExtension}"
+  val libSimplex = "libsimplex.${desktopPlatform.libExtension}"
   val libsTmpDir = File(tmpDir.absolutePath + File.separator + "libs")
-  System.setProperty("java.library.path", libsTmpDir.absolutePath)
   copyResources(desktopPlatform.libPath, libsTmpDir.toPath())
-  System.loadLibrary("libapp-lib")
+  if (desktopPlatform == DesktopPlatform.WINDOWS_X86_64) {
+    val libSimplex = "libsimplex.${desktopPlatform.libExtension}"
+    System.load(File(libsTmpDir, libSimplex).absolutePath)
+  }
+  System.load(File(libsTmpDir, libApp).absolutePath)
+
   vlcDir.deleteRecursively()
   Files.move(File(libsTmpDir, "vlc").toPath(), vlcDir.toPath(), StandardCopyOption.REPLACE_EXISTING)
   // No picture without preloading it, only sound. However, with libs from AppImage it works without preloading
