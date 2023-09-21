@@ -26,7 +26,7 @@
     "simplex-unique-overlay-card-3-p-4": "发送和接收的服务器流量之间没有共同的标识符或密文—— 如果有人在观察它，他们也无法轻易确定谁与谁通信，即使 TLS 受到威胁。",
     "simplex-unique-card-4-p-1": "SimpleX 网络是完全去中心化的，并且独立于任何加密货币或除互联网以外的任何其他平台。",
     "join": "加入",
-    "get-simplex": "获取 SimpleX <a href=\"/downloads\">desktop app</a>: Linux, Mac, Windows",
+    "get-simplex": "获取 SimpleX <a href=\"/downloads\">desktop app</a>",
     "hide-info": "隐藏信息",
     "contact-hero-header": "您收到了一个用于连接 SimpleX Chat 的地址",
     "contact-hero-p-2": "还没有下载 SimpleX Chat 吗？",
