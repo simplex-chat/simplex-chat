@@ -21,6 +21,8 @@ actual val agentDatabaseFileName: String = "simplex_v1_agent.db"
 
 actual val databaseExportDir: File = tmpDir
 
+val vlcDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex-vlc").also { it.deleteOnExit() }
+
 actual fun desktopOpenDatabaseDir() {
   if (Desktop.isDesktopSupported()) {
     try {

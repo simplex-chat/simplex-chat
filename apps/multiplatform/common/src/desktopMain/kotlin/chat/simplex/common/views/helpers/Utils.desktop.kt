@@ -133,7 +133,6 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
 }
 
 actual fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): VideoPlayerInterface.PreviewAndDuration {
-  // LALAL
   return VideoPlayerInterface.PreviewAndDuration(preview = null, timestamp = 0L, duration = 0L)
 }
 

@@ -50,7 +50,7 @@ fun CIVideoView(
       })
     } else {
       Box {
-        ImageView(preview, showMenu, onClick = {
+        VideoPreviewImageView(preview, onClick = {
           if (file != null) {
             when (file.fileStatus) {
               CIFileStatus.RcvInvitation ->
@@ -75,7 +75,10 @@ fun CIVideoView(
               else -> {}
             }
           }
-        })
+        },
+          onLongClick = {
+            showMenu.value = true
+          })
         if (file != null) {
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
@@ -90,7 +93,7 @@ fun CIVideoView(
 
 @Composable
 private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defaultDuration: Long, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
-  val player = remember(uri) { VideoPlayer.getOrCreate(uri, false, defaultPreview, defaultDuration, true) }
+  val player = remember(uri) { VideoPlayerHolder.getOrCreate(uri, false, defaultPreview, defaultDuration, true) }
   val videoPlaying = remember(uri.path) { player.videoPlaying }
   val progress = remember(uri.path) { player.progress }
   val duration = remember(uri.path) { player.duration }
@@ -111,6 +114,7 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
       stop()
     }
   }
+  val onLongClick = { showMenu.value = true }
   Box {
     val windowWidth = LocalWindowWidth()
     val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
@@ -118,12 +122,12 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
       player,
       width,
       onClick = onClick,
-      onLongClick = { showMenu.value = true },
+      onLongClick = onLongClick,
       stop
     )
     if (showPreview.value) {
-      ImageView(preview, showMenu, onClick)
-      PlayButton(brokenVideo, onLongClick =  { showMenu.value = true }, play)
+      VideoPreviewImageView(preview, onClick, onLongClick)
+      PlayButton(brokenVideo, onLongClick = onLongClick, if (appPlatform.isAndroid) play else onClick)
     }
     DurationProgress(file, videoPlaying, duration, progress/*, soundEnabled*/)
   }
@@ -201,7 +205,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
 }
 
 @Composable
-private fun ImageView(preview: ImageBitmap, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
+fun VideoPreviewImageView(preview: ImageBitmap, onClick: () -> Unit, onLongClick: () -> Unit) {
   val windowWidth = LocalWindowWidth()
   val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
   Image(
@@ -210,10 +214,10 @@ private fun ImageView(preview: ImageBitmap, showMenu: MutableState<Boolean>, onC
     modifier = Modifier
       .width(width)
       .combinedClickable(
-        onLongClick = { showMenu.value = true },
+        onLongClick = onLongClick,
         onClick = onClick
       )
-      .onRightClick { showMenu.value = true },
+      .onRightClick(onLongClick),
     contentScale = ContentScale.FillWidth,
   )
 }

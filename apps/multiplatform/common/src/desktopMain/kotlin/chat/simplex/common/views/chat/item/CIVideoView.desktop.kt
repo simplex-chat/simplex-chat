@@ -6,9 +6,7 @@ import androidx.compose.ui.unit.Dp
 import chat.simplex.common.platform.VideoPlayer
 
 @Composable
-actual fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLongClick: () -> Unit, stop: () -> Unit) {
-  /* LALAL */
-}
+actual fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLongClick: () -> Unit, stop: () -> Unit) {}
 
 @Composable
 actual fun LocalWindowWidth(): Dp {

@@ -46,9 +46,11 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   val scope = rememberCoroutineScope()
   val playersToRelease = rememberSaveable { mutableSetOf<URI>() }
   DisposableEffectOnGone(
-    whenGone = { playersToRelease.forEach { VideoPlayer.release(it, true, true) } }
+    whenGone = { playersToRelease.forEach { VideoPlayerHolder.release(it, true, true) } }
   )
-  HorizontalPager(pageCount = remember { provider.totalMediaSize }.value, state = pagerState) { index ->
+
+  @Composable
+  fun Content(index: Int) {
     Column(
       Modifier
         .fillMaxSize()
@@ -127,7 +129,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           FullScreenImageView(modifier, data, imageBitmap)
         } else if (media is ProviderMedia.Video) {
           val preview = remember(media.uri.path) { base64ToBitmap(media.preview) }
-          VideoView(modifier, media.uri, preview, index == settledCurrentPage)
+          VideoView(modifier, media.uri, preview, index == settledCurrentPage, close)
           DisposableEffect(Unit) {
             onDispose { playersToRelease.add(media.uri) }
           }
@@ -135,14 +137,19 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
       }
     }
   }
+  if (appPlatform.isAndroid) {
+    HorizontalPager(pageCount = remember { provider.totalMediaSize }.value, state = pagerState) { index -> Content(index) }
+  } else {
+    Content(pagerState.currentPage)
+  }
 }
 
 @Composable
 expect fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap)
 
 @Composable
-private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap, currentPage: Boolean) {
-  val player = remember(uri) { VideoPlayer.getOrCreate(uri, true, defaultPreview, 0L, true) }
+private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap, currentPage: Boolean, close: () -> Unit) {
+  val player = remember(uri) { VideoPlayerHolder.getOrCreate(uri, true, defaultPreview, 0L, true) }
   val isCurrentPage = rememberUpdatedState(currentPage)
   val play = {
     player.play(true)
@@ -154,13 +161,16 @@ private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap,
     player.enableSound(true)
     snapshotFlow { isCurrentPage.value }
       .distinctUntilChanged()
-      .collect { if (it) play() else stop() }
+      .collect {
+        // Do not autoplay on desktop because it needs workaround
+        if (it && appPlatform.isAndroid) play() else if (!it) stop()
+      }
   }
 
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    FullScreenVideoView(player, modifier)
+    FullScreenVideoView(player, modifier, close)
   }
 }
 
 @Composable
-expect fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier)
+expect fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: () -> Unit)

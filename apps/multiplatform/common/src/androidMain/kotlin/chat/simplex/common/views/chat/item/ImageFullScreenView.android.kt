@@ -51,7 +51,7 @@ actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap:
 }
 
 @Composable
-actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier) {
+actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: () -> Unit) {
   AndroidView(
     factory = { ctx ->
       StyledPlayerView(ctx).apply {
