@@ -675,7 +675,8 @@ p a{
 .content_copy_with_tooltip .content {
   font-size: 15px;
 }
-.contact-tab > .contact-tab-content{
+.contact-tab > .contact-tab-content,
+.job-tab > .job-tab-content{
   opacity: 0;
   max-height: 0;
   transition: all 0.5s ease;
@@ -683,21 +684,26 @@ p a{
   transform: translateY(10px);
   overflow: hidden;
 }
-.contact-tab svg{
+.contact-tab svg,
+.job-tab svg{
   transform: rotate(-180deg);
   transition: all .5s ease;
 }
-.contact-tab.active > .contact-tab-content{
+.contact-tab.active > .contact-tab-content,
+.job-tab.active > .job-tab-content{
   opacity: 1;
   max-height: 300px;
   visibility: visible;
   transform: translateY(0px);
 }
-.for-tablet .contact-tab.active > .contact-tab-content{
+.for-tablet .contact-tab.active > .contact-tab-content,
+.for-tablet .job-tab.active > .job-tab-content{
   min-height: 450px;
 }
 .contact-tab.active svg,
-.contact-tab:hover svg{
+.contact-tab:hover svg,
+.job-tab.active svg,
+.job-tab:hover svg{
   transform: rotate(0deg);
 }
 

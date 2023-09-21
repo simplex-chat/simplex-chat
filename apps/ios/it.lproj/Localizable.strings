@@ -20,6 +20,9 @@
 "_italic_" = "\\_corsivo_";
 
 /* No comment provided by engineer. */
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- connessione al [servizio directory](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- ricevute di consegna (fino a 20 membri).\n- più veloce e più stabile.";
+
+/* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- recapito dei messaggi più stabile.\n- gruppi un po' migliorati.\n- e altro ancora!";
 
 /* No comment provided by engineer. */
@@ -180,6 +183,9 @@
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld minuti";
+
+/* No comment provided by engineer. */
+"%lld new interface languages" = "%lld nuove lingue dell'interfaccia";
 
 /* No comment provided by engineer. */
 "%lld second(s)" = "%lld secondo/i";
@@ -444,6 +450,9 @@
 "App build: %@" = "Build dell'app: %@";
 
 /* No comment provided by engineer. */
+"App encrypts new local files (except videos)." = "L'app cripta i nuovi file locali (eccetto i video).";
+
+/* No comment provided by engineer. */
 "App icon" = "Icona app";
 
 /* No comment provided by engineer. */
@@ -535,6 +544,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Sia tu che il tuo contatto potete inviare messaggi vocali.";
+
+/* No comment provided by engineer. */
+"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulgaro, finlandese, tailandese e ucraino - grazie agli utenti e a [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Per profilo di chat (predefinito) o [per connessione](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
@@ -844,6 +856,9 @@
 "Create link" = "Crea link";
 
 /* No comment provided by engineer. */
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Crea un nuovo profilo nell'[app desktop](https://simplex.chat/downloads/). 💻";
+
+/* No comment provided by engineer. */
 "Create one-time invitation link" = "Crea link di invito una tantum";
 
 /* server test step */
@@ -1150,6 +1165,9 @@
 "Disconnect" = "Disconnetti";
 
 /* No comment provided by engineer. */
+"Discover and join groups" = "Scopri ed unisciti ai gruppi";
+
+/* No comment provided by engineer. */
 "Display name" = "Nome da mostrare";
 
 /* No comment provided by engineer. */
@@ -1244,6 +1262,12 @@
 
 /* No comment provided by engineer. */
 "Encrypt database?" = "Crittografare il database?";
+
+/* No comment provided by engineer. */
+"Encrypt local files" = "Cripta i file locali";
+
+/* No comment provided by engineer. */
+"Encrypt stored files & media" = "Crittografia di file e media memorizzati";
 
 /* No comment provided by engineer. */
 "Encrypted database" = "Database crittografato";
@@ -1355,6 +1379,9 @@
 
 /* No comment provided by engineer. */
 "Error creating profile!" = "Errore nella creazione del profilo!";
+
+/* No comment provided by engineer. */
+"Error decrypting file" = "Errore decifrando il file";
 
 /* No comment provided by engineer. */
 "Error deleting chat database" = "Errore nell'eliminazione del database della chat";
@@ -2120,6 +2147,9 @@
 
 /* No comment provided by engineer. */
 "New database archive" = "Nuovo archivio database";
+
+/* No comment provided by engineer. */
+"New desktop app!" = "Nuova app desktop!";
 
 /* No comment provided by engineer. */
 "New display name" = "Nuovo nome da mostrare";
@@ -2936,6 +2966,9 @@
 "SimpleX one-time invitation" = "Invito SimpleX una tantum";
 
 /* No comment provided by engineer. */
+"Simplified incognito mode" = "Modalità incognito semplificata";
+
+/* No comment provided by engineer. */
 "Skip" = "Salta";
 
 /* No comment provided by engineer. */
@@ -3180,6 +3213,9 @@
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Per verificare la crittografia end-to-end con il tuo contatto, confrontate (o scansionate) il codice sui vostri dispositivi.";
+
+/* No comment provided by engineer. */
+"Toggle incognito when connecting." = "Attiva/disattiva l'incognito quando ti colleghi.";
 
 /* No comment provided by engineer. */
 "Transport isolation" = "Isolamento del trasporto";

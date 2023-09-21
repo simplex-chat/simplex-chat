@@ -291,21 +291,23 @@ fun ChatInfoLayout(
       SectionDividerSpaced()
     }
 
-    SectionView {
-      if (connectionCode != null) {
-        VerifyCodeButton(contact.verified, verifyClicked)
+    if (contact.ready) {
+      SectionView {
+        if (connectionCode != null) {
+          VerifyCodeButton(contact.verified, verifyClicked)
+        }
+        ContactPreferencesButton(openPreferences)
+        SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
+        if (cStats != null && cStats.ratchetSyncAllowed) {
+          SynchronizeConnectionButton(syncContactConnection)
+        }
+        //      } else if (developerTools) {
+        //        SynchronizeConnectionButtonForce(syncContactConnectionForce)
+        //      }
       }
-      ContactPreferencesButton(openPreferences)
-      SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
-      if (cStats != null && cStats.ratchetSyncAllowed) {
-        SynchronizeConnectionButton(syncContactConnection)
-      }
-//      } else if (developerTools) {
-//        SynchronizeConnectionButtonForce(syncContactConnectionForce)
-//      }
+      SectionDividerSpaced()
     }
 
-    SectionDividerSpaced()
     if (contact.contactLink != null) {
       SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
         QRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
@@ -316,36 +318,40 @@ fun ChatInfoLayout(
       SectionDividerSpaced()
     }
 
-    SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
-      SectionItemView({
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.network_status),
-          contactNetworkStatus.statusExplanation
-        )}) {
-        NetworkStatusRow(contactNetworkStatus)
-      }
-      if (cStats != null) {
-        SwitchAddressButton(
-          disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || cStats.ratchetSyncSendProhibited,
-          switchAddress = switchContactAddress
-        )
-        if (cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
-          AbortSwitchAddressButton(
-            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch } || cStats.ratchetSyncSendProhibited,
-            abortSwitchAddress = abortSwitchContactAddress
+    if (contact.ready) {
+      SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
+        SectionItemView({
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.network_status),
+            contactNetworkStatus.statusExplanation
           )
+        }) {
+          NetworkStatusRow(contactNetworkStatus)
         }
-        val rcvServers = cStats.rcvQueuesInfo.map { it.rcvServer }
-        if (rcvServers.isNotEmpty()) {
-          SimplexServers(stringResource(MR.strings.receiving_via), rcvServers)
-        }
-        val sndServers = cStats.sndQueuesInfo.map { it.sndServer }
-        if (sndServers.isNotEmpty()) {
-          SimplexServers(stringResource(MR.strings.sending_via), sndServers)
+        if (cStats != null) {
+          SwitchAddressButton(
+            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || cStats.ratchetSyncSendProhibited,
+            switchAddress = switchContactAddress
+          )
+          if (cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
+            AbortSwitchAddressButton(
+              disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch } || cStats.ratchetSyncSendProhibited,
+              abortSwitchAddress = abortSwitchContactAddress
+            )
+          }
+          val rcvServers = cStats.rcvQueuesInfo.map { it.rcvServer }
+          if (rcvServers.isNotEmpty()) {
+            SimplexServers(stringResource(MR.strings.receiving_via), rcvServers)
+          }
+          val sndServers = cStats.sndQueuesInfo.map { it.sndServer }
+          if (sndServers.isNotEmpty()) {
+            SimplexServers(stringResource(MR.strings.sending_via), sndServers)
+          }
         }
       }
+      SectionDividerSpaced()
     }
-    SectionDividerSpaced()
+
     SectionView {
       ClearChatButton(clearChat)
       DeleteContactButton(deleteContact)

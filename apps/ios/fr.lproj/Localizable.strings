@@ -20,6 +20,9 @@
 "_italic_" = "\\_italique_";
 
 /* No comment provided by engineer. */
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- connexion au [service d'annuaire](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA) !\n- les accusés de réception (jusqu'à 20 membres).\n- plus rapide et plus stable.";
+
+/* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- une diffusion plus stable des messages.\n- des groupes un peu plus performants.\n- et bien d'autres choses encore !";
 
 /* No comment provided by engineer. */
@@ -180,6 +183,9 @@
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld minutes";
+
+/* No comment provided by engineer. */
+"%lld new interface languages" = "%lld nouvelles langues d'interface";
 
 /* No comment provided by engineer. */
 "%lld second(s)" = "%lld seconde·s";
@@ -444,6 +450,9 @@
 "App build: %@" = "Build de l'app : %@";
 
 /* No comment provided by engineer. */
+"App encrypts new local files (except videos)." = "L'application chiffre les nouveaux fichiers locaux (sauf les vidéos).";
+
+/* No comment provided by engineer. */
 "App icon" = "Icône de l'app";
 
 /* No comment provided by engineer. */
@@ -535,6 +544,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Vous et votre contact êtes tous deux en mesure d'envoyer des messages vocaux.";
+
+/* No comment provided by engineer. */
+"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulgare, finnois, thaïlandais et ukrainien - grâce aux utilisateurs et à [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat) !";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Par profil de chat (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
@@ -844,6 +856,9 @@
 "Create link" = "Créer un lien";
 
 /* No comment provided by engineer. */
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Créer un nouveau profil sur [l'application de bureau](https://simplex.chat/downloads/). 💻";
+
+/* No comment provided by engineer. */
 "Create one-time invitation link" = "Créer un lien d'invitation unique";
 
 /* server test step */
@@ -1150,6 +1165,9 @@
 "Disconnect" = "Se déconnecter";
 
 /* No comment provided by engineer. */
+"Discover and join groups" = "Découvrir et rejoindre des groupes";
+
+/* No comment provided by engineer. */
 "Display name" = "Nom affiché";
 
 /* No comment provided by engineer. */
@@ -1244,6 +1262,12 @@
 
 /* No comment provided by engineer. */
 "Encrypt database?" = "Chiffrer la base de données ?";
+
+/* No comment provided by engineer. */
+"Encrypt local files" = "Chiffrer les fichiers locaux";
+
+/* No comment provided by engineer. */
+"Encrypt stored files & media" = "Chiffrement des fichiers et des médias stockés";
 
 /* No comment provided by engineer. */
 "Encrypted database" = "Base de données chiffrée";
@@ -1355,6 +1379,9 @@
 
 /* No comment provided by engineer. */
 "Error creating profile!" = "Erreur lors de la création du profil !";
+
+/* No comment provided by engineer. */
+"Error decrypting file" = "Erreur lors du déchiffrement du fichier";
 
 /* No comment provided by engineer. */
 "Error deleting chat database" = "Erreur lors de la suppression de la base de données du chat";
@@ -2120,6 +2147,9 @@
 
 /* No comment provided by engineer. */
 "New database archive" = "Nouvelle archive de base de données";
+
+/* No comment provided by engineer. */
+"New desktop app!" = "Nouvelle application de bureau !";
 
 /* No comment provided by engineer. */
 "New display name" = "Nouveau nom d'affichage";
@@ -2936,6 +2966,9 @@
 "SimpleX one-time invitation" = "Invitation unique SimpleX";
 
 /* No comment provided by engineer. */
+"Simplified incognito mode" = "Mode incognito simplifié";
+
+/* No comment provided by engineer. */
 "Skip" = "Passer";
 
 /* No comment provided by engineer. */
@@ -3180,6 +3213,9 @@
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.";
+
+/* No comment provided by engineer. */
+"Toggle incognito when connecting." = "Basculer en mode incognito lors de la connexion.";
 
 /* No comment provided by engineer. */
 "Transport isolation" = "Transport isolé";

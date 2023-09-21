@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="{{ page.url | getlang }}"
+    {% for language in languages.languages %}
+        {% if language.label == page.url | getlang %}
+            dir="{{ "rtl" if language.rtl else "ltr" }}"
+        {% endif %}
+    {% endfor %}>
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ title }}</title>
+        <meta name="Content-Type" content="text/html;charset=utf-8" />
+
+        <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+        <link href="/css/tailwind.css" rel="stylesheet" />
+        <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css" />
+        <link href="/css/style.css" rel="stylesheet" />
+        <link rel="stylesheet" href="/css/doc.css" />
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+    </head>
+
+    <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
+        <section class="w-full bg-transparent fixed top-0 z-50">
+            {% include "navbar.html" %}
+        </section>
+
+        <section id="doc" class="bg-white dark:bg-[#17203D] mt-[66px]">
+            <main class="container px-4 lg:px-7 py-10 md:py-16">
+                <div>{{ content | wrapH3s(page) | safe }}</div>
+            </main>
+        </section>
+
+        {% include "footer.html" %}
+    </body>
+
+    <script>
+        window.addEventListener('click', (e) => {
+            if (e.target.closest('.job-tab-btn')) {
+                e.target.closest('.job-tab').classList.toggle('active')
+            }
+        })
+    </script>
+</html>

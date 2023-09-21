@@ -251,7 +251,38 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "- more stable message delivery.\n- a bit better groups.\n- and more!"
             ),
         ]
-    )
+    ),
+    VersionDescription(
+        version: "v5.3",
+        post: URL(string: "https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"),
+        features: [
+            FeatureDescription(
+                icon: "desktopcomputer",
+                title: "New desktop app!",
+                description: "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻"
+            ),
+            FeatureDescription(
+                icon: "lock",
+                title: "Encrypt stored files & media",
+                description: "App encrypts new local files (except videos)."
+            ),
+            FeatureDescription(
+                icon: "magnifyingglass",
+                title: "Discover and join groups",
+                description: "- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable."
+            ),
+            FeatureDescription(
+                icon: "theatermasks",
+                title: "Simplified incognito mode",
+                description: "Toggle incognito when connecting."
+            ),
+            FeatureDescription(
+                icon: "character",
+                title: "\(4) new interface languages",
+                description: "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
+            ),
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -321,12 +352,15 @@ struct WhatsNewView: View {
     private func featureDescription(_ icon: String, _ title: LocalizedStringKey, _ description: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .center, spacing: 4) {
-                Image(systemName: icon).foregroundColor(.secondary)
+                Image(systemName: icon)
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(.secondary)
                     .frame(minWidth: 30, alignment: .center)
                 Text(title).font(.title3).bold()
             }
             Text(description)
                 .multilineTextAlignment(.leading)
+                .lineLimit(10)
         }
     }
 

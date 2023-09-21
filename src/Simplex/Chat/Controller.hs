@@ -282,6 +282,8 @@ data ChatCommand
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
+  | APICreateMemberContact GroupId GroupMemberId
+  | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | APIGetUserProtoServers UserId AProtocolType
   | GetUserProtoServers AProtocolType
   | APISetUserProtoServers UserId AProtoServersConfig
@@ -353,6 +355,7 @@ data ChatCommand
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName
   | SendMessage ChatName Text
+  | SendMemberContactMessage GroupName ContactName Text
   | SendLiveMessage ChatName Text
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: Text, message :: Text}
   | SendMessageBroadcast Text -- UserId (not used in UI)
@@ -506,7 +509,7 @@ data ChatResponse
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
   | CRRcvFileCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileError {user :: User, chatItem :: AChatItem}
+  | CRRcvFileError {user :: User, chatItem :: AChatItem, agentError :: AgentErrorType}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
@@ -553,6 +556,11 @@ data ChatResponse
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRAcceptingGroupJoinRequest {user :: User, groupInfo :: GroupInfo, contact :: Contact}
+  | CRNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
+  | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRMemberContactConnected {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSubError {user :: User, groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {user :: User, groupInfo :: GroupInfo}
@@ -877,6 +885,7 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEInvalidConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
+  | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
@@ -927,6 +936,7 @@ data ChatErrorType
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
   | CEConnectionIncognitoChangeProhibited
+  | CEPeerChatVRangeIncompatible
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception, Generic)
