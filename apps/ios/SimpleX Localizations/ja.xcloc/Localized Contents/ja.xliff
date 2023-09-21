@@ -197,8 +197,9 @@
         <target>%lld 分</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld new interface languages" xml:space="preserve">
+      <trans-unit id="%lld new interface languages" xml:space="preserve" approved="no">
         <source>%lld new interface languages</source>
+        <target state="translated">%lldつの新しいインターフェース言語</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">
@@ -710,8 +711,9 @@
         <target>アプリのビルド: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
+      <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve" approved="no">
         <source>App encrypts new local files (except videos).</source>
+        <target state="translated">アプリは新しいローカルファイル（ビデオを除く）を暗号化します。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
@@ -849,8 +851,9 @@
         <target>あなたと連絡相手が音声メッセージを送信できます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve">
+      <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve" approved="no">
         <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
+        <target state="translated">ブルガリア語、フィンランド語、タイ語、ウクライナ語 - ユーザーと [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)に感謝します！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1249,8 +1252,9 @@
         <target>リンクを生成する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
+        <target state="translated">[デスクトップアプリ](https://simplex.chat/downloads/)で新しいプロファイルを作成します。 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create one-time invitation link" xml:space="preserve">
@@ -1606,8 +1610,9 @@
         <target>Delivery receipts are disabled!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts!" xml:space="preserve">
+      <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
         <source>Delivery receipts!</source>
+        <target state="translated">配信通知！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1705,8 +1710,9 @@
         <target>切断</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Discover and join groups" xml:space="preserve">
+      <trans-unit id="Discover and join groups" xml:space="preserve" approved="no">
         <source>Discover and join groups</source>
+        <target state="translated">グループを見つけて参加する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
@@ -1849,8 +1855,9 @@
         <target>ローカルファイルを暗号化する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve">
+      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve" approved="no">
         <source>Encrypt stored files &amp; media</source>
+        <target state="translated">保存されたファイルとメディアを暗号化する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
@@ -1978,8 +1985,9 @@
         <target>グループリンク生成にエラー発生</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating member contact" xml:space="preserve">
+      <trans-unit id="Error creating member contact" xml:space="preserve" approved="no">
         <source>Error creating member contact</source>
+        <target state="translated">メンバー連絡先の作成中にエラーが発生</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating profile!" xml:space="preserve">
@@ -2111,8 +2119,9 @@
         <target>メールの送信にエラー発生</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sending member contact invitation" xml:space="preserve">
+      <trans-unit id="Error sending member contact invitation" xml:space="preserve" approved="no">
         <source>Error sending member contact invitation</source>
+        <target state="translated">招待メッセージの送信エラー</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -3126,8 +3135,9 @@
         <target>新しいデータベースのアーカイブ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New desktop app!" xml:space="preserve">
+      <trans-unit id="New desktop app!" xml:space="preserve" approved="no">
         <source>New desktop app!</source>
+        <target state="translated">新しいデスクトップアプリ！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New display name" xml:space="preserve">
@@ -3344,8 +3354,9 @@
         <target>音声メッセージを送れるのはあなたの連絡相手だけです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open" xml:space="preserve">
+      <trans-unit id="Open" xml:space="preserve" approved="no">
         <source>Open</source>
+        <target state="translated">開く</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
@@ -4081,8 +4092,9 @@
         <target>ダイレクトメッセージを送信</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send direct message to connect" xml:space="preserve">
+      <trans-unit id="Send direct message to connect" xml:space="preserve" approved="no">
         <source>Send direct message to connect</source>
+        <target state="translated">ダイレクトメッセージを送信して接続する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">
@@ -4378,8 +4390,9 @@
         <target>SimpleX使い捨て招待リンク</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="Simplified incognito mode" xml:space="preserve">
+      <trans-unit id="Simplified incognito mode" xml:space="preserve" approved="no">
         <source>Simplified incognito mode</source>
+        <target state="translated">シークレットモードの簡素化</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Skip" xml:space="preserve">
