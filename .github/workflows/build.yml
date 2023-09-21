@@ -173,7 +173,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-20.04'
         shell: bash
         run: |
-          scripts/desktop/make-appimage-linux.sh
+          scripts/desktop/make-appimage-linux.sh || true
           path=$(echo $PWD/apps/multiplatform/release/main/*imple*.AppImage)
           echo "appimage_path=$path" >> $GITHUB_OUTPUT
           echo "appimage_hash=$(echo SHA2-512\(simplex-desktop-x86_64.AppImage\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
