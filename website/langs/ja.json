@@ -172,7 +172,7 @@
     "simplex-unique-overlay-card-1-p-2": "メッセージを配信するために、SimpleX は一方向メッセージ キューの<a href='https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier'>ペアワイズ匿名アドレス</a>を使用し、受信メッセージと送信メッセージに分けて、通常は異なるサーバーを経由します。 SimpleX を使用することは、<strong>別の「バーナー」 を使用するようなものです。 連絡先ごとにメールまたは電話</strong>を使用できるため、管理に手間がかかりません。",
     "simplex-unique-overlay-card-3-p-4": "送受信されるサーバー トラフィックの間に共通の識別子や暗号文はありません。 &mdash; 誰かがそれを観察している場合、たとえ TLS が侵害されたとしても、誰が誰と通信しているのかを簡単に判断することはできません。",
     "docs-dropdown-2": "Android ファイルへのアクセス",
-    "get-simplex": "SimpleXを入手する",
+    "get-simplex": "SimpleXを入手する <a href=\"/downloads\">desktop app</a>",
     "privacy-matters-overlay-card-3-p-1": "誰もが通信のプライバシーとセキュリティに気を配る必要があります。 たとえ何も隠すものがなかったとしても、無害な会話はあなたを危険にさらす可能性があります。",
     "simplex-unique-2-title": "スパムや悪用から<br>保護されています",
     "comparison-section-list-point-2": "DNSベースのアドレス",

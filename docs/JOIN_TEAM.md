@@ -1,3 +1,9 @@
+---
+title: Join SimpleX Chat team
+permalink: /jobs/index.html
+layout: layouts/jobs.html
+---
+
 # Join SimpleX Chat team
 
 SimpleX Chat Ltd is a seed stage startup with a lot of user growth in 2022-2023, and a lot of exciting technical and product problems to solve to grow faster.

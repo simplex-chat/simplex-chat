@@ -56,39 +56,34 @@ Object.entries(fileLanguageMapping).forEach(([fileName, languages]) => {
             const permalink = `/docs/${linkPath}`.toLowerCase();
 
             if (fileName === 'JOIN_TEAM') {
-                parsedMatter.data.title = 'SimpleX Chat - Jobs';
-                parsedMatter.data.permalink = '/jobs/index.html';
-                parsedMatter.data.layout = 'layouts/jobs.html';
                 parsedMatter.data.active_jobs = true;
             }
-            else {
-                parsedMatter.data.permalink = permalink;
+            if (!parsedMatter.data.permalink) parsedMatter.data.permalink = permalink;
 
-                // Update the frontmatter with the new languages list
-                parsedMatter.data.supportedLangsForDoc = languages;
+            // Update the frontmatter with the new languages list
+            parsedMatter.data.supportedLangsForDoc = languages;
 
-                // Add the layout value
-                parsedMatter.data.layout = 'layouts/doc.html';
+            // Add the layout value
+            if (!parsedMatter.data.layout) parsedMatter.data.layout = 'layouts/doc.html';
 
-                if (fullPath.startsWith(path.join(directoryPath, langFolder))) {
-                    // Non-English files
-                    const [language, ...rest] = relativePath.split(path.sep).slice(1);
-                    const enFilePath = path.join(directoryPath, ...rest);
+            if (fullPath.startsWith(path.join(directoryPath, langFolder))) {
+                // Non-English files
+                const [language, ...rest] = relativePath.split(path.sep).slice(1);
+                const enFilePath = path.join(directoryPath, ...rest);
 
-                    if (enFiles[enFilePath]) {
-                        const enRevision = new Date(enFiles[enFilePath].revision);
-                        const currentRevision = new Date(parsedMatter.data.revision);
+                if (enFiles[enFilePath]) {
+                    const enRevision = new Date(enFiles[enFilePath].revision);
+                    const currentRevision = new Date(parsedMatter.data.revision);
 
-                        const isOld = currentRevision < enRevision;
-                        // Add the version value
-                        parsedMatter.data.version = isOld ? 'old' : 'new';
-                    }
-                } else {
-                    // English files
-                    enFiles[fullPath] = { revision: parsedMatter.data.revision };
+                    const isOld = currentRevision < enRevision;
                     // Add the version value
-                    parsedMatter.data.version = 'new';
+                    parsedMatter.data.version = isOld ? 'old' : 'new';
                 }
+            } else {
+                // English files
+                enFiles[fullPath] = { revision: parsedMatter.data.revision };
+                // Add the version value
+                parsedMatter.data.version = 'new';
             }
 
             // Save the updated frontmatter and content back to the file

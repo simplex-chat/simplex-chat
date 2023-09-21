@@ -315,7 +315,8 @@ module.exports = function (ty) {
       referenceMenu.data.forEach(referenceSubmenu => {
         docs.forEach(doc => {
           const url = doc.url.replace("/docs/", "")
-          const urlParts = url.split("/")
+          let urlParts = url.split("/")
+          urlParts = urlParts.filter((ele) => ele !== "")
 
           if (doc.inputPath.split('/').includes(referenceSubmenu)) {
             if (urlParts.length === 1 && urlParts[0] !== "") {
