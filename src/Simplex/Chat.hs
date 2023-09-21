@@ -73,6 +73,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
+import Simplex.Chat.Util (encryptFile)
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
@@ -1734,22 +1735,15 @@ processChatCommand = \case
       ft' <- if encrypted then encryptLocalFile ft else pure ft
       receiveFile' user ft' rcvInline_ filePath_
     where
-      encryptLocalFile ft@RcvFileTransfer {xftpRcvFile} = case xftpRcvFile of
-        Nothing -> throwChatError $ CEFileInternal "locally encrypted files can't be received via SMP"
-        Just f -> do
-          cfArgs <- liftIO $ CF.randomArgs
-          withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
-          pure ft {xftpRcvFile = Just ((f :: XFTPRcvFile) {cryptoArgs = Just cfArgs})}
+      encryptLocalFile ft = do
+        cfArgs <- liftIO $ CF.randomArgs
+        withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
+        pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
   SetFileToReceive fileId encrypted -> withUser $ \_ -> do
     withChatLock "setFileToReceive" . procCmd $ do
-      cfArgs <- if encrypted then fileCryptoArgs else pure Nothing
+      cfArgs <- if encrypted then Just <$> liftIO CF.randomArgs else pure Nothing
       withStore' $ \db -> setRcvFileToReceive db fileId cfArgs
       ok_
-    where
-      fileCryptoArgs = do
-        (_, RcvFileTransfer {xftpRcvFile = f}) <- withStore (`getRcvFileTransferById` fileId)
-        unless (isJust f) $ throwChatError $ CEFileInternal "locally encrypted files can't be received via SMP"
-        liftIO $ Just <$> CF.randomArgs
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
       withStore (\db -> getFileTransfer db user fileId) >>= \case
@@ -2319,7 +2313,7 @@ receiveFile' user ft rcvInline_ filePath_ = do
       e -> throwError e
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId, cryptoArgs} rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
@@ -2332,7 +2326,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
       filePath <- getRcvFilePath fileId filePath_ fName True
       withStoreCtx (Just "acceptFileReceive, acceptRcvFileTransfer") $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath subMode
     -- XFTP
-    (Just XFTPRcvFile {cryptoArgs}, _) -> do
+    (Just XFTPRcvFile {}, _) -> do
       filePath <- getRcvFilePath fileId filePath_ fName False
       (ci, rfd) <- withStoreCtx (Just "acceptFileReceive, xftpAcceptRcvFT ...") $ \db -> do
         -- marking file as accepted and reading description in the same transaction
@@ -2406,7 +2400,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
     asks filesFolder >>= readTVarIO >>= \case
       Nothing -> do
         dir <- (`combine` "Downloads") <$> getHomeDirectory
-        ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
+        ifM (doesDirectoryExist dir) (pure dir) getChatTempDirectory
           >>= (`uniqueCombine` fn)
           >>= createEmptyFile
       Just filesFolder ->
@@ -2434,14 +2428,18 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
       pure fPath
     getTmpHandle :: FilePath -> m Handle
     getTmpHandle fPath = openFile fPath AppendMode `catchThrow` (ChatError . CEFileInternal . show)
-    uniqueCombine :: FilePath -> String -> m FilePath
-    uniqueCombine filePath fileName = tryCombine (0 :: Int)
-      where
-        tryCombine n =
-          let (name, ext) = splitExtensions fileName
-              suffix = if n == 0 then "" else "_" <> show n
-              f = filePath `combine` (name <> suffix <> ext)
-           in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
+
+uniqueCombine :: MonadIO m => FilePath -> String -> m FilePath
+uniqueCombine filePath fileName = tryCombine (0 :: Int)
+  where
+    tryCombine n =
+      let (name, ext) = splitExtensions fileName
+          suffix = if n == 0 then "" else "_" <> show n
+          f = filePath `combine` (name <> suffix <> ext)
+       in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
+
+getChatTempDirectory :: ChatMonad m => m FilePath
+getChatTempDirectory = chatReadVar tempDirectory >>= maybe getTemporaryDirectory pure
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
 acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
@@ -3062,10 +3060,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO update member profile
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn' confId XOk
-            XOk -> do
-              allowAgentConnectionAsync user conn' confId XOk
-              void $ withStore' $ \db -> resetMemberContactFields db ct
-            _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.ok"
+            XInfo profile -> do
+              ct' <- processContactProfileUpdate ct profile False `catchChatError` const (pure ct)
+              -- [incognito] send incognito profile
+              incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
+              let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
+              allowAgentConnectionAsync user conn' confId $ XInfo p
+              void $ withStore' $ \db -> resetMemberContactFields db ct'
+            _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO connInfo -> do
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           _conn' <- updatePeerChatVRange conn chatVRange
@@ -3074,9 +3076,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO check member ID
               -- TODO update member profile
               pure ()
-            XInfo _profile -> do
-              -- TODO update contact profile
-              pure ()
+            XInfo profile ->
+              void $ processContactProfileUpdate ct profile False
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
@@ -3513,12 +3514,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           RcvChunkOk ->
             if B.length chunk /= fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
-              else ack $ appendFileChunk ft chunkNo chunk
+              else ack $ appendFileChunk ft chunkNo chunk False
           RcvChunkFinal ->
             if B.length chunk > fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
               else do
-                appendFileChunk ft chunkNo chunk
+                appendFileChunk ft chunkNo chunk True
                 ci <- withStore $ \db -> do
                   liftIO $ do
                     updateRcvFileStatus db fileId FSComplete
@@ -3526,7 +3527,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     deleteRcvFileChunks db ft
                   getChatItemByFileId db user fileId
                 toView $ CRRcvFileComplete user ci
-                closeFileHandle fileId rcvFiles
                 forM_ conn_ $ \conn -> deleteAgentConnectionAsync user (aConnId conn)
           RcvChunkDuplicate -> ack $ pure ()
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
@@ -3772,14 +3772,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processFDMessage fileId fileDescr = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
-        (rfd, RcvFileTransfer {fileStatus, xftpRcvFile}) <- withStore $ \db -> do
+        (rfd, RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs}) <- withStore $ \db -> do
           rfd <- appendRcvFD db userId fileId fileDescr
           -- reading second time in the same transaction as appending description
           -- to prevent race condition with accept
           ft' <- getRcvFileTransfer db user fileId
           pure (rfd, ft')
         case (fileStatus, xftpRcvFile) of
-          (RFSAccepted _, Just XFTPRcvFile {cryptoArgs}) -> receiveViaCompleteFD user fileId rfd cryptoArgs
+          (RFSAccepted _, Just XFTPRcvFile {}) -> receiveViaCompleteFD user fileId rfd cryptoArgs
           _ -> pure ()
 
     cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
@@ -4236,15 +4236,22 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
     xInfo :: Contact -> Profile -> m ()
-    xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <- withStore $ \db ->
-        if userTTL == rcvTTL
-          then updateContactProfile db user c p'
-          else do
-            c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
-            updateContactProfile db user c' p'
-      when (directOrUsed c') $ createRcvFeatureItems user c c'
-      toView $ CRContactUpdated user c c'
+    xInfo c p' = void $ processContactProfileUpdate c p' True
+
+    processContactProfileUpdate :: Contact -> Profile -> Bool -> m Contact
+    processContactProfileUpdate c@Contact {profile = p} p' createItems
+      | fromLocalProfile p /= p' = do
+        c' <- withStore $ \db ->
+          if userTTL == rcvTTL
+            then updateContactProfile db user c p'
+            else do
+              c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
+              updateContactProfile db user c' p'
+        when (directOrUsed c' && createItems) $ createRcvFeatureItems user c c'
+        toView $ CRContactUpdated user c c'
+        pure c'
+      | otherwise =
+        pure c
       where
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
@@ -4642,8 +4649,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           (mCt', m') <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode
           createItems mCt' m'
         joinConn subMode = do
-          -- TODO send user's profile for this group membership
-          dm <- directMessage XOk
+          -- [incognito] send membership incognito profile
+          let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing
+          dm <- directMessage $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
           checkIntegrityCreateItem (CDGroupRcv g m') msgMeta
@@ -4787,8 +4795,8 @@ readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo = do
 parseFileChunk :: ChatMonad m => ByteString -> m FileChunk
 parseFileChunk = liftEither . first (ChatError . CEFileRcvChunk) . smpDecode
 
-appendFileChunk :: ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> m ()
-appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
+appendFileChunk :: forall m. ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> Bool -> m ()
+appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs} chunkNo chunk final =
   case fileStatus of
     RFSConnected RcvFileInfo {filePath} -> append_ filePath
     -- sometimes update of file transfer status to FSConnected
@@ -4797,11 +4805,27 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
     RFSCancelled _ -> pure ()
     _ -> throwChatError $ CEFileInternal "receiving file transfer not in progress"
   where
+    append_ :: FilePath -> m ()
     append_ filePath = do
       fsFilePath <- toFSFilePath filePath
       h <- getFileHandle fileId fsFilePath rcvFiles AppendMode
-      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` (ChatError . CEFileWrite filePath . show)
+      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` (fileErr  . show)
       withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
+      when final $ do
+        closeFileHandle fileId rcvFiles
+        forM_ cryptoArgs $ \cfArgs -> do
+          tmpFile <- getChatTempDirectory >>= (`uniqueCombine` ft.fileInvitation.fileName)
+          tryChatError (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
+            Right () -> do
+              removeFile fsFilePath `catchChatError` \_ -> pure ()
+              renameFile tmpFile fsFilePath
+            Left e -> do
+              toView $ CRChatError Nothing e
+              removeFile tmpFile `catchChatError` \_ -> pure ()
+              withStore' (`removeFileCryptoArgs` fileId)
+      where
+        encryptErr e = fileErr $ e <> ", received file not encrypted"
+        fileErr = ChatError . CEFileWrite filePath
 
 getFileHandle :: ChatMonad m => Int64 -> FilePath -> (ChatController -> TVar (Map Int64 Handle)) -> IOMode -> m Handle
 getFileHandle fileId filePath files ioMode = do

@@ -23,6 +23,18 @@
                 "showImage": true,
                 "contentBody": "overlay_content/hero/card_2.html"
             }
+        },
+        {
+            "id": 3,
+            "imgLight": "/img/trail-of-bits-light.png",
+            "imgDark": "/img/trail-of-bits-dark.png",
+            "overlayContent": {
+                "overlayId": "security-assessment",
+                "overlayScrollTo": "",
+                "title": "hero-overlay-3-title",
+                "showImage": true,
+                "contentBody": "overlay_content/hero/card_3.html"
+            }
         }
     ]
 }

@@ -100,6 +100,14 @@
 
                     <hr class="dark:opacity-[0.1]" >
 
+                    <li class="nav-link relative {% if active_jobs %}active{% endif %}">
+                        <a href="/jobs" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">{{ "jobs" | i18n({}, lang ) | safe }}</span>
+                        </a>                        
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
                     <li class="nav-link relative {% if active_blog %}active{% endif %}">
                         <a href="/blog" class="flex items-center justify-between gap-2 lg:py-5">
                             <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">{{ "blog" | i18n({}, lang ) | safe }}</span>
@@ -125,7 +133,7 @@
             </div>
         </nav>
 
-        {% if 'blog' not in page.url %}
+        {% if ('blog' not in page.url) and ('jobs' not in page.url) %}
         <div class="nav-link relative flag-container">
             <a href="javascript:void(0);" class="flex items-center justify-end ltr:ml-8 ltr:lg:ml-5 ltr:xl:ml-10 rtl:mr-8 rtl:lg:mr-5 rtl:xl:mr-10 h-6 w-8 whitespace-nowrap">
                 {% for language in languages.languages %}
@@ -142,7 +150,7 @@
             </a>
             
             <ul class="flex flex-col items-start gap-2 h-fit absolute top-11 -left-10 bg-white dark:bg-black mt-[10px] py-4 min-w-[170px] rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu overflow-auto">
-                {% if "docs" in page.url %}
+                {% if ("docs" in page.url) or ('downloads' in page.url) %}
                     {% for supportedLang in supportedLangsForDoc %}
                         {% for language in languages.languages %}
                             {% if language.label == supportedLang %}

@@ -54,13 +54,17 @@ Object.entries(fileLanguageMapping).forEach(([fileName, languages]) => {
             // Calculate the permalink based on the file's location
             const linkPath = path.relative(directoryPath, fullPath).replace(/\.md$/, '.html');
             const permalink = `/docs/${linkPath}`.toLowerCase();
-            parsedMatter.data.permalink = permalink;
+
+            if (fileName === 'JOIN_TEAM') {
+                parsedMatter.data.active_jobs = true;
+            }
+            if (!parsedMatter.data.permalink) parsedMatter.data.permalink = permalink;
 
             // Update the frontmatter with the new languages list
             parsedMatter.data.supportedLangsForDoc = languages;
 
             // Add the layout value
-            parsedMatter.data.layout = 'layouts/doc.html';
+            if (!parsedMatter.data.layout) parsedMatter.data.layout = 'layouts/doc.html';
 
             if (fullPath.startsWith(path.join(directoryPath, langFolder))) {
                 // Non-English files

@@ -46,6 +46,12 @@
             "enabled": true
         },
         {
+            "label": "ja",
+            "name": "日本語",
+            "flag": "/img/flags/jp.svg",
+            "enabled": true
+        },
+        {
             "label": "nl",
             "name": "Nederlands",
             "flag": "/img/flags/nl.svg",

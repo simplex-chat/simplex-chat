@@ -986,7 +986,10 @@ data RcvFileTransfer = RcvFileTransfer
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
-    grpMemberId :: Maybe Int64
+    grpMemberId :: Maybe Int64,
+    -- XFTP files are encrypted as they are received, they are never stored unecrypted
+    -- SMP files are encrypted after all chunks are received
+    cryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show, Generic)
 
@@ -995,8 +998,7 @@ instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.default
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool,
-    cryptoArgs :: Maybe CryptoFileArgs
+    agentRcvFileDeleted :: Bool
   }
   deriving (Eq, Show, Generic)
 

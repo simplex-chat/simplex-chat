@@ -12,7 +12,7 @@ release_app_dir=$root_dir/apps/multiplatform/release/main/app
 
 cd $multiplatform_dir
 libcrypto_path=$(ldd common/src/commonMain/cpp/desktop/libs/*/deps/libHSdirect-sqlcipher-*.so | grep libcrypto | cut -d'=' -f 2 | cut -d ' ' -f 2)
-
+trap "rm common/src/commonMain/cpp/desktop/libs/*/deps/`basename $libcrypto_path` 2> /dev/null" EXIT
 cp $libcrypto_path common/src/commonMain/cpp/desktop/libs/*/deps
 
 ./gradlew createDistributable
@@ -27,13 +27,15 @@ cp -r ../*imple*/{bin,lib} usr
 cp usr/lib/simplex.png .
 
 # For https://github.com/TheAssassin/AppImageLauncher to be able to show the icon
-mkdir -p usr/share/icons
+mkdir -p usr/share/{icons,metainfo,applications}
 cp usr/lib/simplex.png usr/share/icons
 
 ln -s usr/bin/*imple* AppRun
-cp $multiplatform_dir/desktop/src/jvmMain/resources/distribute/*imple*.desktop .
+cp $multiplatform_dir/desktop/src/jvmMain/resources/distribute/*imple*.desktop chat.simplex.app.desktop
 sed -i 's|Exec=.*|Exec=simplex|g' *imple*.desktop
 sed -i 's|Icon=.*|Icon=simplex|g' *imple*.desktop
+cp *imple*.desktop usr/share/applications/
+cp $multiplatform_dir/desktop/src/jvmMain/resources/distribute/*.appdata.xml usr/share/metainfo
 
 if [ ! -f ../appimagetool-x86_64.AppImage ]; then
     wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O ../appimagetool-x86_64.AppImage
