@@ -37,25 +37,6 @@ actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: (
     player.play(true)
     simplexWindowState.windowState.size = simplexWindowState.windowState.size.copy(width = simplexWindowState.windowState.size.width - 1.dp)
   }
-  /* OR the following code and using SwingPanel(factory = { factory }, ...) */
-  // val factory by rememberUpdatedState(mediaPlayerComponent)
-  // LALAL
-  /*LaunchedEffect(isFullscreen) {
-    if (player.player is EmbeddedMediaPlayer) {
-      *//*
-       * To be able to access window in the commented code below,
-       * extend the player composable function from WindowScope.
-       * See https://github.com/JetBrains/compose-jb/issues/176#issuecomment-812514936
-       * and its subsequent comments.
-       *
-       * We could also just fullscreen the whole window:
-       * `window.placement = WindowPlacement.Fullscreen`
-       * See https://github.com/JetBrains/compose-multiplatform/issues/1489
-       *//*
-      // mediaPlayer.fullScreen().strategy(ExclusiveModeFullScreenStrategy(window))
-      player.player.fullScreen().toggle()
-    }
-  }*/
   Box {
     Box(Modifier.fillMaxSize().padding(bottom = 50.dp)) {
       val factory = remember { { player.mediaPlayerComponent } }
@@ -65,41 +46,6 @@ actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: (
         factory = factory
       )
     }
-//    SwingPanel(
-//      background = Color.Transparent,
-//      modifier = Modifier.padding(bottom = 30.dp).width(simplexWindowState.windowState.size.width).height(simplexWindowState.windowState.size.height - 30.dp),
-//      factory = {
-//        ComposePanel().apply {
-//          setContent {
-//            Box {
-//              SwingPanel(
-//                background = Color.Transparent,
-//                modifier = Modifier.width(simplexWindowState.windowState.size.width).height(simplexWindowState.windowState.size.height - 30.dp),
-//                factory = factory,
-//              )
-//              SwingPanel(
-//                background = Color.Red,
-//                modifier = Modifier.size(AppBarHeight),
-//                factory = {
-//                  ComposePanel().apply {
-//                    setContent {
-//                      SimpleXTheme {
-//                        IconButton(
-//                          onClick = close,
-//                          modifier
-//                            .fillMaxSize()
-//                            .clickable { close() },
-//                        ) {
-//                          Icon(painterResource(MR.images.ic_close), null, Modifier.size(30.dp), tint = MaterialTheme.colors.primary)
-//                        }
-//                      }
-//                    }
-//                  }
-//                })
-//            }
-//          }
-//        }
-//      })
     Controls(player, close)
   }
 }

@@ -7,10 +7,10 @@ import androidx.compose.ui.graphics.toComposeImageBitmap
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
-import org.jetbrains.compose.videoplayer.initializeMediaPlayerComponent
-import org.jetbrains.compose.videoplayer.mediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
+import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
+import java.awt.Component
 import java.io.File
 import java.net.URI
 import kotlin.math.max
@@ -197,5 +197,19 @@ actual class VideoPlayer actual constructor(
     val duration = player.duration.toLong()
     CoroutineScope(Dispatchers.IO).launch { player.release() }
     return VideoPlayerInterface.PreviewAndDuration(preview = preview, timestamp = 0L, duration = duration)
+  }
+
+  private fun initializeMediaPlayerComponent(): Component {
+    return if (desktopPlatform.isMac()) {
+      CallbackMediaPlayerComponent()
+    } else {
+      EmbeddedMediaPlayerComponent()
+    }
+  }
+
+  private fun Component.mediaPlayer() = when (this) {
+    is CallbackMediaPlayerComponent -> mediaPlayer()
+    is EmbeddedMediaPlayerComponent -> mediaPlayer()
+    else -> error("mediaPlayer() can only be called on vlcj player components")
   }
 }

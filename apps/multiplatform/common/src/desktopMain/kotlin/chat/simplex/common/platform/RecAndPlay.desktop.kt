@@ -169,12 +169,14 @@ actual object AudioPlayer: AudioPlayerInterface {
 
   override fun duration(unencryptedFilePath: String): Int? {
     var res: Int? = null
-    kotlin.runCatching {
+    try {
       val helperPlayer = AudioPlayerComponent().mediaPlayer()
       helperPlayer.media().startPaused("file://$unencryptedFilePath")
       res = helperPlayer.duration
       helperPlayer.stop()
       helperPlayer.release()
+    } catch (e: Exception) {
+      Log.e(TAG, e.stackTraceToString())
     }
     return res
   }

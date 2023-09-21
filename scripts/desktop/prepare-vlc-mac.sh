@@ -23,11 +23,6 @@ mkdir -p $vlc_dir/vlc || exit 0
 cd /tmp
 mkdir tmp 2>/dev/null || true
 cd tmp
-#export PATH=$PATH:$(pwd)
-#7zz -h > /dev/null 2>/dev/null || (curl https://7-zip.org/a/7z2301-mac.tar.xz -L -o 7z.tar.xz && tar -xvf 7z.tar.xz 2>/dev/null)
-#curl https://mirror.freedif.org/videolan/vlc/$vlc_version/macosx/vlc-$vlc_version-$vlc_arch.dmg -L -o vlc
-#7zz -y -xr!"VLC media player/Applications" x vlc > /dev/null
-#cd VLC\ media\ player/VLC.app/Contents/MacOS/lib
 curl https://github.com/simplex-chat/vlc/releases/download/v$vlc_version/vlc-macos-$ARCH.zip -L -o vlc
 unzip -oqq vlc
 install_name_tool -add_rpath "@loader_path/VLC.app/Contents/MacOS/lib" vlc-cache-gen
@@ -36,16 +31,10 @@ for lib in $(ls *.dylib); do install_name_tool -add_rpath "@loader_path" $lib 2>
 cd ../plugins
 for lib in $(ls *.dylib); do
     install_name_tool -add_rpath "@loader_path/../../" $lib 2> /dev/null || true
-    # Setting the same date as the date that will be on the file after extraction from JAR to make VLC cache checker happy
-    #touch -m -d "1970-01-01T00:00:00Z" $lib
 done
 cd ..
-#nohup ./VLC --reset-plugins-cache &
-#sleep 60
-#kill -9 $!
 ../../../vlc-cache-gen plugins
 cp lib/* $vlc_dir/
 cp -r -p plugins/ $vlc_dir/vlc/plugins
-#cd ../../../../../
 cd ../../../../
 rm -rf tmp
