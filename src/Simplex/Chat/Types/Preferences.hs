@@ -8,12 +8,15 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
+
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
 
@@ -85,12 +88,12 @@ allChatFeatures =
   ]
 
 chatPrefSel :: SChatFeature f -> Preferences -> Maybe (FeaturePreference f)
-chatPrefSel = \case
-  SCFTimedMessages -> timedMessages
-  SCFFullDelete -> fullDelete
-  SCFReactions -> reactions
-  SCFVoice -> voice
-  SCFCalls -> calls
+chatPrefSel f ps = case f of
+  SCFTimedMessages -> ps.timedMessages
+  SCFFullDelete -> ps.fullDelete
+  SCFReactions -> ps.reactions
+  SCFVoice -> ps.voice
+  SCFCalls -> ps.calls
 
 chatFeature :: SChatFeature f -> ChatFeature
 chatFeature = \case
@@ -110,12 +113,12 @@ instance PreferenceI (Maybe Preferences) where
   getPreference f prefs = fromMaybe (getPreference f defaultChatPrefs) (chatPrefSel f =<< prefs)
 
 instance PreferenceI FullPreferences where
-  getPreference = \case
-    SCFTimedMessages -> timedMessages
-    SCFFullDelete -> fullDelete
-    SCFReactions -> reactions
-    SCFVoice -> voice
-    SCFCalls -> calls
+  getPreference f ps = case f of
+    SCFTimedMessages -> ps.timedMessages
+    SCFFullDelete -> ps.fullDelete
+    SCFReactions -> ps.reactions
+    SCFVoice -> ps.voice
+    SCFCalls -> ps.calls
   {-# INLINE getPreference #-}
 
 setPreference :: forall f. FeatureI f => SChatFeature f -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
@@ -215,13 +218,13 @@ allGroupFeatures =
   ]
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
-groupPrefSel = \case
-  SGFTimedMessages -> timedMessages
-  SGFDirectMessages -> directMessages
-  SGFFullDelete -> fullDelete
-  SGFReactions -> reactions
-  SGFVoice -> voice
-  SGFFiles -> files
+groupPrefSel f ps = case f of
+  SGFTimedMessages -> ps.timedMessages
+  SGFDirectMessages -> ps.directMessages
+  SGFFullDelete -> ps.fullDelete
+  SGFReactions -> ps.reactions
+  SGFVoice -> ps.voice
+  SGFFiles -> ps.files
 
 toGroupFeature :: SGroupFeature f -> GroupFeature
 toGroupFeature = \case
@@ -242,13 +245,13 @@ instance GroupPreferenceI (Maybe GroupPreferences) where
   getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt =<< prefs)
 
 instance GroupPreferenceI FullGroupPreferences where
-  getGroupPreference = \case
-    SGFTimedMessages -> timedMessages
-    SGFDirectMessages -> directMessages
-    SGFFullDelete -> fullDelete
-    SGFReactions -> reactions
-    SGFVoice -> voice
-    SGFFiles -> files
+  getGroupPreference f ps = case f of
+    SGFTimedMessages -> ps.timedMessages
+    SGFDirectMessages -> ps.directMessages
+    SGFFullDelete -> ps.fullDelete
+    SGFReactions -> ps.reactions
+    SGFVoice -> ps.voice
+    SGFFiles -> ps.files
   {-# INLINE getGroupPreference #-}
 
 -- collection of optional group preferences
@@ -428,19 +431,19 @@ class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureA
   prefParam :: FeaturePreference f -> Maybe Int
 
 instance HasField "allow" TimedMessagesPreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, allow (p :: TimedMessagesPreference))
+  hasField p = (\allow -> p {allow}, p.allow)
 
 instance HasField "allow" FullDeletePreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, allow (p :: FullDeletePreference))
+  hasField p = (\allow -> p {allow}, p.allow)
 
 instance HasField "allow" ReactionsPreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, allow (p :: ReactionsPreference))
+  hasField p = (\allow -> p {allow}, p.allow)
 
 instance HasField "allow" VoicePreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, allow (p :: VoicePreference))
+  hasField p = (\allow -> p {allow}, p.allow)
 
 instance HasField "allow" CallsPreference FeatureAllowed where
-  hasField p = (\allow -> p {allow}, allow (p :: CallsPreference))
+  hasField p = (\allow -> p {allow}, p.allow)
 
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
@@ -517,25 +520,25 @@ class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference 
   groupPrefParam :: GroupFeaturePreference f -> Maybe Int
 
 instance HasField "enable" GroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, enable (p :: GroupPreference))
+  hasField p = (\enable -> p {enable}, p.enable)
 
 instance HasField "enable" TimedMessagesGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, enable (p :: TimedMessagesGroupPreference))
+  hasField p = (\enable -> p {enable}, p.enable)
 
 instance HasField "enable" DirectMessagesGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, enable (p :: DirectMessagesGroupPreference))
+  hasField p = (\enable -> p {enable}, p.enable)
 
 instance HasField "enable" ReactionsGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, enable (p :: ReactionsGroupPreference))
+  hasField p = (\enable -> p {enable}, p.enable)
 
 instance HasField "enable" FullDeleteGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, enable (p :: FullDeleteGroupPreference))
+  hasField p = (\enable -> p {enable}, p.enable)
 
 instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, enable (p :: VoiceGroupPreference))
+  hasField p = (\enable -> p {enable}, p.enable)
 
 instance HasField "enable" FilesGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, enable (p :: FilesGroupPreference))
+  hasField p = (\enable -> p {enable}, p.enable)
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
@@ -770,9 +773,9 @@ preferenceState pref =
    in (allow, param)
 
 getContactUserPreference :: SChatFeature f -> ContactUserPreferences -> ContactUserPreference (FeaturePreference f)
-getContactUserPreference = \case
-  SCFTimedMessages -> timedMessages
-  SCFFullDelete -> fullDelete
-  SCFReactions -> reactions
-  SCFVoice -> voice
-  SCFCalls -> calls
+getContactUserPreference f ps = case f of
+  SCFTimedMessages -> ps.timedMessages
+  SCFFullDelete -> ps.fullDelete
+  SCFReactions -> ps.reactions
+  SCFVoice -> ps.voice
+  SCFCalls -> ps.calls

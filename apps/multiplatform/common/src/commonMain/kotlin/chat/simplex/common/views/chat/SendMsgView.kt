@@ -37,6 +37,8 @@ fun SendMsgView(
   recState: MutableState<RecordingState>,
   isDirectChat: Boolean,
   liveMessageAlertShown: SharedPreference<Boolean>,
+  sendMsgEnabled: Boolean,
+  nextSendGrpInv: Boolean,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
   userIsObserver: Boolean,
@@ -74,16 +76,16 @@ fun SendMsgView(
         false
       }
     }
-    val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
+    val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
-    PlatformTextField(composeState, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage) {
+    PlatformTextField(composeState, sendMsgEnabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage) {
       if (!cs.inProgress) {
         sendMessage(null)
       }
     }
     // Disable clicks on text field
-    if (cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
+    if (!sendMsgEnabled || cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
       Box(
         Modifier
           .matchParentSize()
@@ -110,7 +112,7 @@ fun SendMsgView(
       }
       when {
         progressByTimeout -> ProgressIndicator()
-        showVoiceButton -> {
+        showVoiceButton && sendMsgEnabled -> {
           Row(verticalAlignment = Alignment.CenterVertically) {
             val stopRecOnNextClick = remember { mutableStateOf(false) }
             when {
@@ -150,7 +152,7 @@ fun SendMsgView(
         else -> {
           val cs = composeState.value
           val icon = if (cs.editing || cs.liveMessage != null) painterResource(MR.images.ic_check_filled) else painterResource(MR.images.ic_arrow_upward)
-          val disabled = !cs.sendEnabled() ||
+          val disabled = !sendMsgEnabled || !cs.sendEnabled() ||
               (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
               cs.endLiveDisabled
           val showDropdown = rememberSaveable { mutableStateOf(false) }
@@ -159,7 +161,7 @@ fun SendMsgView(
           fun MenuItems(): List<@Composable () -> Unit> {
             val menuItems = mutableListOf<@Composable () -> Unit>()
 
-            if (cs.liveMessage == null && !cs.editing) {
+            if (cs.liveMessage == null && !cs.editing && !nextSendGrpInv || sendMsgEnabled) {
               if (
                 cs.preview !is ComposePreview.VoicePreview &&
                 cs.contextItem is ComposeContextItem.NoContextItem &&
@@ -599,6 +601,8 @@ fun PreviewSendMsgView() {
       recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
+      sendMsgEnabled = true,
+      nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       userIsObserver = false,
@@ -630,6 +634,8 @@ fun PreviewSendMsgViewEditing() {
       recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
+      sendMsgEnabled = true,
+      nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       userIsObserver = false,
@@ -661,6 +667,8 @@ fun PreviewSendMsgViewInProgress() {
       recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
+      sendMsgEnabled = true,
+      nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       userIsObserver = false,

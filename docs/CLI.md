@@ -16,7 +16,7 @@ revision: 31.01.2023
     - [Windows](#windows)
   - [Build from source](#build-from-source)
     - [Using Docker](#using-docker)
-    - [Using Haskell stack](#using-haskell-stack)
+    - [Using Haskell in any OS](#in-any-os)
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
   - [Access messaging servers via Tor](#access-messaging-servers-via-tor-beta)
@@ -102,27 +102,49 @@ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 
 #### In any OS
 
-1. Install [Haskell GHCup](https://www.haskell.org/ghcup/), GHC 8.10.7 and cabal:
+1. Install [Haskell GHCup](https://www.haskell.org/ghcup/), GHC 9.6.2 and cabal 3.10.1.0:
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
 ```
 
-2. Build the project:
+You can use `ghcup tui` to check or add GHC and cabal versions.
+
+2. Clone the source code:
 
 ```shell
 git clone git@github.com:simplex-chat/simplex-chat.git
 cd simplex-chat
 git checkout stable
-# on Linux
+# or to build a specific version:
+# git checkout v5.3.0-beta.8
+```
+
+`master` is a development branch, it may containt unstable code.
+
+3. Prepare the system:
+
+On Linux:
+
+```shell
 apt-get update && apt-get install -y build-essential libgmp3-dev zlib1g-dev
 cp scripts/cabal.project.local.linux cabal.project.local
-# or on MacOS:
-# brew install openssl@1.1
-# cp scripts/cabal.project.local.mac cabal.project.local
-# you may need to amend cabal.project.local to point to the actual openssl location
+```
+
+On Mac:
+
+```
+brew install openssl@1.1
+cp scripts/cabal.project.local.mac cabal.project.local
+```
+
+You may need to amend cabal.project.local to point to the actual openssl location.
+
+4. Build the app:
+
+```shell
 cabal update
-cabal install
+cabal install simplex-chat
 ```
 
 ## Usage

@@ -1072,14 +1072,14 @@
     <string name="enable_lock">Povolit zámek</string>
     <string name="lock_after">Zamknout po</string>
     <string name="lock_mode">Režim zámku</string>
-    <string name="authentication_cancelled">Ověření zrušeno</string>
+    <string name="authentication_cancelled">Autentizace zrušena</string>
     <string name="confirm_passcode">Potvrdit heslo</string>
     <string name="incorrect_passcode">Nesprávné heslo</string>
     <string name="new_passcode">Nové heslo</string>
     <string name="submit_passcode">Odeslat</string>
     <string name="la_mode_system">Systém</string>
     <string name="change_lock_mode">Změnit zamykání</string>
-    <string name="la_mode_passcode">Heslo</string>
+    <string name="la_mode_passcode">Přístupový kód</string>
     <string name="passcode_changed">Heslo změněno!</string>
     <string name="passcode_not_changed">Heslo nezměněno!</string>
     <string name="passcode_set">Heslo nastaveno!</string>
@@ -1376,4 +1376,18 @@
     <string name="privacy_show_last_messages">Zobrazit poslední zprávy</string>
     <string name="send_receipts_disabled_alert_msg">Tato skupina má více než %1$d členů, doručenky nejsou odeslány.</string>
     <string name="in_developing_desc">Tato funkce zatím není podporována. Vyzkoušejte další vydání.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Databáze bude zašifrována a heslo bude uloženo v klíčence.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Všimněte si prosím</b>: zprávy a relé souborů jsou spojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů pomocí přímého připojení.]]></string>
+    <string name="encrypt_local_files">Šifrovat místní soubory</string>
+    <string name="you_can_change_it_later">Náhodné heslo je uloženo v nastavení jako prostý text.
+\nMůžete jej změnit později.</string>
+    <string name="database_encryption_will_be_updated_in_settings">Heslo pro šifrování databáze bude aktualizováno a uloženo v klíčence.</string>
+    <string name="remove_passphrase_from_settings">Odebrat heslo z nastavení\?</string>
+    <string name="use_random_passphrase">Použít náhodné heslo</string>
+    <string name="save_passphrase_in_settings">Uložit heslo v nastavení</string>
+    <string name="setup_database_passphrase">Nastavení hesla databáze</string>
+    <string name="set_database_passphrase">Nastavit heslo databáze</string>
+    <string name="open_database_folder">Otevřete složku databáze</string>
+    <string name="passphrase_will_be_saved_in_settings">Heslo bude uloženo v nastavení jako prostý text až jej změníte nebo po restartu aplikace.</string>
+    <string name="settings_is_storing_in_clear_text">Heslo je uloženo v nastavení jako prostý text.</string>
 </resources>

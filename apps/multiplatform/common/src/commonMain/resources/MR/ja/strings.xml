@@ -530,7 +530,8 @@
     <string name="how_to_use_simplex_chat">使い方</string>
     <string name="markdown_help">マークダウン (書式編集) ガイド</string>
     <string name="smp_servers_enter_manually">サーバを手動で入力</string>
-    <string name="network_use_onion_hosts_required_desc">接続にオニオンのホストが必要となります。</string>
+    <string name="network_use_onion_hosts_required_desc">接続にオニオンのホストが必要となります。
+\n注意: .onion アドレスがないとサーバーに接続できません。</string>
     <string name="create_address">アドレスを作成</string>
     <string name="delete_address__question">アドレスを削除しますか？</string>
     <string name="display_name__field">表示の名前：</string>
@@ -1376,4 +1377,18 @@
     <string name="send_receipts_disabled_alert_msg">This group has over %1$d members, delivery receipts are not sent.</string>
     <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
     <string name="delivery_receipts_are_disabled">Delivery receipts are disabled!</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">データベースは暗号化され、パスフレーズは設定に保存されます。</string>
+    <string name="you_can_change_it_later">ランダムなパスフレーズは設定に平文として保存されます。
+\n後で変更できます。</string>
+    <string name="database_encryption_will_be_updated_in_settings">データベースの暗号化パスフレーズが更新され、設定に保存されます。</string>
+    <string name="remove_passphrase_from_settings">設定からパスフレーズを削除しますか？</string>
+    <string name="use_random_passphrase">ランダムなパスフレーズを使用する</string>
+    <string name="save_passphrase_in_settings">パスフレーズを設定に保存します</string>
+    <string name="setup_database_passphrase">データベースのパスフレーズを設定する</string>
+    <string name="set_database_passphrase">データベースのパスフレーズを設定する</string>
+    <string name="open_database_folder">データベースフォルダを開く</string>
+    <string name="passphrase_will_be_saved_in_settings">パスフレーズを変更するかアプリを再起動すると、平文として設定に保存されます。</string>
+    <string name="settings_is_storing_in_clear_text">パスフレーズは平文として設定に保存されます。</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>注意</b>: メッセージとファイルのリレーは SOCKS プロキシ経由で接続されます。 通話とリンク プレビューの送信には直接接続が使用されます。]]></string>
+    <string name="encrypt_local_files">ローカルファイルを暗号化する</string>
 </resources>

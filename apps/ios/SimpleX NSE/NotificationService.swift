@@ -383,7 +383,7 @@ func apiSetFileToReceive(fileId: Int64, encrypted: Bool) {
 func autoReceiveFile(_ file: CIFile, encrypted: Bool) -> ChatItem? {
     switch file.fileProtocol {
     case .smp:
-        return apiReceiveFile(fileId: file.fileId, encrypted: false)?.chatItem
+        return apiReceiveFile(fileId: file.fileId, encrypted: encrypted)?.chatItem
     case .xftp:
         apiSetFileToReceive(fileId: file.fileId, encrypted: encrypted)
         return nil

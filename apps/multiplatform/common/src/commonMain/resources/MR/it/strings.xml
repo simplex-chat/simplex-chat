@@ -612,7 +612,8 @@
     <string name="network_and_servers">Rete e server</string>
     <string name="network_settings_title">Impostazioni di rete</string>
     <string name="network_use_onion_hosts_no">No</string>
-    <string name="network_use_onion_hosts_required_desc">Gli host Onion saranno necessari per la connessione.</string>
+    <string name="network_use_onion_hosts_required_desc">Gli host Onion saranno necessari per la connessione.
+\nNota bene: non potrai connetterti ai server senza indirizzo .onion .</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Gli host Onion saranno necessari per la connessione.</string>
     <string name="network_use_onion_hosts_prefer_desc">Gli host Onion verranno usati quando disponibili.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Gli host Onion verranno usati quando disponibili.</string>
@@ -1376,4 +1377,30 @@
     <string name="rcv_group_event_3_members_connected">%s, %s e %s sono connessi/e</string>
     <string name="privacy_message_draft">Bozza</string>
     <string name="privacy_show_last_messages">Mostra gli ultimi messaggi</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Il database verrà crittografato e la password conservata nelle impostazioni.</string>
+    <string name="you_can_change_it_later">La password casuale viene conservata nelle impostazioni come testo normale.
+\nPuoi cambiarla dopo.</string>
+    <string name="database_encryption_will_be_updated_in_settings">La password di crittografia del database verrà aggiornata e conservata nelle impostazioni.</string>
+    <string name="remove_passphrase_from_settings">Rimuovere la password dalle impostazioni\?</string>
+    <string name="use_random_passphrase">Usa password casuale</string>
+    <string name="save_passphrase_in_settings">Salva password nelle impostazioni</string>
+    <string name="setup_database_passphrase">Configura password del database</string>
+    <string name="set_database_passphrase">Imposta password del database</string>
+    <string name="open_database_folder">Apri cartella del database</string>
+    <string name="passphrase_will_be_saved_in_settings">La password verrà conservata nelle impostazioni come testo normale dopo averla cambiata o il riavvio dell\'app.</string>
+    <string name="settings_is_storing_in_clear_text">La password viene conservata nelle impostazioni come testo normale.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Nota bene</b>: i relay di messaggi e file sono connessi via proxy SOCKS. Le chiamate e l\'invio di anteprime dei link usano una connessione diretta.]]></string>
+    <string name="encrypt_local_files">Cripta i file locali</string>
+    <string name="v5_3_encrypt_local_files">Crittografia di file e media memorizzati</string>
+    <string name="v5_3_new_desktop_app">Nuova app desktop!</string>
+    <string name="v5_3_new_interface_languages">6 nuove lingue dell\'interfaccia</string>
+    <string name="v5_3_encrypt_local_files_descr">L\'app cripta i nuovi file locali (eccetto i video).</string>
+    <string name="v5_3_discover_join_groups">Scopri ed unisciti ai gruppi</string>
+    <string name="v5_3_simpler_incognito_mode">Modalità incognito semplificata</string>
+    <string name="v5_3_new_interface_languages_descr">Arabo, bulgaro, finlandese, ebraico, tailandese e ucraino - grazie agli utenti e a Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Crea un nuovo profilo nell\'app desktop. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Attiva/disattiva l\'incognito quando ti colleghi.</string>
+    <string name="v5_3_discover_join_groups_descr">- connessione al servizio directory (BETA)!
+\n- ricevute di consegna (fino a 20 membri).
+\n- più veloce e più stabile.</string>
 </resources>

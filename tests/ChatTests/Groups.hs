@@ -68,19 +68,20 @@ chatGroupTests = do
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
   describe "direct connections in group are not established based on chat protocol version" $ do
     describe "3 members group" $ do
-      testNoDirect _0 _0 False -- True
-      testNoDirect _0 _1 False -- True
+      testNoDirect _0 _0 True
+      testNoDirect _0 _1 True
       testNoDirect _1 _0 False
       testNoDirect _1 _1 False
-    describe "4 members group" $ do
-      testNoDirect4 _0 _0 _0 False False False -- True True True
-      testNoDirect4 _0 _0 _1 False False False -- True True True
-      testNoDirect4 _0 _1 _0 False False False -- True True False
-      testNoDirect4 _0 _1 _1 False False False -- True True False
-      testNoDirect4 _1 _0 _0 False False False -- False False True
-      testNoDirect4 _1 _0 _1 False False False -- False False True
-      testNoDirect4 _1 _1 _0 False False False
-      testNoDirect4 _1 _1 _1 False False False
+    it "members have different local display names in different groups" testNoDirectDifferentLDNs
+    it "member should connect to contact when profile match" testConnectMemberToContact
+  describe "create member contact" $ do
+    it "create contact with group member with invitation message" testMemberContactMessage
+    it "create contact with group member without invitation message" testMemberContactNoMessage
+    it "prohibited to create contact with group member if it already exists" testMemberContactProhibitedContactExists
+    it "prohibited to repeat sending x.grp.direct.inv" testMemberContactProhibitedRepeatInv
+    it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
+    it "share incognito profile" testMemberContactIncognito
+    it "sends and updates profile when creating contact" testMemberContactProfileUpdate
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -94,17 +95,6 @@ chatGroupTests = do
             <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
         )
         $ testNoGroupDirectConns supportedChatVRange vrMem2 vrMem3 noConns
-    testNoDirect4 vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34 =
-      it
-        ( "host " <> vRangeStr supportedChatVRange
-            <> (", 2nd mem " <> vRangeStr vrMem2)
-            <> (", 3rd mem " <> vRangeStr vrMem3)
-            <> (", 4th mem " <> vRangeStr vrMem4)
-            <> (if noConns23 then " : 2 <!!> 3" else " : 2 <##> 3")
-            <> (if noConns24 then " : 2 <!!> 4" else " : 2 <##> 4")
-            <> (if noConns34 then " : 3 <!!> 4" else " : 3 <##> 4")
-        )
-        $ testNoGroupDirectConns4Members supportedChatVRange vrMem2 vrMem3 vrMem4 noConns23 noConns24 noConns34
 
 testGroup :: HasCallStack => FilePath -> IO ()
 testGroup =
@@ -230,8 +220,12 @@ testGroupShared alice bob cath checkMessages = do
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
-  alice ##> "@bob hey"
-  alice <## "no contact bob"
+  alice `send` "@bob hey"
+  alice
+    <### [ "@bob hey",
+           "member #team bob does not have direct connection, creating",
+           "peer chat protocol version range incompatible"
+         ]
   when checkMessages $ threadDelay 1000000
   alice #> "#team checking connection"
   bob <# "#team alice> checking connection"
@@ -643,11 +637,22 @@ testGroupDeleteInvitedContact =
       bob <# "#team alice> hello"
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
-      alice ##> "@bob hey"
-      alice <## "no contact bob"
-      bob #> "@alice hey"
-      bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
-      (alice </)
+      alice `send` "@bob hey"
+      alice
+        <### [ WithTime "@bob hey",
+               "member #team bob does not have direct connection, creating",
+               "contact for member #team bob is created",
+               "sent invitation to connect directly to member #team bob"
+             ]
+      bob
+        <### [ "#team alice is creating direct contact alice with you",
+               WithTime "alice> hey",
+               "alice: security code changed"
+             ]
+      concurrently_
+        (alice <## "bob (Bob): contact is connected")
+        (bob <## "alice (Alice): contact is connected")
+      alice <##> bob
 
 testDeleteGroupMemberProfileKept :: HasCallStack => FilePath -> IO ()
 testDeleteGroupMemberProfileKept =
@@ -696,7 +701,7 @@ testDeleteGroupMemberProfileKept =
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
       alice ##> "@bob hey"
-      alice <## "no contact bob"
+      alice <## "no contact bob, use @#club bob <your message>"
       bob #> "@alice hey"
       bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       (alice </)
@@ -2636,53 +2641,482 @@ testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns tmp =
         createGroup3 "team" alice bob cath
         if noDirectConns
           then contactsDontExist bob cath
-          else bob <##> cath
+          else contactsExist bob cath
   where
     contactsDontExist bob cath = do
-      bob ##> "@cath hi"
-      bob <## "no contact cath"
-      cath ##> "@bob hi"
-      cath <## "no contact bob"
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+      cath ##> "/contacts"
+      cath <## "alice (Alice)"
+    contactsExist bob cath = do
+      bob ##> "/contacts"
+      bob
+        <### [ "alice (Alice)",
+               "cath (Catherine)"
+             ]
+      cath ##> "/contacts"
+      cath
+        <### [ "alice (Alice)",
+               "bob (Bob)"
+             ]
+      bob <##> cath
 
-testNoGroupDirectConns4Members :: HasCallStack => VersionRange -> VersionRange -> VersionRange -> VersionRange -> Bool -> Bool -> Bool -> FilePath -> IO ()
-testNoGroupDirectConns4Members hostVRange mem2VRange mem3VRange mem4VRange noConns23 noConns24 noConns34 tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg tmp testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
-        withNewTestChatCfg tmp testCfg {chatVRange = mem4VRange} "dan" danProfile $ \dan -> do
-          createGroup3 "team" alice bob cath
-          connectUsers alice dan
-          addMember "team" alice dan GRMember
-          dan ##> "/j team"
-          concurrentlyN_
-            [ alice <## "#team: dan joined the group",
-              do
-                dan <## "#team: you joined the group"
-                dan
-                  <### [ "#team: member bob (Bob) is connected",
-                         "#team: member cath (Catherine) is connected"
-                       ],
-              aliceAddedDan bob,
-              aliceAddedDan cath
-            ]
-          if noConns23
-            then contactsDontExist bob cath
-            else bob <##> cath
-          if noConns24
-            then contactsDontExist bob dan
-            else bob <##> dan
-          if noConns34
-            then contactsDontExist cath dan
-            else cath <##> dan
+testNoDirectDifferentLDNs :: HasCallStack => FilePath -> IO ()
+testNoDirectDifferentLDNs =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice ##> "/g club"
+      alice <## "group #club is created"
+      alice <## "to add members use /a club <name> or /create link #club"
+      addMember "club" alice bob GRAdmin
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob joined the group")
+        (bob <## "#club: you joined the group")
+      addMember "club" alice cath GRAdmin
+      cath ##> "/j club"
+      concurrentlyN_
+        [ alice <## "#club: cath joined the group",
+          do
+            cath <## "#club: you joined the group"
+            cath <## "#club: member bob_1 (Bob) is connected",
+          do
+            bob <## "#club: alice added cath_1 (Catherine) to the group (connecting...)"
+            bob <## "#club: new member cath_1 is connected"
+        ]
+
+      testGroupLDNs alice bob cath "team" "bob" "cath"
+      testGroupLDNs alice bob cath "club" "bob_1" "cath_1"
+
+      alice `hasContactProfiles` ["alice", "bob", "cath"]
+      bob `hasContactProfiles` ["bob", "alice", "cath", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob", "bob"]
   where
-    aliceAddedDan :: HasCallStack => TestCC -> IO ()
-    aliceAddedDan cc = do
-      cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
-      cc <## "#team: new member dan is connected"
-    contactsDontExist cc1 cc2 = do
-      name1 <- userName cc1
-      name2 <- userName cc2
-      cc1 ##> ("@" <> name2 <> " hi")
-      cc1 <## ("no contact " <> name2)
-      cc2 ##> ("@" <> name1 <> " hi")
-      cc2 <## ("no contact " <> name1)
+    testGroupLDNs alice bob cath gName bobLDN cathLDN = do
+      alice ##> ("/ms " <> gName)
+      alice
+        <### [ "alice (Alice): owner, you, created group",
+               "bob (Bob): admin, invited, connected",
+               "cath (Catherine): admin, invited, connected"
+             ]
+
+      bob ##> ("/ms " <> gName)
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               ConsoleString (cathLDN <> " (Catherine): admin, connected")
+             ]
+
+      cath ##> ("/ms " <> gName)
+      cath
+        <### [ "alice (Alice): owner, host, connected",
+               ConsoleString (bobLDN <> " (Bob): admin, connected"),
+               "cath (Catherine): admin, you, connected"
+             ]
+
+      alice #> ("#" <> gName <> " hello")
+      concurrentlyN_
+        [ bob <# ("#" <> gName <> " alice> hello"),
+          cath <# ("#" <> gName <> " alice> hello")
+        ]
+      bob #> ("#" <> gName <> " hi there")
+      concurrentlyN_
+        [ alice <# ("#" <> gName <> " bob> hi there"),
+          cath <# ("#" <> gName <> " " <> bobLDN <> "> hi there")
+        ]
+      cath #> ("#" <> gName <> " hey")
+      concurrentlyN_
+        [ alice <# ("#" <> gName <> " cath> hey"),
+          bob <# ("#" <> gName <> " " <> cathLDN <> "> hey")
+        ]
+
+testConnectMemberToContact :: HasCallStack => FilePath -> IO ()
+testConnectMemberToContact =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+      createGroup2 "team" bob cath
+      bob ##> "/a #team alice"
+      bob <## "invitation to join the group #team sent to alice"
+      alice <## "#team: bob invites you to join the group as member"
+      alice <## "use /j team to accept"
+      alice ##> "/j team"
+      concurrentlyN_
+        [ do
+            alice <## "#team: you joined the group"
+            alice <## "#team: member cath_1 (Catherine) is connected"
+            alice <## "member #team cath_1 is merged into cath",
+          do
+            bob <## "#team: alice joined the group",
+          do
+            cath <## "#team: bob added alice_1 (Alice) to the group (connecting...)"
+            cath <## "#team: new member alice_1 is connected"
+            cath <## "member #team alice_1 is merged into alice"
+        ]
+      alice <##> cath
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      cath <# "#team alice> hello"
+      cath #> "#team hello too"
+      bob <# "#team cath> hello too"
+      alice <# "#team cath> hello too"
+
+      alice ##> "/contacts"
+      alice
+        <### [ "bob (Bob)",
+               "cath (Catherine)"
+             ]
+      cath ##> "/contacts"
+      cath
+        <### [ "alice (Alice)",
+               "bob (Bob)"
+             ]
+      alice `hasContactProfiles` ["alice", "bob", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+
+testMemberContactMessage :: HasCallStack => FilePath -> IO ()
+testMemberContactMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      -- alice and bob delete contacts, connect
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+
+      alice ##> "@#team bob hi"
+      alice
+        <### [ "member #team bob does not have direct connection, creating",
+               "contact for member #team bob is created",
+               "sent invitation to connect directly to member #team bob",
+               WithTime "@bob hi"
+             ]
+      bob
+        <### [ "#team alice is creating direct contact alice with you",
+               WithTime "alice> hi"
+             ]
+      concurrently_
+        (alice <## "bob (Bob): contact is connected")
+        (bob <## "alice (Alice): contact is connected")
+
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
+      alice <##> bob
+
+      -- bob and cath connect
+      bob ##> "@#team cath hi"
+      bob
+        <### [ "member #team cath does not have direct connection, creating",
+               "contact for member #team cath is created",
+               "sent invitation to connect directly to member #team cath",
+               WithTime "@cath hi"
+             ]
+      cath
+        <### [ "#team bob is creating direct contact bob with you",
+               WithTime "bob> hi"
+             ]
+      concurrently_
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
+
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
+      bob <##> cath
+
+testMemberContactNoMessage :: HasCallStack => FilePath -> IO ()
+testMemberContactNoMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      -- bob and cath connect
+      bob ##> "/_create member contact #1 3"
+      bob <## "contact for member #team cath is created"
+
+      bob ##> "/_invite member contact @3"
+      bob <## "sent invitation to connect directly to member #team cath"
+      cath <## "#team bob is creating direct contact bob with you"
+      concurrently_
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
+
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
+      bob <##> cath
+
+testMemberContactProhibitedContactExists :: HasCallStack => FilePath -> IO ()
+testMemberContactProhibitedContactExists =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice ##> "/_create member contact #1 2"
+      alice <## "bad chat command: member contact already exists"
+
+      alice ##> "@#team bob hi"
+      alice <# "@bob hi"
+      bob <# "alice> hi"
+
+testMemberContactProhibitedRepeatInv :: HasCallStack => FilePath -> IO ()
+testMemberContactProhibitedRepeatInv =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      bob ##> "/_create member contact #1 3"
+      bob <## "contact for member #team cath is created"
+
+      bob ##> "/_invite member contact @3 text hi"
+      bob
+        <### [ "sent invitation to connect directly to member #team cath",
+               WithTime "@cath hi"
+             ]
+      bob ##> "/_invite member contact @3 text hey"
+      bob <## "bad chat command: x.grp.direct.inv already sent"
+      cath
+        <### [ "#team bob is creating direct contact bob with you",
+               WithTime "bob> hi"
+             ]
+      concurrently_
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
+
+      bob <##> cath
+
+testMemberContactInvitedConnectionReplaced :: HasCallStack => FilePath -> IO ()
+testMemberContactInvitedConnectionReplaced tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+
+        alice ##> "/d bob"
+        alice <## "bob: contact is deleted"
+
+        alice ##> "@#team bob hi"
+        alice
+          <### [ "member #team bob does not have direct connection, creating",
+                 "contact for member #team bob is created",
+                 "sent invitation to connect directly to member #team bob",
+                 WithTime "@bob hi"
+               ]
+        bob
+          <### [ "#team alice is creating direct contact alice with you",
+                 WithTime "alice> hi",
+                 "alice: security code changed"
+               ]
+        concurrently_
+          (alice <## "bob (Bob): contact is connected")
+          (bob <## "alice (Alice): contact is connected")
+
+        bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "received invitation to join group team as admin"), (0, "hi"), (0, "security code changed")] <> chatFeatures)
+
+    withTestChat tmp "bob" $ \bob -> do
+      subscriptions bob 1
+
+      checkConnectionsWork alice bob
+
+  withTestChat tmp "alice" $ \alice -> do
+    subscriptions alice 2
+
+    withTestChat tmp "bob" $ \bob -> do
+      subscriptions bob 1
+
+      checkConnectionsWork alice bob
+
+      withTestChat tmp "cath" $ \cath -> do
+        subscriptions cath 1
+
+        -- group messages work
+        alice #> "#team hello"
+        concurrently_
+          (bob <# "#team alice> hello")
+          (cath <# "#team alice> hello")
+        bob #> "#team hi there"
+        concurrently_
+          (alice <# "#team bob> hi there")
+          (cath <# "#team bob> hi there")
+        cath #> "#team hey team"
+        concurrently_
+          (alice <# "#team cath> hey team")
+          (bob <# "#team cath> hey team")
+  where
+    subscriptions :: TestCC -> Int -> IO ()
+    subscriptions cc n = do
+      cc <## (show n <> " contacts connected (use /cs for the list)")
+      cc <## "#team: connected to server(s)"
+    checkConnectionsWork alice bob = do
+      alice <##> bob
+      alice @@@ [("@bob", "hey"), ("@cath", "sent invitation to join group team as admin"), ("#team", "connected")]
+      bob @@@ [("@alice", "hey"), ("#team", "started direct connection with you")]
+
+testMemberContactIncognito :: HasCallStack => FilePath -> IO ()
+testMemberContactIncognito =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      -- create group, bob joins incognito
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c i " <> gLink)
+      bobIncognito <- getTermLine bob
+      bob <## "connection request sent incognito!"
+      alice <## (bobIncognito <> ": accepting request to join group #team...")
+      _ <- getTermLine bob
+      concurrentlyN_
+        [ do
+            alice <## (bobIncognito <> ": contact is connected")
+            alice <## (bobIncognito <> " invited to group #team via your group link")
+            alice <## ("#team: " <> bobIncognito <> " joined the group"),
+          do
+            bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## "use /i alice to print out this incognito profile again"
+            bob <## ("#team: you joined the group incognito as " <> bobIncognito)
+        ]
+      -- cath joins incognito
+      cath ##> ("/c i " <> gLink)
+      cathIncognito <- getTermLine cath
+      cath <## "connection request sent incognito!"
+      alice <## (cathIncognito <> ": accepting request to join group #team...")
+      _ <- getTermLine cath
+      concurrentlyN_
+        [ do
+            alice <## (cathIncognito <> ": contact is connected")
+            alice <## (cathIncognito <> " invited to group #team via your group link")
+            alice <## ("#team: " <> cathIncognito <> " joined the group"),
+          do
+            cath <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> cathIncognito)
+            cath <## "use /i alice to print out this incognito profile again"
+            cath <## ("#team: you joined the group incognito as " <> cathIncognito)
+            cath <## ("#team: member " <> bobIncognito <> " is connected"),
+          do
+            bob <## ("#team: alice added " <> cathIncognito <> " to the group (connecting...)")
+            bob <## ("#team: new member " <> cathIncognito <> " is connected")
+        ]
+
+      alice `hasContactProfiles` ["alice", T.pack bobIncognito, T.pack cathIncognito]
+      bob `hasContactProfiles` ["bob", "alice", T.pack bobIncognito, T.pack cathIncognito]
+      cath `hasContactProfiles` ["cath", "alice", T.pack bobIncognito, T.pack cathIncognito]
+
+      -- bob creates member contact with cath - both share incognito profile
+      bob ##> ("@#team " <> cathIncognito <> " hi")
+      bob
+        <### [ ConsoleString ("member #team " <> cathIncognito <> " does not have direct connection, creating"),
+               ConsoleString ("contact for member #team " <> cathIncognito <> " is created"),
+               ConsoleString ("sent invitation to connect directly to member #team " <> cathIncognito),
+               WithTime ("i @" <> cathIncognito <> " hi")
+             ]
+      cath
+        <### [ ConsoleString ("#team " <> bobIncognito <> " is creating direct contact " <> bobIncognito <> " with you"),
+               WithTime ("i " <> bobIncognito <> "> hi")
+             ]
+      _ <- getTermLine bob
+      _ <- getTermLine cath
+      concurrentlyN_
+        [ do
+            bob <## (cathIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## ("use /i " <> cathIncognito <> " to print out this incognito profile again"),
+          do
+            cath <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> cathIncognito)
+            cath <## ("use /i " <> bobIncognito <> " to print out this incognito profile again")
+        ]
+
+      bob `hasContactProfiles` ["bob", "alice", T.pack bobIncognito, T.pack cathIncognito]
+      cath `hasContactProfiles` ["cath", "alice", T.pack bobIncognito, T.pack cathIncognito]
+
+      bob ?#> ("@" <> cathIncognito <> " hi, I'm incognito")
+      cath ?<# (bobIncognito <> "> hi, I'm incognito")
+      cath ?#> ("@" <> bobIncognito <> " hey, me too")
+      bob ?<# (cathIncognito <> "> hey, me too")
+
+      -- members still use incognito profile for group
+      alice #> "#team hello"
+      concurrentlyN_
+        [ bob ?<# "#team alice> hello",
+          cath ?<# "#team alice> hello"
+        ]
+      bob ?#> "#team hi there"
+      concurrentlyN_
+        [ alice <# ("#team " <> bobIncognito <> "> hi there"),
+          cath ?<# ("#team " <> bobIncognito <> "> hi there")
+        ]
+      cath ?#> "#team hey"
+      concurrentlyN_
+        [ alice <# ("#team " <> cathIncognito <> "> hey"),
+          bob ?<# ("#team " <> cathIncognito <> "> hey")
+        ]
+
+testMemberContactProfileUpdate :: HasCallStack => FilePath -> IO ()
+testMemberContactProfileUpdate =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      bob ##> "/p rob Rob"
+      bob <## "user profile is changed to rob (Rob) (your 1 contacts are notified)"
+      alice <## "contact bob changed to rob (Rob)"
+      alice <## "use @rob <message> to send messages"
+
+      cath ##> "/p kate Kate"
+      cath <## "user profile is changed to kate (Kate) (your 1 contacts are notified)"
+      alice <## "contact cath changed to kate (Kate)"
+      alice <## "use @kate <message> to send messages"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      cath <# "#team alice> hello"
+
+      bob #> "#team hello too"
+      alice <# "#team rob> hello too"
+      cath <# "#team bob> hello too" -- not updated profile
+
+      cath #> "#team hello there"
+      alice <# "#team kate> hello there"
+      bob <# "#team cath> hello there" -- not updated profile
+
+      bob `send` "@cath hi"
+      bob
+        <### [ "member #team cath does not have direct connection, creating",
+               "contact for member #team cath is created",
+               "sent invitation to connect directly to member #team cath",
+               WithTime "@cath hi"
+             ]
+      cath
+        <### [ "#team bob is creating direct contact bob with you",
+               WithTime "bob> hi"
+             ]
+      concurrentlyN_
+        [ do
+            bob <## "contact cath changed to kate (Kate)"
+            bob <## "use @kate <message> to send messages"
+            bob <## "kate (Kate): contact is connected",
+          do
+            cath <## "contact bob changed to rob (Rob)"
+            cath <## "use @rob <message> to send messages"
+            cath <## "rob (Rob): contact is connected"
+        ]
+
+      bob ##> "/contacts"
+      bob
+        <### [ "alice (Alice)",
+               "kate (Kate)"
+             ]
+      cath ##> "/contacts"
+      cath
+        <### [ "alice (Alice)",
+               "rob (Rob)"
+             ]
+      alice `hasContactProfiles` ["alice", "rob", "kate"]
+      bob `hasContactProfiles` ["rob", "alice", "kate"]
+      cath `hasContactProfiles` ["kate", "alice", "rob"]
+
+      bob #> "#team hello too"
+      alice <# "#team rob> hello too"
+      cath <# "#team rob> hello too" -- updated profile
+
+      cath #> "#team hello there"
+      alice <# "#team kate> hello there"
+      bob <# "#team kate> hello there" -- updated profile

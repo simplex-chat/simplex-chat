@@ -347,7 +347,8 @@
     <string name="network_and_servers">Sieć i serwery</string>
     <string name="network_settings_title">Ustawienia sieci</string>
     <string name="network_use_onion_hosts_no">Nie</string>
-    <string name="network_use_onion_hosts_required_desc">Hosty onion będą wymagane do połączenia.</string>
+    <string name="network_use_onion_hosts_required_desc">Hosty onion będą wymagane do połączenia.
+\nUwaga: nie będziesz mógł połączyć się z serwerami bez adresu .onion.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Hosty onion będą wymagane do połączenia.</string>
     <string name="network_use_onion_hosts_prefer_desc">Hosty onion będą używane, gdy będą dostępne.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Hosty onion będą używane, gdy będą dostępne.</string>
@@ -1376,4 +1377,30 @@
     <string name="rcv_group_event_2_members_connected">%s i %s połączeni</string>
     <string name="rcv_group_event_n_members_connected">%s, %s i %d innych członków połączeni</string>
     <string name="rcv_group_event_3_members_connected">%s, %s i %s połączeni</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Baza danych zostanie zaszyfrowana, a hasło zapisane w ustawieniach.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Uwaga</b>: przekaźniki wiadomości i plików są połączone za pośrednictwem serwera proxy SOCKS. Połączenia i wysyłanie podglądów linków korzystają z połączenia bezpośredniego.]]></string>
+    <string name="encrypt_local_files">Zaszyfruj lokalne pliki</string>
+    <string name="you_can_change_it_later">Losowe hasło jest trzymane w ustawieniach w czystym tekście.
+\nMożesz zmienić je później.</string>
+    <string name="database_encryption_will_be_updated_in_settings">Hasło szyfrowania bazy danych zostanie zaktualizowane i zapisane w ustawieniach.</string>
+    <string name="remove_passphrase_from_settings">Usunąć hasło z ustawień\?</string>
+    <string name="use_random_passphrase">Użyj losowego hasła</string>
+    <string name="save_passphrase_in_settings">Zapisz hasło w ustawieniach</string>
+    <string name="setup_database_passphrase">Ustaw hasło bazy danych</string>
+    <string name="set_database_passphrase">Ustaw hasło bazy danych</string>
+    <string name="open_database_folder">Otwórz folder bazy danych</string>
+    <string name="passphrase_will_be_saved_in_settings">Hasło będzie trzymane w ustawieniach jako czysty tekst po tym jak je zmienisz lub zrestartujesz aplikację.</string>
+    <string name="settings_is_storing_in_clear_text">Hasło jest trzymane w ustawieniach w czystym tekście.</string>
+    <string name="v5_3_encrypt_local_files">Szyfruj przechowywane pliki i media</string>
+    <string name="v5_3_new_desktop_app">Nowa aplikacja desktopowa!</string>
+    <string name="v5_3_new_interface_languages">6 nowych języków interfejsu</string>
+    <string name="v5_3_encrypt_local_files_descr">Aplikacja szyfruje nowe lokalne pliki (bez filmów).</string>
+    <string name="v5_3_discover_join_groups">Odkrywaj i dołączaj do grup</string>
+    <string name="v5_3_simpler_incognito_mode">Uproszczony tryb incognito</string>
+    <string name="v5_3_new_interface_languages_descr">Arabski, bułgarski, fiński, hebrajski, tajski i ukraiński - dzięki użytkownikom i Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Utwórz nowy profil w aplikacji desktopowej. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Przełącz incognito przy połączeniu.</string>
+    <string name="v5_3_discover_join_groups_descr">- połącz się z usługą katalogową (BETA)!
+\n- potwierdzenia dostaw (do 20 członków).
+\n- szybszy i stabilniejszy.</string>
 </resources>
