@@ -183,6 +183,8 @@
                             
                                 <li><a href="/docs/translations.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Translate SimpleX Chat</a></li>
                             
+                                <li><a href="/downloads/" class=" lg:px-[20px] inline-block whitespace-nowrap">Downloads</a></li>
+                            
 
                             <hr class=" h-[1px] w-full dark:opacity-[0.1]">
 
@@ -646,6 +648,10 @@ window.addEventListener('scroll',changeHeaderBg);
                                                     <a class="" href="/docs/xftp-server.html">Hosting your own XFTP Server</a>
                                                 </li>
                                             
+                                                <li>
+                                                    <a class="" href="/downloads/">Download SimpleX apps</a>
+                                                </li>
+                                            
                                         </ul>
                                     
                                 
@@ -768,7 +774,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#build-from-source">Build from source</a>
 <ul>
 <li><a href="#using-docker">Using Docker</a></li>
-<li><a href="#using-haskell-stack">Using Haskell stack</a></li>
+<li><a href="#in-any-os">Using Haskell in any OS</a></li>
 </ul>
 </li>
 </ul>
@@ -838,25 +844,38 @@ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 </blockquote>
 <h4 id="in-any-os" tabindex="-1">In any OS</h4>
 <ol>
-<li>Install <a href="https://www.haskell.org/ghcup/">Haskell GHCup</a>, GHC 8.10.7 and cabal:</li>
+<li>Install <a href="https://www.haskell.org/ghcup/">Haskell GHCup</a>, GHC 9.6.2 and cabal 3.10.1.0:</li>
 </ol>
 <pre><code class="language-shell">curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
 </code></pre>
+<p>You can use <code>ghcup tui</code> to check or add GHC and cabal versions.</p>
 <ol start="2">
-<li>Build the project:</li>
+<li>Clone the source code:</li>
 </ol>
 <pre><code class="language-shell">git clone git@github.com:simplex-chat/simplex-chat.git
 cd simplex-chat
 git checkout stable
-# on Linux
-apt-get update &amp;&amp; apt-get install -y build-essential libgmp3-dev zlib1g-dev
+# or to build a specific version:
+# git checkout v5.3.0-beta.8
+</code></pre>
+<p><code>master</code> is a development branch, it may containt unstable code.</p>
+<ol start="3">
+<li>Prepare the system:</li>
+</ol>
+<p>On Linux:</p>
+<pre><code class="language-shell">apt-get update &amp;&amp; apt-get install -y build-essential libgmp3-dev zlib1g-dev
 cp scripts/cabal.project.local.linux cabal.project.local
-# or on MacOS:
-# brew install openssl@1.1
-# cp scripts/cabal.project.local.mac cabal.project.local
-# you may need to amend cabal.project.local to point to the actual openssl location
-cabal update
-cabal install
+</code></pre>
+<p>On Mac:</p>
+<pre><code>brew install openssl@1.1
+cp scripts/cabal.project.local.mac cabal.project.local
+</code></pre>
+<p>You may need to amend cabal.project.local to point to the actual openssl location.</p>
+<ol start="4">
+<li>Build the app:</li>
+</ol>
+<pre><code class="language-shell">cabal update
+cabal install simplex-chat
 </code></pre>
 <h2 id="usage" tabindex="-1">Usage</h2>
 <h3 id="running-the-chat-client" tabindex="-1">Running the chat client</h3>
