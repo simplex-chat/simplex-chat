@@ -2144,7 +2144,6 @@ public struct ChatItem: Identifiable, Decodable {
     }
 
     public var encryptLocalFile: Bool {
-        file?.fileProtocol == .xftp &&
         content.msgContent?.isVideo == false &&
         privacyEncryptLocalFilesGroupDefault.get()
     }

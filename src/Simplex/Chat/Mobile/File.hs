@@ -25,11 +25,11 @@ import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Lazy.Char8 as LB'
 import Data.Char (chr)
 import Data.Either (fromLeft)
-import Data.Word (Word8, Word32)
+import Data.Word (Word32, Word8)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
-import Foreign.Storable (poke)
+import Foreign.Storable (poke, pokeByteOff)
 import GHC.Generics (Generic)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
@@ -52,7 +52,7 @@ cChatWriteFile cPath ptr len = do
   path <- peekCString cPath
   s <- getByteString ptr len
   r <- chatWriteFile path s
-  newCAString $ LB'.unpack $ J.encode r
+  newCStringFromLazyBS $ J.encode r
 
 chatWriteFile :: FilePath -> ByteString -> IO WriteFileResult
 chatWriteFile path s = do
@@ -76,12 +76,11 @@ cChatReadFile cPath cKey cNonce = do
   chatReadFile path key nonce >>= \case
     Left e -> castPtr <$> newCString (chr 1 : e)
     Right s -> do
-      let s' = LB.toStrict s
-          len = B.length s'
+      let len = fromIntegral $ LB.length s
       ptr <- mallocBytes $ len + 5
-      poke ptr 0
-      poke (ptr `plusPtr` 1) (fromIntegral len :: Word32)
-      putByteString (ptr `plusPtr` 5) s'
+      poke ptr (0 :: Word8)
+      pokeByteOff ptr 1 (fromIntegral len :: Word32)
+      putLazyByteString (ptr `plusPtr` 5) s
       pure ptr
 
 chatReadFile :: FilePath -> ByteString -> ByteString -> IO (Either String LB.ByteString)

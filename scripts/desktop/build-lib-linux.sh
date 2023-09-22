@@ -23,3 +23,4 @@ rm -rf apps/multiplatform/desktop/build/cmake
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp -r $BUILD_DIR/build/deps apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+scripts/desktop/prepare-vlc-linux.sh

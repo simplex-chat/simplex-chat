@@ -7,13 +7,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.common.platform.AudioPlayer
-import chat.simplex.common.platform.chatController
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -1417,8 +1416,7 @@ data class ChatItem (
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
 
   val encryptLocalFile: Boolean
-    get() = file?.fileProtocol == FileProtocol.XFTP &&
-        content.msgContent !is MsgContent.MCVideo &&
+    get() = content.msgContent !is MsgContent.MCVideo &&
         chatController.appPrefs.privacyEncryptLocalFiles.get()
 
   val memberDisplayName: String? get() =
@@ -2112,6 +2110,23 @@ data class CryptoFile(
 
   val isAbsolutePath: Boolean
     get() = File(filePath).isAbsolute
+
+  @Transient
+  private var tmpFile: File? = null
+
+  fun createTmpFileIfNeeded(): File {
+    if (tmpFile == null) {
+      val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+      tmpFile.deleteOnExit()
+      ChatModel.filesToDelete.add(tmpFile)
+      this.tmpFile = tmpFile
+    }
+    return tmpFile!!
+  }
+
+  fun deleteTmpFile() {
+    tmpFile?.delete()
+  }
 
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)

@@ -449,7 +449,7 @@ fun ChatLayout(
           val images = groups[true] ?: emptyList()
           val files = groups[false] ?: emptyList()
           if (images.isNotEmpty()) {
-            composeState.processPickedMedia(images, null)
+            CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(images, null) }
           } else if (files.isNotEmpty()) {
             composeState.processPickedFile(uris.first(), null)
           }
@@ -459,7 +459,7 @@ fun ChatLayout(
           tmpFile.deleteOnExit()
           chatModel.filesToDelete.add(tmpFile)
           val uri = tmpFile.toURI()
-          composeState.processPickedMedia(listOf(uri), null)
+          CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(listOf(uri), null) }
         },
         onText = {
           // Need to parse HTML in order to correctly display the content
@@ -737,7 +737,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   }
   DisposableEffectOnGone(
     whenGone = {
-      VideoPlayer.releaseAll()
+      VideoPlayerHolder.releaseAll()
     }
   )
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {

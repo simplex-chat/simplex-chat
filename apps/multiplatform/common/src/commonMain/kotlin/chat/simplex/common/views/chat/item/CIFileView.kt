@@ -71,7 +71,7 @@ fun CIFileView(
       when (file.fileStatus) {
         is CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
-            val encrypted = file.fileProtocol == FileProtocol.XFTP && chatController.appPrefs.privacyEncryptLocalFiles.get()
+            val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
             receiveFile(file.fileId, encrypted)
           } else {
             AlertManager.shared.showAlertMsg(
