@@ -27,7 +27,7 @@ actual class RecorderNative: RecorderInterface {
     }
 
   override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
-    VideoPlayer.stopAll()
+    VideoPlayerHolder.stopAll()
     AudioPlayer.stop()
     val rec: MediaRecorder
     recorder = initRecorder().also { rec = it }
@@ -140,7 +140,7 @@ actual object AudioPlayer: AudioPlayerInterface {
       return null
     }
 
-    VideoPlayer.stopAll()
+    VideoPlayerHolder.stopAll()
     RecorderInterface.stopRecording?.invoke()
     val current = currentlyPlaying.value
     if (current == null || current.first != fileSource.filePath) {

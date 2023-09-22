@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        5.3.0.7
+version:        5.3.0.9
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -112,6 +112,7 @@ library
       Simplex.Chat.Migrations.M20230829_connections_chat_vrange
       Simplex.Chat.Migrations.M20230903_connections_to_subscribe
       Simplex.Chat.Migrations.M20230913_member_contacts
+      Simplex.Chat.Migrations.M20230914_member_probes
       Simplex.Chat.Migrations.M20230922_remote_hosts
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
@@ -179,7 +180,6 @@ library
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -229,7 +229,6 @@ executable simplex-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -279,7 +278,6 @@ executable simplex-bot-advanced
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -331,7 +329,6 @@ executable simplex-broadcast-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -382,7 +379,6 @@ executable simplex-chat
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
@@ -437,7 +433,6 @@ executable simplex-directory-service
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -514,7 +509,6 @@ test-suite simplex-chat-test
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , unix ==2.8.1.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*

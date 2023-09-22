@@ -64,6 +64,7 @@ struct ChatView: View {
             
             Spacer(minLength: 0)
 
+            connectingText()
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
@@ -149,6 +150,7 @@ struct ChatView: View {
                     HStack {
                         if contact.allowsFeature(.calls) {
                             callButton(contact, .audio, imageName: "phone")
+                                .disabled(!contact.ready)
                         }
                         Menu {
                             if contact.allowsFeature(.calls) {
@@ -157,9 +159,11 @@ struct ChatView: View {
                                 } label: {
                                     Label("Video call", systemImage: "video")
                                 }
+                                .disabled(!contact.ready)
                             }
                             searchButton()
                             toggleNtfsButton(chat)
+                                .disabled(!contact.ready)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -312,6 +316,19 @@ struct ChatView: View {
             }
         }
         .scaleEffect(x: 1, y: -1, anchor: .center)
+    }
+
+    @ViewBuilder private func connectingText() -> some View {
+        if case let .direct(contact) = chat.chatInfo,
+           !contact.ready,
+           !contact.nextSendGrpInv {
+            Text("connecting…")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.top)
+        } else {
+            EmptyView()
+        }
     }
     
     private func floatingButtons(_ proxy: ScrollViewProxy) -> some View {
