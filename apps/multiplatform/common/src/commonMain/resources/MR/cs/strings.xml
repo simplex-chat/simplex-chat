@@ -1353,7 +1353,7 @@
     <string name="receipts_groups_override_disabled">Odesílání doručenky je zakázáno pro %d skupin</string>
     <string name="receipts_groups_disable_for_all">Vypnout pro všechny skupiny</string>
     <string name="send_receipts_disabled">vypnut</string>
-    <string name="send_receipts_disabled_alert_title">Receipts jsou zakázány</string>
+    <string name="send_receipts_disabled_alert_title">Potvrzení jsou zakázána</string>
     <string name="in_developing_title">Již brzy!</string>
     <string name="connect_use_current_profile">Použít aktuální profil</string>
     <string name="connect_use_new_incognito_profile">Použít nový incognito profil</string>
@@ -1377,7 +1377,7 @@
     <string name="send_receipts_disabled_alert_msg">Tato skupina má více než %1$d členů, doručenky nejsou odeslány.</string>
     <string name="in_developing_desc">Tato funkce zatím není podporována. Vyzkoušejte další vydání.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Databáze bude zašifrována a heslo bude uloženo v klíčence.</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Všimněte si prosím</b>: zprávy a relé souborů jsou spojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů pomocí přímého připojení.]]></string>
+    <string name="socks_proxy_setting_limitations"><b>Všimněte si prosím</b>: relé zpráv a souborů jsou připojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů používá přímé připojení.</string>
     <string name="encrypt_local_files">Šifrovat místní soubory</string>
     <string name="you_can_change_it_later">Náhodné heslo je uloženo v nastavení jako prostý text.
 \nMůžete jej změnit později.</string>
@@ -1390,4 +1390,8 @@
     <string name="open_database_folder">Otevřete složku databáze</string>
     <string name="passphrase_will_be_saved_in_settings">Heslo bude uloženo v nastavení jako prostý text až jej změníte nebo po restartu aplikace.</string>
     <string name="settings_is_storing_in_clear_text">Heslo je uloženo v nastavení jako prostý text.</string>
+    <string name="v5_3_new_interface_languages">6 nových jazyků pro rozhraní</string>
+    <string name="v5_3_encrypt_local_files_descr">Aplikace šifruje nové místní soubory (kromě videí)</string>
+    <string name="v5_3_new_interface_languages_descr">Arabština, bulharština, finština, hebrejština, thajština a ukrajinština - díky uživatelům a Weblate.</string>
+    <string name="rcv_group_event_member_created_contact">propojeno napřímo</string>
 </resources>
