@@ -440,9 +440,9 @@ struct ChatInfoView: View {
                     do {
                         try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
                         await MainActor.run {
-                            chatModel.removeChat(chat.chatInfo.id)
-                            chatModel.chatId = nil
                             dismiss()
+                            chatModel.chatId = nil
+                            chatModel.removeChat(chat.chatInfo.id)
                         }
                     } catch let error {
                         logger.error("deleteContactAlert apiDeleteChat error: \(responseError(error))")
