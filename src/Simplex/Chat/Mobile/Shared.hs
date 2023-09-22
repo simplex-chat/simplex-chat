@@ -11,7 +11,7 @@ import Foreign
 
 type CJSONString = CString
 
-type JSONByteString = ByteString
+type JSONByteString = LB.ByteString
 
 getByteString :: Ptr Word8 -> CInt -> IO ByteString
 getByteString ptr len = do
@@ -32,9 +32,17 @@ putLazyByteString ptr = \case
     putLazyByteString (ptr `plusPtr` B.length ch) s
 
 newCStringFromBS :: ByteString -> IO CString
-newCStringFromBS (BS fp len) = do
+newCStringFromBS s = do
+  let len = B.length s
   buf <- mallocBytes (len + 1)
-  withForeignPtr fp $ \p -> do
-    memcpy buf p len
-    pokeByteOff buf len (0 :: Word8)
-    pure $ castPtr buf
+  putByteString buf s
+  pokeByteOff buf len (0 :: Word8)
+  pure $ castPtr buf
+
+newCStringFromLazyBS :: LB.ByteString -> IO CString
+newCStringFromLazyBS s = do
+  let len = fromIntegral $ LB.length s
+  buf <- mallocBytes (len + 1)
+  putLazyByteString buf s
+  pokeByteOff buf len (0 :: Word8)
+  pure $ castPtr buf
