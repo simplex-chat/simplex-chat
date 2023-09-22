@@ -176,7 +176,7 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   }
 }
 
-fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text: String?) {
+suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text: String?) {
   val content = ArrayList<UploadContent>()
   val imagesPreview = ArrayList<String>()
   uris.forEach { uri ->
@@ -237,7 +237,7 @@ fun ComposeView(
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
-  AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile, composeState::processPickedMedia)
+  AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
   fun isSimplexLink(link: String): Boolean =
     link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)

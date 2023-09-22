@@ -174,29 +174,12 @@ actual class VideoPlayer actual constructor(
   private suspend fun setPreviewAndDuration() {
     // It freezes main thread, doing it in IO thread
     CoroutineScope(Dispatchers.IO).launch {
-      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo() }
+      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo(defaultPreview, uri) }
       withContext(Dispatchers.Main) {
         preview.value = previewAndDuration.preview ?: defaultPreview
         duration.value = (previewAndDuration.duration ?: 0)
       }
     }
-  }
-
-  private suspend fun getBitmapFromVideo(): VideoPlayerInterface.PreviewAndDuration {
-    val player = CallbackMediaPlayerComponent().mediaPlayer()
-    val filepath = getAppFilePath(uri)
-    if (filepath == null || !File(filepath).exists()) {
-      return VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
-    }
-    player.media().startPaused(filepath)
-    val start = System.currentTimeMillis()
-    while (player.snapshots()?.get() == null && start + 5000 > System.currentTimeMillis()) {
-      delay(10)
-    }
-    val preview = player.snapshots()?.get()?.toComposeImageBitmap()
-    val duration = player.duration.toLong()
-    CoroutineScope(Dispatchers.IO).launch { player.release() }
-    return VideoPlayerInterface.PreviewAndDuration(preview = preview, timestamp = 0L, duration = duration)
   }
 
   private fun initializeMediaPlayerComponent(): Component {
@@ -211,5 +194,23 @@ actual class VideoPlayer actual constructor(
     is CallbackMediaPlayerComponent -> mediaPlayer()
     is EmbeddedMediaPlayerComponent -> mediaPlayer()
     else -> error("mediaPlayer() can only be called on vlcj player components")
+  }
+
+  companion object {
+    suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?): VideoPlayerInterface.PreviewAndDuration {
+      val player = CallbackMediaPlayerComponent().mediaPlayer()
+      if (uri == null || !File(uri.rawPath).exists()) {
+        return VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
+      }
+      player.media().startPaused(uri.toString().replaceFirst("file:", "file://"))
+      val start = System.currentTimeMillis()
+      while (player.snapshots()?.get() == null && start + 5000 > System.currentTimeMillis()) {
+        delay(10)
+      }
+      val preview = player.snapshots()?.get()?.toComposeImageBitmap()
+      val duration = player.duration.toLong()
+      CoroutineScope(Dispatchers.IO).launch { player.release() }
+      return VideoPlayerInterface.PreviewAndDuration(preview = preview, timestamp = 0L, duration = duration)
+    }
   }
 }
