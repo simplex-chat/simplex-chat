@@ -1391,8 +1391,6 @@ serializeIntroStatus = \case
 
 data Notification = Notification {title :: Text, text :: Text}
 
-type JSONString = String
-
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
 
