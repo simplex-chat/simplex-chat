@@ -8,7 +8,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import qualified Data.Text as T
-import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..))
+import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec
 
@@ -17,6 +17,7 @@ chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
+    fit "use multiword profile names" testMultiWordProfileNames
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "add contact link to profile" testProfileLink
@@ -116,6 +117,23 @@ testUpdateProfileImage =
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
       (bob </)
+
+testMultiWordProfileNames :: HasCallStack => FilePath -> IO ()
+testMultiWordProfileNames =
+  testChat3 aliceProfile' bobProfile' cathProfile' $
+    \alice bob cath -> do
+      alice ##> "/c"
+      inv <- getInvitation alice
+      bob ##> ("/c " <> inv)
+      bob <## "confirmation sent!"
+      concurrently_
+        (bob <## "'Alice Jones': contact is connected")
+        (alice <## "'Bob James': contact is connected")
+  where
+    aliceProfile' = baseProfile {displayName = "Alice Jones"}
+    bobProfile' = baseProfile {displayName = "Bob James"}
+    cathProfile' = baseProfile {displayName = "Cath Johnson"}
+    baseProfile = Profile {displayName = "", fullName = "", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
 testUserContactLink :: HasCallStack => FilePath -> IO ()
 testUserContactLink =

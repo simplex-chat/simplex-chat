@@ -1701,7 +1701,7 @@ connEntityLabel = \case
   UserContactConnection _ UserContact {} -> "contact address"
 
 ttyContact :: ContactName -> StyledString
-ttyContact = styled $ colored Green
+ttyContact = styled (colored Green) . viewName
 
 ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
@@ -1721,33 +1721,33 @@ ttyFullName :: ContactName -> Text -> StyledString
 ttyFullName c fullName = ttyContact c <> optFullName c fullName
 
 ttyToContact :: ContactName -> StyledString
-ttyToContact c = ttyTo $ "@" <> c <> " "
+ttyToContact c = ttyTo $ "@" <> viewName c <> " "
 
 ttyToContact' :: Contact -> StyledString
 ttyToContact' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyToContact c
 
 ttyToContactEdited' :: Contact -> StyledString
-ttyToContactEdited' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyTo ("@" <> c <> " [edited] ")
+ttyToContactEdited' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyTo ("@" <> viewName c <> " [edited] ")
 
 ttyQuotedContact :: Contact -> StyledString
-ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ c <> ">"
+ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ viewName c <> ">"
 
 ttyQuotedMember :: Maybe GroupMember -> StyledString
-ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom c
+ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom (viewName c)
 ttyQuotedMember _ = "> " <> ttyFrom "?"
 
 ttyFromContact :: Contact -> StyledString
-ttyFromContact ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (c <> "> ")
+ttyFromContact ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (viewName c <> "> ")
 
 ttyFromContactEdited :: Contact -> StyledString
-ttyFromContactEdited ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (c <> "> [edited] ")
+ttyFromContactEdited ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (viewName c <> "> [edited] ")
 
 ttyFromContactDeleted :: Contact -> Maybe Text -> StyledString
 ttyFromContactDeleted ct@Contact {localDisplayName = c} deletedText_ =
-  ctIncognito ct <> ttyFrom (c <> "> " <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
+  ctIncognito ct <> ttyFrom (viewName c <> "> " <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
 
 ttyGroup :: GroupName -> StyledString
-ttyGroup g = styled (colored Blue) $ "#" <> g
+ttyGroup g = styled (colored Blue) $ "#" <> viewName g
 
 ttyGroup' :: GroupInfo -> StyledString
 ttyGroup' = ttyGroup . groupName'
@@ -1773,7 +1773,7 @@ ttyFromGroupDeleted g m deletedText_ =
 
 fromGroup_ :: GroupInfo -> GroupMember -> Text
 fromGroup_ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} =
-  "#" <> g <> " " <> m <> "> "
+  "#" <> viewName g <> " " <> viewName m <> "> "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
@@ -1783,11 +1783,14 @@ ttyTo = styled $ colored Cyan
 
 ttyToGroup :: GroupInfo -> StyledString
 ttyToGroup g@GroupInfo {localDisplayName = n} =
-  membershipIncognito g <> ttyTo ("#" <> n <> " ")
+  membershipIncognito g <> ttyTo ("#" <> viewName n <> " ")
 
 ttyToGroupEdited :: GroupInfo -> StyledString
 ttyToGroupEdited g@GroupInfo {localDisplayName = n} =
-  membershipIncognito g <> ttyTo ("#" <> n <> " [edited] ")
+  membershipIncognito g <> ttyTo ("#" <> viewName n <> " [edited] ")
+
+viewName :: Text -> Text
+viewName s = if ' ' `T.elem` s then "'" <> s <> "'" else s
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain

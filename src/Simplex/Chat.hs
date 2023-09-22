@@ -33,7 +33,7 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isSpace, toLower)
+import Data.Char
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
@@ -5621,7 +5621,12 @@ chatCommandP =
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
-    displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
+    displayName = safeDecodeUtf8 <$> (manyWords <|> oneWord)
+      where
+        oneWord = A.takeTill (== ' ') >>= check allowedWord
+        manyWords = quoted "'\"" >>= check allowedName
+        check f s = if f (B.unpack s) then pure s else fail "invalid name"
+        quoted cs = A.choice [A.char c *> A.takeTill (== c) <* A.char c | c <- cs]
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
     reactionP = MREmoji <$> (mrEmojiChar <$?> (toEmoji <$> A.anyChar))
@@ -5634,7 +5639,6 @@ chatCommandP =
       '*' -> head "❤️"
       '^' -> '🚀'
       c -> c
-    refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
     receiptSettings = do
@@ -5729,3 +5733,13 @@ timeItToView s action = do
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView $ CRTimedAction s diff
   pure a
+
+allowedName :: String -> Bool
+allowedName s =
+  let ws = words s
+   in unwords ws == s && all allowedWord ws 
+
+allowedWord :: String -> Bool
+allowedWord = all allowed
+  where
+    allowed c = c `notElem` ("@#'\"`" :: String) && (isLetter c || isMark c || isNumber c || isPunctuation c || isSymbol c)

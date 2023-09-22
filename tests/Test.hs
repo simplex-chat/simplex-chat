@@ -1,3 +1,4 @@
+import AllowedNames
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -23,6 +24,7 @@ main = do
     describe "SimpleX chat view" viewTests
     describe "SimpleX chat protocol" protocolTests
     describe "WebRTC encryption" webRTCTests
+    describe "Allowed names" allowedNameTests
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests
