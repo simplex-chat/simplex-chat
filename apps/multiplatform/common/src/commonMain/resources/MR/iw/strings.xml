@@ -677,7 +677,8 @@
     <string name="mark_code_verified">סמן מאומת</string>
     <string name="network_use_onion_hosts_no">לא</string>
     <string name="network_use_onion_hosts_prefer_desc">ייעשה שימוש במארחי Onion כאשר יהיו זמינים.</string>
-    <string name="network_use_onion_hosts_required_desc">מארחי Onion יידרשו לחיבור.</string>
+    <string name="network_use_onion_hosts_required_desc">יידרשו מארחי onion לחיבור.
+\nשימו לב: לא תוכלו להתחבר לשרתים ללא כתובת .onion.</string>
     <string name="network_use_onion_hosts_no_desc">לא ייעשה שימוש במארחי Onion.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">לא ייעשה שימוש במארחי Onion.</string>
     <string name="callstatus_missed">שיחה שלא נענתה</string>
@@ -1377,4 +1378,36 @@
     <string name="system_restricted_background_in_call_warn"><![CDATA[כדי לבצע שיחות ברקע, בחר <b>שימוש בסוללה באפליקציה</b> / <b>ללא הגבלה</b> בהגדרות האפליקציה.]]></string>
     <string name="connect_via_member_address_alert_title">להתחבר ישירות\?</string>
     <string name="connect_via_member_address_alert_desc">בקשת חיבור תישלח לחבר קבוצה זה.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">מסד הנתונים יוצפן וביטוי הסיסמה יאוחסן בהגדרות.</string>
+    <string name="rcv_group_event_open_chat">פתח</string>
+    <string name="v5_3_encrypt_local_files">הצפנת קבצים ומדיה מאוחסנים</string>
+    <string name="error_creating_member_contact">שגיאה ביצירת איש קשר</string>
+    <string name="socks_proxy_setting_limitations"><b>שימו לב</b>: ממסרי הודעות וקבצים מחוברים דרך פרוקסי SOCKS. שיחות ושליחת תצוגות מקדימות של קישורים משתמשים בחיבור ישיר.</string>
+    <string name="encrypt_local_files">הצפין קבצים מקומיים</string>
+    <string name="v5_3_new_desktop_app">אפליקציית שולחן עבודה חדשה!</string>
+    <string name="v5_3_new_interface_languages">6 שפות ממשק חדשות</string>
+    <string name="v5_3_encrypt_local_files_descr">האפליקציה מצפינה קבצים מקומיים חדשים (למעט סרטונים).</string>
+    <string name="you_can_change_it_later">ביטוי סיסמה אקראי מאוחסן בהגדרות כטקסט רגיל.
+\nאתה יכול לשנות את זה מאוחר יותר.</string>
+    <string name="compose_send_direct_message_to_connect">שלח הודעה ישירה כדי להתחבר</string>
+    <string name="v5_3_discover_join_groups">גלה והצטרף לקבוצות</string>
+    <string name="database_encryption_will_be_updated_in_settings">ביטוי הסיסמה להצפנת מסד הנתונים יעודכן ויישמר בהגדרות.</string>
+    <string name="remove_passphrase_from_settings">להסיר את ביטוי הסיסמה מההגדרות\?</string>
+    <string name="use_random_passphrase">השתמש בביטוי סיסמה אקראי</string>
+    <string name="save_passphrase_in_settings">שמור את ביטוי הסיסמה בהגדרות</string>
+    <string name="v5_3_simpler_incognito_mode">מצב זהות נסתרת מפושט</string>
+    <string name="setup_database_passphrase">הגדרת סיסמת מסד נתונים</string>
+    <string name="set_database_passphrase">הגדר את ביטוי הסיסמה של מסד הנתונים</string>
+    <string name="open_database_folder">פתח את תיקיית מסד הנתונים</string>
+    <string name="v5_3_new_interface_languages_descr">ערבית, בולגרית, פינית, עברית, תאילנדית ואוקראינית - הודות למשתמשים ול-Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">צור פרופיל חדש באפליקציית שולחן העבודה. 💻</string>
+    <string name="error_sending_message_contact_invitation">שליחת הודעה להזמנת איש קשר</string>
+    <string name="passphrase_will_be_saved_in_settings">ביטוי הסיסמה יישמר בהגדרות כטקסט רגיל לאחר שתשנה אותו או תפעיל מחדש את האפליקציה.</string>
+    <string name="v5_3_simpler_incognito_mode_descr">החלף מצב זהות נסתרת בעת חיבור.</string>
+    <string name="v5_3_discover_join_groups_descr">- התחבר לשירות ספריות (ביטא)!
+\n- קבלות משלוח (עד 20 חברים).
+\n- מהיר ויציב יותר.</string>
+    <string name="settings_is_storing_in_clear_text">ביטוי הסיסמה מאוחסן בהגדרות כטקסט רגיל.</string>
+    <string name="member_contact_send_direct_message">שלח הודעה ישירה</string>
+    <string name="rcv_group_event_member_created_contact">מחובר ישירות</string>
 </resources>
