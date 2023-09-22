@@ -14,8 +14,8 @@ draft: true
 
 **What's new in v5.3:**
 - [new desktop app!](#multiplatform-desktop-app)!
+- [directory service and other group improvements](#group-directory-service-and-other-group-improvements).
 - [encrypted local files and media with forward secrecy](#encrypted-local-files-and-media-with-forward-secrecy).
-- [directory service](#group-directory-service) and other [group improvements](#group-improvements).
 - [simplified incognito mode](#simplified-incognito-mode)
 
 There are a lot of other improvements and fixes in this release:
@@ -51,6 +51,22 @@ Other limitations:
 - you can play voice messages, but you cannot record them.
 - there is no support for calls yet.
 
+## Group directory service and other group improvements
+
+Directory service provides a way to search for public groups that users registered. To use it, you need to connect to it via SimpleX Chat, as you would connect to any other contact, and type some search terms.
+
+You can also create and register your group, with some limitations explained [here](../docs/DIRECTORY.md).
+
+Other group improvements in this release:
+
+- groups up to 20 members support sending delivery receipts.
+
+- if the group settings allow it, you can now send direct messages to group members even after you deleted the contact.
+
+- connections between members happen faster, and we also a bug that prevented the connections to complete in some cases.
+
+The next release will reduce the time it takes to send messages to the group, especially when there are many members.
+
 ## Encrypted local files and media with forward secrecy
 
 All messages, files and media in SimpleX Chat were always end-to-end encrypted from the very beginning. SimpleX Chat uses double-ratchet algorithm with encrypted message headers, for the best possible meta-data protection.
@@ -63,15 +79,42 @@ From v5.3 all files and media (except videos for now) are encrypted with a rando
 
 So unlike file encryption schemes that use the same passphrase to encrypt files as for the database, this approach provides forward secrecy for locally stored files.
 
-## Group directory service
-
-## Group improvements
-
-- improved groups layout, aggregated "member connected" events.
-
-group performance and stability improvements.
-- send direct messages to group members even after contact is deleted.
-
-- message delivery status in groups.
-
 ## Simplified incognito mode
+
+Incognito mode was added a yeat ago, but and it turned out to be confusing to many users - it was a global setting, but it only affected the new connections.
+
+It is now simpler to use - you can now decide whether to connect to a contact or join a group using your main profile at a point when you create an invitation link or connect via a link or QR code.
+
+## SimpleX platform
+
+Some links to answer the most common questions:
+
+[SimpleX Chat security assessment](./20221108-simplex-chat-v4.2-security-audit-new-website.md).
+
+[How can SimpleX deliver messages without user identifiers](https://simplex.chat/#how-simplex-works).
+
+[What are the risks to have identifiers assigned to the users](https://simplex.chat/#why-ids-bad-for-privacy).
+
+[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations).
+
+[How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
+
+Visit our [website](https://simplex.chat) to learn more.
+
+## Help us with donations
+
+Huge thank you to everybody who donated to SimpleX Chat!
+
+We are prioritizing users privacy and security - it would be impossible without your support.
+
+Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+
+Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.
+
+See [this section](https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations) for the ways to donate.
+
+Thank you,
+
+Evgeny
+
+SimpleX Chat founder
