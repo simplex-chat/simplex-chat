@@ -6,8 +6,6 @@ import Foreign
 
 type CJSONString = CString
 
-type JSONString = String
-
 type JSONByteString = ByteString
 
 getByteString :: Ptr Word8 -> CInt -> IO ByteString

@@ -21,8 +21,6 @@ import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
-import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
@@ -123,9 +121,9 @@ cChatParseServer s = newCStringFromBS . chatParseServer =<< B.packCString s
 
 cChatPasswordHash :: CString -> CString -> IO CString
 cChatPasswordHash cPwd cSalt = do
-  pwd <- peekCAString cPwd
-  salt <- peekCAString cSalt
-  newCAString $ chatPasswordHash pwd salt
+  pwd <- B.packCString cPwd
+  salt <- B.packCString cSalt
+  newCStringFromBS $ chatPasswordHash pwd salt
 
 mobileChatOpts :: String -> String -> ChatOpts
 mobileChatOpts dbFilePrefix dbKey =
@@ -224,11 +222,11 @@ chatParseServer = LB.toStrict . J.encode . toServerAddress . strDecode
     enc :: StrEncoding a => a -> String
     enc = B.unpack . strEncode
 
-chatPasswordHash :: String -> String -> String
+chatPasswordHash :: ByteString -> ByteString -> ByteString
 chatPasswordHash pwd salt = either (const "") passwordHash salt'
   where
-    salt' = U.decode $ B.pack salt
-    passwordHash = B.unpack . U.encode . C.sha512Hash . (encodeUtf8 (T.pack pwd) <>)
+    salt' = U.decode salt
+    passwordHash = U.encode . C.sha512Hash . (pwd <>)
 
 data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: ChatResponse}
   deriving (Generic)
