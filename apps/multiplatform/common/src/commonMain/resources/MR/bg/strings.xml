@@ -1400,4 +1400,10 @@
     <string name="v5_3_discover_join_groups_descr">- свържете се с директория за услуги (БЕТА)!
 \n- потвърждениe за доставка (до 20 члена).
 \n- по-бързо и по-стабилно.</string>
+    <string name="rcv_group_event_open_chat">Отвори</string>
+    <string name="error_creating_member_contact">Грешка при създаване на контакт с член</string>
+    <string name="compose_send_direct_message_to_connect">Изпрати лично съобщение за свързване</string>
+    <string name="error_sending_message_contact_invitation">Изпращане на съобщение за покана за контакт</string>
+    <string name="member_contact_send_direct_message">изпрати лично съобщение</string>
+    <string name="rcv_group_event_member_created_contact">свързан директно</string>
 </resources>
