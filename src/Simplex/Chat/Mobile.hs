@@ -14,6 +14,7 @@ import Data.Aeson (ToJSON (..))
 import qualified Data.Aeson as J
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64.URL as U
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
@@ -101,24 +102,24 @@ cChatMigrateInit fp key conf ctrl = do
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 cChatSendCmd cPtr cCmd = do
   c <- deRefStablePtr cPtr
-  cmd <- peekCAString cCmd
-  newCAString =<< chatSendCmd c cmd
+  cmd <- B.packCString cCmd
+  newCStringFromBS =<< chatSendCmd c cmd
 
 -- | receive message from chat (blocking)
 cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
-cChatRecvMsg cc = deRefStablePtr cc >>= chatRecvMsg >>= newCAString
+cChatRecvMsg cc = deRefStablePtr cc >>= chatRecvMsg >>= newCStringFromBS
 
 -- |  receive message from chat (blocking up to `t` microseconds (1/10^6 sec), returns empty string if times out)
 cChatRecvMsgWait :: StablePtr ChatController -> CInt -> IO CJSONString
-cChatRecvMsgWait cc t = deRefStablePtr cc >>= (`chatRecvMsgWait` fromIntegral t) >>= newCAString
+cChatRecvMsgWait cc t = deRefStablePtr cc >>= (`chatRecvMsgWait` fromIntegral t) >>= newCStringFromBS
 
 -- | parse markdown - returns ParsedMarkdown type JSON
 cChatParseMarkdown :: CString -> IO CJSONString
-cChatParseMarkdown s = newCAString . chatParseMarkdown =<< peekCAString s
+cChatParseMarkdown s = newCStringFromBS . chatParseMarkdown =<< B.packCString s
 
 -- | parse server address - returns ParsedServerAddress JSON
 cChatParseServer :: CString -> IO CJSONString
-cChatParseServer s = newCAString . chatParseServer =<< peekCAString s
+cChatParseServer s = newCStringFromBS . chatParseServer =<< B.packCString s
 
 cChatPasswordHash :: CString -> CString -> IO CString
 cChatPasswordHash cPwd cSalt = do
@@ -197,22 +198,22 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
           _ -> dbError e
         dbError e = Left . DBMErrorSQL dbFile $ show e
 
-chatSendCmd :: ChatController -> String -> IO JSONString
-chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc
+chatSendCmd :: ChatController -> ByteString -> IO JSONByteString
+chatSendCmd cc s = LB.toStrict . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand s) cc
 
-chatRecvMsg :: ChatController -> IO JSONString
+chatRecvMsg :: ChatController -> IO JSONByteString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
   where
-    json (corr, resp) = LB.unpack $ J.encode APIResponse {corr, resp}
+    json (corr, resp) = LB.toStrict $ J.encode APIResponse {corr, resp}
 
-chatRecvMsgWait :: ChatController -> Int -> IO JSONString
+chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)
 
-chatParseMarkdown :: String -> JSONString
-chatParseMarkdown = LB.unpack . J.encode . ParsedMarkdown . parseMaybeMarkdownList . safeDecodeUtf8 . B.pack
+chatParseMarkdown :: ByteString -> JSONByteString
+chatParseMarkdown = LB.toStrict . J.encode . ParsedMarkdown . parseMaybeMarkdownList . safeDecodeUtf8
 
-chatParseServer :: String -> JSONString
-chatParseServer = LB.unpack . J.encode . toServerAddress . strDecode . B.pack
+chatParseServer :: ByteString -> JSONByteString
+chatParseServer = LB.toStrict . J.encode . toServerAddress . strDecode
   where
     toServerAddress :: Either String AProtoServerWithAuth -> ParsedServerAddress
     toServerAddress = \case

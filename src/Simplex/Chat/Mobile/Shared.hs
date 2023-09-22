@@ -1,19 +1,28 @@
 module Simplex.Chat.Mobile.Shared where
 
-import qualified Data.ByteString as B
-import Data.ByteString.Internal (ByteString (PS), memcpy)
+import Data.ByteString.Internal (ByteString (..), memcpy)
 import Foreign.C (CInt, CString)
-import Foreign (Ptr, Word8, newForeignPtr_, plusPtr)
-import Foreign.ForeignPtr.Unsafe
+import Foreign
 
 type CJSONString = CString
+
+type JSONString = String
+
+type JSONByteString = ByteString
 
 getByteString :: Ptr Word8 -> CInt -> IO ByteString
 getByteString ptr len = do
   fp <- newForeignPtr_ ptr
-  pure $ PS fp 0 $ fromIntegral len
+  pure $ BS fp $ fromIntegral len
 
 putByteString :: Ptr Word8 -> ByteString -> IO ()
-putByteString ptr bs@(PS fp offset _)  = do
-  let p = unsafeForeignPtrToPtr fp `plusPtr` offset
-  memcpy ptr p $ B.length bs
+putByteString ptr (BS fp len) =
+  withForeignPtr fp $ \p -> memcpy ptr p len
+
+newCStringFromBS :: ByteString -> IO CString
+newCStringFromBS (BS fp len) = do
+  buf <- mallocBytes (len + 1)
+  withForeignPtr fp $ \p -> do
+    memcpy buf p len
+    pokeByteOff buf len (0 :: Word8)
+    pure $ castPtr buf
