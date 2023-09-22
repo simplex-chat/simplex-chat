@@ -32,7 +32,7 @@ library
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Core
-      Simplex.Chat.Credentials
+      Simplex.Chat.Discovery
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
@@ -159,13 +159,14 @@ library
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , hourglass ==0.2.*
     , http-types ==0.12.*
+    , http2
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -210,13 +211,14 @@ executable simplex-bot
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , hourglass ==0.2.*
     , http-types ==0.12.*
+    , http2
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -262,13 +264,14 @@ executable simplex-bot-advanced
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , hourglass ==0.2.*
     , http-types ==0.12.*
+    , http2
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -316,13 +319,14 @@ executable simplex-broadcast-bot
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , hourglass ==0.2.*
     , http-types ==0.12.*
+    , http2
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -369,13 +373,14 @@ executable simplex-chat
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , hourglass ==0.2.*
     , http-types ==0.12.*
+    , http2
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*
@@ -426,13 +431,14 @@ executable simplex-directory-service
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
-    , hourglass ==0.2.*
     , http-types ==0.12.*
+    , http2
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -502,6 +508,7 @@ test-suite simplex-chat-test
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default
     , deepseq ==1.4.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -510,6 +517,7 @@ test-suite simplex-chat-test
     , filepath ==1.4.*
     , hspec ==2.11.*
     , http-types ==0.12.*
+    , http2
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*

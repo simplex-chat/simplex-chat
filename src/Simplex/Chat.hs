@@ -17,18 +17,6 @@
 
 module Simplex.Chat where
 
-import Debug.Trace
-import Data.String (IsString)
-import qualified Network.Socket as N
-import qualified Network.Socket.ByteString as NSB
-import qualified Network.TLS as TLS
-import qualified Network.UDP as UDP
-import Simplex.Messaging.Transport (supportedParameters)
-import qualified Simplex.Messaging.Transport as Transport
-import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServer)
-import Simplex.Chat.Credentials (genTlsCredentials)
-import Data.Default (def)
-
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import qualified Control.Exception as E
@@ -5792,19 +5780,3 @@ timeItToView s action = do
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView $ CRTimedAction s diff
   pure a
-
--- XXX: ripped from Simplex.Messaging.Transport.Client (not published)
-connectTCPClient :: N.HostName -> N.ServiceName -> IO N.Socket
-connectTCPClient host port = do
-  let hints = N.defaultHints {N.addrSocketType = N.Stream}
-  ai <- N.getAddrInfo (Just hints) (Just host) (Just port)
-  tryOpen ai
-  where
-    tryOpen [] = error "oops"
-    tryOpen (addr : as) =
-      E.try (open addr) >>= either (\E.SomeException{} -> tryOpen as) pure
-
-    open addr = do
-      sock <- N.socket (N.addrFamily addr) (N.addrSocketType addr) (N.addrProtocol addr)
-      N.connect sock $ N.addrAddress addr
-      pure sock
