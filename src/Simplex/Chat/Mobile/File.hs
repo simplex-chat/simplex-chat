@@ -27,11 +27,11 @@ import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Lazy.Char8 as LB'
 import Data.Char (chr)
 import Data.Either (fromLeft)
-import Data.Word (Word8, Word32)
+import Data.Word (Word32, Word8)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
-import Foreign.Storable (poke)
+import Foreign.Storable (poke, pokeByteOff)
 import GHC.Generics (Generic)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
@@ -81,8 +81,8 @@ cChatReadFile cPath cKey cNonce = do
       let s' = LB.toStrict s
           len = B.length s'
       ptr <- mallocBytes $ len + 5
-      poke ptr 0
-      poke (ptr `plusPtr` 1) (fromIntegral len :: Word32)
+      poke ptr (0 :: Word8)
+      pokeByteOff ptr 1 (fromIntegral len :: Word32)
       putByteString (ptr `plusPtr` 5) s'
       pure ptr
 
