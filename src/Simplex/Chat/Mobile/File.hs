@@ -78,12 +78,11 @@ cChatReadFile cPath cKey cNonce = do
   chatReadFile path key nonce >>= \case
     Left e -> castPtr <$> newCString (chr 1 : e)
     Right s -> do
-      let s' = LB.toStrict s
-          len = B.length s'
+      let len = fromIntegral $ LB.length s
       ptr <- mallocBytes $ len + 5
       poke ptr (0 :: Word8)
       pokeByteOff ptr 1 (fromIntegral len :: Word32)
-      putByteString (ptr `plusPtr` 5) s'
+      putLazyByteString (ptr `plusPtr` 5) s
       pure ptr
 
 chatReadFile :: FilePath -> ByteString -> ByteString -> IO (Either String LB.ByteString)
