@@ -188,7 +188,7 @@ actual class VideoPlayer actual constructor(
     if (filepath == null || !File(filepath).exists()) {
       return VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
     }
-    player.media().startPaused(filepath)
+    player.media().startPaused(File(filepath).toURI().toString().replaceFirst("file:", "file://"))
     val start = System.currentTimeMillis()
     while (player.snapshots()?.get() == null && start + 5000 > System.currentTimeMillis()) {
       delay(10)

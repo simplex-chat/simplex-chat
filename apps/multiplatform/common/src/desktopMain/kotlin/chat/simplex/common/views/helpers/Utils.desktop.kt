@@ -88,7 +88,7 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
 }
 
 actual fun getAppFileUri(fileName: String): URI =
-  URI("file:" + appFilesDir.absolutePath + File.separator + fileName)
+  URI(appFilesDir.toURI().toString() + "/" + fileName)
 
 actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   val filePath = getLoadedFilePath(file)
