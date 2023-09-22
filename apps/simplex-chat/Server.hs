@@ -23,7 +23,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Options
-import Simplex.Chat.Types (ZoneId (..))
+import Simplex.Chat.Types (RemoteHostId (..))
 import Simplex.Messaging.Protocol (CorrId (..))
 import Simplex.Messaging.Transport.Server (runTCPServer)
 import Simplex.Messaging.Util (raceAny_)
@@ -46,10 +46,10 @@ defaultChatServerConfig =
       clientQSize = 1
     }
 
-data ChatSrvRequest = ChatSrvRequest {corrId :: Text, zoneId :: Maybe ZoneId, cmd :: Text}
+data ChatSrvRequest = ChatSrvRequest {corrId :: Text, remoteHostId :: Maybe RemoteHostId, cmd :: Text}
   deriving (Generic, FromJSON)
 
-data ChatSrvResponse = ChatSrvResponse {corrId :: Maybe Text, zoneId :: Maybe ZoneId, resp :: ChatResponse}
+data ChatSrvResponse = ChatSrvResponse {corrId :: Maybe Text, remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
   deriving (Generic)
 
 instance ToJSON ChatSrvResponse where
@@ -57,7 +57,7 @@ instance ToJSON ChatSrvResponse where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
 data ChatClient = ChatClient
-  { rcvQ :: TBQueue (Text, Maybe ZoneId, ChatCommand),
+  { rcvQ :: TBQueue (Text, Maybe RemoteHostId, ChatCommand),
     sndQ :: TBQueue ChatSrvResponse
   }
 
@@ -86,24 +86,24 @@ runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
         >>= processCommand
         >>= atomically . writeTBQueue sndQ
     output ChatClient {sndQ} = forever $ do
-      (corr, zoneId, resp) <- atomically . readTBQueue $ outputQ cc
+      (corr, remoteHostId, resp) <- atomically . readTBQueue $ outputQ cc
       let corrId = fmap (decodeUtf8 . bs) corr
-      atomically $ writeTBQueue sndQ ChatSrvResponse {corrId, zoneId, resp}
+      atomically $ writeTBQueue sndQ ChatSrvResponse {corrId, remoteHostId, resp}
     receive ws ChatClient {rcvQ, sndQ} = forever $ do
       s <- WS.receiveData ws
       case J.decodeStrict' s of
-        Just ChatSrvRequest {corrId, zoneId, cmd} -> do
+        Just ChatSrvRequest {corrId, remoteHostId, cmd} -> do
           putStrLn $ "received command " <> show corrId <> " : " <> show cmd
           case parseChatCommand $ encodeUtf8 cmd of
-            Right command -> atomically $ writeTBQueue rcvQ (corrId, zoneId, command)
-            Left e -> sendError (Just corrId) zoneId e
+            Right command -> atomically $ writeTBQueue rcvQ (corrId, remoteHostId, command)
+            Left e -> sendError (Just corrId) remoteHostId e
         Nothing -> sendError Nothing Nothing "invalid request"
       where
-        sendError corrId zoneId e = atomically $ writeTBQueue sndQ ChatSrvResponse {corrId, zoneId, resp = chatCmdError Nothing e}
-    processCommand (corrId, zoneId, cmd) =
+        sendError corrId remoteHostId e = atomically $ writeTBQueue sndQ ChatSrvResponse {corrId, remoteHostId, resp = chatCmdError Nothing e}
+    processCommand (corrId, remoteHostId, cmd) =
       runReaderT (runExceptT $ processChatCommand cmd) cc >>= \case
         Right resp -> response resp
         Left e -> response $ CRChatCmdError Nothing e
       where
-        response resp = pure ChatSrvResponse {corrId = Just corrId, zoneId, resp}
+        response resp = pure ChatSrvResponse {corrId = Just corrId, remoteHostId, resp}
     clientDisconnected _ = pure ()

@@ -190,8 +190,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
-  satellites <- newTVarIO M.empty
-  satelliteHost <- newEmptyTMVarIO
+  remoteHosts <- newTVarIO M.empty
+  remoteController <- newEmptyTMVarIO
   currentUser <- newTVarIO user
   servers <- agentServers config
   smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
@@ -214,7 +214,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {satellites, satelliteHost, activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  pure ChatController {remoteHosts, remoteController, activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -361,40 +361,36 @@ parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
   q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, LOCAL_ZONE, event)
+  atomically $ writeTBQueue q (Nothing, LOCAL_HOST_ID, event)
 
-execZoneCommand :: ChatMonad' m => ZoneId -> B.ByteString -> m ChatResponse
-execZoneCommand zoneId s = either (CRChatCmdError Nothing) id <$> runExceptT processZoneCommand
+relayCommand :: ChatMonad' m => RemoteHostId -> B.ByteString -> m ChatResponse
+relayCommand remoteHostId s = either (CRChatCmdError Nothing) id <$> runExceptT relay
   where
-    processZoneCommand = withZone zoneId $ \case
-      satZone -> processSatelliteCommand satZone s
+    relay = withRemoteHost remoteHostId $ \RemoteHostSession {} -> do
+      error "TODO" s
+      pure CRCmdRelayed
 
-processSatelliteCommand :: ChatMonad m => SatelliteZone -> B.ByteString -> m ChatResponse
-processSatelliteCommand SatelliteZone {relay} cmd = atomically (writeTBQueue relay cmd) $> CRSatelliteRelayed
-
-toZoneView :: ChatMonad' m => ZoneId -> ChatResponse -> m ()
-toZoneView zoneId event = do
+toRemoteView :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
+toRemoteView remoteHostId event = do
   q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, Just zoneId, event)
+  atomically $ writeTBQueue q (Nothing, Just remoteHostId, event)
 
 -- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
-  APIZoneNew -> error "TODO: APIZoneNew"
-  APIZoneList -> error "TODO: APIZoneList"
-  APIZoneDetails zoneId -> withZone zoneId $ \zone -> error "TODO: APIZoneDetails"
-  APIZoneStart zoneId -> withZone zoneId $ \zone -> error "TODO: APIZoneStart"
-  APIZoneStop zoneId -> withZone zoneId $ \zone -> error "TODO: APIZoneStop"
-  APIZoneDispose zoneId -> withZone zoneId $ \zone -> error "TODO: APIZoneDispose"
-  APISatelliteSetup zoneId -> withZone zoneId $ \zone -> error "TODO: APISatelliteSetup"
-  APISatelliteStore zoneId todo'file -> withZone zoneId $ \zone -> error "TODO: APISatelliteStore"
-  APISatelliteFetch zoneId todo'file -> withZone zoneId $ \zone -> error "TODO: APISatelliteFetch"
-  APIHostRegister todo'oobData -> error "TODO: APIHostRegister"
-  APIHostStart -> error "TODO: APIHostStart"
-  APIHostConfirmDiscovery -> error "TODO: APIHostConfirmDiscovery"
-  APIHostRejectDiscovery -> error "TODO: APIHostRejectDiscovery"
-  APIHostStop -> error "TODO: APIHostStop"
-  APIHostDispose todo'oobData -> error "TODO: APIHostDispose"
+  -- TODO: CreateRemoteHost
+  -- TODO: ListRemoteHosts
+  -- TODO: StartRemoteHost
+  -- TODO: StopRemoteHost
+  -- TODO: DisposeRemoteHost
+  -- TODO: StoreRemote
+  -- TODO: FetchRemote
+  -- TODO: RegisterRemoteController
+  -- TODO: StartRemoteController
+  -- TODO: ConfirmRemoteController
+  -- TODO: RejectRemoteController
+  -- TODO: StopRemoteController
+  -- TODO: DisposeRemoteController
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
@@ -5272,11 +5268,11 @@ withUserId userId action = withUser $ \user -> do
   checkSameUser userId user
   action user
 
-withZone :: ChatMonad m => ZoneId -> (SatelliteZone -> m ChatResponse) -> m ChatResponse
-withZone zoneId action = do
-  M.lookup zoneId <$> chatReadVar satellites >>= \case
-    Nothing -> throwZoneError $ ZEMissing zoneId
-    Just zone -> action zone
+withRemoteHost :: ChatMonad m => RemoteHostId -> (RemoteHostSession -> m a) -> m a
+withRemoteHost remoteHostId action = do
+  M.lookup remoteHostId <$> chatReadVar (.remoteHosts) >>= \case
+    Nothing -> throwRemoteError $ REMissing remoteHostId
+    Just rh -> action rh
 
 checkSameUser :: ChatMonad m => UserId -> User -> m ()
 checkSameUser userId User {userId = activeUserId} = when (userId /= activeUserId) $ throwChatError (CEDifferentActiveUser userId activeUserId)
@@ -5325,21 +5321,19 @@ withStoreCtx ctx_ action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
-    [ "/_zone new" $> APIZoneNew,
-      "/_zone list" $> APIZoneList,
-      "/_zone details " *> (APIZoneDetails <$> zoneIdP),
-      "/_zone start " *> (APIZoneStart <$> zoneIdP),
-      "/_zone stop " *> (APIZoneStop <$> zoneIdP),
-      "/_zone dispose " *> (APIZoneDispose <$> zoneIdP),
-      "/_satellite setup " *> (APISatelliteSetup <$> zoneIdP),
-      "/_satellite store " *> (APISatelliteStore <$> zoneIdP <*> strP),
-      "/_satellite fetch " *> (APISatelliteFetch <$> zoneIdP <*> strP),
-      "/_host register " *> (APIHostRegister <$> textP),
-      "/_host start " $> APIHostStart,
-      "/_host confirm " $> APIHostConfirmDiscovery,
-      "/_host reject " $> APIHostRejectDiscovery,
-      "/_host stop " $> APIHostStop,
-      "/_host dispose " *> (APIHostDispose <$> textP),
+    [ "/create remote host" $> CreateRemoteHost,
+      "/list remote hosts" $> ListRemoteHosts,
+      "/start remote host " *> (StartRemoteHost <$> remoteHostIdP),
+      "/stop remote host " *> (StopRemoteHost <$> remoteHostIdP),
+      "/dispose remote host " *> (DisposeRemoteHost <$> remoteHostIdP),
+      "/store remote " *> (StoreRemote <$> strP <*> remoteHostIdP),
+      "/fetch remote " *> (FetchRemote <$> strP <*> remoteHostIdP),
+      "/register remote controller" *> (RegisterRemoteController <$> textP),
+      "/start remote controller" $> StartRemoteController,
+      "/confirm remote controller" $> ConfirmRemoteController,
+      "/reject remote controller" $> RejectRemoteController,
+      "/stop remote controller" $> StopRemoteController,
+      "/dispose remote controller" *> (DisposeRemoteController <$> textP),
       "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` True) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
@@ -5701,7 +5695,7 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
-    zoneIdP = ZoneId <$> A.decimal
+    remoteHostIdP = RemoteHostId <$> A.decimal
 
 adminContactReq :: ConnReqContact
 adminContactReq =

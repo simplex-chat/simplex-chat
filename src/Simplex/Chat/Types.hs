@@ -40,12 +40,15 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.FromRow (FromRow (..))
 import Database.SQLite.Simple.ToField (ToField (..))
+import Database.SQLite.Simple.ToRow (ToRow (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON)
@@ -1503,27 +1506,23 @@ instance ToJSON JVersionRange where
   toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minVersion" .= minV, "maxVersion" .= maxV]
   toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minVersion" .= minV <> "maxVersion" .= maxV
 
-newtype ZoneId = ZoneId Int
+newtype RemoteHostId = RemoteHostId Int
   deriving stock (Show)
-  deriving newtype (Eq, Ord, FromJSON, ToJSON, StrEncoding)
+  deriving newtype (Eq, Ord, FromJSON, ToJSON, FromField, ToField, StrEncoding)
 
-pattern LOCAL_ZONE :: Maybe ZoneId
-pattern LOCAL_ZONE = Nothing
-{-# COMPLETE LOCAL_ZONE, Just #-}
+pattern LOCAL_HOST_ID :: Maybe RemoteHostId
+pattern LOCAL_HOST_ID = Nothing
+{-# COMPLETE LOCAL_HOST_ID, Just #-}
 
-data ZoneInfo = ZoneInfo
-  { zoneId :: ZoneId,
+data RemoteHostInfo = RemoteHostInfo
+  { remoteHostId :: RemoteHostId,
     displayName :: Text,
-    kind :: ZoneKind,
-    properties :: J.Value -- XXX: schema depends on the zone kind
+    -- | Path to store replicated files
+    path :: FilePath,
+    -- | A stable part of X509 credentials used to access the host
+    caCert :: ByteString,
+    -- | Credentials signing key for root and session certs
+    caKey :: C.Key
   }
-  deriving (Eq, Ord, Show, Generic)
-
-data ZoneKind
-  = ZoneUnconfigured
-  | ZoneSatellite
-  deriving (Eq, Ord, Show, Generic)
-
-instance ToJSON ZoneKind where
-  toJSON = J.genericToJSON $ sumTypeJSON id
-  toEncoding = J.genericToEncoding $ sumTypeJSON id
+  deriving stock (Eq, Ord, Show, Generic)
+  deriving anyclass (FromRow, ToRow)

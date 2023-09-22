@@ -108,11 +108,11 @@ cChatSendCmdEx :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
 cChatSendCmdEx cPtr cZone cCmd = do
   c <- deRefStablePtr cPtr
   cmd <- peekCAString cCmd
-  newCAString =<< chatSendCmd c zoneId cmd
+  newCAString =<< chatSendCmd c remoteHostId cmd
   where
-    zoneId
+    remoteHostId
       | cZone == 0 = LOCAL_ZONE
-      | otherwise = Just (ZoneId $ fromIntegral cZone)
+      | otherwise = Just (RemoteHostId $ fromIntegral cZone)
 
 -- | receive message from chat (blocking)
 cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
@@ -208,13 +208,13 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
         dbError e = Left . DBMErrorSQL dbFile $ show e
 
 -- XXX: duplicated multiple times in different APIs
-chatSendCmd :: ChatController -> Maybe ZoneId -> String -> IO JSONString
+chatSendCmd :: ChatController -> Maybe RemoteHostId -> String -> IO JSONString
 chatSendCmd cc z s = LB.unpack . J.encode . APIResponse Nothing z <$> runReaderT (handler $ B.pack s) cc
   where
     handler :: B.ByteString -> ReaderT ChatController IO ChatResponse
     handler = case z of
-      LOCAL_ZONE -> execChatCommand
-      Just zoneId -> execZoneCommand zoneId
+      LOCAL_HOST_ID -> execChatCommand
+      Just remoteHostId -> relayCommand remoteHostId
 
 chatRecvMsg :: ChatController -> IO JSONString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
@@ -245,7 +245,7 @@ chatPasswordHash pwd salt = either (const "") passwordHash salt'
     salt' = U.decode $ B.pack salt
     passwordHash = B.unpack . U.encode . C.sha512Hash . (encodeUtf8 (T.pack pwd) <>)
 
-data APIResponse = APIResponse {corr :: Maybe CorrId, zone :: Maybe ZoneId, resp :: ChatResponse}
+data APIResponse = APIResponse {corr :: Maybe CorrId, zone :: Maybe RemoteHostId, resp :: ChatResponse}
   deriving (Generic)
 
 instance ToJSON APIResponse where

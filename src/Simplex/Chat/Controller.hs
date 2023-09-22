@@ -12,6 +12,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Simplex.Chat.Controller where
 
@@ -165,8 +166,8 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
-    satellites :: TVar (Map ZoneId SatelliteZone), -- All the active satellite zones
-    satelliteHost :: TMVar (Async ()), -- A host supervisor process
+    remoteHosts :: TVar (Map RemoteHostId RemoteHostSession), -- All the active remote hosts
+    remoteController :: TMVar RemoteControllerSession, -- Supervisor process for hosted controllers
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
@@ -175,7 +176,7 @@ data ChatController = ChatController
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
-    outputQ :: TBQueue (Maybe CorrId, Maybe ZoneId, ChatResponse),
+    outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
     subscriptionMode :: TVar SubscriptionMode,
@@ -195,13 +196,26 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath
   }
 
-data SatelliteZone = SatelliteZone
+data RemoteHostSession = RemoteHostSession
   { -- | A process that relays the commands to its host
     handler :: Async (),
-    -- | Commands to be relayed to host
-    relay :: TBQueue ByteString,
     -- | Path for local resources to be synchronized with host
-    path :: FilePath
+    path :: FilePath,
+    -- | Commands to be relayed to a host
+    command :: forall m . ChatMonad m => ByteString -> m ChatResponse,
+    -- | Fetch a file received by a host
+    fetchFile :: forall m . ChatMonad m => FilePath -> m ChatResponse,
+    -- | Store a file on a host to be sent
+    storeFile :: forall m . ChatMonad m => FilePath -> ByteString -> m ChatResponse
+  }
+
+-- | Host-side dual to RemoteHostSession, on-methods represent HTTP API.
+data RemoteControllerSession = RemoteControllerSession
+  { -- | A process that relays commands and data from remote controller
+    handler :: Async (),
+    onCommand :: forall m . ChatMonad m => ByteString -> m ChatResponse,
+    onFetchFile :: forall m . ChatMonad m => FilePath -> m ByteString,
+    onStoreFile :: forall m . ChatMonad m => FilePath -> ByteString -> m ()
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase
@@ -212,21 +226,19 @@ instance ToJSON HelpSection where
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "HS"
 
 data ChatCommand
-  = APIZoneNew -- ^ Prepare a new "empty" zone. Use Setup to install configuration there.
-  | APIZoneList
-  | APIZoneDetails ZoneId
-  | APIZoneStart ZoneId -- ^ Start and announce a new zone
-  | APIZoneStop ZoneId -- ^ Temporarily shut down a running zone
-  | APIZoneDispose ZoneId -- ^ Remove zone data and unregister it
-  | APISatelliteSetup ZoneId -- ^ Configure zone as a satellite uplink to a host
-  | APISatelliteStore ZoneId FilePath -- ^ Store a file at host for `SendFile`
-  | APISatelliteFetch ZoneId FilePath -- ^ Fetch a file from host after `ReceiveFile`
-  | APIHostRegister Text -- ^ Register OOB data for satellite discovery and handshake
-  | APIHostStart -- ^ Start listening for satellite announcements
-  | APIHostConfirmDiscovery -- ^ Confirm discovered data and store confirmation
-  | APIHostRejectDiscovery -- ^ Reject discovered data (and blacklist?)
-  | APIHostStop -- ^ Stop listening for announcements or terminate an active session
-  | APIHostDispose Text -- ^ Remove all local data associated with a satellite session
+  = CreateRemoteHost -- ^ Configure a new remote host
+  | ListRemoteHosts
+  | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
+  | StopRemoteHost RemoteHostId -- ^ Shut down a running session
+  | DisposeRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
+  | StoreRemote FilePath RemoteHostId -- ^ Store a file at host, preparing for `SendFile`
+  | FetchRemote FilePath RemoteHostId -- ^ Fetch a file from host after `ReceiveFile`
+  | RegisterRemoteController Text -- ^ Register OOB data for satellite discovery and handshake
+  | StartRemoteController -- ^ Start listening for satellite announcements
+  | ConfirmRemoteController -- ^ Confirm discovered data and store confirmation
+  | RejectRemoteController -- ^ Reject discovered data (and blacklist?)
+  | StopRemoteController -- ^ Stop listening for announcements or terminate an active session
+  | DisposeRemoteController Text -- ^ Remove all local data associated with a satellite session
   | ShowActiveUser
   | CreateActiveUser NewUser
   | ListUsers
@@ -446,15 +458,16 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRZoneCreated {ident :: ZoneId}
-  | CRZoneList {zones :: [ZoneId]}
-  | CRZoneDetails {ident :: ZoneId, title :: Text, active :: Bool, kind :: ZoneKind}
-  | CRZoneStarted {ident :: ZoneId}
-  | CRZoneStopped {ident :: ZoneId}
-  | CRZoneDisposed {ident :: ZoneId}
-  | CRSatelliteSetup {ident :: ZoneId, oobData :: Text}
-  | CRSatelliteRelayed
-  | CRHost
+  = CRRemoteHostCreated {ident :: RemoteHostId, oobData :: Text}
+  | CRRemoteHostList {remoteHosts :: [(RemoteHostId, Text)]} -- XXX: RemoteHostInfo is mostly concerned with session setup
+  | CRRemoteHostStarted {ident :: RemoteHostId}
+  | CRRemoteHostStopped {ident :: RemoteHostId}
+  | CRRemoteHostDisposed {ident :: RemoteHostId}
+  | CRRemoteControllerRegistered
+  | CRRemoteControllerAccepted
+  | CRRemoteControllerRejected
+  | CRRemoteControllerConnected
+  | CRRemoteControllerDisconnected
   | CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
   | CRChatStarted
@@ -501,6 +514,7 @@ data ChatResponse
   | CRMsgIntegrityError {user :: User, msgError :: MsgErrorType}
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk {user_ :: Maybe User}
+  | CRCmdRelayed -- ^ A command sent to a remote host instead of being interpreted locally
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
@@ -651,8 +665,8 @@ logResponseToFile = \case
   _ -> False
 
 instance ToJSON ChatResponse where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+  toJSON = JT.genericToJSON . sumTypeJSON $ dropPrefix "CR"
+  toEncoding = JT.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -892,9 +906,7 @@ data ChatError
   | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
-  | ChatErrorZone {zoneError :: ZoneError}
-  | ChatErrorSatellite {satelliteError :: SatelliteError}
-  | ChatErrorHost {hostError :: HostError}
+  | ChatErrorRemote {remoteError :: RemoteError}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
@@ -1004,39 +1016,20 @@ instance ToJSON SQLiteError where
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
 
-data ZoneError
-  = ZEMissing {ident :: ZoneId} -- ^ No zone matches this identifier
-  | ZERunning {ident :: ZoneId} -- ^ A zone is already running or still running
+data RemoteError
+  = REMissing {ident :: RemoteHostId} -- ^ No remote session matches this identifier
+  | RERunning {ident :: RemoteHostId} -- ^ A session is already running or still running
+  | REBusy -- ^ A host is busy with another remote controller
+  | REConnectionLost
+  | REConnectionTimeout
   deriving (Show, Exception, Generic)
 
-instance ToJSON ZoneError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "ZE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "ZE"
+instance ToJSON RemoteError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RE"
 
-throwZoneError :: ChatMonad m => ZoneError -> m a
-throwZoneError = throwError . ChatErrorZone
-
-data SatelliteError
-  = SE'todo
-  deriving (Show, Exception, Generic)
-
-instance ToJSON SatelliteError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
-
-throwSatelliteError :: ChatMonad m => SatelliteError -> m a
-throwSatelliteError = throwError . ChatErrorSatellite
-
-data HostError
-  = HE'todo
-  deriving (Show, Exception, Generic)
-
-instance ToJSON HostError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "HE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "HE"
-
-throwHostError :: ChatMonad m => HostError -> m a
-throwHostError = throwError . ChatErrorHost
+throwRemoteError :: ChatMonad m => RemoteError -> m a
+throwRemoteError = throwError . ChatErrorRemote
 
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
