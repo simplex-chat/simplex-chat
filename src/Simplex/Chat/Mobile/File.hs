@@ -54,7 +54,7 @@ cChatWriteFile cPath ptr len = do
   path <- peekCString cPath
   s <- getByteString ptr len
   r <- chatWriteFile path s
-  newCAString $ LB'.unpack $ J.encode r
+  newCStringFromBS $ LB'.toStrict $ J.encode r
 
 chatWriteFile :: FilePath -> ByteString -> IO WriteFileResult
 chatWriteFile path s = do
