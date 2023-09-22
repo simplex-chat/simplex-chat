@@ -243,5 +243,12 @@
     "releases-to-this-repo-are-done-1-2-days-later": "يتم إصدار الإصدارات إلى هذا المستودع بعد يوم أو يومين",
     "f-droid-page-simplex-chat-repo-section-text": "لإضافته إلى عميل F-Droid، <span class='hide-on-mobile'>امسح رمز QR أو</span> استخدم عنوان URL هذا:",
     "f-droid-page-f-droid-org-repo-section-text": "مستودعات SimpleX Chat و F-Droid.org مبنية على مفاتيح مختلفة. للتبديل، يرجى <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>تصدير</a> قاعدة بيانات الدردشة وإعادة تثبيت التطبيق.",
-    "comparison-section-list-point-4a": "مُرحلات SimpleX لا يمكنها أن تتنازل عن تشفير بين الطرفين. تحقق من رمز الأمان للتخفيف من الهجوم على القناة خارج النطاق"
+    "comparison-section-list-point-4a": "مُرحلات SimpleX لا يمكنها أن تتنازل عن تشفير بين الطرفين. تحقق من رمز الأمان للتخفيف من الهجوم على القناة خارج النطاق",
+    "hero-overlay-3-title": "التقييم الأمني",
+    "hero-overlay-card-3-p-2": "قامت Trail of Bits بمراجعة مكونات التشفير والشبكات الخاصة بمنصة SimpleX في نوفمبر 2022.",
+    "hero-overlay-card-3-p-3": "اقرأ المزيد في <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">الإعلان</a>.",
+    "jobs": "انضم للفريق",
+    "hero-overlay-3-textlink": "التقييم الأمني",
+    "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> هي شركة رائدة في مجال الاستشارات الأمنية والتكنولوجية، ومن بين عملائها شركات التكنولوجيا الكبرى والوكالات الحكومية ومشاريع blockchain الكبرى.",
+    "docs-dropdown-9": "التنزيلات"
 }
