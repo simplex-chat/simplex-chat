@@ -117,9 +117,7 @@ fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
 suspend fun openDirectChat(contactId: Long, chatModel: ChatModel) {
   val chat = chatModel.controller.apiGetChat(ChatType.Direct, contactId)
   if (chat != null) {
-    chatModel.chatItems.clear()
-    chatModel.chatItems.addAll(chat.chatItems)
-    chatModel.chatId.value = "@$contactId"
+    openChat(chat, chatModel)
   }
 }
 
@@ -139,11 +137,13 @@ suspend fun openChat(chat: Chat, chatModel: ChatModel) {
 suspend fun apiLoadPrevMessages(chatInfo: ChatInfo, chatModel: ChatModel, beforeChatItemId: Long, search: String) {
   val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
   val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
+  if (chatModel.chatId.value != chat.id) return
   chatModel.chatItems.addAll(0, chat.chatItems)
 }
 
 suspend fun apiFindMessages(chatInfo: ChatInfo, chatModel: ChatModel, search: String) {
   val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, search = search) ?: return
+  if (chatModel.chatId.value != chat.id) return
   chatModel.chatItems.clear()
   chatModel.chatItems.addAll(0, chat.chatItems)
 }
