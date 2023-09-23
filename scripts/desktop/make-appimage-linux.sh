@@ -12,7 +12,7 @@ release_app_dir=$root_dir/apps/multiplatform/release/main/app
 
 cd $multiplatform_dir
 libcrypto_path=$(ldd common/src/commonMain/cpp/desktop/libs/*/deps/libHSdirect-sqlcipher-*.so | grep libcrypto | cut -d'=' -f 2 | cut -d ' ' -f 2)
-trap "rm common/src/commonMain/cpp/desktop/libs/*/deps/`basename $libcrypto_path` 2> /dev/null" EXIT
+trap "rm common/src/commonMain/cpp/desktop/libs/*/deps/`basename $libcrypto_path` 2> /dev/null || true" EXIT
 cp $libcrypto_path common/src/commonMain/cpp/desktop/libs/*/deps
 
 ./gradlew createDistributable

@@ -2392,7 +2392,7 @@ data class NetCfg(
         sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 15_000_000,
         tcpTimeout = 10_000_000,
-        tcpTimeoutPerKb = 20_000,
+        tcpTimeoutPerKb = 30_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3
@@ -2406,7 +2406,7 @@ data class NetCfg(
         sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 30_000_000,
         tcpTimeout = 20_000_000,
-        tcpTimeoutPerKb = 40_000,
+        tcpTimeoutPerKb = 60_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3

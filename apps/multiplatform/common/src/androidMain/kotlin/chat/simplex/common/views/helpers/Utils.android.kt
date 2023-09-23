@@ -309,7 +309,7 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   }
 }
 
-actual fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): VideoPlayerInterface.PreviewAndDuration {
+actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): VideoPlayerInterface.PreviewAndDuration {
   val mmr = MediaMetadataRetriever()
   mmr.setDataSource(androidAppContext, uri.toUri())
   val durationMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()

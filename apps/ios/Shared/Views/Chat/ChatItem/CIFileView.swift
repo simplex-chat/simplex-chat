@@ -84,7 +84,7 @@ struct CIFileView: View {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
                         if let user = ChatModel.shared.currentUser {
-                            let encrypted = file.fileProtocol == .xftp && privacyEncryptLocalFilesGroupDefault.get()
+                            let encrypted = privacyEncryptLocalFilesGroupDefault.get()
                             await receiveFile(user: user, fileId: file.fileId, encrypted: encrypted)
                         }
                     }
