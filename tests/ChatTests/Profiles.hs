@@ -129,6 +129,51 @@ testMultiWordProfileNames =
       concurrently_
         (bob <## "'Alice Jones': contact is connected")
         (alice <## "'Bob James': contact is connected")
+      alice #> "@'Bob James' hi"
+      bob <# "'Alice Jones'> hi"
+      alice ##> "/g 'Our Team'"
+      alice <## "group #'Our Team' is created"
+      alice <## "to add members use /a 'Our Team' <name> or /create link #'Our Team'"
+      alice ##> "/a 'Our Team' 'Bob James' admin"
+      alice <## "invitation to join the group #'Our Team' sent to 'Bob James'"
+      bob <## "#'Our Team': 'Alice Jones' invites you to join the group as admin"
+      bob <## "use /j 'Our Team' to accept"
+      bob ##> "/j 'Our Team'"
+      bob <## "#'Our Team': you joined the group"
+      alice <## "#'Our Team': 'Bob James' joined the group"
+      bob ##> "/c"
+      inv' <- getInvitation bob
+      cath ##> ("/c " <> inv')
+      cath <## "confirmation sent!"
+      concurrently_
+        (cath <## "'Bob James': contact is connected")
+        (bob <## "'Cath Johnson': contact is connected")
+      bob ##> "/a 'Our Team' 'Cath Johnson'"
+      bob <## "invitation to join the group #'Our Team' sent to 'Cath Johnson'"
+      cath <## "#'Our Team': 'Bob James' invites you to join the group as member"
+      cath <## "use /j 'Our Team' to accept"
+      cath ##> "/j 'Our Team'"
+      concurrentlyN_
+        [ bob <## "#'Our Team': 'Cath Johnson' joined the group",
+          do
+            cath <## "#'Our Team': you joined the group"
+            cath <## "#'Our Team': member 'Alice Jones' is connected",
+          do
+            alice <## "#'Our Team': 'Bob James' added 'Cath Johnson' to the group (connecting...)"
+            alice <## "#'Our Team': new member 'Cath Johnson' is connected"
+        ]
+      bob #> "#'Our Team' hi"
+      alice <# "#'Our Team' 'Bob James'> hi"
+      cath <# "#'Our Team' 'Bob James'> hi"
+      alice `send` "@'Cath Johnson' hello"
+      alice <## "member #'Our Team' 'Cath Johnson' does not have direct connection, creating"
+      alice <## "contact for member #'Our Team' 'Cath Johnson' is created"
+      alice <## "sent invitation to connect directly to member #'Our Team' 'Cath Johnson'"
+      alice <# "@'Cath Johnson' hello"
+      cath <## "#'Our Team' 'Alice Jones' is creating direct contact 'Alice Jones' with you"
+      cath <# "'Alice Jones'> hello"
+      cath <## "'Alice Jones': contact is connected"
+      alice <## "'Cath Johnson': contact is connected"
   where
     aliceProfile' = baseProfile {displayName = "Alice Jones"}
     bobProfile' = baseProfile {displayName = "Bob James"}
