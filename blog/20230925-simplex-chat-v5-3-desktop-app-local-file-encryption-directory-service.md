@@ -3,6 +3,7 @@ layout: layouts/article.html
 title: "SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups with directory service"
 date: 2023-09-25
 image: /docs/images/simplex-desktop-light.png
+imageWide: true
 previewBody: blog_previews/20230925.html
 permalink: "/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"
 ---

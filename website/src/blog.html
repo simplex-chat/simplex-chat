@@ -41,10 +41,12 @@ active_blog: true
         {% if not(blog.data.draft) %}
             <article class="w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#11182F] mb-8">
                 <div class="min-h-[200px] h-[inherit] self-stretch md:w-[168px] bg-[#D9E7ED] dark:bg-[#17203D] flex items-center justify-center flex-[1] relative">
-                    <div class="min-h-[inherit] h-full w-full flex items-end px-4 pt-4 justify-center relative">
+                    <div class="min-h-[inherit] h-full w-full flex items-end {% if blog.data.imageWide %}{% else %}px-4 pt-4{% endif %} justify-center relative">
                         {% if blog.data.image %}
                             {% if blog.data.imageBottom %}
-                                <img class="w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                                <img class="w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>   
+                            {% elif blog.data.imageWide %}
+                                <img class="w-full self-center h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                             {% else %}
                                 <img class="mb-4 self-center w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                             {% endif %}
