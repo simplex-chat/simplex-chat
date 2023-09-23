@@ -16,7 +16,7 @@ permalink: "/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-d
 - [new desktop app!](#multiplatform-desktop-app)!
 - [directory service and other group improvements](#group-directory-service-and-other-group-improvements).
 - [encrypted local files and media with forward secrecy](#encrypted-local-files-and-media-with-forward-secrecy).
-- [simplified incognito mode](#simplified-incognito-mode)
+- [simplified incognito mode](#simplified-incognito-mode).
 
 There are a lot of other improvements and fixes in this release:
 - improved app responsiveness and stability.
@@ -90,11 +90,11 @@ This approach provides forward secrecy for locally stored files, unlike file enc
 
 <img src="./images/20230925-incognito.png" width="330" class="float-to-left">
 
-Incognito mode was added a year ago, but it  was confusing for many users - it was a global setting, but it only affected the new connections.
+Incognito mode was [added a year ago](./20220901-simplex-chat-v3.2-incognito-mode.md) to improve anonymity of your profile, but it was confusing for some users - it was a global setting, but it only affected the new connections.
 
 It is now simpler to use - you can decide whether to connect to a contact or join a group using your main profile at a point when you create an invitation link or connect via a link or QR code.
 
-When you are connecting to people your know you would usually want to share your main profile, and when connecting to public groups or strangers you may want to use a random profile.
+When you are connecting to people your know you usually want to share your main profile, and when connecting to public groups or strangers, you may prefer to use a random profile.
 
 ## SimpleX platform
 
