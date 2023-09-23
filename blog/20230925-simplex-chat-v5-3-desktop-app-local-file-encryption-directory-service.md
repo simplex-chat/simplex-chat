@@ -2,10 +2,9 @@
 layout: layouts/article.html
 title: "SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups with directory service"
 date: 2023-09-25
-# image: images/20230925-desktop-app.png
-# previewBody: blog_previews/20230722.html
+image: /docs/images/simplex-desktop-light.png
+previewBody: blog_previews/20230925.html
 permalink: "/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"
-draft: true
 ---
 
 # SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups
@@ -36,7 +35,7 @@ Also, we added 6 new interface languages: Arabic<sup>*</sup>, Bulgarian, Finnish
 
 ## Multiplatform desktop app
 
-<img src="/docs/images/simplex-desktop-light.png" width="500">
+<img src="/docs/images/simplex-desktop-light.png" width="640">
 
 Thanks a lot to everybody who was testing the desktop app since July – it really helped to make it stable!
 
@@ -51,6 +50,8 @@ Other limitations of the desktop app:
 - there is no support for calls yet.
 
 ## Group directory service and other group improvements
+
+<img src="./images/20230925-directory.png" width="330">
 
 Directory service provides a way to search for public groups submitted by the users. To use it, you need to connect to it via SimpleX Chat, as you would connect to any other contact, and type some words to search.
 
@@ -68,6 +69,8 @@ The next release will reduce the time it takes to send messages to the group, es
 
 ## Encrypted local files and media with forward secrecy
 
+<img src="./images/20230925-encrypted.png" width="330">
+
 All messages, files and media sent via SimpleX Chat were always end-to-end encrypted from the very beginning. SimpleX Chat uses double-ratchet algorithm with encrypted message headers, for the best possible meta-data protection.
 
 You contacts, groups and messages are stored in the local database on your device, and this database was encrypted from [v4.0 released a year ago](./20220928-simplex-chat-v4-encrypted-database.md).
@@ -83,6 +86,8 @@ The keys used to encrypt files locally are associated with the messages and stor
 This approach provides forward secrecy for locally stored files, unlike file encryption schemes used in some other apps when the same passphrase is used for all files.
 
 ## Simplified incognito mode
+
+<img src="./images/20230925-incognito.png" width="330">
 
 Incognito mode was added a year ago, but it  was confusing for many users - it was a global setting, but it only affected the new connections.
 
