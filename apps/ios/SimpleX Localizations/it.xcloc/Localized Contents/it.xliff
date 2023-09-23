@@ -6088,9 +6088,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>chiamata rifiutata</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="removed" xml:space="preserve">
+      <trans-unit id="removed" xml:space="preserve" approved="no">
         <source>removed</source>
-        <target>ha rimosso</target>
+        <target state="translated">rimosso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="removed %@" xml:space="preserve">
@@ -6098,9 +6098,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>ha rimosso %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="removed you" xml:space="preserve">
+      <trans-unit id="removed you" xml:space="preserve" approved="no">
         <source>removed you</source>
-        <target>sei stato/a rimosso/a</target>
+        <target state="translated">ti ha rimosso/a</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="sec" xml:space="preserve">
