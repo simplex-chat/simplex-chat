@@ -28,7 +28,7 @@ There are a lot of other improvements and fixes in this release:
   - screen reader for messages<sup>**</sup>.
   - reduced background crashes<sup>**</sup>.
 
-Also, we added 6 new interface languages: Arabic<sup>*</sup>, Bulgarian, Finnish, Hebrew<sup>*</sup>, Thai and Ukranian - thanks to [our users and Weblate](https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat).
+Also, we added 6 new interface languages: Arabic<sup>*</sup>, Bulgarian, Finnish, Hebrew<sup>*</sup>, Thai and Ukrainian - thanks to [our users and Weblate](https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat).
 
 \* Android app.
 
