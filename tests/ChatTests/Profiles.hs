@@ -17,7 +17,7 @@ chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
-    fit "use multiword profile names" testMultiWordProfileNames
+    it "use multiword profile names" testMultiWordProfileNames
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "add contact link to profile" testProfileLink
@@ -174,6 +174,14 @@ testMultiWordProfileNames =
       cath <# "'Alice Jones'> hello"
       cath <## "'Alice Jones': contact is connected"
       alice <## "'Cath Johnson': contact is connected"
+      cath ##> "/p 'Cath J'"
+      cath <## "user profile is changed to 'Cath J' (your 2 contacts are notified)"
+      alice <## "contact 'Cath Johnson' changed to 'Cath J'"
+      alice <## "use @'Cath J' <message> to send messages"
+      bob <## "contact 'Cath Johnson' changed to 'Cath J'"
+      bob <## "use @'Cath J' <message> to send messages"
+      alice #> "@'Cath J' hi"
+      cath <# "'Alice Jones'> hi"
   where
     aliceProfile' = baseProfile {displayName = "Alice Jones"}
     bobProfile' = baseProfile {displayName = "Bob James"}
