@@ -38,7 +38,7 @@ permalink: "/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html"
 
 ### Message delivery receipts
 
-<img src="./images/20230722-receipts.png" width="330">
+<img src="./images/20230722-receipts.png" width="330" class="float-to-left">
 
 Most messaging apps add two ticks to sent messages – the first one to show that the message is accepted by the server, and the second – that it is delivered to the recipient's device. It confirms that the network is functioning, and that the message is not lost or delayed. SimpleX Chat now has this feature too!
 
@@ -48,7 +48,7 @@ To avoid compromising your privacy, sending delivery receipts is disabled for al
 
 ### Filter favorite and unread chats
 
-<img src="./images/20230722-filter.png" width="288">
+<img src="./images/20230722-filter.png" width="288" class="float-to-left">
 
 You can now mark your contacts and groups as _favorite_, to be able to find them faster. With filter enabled, you will only see favorite chats, chats that contain unread messages and also any unaccepted group invitations and contact requests.
 
@@ -58,13 +58,13 @@ Active SimpleX Chat users know how broken the current group experience is, and t
 
 #### What is this in reply to?
 
-<img src="./images/20230722-quoted.png" width="330">
+<img src="./images/20230722-quoted.png" width="330" class="float-to-left">
 
 A major problem is that you can see replies to the messages you've not seen before - this would happen both when you just join the group, and didn't connect to most other members, and also when other new members join the group and they didn't yet connect to you – so literally all the time, and the bigger the group gets, the worse it becomes. While this problem cannot be solved without major group protocol changes, at least there is now ability to see the original message that was replied to via the message information.
 
 #### How to connect to this member?
 
-<img src="./images/20230722-search.png" width="330">
+<img src="./images/20230722-search.png" width="330" class="float-to-left">
 
 To simplify direct connections with other group members, you can now share your SimpleX address via your chat profile, and group members can send you a contact request even if the group does not allow direct messages.
 
