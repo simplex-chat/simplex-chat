@@ -321,7 +321,7 @@
     <string name="icon_descr_flip_camera">Voltear la cámara</string>
     <string name="group_invitation_expired">Invitación de grupo caducada</string>
     <string name="alert_message_group_invitation_expired">La invitación al grupo ya no es válida, ha sido eliminada por el remitente.</string>
-    <string name="delete_group_for_self_cannot_undo_warning">El grupo se eliminará para tí. ¡No podrá deshacerse!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">El grupo será eliminado para tí. ¡No podrá deshacerse!</string>
     <string name="how_to_use_markdown">Cómo usar la sintaxis markdown</string>
     <string name="description_via_one_time_link_incognito">en modo incógnito mediante enlace de un solo uso</string>
     <string name="simplex_link_contact">Dirección de contacto SimpleX</string>
@@ -421,7 +421,7 @@
     <string name="v4_3_improved_privacy_and_security_desc">Ocultar pantalla de aplicaciones en aplicaciones recientes.</string>
     <string name="encrypt_database">Cifrar</string>
     <string name="icon_descr_expand_role">Ampliar la selección de roles</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">El grupo se eliminará para todos los miembros. ¡No podrá deshacerse!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">El grupo será eliminado para todos los miembros. ¡No podrá deshacerse!</string>
     <string name="network_option_enable_tcp_keep_alive">Activar TCP keep-alive</string>
     <string name="feature_enabled_for_you">activado para tí</string>
     <string name="server_error">error</string>
@@ -438,7 +438,7 @@
     <string name="icon_descr_help">ayuda</string>
     <string name="share_link">Compartir enlace</string>
     <string name="how_it_works">Cómo funciona</string>
-    <string name="delete_message_cannot_be_undone_warning">El mensaje se eliminará. ¡No podrá deshacerse!</string>
+    <string name="delete_message_cannot_be_undone_warning">El mensaje será eliminado. ¡No podrá deshacerse!</string>
     <string name="incognito_info_protects">El modo incógnito protege tu privacidad creando un perfil aleatorio por cada contacto.</string>
     <string name="turn_off_battery_optimization"><![CDATA[Para usar SimpleX, por favor <b>permite que SimpleX se ejecute en segundo plano</b> en el siguiente cuadro de diálogo. De lo contrario las notificaciones se desactivarán.]]></string>
     <string name="install_simplex_chat_for_terminal">Instalar terminal para SimpleX Chat</string>
@@ -1090,12 +1090,12 @@
     <string name="alert_text_msg_bad_id">El ID del siguiente mensaje es incorrecto (menor o igual que el anterior).
 \nPuede ocurrir por algún bug o cuando la conexión está comprometida.</string>
     <string name="alert_text_fragment_please_report_to_developers">Por favor, informa a los desarrolladores.</string>
-    <string name="alert_text_decryption_error_too_many_skipped">%1$d mensajes omitidos.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d mensaje(s) omitido(s).</string>
     <string name="alert_title_msg_bad_hash">Hash de mensaje incorrecto</string>
     <string name="alert_title_msg_bad_id">ID de mensaje incorrecto</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</string>
     <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensajes no han podido ser descifrados.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensaje(s) no ha(n) podido ser descifrado(s).</string>
     <string name="no_spaces">¡Sin espacios!</string>
     <string name="stop_file__action">Detener archivo</string>
     <string name="revoke_file__message">El archivo será eliminado de los servidores.</string>
