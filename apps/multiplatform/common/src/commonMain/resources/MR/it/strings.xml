@@ -771,8 +771,8 @@
     <string name="group_member_role_member">membro</string>
     <string name="group_member_role_owner">proprietario</string>
     <string name="group_member_status_removed">ha rimosso</string>
-    <string name="rcv_group_event_member_deleted">rimosso %1$s</string>
-    <string name="rcv_group_event_user_deleted">sei stato/a rimosso/a</string>
+    <string name="rcv_group_event_member_deleted">ha rimosso %1$s</string>
+    <string name="rcv_group_event_user_deleted">ti ha rimosso/a</string>
     <string name="group_invitation_tap_to_join">Tocca per entrare</string>
     <string name="group_invitation_tap_to_join_incognito">Toccare per entrare in incognito</string>
     <string name="alert_message_no_group">Questo gruppo non esiste più.</string>
