@@ -247,14 +247,14 @@
         <target>%lldw</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
         <source>%u messages failed to decrypt.</source>
-        <target>%u mensajes no pudieron ser descifrados.</target>
+        <target state="translated">%u mensaje(s) no ha(n) podido ser descifrado(s).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%u messages skipped." xml:space="preserve">
+      <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
         <source>%u messages skipped.</source>
-        <target>%u mensajes omitidos.</target>
+        <target state="translated">%u mensaje(s) omitido(s).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -2473,14 +2473,14 @@
         <target>Mensaje de bienvenida en grupos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Group will be deleted for all members - this cannot be undone!</source>
-        <target>El grupo se eliminará para todos los miembros. ¡No podrá deshacerse!</target>
+        <target state="translated">El grupo será eliminado para todos los miembros. ¡No podrá deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Group will be deleted for you - this cannot be undone!</source>
-        <target>El grupo se eliminará para tí. ¡No podrá deshacerse!</target>
+        <target state="translated">El grupo será eliminado para tí. ¡No podrá deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help" xml:space="preserve">
