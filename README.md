@@ -227,23 +227,17 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 ## News and updates
 
-Recent updates:
+Recent and important updates:
 
-[July 22, 2023. SimpleX Chat: v5.2 released with message delivery receipts](./blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
+[Sep 25, 2023. SimpleX Chat v5.3 released: desktop app, local file encryption, improved groups and directory service](./blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
+
+[Jul 22, 2023. SimpleX Chat: v5.2 released with message delivery receipts](./blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
 
 [May 23, 2023. SimpleX Chat: v5.1 released with message reactions and self-destruct passcode](./blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md).
 
 [Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
 
-[Mar 28, 2023. v4.6 released - with Android 8+ and ARMv7a support, hidden profiles, community moderation, improved audio/video calls and reduced battery usage](./blog/20230328-simplex-chat-v4-6-hidden-profiles.md).
-
 [Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
-
-[Feb 4, 2023. v4.5 released - with multiple user profiles, message draft, transport isolation and Italian interface](./blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
-
-[Jan 3, 2023. v4.4 released - with disappearing messages, "live" messages, connection security verifications, GIFs and stickers and with French interface language](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
-
-[Dec 6, 2022. November reviews and v4.3 released - with instant voice messages, irreversible deletion of sent messages and improved server configuration](./blog/20221206-simplex-chat-v4.3-voice-messages.md).
 
 [Nov 8, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
@@ -290,18 +284,20 @@ What is already implemented:
 3. [Double ratchet](./docs/GLOSSARY.md#double-ratchet-algorithm) end-to-end encryption in each conversation between two users (or group members). This is the same algorithm that is used in Signal and many other messaging apps; it provides OTR messaging with [forward secrecy](./docs/GLOSSARY.md#forward-secrecy) (each message is encrypted by its own ephemeral key) and [break-in recovery](./docs/GLOSSARY.md#post-compromise-security) (the keys are frequently re-negotiated as part of the message exchange). Two pairs of Curve448 keys are used for the initial [key agreement](./docs/GLOSSARY.md#key-agreement-protocol), initiating party passes these keys via the connection link, accepting side - in the header of the confirmation message.
 4. Additional layer of encryption using NaCL cryptobox for the messages delivered from the server to the recipient. This layer avoids having any ciphertext in common between sent and received traffic of the server inside TLS (and there are no identifiers in common as well).
 5. Several levels of [content padding](./docs/GLOSSARY.md#message-padding) to frustrate message size attacks.
-6. Starting from v2 of SMP protocol (the current version is v4) all message metadata, including the time when the message was received by the server (rounded to a second) is sent to the recipients inside an encrypted envelope, so even if TLS is compromised it cannot be observed.
+6. All message metadata, including the time when the message was received by the server (rounded to a second) is sent to the recipients inside an encrypted envelope, so even if TLS is compromised it cannot be observed.
 7. Only TLS 1.2/1.3 are allowed for client-server connections, limited to cryptographic algorithms: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
 8. To protect against replay attacks SimpleX servers require [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) as session ID in each client command signed with per-queue ephemeral key.
 9. To protect your IP address all SimpleX Chat clients support accessing messaging servers via Tor - see [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) for more details.
 10. Local database encryption with passphrase - your contacts, groups and all sent and received messages are stored encrypted. If you used SimpleX Chat before v4.0 you need to enable the encryption via the app settings.
 11. Transport isolation - different TCP connections and Tor circuits are used for traffic of different user profiles, optionally - for different contacts and group member connections.
 12. Manual messaging queue rotations to move conversation to another SMP relay.
+13. Sending end-to-end encrypted files using [XFTP protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html).
+14. Local files encryption, except videos (to be added later).
 
 We plan to add:
 
-1. Local files encryption. Currently the images and files you send and receive are stored in the app unencrypted, you can delete them via `Settings / Database passphrase & export`. This is currently in progress.
-2. Senders' SMP relays and recipients' XFTP relays to reduce traffic and conceal IP addresses from the relays chosen, and potentially controlled, by another party.
+1. Senders' SMP relays and recipients' XFTP relays to reduce traffic and conceal IP addresses from the relays chosen, and potentially controlled, by another party.
+2. Post-quantum resistant key exchange in double ratchet protocol.
 3. Automatic message queue rotation and redundancy. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
 4. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
 5. Reproducible builds – this is the limitation of the development stack, but we will be investing into solving this problem. Users can still build all applications and services from the source code.
@@ -365,22 +361,26 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 - ✅ Message editing history
 - ✅ Reduced battery and traffic usage in large groups.
 - ✅ Message delivery confirmation (with sender opt-out per contact).
-- 🏗 Desktop client.
+- ✅ Desktop client.
+- ✅ Encryption of local files stored in the app.
+- 🏗 Using mobile profiles from the desktop app.
+- Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
+- Post-quantum resistant key exchange in double ratchet protocol.
+- Large groups, communities and public channels.
+- Privacy & security slider - a simple way to set all settings at once.
+- Improve sending videos (including encryption of locally stored videos).
+- Improve experience for the new users.
 - SMP queue redundancy and rotation (manual is supported).
 - Include optional message into connection request sent via contact address.
-- Local app files encryption.
 - Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).
-- Large groups, communities and public channels.
 - Feeds/broadcasts.
 - Ephemeral/disappearing/OTR conversations with the existing contacts.
 - Privately share your location.
 - Web widgets for custom interactivity in the chats.
 - Programmable chat automations / rules (automatic replies/forward/deletion/sending, reminders, etc.).
-- Supporting the same profile on multiple devices.
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
-- Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
 - High capacity multi-node SMP relays.
 
 ## Disclaimers
