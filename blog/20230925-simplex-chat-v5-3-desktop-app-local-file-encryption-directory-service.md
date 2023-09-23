@@ -52,7 +52,7 @@ Other limitations of the desktop app:
 
 ## Group directory service and other group improvements
 
-<img src="./images/20230925-directory.png" width="330">
+<img src="./images/20230925-directory.png" width="330" class="float-to-left">
 
 Directory service provides a way to search for public groups submitted by the users. To use it, you need to connect to it via SimpleX Chat, as you would connect to any other contact, and type some words to search.
 
@@ -70,7 +70,7 @@ The next release will reduce the time it takes to send messages to the group, es
 
 ## Encrypted local files and media with forward secrecy
 
-<img src="./images/20230925-encrypted.png" width="330">
+<img src="./images/20230925-encrypted.png" width="330" class="float-to-left">
 
 All messages, files and media sent via SimpleX Chat were always end-to-end encrypted from the very beginning. SimpleX Chat uses double-ratchet algorithm with encrypted message headers, for the best possible meta-data protection.
 
@@ -88,7 +88,7 @@ This approach provides forward secrecy for locally stored files, unlike file enc
 
 ## Simplified incognito mode
 
-<img src="./images/20230925-incognito.png" width="330">
+<img src="./images/20230925-incognito.png" width="330" class="float-to-left">
 
 Incognito mode was added a year ago, but it  was confusing for many users - it was a global setting, but it only affected the new connections.
 
