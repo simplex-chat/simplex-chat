@@ -6,6 +6,7 @@ import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import MarkdownTests
+import MarkdownDiffTests
 import MobileTests
 import ProtocolTests
 import SchemaDump
