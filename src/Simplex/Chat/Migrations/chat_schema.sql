@@ -515,6 +515,20 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
 );
+CREATE TABLE remote_hosts(
+  -- hosts known to a controlling app
+  remote_host_id INTEGER PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  path TEXT NOT NULL,
+  ca_key BLOB NOT NULL,
+  ca_cert BLOB NOT NULL
+);
+CREATE TABLE remote_controllers(
+  -- controllers known to a hosting app
+  remote_controller_id INTEGER PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  fingerprint BLOB NOT NULL
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name

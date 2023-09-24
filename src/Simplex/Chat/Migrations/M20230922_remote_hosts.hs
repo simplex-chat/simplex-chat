@@ -8,7 +8,7 @@ import Database.SQLite.Simple.QQ (sql)
 m20230922_remote_hosts :: Query
 m20230922_remote_hosts =
   [sql|
-CREATE TABLE remote_hosts (
+CREATE TABLE remote_hosts ( -- hosts known to a controlling app
   remote_host_id INTEGER PRIMARY KEY,
   display_name TEXT NOT NULL,
   path TEXT NOT NULL,
