@@ -1034,6 +1034,12 @@ chatWriteVar :: ChatMonad' m => (ChatController -> TVar a) -> a -> m ()
 chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
 {-# INLINE chatWriteVar #-}
 
+chatModifyVar :: ChatMonad' m => (ChatController -> TVar a) -> (a -> a) -> m ()
+chatModifyVar f action = do
+  var <- asks f
+  atomically $ modifyTVar var action
+{-# INLINE chatModifyVar #-}
+
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
 {-# INLINE tryChatError #-}

@@ -342,12 +342,14 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
       mapM_ hClose fs
       atomically $ writeTVar files M.empty
 
-execChatCommand :: ChatMonad' m => ByteString -> m ChatResponse
-execChatCommand s = do
+execChatCommand :: ChatMonad' m => Maybe RemoteHostId -> ByteString -> m ChatResponse
+execChatCommand rh s = do
   u <- readTVarIO =<< asks currentUser
   case parseChatCommand s of
     Left e -> pure $ chatCmdError u e
-    Right cmd -> execChatCommand_ u cmd
+    Right cmd -> case rh of
+      Nothing -> execChatCommand_ u cmd
+      Just remoteHostId -> execRemoteCommand u remoteHostId cmd
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
 execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` cmd)
@@ -355,25 +357,23 @@ execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` c
 execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
 execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processChatCommand cmd)
 
+execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> ChatCommand -> m ChatResponse
+execRemoteCommand u rh cmd = either (CRChatCmdError u) id <$> runExceptT (withRemoteHostSession rh $ \rhs -> processRemoteCommand rhs cmd)
+
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 
--- XXX: assuming `toView` only used for local sessions. Most likely false.
+-- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
   q <- asks outputQ
   atomically $ writeTBQueue q (Nothing, Nothing, event)
 
-execRemoteCommand :: ChatMonad' m => RemoteHostId -> B.ByteString -> m ChatResponse
-execRemoteCommand remoteHostId s = either (CRChatCmdError Nothing) id <$> runExceptT relay
-  where
-    relay = withRemoteHost remoteHostId $ \RemoteHostSession {} -> do
-      error "TODO: parse, intercept and return the remote CR synchronously" s
-
-toRemoteView :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
-toRemoteView remoteHostId event = do
+-- | Used by transport to mark remote events with source.
+toViewRemote :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
+toViewRemote rh event = do
   q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, Just remoteHostId, event)
+  atomically $ writeTBQueue q (Nothing, Just rh, event)
 
 -- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
@@ -2186,6 +2186,15 @@ processChatCommand = \case
           pure (gId, chatSettings)
         _ -> throwChatError $ CECommandError "not supported"
       processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
+
+processRemoteCommand :: ChatMonad m => RemoteHostSession -> ChatCommand -> m ChatResponse
+processRemoteCommand rhs = \case
+  -- XXX: intercept and filter some commands
+  -- TODO: store missing files on remote host
+  cmd -> relayCommand rhs cmd
+
+relayCommand :: ChatMonad m => RemoteHostSession -> ChatCommand -> m ChatResponse
+relayCommand todo'rhs todo'cmd = error "TODO"
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -5334,8 +5343,16 @@ withUserId userId action = withUser $ \user -> do
   checkSameUser userId user
   action user
 
-withRemoteHost :: ChatMonad m => RemoteHostId -> (RemoteHostSession -> m a) -> m a
-withRemoteHost remoteHostId action = do
+runRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
+runRemoteHostSession rh = do
+  RemoteHostInfo {displayName, path, caKey, caCert} <- error "TODO: get from DB"
+  (fingerprint, sessionCreds) <- error "TODO: derive session creds" (caKey, caCert)
+  announcer <- async $ error "TODO: run announcer" fingerprint
+  handler <- async $ error "TODO: runServer" path sessionCreds
+  chatModifyVar (.remoteHosts) $ M.insert rh RemoteHostSession {handler, path}
+
+withRemoteHostSession :: ChatMonad m => RemoteHostId -> (RemoteHostSession -> m a) -> m a
+withRemoteHostSession remoteHostId action = do
   M.lookup remoteHostId <$> chatReadVar (.remoteHosts) >>= \case
     Nothing -> throwRemoteError $ REMissing remoteHostId
     Just rh -> action rh

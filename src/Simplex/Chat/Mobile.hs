@@ -205,14 +205,8 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
           _ -> dbError e
         dbError e = Left . DBMErrorSQL dbFile $ show e
 
--- XXX: duplicated multiple times in different APIs
 chatSendCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
-chatSendCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (handler s) cc
-  where
-    handler :: B.ByteString -> ReaderT ChatController IO ChatResponse
-    handler = case rh of
-      Nothing -> execChatCommand
-      Just remoteHostId -> execRemoteCommand remoteHostId
+chatSendCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
