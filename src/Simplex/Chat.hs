@@ -35,7 +35,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace, toLower)
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, lefts, rights)
+import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -82,7 +82,7 @@ import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
-import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Protocol as ASMP
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -4955,28 +4955,27 @@ deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
 deliverMessageBroadcast :: ChatMonad m => [Connection] -> CMEventTag e -> MsgBody -> MessageId -> m [Either ChatError Int64]
 deliverMessageBroadcast conns cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
+      connIds :: [(Int64, ConnId)] = map (\c -> (c.connId, aConnId c)) conns
+      connMap :: Map Int64 ConnId  = M.fromList connIds
   rs :: Map ConnId (Either AgentErrorType AgentMsgId) <-
-    withAgent' (\a -> broadcastMessage a (map aConnId conns) msgFlags msgBody)
-  let (errs :: Map Int64 ChatError, msgIds :: Map Int64 AgentMsgId) = M.mapEither id $ M.fromList $ map (sendResults rs) conns
+    withAgent' (\a -> broadcastMessage a (map snd connIds) msgFlags msgBody)
+  let (errs :: Map Int64 ChatError, msgIds :: Map Int64 AgentMsgId) = M.mapEither id $ M.map (sendResult rs) connMap
       errs' = M.map Left errs
-      msgIds' = M.assocs msgIds
   rs' :: Map Int64 (Either ChatError Int64) <-
-    M.fromList . zipWith createResult msgIds' <$> withStoreBatch' (\db -> map (createDelivery db) msgIds')
-  pure $ map (results $ M.union rs' errs') conns
+    withStoreBatch' (\db -> M.mapWithKey (createDelivery db) msgIds)
+  pure $ map (result (M.union rs' errs') . fst) connIds
   where
-    sendResults :: Map ConnId (Either AgentErrorType AgentMsgId) -> Connection -> (Int64, Either ChatError AgentMsgId)
-    sendResults rs conn@Connection {connId} =
-      (connId,) . first (`ChatErrorAgent` Nothing) $
-        fromMaybe (Left $ CONN NOT_FOUND) $
-          M.lookup (aConnId conn) rs
-    createResult :: (Int64, AgentMsgId) -> Either ChatError Int64 -> (Int64, Either ChatError Int64)
-    createResult (connId, _) r = (connId, r)
-    results :: Map Int64 (Either ChatError Int64) -> Connection -> Either ChatError Int64
-    results rs Connection {connId} =
-      fromMaybe (Left $ ChatErrorAgent (CONN NOT_FOUND) Nothing) $
+    sendResult :: Map ConnId (Either AgentErrorType AgentMsgId) -> ConnId -> Either ChatError AgentMsgId
+    sendResult rs agentConnId =
+      first (`ChatErrorAgent` Nothing) $
+        fromMaybe (Left $ ASMP.INTERNAL $ "no result for agent connection ID: " <> show agentConnId) $
+          M.lookup agentConnId rs
+    result :: Map Int64 (Either ChatError Int64) -> Int64 -> Either ChatError Int64
+    result rs connId =
+      fromMaybe (Left $ ChatErrorAgent (ASMP.INTERNAL $ "no result for connection ID: " <> show connId) Nothing) $
         M.lookup connId rs
-    createDelivery :: DB.Connection -> (Int64, AgentMsgId) -> IO Int64
-    createDelivery db (connId, agentMsgId) = do
+    createDelivery :: DB.Connection -> Int64 -> AgentMsgId -> IO Int64
+    createDelivery db connId agentMsgId = do
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
       liftIO $ createSndMsgDelivery db sndMsgDelivery msgId
 
@@ -5000,8 +4999,6 @@ sendGroupMessage user GroupInfo {groupId} ms chatMsgEvent = do
   sendRs <- processWith sendMs' =<< deliverMessageBroadcast sendConns (toCMEventTag chatMsgEvent) msgBody msgId
   pendingRs <- processWith pendingMs' =<< withStoreBatch' (\db -> map (createPending db msgId) pendingMs')
   let sent = sendRs <> pendingRs
-  -- sent <- forM ms' $ \m ->
-  --   messageMember m msg `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
   pure (msg, catMaybes sent)
   where
     createPending db msgId GroupMember {groupMemberId} = createPendingGroupMessage db groupMemberId msgId Nothing
@@ -5011,10 +5008,6 @@ sendGroupMessage user GroupInfo {groupId} ms chatMsgEvent = do
     processResult (m, r) = case r of
       Left e -> toView (CRChatError (Just user) e) $> Nothing
       Right _ -> pure $ Just m
-    -- messageMember :: (GroupMember, Maybe Connection) -> SndMessage -> m (Maybe GroupMember)
-    -- messageMember (m@GroupMember {groupMemberId}, conn_) SndMessage {msgId, msgBody} = Just m <$ case conn_ of
-    --   Just conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
-    --   Nothing -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId Nothing
 
 sendGroupMemberMessage :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> GroupMember -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> m () -> m ()
 sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId introId_ postDeliver = do
@@ -5399,17 +5392,17 @@ withStoreCtx ctx_ action = do
     handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
-withStoreBatch :: ChatMonad m => (DB.Connection -> [ExceptT StoreError IO a]) -> m [Either ChatError a]
+withStoreBatch :: (ChatMonad m, Traversable t) => (DB.Connection -> t (ExceptT StoreError IO a)) -> m (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
   rs <- liftIO $ withTransaction chatStore $ mapM (\a -> runExceptT a `E.catch` handleInternal) . actions
-  pure $ map (first ChatErrorStore) rs
+  pure $ fmap (first ChatErrorStore) rs
   where
     handleInternal :: E.SomeException -> IO (Either StoreError a)
     handleInternal = pure . Left . SEInternalError . show
 
-withStoreBatch' :: ChatMonad m => (DB.Connection -> [IO a]) -> m [Either ChatError a]
-withStoreBatch' actions = withStoreBatch $ map liftIO . actions
+withStoreBatch' :: (ChatMonad m, Traversable t) => (DB.Connection -> t (IO a)) -> m (t (Either ChatError a))
+withStoreBatch' actions = withStoreBatch $ fmap liftIO . actions
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
