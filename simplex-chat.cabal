@@ -442,7 +442,6 @@ test-suite simplex-chat-test
   type: exitcode-stdio-1.0
   main-is: Test.hs
   other-modules:
-      AllowedNames
       Bots.BroadcastTests
       Bots.DirectoryTests
       ChatClient
@@ -456,6 +455,7 @@ test-suite simplex-chat-test
       MobileTests
       ProtocolTests
       SchemaDump
+      ValidNames
       ViewTests
       WebRTCTests
       Broadcast.Bot

@@ -1,4 +1,3 @@
-import AllowedNames
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -13,6 +12,7 @@ import SchemaDump
 import Test.Hspec
 import UnliftIO.Temporary (withTempDirectory)
 import ViewTests
+import ValidNames
 import WebRTCTests
 
 main :: IO ()
@@ -24,7 +24,7 @@ main = do
     describe "SimpleX chat view" viewTests
     describe "SimpleX chat protocol" protocolTests
     describe "WebRTC encryption" webRTCTests
-    describe "Allowed names" allowedNameTests
+    describe "Valid names" validNameTests
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests

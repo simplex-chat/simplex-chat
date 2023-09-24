@@ -5621,11 +5621,12 @@ chatCommandP =
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
-    displayName = safeDecodeUtf8 <$> (manyWords <|> oneWord)
+    displayName = (quoted "'\"" <|> A.takeTill isSpace) >>= checkValidName
       where
-        oneWord = A.takeTill (== ' ') >>= check allowedWord
-        manyWords = quoted "'\"" >>= check allowedName
-        check f s = if f (B.unpack s) then pure s else fail "invalid name"
+        checkValidName bs =
+          let t = safeDecodeUtf8 bs
+              s = T.unpack t
+           in if mkValidName s == s then pure t else fail "invalid name"
         quoted cs = A.choice [A.char c *> A.takeTill (== c) <* A.char c | c <- cs]
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
@@ -5734,12 +5735,14 @@ timeItToView s action = do
   toView $ CRTimedAction s diff
   pure a
 
-allowedName :: String -> Bool
-allowedName s =
-  let ws = words s
-   in unwords ws == s && all allowedWord ws 
-
-allowedWord :: String -> Bool
-allowedWord = all allowed
+mkValidName :: String -> String
+mkValidName = reverse . dropWhile isSpace . fst . foldl' addChar ("", '\NUL')
   where
-    allowed c = c `notElem` ("@#'\"`" :: String) && (isLetter c || isMark c || isNumber c || isPunctuation c || isSymbol c)
+    addChar (r, prev) c = if notProhibited && validChar then (c : r, c) else (r, prev)
+      where
+      validChar
+        | prev == '\NUL' || isSpace prev = validFirstChar
+        | isPunctuation prev = validFirstChar || isSpace c
+        | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
+      validFirstChar = isLetter c || isNumber c || isSymbol c
+      notProhibited = c `notElem` ("@#'\"`" :: String)
