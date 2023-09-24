@@ -206,18 +206,18 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
         dbError e = Left . DBMErrorSQL dbFile $ show e
 
 -- XXX: duplicated multiple times in different APIs
-chatSendCmd :: ChatController -> Maybe RemoteHostId -> String -> IO JSONByteString
-chatSendCmd cc rh s = J.encode . APIResponse Nothing z <$> runReaderT handler cc
+chatSendCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
+chatSendCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (handler s) cc
   where
     handler :: B.ByteString -> ReaderT ChatController IO ChatResponse
     handler = case rh of
       Nothing -> execChatCommand
-      Just remoteHostId -> relayCommand remoteHostId
+      Just remoteHostId -> execRemoteCommand remoteHostId
 
 chatRecvMsg :: ChatController -> IO JSONByteString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
   where
-    json (corr, zone, resp) = J.encode APIResponse {corr, zone, resp}
+    json (corr, remoteHostId, resp) = J.encode APIResponse {corr, remoteHostId, resp}
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)

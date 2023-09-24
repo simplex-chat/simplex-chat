@@ -12,7 +12,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE RankNTypes #-}
 
 module Simplex.Chat.Controller where
 
@@ -167,7 +166,7 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
     remoteHosts :: TVar (Map RemoteHostId RemoteHostSession), -- All the active remote hosts
-    remoteController :: TMVar RemoteControllerSession, -- Supervisor process for hosted controllers
+    remoteController :: TVar (Maybe RemoteControllerSession), -- Supervisor process for hosted controllers
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
@@ -200,22 +199,16 @@ data RemoteHostSession = RemoteHostSession
   { -- | A process that relays the commands to its host
     handler :: Async (),
     -- | Path for local resources to be synchronized with host
-    path :: FilePath,
-    -- | Commands to be relayed to a host
-    command :: forall m . ChatMonad m => ByteString -> m ChatResponse,
-    -- | Fetch a file received by a host
-    fetchFile :: forall m . ChatMonad m => FilePath -> m ChatResponse,
-    -- | Store a file on a host to be sent
-    storeFile :: forall m . ChatMonad m => FilePath -> ByteString -> m ChatResponse
+    path :: FilePath
   }
 
 -- | Host-side dual to RemoteHostSession, on-methods represent HTTP API.
 data RemoteControllerSession = RemoteControllerSession
   { -- | A process that relays commands and data from remote controller
-    handler :: Async (),
-    onCommand :: forall m . ChatMonad m => ByteString -> m ChatResponse,
-    onFetchFile :: forall m . ChatMonad m => FilePath -> m ByteString,
-    onStoreFile :: forall m . ChatMonad m => FilePath -> ByteString -> m ()
+    handler :: Async ()
+    -- onCommand :: forall m . ChatMonad m => ByteString -> m ChatResponse,
+    -- onFetchFile :: forall m . ChatMonad m => FilePath -> m ByteString,
+    -- onStoreFile :: forall m . ChatMonad m => FilePath -> ByteString -> m ()
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase

@@ -192,7 +192,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   remoteHosts <- newTVarIO M.empty
-  remoteController <- newEmptyTMVarIO
+  remoteController <- newTVarIO Nothing
   currentUser <- newTVarIO user
   servers <- agentServers config
   smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
@@ -364,8 +364,8 @@ toView event = do
   q <- asks outputQ
   atomically $ writeTBQueue q (Nothing, Nothing, event)
 
-relayCommand :: ChatMonad' m => RemoteHostId -> B.ByteString -> m ChatResponse
-relayCommand remoteHostId s = either (CRChatCmdError Nothing) id <$> runExceptT relay
+execRemoteCommand :: ChatMonad' m => RemoteHostId -> B.ByteString -> m ChatResponse
+execRemoteCommand remoteHostId s = either (CRChatCmdError Nothing) id <$> runExceptT relay
   where
     relay = withRemoteHost remoteHostId $ \RemoteHostSession {} -> do
       error "TODO: parse, intercept and return the remote CR synchronously" s
@@ -378,19 +378,17 @@ toRemoteView remoteHostId event = do
 -- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
-  -- TODO: CreateRemoteHost
-  -- TODO: ListRemoteHosts
-  -- TODO: StartRemoteHost
-  -- TODO: StopRemoteHost
-  -- TODO: DisposeRemoteHost
-  -- TODO: StoreRemote
-  -- TODO: FetchRemote
-  -- TODO: RegisterRemoteController
-  -- TODO: StartRemoteController
-  -- TODO: ConfirmRemoteController
-  -- TODO: RejectRemoteController
-  -- TODO: StopRemoteController
-  -- TODO: DisposeRemoteController
+  CreateRemoteHost -> error "TODO: CreateRemoteHost"
+  ListRemoteHosts -> error "TODO: ListRemoteHosts"
+  StartRemoteHost rh -> error "TODO: StartRemoteHost"
+  StopRemoteHost rh -> error "TODO: StopRemoteHost"
+  DisposeRemoteHost rh -> error "TODO: DisposeRemoteHost"
+  RegisterRemoteController oobData -> error "TODO: RegisterRemoteController"
+  StartRemoteController -> error "TODO: StartRemoteController"
+  ConfirmRemoteController -> error "TODO: ConfirmRemoteController"
+  RejectRemoteController -> error "TODO: RejectRemoteController"
+  StopRemoteController -> error "TODO: StopRemoteController"
+  DisposeRemoteController rc -> error "TODO: DisposeRemoteController"
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile

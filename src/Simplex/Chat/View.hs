@@ -1678,9 +1678,7 @@ viewChatError logLevel = \case
         Nothing -> ""
       cId :: Connection -> StyledString
       cId conn = sShow conn.connId
-  ChatErrorZone todo'ze -> [sShow todo'ze]
-  ChatErrorSatellite todo'se -> [sShow todo'se]
-  ChatErrorHost todo'he -> [sShow todo'he]
+  ChatErrorRemote todo're -> [sShow todo're]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case
