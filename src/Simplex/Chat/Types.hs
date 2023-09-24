@@ -1533,13 +1533,7 @@ instance ToJSON JVersionRange where
   toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minVersion" .= minV, "maxVersion" .= maxV]
   toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minVersion" .= minV <> "maxVersion" .= maxV
 
-newtype RemoteHostId = RemoteHostId Int
-  deriving stock (Show)
-  deriving newtype (Eq, Ord, FromJSON, ToJSON, FromField, ToField, StrEncoding)
-
-pattern LOCAL_HOST_ID :: Maybe RemoteHostId
-pattern LOCAL_HOST_ID = Nothing
-{-# COMPLETE LOCAL_HOST_ID, Just #-}
+type RemoteHostId = Int
 
 data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,

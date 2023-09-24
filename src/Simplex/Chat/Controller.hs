@@ -231,8 +231,6 @@ data ChatCommand
   | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DisposeRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
-  | StoreRemote FilePath RemoteHostId -- ^ Store a file at host, preparing for `SendFile`
-  | FetchRemote FilePath RemoteHostId -- ^ Fetch a file from host after `ReceiveFile`
   | RegisterRemoteController Text -- ^ Register OOB data for satellite discovery and handshake
   | StartRemoteController -- ^ Start listening for satellite announcements
   | ConfirmRemoteController -- ^ Confirm discovered data and store confirmation
@@ -514,7 +512,6 @@ data ChatResponse
   | CRMsgIntegrityError {user :: User, msgError :: MsgErrorType}
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk {user_ :: Maybe User}
-  | CRCmdRelayed -- ^ A command sent to a remote host instead of being interpreted locally
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
@@ -666,8 +663,8 @@ logResponseToFile = \case
   _ -> False
 
 instance ToJSON ChatResponse where
-  toJSON = JT.genericToJSON . sumTypeJSON $ dropPrefix "CR"
-  toEncoding = JT.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)

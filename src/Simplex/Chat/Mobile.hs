@@ -103,14 +103,14 @@ cChatSendCmd cPtr = cChatSendCmdEx cPtr 0
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmdEx :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
-cChatSendCmdEx cPtr cZone cCmd = do
+cChatSendCmdEx cPtr cRemoteHostId cCmd = do
   c <- deRefStablePtr cPtr
   cmd <- B.packCString cCmd
   newCStringFromLazyBS =<< chatSendCmd c remoteHostId cmd
   where
     remoteHostId
-      | cZone == 0 = LOCAL_ZONE
-      | otherwise = Just (RemoteHostId $ fromIntegral cZone)
+      | cRemoteHostId == 0 = Nothing
+      | otherwise = Just (fromIntegral cRemoteHostId)
 
 -- | receive message from chat (blocking)
 cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
@@ -207,11 +207,11 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
 
 -- XXX: duplicated multiple times in different APIs
 chatSendCmd :: ChatController -> Maybe RemoteHostId -> String -> IO JSONByteString
-chatSendCmd cc z s = J.encode . APIResponse Nothing z <$> runReaderT handler cc
+chatSendCmd cc rh s = J.encode . APIResponse Nothing z <$> runReaderT handler cc
   where
     handler :: B.ByteString -> ReaderT ChatController IO ChatResponse
-    handler = case z of
-      LOCAL_HOST_ID -> execChatCommand
+    handler = case rh of
+      Nothing -> execChatCommand
       Just remoteHostId -> relayCommand remoteHostId
 
 chatRecvMsg :: ChatController -> IO JSONByteString
@@ -243,7 +243,7 @@ chatPasswordHash pwd salt = either (const "") passwordHash salt'
     salt' = U.decode salt
     passwordHash = U.encode . C.sha512Hash . (pwd <>)
 
-data APIResponse = APIResponse {corr :: Maybe CorrId, zone :: Maybe RemoteHostId, resp :: ChatResponse}
+data APIResponse = APIResponse {corr :: Maybe CorrId, remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
   deriving (Generic)
 
 instance ToJSON APIResponse where

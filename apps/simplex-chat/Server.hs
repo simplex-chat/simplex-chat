@@ -23,7 +23,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Options
-import Simplex.Chat.Types (RemoteHostId (..))
+import Simplex.Chat.Types (RemoteHostId)
 import Simplex.Messaging.Protocol (CorrId (..))
 import Simplex.Messaging.Transport.Server (runTCPServer)
 import Simplex.Messaging.Util (raceAny_)

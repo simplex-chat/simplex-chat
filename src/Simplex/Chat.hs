@@ -362,14 +362,13 @@ parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
   q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, LOCAL_HOST_ID, event)
+  atomically $ writeTBQueue q (Nothing, Nothing, event)
 
 relayCommand :: ChatMonad' m => RemoteHostId -> B.ByteString -> m ChatResponse
 relayCommand remoteHostId s = either (CRChatCmdError Nothing) id <$> runExceptT relay
   where
     relay = withRemoteHost remoteHostId $ \RemoteHostSession {} -> do
-      error "TODO" s
-      pure CRCmdRelayed
+      error "TODO: parse, intercept and return the remote CR synchronously" s
 
 toRemoteView :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
 toRemoteView remoteHostId event = do
@@ -5392,11 +5391,9 @@ chatCommandP =
   choice
     [ "/create remote host" $> CreateRemoteHost,
       "/list remote hosts" $> ListRemoteHosts,
-      "/start remote host " *> (StartRemoteHost <$> remoteHostIdP),
-      "/stop remote host " *> (StopRemoteHost <$> remoteHostIdP),
-      "/dispose remote host " *> (DisposeRemoteHost <$> remoteHostIdP),
-      "/store remote " *> (StoreRemote <$> strP <*> remoteHostIdP),
-      "/fetch remote " *> (FetchRemote <$> strP <*> remoteHostIdP),
+      "/start remote host " *> (StartRemoteHost <$> A.decimal),
+      "/stop remote host " *> (StopRemoteHost <$> A.decimal),
+      "/dispose remote host " *> (DisposeRemoteHost <$> A.decimal),
       "/register remote controller" *> (RegisterRemoteController <$> textP),
       "/start remote controller" $> StartRemoteController,
       "/confirm remote controller" $> ConfirmRemoteController,
@@ -5764,7 +5761,6 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
-    remoteHostIdP = RemoteHostId <$> A.decimal
 
 adminContactReq :: ConnReqContact
 adminContactReq =
