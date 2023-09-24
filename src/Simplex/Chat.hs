@@ -5738,8 +5738,9 @@ timeItToView s action = do
 mkValidName :: String -> String
 mkValidName = reverse . dropWhile isSpace . fst . foldl' addChar ("", '\NUL')
   where
-    addChar (r, prev) c = if notProhibited && validChar then (c : r, c) else (r, prev)
+    addChar (r, prev) c = if notProhibited && validChar then (c' : r, c') else (r, prev)
       where
+      c' = if isSpace c then ' ' else c
       validChar
         | prev == '\NUL' || isSpace prev = validFirstChar
         | isPunctuation prev = validFirstChar || isSpace c

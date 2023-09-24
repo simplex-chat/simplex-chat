@@ -15,7 +15,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Char (toUpper)
+import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
@@ -757,9 +757,9 @@ viewReceivedContactRequest c Profile {fullName} =
   ]
 
 viewGroupCreated :: GroupInfo -> [StyledString]
-viewGroupCreated g@GroupInfo {localDisplayName = n} =
+viewGroupCreated g =
   [ "group " <> ttyFullGroup g <> " is created",
-    "to add members use " <> highlight ("/a " <> viewName n <> " <name>") <> " or " <> highlight ("/create link #" <> viewName n)
+    "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
   ]
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
@@ -861,10 +861,10 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
   where
     ldn_ :: GroupInfo -> Text
     ldn_ g = T.toLower g.localDisplayName
-    groupSS (g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings}, GroupSummary {currentMembers}) =
+    groupSS (g@GroupInfo {membership, chatSettings}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
-        s -> membershipIncognito g <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
+        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s
       where
         viewMemberStatus = \case
           GSMemRemoved -> delete "you are removed"
@@ -872,8 +872,8 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
           GSMemGroupDeleted -> delete "group deleted"
           _
             | enableNtfs chatSettings -> " (" <> memberCount <> ")"
-            | otherwise -> " (" <> memberCount <> ", muted, you can " <> highlight ("/unmute #" <> viewName ldn) <> ")"
-        delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> viewName ldn) <> ")"
+            | otherwise -> " (" <> memberCount <> ", muted, you can " <> highlight ("/unmute #" <> viewGroupName g) <> ")"
+        delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> viewGroupName g) <> ")"
         memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
 
 groupInvitation' :: GroupInfo -> StyledString
@@ -905,7 +905,7 @@ viewUserProfile Profile {displayName, fullName} =
 
 viewUserPrivacy :: User -> User -> [StyledString]
 viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', showNtfs, viewPwdHash} =
-  [ (if userId == userId' then "current " else "") <> "user " <> plain (viewName n') <> ":",
+  [ plain $ (if userId == userId' then "current " else "") <> "user " <> viewName n' <> ":",
     "messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
@@ -1051,11 +1051,11 @@ viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
   QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
 
 viewContactRatchetSync :: Contact -> RatchetSyncProgress -> [StyledString]
-viewContactRatchetSync ct@Contact {localDisplayName = c} RatchetSyncProgress {ratchetSyncStatus = rss} =
+viewContactRatchetSync ct RatchetSyncProgress {ratchetSyncStatus = rss} =
   [ttyContact' ct <> ": " <> (plain . ratchetSyncStatusToText) rss]
     <> help
   where
-    help = ["use " <> highlight ("/sync " <> viewName c) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
+    help = ["use " <> highlight ("/sync " <> viewContactName ct) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
 
 viewGroupMemberRatchetSync :: GroupInfo -> GroupMember -> RatchetSyncProgress -> [StyledString]
 viewGroupMemberRatchetSync g m RatchetSyncProgress {ratchetSyncStatus = rss} =
@@ -1073,7 +1073,7 @@ viewGroupMemberVerificationReset g m =
   [ttyGroup' g <> " " <> ttyMember m <> ": security code changed"]
 
 viewContactCode :: Contact -> Text -> Bool -> [StyledString]
-viewContactCode ct@Contact {localDisplayName = c} = viewSecurityCode (ttyContact' ct) ("/verify " <> viewName c <> " <code from your contact>")
+viewContactCode ct = viewSecurityCode (ttyContact' ct) ("/verify " <> viewContactName ct <> " <code from your contact>")
 
 viewGroupMemberCode :: GroupInfo -> GroupMember -> Text -> Bool -> [StyledString]
 viewGroupMemberCode g m = viewSecurityCode (ttyGroup' g <> " " <> ttyMember m) ("/verify #" <> viewGroupName g <> " " <> viewMemberName m <> " <code from your contact>")
@@ -1564,7 +1564,7 @@ viewChatError logLevel = \case
       ]
     CEContactNotFound cName m_ -> viewContactNotFound cName m_
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
-    CEContactDisabled Contact {localDisplayName = c} -> [ttyContact c <> ": disabled, to enable: " <> highlight ("/enable " <> viewName c) <> ", to delete: " <> highlight ("/d " <> viewName c)]
+    CEContactDisabled ct -> [ttyContact' ct <> ": disabled, to enable: " <> highlight ("/enable " <> viewContactName ct) <> ", to delete: " <> highlight ("/d " <> viewContactName ct)]
     CEConnectionDisabled Connection {connId, connType} -> [plain $ "connection " <> textEncode connType <> " (" <> tshow connId <> ") is disabled" | logLevel <= CLLWarning]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
@@ -1778,8 +1778,7 @@ ttyFromGroupDeleted g m deletedText_ =
   membershipIncognito g <> ttyFrom (fromGroup_ g m <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
 
 fromGroup_ :: GroupInfo -> GroupMember -> Text
-fromGroup_ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} =
-  "#" <> viewName g <> " " <> viewName m <> "> "
+fromGroup_ g m = "#" <> viewGroupName g <> " " <> viewMemberName m <> "> "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
@@ -1788,15 +1787,13 @@ ttyTo :: Text -> StyledString
 ttyTo = styled $ colored Cyan
 
 ttyToGroup :: GroupInfo -> StyledString
-ttyToGroup g@GroupInfo {localDisplayName = n} =
-  membershipIncognito g <> ttyTo ("#" <> viewName n <> " ")
+ttyToGroup g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " ")
 
 ttyToGroupEdited :: GroupInfo -> StyledString
-ttyToGroupEdited g@GroupInfo {localDisplayName = n} =
-  membershipIncognito g <> ttyTo ("#" <> viewName n <> " [edited] ")
+ttyToGroupEdited g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " [edited] ")
 
 viewName :: Text -> Text
-viewName s = if ' ' `T.elem` s then "'" <> s <> "'" else s
+viewName s = if T.any isSpace s then "'" <> s <> "'" else s
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
