@@ -36,7 +36,7 @@
 &lt;p&gt;* Android app.&lt;/p&gt;
 &lt;p&gt;** iOS app.&lt;/p&gt;
 &lt;h2 id=&quot;multiplatform-desktop-app&quot; tabindex=&quot;-1&quot;&gt;Multiplatform desktop app&lt;/h2&gt;
-&lt;img src=&quot;https://simplex.chat/docs/images/simplex-desktop-light.png&quot; width=&quot;640&quot; /&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/simplex-desktop-light.png&quot; width=&quot;640&quot; /&gt;
 &lt;p&gt;Thanks a lot to everybody who was testing the desktop app since July – it really helped to make it stable!&lt;/p&gt;
 &lt;p&gt;To use desktop app you need to &lt;strong&gt;create a new profile&lt;/strong&gt;. As SimpleX platform has no user accounts, it&#39;s not as simple as for centralized apps to access the same profile from two devices.&lt;/p&gt;
 &lt;p&gt;The next app version will allow using your mobile profile from desktop app. For now, as a workaround, you can join groups from both mobile and desktop devices, and use small groups instead of direct conversations.&lt;/p&gt;
