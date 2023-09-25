@@ -50,6 +50,8 @@ Other limitations of the desktop app:
 - you cannot send voice messages.
 - there is no support for calls yet.
 
+You can download the desktop app for Linux and Mac via [downloads page](https://simplex.chat/downloads). Windows version will be available soon.
+
 ## Group directory service and other group improvements
 
 <img src="./images/20230925-directory.png" width="330" class="float-to-left">
