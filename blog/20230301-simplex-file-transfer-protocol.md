@@ -4,6 +4,7 @@ title: "SimpleX File Transfer Protocol - a new protocol for sending large files 
 date: 2023-03-01
 preview: CLI and relays implementing the new XFTP protocol are released - you can use them now!
 image: images/20230301-xftp.jpg
+imageWide: true
 permalink: "/blog/20230301-simplex-file-transfer-protocol.html"
 ---
 

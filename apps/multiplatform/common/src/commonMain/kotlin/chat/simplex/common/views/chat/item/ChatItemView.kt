@@ -64,6 +64,7 @@ fun ChatItemView(
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   getConnectedMemberNames: (() -> List<String>)? = null,
+  developerTools: Boolean,
 ) {
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
@@ -343,7 +344,11 @@ fun ChatItemView(
           is CIContent.RcvDeleted -> DeletedItem()
           is CIContent.SndCall -> CallItem(c.status, c.duration)
           is CIContent.RcvCall -> CallItem(c.status, c.duration)
-          is CIContent.RcvIntegrityError -> IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL)
+          is CIContent.RcvIntegrityError -> if (developerTools) {
+            IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL)
+          } else {
+            Box(Modifier.size(0.dp)) {}
+          }
           is CIContent.RcvDecryptionError -> CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
           is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
           is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
@@ -583,6 +588,7 @@ fun PreviewChatItemView() {
       findModelMember = { null },
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
+      developerTools = false,
     )
   }
 }
@@ -613,6 +619,7 @@ fun PreviewChatItemViewDeletedContent() {
       findModelMember = { null },
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
+      developerTools = false,
     )
   }
 }
