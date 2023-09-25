@@ -10,7 +10,7 @@
 module Simplex.Chat.Markdown where
 
 import Control.Applicative (optional, (<|>))
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
@@ -56,6 +56,9 @@ data Format
 data SimplexLinkType = XLContact | XLInvitation | XLGroup
   deriving (Eq, Show, Generic)
 
+instance FromJSON SimplexLinkType where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "XL"
+
 instance ToJSON SimplexLinkType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "XL"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "XL"
@@ -65,6 +68,9 @@ colored = Colored . FormatColor
 
 markdown :: Format -> Text -> Markdown
 markdown = Markdown . Just
+
+instance FromJSON Format where
+  parseJSON = J.genericParseJSON $ sumTypeJSON fstToLower
 
 instance ToJSON Format where
   toJSON = J.genericToJSON $ sumTypeJSON fstToLower
@@ -91,6 +97,18 @@ instance IsString Markdown where fromString = unmarked . T.pack
 newtype FormatColor = FormatColor Color
   deriving (Eq, Show)
 
+instance FromJSON FormatColor where
+  parseJSON = J.withText "FormatColor" $ fmap FormatColor . \case
+    "red" -> pure Red
+    "green" -> pure Green
+    "blue" -> pure Blue
+    "yellow" -> pure Yellow
+    "cyan" -> pure Cyan
+    "magenta" -> pure Magenta
+    "black" -> pure Black
+    "white" -> pure White
+    unexpected -> fail $ "unexpected FormatColor: " <> show unexpected
+
 instance ToJSON FormatColor where
   toJSON (FormatColor c) = case c of
     Red -> "red"
@@ -104,6 +122,9 @@ instance ToJSON FormatColor where
 
 data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
   deriving (Eq, Show, Generic)
+
+instance FromJSON FormattedText where
+  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
 instance ToJSON FormattedText where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
@@ -129,7 +150,7 @@ parseMaybeMarkdownList s
   | otherwise = Just . reverse $ foldl' acc [] ml
   where
     ml = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
-    acc [] m = [m] 
+    acc [] m = [m]
     acc ms@(FormattedText f t : ms') ft@(FormattedText f' t')
       | f == f' = FormattedText f (t <> t') : ms'
       | otherwise = ft : ms

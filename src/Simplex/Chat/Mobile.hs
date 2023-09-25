@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fobject-code #-}
 
 module Simplex.Chat.Mobile where
 

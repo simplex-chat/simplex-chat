@@ -16,7 +16,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
@@ -101,6 +101,9 @@ data StoreError
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   deriving (Show, Exception, Generic)
+
+instance FromJSON StoreError where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SE"
 
 instance ToJSON StoreError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"

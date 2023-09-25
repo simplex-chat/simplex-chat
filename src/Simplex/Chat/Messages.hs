@@ -17,7 +17,7 @@
 module Simplex.Chat.Messages where
 
 import Control.Applicative ((<|>))
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -66,6 +66,9 @@ chatNameStr (ChatName cType name) = chatTypeStr cType <> T.unpack name
 data ChatRef = ChatRef ChatType Int64
   deriving (Eq, Show, Ord)
 
+instance FromJSON ChatType where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CT"
+
 instance ToJSON ChatType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CT"
@@ -110,6 +113,9 @@ data JSONChatInfo
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
   deriving (Generic)
 
+instance FromJSON JSONChatInfo where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCInfo"
+
 instance ToJSON JSONChatInfo where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCInfo"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCInfo"
@@ -127,7 +133,17 @@ jsonChatInfo = \case
 
 data AChatInfo = forall c. AChatInfo (SChatType c) (ChatInfo c)
 
+jsonAChatInfo :: JSONChatInfo -> AChatInfo
+jsonAChatInfo = \case
+  JCInfoDirect c -> AChatInfo SCTDirect $ DirectChat c
+  JCInfoGroup g -> AChatInfo SCTGroup $ GroupChat g
+  JCInfoContactRequest g -> AChatInfo SCTContactRequest $ ContactRequest g
+  JCInfoContactConnection c -> AChatInfo SCTContactConnection $ ContactConnection c
+
 deriving instance Show AChatInfo
+
+instance FromJSON AChatInfo where
+  parseJSON = fmap jsonAChatInfo . J.parseJSON
 
 instance ToJSON AChatInfo where
   toJSON (AChatInfo _ c) = J.toJSON c
@@ -148,6 +164,8 @@ instance MsgDirectionI d => ToJSON (ChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data ACIDirection = forall c d . MsgDirectionI d => ACIDirection (SChatType c) (SMsgDirection d) (CIDirection c d)
+
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
@@ -162,6 +180,9 @@ data JSONCIDirection
   | JCIGroupSnd
   | JCIGroupRcv {groupMember :: GroupMember}
   deriving (Generic, Show)
+
+instance FromJSON JSONCIDirection where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
 
 instance ToJSON JSONCIDirection where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
@@ -178,10 +199,15 @@ jsonCIDirection = \case
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
 
-data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
-  deriving (Show, Generic)
+jsonACIDirection :: JSONCIDirection -> ACIDirection
+jsonACIDirection = \case
+  JCIDirectSnd -> ACIDirection SCTDirect SMDSnd CIDirectSnd
+  JCIDirectRcv -> ACIDirection SCTDirect SMDRcv CIDirectRcv
+  JCIGroupSnd -> ACIDirection SCTGroup SMDSnd CIGroupSnd
+  JCIGroupRcv m -> ACIDirection SCTGroup SMDRcv $ CIGroupRcv m
 
-instance ToJSON CIReactionCount where toEncoding = J.genericToEncoding J.defaultOptions
+data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
+  deriving (Show, Generic, FromJSON, ToJSON)
 
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
@@ -277,15 +303,20 @@ data Chat c = Chat
     chatItems :: [CChatItem c],
     chatStats :: ChatStats
   }
-  deriving (Show, Generic)
-
-instance ToJSON (Chat c) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show, Generic, ToJSON)
 
 data AChat = forall c. AChat (SChatType c) (Chat c)
 
 deriving instance Show AChat
+
+instance FromJSON AChat where
+  parseJSON = J.withObject "Chat" $ \o -> do
+    jci <- o .: "chatInfo"
+    case jsonAChatInfo jci of
+      AChatInfo sct chatInfo -> do
+        chatItems <- o .: "chatItems"
+        chatStats <- o .: "chatStats"
+        pure $ AChat sct Chat {chatInfo, chatItems, chatStats}
 
 instance ToJSON AChat where
   toJSON (AChat _ c) = J.toJSON c
@@ -296,16 +327,20 @@ data ChatStats = ChatStats
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
   }
-  deriving (Show, Generic)
-
-instance ToJSON ChatStats where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show, Generic, FromJSON, ToJSON)
 
 -- | type to show a mix of messages from multiple chats
 data AChatItem = forall c d. MsgDirectionI d => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
 deriving instance Show AChatItem
+
+instance FromJSON AChatItem where
+  parseJSON = J.withObject "ChatItem" $ \o -> do
+    jci <- o .: "chatInfo"
+    case jsonAChatInfo jci of
+      AChatInfo sct chatInfo -> do
+        chatItem <- o .: "chatItem"
+        pure $ AChatItem sct (error "TODO: AChatItem/smd") chatInfo chatItem
 
 instance ToJSON AChatItem where
   toJSON (AChatItem _ _ chat item) = J.toJSON $ JSONAnyChatItem chat item
@@ -349,7 +384,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, ToJSON)
 
 mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs createdAt updatedAt =
@@ -358,15 +393,11 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
         _ -> False
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, createdAt, updatedAt}
 
-instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
-
 data CITimed = CITimed
   { ttl :: Int, -- seconds
     deleteAt :: Maybe UTCTime -- this is initially Nothing for received items, the timer starts when they are read
   }
-  deriving (Show, Generic)
-
-instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show, Generic, FromJSON, ToJSON)
 
 ttl' :: CITimed -> Int
 ttl' CITimed {ttl} = ttl
@@ -422,16 +453,18 @@ data ACIReaction = forall c d. ACIReaction (SChatType c) (SMsgDirection d) (Chat
 
 deriving instance Show ACIReaction
 
+instance FromJSON ACIReaction where
+  parseJSON = J.withObject "ACIReaction" $ \o -> do
+    fmap jsonAChatInfo (o J..: "chatInfo") >>= \case
+      AChatInfo sct ci ->
+        pure $ ACIReaction sct (error "TODO: ACIReaction smd") ci (error "TODO: ACIReaction cir")
+
 instance ToJSON ACIReaction where
   toJSON (ACIReaction _ _ chat reaction) = J.toJSON $ JSONCIReaction chat reaction
   toEncoding (ACIReaction _ _ chat reaction) = J.toEncoding $ JSONCIReaction chat reaction
 
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
-  deriving (Generic)
-
-instance ToJSON (JSONCIReaction c d) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Generic, ToJSON)
 
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
@@ -594,6 +627,9 @@ data JSONCIFileStatus
   | JCIFSInvalid {text :: Text}
   deriving (Generic)
 
+instance FromJSON JSONCIFileStatus where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCIFS"
+
 instance ToJSON JSONCIFileStatus where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIFS"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIFS"
@@ -712,6 +748,9 @@ data JSONCIStatus
   | JCISInvalid {text :: Text}
   deriving (Show, Generic)
 
+instance FromJSON JSONCIStatus where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCIS"
+
 instance ToJSON JSONCIStatus where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIS"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIS"
@@ -726,6 +765,17 @@ jsonCIStatus = \case
   CISRcvNew -> JCISRcvNew
   CISRcvRead -> JCISRcvRead
   CISInvalid text -> JCISInvalid text
+
+jsonACIStatus :: JSONCIStatus -> ACIStatus
+jsonACIStatus = \case
+  JCISSndNew -> ACIStatus SMDSnd $ CISSndNew
+  JCISSndSent sndProgress -> ACIStatus SMDSnd $ CISSndSent sndProgress
+  JCISSndRcvd msgRcptStatus sndProgress -> ACIStatus SMDSnd $ CISSndRcvd msgRcptStatus sndProgress
+  JCISSndErrorAuth -> ACIStatus SMDSnd $ CISSndErrorAuth
+  JCISSndError e -> ACIStatus SMDSnd $ CISSndError e
+  JCISRcvNew -> ACIStatus SMDRcv $ CISRcvNew
+  JCISRcvRead -> ACIStatus SMDRcv $ CISRcvRead
+  JCISInvalid text -> ACIStatus SMDSnd $ CISInvalid text
 
 ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
 ciStatusNew = case msgDirection @d of
@@ -756,6 +806,9 @@ data SndCIStatusProgress
   = SSPPartial
   | SSPComplete
   deriving (Eq, Show, Generic)
+
+instance FromJSON SndCIStatusProgress where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SSP"
 
 instance ToJSON SndCIStatusProgress where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "SSP"
@@ -940,6 +993,9 @@ data JSONCIDeleted
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show, Generic)
 
+instance FromJSON JSONCIDeleted where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCID"
+
 instance ToJSON JSONCIDeleted where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCID"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCID"
@@ -958,9 +1014,7 @@ data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
     memberDeliveryStatuses :: Maybe [MemberDeliveryStatus]
   }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON ChatItemInfo where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
 data ChatItemVersion = ChatItemVersion
   { chatItemVersionId :: Int64,
@@ -969,9 +1023,7 @@ data ChatItemVersion = ChatItemVersion
     itemVersionTs :: UTCTime,
     createdAt :: UTCTime
   }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON ChatItemVersion where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
 mkItemVersion :: ChatItem c d -> Maybe ChatItemVersion
 mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
@@ -990,9 +1042,18 @@ data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
     memberDeliveryStatus :: CIStatus 'MDSnd
   }
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, ToJSON)
 
-instance ToJSON MemberDeliveryStatus where toEncoding = J.genericToEncoding J.defaultOptions
+instance FromJSON MemberDeliveryStatus where
+  parseJSON = J.withObject "" $ \o -> do
+    jci <- o .: "memberDeliveryStatus"
+    case jsonACIStatus jci of
+      ACIStatus SMDSnd cis -> do
+        groupMemberId <- o .: "groupMemberId"
+        pure $ MemberDeliveryStatus groupMemberId cis
+      _ ->
+        fail "invalid MemberDeliveryStatus"
+
 
 data CIModeration = CIModeration
   { moderationId :: Int64,
