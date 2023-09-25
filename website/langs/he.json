@@ -162,7 +162,7 @@
     "join-the-REDDIT-community": "הצטרפו לקהילת REDDIT",
     "privacy-matters-overlay-card-3-p-3": "אנשים רגילים נעצרים על מה שהם משתפים באינטרנט, אפילו דרך החשבונות ה'אנונימיים' שלהם, <a href='https://www.dailymail.co.uk/news/article-11282263/Moment-police-swoop-house-devout -catholic-mother-malicious-online-posts.html' target='_blank'>אפילו במדינות דמוקרטיות</a>.",
     "simplex-unique-overlay-card-3-p-2": "ההודעות המוצפנות מקצה לקצה מוחזקות באופן זמני בשרתי ממסר של SimpleX עד שמתקבלות, ואז הן נמחקות לצמיתות.",
-    "simplex-unique-overlay-card-4-p-2": "פלטפורמת SimpleX משתמשת ב<a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>פרוטוקול פתוח</a> ומספקת < a href='https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript' target='_blank'>SDK ליצירת צ'אט בוטים</a>, המאפשר הטמעה של שירותים שמשתמשים יכולים לתקשר איתם באמצעות אפליקציות SimpleX Chat &mdash; אנחנו ממש מצפים לראות אילו שירותי SimpleX אתם יכולים לבנות.",
+    "simplex-unique-overlay-card-4-p-2": "פלטפורמת SimpleX משתמשת ב<a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>פרוטוקול פתוח</a> ומספקת <a href='https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript' target='_blank'>SDK ליצירת צ'אט בוטים</a>, המאפשר הטמעה של שירותים שמשתמשים יכולים לתקשר איתם באמצעות אפליקציות SimpleX Chat &mdash; אנחנו ממש מצפים לראות אילו שירותי SimpleX אתם יכולים לבנות.",
     "contact-hero-p-2": "עדיין לא הורדתם את ה-SimpleX Chat?",
     "why-simplex-is": "מדוע SimpleX הוא",
     "simplex-network-section-header": "<span class='gradient-text'>רשת</span> SimpleX",
