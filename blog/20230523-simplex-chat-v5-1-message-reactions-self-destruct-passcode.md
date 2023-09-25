@@ -36,7 +36,7 @@ Also, we added Japanese and Portuguese (Brazil)<sup>*</sup> interface languages,
 
 ## Message reactions
 
-<img src="./images/20230523-reactions.png" width="288">
+<img src="./images/20230523-reactions.png" width="288" class="float-to-left">
 
 No idea why it took us so long to add them – finally we have them, and they are great.
 
@@ -50,7 +50,7 @@ The next app version will allow prohibiting the reactions per conversation, as y
 
 ### Voice messages: up to 5 minutes, better quality, playback control
 
-<img src="./images/20230523-voice.png" width="288">
+<img src="./images/20230523-voice.png" width="288" class="float-to-left">
 
 Since [v4.3](./20221206-simplex-chat-v4.3-voice-messages.md#instant-voice-messages) voice messages were sent in small 16kb chunks, so we had to limit them to 30-40 seconds for better user experience, as sending larger files would require the sender to be online.
 
@@ -66,7 +66,7 @@ This version allows to configure the time for messages to disappear more granula
 
 ### Message editing history
 
-<img src="./images/20230523-info.png" width="288">
+<img src="./images/20230523-info.png" width="288" class="float-to-left">
 
 I [wrote previously](./20221206-simplex-chat-v4.3-voice-messages.md#irreversible-message-deletion) why we decided to require the recipient concent before the messages can be fully deleted by the sender - in short, it is to support recipient's data sovereignty and prevent the possibility of offensive messages being removed without any trace. By default, when the sender deletes the message it is marked as deleted, rather than fully deleted, and you can reveal the original message.
 
@@ -74,7 +74,7 @@ You've found the workaround for it of course - it's enough to simply edit the me
 
 ## Customize and share color themes
 
-<img src="./images/20230523-theme.png" width="288">
+<img src="./images/20230523-theme.png" width="288" class="float-to-left">
 
 Android app now allows choosing between three color themes - Light, Dark and SimpleX (a dark blue theme). You can customize any theme by setting 9 different colors used in the app, including titles, menus, accent colors and colors for sent and received messages.
 
@@ -82,7 +82,7 @@ You can share your theme with other users by exporting it to a file and sending 
 
 ## Self-destruct passcode
 
-<img src="./images/20230523-self-destruct.png" width="288">
+<img src="./images/20230523-self-destruct.png" width="288" class="float-to-left">
 
 This is something many of you asked before - when asked to enter the app passcode under duress, to be able to enter a special self-destruct code that would remove the app data. This feature is offered in many security tools, and now you can configure it in SimpleX Chat as well.
 
