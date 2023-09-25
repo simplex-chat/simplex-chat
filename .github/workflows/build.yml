@@ -8,6 +8,7 @@ on:
       - users
     tags:
       - "v*"
+      - "!*-fdroid"
   pull_request:
 
 jobs:
