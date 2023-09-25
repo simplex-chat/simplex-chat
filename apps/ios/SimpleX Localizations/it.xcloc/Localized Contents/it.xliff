@@ -5972,9 +5972,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>membro</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="member connected" xml:space="preserve">
+      <trans-unit id="member connected" xml:space="preserve" approved="no">
         <source>connected</source>
-        <target>è connesso/a</target>
+        <target state="translated">si è connesso/a</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve">
