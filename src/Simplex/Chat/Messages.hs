@@ -166,6 +166,9 @@ instance MsgDirectionI d => ToJSON (ChatItem c d) where
 
 data ACIDirection = forall c d . MsgDirectionI d => ACIDirection (SChatType c) (SMsgDirection d) (CIDirection c d)
 
+instance FromJSON ACIDirection where
+  parseJSON = fmap jsonACIDirection . J.parseJSON
+
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
@@ -212,6 +215,8 @@ data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: 
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (CChatItem c)
+
+instance FromJSON (CChatItem c) where
 
 instance ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
@@ -336,11 +341,13 @@ deriving instance Show AChatItem
 
 instance FromJSON AChatItem where
   parseJSON = J.withObject "ChatItem" $ \o -> do
-    jci <- o .: "chatInfo"
-    case jsonAChatInfo jci of
+    jChatInfo <- o .: "chatInfo"
+    case jsonAChatInfo jChatInfo of
       AChatInfo sct chatInfo -> do
-        chatItem <- o .: "chatItem"
-        pure $ AChatItem sct (error "TODO: AChatItem/smd") chatInfo chatItem
+        vChatItem <- o .: "chatItem"
+        vChatItem .: "chatDir" >>= \(ACIDirection _sct smd _cid) -> do
+          o .: "chatItem" >>= \JSONAnyChatItem { chatItem } ->
+            pure $ AChatItem sct smd chatInfo chatItem
 
 instance ToJSON AChatItem where
   toJSON (AChatItem _ _ chat item) = J.toJSON $ JSONAnyChatItem chat item
