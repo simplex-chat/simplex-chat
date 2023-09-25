@@ -408,7 +408,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>To accelerate product development and growth we will be raising a seed funding this year, both from the VCs and angel investors, and we also might offer our users an opportunity to participate in the crowd funding round on the same terms as other investors, allowing to both support the project and to benefit from its future growth. <a href="https://simplex.chat#join-simplex">Subscribe to our updates</a> not to miss it, connect to the team in SimpleX Chat and <a href="https://github.com/simplex-chat/simplex-chat#join-user-groups">join users' groups</a>.</p>
 <h2 id="whats-new-in-v50" tabindex="-1">What's new in v5.0</h2>
 <h3 id="send-videos-and-files-up-to-1gb" tabindex="-1">Send videos and files up to 1gb!</h3>
-<img src="./images/20230422-video.png" width="288">
+<img src="./images/20230422-video.png" width="288" class="float-to-left">
 <p>In the beginning of March <a href="20230301-simplex-file-transfer-protocol.html">we released servers and command-line utility to send and receive files via XFTP protocol</a> - a very private and secure protocol that sends end-to-end encrypted files in chunks, protecting meta-data better than any alternatives we know of.</p>
 <p>Now this protocol is fully integrated in SimpleX Chat, and all files except small voice messages are sent using this protocol (small voice messages are sent as usual messages). Not only it is much faster than before - with the fast Internet connection I can send 25Mb file in 3 seconds and 1gb file in 2 minutes (for most users it's capped at the available Internet bandwidth), it has two other major advantages making it more usable:</p>
 <ul>
@@ -423,7 +423,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>While we do think that app passcode does not increase security too much, compared with device passcode or biometric protection, there are cases when it may be preferable, and also many users really wanted that it is added.</p>
 <p>Now you can choose whether to use faster and more convenient system biometric authentication or to use a separate app passcode. You can choose which one to use when it is first offered, or switch later in the settings.</p>
 <h3 id="networking-improvements" tabindex="-1">Networking improvements</h3>
-<img src="./images/20230422-socks.png" width="288">
+<img src="./images/20230422-socks.png" width="288" class="float-to-left">
 <p>Two small improvements to the app networking capabilities were added in this version.</p>
 <p>Firstly, you can now make your self-hosted servers available on IPv6 addresses, and the app supports them as well. Please bear in mind that older clients won't be able to connect to you if you use IPv6 address, and also that some ISPs do not provide IPv6 addresses to their users, in which case they would also not be able to connect if IPv6 address is used. To allow connections in these cases you should make your servers available on some domain name that resolves to both IPv4 and IPv6 addresses, and use this domain name in the server address.</p>
 <p>Secondly, Android client now supports configuring host and port of the SOCKS proxy, allowing to use apps other than Orbot and also to run SOCKS proxy in the local network, to save mobile device battery.</p>
