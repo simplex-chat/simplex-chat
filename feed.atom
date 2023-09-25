@@ -1720,6 +1720,7 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;li&gt;you cannot send voice messages.&lt;/li&gt;
 &lt;li&gt;there is no support for calls yet.&lt;/li&gt;
 &lt;/ul&gt;
+&lt;p&gt;You can download the desktop app for Linux and Mac via &lt;a href=&quot;https://simplex.chat/downloads&quot;&gt;downloads page&lt;/a&gt;. Windows version will be available soon.&lt;/p&gt;
 &lt;h2 id=&quot;group-directory-service-and-other-group-improvements&quot; tabindex=&quot;-1&quot;&gt;Group directory service and other group improvements&lt;/h2&gt;
 &lt;img src=&quot;https://simplex.chat/blog/images/20230925-directory.png&quot; width=&quot;330&quot; class=&quot;float-to-left&quot; /&gt;
 &lt;p&gt;Directory service provides a way to search for public groups submitted by the users. To use it, you need to connect to it via SimpleX Chat, as you would connect to any other contact, and type some words to search.&lt;/p&gt;
