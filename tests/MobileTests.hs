@@ -61,11 +61,6 @@ mobileTests = do
       it "utf8 name 1" $ testFileEncryptionCApi "тест"
       it "utf8 name 2" $ testFileEncryptionCApi "👍"
       it "no exception on missing file" testMissingFileEncryptionCApi
-    xdescribe "remote sessions" $ do
-      it "remote host management works" testRemoteHostManagement
-      it "remote controller management works" testRemoteControllerManagement
-      it "connections get established" testRemoteConnection
-      it "host gets controlled" testRemoteSession
 
 noActiveUser :: LB.ByteString
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -270,22 +265,6 @@ testMissingFileEncryptionCApi tmp = do
   cToPath' <- newCString toPath'
   err' <- peekCAString =<< cChatDecryptFile cToPath cKey cNonce cToPath'
   err' `shouldContain` toPath
-
-testRemoteHostManagement :: FilePath -> IO ()
-testRemoteHostManagement tmp = do
-  fail "TODO"
-
-testRemoteControllerManagement :: FilePath -> IO ()
-testRemoteControllerManagement tmp = do
-  fail "TODO"
-
-testRemoteConnection :: FilePath -> IO ()
-testRemoteConnection tmp = do
-  fail "TODO"
-
-testRemoteSession :: FilePath -> IO ()
-testRemoteSession tmp = do
-  fail "TODO"
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack
