@@ -5386,8 +5386,7 @@ chatCommandP =
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
-      "/_start " *> (APIStartChat <$> (jsonP <|> chatCtrlCfgP)),
-      "/_start" $> APIStartChat defChatCtrlCfg,
+      "/_start" *> (APIStartChat <$> ((A.space *> jsonP) <|> chatCtrlCfgP)),
       "/_stop close" $> APIStopChat {closeStore = True},
       "/_stop" $> APIStopChat False,
       "/_app activate" $> APIActivateChat,
@@ -5618,9 +5617,9 @@ chatCommandP =
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
     chatCtrlCfgP = do
-      subConns <- "subscribe=" *> onOffP
-      enableExpireCIs <- " expire=" *> onOffP
-      startXFTPWorkers <- " xftp=" *> onOffP
+      subConns <- (" subscribe=" *> onOffP) <|> pure True
+      enableExpireCIs <- (" expire=" *> onOffP) <|> pure True
+      startXFTPWorkers <- (" xftp=" *> onOffP) <|> pure True
       openDBWithKey <- optional $ " key=" *> dbKeyP
       pure ChatCtrlCfg {subConns, enableExpireCIs, startXFTPWorkers, openDBWithKey}
     incognitoP = (A.space *> ("incognito" <|> "i")) $> True <|> pure False

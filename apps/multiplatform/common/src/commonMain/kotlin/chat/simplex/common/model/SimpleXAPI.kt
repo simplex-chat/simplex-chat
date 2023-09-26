@@ -525,8 +525,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiStopChat(): Boolean {
-    val r = sendCmd(CC.ApiStopChat())
+  suspend fun apiStopChat(closeStore: Boolean): Boolean {
+    val r = sendCmd(CC.ApiStopChat(closeStore))
     when (r) {
       is CR.ChatStopped -> return true
       else -> throw Error("failed stopping chat: ${r.responseType} ${r.details}")
@@ -1830,7 +1830,7 @@ sealed class CC {
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val cfg: ChatCtrlCfg): CC()
-  class ApiStopChat: CC()
+  class ApiStopChat(val closeStore: Boolean): CC()
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
   class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
@@ -1933,8 +1933,9 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start ${json.encodeToString(cfg)}"
-    is ApiStopChat -> "/_stop"
+//    is StartChat -> "/_start ${json.encodeToString(cfg)}" // this can be used with the new core
+    is StartChat -> "/_start subscribe=on expire=${onOff(cfg.enableExpireCIs)} xftp=on"
+    is ApiStopChat -> if (closeStore) "/_stop close" else "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
