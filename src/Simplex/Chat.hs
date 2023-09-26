@@ -21,6 +21,7 @@ module Simplex.Chat where
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
 import qualified Data.Binary.Builder as Binary
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..))
+import qualified Network.HTTP.Types as HTTP
 import qualified Network.HTTP2.Client as HTTP2Client
 
 import Control.Applicative (optional, (<|>))
@@ -384,16 +385,17 @@ toViewRemote rh event = do
 -- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
-  CreateRemoteHost -> error "TODO: CreateRemoteHost"
+  CreateRemoteHost displayName -> error "TODO: CreateRemoteHost"
   ListRemoteHosts -> error "TODO: ListRemoteHosts"
   StartRemoteHost rh -> error "TODO: StartRemoteHost"
   StopRemoteHost rh -> error "TODO: StopRemoteHost"
   DisposeRemoteHost rh -> error "TODO: DisposeRemoteHost"
-  RegisterRemoteController oobData -> error "TODO: RegisterRemoteController"
+  RegisterRemoteController displayName oobData -> error "TODO: RegisterRemoteController"
+  ListRemoteContollers -> error "TODO: ListRemoteControllers"
   StartRemoteController -> error "TODO: StartRemoteController"
-  ConfirmRemoteController -> error "TODO: ConfirmRemoteController"
-  RejectRemoteController -> error "TODO: RejectRemoteController"
-  StopRemoteController -> error "TODO: StopRemoteController"
+  ConfirmRemoteController rc -> error "TODO: ConfirmRemoteController"
+  RejectRemoteController rc -> error "TODO: RejectRemoteController"
+  StopRemoteController rc -> error "TODO: StopRemoteController"
   DisposeRemoteController rc -> error "TODO: DisposeRemoteController"
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
@@ -2203,14 +2205,57 @@ relayCommand :: ChatMonad m => RemoteHostSession -> ByteString -> m ChatResponse
 relayCommand RemoteHostSession {transport} s = postBytestring Nothing transport "/relay" mempty s >>= \case
   Left e -> error "TODO: http2chatError"
   Right HTTP2.HTTP2Response { respBody=HTTP2Body { bodyHead } } -> do
-    case J.eitherDecodeStrict' bodyHead of -- XXX: large JSONs can overflow into buffered chunks
-      Left e -> error "TODO: json2chatError"
-      Right cr -> pure cr
+    remoteChatResponse <-
+      if iTax then
+        case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
+          Left e -> error "TODO: json2chatError" e
+          Right (raw :: J.Value) -> case J.fromJSON (sum2tagged raw) of
+            J.Error e -> error "TODO: json2chatError" e
+            J.Success cr -> pure cr
+      else
+        case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
+          Left e -> error "TODO: json2chatError" e
+          Right cr -> pure cr
+    case remoteChatResponse of
+      -- TODO: intercept file responses and fetch files when needed
+      -- XXX: is that even possible, to have a file response to a command?
+      _ -> pure remoteChatResponse
   where
+    iTax = True -- TODO: get from RemoteHost
     -- XXX: extract to http2 transport
     postBytestring timeout c path hs body = liftIO $ HTTP2.sendRequest c req timeout
       where
         req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
+
+storeRemoteFile :: ChatMonad m => RemoteHostSession -> FilePath -> m ChatResponse
+storeRemoteFile RemoteHostSession {transport} localFile = do
+  postFile Nothing transport "/store" mempty localFile >>= \case
+    Left e -> error "TODO: http2chatError"
+    Right HTTP2.HTTP2Response { response } -> case HTTP.statusCode <$> HTTP2Client.responseStatus response of
+      Just 200 -> pure $ CRCmdOk Nothing
+      unexpected -> error "TODO: http2chatError"
+  where
+    postFile timeout c path hs file = liftIO $ do
+      fileSize <- fromIntegral <$> getFileSize file
+      HTTP2.sendRequest c (req fileSize) timeout
+      where
+        req size = HTTP2Client.requestFile "POST" path hs (HTTP2Client.FileSpec file 0 size)
+
+fetchRemoteFile :: ChatMonad m => RemoteHostSession -> FileTransferId -> m ChatResponse
+fetchRemoteFile RemoteHostSession {transport, path} remoteFileId = do
+  liftIO (HTTP2.sendRequest transport req Nothing) >>= \case
+    Left e -> error "TODO: http2chatError"
+    Right HTTP2.HTTP2Response { respBody } -> do
+      error "TODO: stream body into a local file" -- XXX: consult headers for a file name?
+  where
+    req = HTTP2Client.requestNoBody "GET" path mempty
+    path = "/fetch/" <> B.pack (show remoteFileId)
+
+-- | Convert swift single-field sum encoding into tagged/discriminator-field
+sum2tagged :: J.Value -> J.Value
+sum2tagged = \case
+  J.Object todo'convert -> J.Object todo'convert
+  skip -> skip
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =

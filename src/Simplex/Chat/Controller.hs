@@ -659,10 +659,8 @@ logResponseToFile = \case
   CRMessageError {} -> True
   _ -> False
 
-#ifdef CHAT_FROM_JSON
 instance FromJSON ChatResponse where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CR"
-#endif
+  parseJSON todo = pure $ CRCmdOk Nothing -- TODO: actually use the instances
 
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
