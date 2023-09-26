@@ -11,12 +11,10 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
-import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.helpers.getBitmapFromByteArray
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.delay
 import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
 import kotlin.math.max
 
@@ -75,47 +73,5 @@ private fun BoxScope.Controls(player: VideoPlayer) {
       onValueChange = { player.player.seekTo((it * duration.value).toInt()) },
       modifier = Modifier.fillMaxWidth()
     )
-  }
-}
-
-@Composable
-fun FullScreenVideoViewSwing(player: VideoPlayer, modifier: Modifier, close: () -> Unit) {
-  // Workaround. Without changing size of the window the screen flashes a lot even if it's not being recomposed
-  LaunchedEffect(Unit) {
-    simplexWindowState.windowState.size = simplexWindowState.windowState.size.copy(width = simplexWindowState.windowState.size.width + 1.dp)
-    delay(50)
-    player.play(true)
-    simplexWindowState.windowState.size = simplexWindowState.windowState.size.copy(width = simplexWindowState.windowState.size.width - 1.dp)
-  }
-  Box {
-    Box(Modifier.fillMaxSize().padding(bottom = 50.dp)) {
-      val factory = remember { { player.mediaPlayerComponent } }
-      SwingPanel(
-        background = Color.Transparent,
-        modifier = Modifier,
-        factory = factory
-      )
-    }
-    ControlsSwing(player, close)
-  }
-}
-
-@Composable
-private fun BoxScope.ControlsSwing(player: VideoPlayer, close: () -> Unit) {
-  val playing = remember(player) { player.videoPlaying }
-  val progress = remember(player) { player.progress }
-  val duration = remember(player) { player.duration }
-  Row(Modifier.fillMaxWidth().align(Alignment.BottomCenter).height(50.dp)) {
-    IconButton(onClick = { if (playing.value) player.player.pause() else player.play(true) },) {
-      Icon(painterResource(if (playing.value) MR.images.ic_pause_filled else MR.images.ic_play_arrow_filled), null, Modifier.size(30.dp), tint = MaterialTheme.colors.primary)
-    }
-    Slider(
-      value = progress.value.toFloat() / max(0.0001f, duration.value.toFloat()),
-      onValueChange = { player.player.seekTo((it * duration.value).toInt()) },
-      modifier = Modifier.fillMaxWidth().weight(1f)
-    )
-    IconButton(onClick = close,) {
-      Icon(painterResource(MR.images.ic_close), null, Modifier.size(30.dp), tint = MaterialTheme.colors.primary)
-    }
   }
 }

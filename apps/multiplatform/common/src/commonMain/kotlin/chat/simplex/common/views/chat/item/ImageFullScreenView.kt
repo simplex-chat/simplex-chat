@@ -161,8 +161,6 @@ private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap,
     snapshotFlow { isCurrentPage.value }
       .distinctUntilChanged()
       .collect {
-        // IF USING SWING, do not autoplay on desktop because it needs workaround
-        //if (it && appPlatform.isAndroid) play() else if (!it) stop()
         if (it) play() else stop()
         player.enableSound(true)
       }
