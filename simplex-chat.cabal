@@ -131,7 +131,7 @@ library
       Simplex.Chat.Store.Messages
       Simplex.Chat.Store.Migrations
       Simplex.Chat.Store.Profiles
-      Simplex.Chat.Store.RemoteHosts
+      Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
       Simplex.Chat.Terminal

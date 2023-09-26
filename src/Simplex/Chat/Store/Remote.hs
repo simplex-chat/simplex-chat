@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.Chat.Store.RemoteHosts where
+module Simplex.Chat.Store.Remote where
 
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)

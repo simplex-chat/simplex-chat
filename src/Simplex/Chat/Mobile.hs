@@ -101,18 +101,18 @@ cChatMigrateInit fp key conf ctrl = do
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
-cChatSendCmd cPtr = cChatSendRemoteCmd cPtr 0
+cChatSendCmd cPtr cCmd = do
+  c <- deRefStablePtr cPtr
+  cmd <- B.packCString cCmd
+  newCStringFromLazyBS =<< chatSendCmd c cmd
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendRemoteCmd :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
 cChatSendRemoteCmd cPtr cRemoteHostId cCmd = do
   c <- deRefStablePtr cPtr
   cmd <- B.packCString cCmd
-  newCStringFromLazyBS =<< chatSendRemoteCmd c remoteHostId cmd
-  where
-    remoteHostId
-      | cRemoteHostId == 0 = Nothing
-      | otherwise = Just (fromIntegral cRemoteHostId)
+  let rhId = Just $ fromIntegral cRemoteHostId
+  newCStringFromLazyBS =<< chatSendRemoteCmd c rhId cmd
 
 -- | receive message from chat (blocking)
 cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
