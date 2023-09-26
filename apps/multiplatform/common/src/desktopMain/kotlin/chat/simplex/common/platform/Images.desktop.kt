@@ -193,23 +193,17 @@ fun BufferedImage.rotate(angle: Double): BufferedImage {
 
 // https://stackoverflow.com/a/9559043
 fun BufferedImage.flip(vertically: Boolean, horizontally: Boolean): BufferedImage {
+  if (!vertically && !horizontally) return this
   val tx: AffineTransform
-  return if (vertically && horizontally) {
+  if (vertically && horizontally) {
     tx = AffineTransform.getScaleInstance(-1.0, -1.0)
     tx.translate(-width.toDouble(), -height.toDouble())
-    val op = AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR)
-    op.filter(this, null)
   } else if (vertically) {
     tx = AffineTransform.getScaleInstance(1.0, -1.0)
     tx.translate(0.0, -height.toDouble())
-    val op = AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR)
-    op.filter(this, null)
-  } else if (horizontally) {
+  } else {
     tx = AffineTransform.getScaleInstance(-1.0, 1.0)
     tx.translate(-width.toDouble(), 0.0)
-    val op = AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR)
-    op.filter(this, null)
-  } else {
-    this
   }
+  return AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR).filter(this, null)
 }
