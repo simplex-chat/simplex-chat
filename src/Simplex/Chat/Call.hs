@@ -49,6 +49,9 @@ data CallStateTag
   | CSTCallNegotiated
   deriving (Show, Generic)
 
+instance FromJSON CallStateTag where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CSTCall"
+
 instance ToJSON CallStateTag where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CSTCall"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CSTCall"
