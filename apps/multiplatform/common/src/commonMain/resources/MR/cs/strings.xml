@@ -891,8 +891,8 @@
     <string name="theme_dark">Tmavé</string>
     <string name="theme">Téma</string>
     <string name="chat_preferences_contact_allows">Kontakt povolil</string>
-    <string name="chat_preferences_on">zapnuto</string>
-    <string name="chat_preferences_off">vypnout</string>
+    <string name="chat_preferences_on">zaplé</string>
+    <string name="chat_preferences_off">vyplé</string>
     <string name="chat_preferences">Chat předvolby</string>
     <string name="contact_preferences">Předvolby kontaktu</string>
     <string name="group_preferences">Předvolby skupiny</string>
