@@ -1547,3 +1547,13 @@ data RemoteHostInfo = RemoteHostInfo
   }
   deriving stock (Eq, Ord, Show, Generic)
   deriving anyclass (FromRow, ToRow)
+
+type RemoteControllerId = Int
+
+data RemoteControllerInfo = RemoteControllerInfo
+  { remoteControllerId :: RemoteControllerId,
+    displayName :: Text,
+    fingerprint :: Text
+  }
+  deriving stock (Eq, Ord, Show, Generic)
+  deriving anyclass (FromRow, ToRow)

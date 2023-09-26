@@ -17,6 +17,12 @@
 
 module Simplex.Chat where
 
+-- XXX: extract to simplexmq?
+import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
+import qualified Data.Binary.Builder as Binary
+import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..))
+import qualified Network.HTTP2.Client as HTTP2Client
+
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import qualified Control.Exception as E
@@ -349,7 +355,7 @@ execChatCommand rh s = do
     Left e -> pure $ chatCmdError u e
     Right cmd -> case rh of
       Nothing -> execChatCommand_ u cmd
-      Just remoteHostId -> execRemoteCommand u remoteHostId cmd
+      Just remoteHostId -> execRemoteCommand u remoteHostId (s, cmd)
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
 execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` cmd)
@@ -357,8 +363,8 @@ execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` c
 execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
 execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processChatCommand cmd)
 
-execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> ChatCommand -> m ChatResponse
-execRemoteCommand u rh cmd = either (CRChatCmdError u) id <$> runExceptT (withRemoteHostSession rh $ \rhs -> processRemoteCommand rhs cmd)
+execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> (ByteString, ChatCommand) -> m ChatResponse
+execRemoteCommand u rh scmd = either (CRChatCmdError u) id <$> runExceptT (withRemoteHostSession rh $ \rhs -> processRemoteCommand rhs scmd)
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
@@ -2187,14 +2193,24 @@ processChatCommand = \case
         _ -> throwChatError $ CECommandError "not supported"
       processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
 
-processRemoteCommand :: ChatMonad m => RemoteHostSession -> ChatCommand -> m ChatResponse
+processRemoteCommand :: ChatMonad m => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
 processRemoteCommand rhs = \case
   -- XXX: intercept and filter some commands
   -- TODO: store missing files on remote host
-  cmd -> relayCommand rhs cmd
+  (s, _cmd) -> relayCommand rhs s
 
-relayCommand :: ChatMonad m => RemoteHostSession -> ChatCommand -> m ChatResponse
-relayCommand todo'rhs todo'cmd = error "TODO"
+relayCommand :: ChatMonad m => RemoteHostSession -> ByteString -> m ChatResponse
+relayCommand RemoteHostSession {transport} s = postBytestring Nothing transport "/relay" mempty s >>= \case
+  Left e -> error "TODO: http2chatError"
+  Right HTTP2.HTTP2Response { respBody=HTTP2Body { bodyHead } } -> do
+    case J.eitherDecodeStrict' bodyHead of -- XXX: large JSONs can overflow into buffered chunks
+      Left e -> error "TODO: json2chatError"
+      Right cr -> pure cr
+  where
+    -- XXX: extract to http2 transport
+    postBytestring timeout c path hs body = liftIO $ HTTP2.sendRequest c req timeout
+      where
+        req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -5348,13 +5364,15 @@ runRemoteHostSession rh = do
   RemoteHostInfo {displayName, path, caKey, caCert} <- error "TODO: get from DB"
   (fingerprint, sessionCreds) <- error "TODO: derive session creds" (caKey, caCert)
   announcer <- async $ error "TODO: run announcer" fingerprint
+  sessionTransport <- newEmptyTMVarIO
   handler <- async $ error "TODO: runServer" path sessionCreds
-  chatModifyVar (.remoteHosts) $ M.insert rh RemoteHostSession {handler, path}
+  transport <- atomically $ takeTMVar sessionTransport
+  chatModifyVar (.remoteHosts) $ M.insert rh RemoteHostSession {handler, path, transport}
 
 withRemoteHostSession :: ChatMonad m => RemoteHostId -> (RemoteHostSession -> m a) -> m a
 withRemoteHostSession remoteHostId action = do
   M.lookup remoteHostId <$> chatReadVar (.remoteHosts) >>= \case
-    Nothing -> throwRemoteError $ REMissing remoteHostId
+    Nothing -> throwRemoteHostError remoteHostId RHMissing
     Just rh -> action rh
 
 checkSameUser :: ChatMonad m => UserId -> User -> m ()
@@ -5404,17 +5422,17 @@ withStoreCtx ctx_ action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
-    [ "/create remote host" $> CreateRemoteHost,
+    [ "/create remote host" *> (CreateRemoteHost <$> textP),
       "/list remote hosts" $> ListRemoteHosts,
       "/start remote host " *> (StartRemoteHost <$> A.decimal),
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/dispose remote host " *> (DisposeRemoteHost <$> A.decimal),
-      "/register remote controller" *> (RegisterRemoteController <$> textP),
+      "/register remote controller " *> (RegisterRemoteController <$> textP <*> remoteHostOOBP),
       "/start remote controller" $> StartRemoteController,
-      "/confirm remote controller" $> ConfirmRemoteController,
-      "/reject remote controller" $> RejectRemoteController,
-      "/stop remote controller" $> StopRemoteController,
-      "/dispose remote controller" *> (DisposeRemoteController <$> textP),
+      "/confirm remote controller " *> (ConfirmRemoteController <$> A.decimal),
+      "/reject remote controller " *> (RejectRemoteController <$> A.decimal),
+      "/stop remote controller " *> (StopRemoteController <$> A.decimal),
+      "/dispose remote controller " *> (DisposeRemoteController <$> A.decimal),
       "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` True) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
@@ -5776,6 +5794,7 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
+    remoteHostOOBP = RemoteHostOOB <$> textP
 
 adminContactReq :: ConnReqContact
 adminContactReq =
