@@ -1558,7 +1558,7 @@ createMemberContactInvited
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = ctConn, viaGroup = Nothing, contactUsed = True, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False}
+        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = ctConn, viaGroup = Nothing, contactUsed = True, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False}
         m' = m {memberContactId = Just contactId}
     pure (mCt', m')
     where
