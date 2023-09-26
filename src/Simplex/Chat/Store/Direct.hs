@@ -42,6 +42,7 @@ module Simplex.Chat.Store.Direct
     deletePCCIncognitoProfile,
     updateContactUsed,
     updateContactUnreadChat,
+    updateContactStatus,
     updateGroupUnreadChat,
     setConnectionVerified,
     incConnectionAuthErrCounter,
@@ -386,6 +387,19 @@ updateContactUnreadChat :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactUnreadChat db User {userId} Contact {contactId} unreadChat = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (unreadChat, updatedAt, userId, contactId)
+
+updateContactStatus :: DB.Connection -> User -> Contact -> ContactStatus -> IO Contact
+updateContactStatus db User {userId} ct@Contact {contactId} ctStatus = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE contacts
+      SET contact_status = ?, updated_at = ?
+      WHERE user_id = ? AND contact_id = ?
+    |]
+    (ctStatus, currentTs, userId, contactId)
+  pure ct -- {contactStatus = CSDeleted`}
 
 updateGroupUnreadChat :: DB.Connection -> User -> GroupInfo -> Bool -> IO ()
 updateGroupUnreadChat db User {userId} GroupInfo {groupId} unreadChat = do

@@ -491,6 +491,7 @@ data ChatResponse
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {user :: User, contact :: Contact}
+  | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {user :: User, connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted {user :: User}
@@ -887,6 +888,7 @@ data ChatErrorType
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
+  | CEContactNotActive {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
   | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
