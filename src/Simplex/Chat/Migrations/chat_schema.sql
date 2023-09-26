@@ -519,9 +519,9 @@ CREATE TABLE remote_hosts(
   -- hosts known to a controlling app
   remote_host_id INTEGER PRIMARY KEY,
   display_name TEXT NOT NULL,
-  path TEXT NOT NULL,
-  ca_key BLOB NOT NULL,
-  ca_cert BLOB NOT NULL
+  store_path TEXT NOT NULL,
+  ca_cert BLOB NOT NULL,
+  ca_key BLOB NOT NULL
 );
 CREATE TABLE remote_controllers(
   -- controllers known to a hosting app

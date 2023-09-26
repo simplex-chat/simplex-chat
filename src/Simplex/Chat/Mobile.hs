@@ -38,6 +38,7 @@ import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
@@ -56,7 +57,7 @@ foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString 
 
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
-foreign export ccall "chat_send_cmd_ex" cChatSendCmdEx :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
+foreign export ccall "chat_send_remote_cmd" cChatSendRemoteCmd :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
 
 foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
 
@@ -100,14 +101,14 @@ cChatMigrateInit fp key conf ctrl = do
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
-cChatSendCmd cPtr = cChatSendCmdEx cPtr 0
+cChatSendCmd cPtr = cChatSendRemoteCmd cPtr 0
 
 -- | send command to chat (same syntax as in terminal for now)
-cChatSendCmdEx :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
-cChatSendCmdEx cPtr cRemoteHostId cCmd = do
+cChatSendRemoteCmd :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
+cChatSendRemoteCmd cPtr cRemoteHostId cCmd = do
   c <- deRefStablePtr cPtr
   cmd <- B.packCString cCmd
-  newCStringFromLazyBS =<< chatSendCmd c remoteHostId cmd
+  newCStringFromLazyBS =<< chatSendRemoteCmd c remoteHostId cmd
   where
     remoteHostId
       | cRemoteHostId == 0 = Nothing
@@ -206,8 +207,11 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
           _ -> dbError e
         dbError e = Left . DBMErrorSQL dbFile $ show e
 
-chatSendCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
-chatSendCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
+chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
+chatSendCmd cc = chatSendRemoteCmd cc Nothing
+
+chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
+chatSendRemoteCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)

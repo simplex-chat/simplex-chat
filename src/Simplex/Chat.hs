@@ -17,13 +17,6 @@
 
 module Simplex.Chat where
 
--- XXX: extract to simplexmq?
-import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
-import qualified Data.Binary.Builder as Binary
-import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..))
-import qualified Network.HTTP.Types as HTTP
-import qualified Network.HTTP2.Client as HTTP2Client
-
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import qualified Control.Exception as E
@@ -69,6 +62,8 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Direct
@@ -198,8 +193,6 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
-  remoteHosts <- newTVarIO M.empty
-  remoteController <- newTVarIO Nothing
   currentUser <- newTVarIO user
   servers <- agentServers config
   smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
@@ -213,6 +206,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
   currentCalls <- atomically TM.empty
+  remoteHostSessions <- atomically TM.empty
+  remoteCtrlSession <- newTVarIO Nothing
   filesFolder <- newTVarIO optFilesFolder
   chatStoreChanged <- newTVarIO False
   expireCIThreads <- newTVarIO M.empty
@@ -222,7 +217,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {remoteHosts, remoteController, activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, remoteHostSessions, remoteCtrlSession, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -372,31 +367,20 @@ parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()
-toView event = do
-  q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, Nothing, event)
+toView = toView_ Nothing
 
 -- | Used by transport to mark remote events with source.
 toViewRemote :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
-toViewRemote rh event = do
+toViewRemote = toView_ . Just
+
+toView_ :: ChatMonad' m => Maybe RemoteHostId -> ChatResponse -> m ()
+toView_ rh event = do
   q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, Just rh, event)
+  atomically $ writeTBQueue q (Nothing, rh, event)
 
 -- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
-  CreateRemoteHost displayName -> error "TODO: CreateRemoteHost"
-  ListRemoteHosts -> error "TODO: ListRemoteHosts"
-  StartRemoteHost rh -> error "TODO: StartRemoteHost"
-  StopRemoteHost rh -> error "TODO: StopRemoteHost"
-  DisposeRemoteHost rh -> error "TODO: DisposeRemoteHost"
-  RegisterRemoteController displayName oobData -> error "TODO: RegisterRemoteController"
-  ListRemoteContollers -> error "TODO: ListRemoteControllers"
-  StartRemoteController -> error "TODO: StartRemoteController"
-  ConfirmRemoteController rc -> error "TODO: ConfirmRemoteController"
-  RejectRemoteController rc -> error "TODO: RejectRemoteController"
-  StopRemoteController rc -> error "TODO: StopRemoteController"
-  DisposeRemoteController rc -> error "TODO: DisposeRemoteController"
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
@@ -1864,6 +1848,24 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
+  CreateRemoteHost _displayName -> pure $ chatCmdError Nothing "not supported"
+  ListRemoteHosts -> pure $ chatCmdError Nothing "not supported"
+  StartRemoteHost rh -> do
+    RemoteHost {displayName = _, storePath, caKey, caCert} <- error "TODO: get from DB"
+    (fingerprint, sessionCreds) <- error "TODO: derive session creds" (caKey, caCert)
+    _announcer <- async $ error "TODO: run announcer" fingerprint
+    hostAsync <- async $ error "TODO: runServer" storePath sessionCreds
+    chatModifyVar remoteHostSessions $ M.insert rh RemoteHostSession {hostAsync, storePath, ctrlClient = undefined}
+    pure $ chatCmdError Nothing "not supported"
+  StopRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
+  DisposeRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
+  RegisterRemoteCtrl _displayName _oobData -> pure $ chatCmdError Nothing "not supported"
+  ListRemoteCtrls -> pure $ chatCmdError Nothing "not supported"
+  StartRemoteCtrl -> pure $ chatCmdError Nothing "not supported"
+  ConfirmRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
+  RejectRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
+  StopRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
+  DisposeRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)
@@ -2194,68 +2196,6 @@ processChatCommand = \case
           pure (gId, chatSettings)
         _ -> throwChatError $ CECommandError "not supported"
       processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
-
-processRemoteCommand :: ChatMonad m => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
-processRemoteCommand rhs = \case
-  -- XXX: intercept and filter some commands
-  -- TODO: store missing files on remote host
-  (s, _cmd) -> relayCommand rhs s
-
-relayCommand :: ChatMonad m => RemoteHostSession -> ByteString -> m ChatResponse
-relayCommand RemoteHostSession {transport} s = postBytestring Nothing transport "/relay" mempty s >>= \case
-  Left e -> error "TODO: http2chatError"
-  Right HTTP2.HTTP2Response { respBody=HTTP2Body { bodyHead } } -> do
-    remoteChatResponse <-
-      if iTax then
-        case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
-          Left e -> error "TODO: json2chatError" e
-          Right (raw :: J.Value) -> case J.fromJSON (sum2tagged raw) of
-            J.Error e -> error "TODO: json2chatError" e
-            J.Success cr -> pure cr
-      else
-        case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
-          Left e -> error "TODO: json2chatError" e
-          Right cr -> pure cr
-    case remoteChatResponse of
-      -- TODO: intercept file responses and fetch files when needed
-      -- XXX: is that even possible, to have a file response to a command?
-      _ -> pure remoteChatResponse
-  where
-    iTax = True -- TODO: get from RemoteHost
-    -- XXX: extract to http2 transport
-    postBytestring timeout c path hs body = liftIO $ HTTP2.sendRequest c req timeout
-      where
-        req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
-
-storeRemoteFile :: ChatMonad m => RemoteHostSession -> FilePath -> m ChatResponse
-storeRemoteFile RemoteHostSession {transport} localFile = do
-  postFile Nothing transport "/store" mempty localFile >>= \case
-    Left e -> error "TODO: http2chatError"
-    Right HTTP2.HTTP2Response { response } -> case HTTP.statusCode <$> HTTP2Client.responseStatus response of
-      Just 200 -> pure $ CRCmdOk Nothing
-      unexpected -> error "TODO: http2chatError"
-  where
-    postFile timeout c path hs file = liftIO $ do
-      fileSize <- fromIntegral <$> getFileSize file
-      HTTP2.sendRequest c (req fileSize) timeout
-      where
-        req size = HTTP2Client.requestFile "POST" path hs (HTTP2Client.FileSpec file 0 size)
-
-fetchRemoteFile :: ChatMonad m => RemoteHostSession -> FileTransferId -> m ChatResponse
-fetchRemoteFile RemoteHostSession {transport, path} remoteFileId = do
-  liftIO (HTTP2.sendRequest transport req Nothing) >>= \case
-    Left e -> error "TODO: http2chatError"
-    Right HTTP2.HTTP2Response { respBody } -> do
-      error "TODO: stream body into a local file" -- XXX: consult headers for a file name?
-  where
-    req = HTTP2Client.requestNoBody "GET" path mempty
-    path = "/fetch/" <> B.pack (show remoteFileId)
-
--- | Convert swift single-field sum encoding into tagged/discriminator-field
-sum2tagged :: J.Value -> J.Value
-sum2tagged = \case
-  J.Object todo'convert -> J.Object todo'convert
-  skip -> skip
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -5404,22 +5344,6 @@ withUserId userId action = withUser $ \user -> do
   checkSameUser userId user
   action user
 
-runRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
-runRemoteHostSession rh = do
-  RemoteHostInfo {displayName, path, caKey, caCert} <- error "TODO: get from DB"
-  (fingerprint, sessionCreds) <- error "TODO: derive session creds" (caKey, caCert)
-  announcer <- async $ error "TODO: run announcer" fingerprint
-  sessionTransport <- newEmptyTMVarIO
-  handler <- async $ error "TODO: runServer" path sessionCreds
-  transport <- atomically $ takeTMVar sessionTransport
-  chatModifyVar (.remoteHosts) $ M.insert rh RemoteHostSession {handler, path, transport}
-
-withRemoteHostSession :: ChatMonad m => RemoteHostId -> (RemoteHostSession -> m a) -> m a
-withRemoteHostSession remoteHostId action = do
-  M.lookup remoteHostId <$> chatReadVar (.remoteHosts) >>= \case
-    Nothing -> throwRemoteHostError remoteHostId RHMissing
-    Just rh -> action rh
-
 checkSameUser :: ChatMonad m => UserId -> User -> m ()
 checkSameUser userId User {userId = activeUserId} = when (userId /= activeUserId) $ throwChatError (CEDifferentActiveUser userId activeUserId)
 
@@ -5467,18 +5391,7 @@ withStoreCtx ctx_ action = do
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
-    [ "/create remote host" *> (CreateRemoteHost <$> textP),
-      "/list remote hosts" $> ListRemoteHosts,
-      "/start remote host " *> (StartRemoteHost <$> A.decimal),
-      "/stop remote host " *> (StopRemoteHost <$> A.decimal),
-      "/dispose remote host " *> (DisposeRemoteHost <$> A.decimal),
-      "/register remote controller " *> (RegisterRemoteController <$> textP <*> remoteHostOOBP),
-      "/start remote controller" $> StartRemoteController,
-      "/confirm remote controller " *> (ConfirmRemoteController <$> A.decimal),
-      "/reject remote controller " *> (RejectRemoteController <$> A.decimal),
-      "/stop remote controller " *> (StopRemoteController <$> A.decimal),
-      "/dispose remote controller " *> (DisposeRemoteController <$> A.decimal),
-      "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
+    [ "/mute " *> ((`SetShowMessages` False) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` True) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
       "/_create user " *> (CreateActiveUser <$> jsonP),
@@ -5722,6 +5635,17 @@ chatCommandP =
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
+      "/create remote host" *> (CreateRemoteHost <$> textP),
+      "/list remote hosts" $> ListRemoteHosts,
+      "/start remote host " *> (StartRemoteHost <$> A.decimal),
+      "/stop remote host " *> (StopRemoteHost <$> A.decimal),
+      "/dispose remote host " *> (DisposeRemoteHost <$> A.decimal),
+      "/register remote ctrl " *> (RegisterRemoteCtrl <$> textP <*> remoteHostOOBP),
+      "/start remote ctrl" $> StartRemoteCtrl,
+      "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
+      "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
+      "/stop remote ctrl " *> (StopRemoteCtrl <$> A.decimal),
+      "/dispose remote ctrl " *> (DisposeRemoteCtrl <$> A.decimal),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,

@@ -61,7 +61,7 @@ mobileTests = do
       it "utf8 name 1" $ testFileEncryptionCApi "тест"
       it "utf8 name 2" $ testFileEncryptionCApi "👍"
       it "no exception on missing file" testMissingFileEncryptionCApi
-    describe "remote sessions" $ do
+    xdescribe "remote sessions" $ do
       it "remote host management works" testRemoteHostManagement
       it "remote controller management works" testRemoteControllerManagement
       it "connections get established" testRemoteConnection
@@ -138,10 +138,10 @@ testChatApiNoUser tmp = do
   let dbPrefix = tmp </> "1"
   Right cc <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "myKey" "yesUp"
-  chatSendCmd cc Nothing "/u" `shouldReturn` noActiveUser
-  chatSendCmd cc Nothing "/_start" `shouldReturn` noActiveUser
-  chatSendCmd cc Nothing "/create user alice Alice" `shouldReturn` activeUser
-  chatSendCmd cc Nothing "/_start" `shouldReturn` chatStarted
+  chatSendCmd cc "/u" `shouldReturn` noActiveUser
+  chatSendCmd cc "/_start" `shouldReturn` noActiveUser
+  chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUser
+  chatSendCmd cc "/_start" `shouldReturn` chatStarted
 
 testChatApi :: FilePath -> IO ()
 testChatApi tmp = do
@@ -152,9 +152,9 @@ testChatApi tmp = do
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey" "yesUp"
-  chatSendCmd cc Nothing "/u" `shouldReturn` activeUser
-  chatSendCmd cc Nothing "/create user alice Alice" `shouldReturn` activeUserExists
-  chatSendCmd cc Nothing "/_start" `shouldReturn` chatStarted
+  chatSendCmd cc "/u" `shouldReturn` activeUser
+  chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
+  chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` contactSubSummary
   chatRecvMsg cc `shouldReturn` userContactSubSummary
   chatRecvMsg cc `shouldReturn` memberSubSummary

@@ -46,6 +46,7 @@ import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -66,7 +67,6 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, 
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
 import System.IO (Handle)
@@ -166,8 +166,6 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
-    remoteHosts :: TVar (Map RemoteHostId RemoteHostSession), -- All the active remote hosts
-    remoteController :: TVar (Maybe RemoteControllerSession), -- Supervisor process for hosted controllers
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
@@ -184,6 +182,8 @@ data ChatController = ChatController
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
+    remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
+    remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
@@ -196,23 +196,6 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath
   }
 
-data RemoteHostSession = RemoteHostSession
-  { -- | A process that relays the commands to its host
-    handler :: Async (),
-    -- | Path for local resources to be synchronized with host
-    path :: FilePath,
-    transport :: HTTP2Client
-  }
-
--- | Host-side dual to RemoteHostSession, on-methods represent HTTP API.
-data RemoteControllerSession = RemoteControllerSession
-  { -- | A process that relays commands and data from remote controller
-    handler :: Async ()
-    -- onCommand :: forall m . ChatMonad m => ByteString -> m ChatResponse,
-    -- onFetchFile :: forall m . ChatMonad m => FilePath -> m ByteString,
-    -- onStoreFile :: forall m . ChatMonad m => FilePath -> ByteString -> m ()
-  }
-
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase
   deriving (Show, Generic)
 
@@ -221,19 +204,7 @@ instance ToJSON HelpSection where
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "HS"
 
 data ChatCommand
-  = CreateRemoteHost Text -- ^ Configure a new remote host
-  | ListRemoteHosts
-  | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
-  | StopRemoteHost RemoteHostId -- ^ Shut down a running session
-  | DisposeRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
-  | RegisterRemoteController Text RemoteHostOOB -- ^ Register OOB data for satellite discovery and handshake
-  | StartRemoteController -- ^ Start listening for announcements from all registered controllers
-  | ListRemoteContollers
-  | ConfirmRemoteController RemoteControllerId -- ^ Confirm discovered data and store confirmation
-  | RejectRemoteController RemoteControllerId -- ^ Reject discovered data (and blacklist?)
-  | StopRemoteController RemoteControllerId -- ^ Stop listening for announcements or terminate an active session
-  | DisposeRemoteController RemoteControllerId -- ^ Remove all local data associated with a satellite session
-  | ShowActiveUser
+  = ShowActiveUser
   | CreateActiveUser NewUser
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
@@ -442,6 +413,18 @@ data ChatCommand
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
+  | CreateRemoteHost Text -- ^ Configure a new remote host
+  | ListRemoteHosts
+  | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
+  | StopRemoteHost RemoteHostId -- ^ Shut down a running session
+  | DisposeRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
+  | RegisterRemoteCtrl Text RemoteHostOOB -- ^ Register OOB data for satellite discovery and handshake
+  | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
+  | ListRemoteCtrls
+  | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm discovered data and store confirmation
+  | RejectRemoteCtrl RemoteCtrlId -- ^ Reject discovered data (and blacklist?)
+  | StopRemoteCtrl RemoteCtrlId -- ^ Stop listening for announcements or terminate an active session
+  | DisposeRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -452,18 +435,7 @@ data ChatCommand
   deriving (Show)
 
 data ChatResponse
-  = CRRemoteHostCreated {remoteHostId :: RemoteHostId, oobData :: RemoteHostOOB}
-  | CRRemoteHostList {remoteHosts :: [RemoteHostItem]} -- XXX: RemoteHostInfo is mostly concerned with session setup
-  | CRRemoteHostStarted {remoteHostId :: RemoteHostId}
-  | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
-  | CRRemoteHostDisposed {remoteHostId :: RemoteHostId}
-  | CRRemoteControllerList {remoteControllers :: [RemoteControllerItem]}
-  | CRRemoteControllerRegistered {remoteControllerId :: RemoteControllerId}
-  | CRRemoteControllerAccepted {remoteControllerId :: RemoteControllerId}
-  | CRRemoteControllerRejected {remoteControllerId :: RemoteControllerId}
-  | CRRemoteControllerConnected {remoteControllerId :: RemoteControllerId}
-  | CRRemoteControllerDisconnected {remoteControllerId :: RemoteControllerId}
-  | CRActiveUser {user :: User}
+  = CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
   | CRChatStarted
   | CRChatRunning
@@ -623,6 +595,17 @@ data ChatResponse
   | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
+  | CRRemoteHostCreated {remoteHostId :: RemoteHostId, oobData :: RemoteHostOOB}
+  | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]} -- XXX: RemoteHostInfo is mostly concerned with session setup
+  | CRRemoteHostStarted {remoteHostId :: RemoteHostId}
+  | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
+  | CRRemoteHostDisposed {remoteHostId :: RemoteHostId}
+  | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
+  | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlDisconnected {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -669,21 +652,21 @@ instance ToJSON ChatResponse where
 data RemoteHostOOB = RemoteHostOOB
   { fingerprint :: Text -- CA key fingerprint
   }
-  deriving (Eq, Show, Generic, ToJSON)
+  deriving (Show, Generic, ToJSON)
 
-data RemoteHostItem = RemoteHostItem
-  { remoteHostId :: RemoteHostId
-  , displayName :: Text
-  , sessionActive :: Bool
+data RemoteHostInfo = RemoteHostInfo
+  { remoteHostId :: RemoteHostId,
+    displayName :: Text,
+    sessionActive :: Bool
   }
-  deriving (Eq, Show, Generic, ToJSON)
+  deriving (Show, Generic, ToJSON)
 
-data RemoteControllerItem = RemoteControllerItem
-  { remoteControllerId :: RemoteControllerId
-  , displayName :: Text
-  , sessionActive :: Bool
+data RemoteCtrlInfo = RemoteCtrlInfo
+  { remoteCtrlId :: RemoteCtrlId,
+    displayName :: Text,
+    sessionActive :: Bool
   }
-  deriving (Eq, Show, Generic, ToJSON)
+  deriving (Show, Generic, ToJSON)
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -923,7 +906,7 @@ data ChatError
   | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
-  | ChatErrorRemoteController {remoteControllerId :: RemoteControllerId, remoteControllerError :: RemoteControllerError}
+  | ChatErrorRemoteCtrl {remoteCtrlId :: RemoteCtrlId, remoteControllerError :: RemoteCtrlError}
   | ChatErrorRemoteHost {remoteHostId :: RemoteHostId, remoteHostError :: RemoteHostError}
   deriving (Show, Exception, Generic)
 
@@ -1034,6 +1017,7 @@ instance ToJSON SQLiteError where
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
 
+-- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteHostError
   = RHMissing -- ^ No remote session matches this identifier
   | RHBusy -- ^ A session is already running
@@ -1050,28 +1034,23 @@ instance ToJSON RemoteHostError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RH"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RH"
 
-throwRemoteHostError :: ChatMonad m => RemoteHostId -> RemoteHostError -> m a
-throwRemoteHostError rh = throwError . ChatErrorRemoteHost rh
-
-data RemoteControllerError
-  = RCMissing -- ^ No remote session matches this identifier
-  | RCBusy -- ^ A session is already running
-  | RCTimeout -- ^ Remote operation timed out
-  | RCDisconnected {reason :: Text} -- ^ A session disconnected by a controller
-  | RCConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
-  | RCCertificateExpired -- ^ A connection or CA certificate in a chain have bad validity period
-  | RCCertificateUntrusted -- ^ TLS is unable to validate certificate chain presented for a connection
+-- TODO review errors, some of it can be covered by HTTP2 errors
+data RemoteCtrlError
+  = RCEMissing -- ^ No remote session matches this identifier
+  | RCEBusy -- ^ A session is already running
+  | RCETimeout -- ^ Remote operation timed out
+  | RCEDisconnected {reason :: Text} -- ^ A session disconnected by a controller
+  | RCEConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
+  | RCECertificateExpired -- ^ A connection or CA certificate in a chain have bad validity period
+  | RCECertificateUntrusted -- ^ TLS is unable to validate certificate chain presented for a connection
   deriving (Show, Exception, Generic)
 
-instance FromJSON RemoteControllerError where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RC"
+instance FromJSON RemoteCtrlError where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RCE"
 
-instance ToJSON RemoteControllerError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RC"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RC"
-
-throwRemoteControllerError :: ChatMonad m => RemoteControllerId -> RemoteControllerError -> m a
-throwRemoteControllerError rh = throwError . ChatErrorRemoteController rh
+instance ToJSON RemoteCtrlError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RCE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RCE"
 
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
@@ -1086,9 +1065,7 @@ chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
 {-# INLINE chatWriteVar #-}
 
 chatModifyVar :: ChatMonad' m => (ChatController -> TVar a) -> (a -> a) -> m ()
-chatModifyVar f action = do
-  var <- asks f
-  atomically $ modifyTVar var action
+chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
 {-# INLINE chatModifyVar #-}
 
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)

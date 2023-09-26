@@ -113,8 +113,7 @@ library
       Simplex.Chat.Migrations.M20230903_connections_to_subscribe
       Simplex.Chat.Migrations.M20230913_member_contacts
       Simplex.Chat.Migrations.M20230914_member_probes
-      Simplex.Chat.Migrations.M20230922_remote_hosts
-      Simplex.Chat.Migrations.M20230924_remote_controllers
+      Simplex.Chat.Migrations.M20230922_remote_controller
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -122,6 +121,8 @@ library
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
+      Simplex.Chat.Remote
+      Simplex.Chat.Remote.Types
       Simplex.Chat.Store
       Simplex.Chat.Store.Connections
       Simplex.Chat.Store.Direct
