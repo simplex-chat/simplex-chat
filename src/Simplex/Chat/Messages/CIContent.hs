@@ -191,7 +191,11 @@ ciRequiresAttention content = case msgDirection @d of
       RGEGroupUpdated _ -> False
       RGEInvitedViaGroupLink -> False
       RGEMemberCreatedContact -> False
-    CIRcvConnEvent _ -> True
+    CIRcvConnEvent rce -> case rce of
+      RCESwitchQueue _ -> True
+      RCERatchetSync _ -> True
+      RCEVerificationCodeReset -> True
+      RCEContactDeleted -> False
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
     CIRcvGroupFeature {} -> False
@@ -261,6 +265,7 @@ data RcvConnEvent
   = RCESwitchQueue {phase :: SwitchPhase}
   | RCERatchetSync {syncStatus :: RatchetSyncState}
   | RCEVerificationCodeReset
+  | RCEContactDeleted
   deriving (Show, Generic)
 
 data SndConnEvent
@@ -399,6 +404,7 @@ rcvConnEventToText = \case
     SPCompleted -> "changed address for you"
   RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
   RCEVerificationCodeReset -> "security code changed"
+  RCEContactDeleted -> "contact deleted"
 
 ratchetSyncStatusToText :: RatchetSyncState -> Text
 ratchetSyncStatusToText = \case

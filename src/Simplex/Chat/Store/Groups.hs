@@ -1156,6 +1156,7 @@ getActiveMembersByName db user@User {userId} groupMemberName = do
   where
     ts GroupInfo {chatTs, updatedAt} = fromMaybe updatedAt chatTs
 
+-- TODO and status == CSActive
 getMatchingContacts :: DB.Connection -> User -> Contact -> IO [Contact]
 getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do
   contactIds <-
