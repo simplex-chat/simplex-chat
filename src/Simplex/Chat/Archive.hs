@@ -124,7 +124,7 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
     checkFile `with` fs
     backup `with` fs
     (export chatDb chatEncrypted >> export agentDb agentEncrypted)
-      `catchChatError` \e -> (restore `with` fs) >> throwError e
+      `catchChatError` \e -> tryChatError (restore `with` fs) >> throwError e
   where
     action `with` StorageFiles {chatDb, agentDb} = action chatDb >> action agentDb
     backup f = copyFile f (f <> ".bak")
