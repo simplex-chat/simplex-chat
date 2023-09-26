@@ -188,29 +188,26 @@ h3::before {
   outline: none;
 }
 
-p,
-a,
 h1,
 h2,
 h3,
 h4,
 h5,
-h6,
-li,
-ul,
-ol,
-span,
-div,
-blockquote,
-pre,
-code {
+h6{
   clear: both;
 }
 
 #article p img {
-  float: left;
+  display: inline-block;
 }
 
 #article img {
-  margin-bottom: 1.5rem;
+  margin: 0.5rem 0 1rem 0;
+}
+
+@media (min-width: 1024px) {
+  #article .float-to-left{
+    float: left;
+    margin-right: 3rem;
+  }
 }
