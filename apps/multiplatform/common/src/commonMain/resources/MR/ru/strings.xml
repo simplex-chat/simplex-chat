@@ -345,8 +345,8 @@
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш SimpleX адрес</string>
     <string name="database_passphrase_and_export">База данных</string>
-    <string name="about_simplex_chat">Информация о SimpleX Chat</string>
-    <string name="how_to_use_simplex_chat">Как использовать</string>
+    <string name="about_simplex_chat">О приложении</string>
+    <string name="how_to_use_simplex_chat">Руководство</string>
     <string name="markdown_help">Форматирование сообщений</string>
     <string name="markdown_in_messages">Форматирование сообщений</string>
     <string name="chat_with_the_founder">Вопросы и предложения</string>
@@ -867,7 +867,7 @@
     <string name="contact_preferences">Предпочтения контакта</string>
     <string name="group_preferences">Предпочтения группы</string>
     <string name="set_group_preferences">Предпочтения группы</string>
-    <string name="your_preferences">Настройки чатов</string>
+    <string name="your_preferences">Чаты и звонки</string>
     <string name="direct_messages">Прямые сообщения</string>
     <string name="full_deletion">Удаление для всех</string>
     <string name="voice_messages">Голосовые сообщения</string>
