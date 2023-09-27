@@ -150,6 +150,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
+  CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
   CRAcceptingContactRequest u c -> ttyUser u [ttyFullContact c <> ": accepting contact request..."]
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
@@ -1561,6 +1562,7 @@ viewChatError logLevel = \case
       ]
     CEContactNotFound cName m_ -> viewContactNotFound cName m_
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
+    CEContactNotActive c -> [ttyContact' c <> ": not active"]
     CEContactDisabled Contact {localDisplayName = c} -> [ttyContact c <> ": disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
     CEConnectionDisabled Connection {connId, connType} -> [plain $ "connection " <> textEncode connType <> " (" <> tshow connId <> ") is disabled" | logLevel <= CLLWarning]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]

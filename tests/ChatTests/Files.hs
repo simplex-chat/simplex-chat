@@ -573,6 +573,7 @@ testSendImage =
       -- deleting contact without files folder set should not remove file
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
+      alice <## "bob (Bob) deleted contact with you"
       fileExists <- doesFileExist "./tests/tmp/test.jpg"
       fileExists `shouldBe` True
 
@@ -635,6 +636,7 @@ testFilesFoldersSendImage =
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
+        alice <## "bob (Bob) deleted contact with you"
 
 testFilesFoldersImageSndDelete :: HasCallStack => FilePath -> IO ()
 testFilesFoldersImageSndDelete =
@@ -658,6 +660,7 @@ testFilesFoldersImageSndDelete =
       checkActionDeletesFile "./tests/tmp/alice_app_files/test_1MB.pdf" $ do
         alice ##> "/d bob"
         alice <## "bob: contact is deleted"
+        bob <## "alice (Alice) deleted contact with you"
         bob ##> "/fs 1"
         bob <##. "receiving file 1 (test_1MB.pdf) progress"
       -- deleting contact should remove cancelled file
@@ -687,7 +690,10 @@ testFilesFoldersImageRcvDelete =
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
-        alice <## "bob cancelled receiving file 1 (test.jpg)"
+        alice
+          <### [ "bob (Bob) deleted contact with you",
+                 "bob cancelled receiving file 1 (test.jpg)"
+               ]
         alice ##> "/fs 1"
         alice <## "sending file 1 (test.jpg) cancelled: bob"
         alice <## "file transfer cancelled"

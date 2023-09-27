@@ -220,6 +220,7 @@ testGroupShared alice bob cath checkMessages = do
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
+  bob <## "alice (Alice) deleted contact with you"
   alice `send` "@bob hey"
   alice
     <### [ "@bob hey",
@@ -234,7 +235,7 @@ testGroupShared alice bob cath checkMessages = do
   alice <# "#team bob> received"
   when checkMessages $ do
     alice @@@ [("@cath", "sent invitation to join group team as admin"), ("#team", "received")]
-    bob @@@ [("@alice", "received invitation to join group team as admin"), ("@cath", "hey"), ("#team", "received")]
+    bob @@@ [("@alice", "contact deleted"), ("@cath", "hey"), ("#team", "received")]
   -- test clearing chat
   threadDelay 1000000
   alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
@@ -629,6 +630,7 @@ testGroupDeleteInvitedContact =
       threadDelay 500000
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
       bob ##> "/j team"
       concurrently_
         (alice <## "#team: bob joined the group")
@@ -700,10 +702,11 @@ testDeleteGroupMemberProfileKept =
       -- delete contact
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
       alice ##> "@bob hey"
       alice <## "no contact bob, use @#club bob <your message>"
-      bob #> "@alice hey"
-      bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+      bob ##> "@alice hey"
+      bob <## "alice: not ready"
       (alice </)
       -- delete group 1
       alice ##> "/d #team"
@@ -2785,6 +2788,8 @@ testMemberContactMessage =
       -- alice and bob delete contacts, connect
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
 
@@ -2893,6 +2898,7 @@ testMemberContactInvitedConnectionReplaced tmp = do
 
         alice ##> "/d bob"
         alice <## "bob: contact is deleted"
+        bob <## "alice (Alice) deleted contact with you"
 
         alice ##> "@#team bob hi"
         alice
@@ -2910,7 +2916,7 @@ testMemberContactInvitedConnectionReplaced tmp = do
           (alice <## "bob (Bob): contact is connected")
           (bob <## "alice (Alice): contact is connected")
 
-        bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "received invitation to join group team as admin"), (0, "hi"), (0, "security code changed")] <> chatFeatures)
+        bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "received invitation to join group team as admin"), (0, "contact deleted"), (0, "hi"), (0, "security code changed")] <> chatFeatures)
 
     withTestChat tmp "bob" $ \bob -> do
       subscriptions bob 1
