@@ -169,7 +169,7 @@ data Contact = Contact
     activeConn :: Connection,
     viaGroup :: Maybe Int64,
     contactUsed :: Bool,
-    -- contactStatus :: ContactStatus,
+    contactStatus :: ContactStatus,
     chatSettings :: ChatSettings,
     userPreferences :: Preferences,
     mergedPreferences :: ContactUserPreferences,
