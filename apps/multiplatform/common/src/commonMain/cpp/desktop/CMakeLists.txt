@@ -73,6 +73,11 @@ else()
 	target_link_libraries(app-lib rts simplex)
 endif()
 
+if(APPLE)
+    add_custom_command(TARGET app-lib POST_BUILD
+        COMMAND  ${CMAKE_CURRENT_SOURCE_DIR}/patch-libapp-mac.sh
+)
+endif()
 
 
 # Trying to copy resulting files into needed directory, but none of these work for some reason. This could allow to
