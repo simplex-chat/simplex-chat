@@ -1586,8 +1586,9 @@ updateMemberContactInvited :: DB.Connection -> User -> (CommandId, ConnId) -> Gr
 updateMemberContactInvited db user connIds gInfo mConn ct@Contact {contactId, activeConn = oldContactConn} subMode = do
   updateConnectionStatus db oldContactConn ConnDeleted
   activeConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
-  ct' <- resetMemberContactFields db ct
-  pure (ct' :: Contact) {activeConn}
+  ct' <- updateContactStatus db user ct CSActive
+  ct'' <- resetMemberContactFields db ct'
+  pure (ct'' :: Contact) {activeConn}
 
 resetMemberContactFields :: DB.Connection -> Contact -> IO Contact
 resetMemberContactFields db ct@Contact {contactId} = do
