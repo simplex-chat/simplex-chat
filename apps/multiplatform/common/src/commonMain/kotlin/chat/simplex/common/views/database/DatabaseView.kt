@@ -419,7 +419,7 @@ private fun stopChat(m: ChatModel) {
 }
 
 suspend fun stopChatAsync(m: ChatModel) {
-  m.controller.apiStopChat()
+  m.controller.apiStopChat(false)
   m.chatRunning.value = false
 }
 
