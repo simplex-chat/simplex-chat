@@ -150,7 +150,7 @@ struct ChatView: View {
                     HStack {
                         if contact.allowsFeature(.calls) {
                             callButton(contact, .audio, imageName: "phone")
-                                .disabled(!contact.ready)
+                                .disabled(!contact.ready || !contact.active)
                         }
                         Menu {
                             if contact.allowsFeature(.calls) {
@@ -159,11 +159,11 @@ struct ChatView: View {
                                 } label: {
                                     Label("Video call", systemImage: "video")
                                 }
-                                .disabled(!contact.ready)
+                                .disabled(!contact.ready || !contact.active)
                             }
                             searchButton()
                             toggleNtfsButton(chat)
-                                .disabled(!contact.ready)
+                                .disabled(!contact.ready || !contact.active)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -321,6 +321,7 @@ struct ChatView: View {
     @ViewBuilder private func connectingText() -> some View {
         if case let .direct(contact) = chat.chatInfo,
            !contact.ready,
+           contact.active,
            !contact.nextSendGrpInv {
             Text("connecting…")
                 .font(.caption)

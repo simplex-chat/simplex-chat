@@ -57,19 +57,26 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
-        if case let .group(groupInfo) = chat.chatInfo {
+        switch chat.chatInfo {
+        case let .direct(contact):
+            if !contact.active {
+                inactiveIcon()
+            } else {
+                EmptyView()
+            }
+        case let .group(groupInfo):
             switch (groupInfo.membership.memberStatus) {
-            case .memLeft: groupInactiveIcon()
-            case .memRemoved: groupInactiveIcon()
-            case .memGroupDeleted: groupInactiveIcon()
+            case .memLeft: inactiveIcon()
+            case .memRemoved: inactiveIcon()
+            case .memGroupDeleted: inactiveIcon()
             default: EmptyView()
             }
-        } else {
+        default:
             EmptyView()
         }
     }
 
-    @ViewBuilder private func groupInactiveIcon() -> some View {
+    @ViewBuilder private func inactiveIcon() -> some View {
         Image(systemName: "multiply.circle.fill")
             .foregroundColor(.secondary.opacity(0.65))
             .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
@@ -183,7 +190,7 @@ struct ChatPreviewView: View {
                 if !contact.ready {
                     if contact.nextSendGrpInv {
                         chatPreviewInfoText("send direct message")
-                    } else {
+                    } else if contact.active {
                         chatPreviewInfoText("connecting…")
                     }
                 }
