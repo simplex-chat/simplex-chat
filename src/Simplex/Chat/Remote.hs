@@ -29,6 +29,9 @@ withRemoteHostSession remoteHostId action = do
   where
     err = throwError $ ChatErrorRemoteHost remoteHostId RHMissing
 
+closeRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
+closeRemoteHostSession rh = withRemoteHostSession rh (liftIO . HTTP2.closeHTTP2Client . ctrlClient)
+
 processRemoteCommand :: ChatMonad m => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
 processRemoteCommand rhs = \case
   -- XXX: intercept and filter some commands

@@ -31,9 +31,7 @@ data RemoteCtrl = RemoteCtrl
   }
 
 data RemoteHostSession = RemoteHostSession
-  { -- | process to communicate with the host
-    hostAsync :: Async (),
-    -- | Path for local resources to be synchronized with host
+  { -- | Path for local resources to be synchronized with host
     storePath :: FilePath,
     ctrlClient :: HTTP2Client
   }

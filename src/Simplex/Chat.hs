@@ -63,6 +63,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
+import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
@@ -1852,12 +1853,14 @@ processChatCommand = \case
   ListRemoteHosts -> pure $ chatCmdError Nothing "not supported"
   StartRemoteHost rh -> do
     RemoteHost {displayName = _, storePath, caKey, caCert} <- error "TODO: get from DB"
-    (fingerprint, sessionCreds) <- error "TODO: derive session creds" (caKey, caCert)
-    _announcer <- async $ error "TODO: run announcer" fingerprint
-    hostAsync <- async $ error "TODO: runServer" storePath sessionCreds
-    chatModifyVar remoteHostSessions $ M.insert rh RemoteHostSession {hostAsync, storePath, ctrlClient = undefined}
-    pure $ chatCmdError Nothing "not supported"
-  StopRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
+    (fingerprint :: ByteString, sessionCreds) <- error "TODO: derive session creds" (caKey, caCert)
+    cleanup <- toIO $ chatModifyVar remoteHostSessions (M.delete rh)
+    Discovery.runAnnouncer cleanup fingerprint sessionCreds >>= \case
+      Left todo'err -> pure $ chatCmdError Nothing "TODO: Some HTTP2 error"
+      Right ctrlClient -> do
+        chatModifyVar remoteHostSessions $ M.insert rh RemoteHostSession {storePath, ctrlClient}
+        pure $ CRRemoteHostStarted rh
+  StopRemoteHost rh -> closeRemoteHostSession rh $> CRRemoteHostStopped rh
   DisposeRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
   RegisterRemoteCtrl _displayName _oobData -> pure $ chatCmdError Nothing "not supported"
   ListRemoteCtrls -> pure $ chatCmdError Nothing "not supported"
