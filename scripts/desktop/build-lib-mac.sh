@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 OS=mac
 ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
 GHC_VERSION=9.6.2
@@ -18,7 +20,7 @@ rm -rf $BUILD_DIR
 cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi"
 
 cd $BUILD_DIR/build
-mkdir deps 2> /dev/null
+mkdir deps 2> /dev/null || true
 
 # It's not included by default for some reason. Compiled lib tries to find system one but it's not always available
 #cp $GHC_LIBS_DIR/libffi.dylib ./deps
@@ -54,7 +56,7 @@ function copy_deps() {
 
 	cp $LIB ./deps
     if [[ "$NON_FINAL_RPATHS" == *"@loader_path/.."* ]]; then
-		# Need to point the lib to @loader_path instead
+        # Need to point the lib to @loader_path instead
 		install_name_tool -add_rpath @loader_path ./deps/`basename $LIB`
 	fi
 	#echo LIB $LIB
@@ -79,13 +81,6 @@ copy_deps $LIB
 cp $(ghc --print-libdir)/$ARCH-osx-ghc-$GHC_VERSION/libHSghc-boot-th-$GHC_VERSION-ghc$GHC_VERSION.dylib deps
 rm deps/`basename $LIB`
 
-if [ -e deps/libHSdrct-*.$LIB_EXT ]; then
-    LIBCRYPTO_PATH=$(otool -l deps/libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT deps/libHSdrct-*.$LIB_EXT
-    cp $LIBCRYPTO_PATH deps/libcrypto.1.1.$LIB_EXT
-    chmod 755 deps/libcrypto.1.1.$LIB_EXT
-fi
-
 cd -
 
 rm -rf apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
@@ -95,4 +90,27 @@ rm -rf apps/multiplatform/desktop/build/cmake
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp -r $BUILD_DIR/build/deps apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+
+cd apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+
+LIBCRYPTO_PATH=$(otool -l deps/libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT deps/libHSdrct-*.$LIB_EXT
+cp $LIBCRYPTO_PATH deps/libcrypto.1.1.$LIB_EXT
+chmod 755 deps/libcrypto.1.1.$LIB_EXT
+install_name_tool -id "libcrypto.1.1.$LIB_EXT" deps/libcrypto.1.1.$LIB_EXT
+install_name_tool -id "libffi.8.$LIB_EXT" deps/libffi.$LIB_EXT
+
+LIBCRYPTO_PATH=$(otool -l $LIB | grep libcrypto | cut -d' ' -f11)
+if [ -n "$LIBCRYPTO_PATH" ]; then
+    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT $LIB
+fi
+
+for lib in $(find . -type f -name "*.$LIB_EXT"); do
+    RPATHS=`otool -l $lib | grep -E "path /Users/|path /usr/local|path /opt/" | cut -d' ' -f11`
+    for RPATH in $RPATHS; do
+        install_name_tool -delete_rpath $RPATH $lib
+    done
+done
+
+cd -
 scripts/desktop/prepare-vlc-mac.sh
