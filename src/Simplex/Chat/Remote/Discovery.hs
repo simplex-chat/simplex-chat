@@ -10,19 +10,13 @@ module Simplex.Chat.Remote.Discovery
 where
 
 import Control.Monad
-import Data.ByteString.Builder (Builder, intDec)
 import Data.Default (def)
 import Data.String (IsString)
-import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
 import Debug.Trace
-import qualified Network.HTTP.Types as HTTP
-import qualified Network.HTTP2.Server as HTTP2
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import qualified Network.UDP as UDP
-import Simplex.Chat.Controller (ChatMonad)
-import Simplex.Chat.Types ()
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Transport (supportedParameters)
 import qualified Simplex.Messaging.Transport as Transport
@@ -34,7 +28,7 @@ import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTran
 import UnliftIO
 import UnliftIO.Concurrent
 
-runAnnouncer :: (StrEncoding invite, ChatMonad m) => IO () -> invite -> TLS.Credentials -> m (Either HTTP2ClientError HTTP2Client)
+runAnnouncer :: (StrEncoding invite, MonadUnliftIO m) => IO () -> invite -> TLS.Credentials -> m (Either HTTP2ClientError HTTP2Client)
 runAnnouncer finished invite credentials = do
   started <- newEmptyTMVarIO
   aPid <- async $ announcer started (strEncode invite)
@@ -76,57 +70,38 @@ broadcastAddrV4 = "255.255.255.255"
 partyPort :: (IsString a) => a
 partyPort = "5226" -- XXX: should be `0` or something, to get a random port and announce it
 
-runDiscoverer :: (ChatMonad m) => Text -> m ()
-runDiscoverer oobData =
-  case strDecode (encodeUtf8 oobData) of
-    Left err -> traceM $ "oobData decode error: " <> err
-    Right expected -> liftIO $ do
-      traceM $ "runDiscoverer: locating " <> show oobData
-      sock <- UDP.serverSocket (broadcastAddrV4, read partyPort)
-      N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
-      traceM $ "runDiscoverer: " <> show sock
-      go sock expected
+runDiscoverer :: IO [(C.KeyHash, ctx)] -> (ctx -> IO Bool) -> (ctx -> Maybe SomeException -> IO ()) -> (ctx -> HTTP2Request -> IO ()) -> IO ()
+runDiscoverer getFingerprints started finished processRequest = do
+  sock <- UDP.serverSocket (broadcastAddrV4, read partyPort)
+  N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
+  traceM $ "runDiscoverer: " <> show sock
+  go sock
   where
-    go sock expected = do
+    go sock = do
       (invite, UDP.ClientSockAddr source _cmsg) <- UDP.recvFrom sock
-      traceShowM (invite, source)
-      let expect hash = hash `elem` [expected] -- XXX: can be a callback to fetch actual invite list just in time
       case strDecode invite of
         Left err -> do
           traceM $ "Inivite decode error: " <> err
-          go sock expected
-        Right inviteHash | not (expect inviteHash) -> do
-          traceM $ "Skipping unexpected invite " <> show (strEncode inviteHash)
-          go sock expected
-        Right _expected -> do
-          host <- case source of
-            N.SockAddrInet _port addr -> do
-              pure $ THIPv4 (N.hostAddressToTuple addr)
-            unexpected ->
-              -- TODO: actually, Apple mandates IPv6 support
-              fail $ "Discoverer: expected an IPv4 party, got " <> show unexpected
-          traceM $ "Discoverer: go connect " <> show host
-          runTransportClient defaultTransportClientConfig Nothing host partyPort (Just expected) $ \tls -> do
-            traceM "2PTTH server starting"
-            run tls
-            traceM "2PTTH server finished"
-
-    run tls = runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
-      reqBody <- getHTTP2Body r 16384
-      processRequest HTTP2Request {sessionId, request = r, reqBody, sendResponse}
-
-    processRequest req = do
-      traceM $ "Got request: " <> show (request req)
-      -- TODO: sendResponse req . HTTP2.promiseResponse $ HTTP2.pushPromise path response weight
-      sendResponse req $ HTTP2.responseStreaming HTTP.ok200 sseHeaders sseExample
-
-    sseHeaders = [(HTTP.hContentType, "text/event-stream")]
-
-    sseExample :: (Builder -> IO ()) -> IO () -> IO ()
-    sseExample write flush = forM_ [1 .. 10] $ \i -> do
-      let payload = "[" <> intDec i <> ", \"blah\"]"
-      write "event: message\n" -- XXX: SSE header line
-      write $ "data: " <> payload <> "\n" -- XXX: SSE payload line
-      write "\n" -- XXX: SSE delimiter
-      flush
-      threadDelay 1000000
+          go sock
+        Right inviteHash -> do
+          expected <- getFingerprints
+          case lookup inviteHash expected of
+            Nothing -> do
+              traceM $ "Unexpected invite: " <> show (invite, source)
+              go sock
+            Just ctx -> do
+              host <- case source of
+                N.SockAddrInet _port addr -> do
+                  pure $ THIPv4 (N.hostAddressToTuple addr)
+                unexpected ->
+                  -- TODO: actually, Apple mandates IPv6 support
+                  fail $ "Discoverer: expected an IPv4 party, got " <> show unexpected
+              runTransportClient defaultTransportClientConfig Nothing host partyPort (Just inviteHash) $ \tls -> do
+                accepted <- started ctx
+                if not accepted
+                  then go sock -- Ignore rejected invites and wait for another
+                  else do
+                    res <- try $ runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
+                      reqBody <- getHTTP2Body r 16384
+                      processRequest ctx HTTP2Request {sessionId, request = r, reqBody, sendResponse}
+                    finished ctx $ either Just (\() -> Nothing) res

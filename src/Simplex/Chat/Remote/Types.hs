@@ -8,6 +8,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
+import UnliftIO.STM
 
 type RemoteHostId = Int64
 
@@ -22,12 +23,13 @@ data RemoteHost = RemoteHost
     caKey :: C.Key
   }
 
-type RemoteCtrlId = Int
+type RemoteCtrlId = Int64
 
 data RemoteCtrl = RemoteCtrl
   { remoteCtrlId :: RemoteCtrlId,
     displayName :: Text,
-    fingerprint :: Text
+    fingerprint :: C.KeyHash,
+    accepted :: Maybe Bool
   }
 
 data RemoteHostSession = RemoteHostSession
@@ -36,9 +38,8 @@ data RemoteHostSession = RemoteHostSession
     ctrlClient :: HTTP2Client
   }
 
--- | Host-side dual to RemoteHostSession, on-methods represent HTTP API.
 data RemoteCtrlSession = RemoteCtrlSession
-  { -- | process to communicate with the remote controller
-    ctrlAsync :: Async ()
-    -- server :: HTTP2Server
+  { -- | Server side of transport to process remote commands and forward notifications
+    ctrlAsync :: Async (),
+    accepted :: TMVar Bool
   }

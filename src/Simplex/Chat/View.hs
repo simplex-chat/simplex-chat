@@ -1678,7 +1678,7 @@ viewChatError logLevel = \case
         Nothing -> ""
       cId :: Connection -> StyledString
       cId conn = sShow conn.connId
-  ChatErrorRemoteCtrl remoteCtrlId todo'rc -> [sShow remoteCtrlId, sShow todo'rc]
+  ChatErrorRemoteCtrl todo'rc -> [sShow todo'rc]
   ChatErrorRemoteHost remoteHostId todo'rh -> [sShow remoteHostId, sShow todo'rh]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]

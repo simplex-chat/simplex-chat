@@ -72,6 +72,7 @@ import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
+import Simplex.Chat.Store.Remote
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -1864,11 +1865,56 @@ processChatCommand = \case
   DisposeRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
   RegisterRemoteCtrl _displayName _oobData -> pure $ chatCmdError Nothing "not supported"
   ListRemoteCtrls -> pure $ chatCmdError Nothing "not supported"
-  StartRemoteCtrl -> pure $ chatCmdError Nothing "not supported"
-  ConfirmRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
-  RejectRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
-  StopRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
-  DisposeRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
+  StartRemoteCtrl ->
+    chatReadVar remoteCtrlSession >>= \case
+      Just _busy -> throwError $ ChatErrorRemoteCtrl RCEBusy
+      Nothing -> do
+        uio <- askUnliftIO
+        accepted <- newEmptyTMVarIO
+        let getControllers = unliftIO uio $ withStore' $ \db ->
+              map (\RemoteCtrl{remoteCtrlId, fingerprint} -> (fingerprint, remoteCtrlId)) <$> getRemoteCtrls (DB.conn db)
+        let started remoteCtrlId = unliftIO uio $ do
+              withStore' (\db -> getRemoteCtrl (DB.conn db) remoteCtrlId) >>= \case
+                Nothing -> pure False
+                Just RemoteCtrl{displayName, accepted=resolution} -> case resolution of
+                  Nothing -> do
+                    -- started/finished wrapper is synchronous, running HTTP server can be delayed here until UI processes the first contact dialogue
+                    toView $ CRRemoteCtrlFirstContact {remoteCtrlId, displayName}
+                    atomically $ takeTMVar accepted
+                  Just known -> atomically $ putTMVar accepted known $> known
+        let finished remoteCtrlId todo'error = unliftIO uio $ do
+              chatWriteVar remoteCtrlSession Nothing
+              toView $ CRRemoteCtrlDisconnected {remoteCtrlId}
+        let process rc req = unliftIO uio $ processControllerCommand rc req
+        ctrlAsync <- async . liftIO $ Discovery.runDiscoverer getControllers started finished process
+        chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {ctrlAsync, accepted}
+        pure CRRemoteCtrlStarted
+  ConfirmRemoteCtrl remoteCtrlId -> do
+    chatReadVar remoteCtrlSession >>= \case
+      Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
+      Just RemoteCtrlSession {accepted} -> do
+        withStore' $ \db -> markRemoteCtrlResolution (DB.conn db) remoteCtrlId True
+        atomically $ putTMVar accepted True
+        pure $ CRRemoteCtrlAccepted {remoteCtrlId}
+  RejectRemoteCtrl remoteCtrlId -> do
+    chatReadVar remoteCtrlSession >>= \case
+      Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
+      Just RemoteCtrlSession {accepted} -> do
+        withStore' $ \db -> markRemoteCtrlResolution (DB.conn db) remoteCtrlId False
+        atomically $ putTMVar accepted False
+        pure $ CRRemoteCtrlRejected {remoteCtrlId}
+  StopRemoteCtrl remoteCtrlId ->
+    chatReadVar remoteCtrlSession >>= \case
+      Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
+      Just RemoteCtrlSession {ctrlAsync} -> do
+        cancel ctrlAsync
+        pure $ CRRemoteCtrlDisconnected {remoteCtrlId}
+  DisposeRemoteCtrl remoteCtrlId ->
+    chatReadVar remoteCtrlSession >>= \case
+      Nothing -> do
+        withStore' $ \db -> deleteRemoteCtrl (DB.conn db) remoteCtrlId
+        pure $ CRRemoteCtrlDisposed {remoteCtrlId}
+      Just _ -> throwError $ ChatErrorRemoteCtrl RCEBusy
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)

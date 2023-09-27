@@ -422,7 +422,7 @@ data ChatCommand
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
   | ListRemoteCtrls
   | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm discovered data and store confirmation
-  | RejectRemoteCtrl RemoteCtrlId -- ^ Reject discovered data (and blacklist?)
+  | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
   | StopRemoteCtrl RemoteCtrlId -- ^ Stop listening for announcements or terminate an active session
   | DisposeRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
   | QuitChat
@@ -602,9 +602,11 @@ data ChatResponse
   | CRRemoteHostDisposed {remoteHostId :: RemoteHostId}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlStarted
+  | CRRemoteCtrlFirstContact {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlDisconnected {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
@@ -906,7 +908,7 @@ data ChatError
   | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
-  | ChatErrorRemoteCtrl {remoteCtrlId :: RemoteCtrlId, remoteControllerError :: RemoteCtrlError}
+  | ChatErrorRemoteCtrl {remoteControllerError :: RemoteCtrlError}
   | ChatErrorRemoteHost {remoteHostId :: RemoteHostId, remoteHostError :: RemoteHostError}
   deriving (Show, Exception, Generic)
 
@@ -1036,13 +1038,14 @@ instance ToJSON RemoteHostError where
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
-  = RCEMissing -- ^ No remote session matches this identifier
+  = RCEMissing {remoteCtrlId :: RemoteCtrlId} -- ^ No remote session matches this identifier
+  | RCEInactive -- ^ No session is running
   | RCEBusy -- ^ A session is already running
   | RCETimeout -- ^ Remote operation timed out
-  | RCEDisconnected {reason :: Text} -- ^ A session disconnected by a controller
-  | RCEConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
-  | RCECertificateExpired -- ^ A connection or CA certificate in a chain have bad validity period
-  | RCECertificateUntrusted -- ^ TLS is unable to validate certificate chain presented for a connection
+  | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
+  | RCEConnectionLost {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected due to transport issues
+  | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
+  | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteCtrlError where
