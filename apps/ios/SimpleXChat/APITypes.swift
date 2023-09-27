@@ -462,6 +462,7 @@ public enum ChatResponse: Decodable, Error {
     case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactRequestAlreadyAccepted(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
+    case contactDeletedByContact(user: UserRef, contact: Contact)
     case chatCleared(user: UserRef, chatInfo: ChatInfo)
     case userProfileNoChange(user: User)
     case userProfileUpdated(user: User, fromProfile: Profile, toProfile: Profile, updateSummary: UserProfileUpdateSummary)
@@ -599,6 +600,7 @@ public enum ChatResponse: Decodable, Error {
             case .contactAlreadyExists: return "contactAlreadyExists"
             case .contactRequestAlreadyAccepted: return "contactRequestAlreadyAccepted"
             case .contactDeleted: return "contactDeleted"
+            case .contactDeletedByContact: return "contactDeletedByContact"
             case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
@@ -735,6 +737,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
             case let .contactRequestAlreadyAccepted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
+            case let .contactDeletedByContact(u, contact): return withUser(u, String(describing: contact))
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(u, _, toProfile, _): return withUser(u, String(describing: toProfile))
@@ -1420,6 +1423,7 @@ public enum ChatErrorType: Decodable {
     case invalidConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case contactNotReady(contact: Contact)
+    case contactNotActive(contact: Contact)
     case contactDisabled(contact: Contact)
     case connectionDisabled(connection: Connection)
     case groupUserRole(groupInfo: GroupInfo, requiredRole: GroupMemberRole)

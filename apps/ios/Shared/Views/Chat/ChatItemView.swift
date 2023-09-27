@@ -79,6 +79,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
+        case .rcvDirectEvent: eventItemView()
         case .rcvGroupEvent(.memberConnected): CIEventView(eventText: membersConnectedItemText)
         case .rcvGroupEvent(.memberCreatedContact): CIMemberCreatedContactView(chatItem: chatItem)
         case .rcvGroupEvent: eventItemView()

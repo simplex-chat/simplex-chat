@@ -156,11 +156,12 @@ testAddContact = versionTestMatrix2 runTestAddContact
       -- test deleting contact
       alice ##> "/d bob_1"
       alice <## "bob_1: contact is deleted"
+      bob <## "alice_1 (Alice) deleted contact with you"
       alice ##> "@bob_1 hey"
       alice <## "no contact bob_1"
       alice @@@ [("@bob", "how are you?")]
       alice `hasContactProfiles` ["alice", "bob"]
-      bob @@@ [("@alice_1", "hi"), ("@alice", "how are you?")]
+      bob @@@ [("@alice_1", "contact deleted"), ("@alice", "how are you?")]
       bob `hasContactProfiles` ["alice", "alice", "bob"]
       -- test clearing chat
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
@@ -202,6 +203,7 @@ testDeleteContactDeletesProfile =
       -- alice deletes contact, profile is deleted
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
       alice ##> "/_contacts 1"
       (alice </)
       alice `hasContactProfiles` ["alice"]
@@ -514,7 +516,7 @@ testRepeatAuthErrorsDisableContact =
     connectUsers alice bob
     alice <##> bob
     threadDelay 500000
-    bob ##> "/d alice"
+    bob ##> "/_delete @2 notify=off"
     bob <## "alice: contact is deleted"
     forM_ [1 .. authErrDisableCount] $ \_ -> sendAuth alice
     alice <## "[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"
