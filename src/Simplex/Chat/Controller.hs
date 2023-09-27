@@ -629,9 +629,6 @@ data ChatCtrlCfg = ChatCtrlCfg
   }
   deriving (Show, Generic, FromJSON)
 
-defChatCtrlCfg :: ChatCtrlCfg
-defChatCtrlCfg = ChatCtrlCfg True True True Nothing
-
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
 
