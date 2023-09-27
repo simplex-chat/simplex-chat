@@ -132,6 +132,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvDecryptionError :: MsgDecryptError -> Word32 -> CIContent 'MDRcv
   CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
+  CIRcvDirectEvent :: RcvDirectEvent -> CIContent 'MDRcv
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
   CISndGroupEvent :: SndGroupEvent -> CIContent 'MDSnd
   CIRcvConnEvent :: RcvConnEvent -> CIContent 'MDRcv
@@ -179,6 +180,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvIntegrityError _ -> True
     CIRcvDecryptionError {} -> True
     CIRcvGroupInvitation {} -> True
+    CIRcvDirectEvent _ -> False
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
@@ -191,11 +193,7 @@ ciRequiresAttention content = case msgDirection @d of
       RGEGroupUpdated _ -> False
       RGEInvitedViaGroupLink -> False
       RGEMemberCreatedContact -> False
-    CIRcvConnEvent rce -> case rce of
-      RCESwitchQueue _ -> True
-      RCERatchetSync _ -> True
-      RCEVerificationCodeReset -> True
-      RCEContactDeleted -> False
+    CIRcvConnEvent _ -> True
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
     CIRcvGroupFeature {} -> False
@@ -265,7 +263,6 @@ data RcvConnEvent
   = RCESwitchQueue {phase :: SwitchPhase}
   | RCERatchetSync {syncStatus :: RatchetSyncState}
   | RCEVerificationCodeReset
-  | RCEContactDeleted
   deriving (Show, Generic)
 
 data SndConnEvent
@@ -304,6 +301,27 @@ instance FromJSON DBSndConnEvent where
 instance ToJSON DBSndConnEvent where
   toJSON (SCE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SCE") v
   toEncoding (SCE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SCE") v
+
+data RcvDirectEvent =
+  -- RDEProfileChanged {...}
+  RDEContactDeleted
+  deriving (Show, Generic)
+
+instance FromJSON RcvDirectEvent where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RDE"
+
+instance ToJSON RcvDirectEvent where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RDE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RDE"
+
+newtype DBRcvDirectEvent = RDE RcvDirectEvent
+
+instance FromJSON DBRcvDirectEvent where
+  parseJSON v = RDE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RDE") v
+
+instance ToJSON DBRcvDirectEvent where
+  toJSON (RDE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RDE") v
+  toEncoding (RDE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RDE") v
 
 newtype DBMsgErrorType = DBME MsgErrorType
 
@@ -353,6 +371,7 @@ ciContentToText = \case
   CIRcvDecryptionError err n -> msgDecryptErrorText err n
   CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
   CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
+  CIRcvDirectEvent event -> rcvDirectEventToText event
   CIRcvGroupEvent event -> rcvGroupEventToText event
   CISndGroupEvent event -> sndGroupEventToText event
   CIRcvConnEvent event -> rcvConnEventToText event
@@ -372,6 +391,10 @@ ciContentToText = \case
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
   "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> (decodeLatin1 . strEncode $ role)
+
+rcvDirectEventToText :: RcvDirectEvent -> Text
+rcvDirectEventToText = \case
+  RDEContactDeleted -> "contact deleted"
 
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
@@ -404,7 +427,6 @@ rcvConnEventToText = \case
     SPCompleted -> "changed address for you"
   RCERatchetSync syncStatus -> ratchetSyncStatusToText syncStatus
   RCEVerificationCodeReset -> "security code changed"
-  RCEContactDeleted -> "contact deleted"
 
 ratchetSyncStatusToText :: RatchetSyncState -> Text
 ratchetSyncStatusToText = \case
@@ -492,6 +514,7 @@ data JSONCIContent
   | JCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
   | JCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
+  | JCIRcvDirectEvent {rcvDirectEvent :: RcvDirectEvent}
   | JCIRcvGroupEvent {rcvGroupEvent :: RcvGroupEvent}
   | JCISndGroupEvent {sndGroupEvent :: SndGroupEvent}
   | JCIRcvConnEvent {rcvConnEvent :: RcvConnEvent}
@@ -528,6 +551,7 @@ jsonCIContent = \case
   CIRcvDecryptionError err n -> JCIRcvDecryptionError err n
   CIRcvGroupInvitation groupInvitation memberRole -> JCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
+  CIRcvDirectEvent rcvDirectEvent -> JCIRcvDirectEvent {rcvDirectEvent}
   CIRcvGroupEvent rcvGroupEvent -> JCIRcvGroupEvent {rcvGroupEvent}
   CISndGroupEvent sndGroupEvent -> JCISndGroupEvent {sndGroupEvent}
   CIRcvConnEvent rcvConnEvent -> JCIRcvConnEvent {rcvConnEvent}
@@ -556,6 +580,7 @@ aciContentJSON = \case
   JCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
   JCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
+  JCIRcvDirectEvent {rcvDirectEvent} -> ACIContent SMDRcv $ CIRcvDirectEvent rcvDirectEvent
   JCIRcvGroupEvent {rcvGroupEvent} -> ACIContent SMDRcv $ CIRcvGroupEvent rcvGroupEvent
   JCISndGroupEvent {sndGroupEvent} -> ACIContent SMDSnd $ CISndGroupEvent sndGroupEvent
   JCIRcvConnEvent {rcvConnEvent} -> ACIContent SMDRcv $ CIRcvConnEvent rcvConnEvent
@@ -585,6 +610,7 @@ data DBJSONCIContent
   | DBJCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
+  | DBJCIRcvDirectEvent {rcvDirectEvent :: DBRcvDirectEvent}
   | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}
   | DBJCISndGroupEvent {sndGroupEvent :: DBSndGroupEvent}
   | DBJCIRcvConnEvent {rcvConnEvent :: DBRcvConnEvent}
@@ -621,6 +647,7 @@ dbJsonCIContent = \case
   CIRcvDecryptionError err n -> DBJCIRcvDecryptionError err n
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
+  CIRcvDirectEvent rde -> DBJCIRcvDirectEvent $ RDE rde
   CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
   CISndGroupEvent sge -> DBJCISndGroupEvent $ SGE sge
   CIRcvConnEvent rce -> DBJCIRcvConnEvent $ RCE rce
@@ -649,6 +676,7 @@ aciContentDBJSON = \case
   DBJCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
+  DBJCIRcvDirectEvent (RDE rde) -> ACIContent SMDRcv $ CIRcvDirectEvent rde
   DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
   DBJCISndGroupEvent (SGE sge) -> ACIContent SMDSnd $ CISndGroupEvent sge
   DBJCIRcvConnEvent (RCE rce) -> ACIContent SMDRcv $ CIRcvConnEvent rce
