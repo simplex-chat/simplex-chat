@@ -112,7 +112,7 @@ withTermLock ChatTerminal {termLock} action = do
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
 runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = do
   forever $ do
-    (_, r) <- atomically $ readTBQueue outputQ
+    (_, _, r) <- atomically $ readTBQueue outputQ
     case r of
       CRNewChatItem _ ci -> markChatItemRead ci
       CRChatItemUpdated _ ci -> markChatItemRead ci

@@ -56,7 +56,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   let bs = encodeUtf8 $ T.pack s
       cmd = parseChatCommand bs
   unless (isMessage cmd) $ echo s
-  r <- runReaderT (execChatCommand bs) cc
+  r <- runReaderT (execChatCommand Nothing bs) cc
   case r of
     CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
     CRChatError _ _ -> when (isMessage cmd) $ echo s

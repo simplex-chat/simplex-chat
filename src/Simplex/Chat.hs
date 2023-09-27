@@ -62,6 +62,8 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Direct
@@ -204,6 +206,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
   currentCalls <- atomically TM.empty
+  remoteHostSessions <- atomically TM.empty
+  remoteCtrlSession <- newTVarIO Nothing
   filesFolder <- newTVarIO optFilesFolder
   chatStoreChanged <- newTVarIO False
   expireCIThreads <- newTVarIO M.empty
@@ -213,7 +217,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, remoteHostSessions, remoteCtrlSession, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -340,12 +344,14 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
       mapM_ hClose fs
       atomically $ writeTVar files M.empty
 
-execChatCommand :: ChatMonad' m => ByteString -> m ChatResponse
-execChatCommand s = do
+execChatCommand :: ChatMonad' m => Maybe RemoteHostId -> ByteString -> m ChatResponse
+execChatCommand rh s = do
   u <- readTVarIO =<< asks currentUser
   case parseChatCommand s of
     Left e -> pure $ chatCmdError u e
-    Right cmd -> execChatCommand_ u cmd
+    Right cmd -> case rh of
+      Nothing -> execChatCommand_ u cmd
+      Just remoteHostId -> execRemoteCommand u remoteHostId (s, cmd)
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
 execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` cmd)
@@ -353,14 +359,26 @@ execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` c
 execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
 execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processChatCommand cmd)
 
+execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> (ByteString, ChatCommand) -> m ChatResponse
+execRemoteCommand u rh scmd = either (CRChatCmdError u) id <$> runExceptT (withRemoteHostSession rh $ \rhs -> processRemoteCommand rhs scmd)
+
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 
+-- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()
-toView event = do
-  q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, event)
+toView = toView_ Nothing
 
+-- | Used by transport to mark remote events with source.
+toViewRemote :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
+toViewRemote = toView_ . Just
+
+toView_ :: ChatMonad' m => Maybe RemoteHostId -> ChatResponse -> m ()
+toView_ rh event = do
+  q <- asks outputQ
+  atomically $ writeTBQueue q (Nothing, rh, event)
+
+-- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
@@ -1830,6 +1848,24 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
+  CreateRemoteHost _displayName -> pure $ chatCmdError Nothing "not supported"
+  ListRemoteHosts -> pure $ chatCmdError Nothing "not supported"
+  StartRemoteHost rh -> do
+    RemoteHost {displayName = _, storePath, caKey, caCert} <- error "TODO: get from DB"
+    (fingerprint, sessionCreds) <- error "TODO: derive session creds" (caKey, caCert)
+    _announcer <- async $ error "TODO: run announcer" fingerprint
+    hostAsync <- async $ error "TODO: runServer" storePath sessionCreds
+    chatModifyVar remoteHostSessions $ M.insert rh RemoteHostSession {hostAsync, storePath, ctrlClient = undefined}
+    pure $ chatCmdError Nothing "not supported"
+  StopRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
+  DisposeRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
+  RegisterRemoteCtrl _displayName _oobData -> pure $ chatCmdError Nothing "not supported"
+  ListRemoteCtrls -> pure $ chatCmdError Nothing "not supported"
+  StartRemoteCtrl -> pure $ chatCmdError Nothing "not supported"
+  ConfirmRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
+  RejectRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
+  StopRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
+  DisposeRemoteCtrl _rc -> pure $ chatCmdError Nothing "not supported"
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)
@@ -5599,6 +5635,17 @@ chatCommandP =
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
+      "/create remote host" *> (CreateRemoteHost <$> textP),
+      "/list remote hosts" $> ListRemoteHosts,
+      "/start remote host " *> (StartRemoteHost <$> A.decimal),
+      "/stop remote host " *> (StopRemoteHost <$> A.decimal),
+      "/dispose remote host " *> (DisposeRemoteHost <$> A.decimal),
+      "/register remote ctrl " *> (RegisterRemoteCtrl <$> textP <*> remoteHostOOBP),
+      "/start remote ctrl" $> StartRemoteCtrl,
+      "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
+      "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
+      "/stop remote ctrl " *> (StopRemoteCtrl <$> A.decimal),
+      "/dispose remote ctrl " *> (DisposeRemoteCtrl <$> A.decimal),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
@@ -5716,6 +5763,7 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
+    remoteHostOOBP = RemoteHostOOB <$> textP
 
 adminContactReq :: ConnReqContact
 adminContactReq =

@@ -46,6 +46,7 @@ import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -173,7 +174,7 @@ data ChatController = ChatController
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
-    outputQ :: TBQueue (Maybe CorrId, ChatResponse),
+    outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
     subscriptionMode :: TVar SubscriptionMode,
@@ -181,6 +182,8 @@ data ChatController = ChatController
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
+    remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
+    remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
@@ -410,6 +413,18 @@ data ChatCommand
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
+  | CreateRemoteHost Text -- ^ Configure a new remote host
+  | ListRemoteHosts
+  | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
+  | StopRemoteHost RemoteHostId -- ^ Shut down a running session
+  | DisposeRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
+  | RegisterRemoteCtrl Text RemoteHostOOB -- ^ Register OOB data for satellite discovery and handshake
+  | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
+  | ListRemoteCtrls
+  | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm discovered data and store confirmation
+  | RejectRemoteCtrl RemoteCtrlId -- ^ Reject discovered data (and blacklist?)
+  | StopRemoteCtrl RemoteCtrlId -- ^ Stop listening for announcements or terminate an active session
+  | DisposeRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -580,6 +595,17 @@ data ChatResponse
   | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
+  | CRRemoteHostCreated {remoteHostId :: RemoteHostId, oobData :: RemoteHostOOB}
+  | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]} -- XXX: RemoteHostInfo is mostly concerned with session setup
+  | CRRemoteHostStarted {remoteHostId :: RemoteHostId}
+  | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
+  | CRRemoteHostDisposed {remoteHostId :: RemoteHostId}
+  | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
+  | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlDisconnected {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -616,9 +642,31 @@ logResponseToFile = \case
   CRMessageError {} -> True
   _ -> False
 
+instance FromJSON ChatResponse where
+  parseJSON todo = pure $ CRCmdOk Nothing -- TODO: actually use the instances
+
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+data RemoteHostOOB = RemoteHostOOB
+  { fingerprint :: Text -- CA key fingerprint
+  }
+  deriving (Show, Generic, ToJSON)
+
+data RemoteHostInfo = RemoteHostInfo
+  { remoteHostId :: RemoteHostId,
+    displayName :: Text,
+    sessionActive :: Bool
+  }
+  deriving (Show, Generic, ToJSON)
+
+data RemoteCtrlInfo = RemoteCtrlInfo
+  { remoteCtrlId :: RemoteCtrlId,
+    displayName :: Text,
+    sessionActive :: Bool
+  }
+  deriving (Show, Generic, ToJSON)
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -858,6 +906,8 @@ data ChatError
   | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
+  | ChatErrorRemoteCtrl {remoteCtrlId :: RemoteCtrlId, remoteControllerError :: RemoteCtrlError}
+  | ChatErrorRemoteHost {remoteHostId :: RemoteHostId, remoteHostError :: RemoteHostError}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
@@ -967,6 +1017,41 @@ instance ToJSON SQLiteError where
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
 
+-- TODO review errors, some of it can be covered by HTTP2 errors
+data RemoteHostError
+  = RHMissing -- ^ No remote session matches this identifier
+  | RHBusy -- ^ A session is already running
+  | RHRejected -- ^ A session attempt was rejected by a host
+  | RHTimeout -- ^ A discovery or a remote operation has timed out
+  | RHDisconnected {reason :: Text} -- ^ A session disconnected by a host
+  | RHConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
+  deriving (Show, Exception, Generic)
+
+instance FromJSON RemoteHostError where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RH"
+
+instance ToJSON RemoteHostError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RH"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RH"
+
+-- TODO review errors, some of it can be covered by HTTP2 errors
+data RemoteCtrlError
+  = RCEMissing -- ^ No remote session matches this identifier
+  | RCEBusy -- ^ A session is already running
+  | RCETimeout -- ^ Remote operation timed out
+  | RCEDisconnected {reason :: Text} -- ^ A session disconnected by a controller
+  | RCEConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
+  | RCECertificateExpired -- ^ A connection or CA certificate in a chain have bad validity period
+  | RCECertificateUntrusted -- ^ TLS is unable to validate certificate chain presented for a connection
+  deriving (Show, Exception, Generic)
+
+instance FromJSON RemoteCtrlError where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RCE"
+
+instance ToJSON RemoteCtrlError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RCE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RCE"
+
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
@@ -978,6 +1063,10 @@ chatReadVar f = asks f >>= readTVarIO
 chatWriteVar :: ChatMonad' m => (ChatController -> TVar a) -> a -> m ()
 chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
 {-# INLINE chatWriteVar #-}
+
+chatModifyVar :: ChatMonad' m => (ChatController -> TVar a) -> (a -> a) -> m ()
+chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
+{-# INLINE chatModifyVar #-}
 
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
