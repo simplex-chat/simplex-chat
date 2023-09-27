@@ -959,6 +959,8 @@ testDatabaseEncryption tmp = do
       alice <## "chat stopped"
       alice ##> "/db key wrongkey nextkey"
       alice <## "error encrypting database: wrong passphrase or invalid database file"
+      alice ##> "/_start key=wrongkey"
+      alice <## "error opening database: wrong passphrase or invalid database file"
       alice ##> "/_start key=mykey"
       alice <## "chat started"
       testChatWorking alice bob
