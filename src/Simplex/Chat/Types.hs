@@ -206,6 +206,9 @@ directOrUsed ct@Contact {contactUsed} =
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
 
+contactActive :: Contact -> Bool
+contactActive Contact {contactStatus} = contactStatus == CSActive
+
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode activeConn
 

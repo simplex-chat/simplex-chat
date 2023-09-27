@@ -903,7 +903,7 @@ processChatCommand = \case
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       withChatLock "deleteChat direct" . procCmd $ do
         deleteFilesAndConns user filesInfo
-        void $ sendDirectContactMessage ct XDirectDel -- TODO when active
+        when (contactActive ct) . void $ sendDirectContactMessage ct XDirectDel
         contactConnIds <- map aConnId <$> withStore (\db -> getContactConnections db userId ct)
         deleteAgentConnectionsAsync user contactConnIds
         -- functions below are called in separate transactions to prevent crashes on android
@@ -1423,7 +1423,7 @@ processChatCommand = \case
     processChatCommand . APISendMessage chatRef True Nothing $ ComposedMessage Nothing Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore' (`getUserContacts` user)
-    let cts = filter (\ct -> isReady ct && directOrUsed ct) contacts -- TODO && isActive
+    let cts = filter (\ct -> isReady ct && contactActive ct && directOrUsed ct) contacts
     ChatConfig {logLevel} <- asks config
     withChatLock "sendMessageBroadcast" . procCmd $ do
       (successes, failures) <- foldM (sendAndCount user logLevel) (0, 0) cts
@@ -1973,7 +1973,7 @@ processChatCommand = \case
         -- read contacts before user update to correctly merge preferences
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
-          filter (\ct -> isReady ct && not (contactConnIncognito ct))
+          filter (\ct -> isReady ct && contactActive ct && not (contactConnIncognito ct))
             <$> withStore' (`getUserContacts` user)
         user' <- updateUser
         asks currentUser >>= atomically . (`writeTVar` Just user')
@@ -4242,14 +4242,15 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     xDirectDel :: Contact -> RcvMessage -> MsgMeta -> m ()
     xDirectDel c msg msgMeta = do
-      checkIntegrityCreateItem (CDDirectRcv c) msgMeta -- not necessary
+      checkIntegrityCreateItem (CDDirectRcv c) msgMeta
       ct' <- withStore' $ \db -> updateContactStatus db user c CSDeleted
       contactConns <- withStore $ \db -> getContactConnections db userId ct'
       deleteAgentConnectionsAsync user $ map aConnId contactConns
       forM_ contactConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
-      ci <- saveRcvChatItem user (CDDirectRcv ct') msg msgMeta (CIRcvDirectEvent RDEContactDeleted)
-      toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct') ci)
-      toView $ CRContactDeletedByContact user ct'
+      let ct'' = ct' {activeConn = (contactConn ct') {connStatus = ConnDeleted}} :: Contact
+      ci <- saveRcvChatItem user (CDDirectRcv ct'') msg msgMeta (CIRcvDirectEvent RDEContactDeleted)
+      toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct'') ci)
+      toView $ CRContactDeletedByContact user ct''
 
     processContactProfileUpdate :: Contact -> Profile -> Bool -> m Contact
     processContactProfileUpdate c@Contact {profile = p} p' createItems
@@ -4934,9 +4935,9 @@ deleteOrUpdateMemberRecord user@User {userId} member =
       Nothing -> deleteGroupMember db user member
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
-sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}} chatMsgEvent
+sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}, contactStatus} chatMsgEvent
   | connStatus /= ConnReady && connStatus /= ConnSndReady = throwChatError $ CEContactNotReady ct
-  -- | contactStatus /= CSActive = throwChatError $ CEContactNotActive ct
+  | contactStatus /= CSActive = throwChatError $ CEContactNotActive ct
   | connDisabled conn = throwChatError $ CEContactDisabled ct
   | otherwise = sendDirectMessage conn chatMsgEvent (ConnectionId connId)
 

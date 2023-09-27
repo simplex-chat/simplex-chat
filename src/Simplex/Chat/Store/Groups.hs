@@ -1156,13 +1156,12 @@ getActiveMembersByName db user@User {userId} groupMemberName = do
   where
     ts GroupInfo {chatTs, updatedAt} = fromMaybe updatedAt chatTs
 
--- TODO and status == CSActive
 getMatchingContacts :: DB.Connection -> User -> Contact -> IO [Contact]
 getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do
   contactIds <-
     map fromOnly <$> case image of
-      Just img -> DB.query db (q <> " AND p.image = ?") (userId, contactId, displayName, fullName, img)
-      Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, contactId, displayName, fullName)
+      Just img -> DB.query db (q <> " AND p.image = ?") (userId, contactId, CSActive, displayName, fullName, img)
+      Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, contactId, CSActive, displayName, fullName)
   rights <$> mapM (runExceptT . getContact db user) contactIds
   where
     -- this query is different from one in getMatchingMemberContacts
@@ -1173,7 +1172,7 @@ getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalPro
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
         WHERE ct.user_id = ? AND ct.contact_id != ?
-          AND ct.deleted = 0
+          AND ct.contact_status = ? AND ct.deleted = 0
           AND p.display_name = ? AND p.full_name = ?
       |]
 
