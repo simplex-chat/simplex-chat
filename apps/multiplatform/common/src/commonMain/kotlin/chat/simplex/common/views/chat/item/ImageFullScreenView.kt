@@ -158,12 +158,11 @@ private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap,
     player.stop()
   }
   LaunchedEffect(Unit) {
-    player.enableSound(true)
     snapshotFlow { isCurrentPage.value }
       .distinctUntilChanged()
       .collect {
-        // Do not autoplay on desktop because it needs workaround
-        if (it && appPlatform.isAndroid) play() else if (!it) stop()
+        if (it) play() else stop()
+        player.enableSound(true)
       }
   }
 
