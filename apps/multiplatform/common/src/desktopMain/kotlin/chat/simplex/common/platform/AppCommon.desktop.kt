@@ -7,6 +7,8 @@ import java.util.*
 
 actual val appPlatform = AppPlatform.DESKTOP
 
+actual fun AppPlatform.isWindows() = desktopPlatform.isWindows()
+
 @Suppress("ConstantLocale")
 val defaultLocale: Locale = Locale.getDefault()
 

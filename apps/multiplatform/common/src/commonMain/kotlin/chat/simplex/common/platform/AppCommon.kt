@@ -18,6 +18,8 @@ enum class AppPlatform {
 
 expect val appPlatform: AppPlatform
 
+expect fun AppPlatform.isWindows(): Boolean
+
 val appVersionInfo: Pair<String, Int?> = if (appPlatform == AppPlatform.ANDROID)
   BuildConfigCommon.ANDROID_VERSION_NAME to BuildConfigCommon.ANDROID_VERSION_CODE
 else

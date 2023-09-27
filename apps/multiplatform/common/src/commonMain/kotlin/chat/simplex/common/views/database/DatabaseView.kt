@@ -80,7 +80,17 @@ fun DatabaseView(
       chatItemTTL,
       m.currentUser.value,
       m.users,
-      startChat = { startChat(m, chatLastStart, m.chatDbChanged) },
+      startChat = {
+        var storedKey = DatabaseUtils.ksDatabasePassword.get()
+        if (storedKey == "") {
+          storedKey = null
+        }
+        if (m.chatDbEncrypted.value == true && appPlatform.isWindows() && storedKey == null) {
+          showEnterPassphraseModal(chatLastStart, m.chatDbChanged, progressIndicator)
+        } else {
+          startChat(if (appPlatform.isWindows()) storedKey else null, m, chatLastStart, m.chatDbChanged)
+        }
+      },
       stopChatAlert = { stopChatAlert(m) },
       exportArchive = { exportArchive(m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
@@ -335,7 +345,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) MR.strings.old_database_archive else MR.strings.new_database_archive)
 }
 
-private fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
+private fun startChat(passphrase: String?, m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
   withApi {
     try {
       if (chatDbChanged.value) {
@@ -351,7 +361,7 @@ private fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatD
         ModalManager.closeAllModalsEverywhere()
         return@withApi
       } else {
-        m.controller.apiStartChat()
+        m.controller.apiStartChat(passphrase)
         m.chatRunning.value = true
       }
       val ts = Clock.System.now()
@@ -419,8 +429,35 @@ private fun stopChat(m: ChatModel) {
 }
 
 suspend fun stopChatAsync(m: ChatModel) {
-  m.controller.apiStopChat(false)
+  m.controller.apiStopChat(appPlatform.isWindows())
   m.chatRunning.value = false
+}
+
+private fun showEnterPassphraseModal(
+  chatLastStart: MutableState<Instant?>,
+  chatDbChanged: MutableState<Boolean>,
+  progressIndicator: MutableState<Boolean>
+) {
+  ModalManager.fullscreen.showModalCloseable { close ->
+    Column(
+      Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+      verticalArrangement = Arrangement.Center,
+    ) {
+      val dbKey = remember { mutableStateOf("") }
+      val open = {
+        startChat(dbKey.value, ChatModel, chatLastStart, chatDbChanged)
+      }
+      LaunchedEffect(ChatModel.chatRunning.value) {
+        if (ChatModel.chatRunning.value == true) close()
+      }
+      val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
+      DatabaseErrorDetails(MR.strings.encrypted_database) {
+        Text(generalGetString(MR.strings.database_passphrase_is_required))
+        DatabaseKeyField(dbKey, buttonEnabled, open)
+        OpenChatButton(buttonEnabled, open)
+      }
+    }
+  }
 }
 
 suspend fun deleteChatAsync(m: ChatModel) {

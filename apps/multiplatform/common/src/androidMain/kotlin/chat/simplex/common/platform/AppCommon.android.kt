@@ -16,6 +16,8 @@ import kotlin.random.Random
 
 actual val appPlatform = AppPlatform.ANDROID
 
+actual fun AppPlatform.isWindows(): Boolean = false
+
 var isAppOnForeground: Boolean = false
 
 @Suppress("ConstantLocale")

@@ -1933,8 +1933,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-//    is StartChat -> "/_start ${json.encodeToString(cfg)}" // this can be used with the new core
-    is StartChat -> "/_start subscribe=on expire=${onOff(cfg.enableExpireCIs)} xftp=on"
+    is StartChat -> "/_start ${json.encodeToString(cfg)}"
     is ApiStopChat -> if (closeStore) "/_stop close" else "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
@@ -2129,6 +2128,7 @@ sealed class CC {
       is ApiHideUser -> ApiHideUser(userId, obfuscate(viewPwd))
       is ApiUnhideUser -> ApiUnhideUser(userId, obfuscate(viewPwd))
       is ApiDeleteUser -> ApiDeleteUser(userId, delSMPQueues, obfuscateOrNull(viewPwd))
+      is StartChat -> StartChat(cfg = cfg.copy(openDBWithKey = obfuscateOrNull(cfg.openDBWithKey)))
       else -> this
     }
 

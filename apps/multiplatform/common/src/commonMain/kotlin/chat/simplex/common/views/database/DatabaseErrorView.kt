@@ -57,16 +57,6 @@ fun DatabaseErrorView(
   }
 
   @Composable
-  fun DatabaseErrorDetails(title: StringResource, content: @Composable ColumnScope.() -> Unit) {
-    Text(
-      generalGetString(title),
-      Modifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
-      style = MaterialTheme.typography.h1
-    )
-    SectionView(null, padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), content)
-  }
-
-  @Composable
   fun FileNameText(dbFile: String) {
     Text(String.format(generalGetString(MR.strings.file_with_path), dbFile.split("/").lastOrNull() ?: dbFile))
   }
@@ -185,6 +175,16 @@ fun DatabaseErrorView(
   }
 }
 
+@Composable
+fun DatabaseErrorDetails(title: StringResource, content: @Composable ColumnScope.() -> Unit) {
+  Text(
+    generalGetString(title),
+    Modifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
+    style = MaterialTheme.typography.h1
+  )
+  SectionView(null, padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), content)
+}
+
 private fun runChat(
   dbKey: String? = null,
   confirmMigrations: MigrationConfirmation? = null,
@@ -254,7 +254,7 @@ private fun mtrErrorDescription(err: MTRError): String =
   }
 
 @Composable
-private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onClick: (() -> Unit)? = null) {
+fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onClick: (() -> Unit)? = null) {
   val focusRequester = remember { FocusRequester() }
   LaunchedEffect(Unit) {
     delay(100L)
@@ -287,7 +287,7 @@ private fun ColumnScope.SaveAndOpenButton(enabled: Boolean, onClick: () -> Unit)
 }
 
 @Composable
-private fun ColumnScope.OpenChatButton(enabled: Boolean, onClick: () -> Unit) {
+fun ColumnScope.OpenChatButton(enabled: Boolean, onClick: () -> Unit) {
   TextButton(onClick, Modifier.align(Alignment.CenterHorizontally), enabled = enabled) {
     Text(generalGetString(MR.strings.open_chat))
   }
