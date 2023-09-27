@@ -116,6 +116,7 @@ for lib in $(find . -type f -name "*.$LIB_EXT"); do
         install_name_tool -delete_rpath $RPATH $lib
     done
 done
+
 LOCAL_DIRS=`for lib in $(find . -type f -name "*.$LIB_EXT"); do otool -l $lib | grep -E "/Users|/opt/|/usr/local" && echo $lib; done`
 if [ -n "$LOCAL_DIRS" ]; then
     echo These libs still point to local directories:
