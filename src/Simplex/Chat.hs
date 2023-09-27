@@ -30,6 +30,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace, toLower)
+import Data.Composition ((.:))
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
@@ -245,13 +246,9 @@ cfgServers = \case
   SPSMP -> smp
   SPXFTP -> xftp
 
-startChatController :: forall m. ChatMonad' m => ChatCtrlCfg -> m (Async ())
-startChatController ChatCtrlCfg {subConns, enableExpireCIs, startXFTPWorkers, openDBWithKey} = do
-  ChatController {chatStore, smpAgent} <- ask
-  forM_ openDBWithKey $ \(DBEncryptionKey dbKey) -> liftIO $ do
-    openSQLiteStore chatStore dbKey
-    openSQLiteStore (agentClientStore smpAgent) dbKey
-  resumeAgentClient smpAgent
+startChatController :: forall m. ChatMonad' m => Bool -> Bool -> Bool -> m (Async ())
+startChatController subConns enableExpireCIs startXFTPWorkers = do
+  resumeAgentClient =<< asks smpAgent
   unless subConns $
     chatWriteVar subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStoreCtx' (Just "startChatController, getUsers") getUsers)
@@ -465,10 +462,17 @@ processChatCommand = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" . procCmd $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  APIStartChat cfg -> withUser' $ \_ ->
+  APIStartChat ChatCtrlCfg {subConns, enableExpireCIs, startXFTPWorkers, openDBWithKey} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged $ startChatController cfg $> CRChatStarted
+      _ -> checkStoreNotChanged $ do
+        forM_ openDBWithKey $ \(DBEncryptionKey dbKey) -> do
+          ChatController {chatStore, smpAgent} <- ask
+          open chatStore dbKey
+          open (agentClientStore smpAgent) dbKey
+        startChatController subConns enableExpireCIs startXFTPWorkers $> CRChatStarted
+        where
+          open = handleDBError DBErrorOpen .: openSQLiteStore
   APIStopChat closeStore -> do
     ask >>= (`stopChatController` closeStore)
     pure CRChatStopped
