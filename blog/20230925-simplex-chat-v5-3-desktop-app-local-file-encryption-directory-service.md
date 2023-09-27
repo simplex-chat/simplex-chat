@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups with directory service"
 date: 2023-09-25
-image: /docs/images/simplex-desktop-light.png
+image: images/simplex-desktop-light.png
 imageWide: true
 previewBody: blog_previews/20230925.html
 permalink: "/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"
@@ -36,7 +36,7 @@ Also, we added 6 new interface languages: Arabic<sup>*</sup>, Bulgarian, Finnish
 
 ## Multiplatform desktop app
 
-<img src="/docs/images/simplex-desktop-light.png" width="640">
+<img src="./images/simplex-desktop-light.png" width="640">
 
 Thanks a lot to everybody who was testing the desktop app since July – it really helped to make it stable!
 
@@ -49,6 +49,8 @@ When you start the app first time, you will be offered to **set database passphr
 Other limitations of the desktop app:
 - you cannot send voice messages.
 - there is no support for calls yet.
+
+You can download the desktop app for Linux and Mac via [downloads page](https://simplex.chat/downloads). Windows version will be available soon.
 
 ## Group directory service and other group improvements
 
