@@ -87,7 +87,6 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             previewTitle(contact.verified == true ? verifiedIcon + t : t)
-                .foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
         case let .group(groupInfo):
             let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
@@ -235,16 +234,20 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatStatusImage() -> some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            switch (chatModel.contactNetworkStatus(contact)) {
-            case .connected: incognitoIcon(chat.chatInfo.incognito)
-            case .error:
-                Image(systemName: "exclamationmark.circle")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 17, height: 17)
-                    .foregroundColor(.secondary)
-            default:
-                ProgressView()
+            if contact.active {
+                switch (chatModel.contactNetworkStatus(contact)) {
+                case .connected: incognitoIcon(chat.chatInfo.incognito)
+                case .error:
+                    Image(systemName: "exclamationmark.circle")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 17, height: 17)
+                        .foregroundColor(.secondary)
+                default:
+                    ProgressView()
+                }
+            } else {
+                incognitoIcon(chat.chatInfo.incognito)
             }
         default:
             incognitoIcon(chat.chatInfo.incognito)
