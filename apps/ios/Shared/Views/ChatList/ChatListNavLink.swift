@@ -65,7 +65,7 @@ struct ChatListNavLink: View {
             }
             Button {
                 AlertManager.shared.showAlert(
-                    contact.ready
+                    contact.ready || !contact.active
                     ? deleteContactAlert(chat.chatInfo)
                     : deletePendingContactAlert(chat, contact)
                 )

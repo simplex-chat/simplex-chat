@@ -31,6 +31,7 @@ chatDirectTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive message" testAddContact
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
+    it "unused contact is deleted silently" testDeleteUnusedContactSilent
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message edit history" testDirectMessageEditHistory
@@ -156,11 +157,12 @@ testAddContact = versionTestMatrix2 runTestAddContact
       -- test deleting contact
       alice ##> "/d bob_1"
       alice <## "bob_1: contact is deleted"
+      bob <## "alice_1 (Alice) deleted contact with you"
       alice ##> "@bob_1 hey"
       alice <## "no contact bob_1"
       alice @@@ [("@bob", "how are you?")]
       alice `hasContactProfiles` ["alice", "bob"]
-      bob @@@ [("@alice_1", "hi"), ("@alice", "how are you?")]
+      bob @@@ [("@alice_1", "contact deleted"), ("@alice", "how are you?")]
       bob `hasContactProfiles` ["alice", "alice", "bob"]
       -- test clearing chat
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
@@ -202,6 +204,7 @@ testDeleteContactDeletesProfile =
       -- alice deletes contact, profile is deleted
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
       alice ##> "/_contacts 1"
       (alice </)
       alice `hasContactProfiles` ["alice"]
@@ -211,6 +214,42 @@ testDeleteContactDeletesProfile =
       bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
+
+testDeleteUnusedContactSilent :: HasCallStack => FilePath -> IO ()
+testDeleteUnusedContactSilent =
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob ##> "/contacts"
+      bob <### ["alice (Alice)", "cath (Catherine)"]
+      bob `hasContactProfiles` ["bob", "alice", "cath"]
+      cath ##> "/contacts"
+      cath <### ["alice (Alice)", "bob (Bob)"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+      -- bob deletes cath, cath's bob contact is deleted silently
+      bob ##> "/d cath"
+      bob <## "cath: contact is deleted"
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+      threadDelay 50000
+      cath ##> "/contacts"
+      cath <## "alice (Alice)"
+      -- group messages work
+      alice #> "#team hello"
+      concurrentlyN_
+        [ bob <# "#team alice> hello",
+          cath <# "#team alice> hello"
+        ]
+      bob #> "#team hi there"
+      concurrentlyN_
+        [ alice <# "#team bob> hi there",
+          cath <# "#team bob> hi there"
+        ]
+      cath #> "#team hey"
+      concurrentlyN_
+        [ alice <# "#team cath> hey",
+          bob <# "#team cath> hey"
+        ]
 
 testDirectMessageQuotedReply :: HasCallStack => FilePath -> IO ()
 testDirectMessageQuotedReply =
@@ -514,7 +553,7 @@ testRepeatAuthErrorsDisableContact =
     connectUsers alice bob
     alice <##> bob
     threadDelay 500000
-    bob ##> "/d alice"
+    bob ##> "/_delete @2 notify=off"
     bob <## "alice: contact is deleted"
     forM_ [1 .. authErrDisableCount] $ \_ -> sendAuth alice
     alice <## "[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"
@@ -957,6 +996,8 @@ testDatabaseEncryption tmp = do
       alice <## "chat stopped"
       alice ##> "/db key wrongkey nextkey"
       alice <## "error encrypting database: wrong passphrase or invalid database file"
+      alice ##> "/_start key=wrongkey"
+      alice <## "error opening database: wrong passphrase or invalid database file"
       alice ##> "/_start key=mykey"
       alice <## "chat started"
       testChatWorking alice bob

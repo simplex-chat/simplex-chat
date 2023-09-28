@@ -248,7 +248,7 @@ data ChatCommand
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
-  | APIDeleteChat ChatRef
+  | APIDeleteChat ChatRef Bool -- `notify` flag is only applied to direct chats
   | APIClearChat ChatRef
   | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
@@ -491,6 +491,7 @@ data ChatResponse
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {user :: User, contact :: Contact}
+  | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {user :: User, connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted {user :: User}
@@ -627,9 +628,6 @@ data ChatCtrlCfg = ChatCtrlCfg
     openDBWithKey :: Maybe DBEncryptionKey
   }
   deriving (Show, Generic, FromJSON)
-
-defChatCtrlCfg :: ChatCtrlCfg
-defChatCtrlCfg = ChatCtrlCfg True True True Nothing
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -898,6 +896,7 @@ data ChatErrorType
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
+  | CEContactNotActive {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
   | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
