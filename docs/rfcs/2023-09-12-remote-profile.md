@@ -94,7 +94,8 @@ Alternatively a mobile (or a desktop, why not) may signal that they're done here
 
 ### On a mobile device
 
-1. A user opens sidebar and clicks "connect from desktop" in the "You" section, starting remote controller discovery.
+1. A user opens sidebar and clicks "use from desktop" in the "You" section, starting remote controller discovery.
+  * When this happens for the first time, the user must set the mobile device name, pre-filled from system device name if possible.
   * UI enters "Waiting for desktop" window, which collects all the broadcasts received so far.
   * Discovery process starts UDP broadcast listener on application port (5226).
   * A datagram containing remote controller fingerprint is checked against a list of pre-registered controller devices.
@@ -105,7 +106,6 @@ Alternatively a mobile (or a desktop, why not) may signal that they're done here
   * UI enters "New device" window, displaying a fingerprint and asking to scan a QR code (or paste a link, like in the contact screen).
   * A OOB data from the QR/link contains remote controller fingerprint and remote display name, which is stored in device DB.
     - Fingerprint must match the announce.
-    - Display name can be changed.
   * Accepting the OOB automatically triggers remote controller connection and transitions UI to "connection status" window.
 3. A remote session initiated with a known device, or as a result of OOB exchange.
   * A "connection status" window shows registered display name and current session status.
@@ -118,27 +118,26 @@ Alternatively a mobile (or a desktop, why not) may signal that they're done here
     - This restriction may be lifted later.
 
 At any time a user may click on a "cancel" button and return to the main UI.
+That should fully re-initialise UI state.
 
 In the "Network & servers" section of "Settings", there is an item to list all the registered remote controllers with buttons attached to *dispose* them one by one.
-*Disposing* a remote controller means its entry will be removed from database and any associated files deleted (there are none right now).
+*Disposing* a remote controller means its entry will be removed from database.
 Future connection attempts from a disposed device would be treated exactly as from a previously-unknown device.
 
 ### On a desktop device
 
 1. A user opens sidebar and clicks "connect to mobile" in the "You" section.
   * UI enters a "Select remote host" window asking user to pick an existing connection profile or generate a new one.
-2. When a new connection profile is requested by a user, UI transitions to "new remote host profile" window.
-  * A user may enter a device name that would be presented on a mobile device during OOB handshake, defaults to system device name.
-  * After submitting a private key is generated and a new X509 root CA certificate is produced and stored in device DB. Then the desktop proceeds to the connection screen.
-3. Clicking on an existing connection profile transitions UI to "connecting to remote host" window.
-  * A QR code / link is presented, containing the fingerprint of the CA CA stored for the selected profile.
+  * When a new connection profile is requested by a user, a private key is generated and a new X509 root CA certificate is produced and stored in device DB. Then the desktop proceeds to the connection screen.
+2. Clicking on an existing connection profile transitions UI to "connecting to remote host" window.
+  * A QR code / link is presented, containing the fingerprint of the CA stored for the selected profile.
   * A new session certificate is derived from the CA.
   * A TLS server is started using ephemeral session certificate.
   * A UDP broadcast on port 5226 is started, sending the fingerprint.
-4. When incoming connection is established the UI transitions to "connected to remote host" window.
+3. When incoming connection is established the UI transitions to "connected to remote host" window.
   * Desktop chat controller establishes a remote session over the incoming connection (and prevents further connections).
   * UI transitions to the "remote host" mode, shunting local profiles into background while keeping notifications coming.
-5. A user may open sidebar and click "disconnect from mobile" to close the session and return to local mode.
+4. A user may open sidebar and click "disconnect from mobile" to close the session and return to local mode.
 
 In the "Network & servers" section of "Settings", there is an item to list all the registered remote hosts with buttons attached to *dispose* them one by one.
 *Disposing* a remote host means its entry will be removed from database and any associated files deleted (photos, voice messages, transferred files etc).
