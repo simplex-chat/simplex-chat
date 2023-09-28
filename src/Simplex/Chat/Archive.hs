@@ -22,7 +22,7 @@ import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), sqlString)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), setSQLiteModeWAL, sqlString)
 import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
@@ -43,13 +43,21 @@ archiveFilesFolder = "simplex_v1_files"
 exportArchive :: ChatMonad m => ArchiveConfig -> m ()
 exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   withTempDir cfg "simplex-chat." $ \dir -> do
+    setMode False
     StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
     copyFile chatDb $ dir </> archiveChatDbFile
     copyFile agentDb $ dir </> archiveAgentDbFile
+    setMode True
     forM_ filesPath $ \fp ->
       copyDirectoryFiles fp $ dir </> archiveFilesFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
+  where
+    -- TODO this won't work on Windows as we close connection there when stopping chat
+    setMode walMode = do
+      ChatController {chatStore, smpAgent} <- ask
+      liftIO $ setSQLiteModeWAL chatStore walMode
+      liftIO $ setSQLiteModeWAL (agentClientStore smpAgent) walMode
 
 importArchive :: ChatMonad m => ArchiveConfig -> m [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
@@ -145,7 +153,9 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
           T.unlines $
             keySQL key
               <> [ "ATTACH DATABASE " <> sqlString (f <> ".exported") <> " AS exported KEY " <> sqlString key' <> ";",
+                   "PRAGMA wal_checkpoint(TRUNCATE);",
                    "SELECT sqlcipher_export('exported');",
+                   "PRAGMA exported.wal_checkpoint(TRUNCATE);",
                    "DETACH DATABASE exported;"
                  ]
         testSQL =

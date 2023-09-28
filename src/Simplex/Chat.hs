@@ -84,7 +84,7 @@ import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentCl
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection, closeSQLiteStore, openSQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection, checkpointSQLiteStore, closeSQLiteStore, openSQLiteStore)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
@@ -334,9 +334,13 @@ stopChatController ChatController {chatStore, smpAgent, agentAsync = s, sndFiles
     keys <- M.keys <$> readTVar expireCIFlags
     forM_ keys $ \k -> TM.insert k False expireCIFlags
     writeTVar s Nothing
-  when closeStore $ liftIO $ do
-    closeSQLiteStore chatStore
-    closeSQLiteStore $ agentClientStore smpAgent
+  liftIO $ do
+    let agentStore = agentClientStore smpAgent
+    checkpointSQLiteStore chatStore
+    checkpointSQLiteStore agentStore
+    when closeStore $ do
+      closeSQLiteStore chatStore
+      closeSQLiteStore agentStore
   where
     closeFiles :: TVar (Map Int64 Handle) -> m ()
     closeFiles files = do
