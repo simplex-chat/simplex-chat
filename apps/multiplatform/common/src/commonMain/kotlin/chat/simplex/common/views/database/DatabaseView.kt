@@ -376,6 +376,7 @@ private fun startChat(passphrase: String?, m: ChatModel, chatLastStart: MutableS
               AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
             }
           }
+          return@withApi
         }
       }
       val ts = Clock.System.now()
