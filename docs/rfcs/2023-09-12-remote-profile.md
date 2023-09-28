@@ -92,6 +92,9 @@ Alternatively a mobile (or a desktop, why not) may signal that they're done here
 
 ## Proposed UX flow
 
+> For now, desktop and mobile roles are mutually exclusive.
+> Mobile device can only host remote session, while desktop devices can only remote-control.
+
 ### On a mobile device
 
 1. A user opens sidebar and clicks "use from desktop" in the "You" section, starting remote controller discovery.
@@ -131,13 +134,17 @@ Future connection attempts from a disposed device would be treated exactly as fr
   * When a new connection profile is requested by a user, a private key is generated and a new X509 root CA certificate is produced and stored in device DB. Then the desktop proceeds to the connection screen.
 2. Clicking on an existing connection profile transitions UI to "connecting to remote host" window.
   * A QR code / link is presented, containing the fingerprint of the CA stored for the selected profile.
+    - For a first time connection a QR code is shown.
+    - After first time the QR code is hidden until a subdued "show QR code" button is clicked.
   * A new session certificate is derived from the CA.
   * A TLS server is started using ephemeral session certificate.
+    - TLS handshake is used to authenticate desktop to a connecting mobile, proving that the announcer is indeed owns the key with the fingerprint received OOB by mobile. See below for a case for mutual authentication.
   * A UDP broadcast on port 5226 is started, sending the fingerprint.
 3. When incoming connection is established the UI transitions to "connected to remote host" window.
   * Desktop chat controller establishes a remote session over the incoming connection (and prevents further connections).
   * UI transitions to the "remote host" mode, shunting local profiles into background while keeping notifications coming.
 4. A user may open sidebar and click "disconnect from mobile" to close the session and return to local mode.
+  * That should fully re-initialise UI state.
 
 In the "Network & servers" section of "Settings", there is an item to list all the registered remote hosts with buttons attached to *dispose* them one by one.
 *Disposing* a remote host means its entry will be removed from database and any associated files deleted (photos, voice messages, transferred files etc).
