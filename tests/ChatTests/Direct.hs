@@ -31,6 +31,7 @@ chatDirectTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive message" testAddContact
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
+    it "unused contact is deleted silently" testDeleteUnusedContactSilent
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message edit history" testDirectMessageEditHistory
@@ -213,6 +214,42 @@ testDeleteContactDeletesProfile =
       bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
+
+testDeleteUnusedContactSilent :: HasCallStack => FilePath -> IO ()
+testDeleteUnusedContactSilent =
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob ##> "/contacts"
+      bob <### ["alice (Alice)", "cath (Catherine)"]
+      bob `hasContactProfiles` ["bob", "alice", "cath"]
+      cath ##> "/contacts"
+      cath <### ["alice (Alice)", "bob (Bob)"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+      -- bob deletes cath, cath's bob contact is deleted silently
+      bob ##> "/d cath"
+      bob <## "cath: contact is deleted"
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+      threadDelay 50000
+      cath ##> "/contacts"
+      cath <## "alice (Alice)"
+      -- group messages work
+      alice #> "#team hello"
+      concurrentlyN_
+        [ bob <# "#team alice> hello",
+          cath <# "#team alice> hello"
+        ]
+      bob #> "#team hi there"
+      concurrentlyN_
+        [ alice <# "#team bob> hi there",
+          cath <# "#team bob> hi there"
+        ]
+      cath #> "#team hey"
+      concurrentlyN_
+        [ alice <# "#team cath> hey",
+          bob <# "#team cath> hey"
+        ]
 
 testDirectMessageQuotedReply :: HasCallStack => FilePath -> IO ()
 testDirectMessageQuotedReply =

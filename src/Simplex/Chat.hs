@@ -4252,16 +4252,22 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xInfo c p' = void $ processContactProfileUpdate c p' True
 
     xDirectDel :: Contact -> RcvMessage -> MsgMeta -> m ()
-    xDirectDel c msg msgMeta = do
-      checkIntegrityCreateItem (CDDirectRcv c) msgMeta
-      ct' <- withStore' $ \db -> updateContactStatus db user c CSDeleted
-      contactConns <- withStore $ \db -> getContactConnections db userId ct'
-      deleteAgentConnectionsAsync user $ map aConnId contactConns
-      forM_ contactConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
-      let ct'' = ct' {activeConn = (contactConn ct') {connStatus = ConnDeleted}} :: Contact
-      ci <- saveRcvChatItem user (CDDirectRcv ct'') msg msgMeta (CIRcvDirectEvent RDEContactDeleted)
-      toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct'') ci)
-      toView $ CRContactDeletedByContact user ct''
+    xDirectDel c msg msgMeta =
+      if directOrUsed c
+        then do
+          checkIntegrityCreateItem (CDDirectRcv c) msgMeta
+          ct' <- withStore' $ \db -> updateContactStatus db user c CSDeleted
+          contactConns <- withStore $ \db -> getContactConnections db userId ct'
+          deleteAgentConnectionsAsync user $ map aConnId contactConns
+          forM_ contactConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
+          let ct'' = ct' {activeConn = (contactConn ct') {connStatus = ConnDeleted}} :: Contact
+          ci <- saveRcvChatItem user (CDDirectRcv ct'') msg msgMeta (CIRcvDirectEvent RDEContactDeleted)
+          toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct'') ci)
+          toView $ CRContactDeletedByContact user ct''
+        else do
+          contactConns <- withStore $ \db -> getContactConnections db userId c
+          deleteAgentConnectionsAsync user $ map aConnId contactConns
+          withStore' $ \db -> deleteContact db user c
 
     processContactProfileUpdate :: Contact -> Profile -> Bool -> m Contact
     processContactProfileUpdate c@Contact {profile = p} p' createItems
