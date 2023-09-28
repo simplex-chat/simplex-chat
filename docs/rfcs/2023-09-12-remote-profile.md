@@ -100,19 +100,21 @@ Alternatively a mobile (or a desktop, why not) may signal that they're done here
 1. A user opens sidebar and clicks "use from desktop" in the "You" section, starting remote controller discovery.
   * When this happens for the first time, the user must set the mobile device name, pre-filled from system device name if possible.
   * UI enters "Waiting for desktop" window, which collects all the broadcasts received so far.
+    -
   * Discovery process starts UDP broadcast listener on application port (5226).
   * A datagram containing remote controller fingerprint is checked against a list of pre-registered controller devices.
-    - If the device is already known, the host establishes connection and UI transitions into "connection status" window.
-    - For unknown/new broadcasts a fingerprint is displayed instead.
     - If the datagram contains no valid fingerprint, it is ignored.
+    - For unknown/new broadcasts a fingerprint is displayed instead.
+    - If the device is already known, the host establishes connection and UI transitions into "connection status" window.
 2. Clicking on unknown device fingerprint in the list starts OOB handshake.
   * UI enters "New device" window, displaying a fingerprint and asking to scan a QR code (or paste a link, like in the contact screen).
   * A OOB data from the QR/link contains remote controller fingerprint and remote display name, which is stored in device DB.
-    - Fingerprint must match the announce.
+    - The OOB fingerprint must match the announce.
   * Accepting the OOB automatically triggers remote controller connection and transitions UI to "connection status" window.
 3. A remote session initiated with a known device, or as a result of OOB exchange.
   * A "connection status" window shows registered display name and current session status.
   * Chat controller attempts to establish a remote session.
+    - The source adddress of the datagram is used to initiate TCP connection.
     - A TCP connection is made to the address discovered.
     - A TLS connection is instantiated, checking for remote CA fingerprint matches the previously established.
     - A HTTP2 server is started on the mobile side of the TLS connection.
@@ -133,15 +135,15 @@ Future connection attempts from a disposed device would be treated exactly as fr
   * UI enters a "Select remote host" window asking user to pick an existing connection profile or generate a new one.
   * When a new connection profile is requested by a user, a private key is generated and a new X509 root CA certificate is produced and stored in device DB. Then the desktop proceeds to the connection screen.
 2. Clicking on an existing connection profile transitions UI to "connecting to remote host" window.
-  * A QR code / link is presented, containing the fingerprint of the CA stored for the selected profile.
-    - For a first time connection a QR code is shown.
-    - After first time the QR code is hidden until a subdued "show QR code" button is clicked.
+  * For a first-time connection a QR code / link is presented, containing the fingerprint of the CA stored for the selected profile.
+    - After first time the QR code is hidden until a subdued "show QR code" button is clicked. This is to prevent user confusion that they have to scan the code every time.
   * A new session certificate is derived from the CA.
   * A TLS server is started using ephemeral session certificate.
     - TLS handshake is used to authenticate desktop to a connecting mobile, proving that the announcer is indeed owns the key with the fingerprint received OOB by mobile. See below for a case for mutual authentication.
-  * A UDP broadcast on port 5226 is started, sending the fingerprint.
-3. When incoming connection is established the UI transitions to "connected to remote host" window.
-  * Desktop chat controller establishes a remote session over the incoming connection (and prevents further connections).
+  * A periodic UDP broadcast on port 5226 is started, sending the fingerprint.
+3. When an incoming connection is established the UI transitions to "connected to remote host" window.
+  * The announcer is terminated and TCP server stops accepting new connections.
+  * Desktop chat controller establishes a remote session over the tls session.
   * UI transitions to the "remote host" mode, shunting local profiles into background while keeping notifications coming.
 4. A user may open sidebar and click "disconnect from mobile" to close the session and return to local mode.
   * That should fully re-initialise UI state.
@@ -168,6 +170,10 @@ There is a threat, that a device in the broadcast range may intercept discovery 
 In the case of such a "honeypot", a desktop may be tricked into receiving arbitrary contacts, messages and files from the remote host.
 Some mitigations are possible for authenticating a remote host (like using OOB token as a cookie or exchanging it for a TLS client certificate).
 This is intentionally left out of scope for now, until the "remote profiles" system is audited, to be resolved in a wider context.
+
+Requesting a list of IP addresses is problematic.
+A shady app permission is required from the OS (ACCESS_NETWORK_STATE on Android).
+And then the app needs to sort through all the found interfaces and guess which one would be accessible.
 
 ## "Should-works"
 
