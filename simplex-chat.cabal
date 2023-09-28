@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        5.3.0.9
+version:        5.3.1.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -113,6 +113,7 @@ library
       Simplex.Chat.Migrations.M20230903_connections_to_subscribe
       Simplex.Chat.Migrations.M20230913_member_contacts
       Simplex.Chat.Migrations.M20230914_member_probes
+      Simplex.Chat.Migrations.M20230926_contact_status
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

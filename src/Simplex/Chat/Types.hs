@@ -169,6 +169,7 @@ data Contact = Contact
     activeConn :: Connection,
     viaGroup :: Maybe Int64,
     contactUsed :: Bool,
+    contactStatus :: ContactStatus,
     chatSettings :: ChatSettings,
     userPreferences :: Preferences,
     mergedPreferences :: ContactUserPreferences,
@@ -185,7 +186,7 @@ instance ToJSON Contact where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 contactConn :: Contact -> Connection
-contactConn Contact{activeConn} = activeConn
+contactConn Contact {activeConn} = activeConn
 
 contactConnId :: Contact -> ConnId
 contactConnId = aConnId . contactConn
@@ -205,8 +206,33 @@ directOrUsed ct@Contact {contactUsed} =
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
 
+contactActive :: Contact -> Bool
+contactActive Contact {contactStatus} = contactStatus == CSActive
+
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode activeConn
+
+data ContactStatus
+  = CSActive
+  | CSDeleted -- contact deleted by contact
+  deriving (Eq, Show, Ord)
+
+instance FromField ContactStatus where fromField = fromTextField_ textDecode
+
+instance ToField ContactStatus where toField = toField . textEncode
+
+instance ToJSON ContactStatus where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance TextEncoding ContactStatus where
+  textDecode = \case
+    "active" -> Just CSActive
+    "deleted" -> Just CSDeleted
+    _ -> Nothing
+  textEncode = \case
+    CSActive -> "active"
+    CSDeleted -> "deleted"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -1392,8 +1418,6 @@ serializeIntroStatus = \case
   GMIntroConnected -> "con"
 
 data Notification = Notification {title :: Text, text :: Text}
-
-type JSONString = String
 
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode

@@ -797,6 +797,7 @@ data class Contact(
   val activeConn: Connection,
   val viaGroup: Long? = null,
   val contactUsed: Boolean,
+  val contactStatus: ContactStatus,
   val chatSettings: ChatSettings,
   val userPreferences: ChatPreferences,
   val mergedPreferences: ContactUserPreferences,
@@ -809,8 +810,9 @@ data class Contact(
   override val id get() = "@$contactId"
   override val apiId get() = contactId
   override val ready get() = activeConn.connStatus == ConnStatus.Ready
+  val active get() = contactStatus == ContactStatus.Active
   override val sendMsgEnabled get() =
-    (ready && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false))
+    (ready && active && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false))
         || nextSendGrpInv
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   override val ntfsEnabled get() = chatSettings.enableNtfs
@@ -859,6 +861,7 @@ data class Contact(
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
       contactUsed = true,
+      contactStatus = ContactStatus.Active,
       chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
@@ -867,6 +870,12 @@ data class Contact(
       contactGrpInvSent = false
     )
   }
+}
+
+@Serializable
+enum class ContactStatus {
+  @SerialName("active") Active,
+  @SerialName("deleted") Deleted;
 }
 
 @Serializable
@@ -1471,6 +1480,7 @@ data class ChatItem (
       is CIContent.RcvDecryptionError -> showNtfDir
       is CIContent.RcvGroupInvitation -> showNtfDir
       is CIContent.SndGroupInvitation -> showNtfDir
+      is CIContent.RcvDirectEventContent -> false
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
         is RcvGroupEvent.MemberAdded -> false
         is RcvGroupEvent.MemberConnected -> false
@@ -1854,6 +1864,7 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvDecryptionError") class RcvDecryptionError(val msgDecryptError: MsgDecryptError, val msgCount: UInt): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvDirectEvent") class RcvDirectEventContent(val rcvDirectEvent: RcvDirectEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupEvent") class RcvGroupEventContent(val rcvGroupEvent: RcvGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupEvent") class SndGroupEventContent(val sndGroupEvent: SndGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvConnEvent") class RcvConnEventContent(val rcvConnEvent: RcvConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
@@ -1881,6 +1892,7 @@ sealed class CIContent: ItemContent {
       is RcvDecryptionError -> msgDecryptError.text
       is RcvGroupInvitation -> groupInvitation.text
       is SndGroupInvitation -> groupInvitation.text
+      is RcvDirectEventContent -> rcvDirectEvent.text
       is RcvGroupEventContent -> rcvGroupEvent.text
       is SndGroupEventContent -> sndGroupEvent.text
       is RcvConnEventContent -> rcvConnEvent.text
@@ -2484,6 +2496,15 @@ sealed class MsgErrorType() {
     is MsgBadHash -> generalGetString(MR.strings.integrity_msg_bad_hash) // not used now
     is MsgBadId -> generalGetString(MR.strings.integrity_msg_bad_id) // not used now
     is MsgDuplicate -> generalGetString(MR.strings.integrity_msg_duplicate) // not used now
+  }
+}
+
+@Serializable
+sealed class RcvDirectEvent() {
+  @Serializable @SerialName("contactDeleted") class ContactDeleted(): RcvDirectEvent()
+
+  val text: String get() = when (this) {
+    is ContactDeleted -> generalGetString(MR.strings.rcv_direct_event_contact_deleted)
   }
 }
 

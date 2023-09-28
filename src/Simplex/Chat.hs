@@ -34,6 +34,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace, toLower)
+import Data.Composition ((.:))
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
@@ -83,7 +84,7 @@ import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentCl
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection, closeSQLiteStore, openSQLiteStore)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
@@ -217,8 +218,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   where
     configServers :: DefaultAgentServers
     configServers =
-      let smp' = fromMaybe (defaultServers.smp) (nonEmpty smpServers)
-          xftp' = fromMaybe (defaultServers.xftp) (nonEmpty xftpServers)
+      let smp' = fromMaybe defaultServers.smp (nonEmpty smpServers)
+          xftp' = fromMaybe defaultServers.xftp (nonEmpty xftpServers)
        in defaultServers {smp = smp', xftp = xftp', netCfg = networkConfig}
     agentServers :: ChatConfig -> IO InitialAgentServers
     agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
@@ -251,7 +252,7 @@ cfgServers p s = case p of
 
 startChatController :: forall m. ChatMonad' m => Bool -> Bool -> Bool -> m (Async ())
 startChatController subConns enableExpireCIs startXFTPWorkers = do
-  asks smpAgent >>= resumeAgentClient
+  resumeAgentClient =<< asks smpAgent
   unless subConns $
     chatWriteVar subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStoreCtx' (Just "startChatController, getUsers") getUsers)
@@ -323,8 +324,8 @@ restoreCalls = do
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
 
-stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags} = do
+stopChatController :: forall m. MonadUnliftIO m => ChatController -> Bool -> m ()
+stopChatController ChatController {chatStore, smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags} closeStore = do
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   closeFiles sndFiles
@@ -333,6 +334,9 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
     keys <- M.keys <$> readTVar expireCIFlags
     forM_ keys $ \k -> TM.insert k False expireCIFlags
     writeTVar s Nothing
+  when closeStore $ liftIO $ do
+    closeSQLiteStore chatStore
+    closeSQLiteStore $ agentClientStore smpAgent
   where
     closeFiles :: TVar (Map Int64 Handle) -> m ()
     closeFiles files = do
@@ -462,12 +466,19 @@ processChatCommand = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" . procCmd $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat subConns enableExpireCIs startXFTPWorkers -> withUser' $ \_ ->
+  APIStartChat ChatCtrlCfg {subConns, enableExpireCIs, startXFTPWorkers, openDBWithKey} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged $ startChatController subConns enableExpireCIs startXFTPWorkers $> CRChatStarted
-  APIStopChat -> do
-    ask >>= stopChatController
+      _ -> checkStoreNotChanged $ do
+        forM_ openDBWithKey $ \(DBEncryptionKey dbKey) -> do
+          ChatController {chatStore, smpAgent} <- ask
+          open chatStore dbKey
+          open (agentClientStore smpAgent) dbKey
+        startChatController subConns enableExpireCIs startXFTPWorkers $> CRChatStarted
+        where
+          open = handleDBError DBErrorOpen .: openSQLiteStore
+  APIStopChat closeStore -> do
+    ask >>= (`stopChatController` closeStore)
     pure CRChatStopped
   APIActivateChat -> withUser $ \_ -> do
     restoreCalls
@@ -897,14 +908,15 @@ processChatCommand = \case
         liftIO $ updateGroupUnreadChat db user groupInfo unreadChat
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
+  APIDeleteChat (ChatRef cType chatId) notify -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
-      contactConnIds <- map aConnId <$> withStore (\db -> getContactConnections db userId ct)
       withChatLock "deleteChat direct" . procCmd $ do
-        fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-        deleteAgentConnectionsAsync user $ fileAgentConnIds <> contactConnIds
+        deleteFilesAndConns user filesInfo
+        when (contactActive ct && notify) . void $ sendDirectContactMessage ct XDirectDel
+        contactConnIds <- map aConnId <$> withStore (\db -> getContactConnections db userId ct)
+        deleteAgentConnectionsAsync user contactConnIds
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
@@ -1327,7 +1339,7 @@ processChatCommand = \case
   ConnectSimplex incognito -> withUser $ \user ->
     -- [incognito] generate profile to send
     connectViaContact user incognito adminContactReq
-  DeleteContact cName -> withContactName cName $ APIDeleteChat . ChatRef CTDirect
+  DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
     CRContactsList user <$> withStore' (`getUserContacts` user)
@@ -1422,7 +1434,7 @@ processChatCommand = \case
     processChatCommand . APISendMessage chatRef True Nothing $ ComposedMessage Nothing Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore' (`getUserContacts` user)
-    let cts = filter (\ct -> isReady ct && directOrUsed ct) contacts
+    let cts = filter (\ct -> isReady ct && contactActive ct && directOrUsed ct) contacts
     ChatConfig {logLevel} <- asks config
     withChatLock "sendMessageBroadcast" . procCmd $ do
       (successes, failures) <- foldM (sendAndCount user logLevel) (0, 0) cts
@@ -1590,7 +1602,7 @@ processChatCommand = \case
     processChatCommand $ APILeaveGroup groupId
   DeleteGroup gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APIDeleteChat (ChatRef CTGroup groupId)
+    processChatCommand $ APIDeleteChat (ChatRef CTGroup groupId) True
   ClearGroup gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIClearChat (ChatRef CTGroup groupId)
@@ -1972,7 +1984,7 @@ processChatCommand = \case
         -- read contacts before user update to correctly merge preferences
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
-          filter (\ct -> isReady ct && not (contactConnIncognito ct))
+          filter (\ct -> isReady ct && contactActive ct && not (contactConnIncognito ct))
             <$> withStore' (`getUserContacts` user)
         user' <- updateUser
         asks currentUser >>= atomically . (`writeTVar` Just user')
@@ -3034,6 +3046,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XFileCancel sharedMsgId -> xFileCancel ct' sharedMsgId msgMeta
               XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInv ct' sharedMsgId fileConnReq_ fName msgMeta
               XInfo p -> xInfo ct' p
+              XDirectDel -> xDirectDel ct' msg msgMeta
               XGrpInv gInv -> processGroupInvitation ct' gInv msg msgMeta
               XInfoProbe probe -> xInfoProbe (CGMContact ct') probe
               XInfoProbeCheck probeHash -> xInfoProbeCheck ct' probeHash
@@ -4238,6 +4251,24 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xInfo :: Contact -> Profile -> m ()
     xInfo c p' = void $ processContactProfileUpdate c p' True
 
+    xDirectDel :: Contact -> RcvMessage -> MsgMeta -> m ()
+    xDirectDel c msg msgMeta =
+      if directOrUsed c
+        then do
+          checkIntegrityCreateItem (CDDirectRcv c) msgMeta
+          ct' <- withStore' $ \db -> updateContactStatus db user c CSDeleted
+          contactConns <- withStore $ \db -> getContactConnections db userId ct'
+          deleteAgentConnectionsAsync user $ map aConnId contactConns
+          forM_ contactConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
+          let ct'' = ct' {activeConn = (contactConn ct') {connStatus = ConnDeleted}} :: Contact
+          ci <- saveRcvChatItem user (CDDirectRcv ct'') msg msgMeta (CIRcvDirectEvent RDEContactDeleted)
+          toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct'') ci)
+          toView $ CRContactDeletedByContact user ct''
+        else do
+          contactConns <- withStore $ \db -> getContactConnections db userId c
+          deleteAgentConnectionsAsync user $ map aConnId contactConns
+          withStore' $ \db -> deleteContact db user c
+
     processContactProfileUpdate :: Contact -> Profile -> Bool -> m Contact
     processContactProfileUpdate c@Contact {profile = p} p' createItems
       | fromLocalProfile p /= p' = do
@@ -4921,8 +4952,9 @@ deleteOrUpdateMemberRecord user@User {userId} member =
       Nothing -> deleteGroupMember db user member
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
-sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}} chatMsgEvent
+sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}, contactStatus} chatMsgEvent
   | connStatus /= ConnReady && connStatus /= ConnSndReady = throwChatError $ CEContactNotReady ct
+  | contactStatus /= CSActive = throwChatError $ CEContactNotActive ct
   | connDisabled conn = throwChatError $ CEContactDisabled ct
   | otherwise = sendDirectMessage conn chatMsgEvent (ConnectionId connId)
 
@@ -5379,9 +5411,9 @@ chatCommandP =
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
-      "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP <* " xftp=" <*> onOffP),
-      "/_start" $> StartChat True True True,
-      "/_stop" $> APIStopChat,
+      "/_start" *> (APIStartChat <$> ((A.space *> jsonP) <|> chatCtrlCfgP)),
+      "/_stop close" $> APIStopChat {closeStore = True},
+      "/_stop" $> APIStopChat False,
       "/_app activate" $> APIActivateChat,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
       "/_resubscribe all" $> ResubscribeAllConnections,
@@ -5411,7 +5443,7 @@ chatCommandP =
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
-      "/_delete " *> (APIDeleteChat <$> chatRefP),
+      "/_delete " *> (APIDeleteChat <$> chatRefP <*> (A.space *> "notify=" *> onOffP <|> pure True)),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
       "/_reject " *> (APIRejectContact <$> A.decimal),
@@ -5609,6 +5641,12 @@ chatCommandP =
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
+    chatCtrlCfgP = do
+      subConns <- (" subscribe=" *> onOffP) <|> pure True
+      enableExpireCIs <- (" expire=" *> onOffP) <|> pure True
+      startXFTPWorkers <- (" xftp=" *> onOffP) <|> pure True
+      openDBWithKey <- optional $ " key=" *> dbKeyP
+      pure ChatCtrlCfg {subConns, enableExpireCIs, startXFTPWorkers, openDBWithKey}
     incognitoP = (A.space *> ("incognito" <|> "i")) $> True <|> pure False
     incognitoOnOffP = (A.space *> "incognito=" *> onOffP) <|> pure False
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
