@@ -63,8 +63,8 @@ compose {
         windows {
           packageName = "SimpleX"
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.ico"))
-          console = true
-          perUserInstall = true
+          console = false
+          perUserInstall = false
           dirChooser = true
         }
         macOS {
