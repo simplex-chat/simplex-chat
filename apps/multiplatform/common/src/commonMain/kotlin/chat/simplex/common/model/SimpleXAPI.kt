@@ -338,7 +338,7 @@ object ChatController {
       val users = listUsers()
       chatModel.users.clear()
       chatModel.users.addAll(users)
-      if (justStarted) {
+      if (justStarted.getOrNull() == true) {
         chatModel.currentUser.value = user
         chatModel.userCreated.value = true
         getUserChatData()
@@ -516,11 +516,12 @@ object ChatController {
     throw Exception("failed to delete the user ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiStartChat(openDBWithKey: String? = null): Boolean {
+  suspend fun apiStartChat(openDBWithKey: String? = null): Result<Boolean> {
     val r = sendCmd(CC.StartChat(ChatCtrlCfg(subConns = true, enableExpireCIs = true, startXFTPWorkers = true, openDBWithKey = openDBWithKey)))
-    when (r) {
-      is CR.ChatStarted -> return true
-      is CR.ChatRunning -> return false
+    return when {
+      r is CR.ChatStarted -> Result.success(true)
+      r is CR.ChatRunning -> Result.success(false)
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorDatabase && r.chatError.databaseError is DatabaseError.ErrorOpen -> Result.failure(r.chatError.databaseError.sqliteError)
       else -> throw Error("failed starting chat: ${r.responseType} ${r.details}")
     }
   }
@@ -4107,9 +4108,9 @@ sealed class DatabaseError {
 }
 
 @Serializable
-sealed class SQLiteError {
+sealed class SQLiteError(val mes: String = ""): Exception(mes) {
   @Serializable @SerialName("errorNotADatabase") object ErrorNotADatabase: SQLiteError()
-  @Serializable @SerialName("error") class Error(val error: String): SQLiteError()
+  @Serializable @SerialName("error") class Error(val error: String): SQLiteError(error)
 }
 
 @Serializable

@@ -361,8 +361,22 @@ private fun startChat(passphrase: String?, m: ChatModel, chatLastStart: MutableS
         ModalManager.closeAllModalsEverywhere()
         return@withApi
       } else {
-        m.controller.apiStartChat(passphrase)
-        m.chatRunning.value = true
+        val res = m.controller.apiStartChat(passphrase)
+        if (res.isSuccess) {
+          m.chatRunning.value = true
+        } else {
+          when (val e = res.exceptionOrNull()) {
+            is SQLiteError.ErrorNotADatabase -> {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.wrong_passphrase_title),
+                generalGetString(MR.strings.enter_correct_current_passphrase)
+              )
+            }
+            else -> {
+              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
+            }
+          }
+        }
       }
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)
