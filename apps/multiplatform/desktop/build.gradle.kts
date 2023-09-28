@@ -194,7 +194,7 @@ afterEvaluate {
         copyIfNeeded(destinationDir, copyDetails)
       }
       copy {
-        from("${project(":desktop").buildDir}/cmake/main/win-amd64", "$cppPath/desktop/libs/windows-x86_64", "$cppPath/desktop/libs/windows-x86_64/deps")
+        from("${project(":desktop").buildDir}/cmake/main/windows-amd64", "$cppPath/desktop/libs/windows-x86_64", "$cppPath/desktop/libs/windows-x86_64/deps")
         into("src/jvmMain/resources/libs/windows-x86_64")
         include("*.dll")
         eachFile {
