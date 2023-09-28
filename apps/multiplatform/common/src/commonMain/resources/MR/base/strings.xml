@@ -1105,6 +1105,9 @@
   <string name="you_rejected_group_invitation">You rejected group invitation</string>
   <string name="group_invitation_expired">Group invitation expired</string>
 
+  <!-- Direct event chat items -->
+  <string name="rcv_direct_event_contact_deleted">deleted contact</string>
+
   <!-- Group event chat items -->
   <string name="rcv_group_event_member_added">invited %1$s</string>
   <string name="rcv_group_event_member_connected">connected</string>

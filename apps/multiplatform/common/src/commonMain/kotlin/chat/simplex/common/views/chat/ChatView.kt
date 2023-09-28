@@ -118,7 +118,12 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           Modifier.fillMaxWidth(),
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
-          if (chat.chatInfo is ChatInfo.Direct && !chat.chatInfo.contact.ready && !chat.chatInfo.contact.nextSendGrpInv) {
+          if (
+            chat.chatInfo is ChatInfo.Direct
+            && !chat.chatInfo.contact.ready
+            && chat.chatInfo.contact.active
+            && !chat.chatInfo.contact.nextSendGrpInv
+          ) {
             Text(
               generalGetString(MR.strings.contact_connection_pending),
               Modifier.padding(top = 4.dp),
@@ -550,15 +555,15 @@ fun ChatInfoToolbar(
         showMenu.value = false
         startCall(CallMediaType.Audio)
       },
-      enabled = chat.chatInfo.contact.ready) {
+      enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active) {
         Icon(
           painterResource(MR.images.ic_call_500),
           stringResource(MR.strings.icon_descr_more_button),
-          tint = if (chat.chatInfo.contact.ready) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+          tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
         )
       }
     }
-    if (chat.chatInfo.contact.ready) {
+    if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) {
       menuItems.add {
         ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
           showMenu.value = false
@@ -576,7 +581,7 @@ fun ChatInfoToolbar(
       }
     }
   }
-  if ((chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.ready) || chat.chatInfo is ChatInfo.Group) {
+  if ((chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.ready && chat.chatInfo.contact.active) || chat.chatInfo is ChatInfo.Group) {
     val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
     menuItems.add {
       ItemAction(
