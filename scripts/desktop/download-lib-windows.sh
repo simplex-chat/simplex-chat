@@ -22,4 +22,5 @@ curl --location -o libsimplex.zip $job_repo/$arch-linux.$arch-windows:lib:simple
 $WINDIR\\System32\\tar.exe -xf libsimplex.zip && \
 mv libsimplex.dll "$output_dir" && \
 mv libcrypto*.dll "$output_dir/deps" && \
+mv libffi*.dll "$output_dir/deps" && \
 rm libsimplex.zip
