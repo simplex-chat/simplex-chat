@@ -62,7 +62,6 @@ private fun windowsLoadRequiredLibs(libsTmpDir: File) {
   val mainLibs = arrayOf(
     "libcrypto-3-x64.dll",
     "libffi-8.dll",
-    "libgmp-10.dll",
     "libsimplex.dll",
     "libapp-lib.dll"
   )
