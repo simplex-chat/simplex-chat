@@ -9,7 +9,6 @@ module Simplex.Chat.Archive
     importArchive,
     deleteStorage,
     sqlCipherExport,
-    handleDBError,
   )
 where
 
@@ -140,7 +139,17 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
       withDB (`SQL.exec` testSQL) DBErrorOpen
       atomically $ writeTVar dbEnc $ not (null key')
       where
-        withDB a err = handleDBError err $ bracket (SQL.open $ T.pack f) SQL.close a
+        withDB a err =
+          liftIO (bracket (SQL.open $ T.pack f) SQL.close a $> Nothing)
+            `catch` checkSQLError
+            `catch` (\(e :: SomeException) -> sqliteError' e)
+            >>= mapM_ (throwDBError . err)
+          where
+            checkSQLError e = case SQL.sqlError e of
+              SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
+              _ -> sqliteError' e
+            sqliteError' :: Show e => e -> m (Maybe SQLiteError)
+            sqliteError' = pure . Just . SQLiteError . show
         exportSQL =
           T.unlines $
             keySQL key
@@ -157,16 +166,3 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
                    "SELECT count(*) FROM sqlite_master;"
                  ]
         keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]
-
-handleDBError :: forall m. ChatMonad m => (SQLiteError -> DatabaseError) -> IO () -> m ()
-handleDBError err a =
-  (liftIO a $> Nothing)
-    `catch` checkSQLError
-    `catch` (\(e :: SomeException) -> sqliteError' e)
-    >>= mapM_ (throwDBError . err)
-  where
-    checkSQLError e = case SQL.sqlError e of
-      SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
-      _ -> sqliteError' e
-    sqliteError' :: Show e => e -> m (Maybe SQLiteError)
-    sqliteError' = pure . Just . SQLiteError . show
