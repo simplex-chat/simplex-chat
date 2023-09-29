@@ -132,19 +132,18 @@ startRemoteCtrl =
         uiEvent <- async $ atomically $ readTMVar accepted
         waitEitherCatchCancel listener uiEvent >>= \case
           Left _ -> pure () -- discover got cancelled or crashed on some UDP error
-          Right (Left _) -> pure () -- readTMVar blocked indefinitely (should not happen)
-          Right (Right remoteCtrlId) -> do
+          Right (Left _) -> toView . CRChatError Nothing . ChatError $ CEException "Crashed while waiting for remote session confirmation"
+          Right (Right remoteCtrlId) ->
             -- got connection confirmation
-            (source, fingerprint) <-
-              atomically $
-                TM.lookup remoteCtrlId discovered >>= \case
-                  Nothing -> error "Session accepted without getting registered"
-                  Just found -> found <$ writeTVar discovered mempty -- flush unused sources
-            host <- async $ runRemoteHost remoteCtrlId source fingerprint
-            chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {ctrlAsync = host, accepted}
-            _ <- waitCatch host
-            chatWriteVar remoteCtrlSession Nothing
-            toView $ CRRemoteCtrlStopped {remoteCtrlId}
+            atomically (TM.lookup remoteCtrlId discovered) >>= \case
+              Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote session accepted without getting discovered first"
+              Just (source, fingerprint) -> do
+                atomically $ writeTVar discovered mempty -- flush unused sources
+                host <- async $ runRemoteHost remoteCtrlId source fingerprint
+                chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {ctrlAsync = host, accepted}
+                _ <- waitCatch host
+                chatWriteVar remoteCtrlSession Nothing
+                toView $ CRRemoteCtrlStopped {remoteCtrlId}
       chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {ctrlAsync = listener, accepted}
       pure CRRemoteCtrlStarted
 

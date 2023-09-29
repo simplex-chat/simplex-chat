@@ -913,7 +913,7 @@ data ChatError
   | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
-  | ChatErrorRemoteCtrl {remoteControllerError :: RemoteCtrlError}
+  | ChatErrorRemoteCtrl {remoteCtrlError :: RemoteCtrlError}
   | ChatErrorRemoteHost {remoteHostId :: RemoteHostId, remoteHostError :: RemoteHostError}
   deriving (Show, Exception, Generic)
 

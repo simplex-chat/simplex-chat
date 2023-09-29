@@ -5,7 +5,7 @@
 module Simplex.Chat.Remote.Types where
 
 import Control.Concurrent.Async (Async)
-import Data.Aeson (ToJSON)
+import Data.Aeson (ToJSON (..))
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
@@ -13,6 +13,7 @@ import GHC.Generics (Generic)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import UnliftIO.STM
+import Simplex.Messaging.Encoding.String (strToJEncoding, strToJSON)
 
 type RemoteHostId = Int64
 
@@ -37,6 +38,11 @@ data RemoteCtrl = RemoteCtrl
     accepted :: Maybe Bool
   }
   deriving (Show, Generic, ToJSON)
+
+-- XXX: until fixed in master
+instance ToJSON C.KeyHash where
+  toEncoding = strToJEncoding
+  toJSON = strToJSON
 
 data RemoteHostSession = RemoteHostSession
   { -- | Path for local resources to be synchronized with host
