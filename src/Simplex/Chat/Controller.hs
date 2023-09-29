@@ -221,8 +221,8 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | APIStartChat ChatCtrlCfg
-  | APIStopChat {closeStore :: Bool}
+  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool, startXFTPWorkers :: Bool}
+  | APIStopChat
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
@@ -620,17 +620,6 @@ logResponseToFile = \case
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
-
-data ChatCtrlCfg = ChatCtrlCfg
-  { subConns :: Bool,
-    enableExpireCIs :: Bool,
-    startXFTPWorkers :: Bool,
-    openDBWithKey :: Maybe DBEncryptionKey
-  }
-  deriving (Show, Generic, FromJSON)
-
-defChatCtrlCfg :: ChatCtrlCfg
-defChatCtrlCfg = ChatCtrlCfg True True True Nothing
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
