@@ -516,8 +516,8 @@ object ChatController {
     throw Exception("failed to delete the user ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiStartChat(openDBWithKey: String? = null): Boolean {
-    val r = sendCmd(CC.StartChat(ChatCtrlCfg(subConns = true, enableExpireCIs = true, startXFTPWorkers = true, openDBWithKey = openDBWithKey)))
+  suspend fun apiStartChat(): Boolean {
+    val r = sendCmd(CC.StartChat(expire = true))
     when (r) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -525,8 +525,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiStopChat(closeStore: Boolean): Boolean {
-    val r = sendCmd(CC.ApiStopChat(closeStore))
+  suspend fun apiStopChat(): Boolean {
+    val r = sendCmd(CC.ApiStopChat())
     when (r) {
       is CR.ChatStopped -> return true
       else -> throw Error("failed stopping chat: ${r.responseType} ${r.details}")
@@ -1366,6 +1366,11 @@ object ChatController {
           chatModel.removeChat(r.connection.id)
         }
       }
+      is CR.ContactDeletedByContact -> {
+        if (active(r.user) && r.contact.directOrUsed) {
+          chatModel.updateContact(r.contact)
+        }
+      }
       is CR.ContactConnected -> {
         if (active(r.user) && r.contact.directOrUsed) {
           chatModel.updateContact(r.contact)
@@ -1829,8 +1834,8 @@ sealed class CC {
   class ApiMuteUser(val userId: Long): CC()
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
-  class StartChat(val cfg: ChatCtrlCfg): CC()
-  class ApiStopChat(val closeStore: Boolean): CC()
+  class StartChat(val expire: Boolean): CC()
+  class ApiStopChat: CC()
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
   class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
@@ -1933,9 +1938,8 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-//    is StartChat -> "/_start ${json.encodeToString(cfg)}" // this can be used with the new core
-    is StartChat -> "/_start subscribe=on expire=${onOff(cfg.enableExpireCIs)} xftp=on"
-    is ApiStopChat -> if (closeStore) "/_stop close" else "/_stop"
+    is StartChat -> "/_start subscribe=on expire=${onOff(expire)} xftp=on"
+    is ApiStopChat -> "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
@@ -2151,14 +2155,6 @@ sealed class CC {
     fun protoServersStr(servers: List<ServerCfg>) = json.encodeToString(ProtoServersConfig(servers))
   }
 }
-
-@Serializable
-data class ChatCtrlCfg (
-  val subConns: Boolean,
-  val enableExpireCIs: Boolean,
-  val startXFTPWorkers: Boolean,
-  val openDBWithKey: String?
-)
 
 @Serializable
 data class NewUser(
@@ -3304,6 +3300,7 @@ sealed class CR {
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactDeletedByContact") class ContactDeletedByContact(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
@@ -3435,6 +3432,7 @@ sealed class CR {
     is ContactAlreadyExists -> "contactAlreadyExists"
     is ContactRequestAlreadyAccepted -> "contactRequestAlreadyAccepted"
     is ContactDeleted -> "contactDeleted"
+    is ContactDeletedByContact -> "contactDeletedByContact"
     is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
@@ -3563,6 +3561,7 @@ sealed class CR {
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
     is ContactRequestAlreadyAccepted -> withUser(user, json.encodeToString(contact))
     is ContactDeleted -> withUser(user, json.encodeToString(contact))
+    is ContactDeletedByContact -> withUser(user, json.encodeToString(contact))
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
     is UserProfileNoChange -> withUser(user, noDetails())
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))
@@ -3831,6 +3830,7 @@ sealed class ChatErrorType {
       is InvalidConnReq -> "invalidConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ContactNotReady -> "contactNotReady"
+      is ContactNotActive -> "contactNotActive"
       is ContactDisabled -> "contactDisabled"
       is ConnectionDisabled -> "connectionDisabled"
       is GroupUserRole -> "groupUserRole"
@@ -3906,6 +3906,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contact: Contact): ChatErrorType()
+  @Serializable @SerialName("contactNotActive") class ContactNotActive(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("contactDisabled") class ContactDisabled(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("connectionDisabled") class ConnectionDisabled(val connection: Connection): ChatErrorType()
   @Serializable @SerialName("groupUserRole") class GroupUserRole(val groupInfo: GroupInfo, val requiredRole: GroupMemberRole): ChatErrorType()
