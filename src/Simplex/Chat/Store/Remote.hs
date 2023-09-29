@@ -37,6 +37,11 @@ getRemoteCtrl db remoteCtrlId =
   maybeFirstRow toRemoteCtrl $
     DB.query db (remoteCtrlQuery <> "WHERE remote_controller_id = ?") (DB.Only remoteCtrlId)
 
+getRemoteCtrlByFingerprint :: DB.Connection -> C.KeyHash -> IO (Maybe RemoteCtrl)
+getRemoteCtrlByFingerprint db fingerprint =
+  maybeFirstRow toRemoteCtrl $
+    DB.query db (remoteCtrlQuery <> "WHERE fingerprint = ?") (DB.Only fingerprint)
+
 remoteCtrlQuery :: DB.Query
 remoteCtrlQuery = "SELECT remote_controller_id, display_name, fingerprint, accepted FROM remote_controllers"
 
@@ -46,7 +51,7 @@ toRemoteCtrl (remoteCtrlId, displayName, fingerprint, accepted) =
 
 markRemoteCtrlResolution :: DB.Connection -> RemoteCtrlId -> Bool -> IO ()
 markRemoteCtrlResolution db remoteCtrlId accepted =
-  DB.execute db "UPDATE remote_controllers SET accepted = ? WHERE remote_controller_id = ?" (accepted, remoteCtrlId)
+  DB.execute db "UPDATE remote_controllers SET accepted = ? WHERE remote_controller_id = ? AND accepted IS NULL" (accepted, remoteCtrlId)
 
 deleteRemoteCtrl :: DB.Connection -> RemoteCtrlId -> IO ()
 deleteRemoteCtrl db remoteCtrlId =

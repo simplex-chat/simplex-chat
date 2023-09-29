@@ -19,7 +19,6 @@ module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
-import qualified Control.Exception as E
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
@@ -63,7 +62,6 @@ import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
-import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
@@ -72,7 +70,6 @@ import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
-import Simplex.Chat.Store.Remote
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -366,19 +363,6 @@ execRemoteCommand u rh scmd = either (CRChatCmdError u) id <$> runExceptT (withR
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
-
--- | Emit local events.
-toView :: ChatMonad' m => ChatResponse -> m ()
-toView = toView_ Nothing
-
--- | Used by transport to mark remote events with source.
-toViewRemote :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
-toViewRemote = toView_ . Just
-
-toView_ :: ChatMonad' m => Maybe RemoteHostId -> ChatResponse -> m ()
-toView_ rh event = do
-  q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, rh, event)
 
 -- | Chat API commands interpreted in context of a local zone
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
@@ -1852,69 +1836,16 @@ processChatCommand = \case
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   CreateRemoteHost _displayName -> pure $ chatCmdError Nothing "not supported"
   ListRemoteHosts -> pure $ chatCmdError Nothing "not supported"
-  StartRemoteHost rh -> do
-    RemoteHost {displayName = _, storePath, caKey, caCert} <- error "TODO: get from DB"
-    (fingerprint :: ByteString, sessionCreds) <- error "TODO: derive session creds" (caKey, caCert)
-    cleanup <- toIO $ chatModifyVar remoteHostSessions (M.delete rh)
-    Discovery.runAnnouncer cleanup fingerprint sessionCreds >>= \case
-      Left todo'err -> pure $ chatCmdError Nothing "TODO: Some HTTP2 error"
-      Right ctrlClient -> do
-        chatModifyVar remoteHostSessions $ M.insert rh RemoteHostSession {storePath, ctrlClient}
-        pure $ CRRemoteHostStarted rh
+  StartRemoteHost rh -> startRemoteHost rh
   StopRemoteHost rh -> closeRemoteHostSession rh $> CRRemoteHostStopped rh
   DisposeRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
+  StartRemoteCtrl -> startRemoteCtrl
+  ConfirmRemoteCtrl rc -> confirmRemoteCtrl rc
+  RejectRemoteCtrl rc -> rejectRemoteCtrl rc
+  StopRemoteCtrl rc -> stopRemoteCtrl rc
   RegisterRemoteCtrl _displayName _oobData -> pure $ chatCmdError Nothing "not supported"
   ListRemoteCtrls -> pure $ chatCmdError Nothing "not supported"
-  StartRemoteCtrl ->
-    chatReadVar remoteCtrlSession >>= \case
-      Just _busy -> throwError $ ChatErrorRemoteCtrl RCEBusy
-      Nothing -> do
-        uio <- askUnliftIO
-        accepted <- newEmptyTMVarIO
-        let getControllers = unliftIO uio $ withStore' $ \db ->
-              map (\RemoteCtrl{remoteCtrlId, fingerprint} -> (fingerprint, remoteCtrlId)) <$> getRemoteCtrls (DB.conn db)
-        let started remoteCtrlId = unliftIO uio $ do
-              withStore' (\db -> getRemoteCtrl (DB.conn db) remoteCtrlId) >>= \case
-                Nothing -> pure False
-                Just RemoteCtrl{displayName, accepted=resolution} -> case resolution of
-                  Nothing -> do
-                    -- started/finished wrapper is synchronous, running HTTP server can be delayed here until UI processes the first contact dialogue
-                    toView $ CRRemoteCtrlFirstContact {remoteCtrlId, displayName}
-                    atomically $ takeTMVar accepted
-                  Just known -> atomically $ putTMVar accepted known $> known
-        let finished remoteCtrlId todo'error = unliftIO uio $ do
-              chatWriteVar remoteCtrlSession Nothing
-              toView $ CRRemoteCtrlDisconnected {remoteCtrlId}
-        let process rc req = unliftIO uio $ processControllerCommand rc req
-        ctrlAsync <- async . liftIO $ Discovery.runDiscoverer getControllers started finished process
-        chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {ctrlAsync, accepted}
-        pure CRRemoteCtrlStarted
-  ConfirmRemoteCtrl remoteCtrlId -> do
-    chatReadVar remoteCtrlSession >>= \case
-      Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-      Just RemoteCtrlSession {accepted} -> do
-        withStore' $ \db -> markRemoteCtrlResolution (DB.conn db) remoteCtrlId True
-        atomically $ putTMVar accepted True
-        pure $ CRRemoteCtrlAccepted {remoteCtrlId}
-  RejectRemoteCtrl remoteCtrlId -> do
-    chatReadVar remoteCtrlSession >>= \case
-      Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-      Just RemoteCtrlSession {accepted} -> do
-        withStore' $ \db -> markRemoteCtrlResolution (DB.conn db) remoteCtrlId False
-        atomically $ putTMVar accepted False
-        pure $ CRRemoteCtrlRejected {remoteCtrlId}
-  StopRemoteCtrl remoteCtrlId ->
-    chatReadVar remoteCtrlSession >>= \case
-      Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-      Just RemoteCtrlSession {ctrlAsync} -> do
-        cancel ctrlAsync
-        pure $ CRRemoteCtrlDisconnected {remoteCtrlId}
-  DisposeRemoteCtrl remoteCtrlId ->
-    chatReadVar remoteCtrlSession >>= \case
-      Nothing -> do
-        withStore' $ \db -> deleteRemoteCtrl (DB.conn db) remoteCtrlId
-        pure $ CRRemoteCtrlDisposed {remoteCtrlId}
-      Just _ -> throwError $ ChatErrorRemoteCtrl RCEBusy
+  DisposeRemoteCtrl rc -> disposeRemoteCtrl rc
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)
@@ -5410,33 +5341,6 @@ withAgent action =
     >>= runExceptT . action
     >>= liftEither . first (`ChatErrorAgent` Nothing)
 
-withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
-withStore' action = withStore $ liftIO . action
-
-withStore :: ChatMonad m => (DB.Connection -> ExceptT StoreError IO a) -> m a
-withStore = withStoreCtx Nothing
-
-withStoreCtx' :: ChatMonad m => Maybe String -> (DB.Connection -> IO a) -> m a
-withStoreCtx' ctx_ action = withStoreCtx ctx_ $ liftIO . action
-
-withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreError IO a) -> m a
-withStoreCtx ctx_ action = do
-  ChatController {chatStore} <- ask
-  liftEitherError ChatErrorStore $ case ctx_ of
-    Nothing -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-    -- uncomment to debug store performance
-    -- Just ctx -> do
-    --   t1 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
-    --   r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
-    --   t2 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
-    --   pure r
-    Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-  where
-    handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
-    handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
-
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
@@ -5689,8 +5593,8 @@ chatCommandP =
       "/start remote host " *> (StartRemoteHost <$> A.decimal),
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/dispose remote host " *> (DisposeRemoteHost <$> A.decimal),
-      "/register remote ctrl " *> (RegisterRemoteCtrl <$> textP <*> remoteHostOOBP),
       "/start remote ctrl" $> StartRemoteCtrl,
+      "/register remote ctrl " *> (RegisterRemoteCtrl <$> textP <*> remoteHostOOBP),
       "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
       "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
       "/stop remote ctrl " *> (StopRemoteCtrl <$> A.decimal),

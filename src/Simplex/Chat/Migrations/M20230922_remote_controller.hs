@@ -20,7 +20,7 @@ CREATE TABLE remote_controllers ( -- controllers known to a hosting app
   remote_controller_id INTEGER PRIMARY KEY,
   display_name TEXT NOT NULL,
   fingerprint BLOB NOT NULL,
-  accepted INTEGER
+  accepted INTEGER -- unknown/rejected/confirmed
 );
 |]
 

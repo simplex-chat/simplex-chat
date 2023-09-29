@@ -2,14 +2,22 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Simplex.Chat.Remote.Discovery
-  ( runAnnouncer,
-    runDiscoverer,
+  ( -- * Announce
+    runAnnouncer,
+
+    -- * Discovery
+    openListener,
+    recvAnnounce,
+    connectSessionHost,
+    attachServer,
   )
 where
 
 import Control.Monad
+import Data.ByteString (ByteString)
 import Data.Default (def)
 import Data.String (IsString)
 import Debug.Trace
@@ -28,6 +36,13 @@ import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTran
 import UnliftIO
 import UnliftIO.Concurrent
 
+-- | Link-local broadcast address.
+pattern BROADCAST_ADDR_V4 :: (IsString a, Eq a) => a
+pattern BROADCAST_ADDR_V4 = "255.255.255.255"
+
+pattern BROADCAST_PORT :: (IsString a, Eq a) => a
+pattern BROADCAST_PORT = "5226"
+
 runAnnouncer :: (StrEncoding invite, MonadUnliftIO m) => IO () -> invite -> TLS.Credentials -> m (Either HTTP2ClientError HTTP2Client)
 runAnnouncer finished invite credentials = do
   started <- newEmptyTMVarIO
@@ -40,7 +55,7 @@ runAnnouncer finished invite credentials = do
             TLS.serverSupported = supportedParameters
           }
   httpClient <- newEmptyMVar
-  liftIO $ runTransportServer started partyPort serverParams defaultTransportServerConfig (run aPid httpClient)
+  liftIO $ runTransportServer started BROADCAST_PORT serverParams defaultTransportServerConfig (run aPid httpClient)
   takeMVar httpClient
   where
     announcer started inviteBS = do
@@ -48,10 +63,10 @@ runAnnouncer finished invite credentials = do
         False ->
           error "Server not started?.."
         True -> liftIO $ do
-          traceM $ "TCP server started at " <> partyPort
-          sock <- UDP.clientSocket broadcastAddrV4 partyPort False
+          traceM $ "TCP server started at " <> BROADCAST_PORT
+          sock <- UDP.clientSocket BROADCAST_ADDR_V4 BROADCAST_PORT False
           N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
-          traceM $ "UDP announce started at " <> broadcastAddrV4 <> ":" <> partyPort
+          traceM $ "UDP announce started at " <> BROADCAST_ADDR_V4 <> ":" <> BROADCAST_PORT
           traceM $ "Server invite: " <> show inviteBS
           forever $ do
             UDP.send sock inviteBS
@@ -61,47 +76,25 @@ runAnnouncer finished invite credentials = do
     run aPid clientVar tls = do
       cancel aPid
       let partyHost = "255.255.255.255" -- XXX: get from tls somehow? not required as host verification is disabled.
-      attachHTTP2Client defaultHTTP2ClientConfig partyHost partyPort finished defaultHTTP2BufferSize tls >>= putMVar clientVar
+      attachHTTP2Client defaultHTTP2ClientConfig partyHost BROADCAST_PORT finished defaultHTTP2BufferSize tls >>= putMVar clientVar
 
--- | Link-local broadcast address.
-broadcastAddrV4 :: (IsString a) => a
-broadcastAddrV4 = "255.255.255.255"
-
-partyPort :: (IsString a) => a
-partyPort = "5226" -- XXX: should be `0` or something, to get a random port and announce it
-
-runDiscoverer :: IO [(C.KeyHash, ctx)] -> (ctx -> IO Bool) -> (ctx -> Maybe SomeException -> IO ()) -> (ctx -> HTTP2Request -> IO ()) -> IO ()
-runDiscoverer getFingerprints started finished processRequest = do
-  sock <- UDP.serverSocket (broadcastAddrV4, read partyPort)
+openListener :: (MonadIO m) => m UDP.ListenSocket
+openListener = liftIO $ do
+  sock <- UDP.serverSocket (BROADCAST_ADDR_V4, read BROADCAST_PORT)
   N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
-  traceM $ "runDiscoverer: " <> show sock
-  go sock
-  where
-    go sock = do
-      (invite, UDP.ClientSockAddr source _cmsg) <- UDP.recvFrom sock
-      case strDecode invite of
-        Left err -> do
-          traceM $ "Inivite decode error: " <> err
-          go sock
-        Right inviteHash -> do
-          expected <- getFingerprints
-          case lookup inviteHash expected of
-            Nothing -> do
-              traceM $ "Unexpected invite: " <> show (invite, source)
-              go sock
-            Just ctx -> do
-              host <- case source of
-                N.SockAddrInet _port addr -> do
-                  pure $ THIPv4 (N.hostAddressToTuple addr)
-                unexpected ->
-                  -- TODO: actually, Apple mandates IPv6 support
-                  fail $ "Discoverer: expected an IPv4 party, got " <> show unexpected
-              runTransportClient defaultTransportClientConfig Nothing host partyPort (Just inviteHash) $ \tls -> do
-                accepted <- started ctx
-                if not accepted
-                  then go sock -- Ignore rejected invites and wait for another
-                  else do
-                    res <- try $ runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
-                      reqBody <- getHTTP2Body r 16384
-                      processRequest ctx HTTP2Request {sessionId, request = r, reqBody, sendResponse}
-                    finished ctx $ either Just (\() -> Nothing) res
+  pure sock
+
+recvAnnounce :: (MonadIO m) => UDP.ListenSocket -> m (N.SockAddr, ByteString)
+recvAnnounce sock = liftIO $ do
+  (invite, UDP.ClientSockAddr source _cmsg) <- UDP.recvFrom sock
+  pure (source, invite)
+
+connectSessionHost :: (MonadUnliftIO m) => TransportHost -> C.KeyHash -> (Transport.TLS -> m a) -> m a
+connectSessionHost host caFingerprint = runTransportClient defaultTransportClientConfig Nothing host BROADCAST_PORT (Just caFingerprint)
+
+attachServer :: (MonadUnliftIO m) => (HTTP2Request -> m ()) -> Transport.TLS -> m ()
+attachServer processRequest tls = do
+  withRunInIO $ \unlift ->
+    runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
+      reqBody <- getHTTP2Body r defaultHTTP2BufferSize
+      unlift $ processRequest HTTP2Request {sessionId, request = r, reqBody, sendResponse}

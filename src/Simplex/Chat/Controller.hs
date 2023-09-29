@@ -47,7 +47,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.Types
-import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
@@ -57,6 +57,8 @@ import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+import Simplex.Messaging.Agent.Store.SQLite.Common (withTransaction)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -67,7 +69,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, 
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors, (<$$>))
+import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
@@ -603,11 +605,14 @@ data ChatResponse
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlStarted
-  | CRRemoteCtrlFirstContact {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
+  | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
+  | CRRemoteCtrlFound {remoteCtrl::RemoteCtrl} -- registered fingerprint, may connect
+  -- | CRRemoteCtrlFirstContact {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
-  | CRRemoteCtrlDisconnected {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlStopped {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlDisposed {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -1106,3 +1111,43 @@ data ArchiveError
 instance ToJSON ArchiveError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
+
+-- | Emit local events.
+toView :: ChatMonad' m => ChatResponse -> m ()
+toView = toView_ Nothing
+
+-- | Used by transport to mark remote events with source.
+toViewRemote :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
+toViewRemote = toView_ . Just
+
+toView_ :: ChatMonad' m => Maybe RemoteHostId -> ChatResponse -> m ()
+toView_ rh event = do
+  q <- asks outputQ
+  atomically $ writeTBQueue q (Nothing, rh, event)
+
+withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
+withStore' action = withStore $ liftIO . action
+
+withStore :: ChatMonad m => (DB.Connection -> ExceptT StoreError IO a) -> m a
+withStore = withStoreCtx Nothing
+
+withStoreCtx' :: ChatMonad m => Maybe String -> (DB.Connection -> IO a) -> m a
+withStoreCtx' ctx_ action = withStoreCtx ctx_ $ liftIO . action
+
+withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreError IO a) -> m a
+withStoreCtx ctx_ action = do
+  ChatController {chatStore} <- ask
+  liftEitherError ChatErrorStore $ case ctx_ of
+    Nothing -> withTransaction chatStore (runExceptT . action) `catch` handleInternal ""
+    -- uncomment to debug store performance
+    -- Just ctx -> do
+    --   t1 <- liftIO getCurrentTime
+    --   putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
+    --   r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
+    --   t2 <- liftIO getCurrentTime
+    --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
+    --   pure r
+    Just _ -> withTransaction chatStore (runExceptT . action) `catch` handleInternal ""
+  where
+    handleInternal :: String -> SomeException -> IO (Either StoreError a)
+    handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
