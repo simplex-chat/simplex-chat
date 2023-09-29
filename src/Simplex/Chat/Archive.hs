@@ -9,7 +9,6 @@ module Simplex.Chat.Archive
     importArchive,
     deleteStorage,
     sqlCipherExport,
-    handleDBError,
   )
 where
 
@@ -22,7 +21,7 @@ import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), setSQLiteModeWAL, sqlString)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, setSQLiteModeWAL, sqlString)
 import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
@@ -43,31 +42,27 @@ archiveFilesFolder = "simplex_v1_files"
 exportArchive :: ChatMonad m => ArchiveConfig -> m ()
 exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   withTempDir cfg "simplex-chat." $ \dir -> do
-    setMode False
-    StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
-    copyFile chatDb $ dir </> archiveChatDbFile
-    copyFile agentDb $ dir </> archiveAgentDbFile
-    setMode True
+    fs@StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
+    setWALMode False `withStores` fs
+    copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
+    copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
+    setWALMode True `withStores` fs
     forM_ filesPath $ \fp ->
       copyDirectoryFiles fp $ dir </> archiveFilesFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
   where
-    -- TODO this won't work on Windows as we close connection there when stopping chat
-    setMode walMode = do
-      ChatController {chatStore, smpAgent} <- ask
-      liftIO $ setSQLiteModeWAL chatStore walMode
-      liftIO $ setSQLiteModeWAL (agentClientStore smpAgent) walMode
+    setWALMode walMode st = liftIO $ setSQLiteModeWAL st walMode
 
 importArchive :: ChatMonad m => ArchiveConfig -> m [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
-    StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
-    backup chatDb
-    backup agentDb
-    copyFile (dir </> archiveChatDbFile) chatDb
-    copyFile (dir </> archiveAgentDbFile) agentDb
+    fs@StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
+    liftIO $ closeSQLiteStore `withStores` fs
+    backup `withDBs` fs
+    copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
+    copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
     copyFiles dir filesPath
       `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
   where
@@ -103,52 +98,69 @@ copyDirectoryFiles fromDir toDir = do
 
 deleteStorage :: ChatMonad m => m ()
 deleteStorage = do
-  StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
-  removeFile chatDb
-  removeFile agentDb
-  mapM_ removePathForcibly filesPath
-  tmpPath <- readTVarIO =<< asks tempDirectory
-  mapM_ removePathForcibly tmpPath
+  fs <- storageFiles
+  liftIO $ closeSQLiteStore `withStores` fs
+  remove `withDBs` fs
+  mapM_ removeDir $ filesPath fs
+  mapM_ removeDir =<< chatReadVar tempDirectory
+  where
+    remove f = whenM (doesFileExist f) $ removeFile f
+    removeDir d = whenM (doesDirectoryExist d) $ removePathForcibly d
 
 data StorageFiles = StorageFiles
-  { chatDb :: FilePath,
-    chatEncrypted :: TVar Bool,
-    agentDb :: FilePath,
-    agentEncrypted :: TVar Bool,
+  { chatStore :: SQLiteStore,
+    agentStore :: SQLiteStore,
     filesPath :: Maybe FilePath
   }
 
 storageFiles :: ChatMonad m => m StorageFiles
 storageFiles = do
   ChatController {chatStore, filesFolder, smpAgent} <- ask
-  let SQLiteStore {dbFilePath = chatDb, dbEncrypted = chatEncrypted} = chatStore
-      SQLiteStore {dbFilePath = agentDb, dbEncrypted = agentEncrypted} = agentClientStore smpAgent
+  let agentStore = agentClientStore smpAgent
   filesPath <- readTVarIO filesFolder
-  pure StorageFiles {chatDb, chatEncrypted, agentDb, agentEncrypted, filesPath}
+  pure StorageFiles {chatStore, agentStore, filesPath}
 
 sqlCipherExport :: forall m. ChatMonad m => DBEncryptionConfig -> m ()
 sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = DBEncryptionKey key'} =
   when (key /= key') $ do
-    fs@StorageFiles {chatDb, chatEncrypted, agentDb, agentEncrypted} <- storageFiles
-    checkFile `with` fs
-    backup `with` fs
-    (export chatDb chatEncrypted >> export agentDb agentEncrypted)
-      `catchChatError` \e -> tryChatError (restore `with` fs) >> throwError e
+    fs <- storageFiles
+    checkFile `withDBs` fs
+    backup `withDBs` fs
+    checkEncryption `withStores` fs
+    removeExported `withDBs` fs
+    export `withDBs` fs
+    -- closing after encryption prevents closing in case wrong encryption key was passed
+    liftIO $ closeSQLiteStore `withStores` fs
+    (moveExported `withStores` fs)
+      `catchChatError` \e -> (restore `withDBs` fs) >> throwError e
   where
-    action `with` StorageFiles {chatDb, agentDb} = action chatDb >> action agentDb
     backup f = copyFile f (f <> ".bak")
     restore f = copyFile (f <> ".bak") f
     checkFile f = unlessM (doesFileExist f) $ throwDBError $ DBErrorNoFile f
-    export f dbEnc = do
-      enc <- readTVarIO dbEnc
+    checkEncryption SQLiteStore {dbEncrypted} = do
+      enc <- readTVarIO dbEncrypted
       when (enc && null key) $ throwDBError DBErrorEncrypted
       when (not enc && not (null key)) $ throwDBError DBErrorPlaintext
-      withDB (`SQL.exec` exportSQL) DBErrorExport
-      renameFile (f <> ".exported") f
-      withDB (`SQL.exec` testSQL) DBErrorOpen
-      atomically $ writeTVar dbEnc $ not (null key')
+    exported = (<> ".exported")
+    removeExported f = whenM (doesFileExist $ exported f) $ removeFile (exported f)
+    moveExported SQLiteStore {dbFilePath = f, dbEncrypted} = do
+      renameFile (exported f) f
+      atomically $ writeTVar dbEncrypted $ not (null key')
+    export f = do
+      withDB f (`SQL.exec` exportSQL) DBErrorExport
+      withDB (exported f) (`SQL.exec` testSQL) DBErrorOpen
       where
-        withDB a err = handleDBError err $ bracket (SQL.open $ T.pack f) SQL.close a
+        withDB f' a err =
+          liftIO (bracket (SQL.open $ T.pack f') SQL.close a $> Nothing)
+            `catch` checkSQLError
+            `catch` (\(e :: SomeException) -> sqliteError' e)
+            >>= mapM_ (throwDBError . err)
+          where
+            checkSQLError e = case SQL.sqlError e of
+              SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
+              _ -> sqliteError' e
+            sqliteError' :: Show e => e -> m (Maybe SQLiteError)
+            sqliteError' = pure . Just . SQLiteError . show
         exportSQL =
           T.unlines $
             keySQL key
@@ -163,20 +175,12 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
             keySQL key'
               <> [ "PRAGMA foreign_keys = ON;",
                    "PRAGMA secure_delete = ON;",
-                   "PRAGMA auto_vacuum = FULL;",
                    "SELECT count(*) FROM sqlite_master;"
                  ]
         keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]
 
-handleDBError :: forall m. ChatMonad m => (SQLiteError -> DatabaseError) -> IO () -> m ()
-handleDBError err a =
-  (liftIO a $> Nothing)
-    `catch` checkSQLError
-    `catch` (\(e :: SomeException) -> sqliteError' e)
-    >>= mapM_ (throwDBError . err)
-  where
-    checkSQLError e = case SQL.sqlError e of
-      SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
-      _ -> sqliteError' e
-    sqliteError' :: Show e => e -> m (Maybe SQLiteError)
-    sqliteError' = pure . Just . SQLiteError . show
+withDBs :: Monad m => (FilePath -> m b) -> StorageFiles -> m b
+action `withDBs` StorageFiles {chatStore, agentStore} = action (dbFilePath chatStore) >> action (dbFilePath agentStore)
+
+withStores :: Monad m => (SQLiteStore -> m b) -> StorageFiles -> m b
+action `withStores` StorageFiles {chatStore, agentStore} = action chatStore >> action agentStore
