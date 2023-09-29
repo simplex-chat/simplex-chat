@@ -42,9 +42,9 @@ archiveFilesFolder = "simplex_v1_files"
 exportArchive :: ChatMonad m => ArchiveConfig -> m ()
 exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   withTempDir cfg "simplex-chat." $ \dir -> do
-    StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
-    copyFile chatDb $ dir </> archiveChatDbFile
-    copyFile agentDb $ dir </> archiveAgentDbFile
+    StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
+    copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
+    copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
     forM_ filesPath $ \fp ->
       copyDirectoryFiles fp $ dir </> archiveFilesFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
@@ -54,11 +54,11 @@ importArchive :: ChatMonad m => ArchiveConfig -> m [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
-    fs@StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
+    fs@StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
     liftIO $ closeSQLiteStore `withStores` fs
     backup `withDBs` fs
-    copyFile (dir </> archiveChatDbFile) chatDb
-    copyFile (dir </> archiveAgentDbFile) agentDb
+    copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
+    copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
     copyFiles dir filesPath
       `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
   where
@@ -102,9 +102,7 @@ deleteStorage = do
   mapM_ removePathForcibly tmpPath
 
 data StorageFiles = StorageFiles
-  { chatDb :: FilePath,
-    chatStore :: SQLiteStore,
-    agentDb :: FilePath,
+  { chatStore :: SQLiteStore,
     agentStore :: SQLiteStore,
     filesPath :: Maybe FilePath
   }
@@ -114,7 +112,7 @@ storageFiles = do
   ChatController {chatStore, filesFolder, smpAgent} <- ask
   let agentStore = agentClientStore smpAgent
   filesPath <- readTVarIO filesFolder
-  pure StorageFiles {chatDb = dbFilePath chatStore, chatStore, agentDb = dbFilePath agentStore, agentStore, filesPath}
+  pure StorageFiles {chatStore, agentStore, filesPath}
 
 sqlCipherExport :: forall m. ChatMonad m => DBEncryptionConfig -> m ()
 sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = DBEncryptionKey key'} =
@@ -174,7 +172,7 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
         keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]
 
 withDBs :: Monad m => (FilePath -> m b) -> StorageFiles -> m b
-action `withDBs` StorageFiles {chatDb, agentDb} = action chatDb >> action agentDb
+action `withDBs` StorageFiles {chatStore, agentStore} = action (dbFilePath chatStore) >> action (dbFilePath agentStore)
 
 withStores :: Monad m => (SQLiteStore -> m b) -> StorageFiles -> m b
 action `withStores` StorageFiles {chatStore, agentStore} = action chatStore >> action agentStore
