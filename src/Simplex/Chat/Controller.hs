@@ -55,9 +55,8 @@ import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
-import Simplex.Messaging.Agent.Store.SQLite.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -253,7 +252,7 @@ data ChatCommand
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
-  | APIDeleteChat ChatRef
+  | APIDeleteChat ChatRef Bool -- `notify` flag is only applied to direct chats
   | APIClearChat ChatRef
   | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
@@ -508,6 +507,7 @@ data ChatResponse
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {user :: User, contact :: Contact}
+  | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {user :: User, connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted {user :: User}
@@ -944,6 +944,7 @@ data ChatErrorType
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
+  | CEContactNotActive {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
   | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
@@ -1060,6 +1061,15 @@ instance ToJSON RemoteCtrlError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RCE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RCE"
 
+data ArchiveError
+  = AEImport {chatError :: ChatError}
+  | AEImportFile {file :: String, chatError :: ChatError}
+  deriving (Show, Exception, Generic)
+
+instance ToJSON ArchiveError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
+
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
@@ -1102,15 +1112,6 @@ unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m 
 unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
   where
     unset a' = if a == a' then ActiveNone else a'
-
-data ArchiveError
-  = AEImport {chatError :: ChatError}
-  | AEImportFile {file :: String, chatError :: ChatError}
-  deriving (Show, Exception, Generic)
-
-instance ToJSON ArchiveError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()

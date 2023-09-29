@@ -42,6 +42,7 @@ module Simplex.Chat.Store.Direct
     deletePCCIncognitoProfile,
     updateContactUsed,
     updateContactUnreadChat,
+    updateContactStatus,
     updateGroupUnreadChat,
     setConnectionVerified,
     incConnectionAuthErrCounter,
@@ -147,7 +148,7 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
               cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
@@ -206,7 +207,7 @@ createDirectContact db user@User {userId} activeConn@Connection {connId, localAl
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
+  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
 
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContactConnectionsAndFiles db userId Contact {contactId} = do
@@ -387,6 +388,19 @@ updateContactUnreadChat db User {userId} Contact {contactId} unreadChat = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (unreadChat, updatedAt, userId, contactId)
 
+updateContactStatus :: DB.Connection -> User -> Contact -> ContactStatus -> IO Contact
+updateContactStatus db User {userId} ct@Contact {contactId} contactStatus = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE contacts
+      SET contact_status = ?, updated_at = ?
+      WHERE user_id = ? AND contact_id = ?
+    |]
+    (contactStatus, currentTs, userId, contactId)
+  pure ct {contactStatus}
+
 updateGroupUnreadChat :: DB.Connection -> User -> GroupInfo -> Bool -> IO ()
 updateGroupUnreadChat db User {userId} GroupInfo {groupId} unreadChat = do
   updatedAt <- getCurrentTime
@@ -491,7 +505,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
               cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
@@ -637,7 +651,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
 
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =
@@ -655,7 +669,7 @@ getContact_ db user@User {userId} contactId deleted =
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
