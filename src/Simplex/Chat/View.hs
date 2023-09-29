@@ -1648,7 +1648,7 @@ viewChatError logLevel = \case
     DBErrorEncrypted -> ["error: chat database is already encrypted"]
     DBErrorPlaintext -> ["error: chat database is not encrypted"]
     DBErrorExport e -> ["error encrypting database: " <> sqliteError' e]
-    DBErrorOpen e -> ["error opening database: " <> sqliteError' e]
+    DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err entity_ -> case err of
     CMD PROHIBITED -> [withConnEntity <> "error: command is prohibited"]
