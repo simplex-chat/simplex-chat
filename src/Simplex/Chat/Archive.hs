@@ -94,12 +94,14 @@ copyDirectoryFiles fromDir toDir = do
 
 deleteStorage :: ChatMonad m => m ()
 deleteStorage = do
-  fs@StorageFiles {filesPath} <- storageFiles
+  fs <- storageFiles
   liftIO $ closeSQLiteStore `withStores` fs
-  removeFile `withDBs` fs
-  mapM_ removePathForcibly filesPath
-  tmpPath <- readTVarIO =<< asks tempDirectory
-  mapM_ removePathForcibly tmpPath
+  remove `withDBs` fs
+  mapM_ removeDir $ filesPath fs
+  mapM_ removeDir =<< chatReadVar tempDirectory
+  where
+    remove f = whenM (doesFileExist f) $ removeFile f
+    removeDir d = whenM (doesDirectoryExist d) $ removePathForcibly d
 
 data StorageFiles = StorageFiles
   { chatStore :: SQLiteStore,
