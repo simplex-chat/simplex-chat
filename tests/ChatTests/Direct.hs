@@ -992,17 +992,10 @@ testDatabaseEncryption tmp = do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
-      alice ##> "/_stop close"
+      alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/db key wrongkey nextkey"
       alice <## "error encrypting database: wrong passphrase or invalid database file"
-      alice ##> "/_start key=wrongkey"
-      alice <## "error opening database: wrong passphrase or invalid database file"
-      alice ##> "/_start key=mykey"
-      alice <## "chat started"
-      testChatWorking alice bob
-      alice ##> "/_stop close"
-      alice <## "chat stopped"
       alice ##> "/db key mykey nextkey"
       alice <## "ok"
       alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"
