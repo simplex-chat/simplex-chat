@@ -21,7 +21,7 @@ import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), sqlString)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), sqlString, closeSQLiteStore)
 import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
@@ -54,9 +54,9 @@ importArchive :: ChatMonad m => ArchiveConfig -> m [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
-    StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
-    backup chatDb
-    backup agentDb
+    fs@StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
+    liftIO $ closeSQLiteStore `withStores` fs
+    backup `withDBs` fs
     copyFile (dir </> archiveChatDbFile) chatDb
     copyFile (dir </> archiveAgentDbFile) agentDb
     copyFiles dir filesPath
@@ -94,53 +94,60 @@ copyDirectoryFiles fromDir toDir = do
 
 deleteStorage :: ChatMonad m => m ()
 deleteStorage = do
-  StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
-  removeFile chatDb
-  removeFile agentDb
+  fs@StorageFiles {filesPath} <- storageFiles
+  liftIO $ closeSQLiteStore `withStores` fs
+  removeFile `withDBs` fs
   mapM_ removePathForcibly filesPath
   tmpPath <- readTVarIO =<< asks tempDirectory
   mapM_ removePathForcibly tmpPath
 
 data StorageFiles = StorageFiles
   { chatDb :: FilePath,
-    chatEncrypted :: TVar Bool,
+    chatStore :: SQLiteStore,
     agentDb :: FilePath,
-    agentEncrypted :: TVar Bool,
+    agentStore :: SQLiteStore,
     filesPath :: Maybe FilePath
   }
 
 storageFiles :: ChatMonad m => m StorageFiles
 storageFiles = do
   ChatController {chatStore, filesFolder, smpAgent} <- ask
-  let SQLiteStore {dbFilePath = chatDb, dbEncrypted = chatEncrypted} = chatStore
-      SQLiteStore {dbFilePath = agentDb, dbEncrypted = agentEncrypted} = agentClientStore smpAgent
+  let agentStore = agentClientStore smpAgent
   filesPath <- readTVarIO filesFolder
-  pure StorageFiles {chatDb, chatEncrypted, agentDb, agentEncrypted, filesPath}
+  pure StorageFiles {chatDb = dbFilePath chatStore, chatStore, agentDb = dbFilePath agentStore, agentStore, filesPath}
 
 sqlCipherExport :: forall m. ChatMonad m => DBEncryptionConfig -> m ()
 sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = DBEncryptionKey key'} =
   when (key /= key') $ do
-    fs@StorageFiles {chatDb, chatEncrypted, agentDb, agentEncrypted} <- storageFiles
-    checkFile `with` fs
-    backup `with` fs
-    (export chatDb chatEncrypted >> export agentDb agentEncrypted)
-      `catchChatError` \e -> (restore `with` fs) >> throwError e
+    fs <- storageFiles
+    checkFile `withDBs` fs
+    backup `withDBs` fs
+    checkEncryption `withStores` fs
+    removeExported `withDBs` fs
+    export `withDBs` fs
+    -- closing after encryption prevents closing in case wrong encryption key was passed
+    liftIO $ closeSQLiteStore `withStores` fs
+    (moveExported `withStores` fs)
+      `catchChatError` \e -> (restore `withDBs` fs) >> throwError e
   where
-    action `with` StorageFiles {chatDb, agentDb} = action chatDb >> action agentDb
     backup f = copyFile f (f <> ".bak")
     restore f = copyFile (f <> ".bak") f
     checkFile f = unlessM (doesFileExist f) $ throwDBError $ DBErrorNoFile f
-    export f dbEnc = do
-      enc <- readTVarIO dbEnc
+    checkEncryption SQLiteStore {dbEncrypted} = do
+      enc <- readTVarIO dbEncrypted
       when (enc && null key) $ throwDBError DBErrorEncrypted
       when (not enc && not (null key)) $ throwDBError DBErrorPlaintext
-      withDB (`SQL.exec` exportSQL) DBErrorExport
-      renameFile (f <> ".exported") f
-      withDB (`SQL.exec` testSQL) DBErrorOpen
-      atomically $ writeTVar dbEnc $ not (null key')
+    exported = (<> ".exported")
+    removeExported f = whenM (doesFileExist $ exported f) $ removeFile (exported f)
+    moveExported SQLiteStore {dbFilePath = f, dbEncrypted} = do
+      renameFile (exported f) f
+      atomically $ writeTVar dbEncrypted $ not (null key')
+    export f = do
+      withDB f (`SQL.exec` exportSQL) DBErrorExport
+      withDB (exported f) (`SQL.exec` testSQL) DBErrorOpen
       where
-        withDB a err =
-          liftIO (bracket (SQL.open $ T.pack f) SQL.close a $> Nothing)
+        withDB f' a err =
+          liftIO (bracket (SQL.open $ T.pack f') SQL.close a $> Nothing)
             `catch` checkSQLError
             `catch` (\(e :: SomeException) -> sqliteError' e)
             >>= mapM_ (throwDBError . err)
@@ -162,7 +169,12 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
             keySQL key'
               <> [ "PRAGMA foreign_keys = ON;",
                    "PRAGMA secure_delete = ON;",
-                   "PRAGMA auto_vacuum = FULL;",
                    "SELECT count(*) FROM sqlite_master;"
                  ]
         keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]
+
+withDBs :: Monad m => (FilePath -> m b) -> StorageFiles -> m b
+action `withDBs` StorageFiles {chatDb, agentDb} = action chatDb >> action agentDb
+
+withStores :: Monad m => (SQLiteStore -> m b) -> StorageFiles -> m b
+action `withStores` StorageFiles {chatStore, agentStore} = action chatStore >> action agentStore
