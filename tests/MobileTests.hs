@@ -39,7 +39,6 @@ import System.Directory (copyFile)
 import System.FilePath ((</>))
 import System.IO (utf8)
 import Test.Hspec
-import Control.Concurrent (threadDelay)
 
 mobileTests :: HasCallStack => SpecWith FilePath
 mobileTests = do
@@ -149,6 +148,10 @@ testChatApi tmp = do
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey" "yesUp"
+  chatCloseStore cc `shouldReturn` ""
+  chatOpenStore cc "" >>= (`shouldContain` "file is not a database")
+  chatOpenStore cc "anotherKey" >>= (`shouldContain` "file is not a database")
+  chatOpenStore cc "myKey" `shouldReturn` ""
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted

@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Archive
   ( exportArchive,
@@ -21,7 +22,7 @@ import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, setSQLiteModeWAL, sqlString)
+import Simplex.Messaging.Agent.Store.SQLite
 import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
@@ -41,7 +42,7 @@ archiveFilesFolder = "simplex_v1_files"
 
 exportArchive :: ChatMonad m => ArchiveConfig -> m ()
 exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
-  withTempDir cfg "simplex-chat." $ \dir -> do
+  handleErr $ withTempDir cfg "simplex-chat." $ \dir -> do
     fs@StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
     setWALMode False `withStores` fs
     copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
@@ -56,17 +57,16 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
 
 importArchive :: ChatMonad m => ArchiveConfig -> m [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
-  withTempDir cfg "simplex-chat." $ \dir -> do
+  handleErr $ withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
     fs@StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
-    liftIO $ closeSQLiteStore `withStores` fs
-    backup `withDBs` fs
+    liftIO $ (closeSQLiteStore `withStores` fs) `catch` print @SomeException
+    liftIO $ backupSQLiteStore `withStores` fs
     copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
     copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
     copyFiles dir filesPath
       `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
   where
-    backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
     copyFiles dir filesPath = do
       let filesDir = dir </> archiveFilesFolder
       case filesPath of
@@ -97,15 +97,17 @@ copyDirectoryFiles fromDir toDir = do
       whenM (doesFileExist f') $ copyFile f' $ toDir </> fn
 
 deleteStorage :: ChatMonad m => m ()
-deleteStorage = do
+deleteStorage = handleErr $ do
   fs <- storageFiles
   liftIO $ closeSQLiteStore `withStores` fs
-  remove `withDBs` fs
+  liftIO $ removeSQLiteStore `withStores` fs
   mapM_ removeDir $ filesPath fs
   mapM_ removeDir =<< chatReadVar tempDirectory
   where
-    remove f = whenM (doesFileExist f) $ removeFile f
     removeDir d = whenM (doesDirectoryExist d) $ removePathForcibly d
+
+handleErr :: ChatMonad m => m a -> m a
+handleErr = E.handle (throwError . mkChatError)
 
 data StorageFiles = StorageFiles
   { chatStore :: SQLiteStore,
@@ -125,17 +127,15 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
   when (key /= key') $ do
     fs <- storageFiles
     checkFile `withDBs` fs
-    backup `withDBs` fs
+    liftIO $ backupSQLiteStore `withStores` fs
     checkEncryption `withStores` fs
     removeExported `withDBs` fs
     export `withDBs` fs
     -- closing after encryption prevents closing in case wrong encryption key was passed
     liftIO $ closeSQLiteStore `withStores` fs
     (moveExported `withStores` fs)
-      `catchChatError` \e -> (restore `withDBs` fs) >> throwError e
+      `catchChatError` \e -> liftIO (restoreSQLiteStore `withStores` fs) >> throwError e
   where
-    backup f = copyFile f (f <> ".bak")
-    restore f = copyFile (f <> ".bak") f
     checkFile f = unlessM (doesFileExist f) $ throwDBError $ DBErrorNoFile f
     checkEncryption SQLiteStore {dbEncrypted} = do
       enc <- readTVarIO dbEncrypted
@@ -167,7 +167,6 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
               <> [ "ATTACH DATABASE " <> sqlString (f <> ".exported") <> " AS exported KEY " <> sqlString key' <> ";",
                    "PRAGMA wal_checkpoint(TRUNCATE);",
                    "SELECT sqlcipher_export('exported');",
-                   "PRAGMA exported.wal_checkpoint(TRUNCATE);",
                    "DETACH DATABASE exported;"
                  ]
         testSQL =
@@ -179,8 +178,8 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
                  ]
         keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]
 
-withDBs :: Monad m => (FilePath -> m b) -> StorageFiles -> m b
+withDBs :: Monad m => (FilePath -> m a) -> StorageFiles -> m a
 action `withDBs` StorageFiles {chatStore, agentStore} = action (dbFilePath chatStore) >> action (dbFilePath agentStore)
 
-withStores :: Monad m => (SQLiteStore -> m b) -> StorageFiles -> m b
+withStores :: Monad m => (SQLiteStore -> m a) -> StorageFiles -> m a
 action `withStores` StorageFiles {chatStore, agentStore} = action chatStore >> action agentStore
