@@ -29,7 +29,7 @@ import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -39,6 +39,7 @@ import System.Directory (copyFile)
 import System.FilePath ((</>))
 import System.IO (utf8)
 import Test.Hspec
+import Control.Concurrent (threadDelay)
 
 mobileTests :: HasCallStack => SpecWith FilePath
 mobileTests = do
@@ -144,6 +145,7 @@ testChatApi tmp = do
       f = chatStoreFile dbPrefix
   Right st <- createChatStore f "myKey" MCYesUp
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
+  closeSQLiteStore st
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey" "yesUp"
