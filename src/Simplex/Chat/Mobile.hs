@@ -55,9 +55,9 @@ import System.Timeout (timeout)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
-foreign export ccall "chat_close_store" cChatCloseStore :: StablePtr ChatController -> IO CJSONString
+foreign export ccall "chat_close_store" cChatCloseStore :: StablePtr ChatController -> IO CString
 
-foreign export ccall "chat_open_store" cChatOpenStore :: StablePtr ChatController -> CString -> IO CJSONString
+foreign export ccall "chat_open_store" cChatOpenStore :: StablePtr ChatController -> CString -> IO CString
 
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
