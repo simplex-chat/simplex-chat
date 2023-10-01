@@ -106,6 +106,7 @@ class AppPreferences {
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
+  val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
   private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
@@ -265,6 +266,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
+    private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
     private const val SHARED_PREFS_NETWORK_SESSION_MODE = "NetworkSessionMode"

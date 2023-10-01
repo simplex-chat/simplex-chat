@@ -14,10 +14,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.defaultLocale
 import chat.simplex.common.platform.desktopPlatform
+import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.FileDialogChooser
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
@@ -115,6 +118,18 @@ fun showApp() = application {
             AppLock.appWasHidden()
           }
         })
+      }
+    }
+  }
+  // Reload all strings in all @Composable's after language change at runtime
+  if (remember { ChatController.appPrefs.terminalAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
+    var hiddenUntilRestart by remember { mutableStateOf(false) }
+    if (!hiddenUntilRestart) {
+      val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH, height = 768.dp)
+      Window(state = cWindowState, onCloseRequest = ::exitApplication, title = stringResource(MR.strings.chat_console)) {
+        SimpleXTheme {
+          TerminalView(ChatModel) { hiddenUntilRestart = true }
+        }
       }
     }
   }
