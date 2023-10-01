@@ -63,8 +63,8 @@ compose {
         windows {
           packageName = "SimpleX"
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.ico"))
-          console = true
-          perUserInstall = true
+          console = false
+          perUserInstall = false
           dirChooser = true
         }
         macOS {
@@ -119,9 +119,9 @@ cmake {
     /*machines.customMachines.register("linux-aarch64") {
       toolchainFile.set(project.file("$cppPath/toolchains/aarch64-linux-gnu-gcc.cmake"))
     }*/
-    machines.customMachines.register("win-amd64") {
+    /*machines.customMachines.register("win-amd64") {
       toolchainFile.set(project.file("$cppPath/toolchains/x86_64-windows-mingw32-gcc.cmake"))
-    }
+    }*/
     if (machines.host.name == "mac-amd64") {
       machines.customMachines.register("mac-amd64") {
         toolchainFile.set(project.file("$cppPath/toolchains/x86_64-mac-apple-darwin-gcc.cmake"))
@@ -139,6 +139,9 @@ cmake {
     val main by creating {
       cmakeLists.set(file("$cppPath/desktop/CMakeLists.txt"))
       targetMachines.addAll(compileMachineTargets.toSet())
+      if (machines.host.name.contains("win")) {
+        cmakeArgs.add("-G MinGW Makefiles")
+      }
     }
   }
 }
@@ -191,7 +194,7 @@ afterEvaluate {
         copyIfNeeded(destinationDir, copyDetails)
       }
       copy {
-        from("${project(":desktop").buildDir}/cmake/main/win-amd64", "$cppPath/desktop/libs/windows-x86_64", "$cppPath/desktop/libs/windows-x86_64/deps")
+        from("${project(":desktop").buildDir}/cmake/main/windows-amd64", "$cppPath/desktop/libs/windows-x86_64", "$cppPath/desktop/libs/windows-x86_64/deps")
         into("src/jvmMain/resources/libs/windows-x86_64")
         include("*.dll")
         eachFile {
