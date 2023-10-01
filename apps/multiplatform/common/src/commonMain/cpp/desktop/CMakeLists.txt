@@ -19,6 +19,8 @@ project("app")
 if(UNIX AND NOT APPLE)
     set(OS_LIB_PATH "linux")
     set(OS_LIB_EXT "so")
+    # Makes ld search libs in the same dir as libapp-lib, not in system dirs
+    set(CMAKE_BUILD_RPATH "$ORIGIN")
 elseif(WIN32)
     set(OS_LIB_PATH "windows")
     set(OS_LIB_EXT "dll")
@@ -36,9 +38,6 @@ elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64")
 else()
     set(OS_LIB_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 endif()
-
-# Makes ld search libs in the same dir as libapp-lib, not in system dirs
-#set(CMAKE_BUILD_RPATH "$ORIGIN")
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.

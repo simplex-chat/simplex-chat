@@ -9,9 +9,7 @@ module Simplex.Chat.Bot where
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad.Reader
-import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
@@ -19,9 +17,8 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store
-import Simplex.Chat.Types (Contact (..), IsContact (..), User (..))
+import Simplex.Chat.Types (Contact (..), ContactId, IsContact (..), User (..))
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Exit (exitFailure)
 
 chatBotRepl :: String -> (Contact -> String -> IO String) -> User -> ChatController -> IO ()
@@ -32,48 +29,57 @@ chatBotRepl welcome answer _user cc = do
     case resp of
       CRContactConnected _ contact _ -> do
         contactConnected contact
-        void $ sendMsg contact welcome
+        void $ sendMessage cc contact welcome
       CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) -> do
         let msg = T.unpack $ ciContentToText mc
-        void $ sendMsg contact =<< answer contact msg
+        void $ sendMessage cc contact =<< answer contact msg
       _ -> pure ()
   where
-    sendMsg Contact {contactId} msg = sendChatCmd cc $ "/_send @" <> show contactId <> " text " <> msg
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"
 
 initializeBotAddress :: ChatController -> IO ()
-initializeBotAddress cc = do
-  sendChatCmd cc "/show_address" >>= \case
+initializeBotAddress = initializeBotAddress' True
+
+initializeBotAddress' :: Bool -> ChatController -> IO ()
+initializeBotAddress' logAddress cc = do
+  sendChatCmd cc ShowMyAddress >>= \case
     CRUserContactLink _ UserContactLink {connReqContact} -> showBotAddress connReqContact
     CRChatCmdError _ (ChatErrorStore SEUserContactLinkNotFound) -> do
-      putStrLn "No bot address, creating..."
-      sendChatCmd cc "/address" >>= \case
+      when logAddress $ putStrLn "No bot address, creating..."
+      sendChatCmd cc CreateMyAddress >>= \case
         CRUserContactLinkCreated _ uri -> showBotAddress uri
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
   where
     showBotAddress uri = do
-      putStrLn $ "Bot's contact address is: " <> B.unpack (strEncode uri)
-      void $ sendChatCmd cc "/auto_accept on"
+      when logAddress $ putStrLn $ "Bot's contact address is: " <> B.unpack (strEncode uri)
+      void $ sendChatCmd cc $ AddressAutoAccept $ Just AutoAccept {acceptIncognito = False, autoReply = Nothing}
 
 sendMessage :: ChatController -> Contact -> String -> IO ()
 sendMessage cc ct = sendComposedMessage cc ct Nothing . textMsgContent
 
+sendMessage' :: ChatController -> ContactId -> String -> IO ()
+sendMessage' cc ctId = sendComposedMessage' cc ctId Nothing . textMsgContent
+
 sendComposedMessage :: ChatController -> Contact -> Maybe ChatItemId -> MsgContent -> IO ()
-sendComposedMessage cc ct quotedItemId msgContent = do
-  let cm = ComposedMessage {filePath = Nothing, quotedItemId, msgContent}
-  sendChatCmd cc ("/_send @" <> show (contactId' ct) <> " json " <> jsonEncode cm) >>= \case
-    CRNewChatItem {} -> printLog cc CLLInfo $ "sent message to " <> contactInfo ct
+sendComposedMessage cc = sendComposedMessage' cc . contactId'
+
+sendComposedMessage' :: ChatController -> ContactId -> Maybe ChatItemId -> MsgContent -> IO ()
+sendComposedMessage' cc ctId quotedItemId msgContent = do
+  let cm = ComposedMessage {fileSource = Nothing, quotedItemId, msgContent}
+  sendChatCmd cc (APISendMessage (ChatRef CTDirect ctId) False Nothing cm) >>= \case
+    CRNewChatItem {} -> printLog cc CLLInfo $ "sent message to contact ID " <> show ctId
     r -> putStrLn $ "unexpected send message response: " <> show r
-  where
-    jsonEncode = T.unpack . safeDecodeUtf8 . LB.toStrict . J.encode
 
 deleteMessage :: ChatController -> Contact -> ChatItemId -> IO ()
 deleteMessage cc ct chatItemId = do
-  let cmd = "/_delete item @" <> show (contactId' ct) <> " " <> show chatItemId <> " internal"
+  let cmd = APIDeleteChatItem (contactRef ct) chatItemId CIDMInternal
   sendChatCmd cc cmd >>= \case
     CRChatItemDeleted {} -> printLog cc CLLInfo $ "deleted message from " <> contactInfo ct
     r -> putStrLn $ "unexpected delete message response: " <> show r
+
+contactRef :: Contact -> ChatRef
+contactRef = ChatRef CTDirect . contactId'
 
 textMsgContent :: String -> MsgContent
 textMsgContent = MCText . T.pack

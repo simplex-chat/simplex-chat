@@ -16,8 +16,8 @@ struct CIFileView: View {
 
     var body: some View {
         let metaReserve = edited
-        ? "                         "
-        : "                     "
+        ? "                           "
+        : "                       "
         Button(action: fileAction) {
             HStack(alignment: .bottom, spacing: 6) {
                 fileIndicator()
@@ -84,7 +84,8 @@ struct CIFileView: View {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
                         if let user = ChatModel.shared.currentUser {
-                            await receiveFile(user: user, fileId: file.fileId)
+                            let encrypted = privacyEncryptLocalFilesGroupDefault.get()
+                            await receiveFile(user: user, fileId: file.fileId, encrypted: encrypted)
                         }
                     }
                 } else {
@@ -109,9 +110,8 @@ struct CIFileView: View {
                 }
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
-                if let filePath = getLoadedFilePath(file) {
-                    let url = URL(fileURLWithPath: filePath)
-                    showShareSheet(items: [url])
+                if let fileSource = getLoadedFileSource(file) {
+                    saveCryptoFile(fileSource)
                 }
             default: break
             }
@@ -193,11 +193,35 @@ struct CIFileView: View {
     }
 }
 
+func saveCryptoFile(_ fileSource: CryptoFile) {
+    if let cfArgs = fileSource.cryptoArgs {
+        let url = getAppFilePath(fileSource.filePath)
+        let tempUrl = getTempFilesDirectory().appendingPathComponent(fileSource.filePath)
+        Task {
+            do {
+                try decryptCryptoFile(fromPath: url.path, cryptoArgs: cfArgs, toPath: tempUrl.path)
+                await MainActor.run {
+                    showShareSheet(items: [tempUrl]) {
+                        removeFile(tempUrl)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    AlertManager.shared.showAlertMsg(title: "Error decrypting file", message: "Error: \(error.localizedDescription)")
+                }
+            }
+        }
+    } else {
+        let url = getAppFilePath(fileSource.filePath)
+        showShareSheet(items: [url])
+    }
+}
+
 struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
         let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, itemEdited: true),
+            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .file("")),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)

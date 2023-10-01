@@ -29,7 +29,6 @@
     <string name="ttl_sec">%d 秒</string>
     <string name="feature_cancelled_item">已取消 %s</string>
     <string name="v4_2_auto_accept_contact_requests">自動接受聯絡人請求</string>
-    <string name="group_unsupported_incognito_main_profile_sent">匿名聊天模式在這裡是不支援 - 你的個人檔案會顯示於群組內</string>
     <string name="chat_preferences_no">不</string>
     <string name="allow_to_send_disappearing">允許傳送自動銷毀的訊息。</string>
     <string name="database_initialization_error_title">無法初始化數據庫</string>
@@ -185,7 +184,6 @@
     <string name="star_on_github">於 Github 給個星星</string>
     <string name="incognito_info_protects">匿名聊天模式會保護你的真實個人檔案名稱和頭像 — 當有新聯絡人的時候會自動建立一個隨機性的個人檔案。</string>
     <string name="incognito_info_allows">這樣是允許每一個對話中擁有不同的顯示名稱，並且沒有任何的個人資料可用於分享或有機會外洩。</string>
-    <string name="incognito_info_find">若要查找用於匿名聊天模式連接的個人檔案，請點擊聯絡人或群組名稱。</string>
     <string name="allow_disappearing_messages_only_if">只有你的聯絡人允許的情況下，才允許自動銷毀訊息。</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">允許你的聯絡人傳送自動銷毀的訊息。</string>
     <string name="allow_irreversible_message_deletion_only_if">只有你的聯絡人允許的情況下，才允許不可逆地將訊息刪除。</string>
@@ -476,9 +474,7 @@
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[如果你不能面對面接觸此聯絡人，<b>可於視訊通話中出示你的二維碼</b>，或者分享連結。]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">你的個人檔案會傳送給
 \n你的聯絡人</string>
-    <string name="paste_connection_link_below_to_connect">將你接收到的連結貼上至下面的框內，以開啟你與你的聯絡人對話。</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[如果你不能面對面接觸此聯絡人，你可以於 <b>視訊通話中掃描二維碼</b> ，或者你可以分享一個邀請連結給此聯絡人。]]></string>
-    <string name="your_profile_will_be_sent">你的個人檔案會傳送給你的聯絡人</string>
     <string name="paste_button">貼上</string>
     <string name="this_string_is_not_a_connection_link">這些字串不是連接連結！</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[你也可以點擊連結連接。如果在瀏覧器中開啟，點擊 <b>在電話應用程式內的開啟</b> 按鈕。]]></string>
@@ -533,7 +529,7 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[你可以透過 <font color="#0088ff">連接到 SimpleX Chat 開發人員提出任何問題並同意更新</font>。]]></string>
     <string name="to_start_a_new_chat_help_header">開啟新的對話</string>
     <string name="set_contact_name">設定聯絡人名稱</string>
-    <string name="you_invited_your_contact">你已邀請了你的聯絡人</string>
+    <string name="you_invited_a_contact">你已邀請了你的聯絡人</string>
     <string name="you_accepted_connection">你接受了連接</string>
     <string name="delete_pending_connection__question">刪除等待中的連接？</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">當聯絡人發現此連結後，嘗試點擊的聯絡人將無法連接！</string>
@@ -756,7 +752,6 @@
     <string name="users_delete_with_connections">檔案和伺服器連接</string>
     <string name="users_delete_data_only">只有本機檔案</string>
     <string name="incognito_random_profile">你的隨機個人檔案</string>
-    <string name="incognito_random_profile_description">隨機的個人檔案將傳送給你的聯絡人</string>
     <string name="theme_system">系統</string>
     <string name="theme_light">明亮</string>
     <string name="reset_color">重設顏色</string>
@@ -827,7 +822,6 @@
     <string name="conn_stats_section_title_servers">伺服器</string>
     <string name="receiving_via">接收訊息透過</string>
     <string name="sending_via">傳送訊息透過</string>
-    <string name="incognito_random_profile_from_contact_description">隨機的個人檔案將傳送給收到此連結的聯絡人</string>
     <string name="prohibit_sending_disappearing_messages">禁止傳送自動銷毀的訊息。</string>
     <string name="prohibit_message_deletion">禁止不可逆的訊息刪除。</string>
     <string name="prohibit_sending_voice">禁止傳送語音訊息。</string>

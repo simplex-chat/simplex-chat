@@ -32,6 +32,7 @@
     "fs": "^0.0.1-security",
     "gray-matter": "^4.0.3",
     "jsdom": "^22.1.0",
+    "lottie-web": "5.12.2",
     "markdown-it": "^13.0.1"
   }
 }

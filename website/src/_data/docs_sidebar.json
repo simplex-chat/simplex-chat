@@ -18,6 +18,7 @@
             "menu": "Reference",
             "data": [
                 "SIMPLEX.md",
+                "DIRECTORY.md",
                 "ANDROID.md",
                 "CLI.md",
                 "SQL.md",
@@ -25,7 +26,8 @@
                 "SERVER.md",
                 "TRANSLATIONS.md",
                 "WEBRTC.md",
-                "XFTP-SERVER.md"
+                "XFTP-SERVER.md",
+                "DOWNLOADS.md"
             ]
         },
         {

@@ -49,11 +49,10 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
-        let v = NavLinkPlain(
+        NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
-            label: { ChatPreviewView(chat: chat) },
-            disabled: !contact.ready
+            label: { ChatPreviewView(chat: chat) }
         )
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
@@ -76,14 +75,6 @@ struct ChatListNavLink: View {
             .tint(.red)
         }
         .frame(height: rowHeights[dynamicTypeSize])
-
-        if contact.ready {
-            v
-        } else {
-            v.onTapGesture {
-                AlertManager.shared.showAlert(pendingContactAlert(chat, contact))
-            }
-        }
     }
 
     @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
@@ -222,9 +213,15 @@ struct ChatListNavLink: View {
         ContactRequestView(contactRequest: contactRequest, chat: chat)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
-                Task { await acceptContactRequest(contactRequest) }
-            } label: { Label("Accept", systemImage: chatModel.incognito ? "theatermasks" : "checkmark") }
-                .tint(chatModel.incognito ? .indigo : .accentColor)
+                Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
+            } label: { Label("Accept", systemImage: "checkmark") }
+                .tint(.accentColor)
+            Button {
+                Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
+            } label: {
+                Label("Accept incognito", systemImage: "theatermasks")
+            }
+            .tint(.indigo)
             Button {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
             } label: {
@@ -234,9 +231,10 @@ struct ChatListNavLink: View {
         }
         .frame(height: rowHeights[dynamicTypeSize])
         .onTapGesture { showContactRequestDialog = true }
-        .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button(chatModel.incognito ? "Accept incognito" : "Accept contact") { Task { await acceptContactRequest(contactRequest) } }
-            Button("Reject contact (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
+        .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
+            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
+            Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) } }
+            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
         }
     }
 

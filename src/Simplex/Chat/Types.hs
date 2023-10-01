@@ -23,7 +23,7 @@
 module Simplex.Chat.Types where
 
 import Crypto.Number.Serialize (os2ip)
-import Data.Aeson (FromJSON (..), ToJSON (..))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.Types as JT
@@ -42,10 +42,12 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Version
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -170,7 +172,9 @@ data Contact = Contact
     mergedPreferences :: ContactUserPreferences,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    chatTs :: Maybe UTCTime
+    chatTs :: Maybe UTCTime,
+    contactGroupMemberId :: Maybe GroupMemberId,
+    contactGrpInvSent :: Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -184,7 +188,9 @@ contactConn = activeConn
 contactConnId :: Contact -> ConnId
 contactConnId = aConnId . contactConn
 
-contactConnIncognito :: Contact -> Bool
+type IncognitoEnabled = Bool
+
+contactConnIncognito :: Contact -> IncognitoEnabled
 contactConnIncognito = connIncognito . contactConn
 
 contactDirect :: Contact -> Bool
@@ -210,6 +216,19 @@ data ContactRef = ContactRef
 
 instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
 
+data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
+  deriving (Show)
+
+contactOrGroupMemberIds :: ContactOrGroupMember -> (Maybe ContactId, Maybe GroupMemberId)
+contactOrGroupMemberIds = \case
+  CGMContact Contact {contactId} -> (Just contactId, Nothing)
+  CGMGroupMember _ GroupMember {groupMemberId} -> (Nothing, Just groupMemberId)
+
+contactOrGroupMemberIncognito :: ContactOrGroupMember -> IncognitoEnabled
+contactOrGroupMemberIncognito = \case
+  CGMContact ct -> contactConnIncognito ct
+  CGMGroupMember _ m -> memberIncognito m
+
 data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact,
@@ -229,6 +248,7 @@ data UserContactRequest = UserContactRequest
     agentInvitationId :: AgentInvId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
+    cReqChatVRange :: JVersionRange,
     localDisplayName :: ContactName,
     profileId :: Int64,
     profile :: Profile,
@@ -318,6 +338,13 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
+data GroupSummary = GroupSummary
+  { currentMembers :: Int
+  }
+  deriving (Show, Generic)
+
+instance ToJSON GroupSummary where toEncoding = J.genericToEncoding J.defaultOptions
+
 data ContactOrGroup = CGContact Contact | CGGroup Group
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
@@ -336,11 +363,12 @@ data ChatSettings = ChatSettings
 instance ToJSON ChatSettings where toEncoding = J.genericToEncoding J.defaultOptions
 
 defaultChatSettings :: ChatSettings
-defaultChatSettings = ChatSettings
-  { enableNtfs = True,
-    sendRcpts = Nothing,
-    favorite = False
-  }
+defaultChatSettings =
+  ChatSettings
+    { enableNtfs = True,
+      sendRcpts = Nothing,
+      favorite = False
+    }
 
 pattern DisableNtfs :: ChatSettings
 pattern DisableNtfs <- ChatSettings {enableNtfs = False}
@@ -412,10 +440,10 @@ instance ToJSON Profile where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 -- check if profiles match ignoring preferences
-profilesMatch :: Profile -> Profile -> Bool
+profilesMatch :: LocalProfile -> LocalProfile -> Bool
 profilesMatch
-  Profile {displayName = n1, fullName = fn1, image = i1}
-  Profile {displayName = n2, fullName = fn2, image = i2} =
+  LocalProfile {displayName = n1, fullName = fn1, image = i1}
+  LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
@@ -527,24 +555,31 @@ instance ToJSON MemberIdRole where toEncoding = J.genericToEncoding J.defaultOpt
 
 data IntroInvitation = IntroInvitation
   { groupConnReq :: ConnReqInvitation,
-    directConnReq :: ConnReqInvitation
+    directConnReq :: Maybe ConnReqInvitation
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON IntroInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON IntroInvitation where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
     memberRole :: GroupMemberRole,
+    v :: Maybe ChatVersionRange,
     profile :: Profile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON MemberInfo where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MemberInfo where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 memberInfo :: GroupMember -> MemberInfo
-memberInfo GroupMember {memberId, memberRole, memberProfile} =
-  MemberInfo memberId memberRole (fromLocalProfile memberProfile)
+memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
+  MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
+  where
+    memberChatVRange = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -566,8 +601,13 @@ data GroupMember = GroupMember
     memberStatus :: GroupMemberStatus,
     invitedBy :: InvitedBy,
     localDisplayName :: ContactName,
+    -- for membership, memberProfile can be either user's profile or incognito profile, based on memberIncognito test.
+    -- for other members it's whatever profile the local user can see (there is no info about whether it's main or incognito profile for remote users).
     memberProfile :: LocalProfile,
+    -- this is the ID of the associated contact (it will be used to send direct messages to the member)
     memberContactId :: Maybe ContactId,
+    -- for membership it would always point to user's contact
+    -- it is used to test for incognito status by comparing with ID in memberProfile
     memberContactProfileId :: ProfileId,
     activeConn :: Maybe Connection
   }
@@ -595,8 +635,17 @@ memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId
 
-memberIncognito :: GroupMember -> Bool
+memberIncognito :: GroupMember -> IncognitoEnabled
 memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
+
+incognitoMembership :: GroupInfo -> IncognitoEnabled
+incognitoMembership GroupInfo {membership} = memberIncognito membership
+
+-- returns profile when membership is incognito, otherwise Nothing
+incognitoMembershipProfile :: GroupInfo -> Maybe LocalProfile
+incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}}
+  | memberIncognito m = Just memberProfile
+  | otherwise = Nothing
 
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
@@ -782,7 +831,11 @@ memberActive m = case memberStatus m of
   GSMemCreator -> True
 
 memberCurrent :: GroupMember -> Bool
-memberCurrent m = case memberStatus m of
+memberCurrent = memberCurrent' . memberStatus
+
+-- update getGroupSummary if this is changed
+memberCurrent' :: GroupMemberStatus -> Bool
+memberCurrent' = \case
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
@@ -931,7 +984,10 @@ data RcvFileTransfer = RcvFileTransfer
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
-    grpMemberId :: Maybe Int64
+    grpMemberId :: Maybe Int64,
+    -- XFTP files are encrypted as they are received, they are never stored unecrypted
+    -- SMP files are encrypted after all chunks are received
+    cryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show, Generic)
 
@@ -1095,7 +1151,8 @@ instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaul
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
     privateSndFileDescr :: Maybe Text,
-    agentSndFileDeleted :: Bool
+    agentSndFileDeleted :: Bool,
+    cryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show, Generic)
 
@@ -1141,6 +1198,7 @@ type ConnReqContact = ConnectionRequestUri 'CMContact
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
+    peerChatVRange :: JVersionRange,
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
@@ -1333,8 +1391,6 @@ serializeIntroStatus = \case
 
 data Notification = Notification {title :: Text, text :: Text}
 
-type JSONString = String
-
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
 
@@ -1451,3 +1507,21 @@ instance ProtocolTypeI p => ToJSON (ServerCfg p) where
 
 instance ProtocolTypeI p => FromJSON (ServerCfg p) where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+newtype ChatVersionRange = ChatVersionRange {fromChatVRange :: VersionRange} deriving (Eq, Show)
+
+chatInitialVRange :: VersionRange
+chatInitialVRange = versionToRange 1
+
+instance FromJSON ChatVersionRange where
+  parseJSON v = ChatVersionRange <$> strParseJSON "ChatVersionRange" v
+
+instance ToJSON ChatVersionRange where
+  toJSON (ChatVersionRange vr) = strToJSON vr
+  toEncoding (ChatVersionRange vr) = strToJEncoding vr
+
+newtype JVersionRange = JVersionRange {fromJVersionRange :: VersionRange} deriving (Eq, Show)
+
+instance ToJSON JVersionRange where
+  toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minVersion" .= minV, "maxVersion" .= maxV]
+  toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minVersion" .= minV <> "maxVersion" .= maxV

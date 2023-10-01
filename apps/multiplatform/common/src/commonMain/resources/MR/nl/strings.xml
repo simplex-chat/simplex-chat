@@ -48,7 +48,6 @@
     <string name="allow_verb">Toestaan</string>
     <string name="chat_item_ttl_day">1 dag</string>
     <string name="accept_feature">Accepteer</string>
-    <string name="incognito_random_profile_from_contact_description">Er wordt een willekeurig profiel verzonden naar het contact van wie je deze link hebt ontvangen</string>
     <string name="network_session_mode_entity_description">Er wordt een afzonderlijke TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk contact en groepslid </b>.
 \n<b>Let op</b>: als u veel verbindingen heeft, kan uw batterij- en verkeersverbruik aanzienlijk hoger zijn en kunnen sommige verbindingen uitvallen.</string>
     <string name="icon_descr_audio_call">audio oproep</string>
@@ -59,17 +58,16 @@
     <string name="back">Terug</string>
     <string name="v4_2_auto_accept_contact_requests">Contact verzoeken automatisch accepteren</string>
     <string name="bold_text">vetgedrukt</string>
-    <string name="incognito_random_profile_description">Er wordt een willekeurig profiel naar uw contactpersoon verzonden</string>
     <string name="attach">Bijvoegen</string>
-    <string name="allow_irreversible_message_deletion_only_if">Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contactpersoon dit toestaat.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat.</string>
     <string name="allow_to_send_disappearing">Sta toe om verdwijnende berichten te verzenden.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Sta toe dat uw contacten spraak berichten verzenden.</string>
     <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
     <string name="allow_voice_messages_question">Spraak berichten toestaan\?</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Goed voor de batterij</b>. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.]]></string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scan QR-code</b>: om verbinding te maken met uw contactpersoon die u de QR-code laat zien.]]></string>
-    <string name="integrity_msg_bad_id">Onjuiste bericht ID</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scan QR-code</b>: om verbinding te maken met uw contact die u de QR-code laat zien.]]></string>
+    <string name="integrity_msg_bad_id">Onjuiste bericht-ID</string>
     <string name="call_already_ended">Oproep al beëindigd!</string>
     <string name="chat_item_ttl_month">1 maand</string>
     <string name="about_simplex">Over SimpleX</string>
@@ -77,8 +75,8 @@
     <string name="above_then_preposition_continuation">hier boven, dan:</string>
     <string name="users_delete_all_chats_deleted">Alle gesprekken en berichten worden verwijderd, dit kan niet ongedaan worden gemaakt!</string>
     <string name="clear_chat_warning">Alle berichten worden verwijderd, dit kan niet ongedaan worden gemaakt! De berichten worden ALLEEN voor jou verwijderd.</string>
-    <string name="allow_disappearing_messages_only_if">Sta verdwijnende berichten alleen toe als uw contactpersoon dit toestaat.</string>
-    <string name="allow_voice_messages_only_if">Sta spraak berichten alleen toe als uw contactpersoon ze toestaat.</string>
+    <string name="allow_disappearing_messages_only_if">Sta verdwijnende berichten alleen toe als uw contact dit toestaat.</string>
+    <string name="allow_voice_messages_only_if">Sta spraak berichten alleen toe als uw contact ze toestaat.</string>
     <string name="allow_your_contacts_irreversibly_delete">Laat uw contacten verzonden berichten onomkeerbaar verwijderen.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Sta toe dat uw contacten verdwijnende berichten verzenden.</string>
     <string name="chat_preferences_always">altijd</string>
@@ -101,9 +99,9 @@
     <string name="turning_off_service_and_periodic">Batterijoptimalisatie is actief, waardoor achtergrondservice en periodieke verzoeken om nieuwe berichten worden uitgeschakeld. Je kunt ze weer inschakelen via instellingen.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Het beste voor de batterij</b>. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Het kan worden uitgeschakeld via instellingen</b>, meldingen worden nog steeds weergegeven terwijl de app actief is.]]></string>
-    <string name="both_you_and_your_contacts_can_delete">Zowel jij als je contactpersoon kunnen verzonden berichten onherroepelijk verwijderen.</string>
-    <string name="both_you_and_your_contact_can_send_disappearing">Zowel jij als je contactpersoon kunnen verdwijnende berichten sturen.</string>
-    <string name="both_you_and_your_contact_can_send_voice">Zowel jij als je contactpersoon kunnen spraak berichten verzenden.</string>
+    <string name="both_you_and_your_contacts_can_delete">Zowel jij als je contact kunnen verzonden berichten onherroepelijk verwijderen.</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">Zowel jij als je contact kunnen verdwijnende berichten sturen.</string>
+    <string name="both_you_and_your_contact_can_send_voice">Zowel jij als je contact kunnen spraak berichten verzenden.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Let op</b>: u kunt het wachtwoord NIET herstellen of wijzigen als u het kwijt raakt.]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Gebruikt meer batterij</b>! Achtergrondservice wordt altijd uitgevoerd - meldingen worden weergegeven zodra berichten beschikbaar zijn.]]></string>
     <string name="icon_descr_cancel_link_preview">link voorbeeld annuleren</string>
@@ -229,7 +227,7 @@
     <string name="group_member_status_announced">verbinden (aangekondigd)</string>
     <string name="info_row_connection">Verbinding</string>
     <string name="create_secret_group_title">Maak een geheime groep aan</string>
-    <string name="info_row_database_id">Database ID</string>
+    <string name="info_row_database_id">Database-ID</string>
     <string name="chat_preferences_contact_allows">Contact maakt het mogelijk</string>
     <string name="contact_preferences">Contact voorkeuren</string>
     <string name="contacts_can_mark_messages_for_deletion">Contact personen kunnen berichten markeren voor verwijdering; u kunt ze wel bekijken.</string>
@@ -376,7 +374,7 @@
     <string name="delete_group_for_self_cannot_undo_warning">De groep wordt voor u verwijderd, dit kan niet ongedaan worden gemaakt!</string>
     <string name="hide_notification">Verbergen</string>
     <string name="server_error">fout</string>
-    <string name="file_will_be_received_when_contact_is_online">Het bestand wordt ontvangen wanneer uw contact persoon online is, even geduld a.u.b. of controleer later!</string>
+    <string name="file_will_be_received_when_contact_is_online">Het bestand wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of controleer later!</string>
     <string name="error_saving_file">Fout bij opslaan van bestand</string>
     <string name="file_not_found">Bestand niet gevonden</string>
     <string name="file_saved">Bestand opgeslagen</string>
@@ -422,7 +420,7 @@
     <string name="mark_read">Markeer gelezen</string>
     <string name="mark_unread">Markeer als ongelezen</string>
     <string name="mute_chat">Dempen</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Als u elkaar niet persoonlijk kunt ontmoeten, kunt u <b> de QR-code scannen in het video gesprek </b>, of uw contactpersoon kan een uitnodiging link delen.]]></string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Als u elkaar niet persoonlijk kunt ontmoeten, kunt u <b> de QR-code scannen in het video gesprek </b>, of uw contact kan een uitnodiging link delen.]]></string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Als je elkaar niet persoonlijk kunt ontmoeten, <b>toon je de QR-code in het video gesprek</b> of deel je de link.]]></string>
     <string name="invalid_QR_code">Ongeldige QR-code</string>
     <string name="icon_descr_more_button">Meer</string>
@@ -437,7 +435,7 @@
     <string name="how_it_works">Hoe het werkt</string>
     <string name="callstatus_missed">gemiste oproep</string>
     <string name="how_simplex_works">Hoe SimpleX werkt</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Veel mensen vroegen: <i>als SimpleX geen gebruikers ID\'s heeft, hoe kan het dan berichten bezorgen\?</i>]]></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Veel mensen vroegen: <i>als SimpleX geen gebruikers-ID\'s heeft, hoe kan het dan berichten bezorgen\?</i>]]></string>
     <string name="incoming_audio_call">Inkomende audio oproep</string>
     <string name="incoming_video_call">Inkomend video gesprek</string>
     <string name="ignore">Negeren</string>
@@ -451,7 +449,6 @@
     <string name="group_member_status_invited">uitgenodigd</string>
     <string name="button_leave_group">Groep verlaten</string>
     <string name="info_row_local_name">Lokale naam</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Incognito modus wordt hier niet ondersteund, uw hoofdprofiel wordt naar groepsleden verzonden</string>
     <string name="users_delete_data_only">Alleen lokale profielgegevens</string>
     <string name="message_deletion_prohibited_in_chat">Het onomkeerbaar verwijderen van berichten is verboden in deze groep.</string>
     <string name="v4_3_improved_privacy_and_security_desc">App scherm verbergen in de recente apps.</string>
@@ -472,7 +469,7 @@
     <string name="v4_5_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
     <string name="button_add_members">Nodig leden uit</string>
     <string name="notification_display_mode_hidden_desc">Verberg contact en bericht</string>
-    <string name="turn_off_battery_optimization"><![CDATA[Om het te gebruiken <b>batterijoptimalisatie uitschakelen</b> voor SimpleX in het volgende dialoogvenster. Anders worden de meldingen uitgeschakeld.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Om het te gebruiken, kunt u Simplex in het volgende dialoogvenster \u0020<b>op de achtergrond uitvoeren</b>. Anders worden de meldingen uitgeschakeld.]]></string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Als u ervoor kiest om te weigeren, wordt de afzender NIET op de hoogte gesteld.</string>
     <string name="onboarding_notifications_mode_service">Onmiddellijk</string>
     <string name="rcv_group_event_member_added">heeft %1$s uitgenodigd</string>
@@ -482,7 +479,7 @@
     <string name="group_preview_join_as">lid worden als %s</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Het kan gebeuren wanneer:
 \n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.
-\n2. Decodering van het bericht is mislukt, omdat u of uw contactpersoon een oude databaseback-up heeft gebruikt.
+\n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude databaseback-up heeft gebruikt.
 \n3. De verbinding is verbroken.</string>
     <string name="joining_group">Deel nemen aan groep</string>
     <string name="leave_group_button">Verlaten</string>
@@ -501,7 +498,7 @@
     <string name="import_database">Database importeren</string>
     <string name="v4_3_improved_privacy_and_security">Verbeterde privacy en veiligheid</string>
     <string name="image_will_be_received_when_contact_is_online">De afbeelding wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of kijk later!</string>
-    <string name="incognito_info_protects">De incognito modus beschermt de privacy van uw hoofdprofielnaam en afbeelding, voor elk nieuw contact wordt een nieuw willekeurig profiel gemaakt.</string>
+    <string name="incognito_info_protects">Incognito beschermt je privacy door een nieuw willekeurig profiel te gebruiken voor elk contact.</string>
     <string name="new_database_archive">Nieuw database archief</string>
     <string name="no_details">geen details</string>
     <string name="conn_level_desc_indirect">indirect (%1$s)</string>
@@ -518,7 +515,7 @@
     <string name="network_and_servers">Netwerk &amp; servers</string>
     <string name="enter_one_ICE_server_per_line">ICE servers (één per lijn)</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Zorg ervoor dat WebRTC ICE server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
-    <string name="network_disable_socks_info">Als u bevestigt, kunnen de berichten servers uw IP-adres zien en uw provider, met welke servers u verbinding maakt.</string>
+    <string name="network_disable_socks_info">Als u bevestigt, kunnen de berichten servers en uw provider uw IP-adres zien en met welke servers u verbinding maakt.</string>
     <string name="network_use_onion_hosts_no">Nee</string>
     <string name="immune_to_spam_and_abuse">Immuun voor spam en misbruik</string>
     <string name="make_private_connection">Maak een privéverbinding</string>
@@ -530,7 +527,7 @@
     <string name="rcv_group_event_invited_via_your_group_link">uitgenodigd via je groep link</string>
     <string name="incognito">Incognito</string>
     <string name="icon_descr_call_missed">Gemiste oproep</string>
-    <string name="description_via_contact_address_link_incognito">incognito via contact adres link</string>
+    <string name="description_via_contact_address_link_incognito">incognito via contactadres link</string>
     <string name="description_via_group_link_incognito">incognito via groep link</string>
     <string name="description_via_one_time_link_incognito">incognito via eenmalige link</string>
     <string name="invalid_chat">ongeldige gesprek</string>
@@ -540,7 +537,7 @@
     <string name="live">LIVE</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Zorg ervoor dat SMP server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
     <string name="marked_deleted_description">gemarkeerd als verwijderd</string>
-    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Controleer of u de juiste link heeft gebruikt of vraag uw contactpersoon om u een andere te sturen.</string>
+    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Controleer of u de juiste link heeft gebruikt of vraag uw contact om u een andere te sturen.</string>
     <string name="image_descr_profile_image">profielfoto</string>
     <string name="privacy_redefined">Privacy opnieuw gedefinieerd</string>
     <string name="privacy_and_security">Privacy en beveiliging</string>
@@ -566,8 +563,8 @@
     <string name="chat_preferences_off">uit</string>
     <string name="chat_preferences_on">aan</string>
     <string name="only_you_can_send_disappearing">Alleen jij kunt verdwijnende berichten verzenden.</string>
-    <string name="only_your_contact_can_send_disappearing">Alleen uw contactpersoon kan verdwijnende berichten verzenden.</string>
-    <string name="only_you_can_delete_messages">Alleen jij kunt berichten onomkeerbaar verwijderen (je contactpersoon kan ze markeren voor verwijdering).</string>
+    <string name="only_your_contact_can_send_disappearing">Alleen uw contact kan verdwijnende berichten verzenden.</string>
+    <string name="only_you_can_delete_messages">Alleen jij kunt berichten onomkeerbaar verwijderen (je contact kan ze markeren voor verwijdering).</string>
     <string name="feature_offered_item_with_param">voorgesteld %s: %2s</string>
     <string name="old_database_archive">Oud database archief</string>
     <string name="enter_correct_current_passphrase">Voer het juiste huidige wachtwoord in.</string>
@@ -583,12 +580,11 @@
     <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts zijn vereist voor verbinding.</string>
     <string name="only_group_owners_can_change_prefs">Alleen groep eigenaren kunnen groep voorkeuren wijzigen.</string>
     <string name="only_stored_on_members_devices">(alleen opgeslagen door groepsleden)</string>
-    <string name="paste_connection_link_below_to_connect">Plak de link die je hebt ontvangen in het vak hieronder om verbinding te maken met je contactpersoon.</string>
     <string name="smp_servers_preset_server">Vooraf ingestelde server</string>
     <string name="periodic_notifications_disabled">Periodieke meldingen zijn uitgeschakeld!</string>
     <string name="icon_descr_server_status_pending">In behandeling</string>
     <string name="only_group_owners_can_enable_voice">Alleen groep eigenaren kunnen spraak berichten inschakelen.</string>
-    <string name="ask_your_contact_to_enable_voice">Vraag uw contactpersoon om het verzenden van spraak berichten in te schakelen.</string>
+    <string name="ask_your_contact_to_enable_voice">Vraag uw contact om het verzenden van spraak berichten in te schakelen.</string>
     <string name="ok">OK</string>
     <string name="network_use_onion_hosts_required_desc">Onion hosts zijn vereist voor verbinding.</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion hosts worden gebruikt indien beschikbaar.</string>
@@ -596,9 +592,9 @@
     <string name="network_use_onion_hosts_no_desc">Onion hosts worden niet gebruikt.</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol en code. Iedereen kan de servers draaien.</string>
     <string name="people_can_connect_only_via_links_you_share">Mensen kunnen alleen verbinding met u maken via de links die u deelt.</string>
-    <string name="only_your_contact_can_delete">Alleen uw contactpersoon kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).</string>
+    <string name="only_your_contact_can_delete">Alleen uw contact kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).</string>
     <string name="only_you_can_send_voice">Alleen jij kunt spraak berichten verzenden.</string>
-    <string name="only_your_contact_can_send_voice">Alleen uw contactpersoon kan spraak berichten verzenden.</string>
+    <string name="only_your_contact_can_send_voice">Alleen uw contact kan spraak berichten verzenden.</string>
     <string name="prohibit_message_deletion">Verbied het onomkeerbaar verwijderen van berichten.</string>
     <string name="feature_offered_item">voorgesteld %s</string>
     <string name="store_passphrase_securely_without_recover">Sla het wachtwoord veilig op. Als u deze kwijtraakt, heeft u GEEN toegang tot de gesprekken.</string>
@@ -645,7 +641,7 @@
     <string name="simplex_service_notification_title">SimpleX Chat service</string>
     <string name="simplex_service_notification_text">Berichten ontvangen…</string>
     <string name="notification_preview_mode_message_desc">Toon contact en bericht</string>
-    <string name="notification_preview_mode_contact_desc">Toon alleen contactpersoon</string>
+    <string name="notification_preview_mode_contact_desc">Toon alleen contact</string>
     <string name="ntf_channel_messages">SimpleX Chat berichten</string>
     <string name="auth_simplex_lock_turned_on">SimpleX Vergrendelen ingeschakeld</string>
     <string name="auth_stop_chat">Stop chat</string>
@@ -678,30 +674,29 @@
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scannen of plakken vanaf klembord)</string>
     <string name="to_connect_via_link_title">Om verbinding te maken via een link</string>
     <string name="reject_contact_button">Afwijzen</string>
-    <string name="set_contact_name">Naam contactpersoon instellen</string>
+    <string name="set_contact_name">Naam contact instellen</string>
     <string name="connection_you_accepted_will_be_cancelled">De door u geaccepteerde verbinding wordt geannuleerd!</string>
-    <string name="contact_you_shared_link_with_wont_be_able_to_connect">Het contact met wie je deze link hebt gedeeld, kan GEEN verbinding maken!</string>
+    <string name="contact_you_shared_link_with_wont_be_able_to_connect">Het contact met wie je deze link hebt gedeeld kan GEEN verbinding maken!</string>
     <string name="you_accepted_connection">Je hebt de verbinding geaccepteerd</string>
-    <string name="you_invited_your_contact">Je hebt je contactpersoon uitgenodigd</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Uw contactpersoon moet online zijn om de verbinding te voltooien.
-\nU kunt deze verbinding verbreken en het contact verwijderen (en later proberen met een nieuwe link).</string>
+    <string name="you_invited_a_contact">Je hebt je contact uitgenodigd</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Uw contact moet online zijn om de verbinding te voltooien.
+\nU kunt deze verbinding verbreken en het contact verwijderen en later proberen met een nieuwe link.</string>
     <string name="image_descr_qr_code">QR code</string>
     <string name="icon_descr_settings">Instellingen</string>
     <string name="contact_wants_to_connect_with_you">wil met je in contact komen!</string>
     <string name="icon_descr_address">SimpleX Adres</string>
     <string name="show_QR_code">Toon QR-code</string>
     <string name="image_descr_simplex_logo">SimpleX-Logo</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Je chat profiel wordt verzonden naar uw contactpersoon</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Je chat profiel wordt verzonden naar uw contact</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Je wordt verbonden met de groep wanneer het apparaat van de groep host online is, even geduld a.u.b. of controleer het later!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">U wordt verbonden wanneer uw verbindingsverzoek wordt geaccepteerd, even geduld a.u.b. of controleer later!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Je wordt verbonden wanneer het apparaat van je contact online is, even geduld a.u.b. of controleer het later!</string>
-    <string name="scan_code_from_contacts_app">Scan de beveiligingscode van de app van uw contactpersoon.</string>
+    <string name="scan_code_from_contacts_app">Scan de beveiligingscode van de app van uw contact.</string>
     <string name="security_code">Beveiligingscode</string>
     <string name="is_not_verified">%s is niet geverifieerd</string>
     <string name="is_verified">%s is geverifieerd</string>
-    <string name="to_verify_compare">Vergelijk (of scan) de code op uw apparaten om end-to-end codering met uw contactpersoon te verifiëren.</string>
+    <string name="to_verify_compare">Vergelijk (of scan) de code op uw apparaten om end-to-end codering met uw contact te verifiëren.</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[U kunt ook verbinding maken door op de link te klikken. Als het in de browser wordt geopend, klikt u op de knop <b> Openen in mobiele app </b>.]]></string>
-    <string name="your_profile_will_be_sent">Uw chat profiel wordt naar uw contactpersoon verzonden</string>
     <string name="your_chat_profiles">Uw chat profielen</string>
     <string name="your_simplex_contact_address">Uw SimpleX adres</string>
     <string name="chat_with_the_founder">Stuur vragen en ideeën</string>
@@ -733,7 +728,7 @@
     <string name="secret_text">geheim</string>
     <string name="next_generation_of_private_messaging">De volgende generatie privéberichten</string>
     <string name="callstate_waiting_for_answer">wachten op antwoord…</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers ID\'s die door alle andere platforms worden gebruikt, ID\'s voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID\'s die door alle andere platforms worden gebruikt, ID\'s voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.</string>
     <string name="use_chat">Gebruik chat</string>
     <string name="onboarding_notifications_mode_off">Wanneer de app actief is</string>
     <string name="video_call_no_encryption">video gesprek (niet e2e versleuteld)</string>
@@ -820,7 +815,6 @@
     <string name="network_options_revert">Terugdraaien</string>
     <string name="network_options_save">Opslaan</string>
     <string name="network_option_seconds_label">sec</string>
-    <string name="incognito_info_find">Om het profiel te vinden dat wordt gebruikt voor een incognito verbinding, tikt u op de naam van het contact of de groep bovenaan het gesprek.</string>
     <string name="incognito_info_share">Wanneer je een incognito profiel met iemand deelt, wordt dit profiel gebruikt voor de groepen waarvoor ze je uitnodigen.</string>
     <string name="theme">Thema</string>
     <string name="reset_color">Kleuren resetten</string>
@@ -870,7 +864,7 @@
     <string name="update_network_session_mode_question">Transportisolatiemodus updaten\?</string>
     <string name="callstate_received_confirmation">bevestiging ontvangen…</string>
     <string name="callstate_waiting_for_confirmation">Wachten op bevestiging…</string>
-    <string name="first_platform_without_user_ids">Het eerste platform zonder gebruikers ID\'s, privé door ontwerp.</string>
+    <string name="first_platform_without_user_ids">Het eerste platform zonder gebruikers-ID\'s, privé door ontwerp.</string>
     <string name="prohibit_direct_messages">Verbied het sturen van directe berichten naar leden.</string>
     <string name="prohibit_sending_voice">Verbieden het verzenden van spraak berichten.</string>
     <string name="v4_2_security_assessment_desc">De beveiliging van SimpleX Chat is gecontroleerd door Trail of Bits.</string>
@@ -913,8 +907,8 @@
     <string name="chat_preferences_you_allow">Jij staat toe</string>
     <string name="you_are_invited_to_group">Je bent uitgenodigd voor de groep</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[U kunt <font color="#0088ff">verbinding maken met SimpleX Chat ontwikkelaars om vragen te stellen en updates te ontvangen</font>.]]></string>
-    <string name="connection_error_auth_desc">Tenzij uw contactpersoon de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
-\nOm verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
+    <string name="connection_error_auth_desc">Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
+\nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
     <string name="update_onion_hosts_settings_question">.onion hosts-instelling updaten\?</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat servers gebruiken\?</string>
     <string name="voice_messages_are_prohibited">Spraak berichten zijn verboden in deze groep.</string>
@@ -922,10 +916,10 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">U kunt de chat starten via app Instellingen / Database of door de app opnieuw op te starten.</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">je hebt het adres gewijzigd voor %s</string>
     <string name="snd_group_event_member_deleted">je hebt %1$s verwijderd</string>
-    <string name="contact_sent_large_file">Je contactpersoon heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%1$s).</string>
+    <string name="contact_sent_large_file">Je contact heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%1$s).</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Uw huidige chatdatabase wordt VERWIJDERD en VERVANGEN door de geïmporteerde.
 \nDeze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
-    <string name="invite_prohibited_description">Je probeert een contact met wie je een incognito profiel hebt gedeeld, uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</string>
+    <string name="invite_prohibited_description">Je probeert een contact met wie je een incognito profiel hebt gedeeld uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten. SimpleX servers kunnen uw profiel niet zien.</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">U moet zich authenticeren wanneer u de app na 30 seconden op de achtergrond start of hervat.</string>
     <string name="images_limit_title">Te veel afbeeldingen!</string>
@@ -943,7 +937,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Er wordt geprobeerd verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %1$s).</string>
     <string name="unknown_message_format">onbekend berichtformaat</string>
     <string name="simplex_link_mode_browser">Via browser</string>
-    <string name="description_via_contact_address_link">via contact adres link</string>
+    <string name="description_via_contact_address_link">via contactadres link</string>
     <string name="description_via_group_link">via groep link</string>
     <string name="description_via_one_time_link">via een eenmalige link</string>
     <string name="simplex_link_connection">via %1$s</string>
@@ -1020,10 +1014,10 @@
     <string name="confirm_database_upgrades">Bevestig database upgrades</string>
     <string name="mtr_error_no_down_migration">database versie is nieuwer dan de app, maar geen down migratie voor: %s</string>
     <string name="incompatible_database_version">Incompatibele database versie</string>
-    <string name="file_will_be_received_when_contact_completes_uploading">Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</string>
-    <string name="image_will_be_received_when_contact_completes_uploading">De afbeelding wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">Het bestand wordt gedownload wanneer uw contact het uploaden heeft voltooid.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">De afbeelding wordt gedownload wanneer uw contact het uploaden heeft voltooid.</string>
     <string name="show_dev_options">Toon:</string>
-    <string name="developer_options">Database ID\'s en Transport isolatie optie.</string>
+    <string name="developer_options">Database-ID\'s en Transport isolatie optie.</string>
     <string name="hide_dev_options">Verbergen:</string>
     <string name="show_developer_options">Ontwikkelaars opties tonen</string>
     <string name="settings_section_title_experimenta">EXPERIMENTEEL</string>
@@ -1040,7 +1034,7 @@
     <string name="icon_descr_waiting_for_video">Wachten op video</string>
     <string name="waiting_for_video">Wachten op video</string>
     <string name="video_descr">Video</string>
-    <string name="video_will_be_received_when_contact_completes_uploading">De video wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">De video wordt gedownload wanneer uw contact het uploaden heeft voltooid.</string>
     <string name="error_saving_xftp_servers">Fout bij opslaan van XFTP-servers</string>
     <string name="error_loading_xftp_servers">Fout bij het laden van XFTP servers</string>
     <string name="error_xftp_test_server_auth">Server vereist autorisatie om te uploaden, wachtwoord controleren</string>
@@ -1092,13 +1086,13 @@
     <string name="decryption_error">Decodering fout</string>
     <string name="alert_text_msg_bad_hash">De hash van het vorige bericht is anders.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d berichten overgeslagen.</string>
-    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of de ander een oude databaseback-up gebruikt.</string>
     <string name="alert_text_fragment_please_report_to_developers">Meld het alsjeblieft aan de ontwikkelaars.</string>
     <string name="alert_title_msg_bad_hash">Onjuiste bericht hash</string>
-    <string name="alert_title_msg_bad_id">Onjuiste bericht ID</string>
+    <string name="alert_title_msg_bad_id">Onjuiste bericht-ID</string>
     <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
 \nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d-berichten konden niet worden ontsleuteld.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d berichten konden niet worden ontsleuteld.</string>
     <string name="no_spaces">Geen spaties!</string>
     <string name="stop_rcv_file__message">Het ontvangen van het bestand wordt gestopt.</string>
     <string name="revoke_file__confirm">Intrekken</string>
@@ -1110,10 +1104,10 @@
     <string name="stop_snd_file__title">Bestand verzenden stoppen\?</string>
     <string name="only_your_contact_can_make_calls">Alleen je contact kan bellen.</string>
     <string name="revoke_file__message">Het bestand wordt van de servers verwijderd.</string>
-    <string name="both_you_and_your_contact_can_make_calls">Zowel u als uw contact persoon kunnen bellen.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Zowel u als uw contact kunnen bellen.</string>
     <string name="only_you_can_make_calls">Alleen jij kunt bellen.</string>
     <string name="stop_snd_file__message">Het verzenden van het bestand wordt gestopt.</string>
-    <string name="allow_calls_only_if">Sta oproepen alleen toe als uw contact persoon dit toestaat.</string>
+    <string name="allow_calls_only_if">Sta oproepen alleen toe als uw contact dit toestaat.</string>
     <string name="allow_your_contacts_to_call">Sta toe dat uw contacten u bellen.</string>
     <string name="audio_video_calls">Audio/video oproepen</string>
     <string name="available_in_v51">"
@@ -1129,7 +1123,7 @@
     <string name="auth_open_chat_profiles">Chat profielen openen</string>
     <string name="learn_more_about_address">Over SimpleX adres</string>
     <string name="learn_more">Kom meer te weten</string>
-    <string name="scan_qr_to_connect_to_contact">Om verbinding te maken, kan uw contact persoon de QR-code scannen of de link in de app gebruiken.</string>
+    <string name="scan_qr_to_connect_to_contact">Om verbinding te maken, kan uw contact de QR-code scannen of de link in de app gebruiken.</string>
     <string name="customize_theme_title">Thema aanpassen</string>
     <string name="group_welcome_preview">Voorbeeld</string>
     <string name="you_can_share_this_address_with_your_contacts">U kunt dit adres delen met uw contacten om ze verbinding te laten maken met %s.</string>
@@ -1181,7 +1175,7 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[Lees meer in de <font color="#0088ff">Gebruikershandleiding</font>.]]></string>
     <string name="theme_colors_section_title">THEMA KLEUREN</string>
     <string name="you_can_share_your_address">U kunt uw adres delen als een link of QR-code - iedereen kan verbinding met u maken.</string>
-    <string name="your_contacts_will_see_it">Uw contacten in SimpleX zullen het zien.
+    <string name="your_contacts_will_see_it">Uw contacten in SimpleX kunnen het zien.
 \nU kunt dit wijzigen in Instellingen.</string>
     <string name="all_app_data_will_be_cleared">Alle app-gegevens worden verwijderd.</string>
     <string name="empty_chat_profile_is_created">Er wordt een leeg chatprofiel met de opgegeven naam gemaakt en de app wordt zoals gewoonlijk geopend.</string>
@@ -1202,14 +1196,14 @@
     <string name="only_you_can_add_message_reactions">Alleen jij kunt berichtreacties toevoegen.</string>
     <string name="message_reactions_are_prohibited">Reacties op berichten zijn verboden in deze groep.</string>
     <string name="prohibit_message_reactions_group">Berichten reacties verbieden.</string>
-    <string name="allow_message_reactions_only_if">Sta berichtreacties alleen toe als uw contactpersoon dit toestaat.</string>
+    <string name="allow_message_reactions_only_if">Sta berichtreacties alleen toe als uw contact dit toestaat.</string>
     <string name="allow_your_contacts_adding_message_reactions">Sta uw contactpersonen toe om berichtreacties toe te voegen.</string>
     <string name="allow_message_reactions">Sta berichtreacties toe.</string>
     <string name="group_members_can_add_message_reactions">Groepsleden kunnen berichtreacties toevoegen.</string>
-    <string name="both_you_and_your_contact_can_add_message_reactions">Zowel u als uw contactpersoon kunnen berichtreacties toevoegen.</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Zowel u als uw contact kunnen berichtreacties toevoegen.</string>
     <string name="message_reactions">Reacties op berichten</string>
     <string name="message_reactions_prohibited_in_this_chat">Reacties op berichten zijn verboden in deze chat.</string>
-    <string name="only_your_contact_can_add_message_reactions">Alleen uw contactpersoon kan berichtreacties toevoegen.</string>
+    <string name="only_your_contact_can_add_message_reactions">Alleen uw contact kan berichtreacties toevoegen.</string>
     <string name="custom_time_unit_days">dagen</string>
     <string name="custom_time_unit_hours">uren</string>
     <string name="custom_time_unit_minutes">minuten</string>
@@ -1230,9 +1224,9 @@
     <string name="item_info_current">(huidig)</string>
     <string name="share_text_database_id">Database-ID: %d</string>
     <string name="info_menu">Info</string>
-    <string name="info_row_disappears_at">Verdwijnt om</string>
+    <string name="info_row_disappears_at">Verdwijnt op</string>
     <string name="share_text_moderated_at">Gemodereerd op: %s</string>
-    <string name="share_text_disappears_at">Verdwijnt om: %s</string>
+    <string name="share_text_disappears_at">Verdwijnt op: %s</string>
     <string name="current_version_timestamp">%s (huidig)</string>
     <string name="share_text_sent_at">Verzonden op: %s</string>
     <string name="error_loading_details">Fout bij het laden van details</string>
@@ -1307,21 +1301,21 @@
     <string name="conn_event_ratchet_sync_allowed">versleuteling heronderhandeling toegestaan</string>
     <string name="error_synchronizing_connection">Fout bij het synchroniseren van de verbinding</string>
     <string name="sync_connection_force_desc">De versleuteling werkt en de nieuwe versleutelingsovereenkomst is niet vereist. Dit kan leiden tot verbindingsfouten!</string>
-    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</string>
-    <string name="v5_2_message_delivery_receipts">Ontvangstbevestiging voor berichten!</string>
-    <string name="receipts_section_description_1">Ze kunnen worden overschreven in contactinstellingen</string>
+    <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</string>
+    <string name="v5_2_message_delivery_receipts">Ontvangst bevestiging voor berichten!</string>
+    <string name="receipts_section_description_1">Ze kunnen worden overschreven in contact en groep instellingen</string>
     <string name="receipts_section_contacts">Contacten</string>
-    <string name="receipts_contacts_title_disable">Ontvangstbevestiging uitschakelen\?</string>
-    <string name="receipts_contacts_title_enable">Ontvangstbevestiging inschakelen\?</string>
-    <string name="receipts_contacts_override_enabled">Het verzenden van ontvangstbevestiging is ingeschakeld voor %d-contactpersonen</string>
+    <string name="receipts_contacts_title_disable">Ontvangst bevestiging uitschakelen\?</string>
+    <string name="receipts_contacts_title_enable">Ontvangst bevestiging inschakelen\?</string>
+    <string name="receipts_contacts_override_enabled">Het verzenden van ontvangst bevestiging is ingeschakeld voor %d-contactpersonen</string>
     <string name="receipts_section_description">Deze instellingen gelden voor uw huidige profiel</string>
     <string name="receipts_contacts_disable_keep_overrides">Uitschakelen (overschrijvingen behouden)</string>
     <string name="receipts_contacts_enable_for_all">Inschakelen voor iedereen</string>
     <string name="receipts_contacts_enable_keep_overrides">Inschakelen (overschrijvingen behouden)</string>
-    <string name="receipts_contacts_override_disabled">Het verzenden van ontvangstbevestiging is uitgeschakeld voor %d-contactpersonen</string>
+    <string name="receipts_contacts_override_disabled">Het verzenden van ontvangst bevestiging is uitgeschakeld voor %d-contactpersonen</string>
     <string name="receipts_contacts_disable_for_all">Uitschakelen voor iedereen</string>
-    <string name="settings_section_title_delivery_receipts">STUUR ONTVANGSTBEVESTIGING NAAR</string>
-    <string name="send_receipts">Ontvangstbevestiging verzenden</string>
+    <string name="settings_section_title_delivery_receipts">STUUR ONTVANGST BEVESTIGING NAAR</string>
+    <string name="send_receipts">Ontvangst bevestiging verzenden</string>
     <string name="v5_2_message_delivery_receipts_descr">De tweede vink die we gemist hebben! ✅</string>
     <string name="v5_2_favourites_filter_descr">Filter ongelezen en favoriete chats.</string>
     <string name="v5_2_favourites_filter">Vind gesprekken sneller</string>
@@ -1329,16 +1323,82 @@
     <string name="v5_2_fix_encryption">Behoud uw verbindingen</string>
     <string name="v5_2_disappear_one_message">Eén bericht laten verdwijnen</string>
     <string name="v5_2_more_things">Nog een paar dingen</string>
-    <string name="delivery_receipts_are_disabled">Ontvangstbevestiging is uitgeschakeld!</string>
-    <string name="delivery_receipts_title">Ontvangstbevestiging!</string>
+    <string name="delivery_receipts_are_disabled">Ontvangst bevestiging is uitgeschakeld!</string>
+    <string name="delivery_receipts_title">Ontvangst bevestiging!</string>
     <string name="dont_enable_receipts">Niet inschakelen</string>
     <string name="enable_receipts_all">Inschakelen</string>
     <string name="v5_2_disappear_one_message_descr">Zelfs wanneer uitgeschakeld in het gesprek.</string>
     <string name="v5_2_more_things_descr">- stabielere berichtbezorging.
 \n- een beetje betere groepen.
 \n- en meer!</string>
-    <string name="sending_delivery_receipts_will_be_enabled">Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contactpersonen.</string>
+    <string name="sending_delivery_receipts_will_be_enabled">Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contactpersonen.</string>
     <string name="you_can_enable_delivery_receipts_later">U kunt later inschakelen via Instellingen</string>
     <string name="you_can_enable_delivery_receipts_later_alert">U kunt ze later inschakelen via de privacy- en beveiligingsinstellingen van de app.</string>
-    <string name="error_enabling_delivery_receipts">Fout bij het inschakelen van ontvangstbevestiging!</string>
+    <string name="error_enabling_delivery_receipts">Fout bij het inschakelen van ontvangst bevestiging!</string>
+    <string name="choose_file_title">Kies een bestand</string>
+    <string name="in_developing_title">Binnenkort beschikbaar!</string>
+    <string name="in_developing_desc">Deze functie wordt nog niet ondersteund. Probeer de volgende versie.</string>
+    <string name="no_selected_chat">Geen geselecteerd gesprek</string>
+    <string name="delivery">Levering</string>
+    <string name="no_info_on_delivery">Geen leveringsinformatie</string>
+    <string name="receipts_groups_title_disable">Ontvangstbevestiging voor groepen uitschakelen\?</string>
+    <string name="receipts_groups_title_enable">Ontvangstbevestiging inschakelen voor groepen\?</string>
+    <string name="receipts_section_groups">Kleine groepen (max 20)</string>
+    <string name="receipts_groups_disable_for_all">Uitschakelen voor alle groepen</string>
+    <string name="receipts_groups_disable_keep_overrides">Uitschakelen (groep overschrijven behouden)</string>
+    <string name="receipts_groups_enable_for_all">Inschakelen voor alle groepen</string>
+    <string name="receipts_groups_enable_keep_overrides">Inschakelen (groep overschrijven behouden)</string>
+    <string name="receipts_groups_override_disabled">Het verzenden van ontvangstbevestigingen is uitgeschakeld voor %d-groepen</string>
+    <string name="receipts_groups_override_enabled">Het verzenden van ontvangstbevestigingen is ingeschakeld voor %d-groepen</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="send_receipts_disabled_alert_msg">Deze groep heeft meer dan %1$d leden, Ontvangstbevestigingen worden niet verzonden.</string>
+    <string name="send_receipts_disabled">uitgeschakeld</string>
+    <string name="send_receipts_disabled_alert_title">Ontvangstbevestigingen zijn uitgeschakeld</string>
+    <string name="connect_via_member_address_alert_title">Verbind direct\?</string>
+    <string name="turn_off_battery_optimization_button">Toestaan</string>
+    <string name="connect_via_link_incognito">Verbind incognito</string>
+    <string name="disable_notifications_button">Meldingen uitzetten</string>
+    <string name="turn_off_system_restriction_button">Open app instellingen</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Een nieuw willekeurig profiel zal gedeeld worden.</string>
+    <string name="connect_use_current_profile">Gebruik het huidige profiel</string>
+    <string name="system_restricted_background_in_call_title">Geen achtergrondgesprekken</string>
+    <string name="system_restricted_background_desc">SimpleX kan niet op de achtergrond draaien. Je krijgt alleen de berichten als de app open is.</string>
+    <string name="system_restricted_background_in_call_desc">De app is misschien afgesloten na 1 minuut achtergrond.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Kies de <b>app -batterijgebruik</b> / <b>onbeperkt</b> in de app -instellingen om met gesloten app te bellen.]]></string>
+    <string name="connect__your_profile_will_be_shared">Uw profiel %1$s wordt gedeeld.</string>
+    <string name="connect_via_member_address_alert_desc">Verzoek voor het verbinden wordt naar dit groepslid verzonden.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Plak de link die je hebt ontvangen om verbinding te maken met je contact…</string>
+    <string name="system_restricted_background_warn"><![CDATA[Als u meldingen wilt inschakelen, kiest u <b> App-batterijgebruik</b> /<b> Onbeperkt</b> in de app-instellingen.]]></string>
+    <string name="connect_use_new_incognito_profile">Gebruik een nieuw incognito profiel</string>
+    <string name="privacy_message_draft">Concept bericht</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s en %d andere leden verbonden</string>
+    <string name="privacy_show_last_messages">Laat laatste berichten zien</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s en %s verbonden</string>
+    <string name="rcv_group_event_2_members_connected">%s en %s verbonden</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">De database wordt versleuteld en het wachtwoord wordt opgeslagen in de instellingen.</string>
+    <string name="you_can_change_it_later">Willekeurig wachtwoord wordt in de instellingen opgeslagen als platte tekst.
+\nJe kunt het later wijzigen.</string>
+    <string name="database_encryption_will_be_updated_in_settings">Het wachtwoord voor database versleuteling wordt bijgewerkt en opgeslagen in de instellingen.</string>
+    <string name="remove_passphrase_from_settings">Wachtwoord uit instellingen verwijderen\?</string>
+    <string name="use_random_passphrase">Gebruik een willekeurig wachtwoord</string>
+    <string name="save_passphrase_in_settings">Bewaar het wachtwoord in de instellingen</string>
+    <string name="setup_database_passphrase">Database wachtwoord instellen</string>
+    <string name="set_database_passphrase">Database wachtwoord instellen</string>
+    <string name="open_database_folder">Database map openen</string>
+    <string name="passphrase_will_be_saved_in_settings">Het wachtwoord wordt als platte tekst in de instellingen opgeslagen nadat u deze hebt gewijzigd of de app opnieuw hebt opgestart.</string>
+    <string name="settings_is_storing_in_clear_text">Het wachtwoord wordt als leesbare tekst in de instellingen opgeslagen.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Let op</b>: bericht en bestands relais zijn verbonden via SOCKS-proxy. Voor oproepen en het verzenden van link voorbeelden wordt gebruik gemaakt van een directe verbinding.]]></string>
+    <string name="encrypt_local_files">Versleutel lokale bestanden</string>
+    <string name="v5_3_encrypt_local_files">Versleutel opgeslagen bestanden en media</string>
+    <string name="v5_3_new_desktop_app">Nieuwe desktop app!</string>
+    <string name="v5_3_new_interface_languages">6 nieuwe interfacetalen</string>
+    <string name="v5_3_encrypt_local_files_descr">App versleutelt nieuwe lokale bestanden (behalve video\'s)</string>
+    <string name="v5_3_discover_join_groups">Ontdek en sluit je aan bij groepen</string>
+    <string name="v5_3_simpler_incognito_mode">Vereenvoudigde incognitomodus</string>
+    <string name="v5_3_new_interface_languages_descr">Arabisch, Bulgaars, Fins, Hebreeuws, Thais en Oekraïens - dankzij de gebruikers en Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Maak een nieuw profiel in de desktop-app. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Schakel incognito in tijdens het verbinden.</string>
+    <string name="v5_3_discover_join_groups_descr">- maak verbinding met de directoryservice (BETA)!
+\n- ontvangst bevestiging (tot 20 leden).
+\n- sneller en stabieler.</string>
 </resources>

@@ -58,10 +58,14 @@ struct ContactConnectionView: View {
                 }
                 .padding(.bottom, 2)
 
-                Text(contactConnection.description)
-                    .frame(alignment: .topLeading)
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 2)
+                ZStack(alignment: .topTrailing) {
+                    Text(contactConnection.description)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    incognitoIcon(contactConnection.incognito)
+                        .padding(.top, 26)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                .padding(.horizontal, 8)
 
                 Spacer()
             }

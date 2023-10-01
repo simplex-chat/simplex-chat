@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 
 plugins {
   kotlin("multiplatform")
@@ -20,6 +21,7 @@ kotlin {
       dependencies {
         implementation(project(":common"))
         implementation(compose.desktop.currentOs)
+        implementation("net.java.dev.jna:jna:5.13.0")
       }
     }
     val jvmTest by getting
@@ -30,9 +32,24 @@ kotlin {
 compose {
   desktop {
     application {
-      mainClass = "MainKt"
+      // For debugging via VisualVM
+      val debugJava = false
+      if (debugJava) {
+        jvmArgs += listOf(
+          "-Dcom.sun.management.jmxremote.port=8080",
+          "-Dcom.sun.management.jmxremote.ssl=false",
+          "-Dcom.sun.management.jmxremote.authenticate=false"
+        )
+      }
+      mainClass = "chat.simplex.desktop.MainKt"
       nativeDistributions {
-        modules("jdk.zipfs")
+        // For debugging via VisualVM
+        if (debugJava) {
+          modules("jdk.zipfs", "jdk.unsupported", "jdk.management.agent")
+        } else {
+          // 'jdk.unsupported' is for vlcj
+          modules("jdk.zipfs", "jdk.unsupported")
+        }
         //includeAllModules = true
         outputBaseDir.set(project.file("../release"))
         targetFormats(
@@ -40,23 +57,45 @@ compose {
           //, TargetFormat.AppImage // Gradle doesn't sync on Mac with it
         )
         linux {
-          iconFile.set(project.file("../common/src/commonMain/resources/distribute/simplex.png"))
+          iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.png"))
           appCategory = "Messenger"
         }
         windows {
-          // LALAL
-          iconFile.set(project.file("../common/src/commonMain/resources/distribute/simplex.ico"))
+          packageName = "SimpleX"
+          iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.ico"))
           console = true
           perUserInstall = true
           dirChooser = true
         }
         macOS {
-          // LALAL
-          //iconFile.set(project.file("../common/src/commonMain/resources/distribute/simplex.icns"))
+          packageName = "SimpleX"
+          iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.icns"))
           appCategory = "public.app-category.social-networking"
           bundleID = "chat.simplex.app"
+          val identity = rootProject.extra["desktop.mac.signing.identity"] as String?
+          val keychain = rootProject.extra["desktop.mac.signing.keychain"] as String?
+          val appleId = rootProject.extra["desktop.mac.notarization.apple_id"] as String?
+          val password = rootProject.extra["desktop.mac.notarization.password"] as String?
+          val teamId = rootProject.extra["desktop.mac.notarization.team_id"] as String?
+          if (identity != null && keychain != null && appleId != null && password != null) {
+            signing {
+              sign.set(true)
+              this.identity.set(identity)
+              this.keychain.set(keychain)
+            }
+            notarization {
+              this.appleID.set(appleId)
+              this.password.set(password)
+              this.ascProvider.set(teamId)
+            }
+          }
         }
-        packageName = "simplex"
+        val os = System.getProperty("os.name", "generic").toLowerCaseAsciiOnly()
+        if (os.contains("mac") || os.contains("win")) {
+          packageName = "SimpleX"
+        } else {
+          packageName = "simplex"
+        }
         // Packaging requires to have version like MAJOR.MINOR.PATCH
         var adjustedVersion = rootProject.extra["desktop.version_name"] as String
         adjustedVersion = adjustedVersion.replace(Regex("[^0-9.]"), "")
@@ -113,21 +152,30 @@ tasks.named("compileJava") {
 afterEvaluate {
   tasks.create("cmakeBuildAndCopy") {
     dependsOn("cmakeBuild")
+    val copyDetails = mutableMapOf<String, ArrayList<FileCopyDetails>>()
     doLast {
       copy {
         from("${project(":desktop").buildDir}/cmake/main/linux-amd64", "$cppPath/desktop/libs/linux-x86_64", "$cppPath/desktop/libs/linux-x86_64/deps")
-        into("../common/src/commonMain/resources/libs/linux-x86_64")
-        include("*.so")
+        into("src/jvmMain/resources/libs/linux-x86_64")
+        include("*.so*")
         eachFile {
           path = name
         }
         includeEmptyDirs = false
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
+        val destinationDir = "src/jvmMain/resources/libs/linux-x86_64/vlc"
+        from("$cppPath/desktop/libs/linux-x86_64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
       }
       copy {
         from("${project(":desktop").buildDir}/cmake/main/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64/deps")
-        into("../common/src/commonMain/resources/libs/linux-aarch64")
-        include("*.so")
+        into("src/jvmMain/resources/libs/linux-aarch64")
+        include("*.so*")
         eachFile {
           path = name
         }
@@ -135,8 +183,16 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
+        val destinationDir = "src/jvmMain/resources/libs/linux-aarch64/vlc"
+        from("$cppPath/desktop/libs/linux-aarch64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
+      }
+      copy {
         from("${project(":desktop").buildDir}/cmake/main/win-amd64", "$cppPath/desktop/libs/windows-x86_64", "$cppPath/desktop/libs/windows-x86_64/deps")
-        into("../common/src/commonMain/resources/libs/windows-x86_64")
+        into("src/jvmMain/resources/libs/windows-x86_64")
         include("*.dll")
         eachFile {
           path = name
@@ -145,8 +201,16 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
+        val destinationDir = "src/jvmMain/resources/libs/windows-x86_64/vlc"
+        from("$cppPath/desktop/libs/windows-x86_64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
+      }
+      copy {
         from("${project(":desktop").buildDir}/cmake/main/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64/deps")
-        into("../common/src/commonMain/resources/libs/mac-x86_64")
+        into("src/jvmMain/resources/libs/mac-x86_64")
         include("*.dylib")
         eachFile {
           path = name
@@ -155,8 +219,16 @@ afterEvaluate {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
       copy {
+        val destinationDir = "src/jvmMain/resources/libs/mac-x86_64/vlc"
+        from("$cppPath/desktop/libs/mac-x86_64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
+      }
+      copy {
         from("${project(":desktop").buildDir}/cmake/main/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64/deps")
-        into("../common/src/commonMain/resources/libs/mac-aarch64")
+        into("src/jvmMain/resources/libs/mac-aarch64")
         include("*.dylib")
         eachFile {
           path = name
@@ -164,6 +236,39 @@ afterEvaluate {
         includeEmptyDirs = false
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
       }
+      copy {
+        val destinationDir = "src/jvmMain/resources/libs/mac-aarch64/vlc"
+        from("$cppPath/desktop/libs/mac-aarch64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
+      }
+    }
+    afterEvaluate {
+      doLast {
+        copyDetails.forEach { (destinationDir, details) ->
+          details.forEach { detail ->
+            val target = File(projectDir.absolutePath + File.separator + destinationDir + File.separator + detail.path)
+            if (target.exists()) {
+              target.setLastModified(detail.lastModified)
+            }
+          }
+        }
+      }
     }
   }
+}
+
+fun CopySpec.copyIfNeeded(destinationDir: String, into: MutableMap<String, ArrayList<FileCopyDetails>>) {
+  val details = arrayListOf<FileCopyDetails>()
+  eachFile {
+    val targetFile = File(destinationDir, path)
+    if (file.lastModified() == targetFile.lastModified() && file.length() == targetFile.length()) {
+      exclude()
+    } else {
+      details.add(this)
+    }
+  }
+  into[destinationDir] = details
 }

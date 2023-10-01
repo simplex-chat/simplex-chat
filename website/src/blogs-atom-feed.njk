@@ -5,7 +5,7 @@ metadata:
     title: SimpleX Chat Blog
     subtitle: It allows you to stay up to date with the latest Blogs from SimpleX Chat.
     language: en
-    url: https://simplex.chat/,
+    url: https://simplex.chat/
     author:
         name: SimpleX Chat
         email: chat@simplex.chat
@@ -23,6 +23,7 @@ metadata:
         <email>{{ metadata.author.email }}</email>
     </author>
     {%- for blog in collections.blogs | reverse %}
+    {%- if not blog.data.draft %}
         {%- set absolutePostUrl = blog.url | absoluteUrl(metadata.url) %}
         <entry>
             <title>{{ blog.data.title }}</title>
@@ -33,5 +34,6 @@ metadata:
             <content xml:lang="{{ metadata.language }}" type="html">{{ blog.templateContent | htmlToAbsoluteUrls(absolutePostUrl) }}</content>
             {# <content xml:lang="{{ metadata.language }}" type="html">{{ blog.templateContent | striptags | truncate(200) }}</content> #}
         </entry>
+    {%- endif %}
     {%- endfor %}
 </feed>

@@ -13,6 +13,9 @@ struct PrivacySettings: View {
     @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
+    @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
+    @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -21,6 +24,10 @@ struct PrivacySettings: View {
     @State private var contactReceiptsReset = false
     @State private var contactReceiptsOverrides = 0
     @State private var contactReceiptsDialogue = false
+    @State private var groupReceipts = false
+    @State private var groupReceiptsReset = false
+    @State private var groupReceiptsOverrides = 0
+    @State private var groupReceiptsDialogue = false
     @State private var alert: PrivacySettingsViewAlert?
 
     enum PrivacySettingsViewAlert: Identifiable {
@@ -57,6 +64,9 @@ struct PrivacySettings: View {
                 }
 
                 Section {
+                    settingsRow("lock.doc") {
+                        Toggle("Encrypt local files", isOn: $encryptLocalFiles)
+                    }
                     settingsRow("photo") {
                         Toggle("Auto-accept images", isOn: $autoAcceptImages)
                             .onChange(of: autoAcceptImages) {
@@ -65,6 +75,18 @@ struct PrivacySettings: View {
                     }
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
+                    }
+                    settingsRow("message") {
+                        Toggle("Show last messages", isOn: $showChatPreviews)
+                    }
+                    settingsRow("rectangle.and.pencil.and.ellipsis") {
+                        Toggle("Message draft", isOn: $saveLastDraft)
+                    }
+                    .onChange(of: saveLastDraft) { saveDraft in
+                        if !saveDraft {
+                            m.draft = nil
+                            m.draftChatId = nil
+                        }
                     }
                     settingsRow("link") {
                         Picker("SimpleX links", selection: $simplexLinkMode) {
@@ -89,15 +111,15 @@ struct PrivacySettings: View {
                     settingsRow("person") {
                         Toggle("Contacts", isOn: $contactReceipts)
                     }
-//                    settingsRow("person.2") {
-//                        Toggle("Small groups (max 20)", isOn: Binding.constant(false))
-//                    }
+                    settingsRow("person.2") {
+                        Toggle("Small groups (max 20)", isOn: $groupReceipts)
+                    }
                 } header: {
                     Text("Send delivery receipts to")
                 } footer: {
                     VStack(alignment: .leading) {
                         Text("These settings are for your current profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
-                        Text("They can be overridden in contact settings")
+                        Text("They can be overridden in contact and group settings.")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -113,19 +135,44 @@ struct PrivacySettings: View {
                         contactReceipts.toggle()
                     }
                 }
+                .confirmationDialog(groupReceiptsDialogTitle, isPresented: $groupReceiptsDialogue, titleVisibility: .visible) {
+                    Button(groupReceipts ? "Enable (keep overrides)" : "Disable (keep overrides)") {
+                        setSendReceiptsGroups(groupReceipts, clearOverrides: false)
+                    }
+                    Button(groupReceipts ? "Enable for all" : "Disable for all", role: .destructive) {
+                        setSendReceiptsGroups(groupReceipts, clearOverrides: true)
+                    }
+                    Button("Cancel", role: .cancel) {
+                        groupReceiptsReset = true
+                        groupReceipts.toggle()
+                    }
+                }
             }
         }
-        .onChange(of: contactReceipts) { _ in // sometimes there is race with onAppear
+        .onChange(of: contactReceipts) { _ in
             if contactReceiptsReset {
                 contactReceiptsReset = false
             } else {
                 setOrAskSendReceiptsContacts(contactReceipts)
             }
         }
+        .onChange(of: groupReceipts) { _ in
+            if groupReceiptsReset {
+                groupReceiptsReset = false
+            } else {
+                setOrAskSendReceiptsGroups(groupReceipts)
+            }
+        }
         .onAppear {
-            if let u = m.currentUser, contactReceipts != u.sendRcptsContacts {
-                contactReceiptsReset = true
-                contactReceipts = u.sendRcptsContacts
+            if let u = m.currentUser {
+                if contactReceipts != u.sendRcptsContacts {
+                    contactReceiptsReset = true
+                    contactReceipts = u.sendRcptsContacts
+                }
+                if groupReceipts != u.sendRcptsSmallGroups {
+                    groupReceiptsReset = true
+                    groupReceipts = u.sendRcptsSmallGroups
+                }
             }
         }
         .alert(item: $alert) { alert in
@@ -172,6 +219,54 @@ struct PrivacySettings: View {
                                     if sendRcpts != nil && sendRcpts != enable {
                                         contact.chatSettings.sendRcpts = nil
                                         m.updateContact(contact)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch let error {
+                alert = .error(title: "Error setting delivery receipts!", error: "Error: \(responseError(error))")
+            }
+        }
+    }
+
+    private func setOrAskSendReceiptsGroups(_ enable: Bool) {
+        groupReceiptsOverrides = m.chats.reduce(0) { count, chat in
+            let sendRcpts = chat.chatInfo.groupInfo?.chatSettings.sendRcpts
+            return count + (sendRcpts == nil || sendRcpts == enable ? 0 : 1)
+        }
+        if groupReceiptsOverrides == 0 {
+            setSendReceiptsGroups(enable, clearOverrides: false)
+        } else {
+            groupReceiptsDialogue = true
+        }
+    }
+
+    private var groupReceiptsDialogTitle: LocalizedStringKey {
+        groupReceipts
+        ? "Sending receipts is disabled for \(groupReceiptsOverrides) groups"
+        : "Sending receipts is enabled for \(groupReceiptsOverrides) groups"
+    }
+
+    private func setSendReceiptsGroups(_ enable: Bool, clearOverrides: Bool) {
+        Task {
+            do {
+                if let currentUser = m.currentUser {
+                    let userMsgReceiptSettings = UserMsgReceiptSettings(enable: enable, clearOverrides: clearOverrides)
+                    try await apiSetUserGroupReceipts(currentUser.userId, userMsgReceiptSettings: userMsgReceiptSettings)
+                    privacyDeliveryReceiptsSet.set(true)
+                    await MainActor.run {
+                        var updatedUser = currentUser
+                        updatedUser.sendRcptsSmallGroups = enable
+                        m.updateUser(updatedUser)
+                        if clearOverrides {
+                            m.chats.forEach { chat in
+                                if var groupInfo = chat.chatInfo.groupInfo {
+                                    let sendRcpts = groupInfo.chatSettings.sendRcpts
+                                    if sendRcpts != nil && sendRcpts != enable {
+                                        groupInfo.chatSettings.sendRcpts = nil
+                                        m.updateGroup(groupInfo)
                                     }
                                 }
                             }

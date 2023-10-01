@@ -1,0 +1,3681 @@
+/* No comment provided by engineer. */
+"\n" = "\n";
+
+/* No comment provided by engineer. */
+" " = " ";
+
+/* No comment provided by engineer. */
+"  " = "  ";
+
+/* No comment provided by engineer. */
+"   " = "   ";
+
+/* No comment provided by engineer. */
+" (" = " (";
+
+/* No comment provided by engineer. */
+" (can be copied)" = " (voidaan kopioida)";
+
+/* No comment provided by engineer. */
+"_italic_" = "\\_italic_";
+
+/* No comment provided by engineer. */
+"- more stable message delivery.\n- a bit better groups.\n- and more!" = "- vakaampi viestien toimitus.\n- hieman paremmat ryhmät.\n- ja paljon muuta!";
+
+/* No comment provided by engineer. */
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- ääniviestit enintään 5 minuuttia.\n- mukautettu katoamisaika.\n- historian muokkaaminen.";
+
+/* No comment provided by engineer. */
+", " = ", ";
+
+/* No comment provided by engineer. */
+": " = ": ";
+
+/* No comment provided by engineer. */
+"!1 colored!" = "!1 värillinen!";
+
+/* No comment provided by engineer. */
+"." = ".";
+
+/* No comment provided by engineer. */
+"(" = "(";
+
+/* No comment provided by engineer. */
+")" = ")";
+
+/* No comment provided by engineer. */
+"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Osallistu](https://github.com/simplex-chat/simplex-chat#contribute)";
+
+/* No comment provided by engineer. */
+"[Send us email](mailto:chat@simplex.chat)" = "[Lähetä meille sähköpostia](mailto:chat@simplex.chat)";
+
+/* No comment provided by engineer. */
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Tähti GitHubissa](https://github.com/simplex-chat/simplex-chat)";
+
+/* No comment provided by engineer. */
+"**Add new contact**: to create your one-time QR Code for your contact." = "**Lisää uusi kontakti**: luo kertakäyttöinen QR-koodi tai linkki kontaktille.";
+
+/* No comment provided by engineer. */
+"**Create link / QR code** for your contact to use." = "**Luo linkki / QR-koodi* kontaktille.";
+
+/* No comment provided by engineer. */
+"**e2e encrypted** audio call" = "**e2e-salattu** äänipuhelu";
+
+/* No comment provided by engineer. */
+"**e2e encrypted** video call" = "**e2e-salattu** videopuhelu";
+
+/* No comment provided by engineer. */
+"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Yksityisempi**: tarkista uudet viestit 20 minuutin välein. Laitetunnus jaetaan SimpleX Chat -palvelimen kanssa, mutta ei sitä, kuinka monta yhteystietoa tai viestiä sinulla on.";
+
+/* No comment provided by engineer. */
+"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Yksityisin**: älä käytä SimpleX Chat -ilmoituspalvelinta, tarkista viestit ajoittain taustalla (riippuu siitä, kuinka usein käytät sovellusta).";
+
+/* No comment provided by engineer. */
+"**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Liitä vastaanotettu linkki** tai avaa se selaimessa ja napauta **Avaa mobiilisovelluksessa**.";
+
+/* No comment provided by engineer. */
+"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Huomaa**: et voi palauttaa tai muuttaa tunnuslausetta, jos kadotat sen.";
+
+/* No comment provided by engineer. */
+"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Suositus**: laitetunnus ja ilmoitukset lähetetään SimpleX Chat -ilmoituspalvelimelle, mutta ei viestin sisältöä, kokoa tai sitä, keneltä se on peräisin.";
+
+/* No comment provided by engineer. */
+"**Scan QR code**: to connect to your contact in person or via video call." = "**Skannaa QR-koodi**: muodosta yhteys kontaktiisi henkilökohtaisesti tai videopuhelun kautta.";
+
+/* No comment provided by engineer. */
+"**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Varoitus**: Välittömät push-ilmoitukset vaativat tunnuslauseen, joka on tallennettu Keychainiin.";
+
+/* No comment provided by engineer. */
+"*bold*" = "\\*bold*";
+
+/* copied message info title, # <title> */
+"# %@" = "# %@";
+
+/* copied message info */
+"## History" = "## Historia";
+
+/* copied message info */
+"## In reply to" = "## vastauksena";
+
+/* No comment provided by engineer. */
+"#secret#" = "#salaisuus#";
+
+/* No comment provided by engineer. */
+"%@" = "% @";
+
+/* No comment provided by engineer. */
+"%@ (current)" = "%@ (nykyinen)";
+
+/* copied message info */
+"%@ (current):" = "% (nykyinen):";
+
+/* No comment provided by engineer. */
+"%@ / %@" = "%@ / % @";
+
+/* No comment provided by engineer. */
+"%@ %@" = "%@ % @";
+
+/* No comment provided by engineer. */
+"%@ and %@ connected" = "%@ ja %@ yhdistetty";
+
+/* copied message info, <sender> at <time> */
+"%@ at %@:" = "%1$@ klo %2$@:";
+
+/* notification title */
+"%@ is connected!" = "%@ on yhdistetty!";
+
+/* No comment provided by engineer. */
+"%@ is not verified" = "%@ ei ole vahvistettu";
+
+/* No comment provided by engineer. */
+"%@ is verified" = "%@ on vahvistettu";
+
+/* No comment provided by engineer. */
+"%@ servers" = "%@ palvelimet";
+
+/* notification title */
+"%@ wants to connect!" = "%@ haluaa muodostaa yhteyden!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld other members connected" = "%@, %@ ja %lld muut jäsenet yhdistetty";
+
+/* copied message info */
+"%@:" = "%@:";
+
+/* time interval */
+"%d days" = "%d päivää";
+
+/* time interval */
+"%d hours" = "%d tuntia";
+
+/* time interval */
+"%d min" = "%d min";
+
+/* time interval */
+"%d months" = "%d kuukautta";
+
+/* time interval */
+"%d sec" = "%d sek";
+
+/* integrity error chat item */
+"%d skipped message(s)" = "%d ohitettua viestiä";
+
+/* time interval */
+"%d weeks" = "%d viikkoa";
+
+/* No comment provided by engineer. */
+"%lld" = "%lld";
+
+/* No comment provided by engineer. */
+"%lld %@" = "%lld %@";
+
+/* No comment provided by engineer. */
+"%lld contact(s) selected" = "%lld kontaktia valittu";
+
+/* No comment provided by engineer. */
+"%lld file(s) with total size of %@" = "%lld tiedosto(a), joiden kokonaiskoko on %@";
+
+/* No comment provided by engineer. */
+"%lld members" = "%lld jäsenet";
+
+/* No comment provided by engineer. */
+"%lld minutes" = "%lld minuuttia";
+
+/* No comment provided by engineer. */
+"%lld second(s)" = "%lld sekunti(a)";
+
+/* No comment provided by engineer. */
+"%lld seconds" = "%lld sekuntia";
+
+/* No comment provided by engineer. */
+"%lldd" = "%lldd";
+
+/* No comment provided by engineer. */
+"%lldh" = "%lldh";
+
+/* No comment provided by engineer. */
+"%lldk" = "%lldk";
+
+/* No comment provided by engineer. */
+"%lldm" = "%lldm";
+
+/* No comment provided by engineer. */
+"%lldmth" = "%lldmth";
+
+/* No comment provided by engineer. */
+"%llds" = "%llds";
+
+/* No comment provided by engineer. */
+"%lldw" = "%lldw";
+
+/* No comment provided by engineer. */
+"%u messages failed to decrypt." = "%u viestien salauksen purku epäonnistui.";
+
+/* No comment provided by engineer. */
+"%u messages skipped." = "%u viestit ohitettu.";
+
+/* No comment provided by engineer. */
+"`a + b`" = "\\`a + b`";
+
+/* email text */
+"<p>Hi!</p>\n<p><a href=\"%@\">Connect to me via SimpleX Chat</a></p>" = "<p> Hei! </p>\n<p> <a href=\"%@\"> Ollaan yhteydessä SimpleX Chatin kautta</a></p>";
+
+/* No comment provided by engineer. */
+"~strike~" = "\\~strike~";
+
+/* No comment provided by engineer. */
+"0s" = "0s";
+
+/* time interval */
+"1 day" = "1 päivä";
+
+/* time interval */
+"1 hour" = "1 tunti";
+
+/* No comment provided by engineer. */
+"1 minute" = "1 minuutti";
+
+/* time interval */
+"1 month" = "1 kuukausi";
+
+/* time interval */
+"1 week" = "1 viikko";
+
+/* No comment provided by engineer. */
+"1-time link" = "Kertakäyttölinkki";
+
+/* No comment provided by engineer. */
+"5 minutes" = "5 minuuttia";
+
+/* No comment provided by engineer. */
+"6" = "6";
+
+/* No comment provided by engineer. */
+"30 seconds" = "30 sekuntia";
+
+/* No comment provided by engineer. */
+"A few more things" = "Muutama asia lisää";
+
+/* notification title */
+"A new contact" = "Uusi kontakti";
+
+/* No comment provided by engineer. */
+"A new random profile will be shared." = "Uusi satunnainen profiili jaetaan.";
+
+/* No comment provided by engineer. */
+"A separate TCP connection will be used **for each chat profile you have in the app**." = "Erillistä TCP-yhteyttä käytetään **jokaiselle sovelluksessa olevalle chat-profiilille**.";
+
+/* No comment provided by engineer. */
+"A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Jokaiselle kontaktille ja ryhmän jäsenelle käytetään erillistä TCP-yhteyttä**.\n**Huomaa**: jos kontakteja on useita, akun ja liikenteen kulutus voi olla huomattavasti suurempi ja jotkin yhteydet voivat epäonnistua.";
+
+/* No comment provided by engineer. */
+"Abort" = "Keskeytä";
+
+/* No comment provided by engineer. */
+"Abort changing address" = "Keskeytä osoitteenvaihto";
+
+/* No comment provided by engineer. */
+"Abort changing address?" = "Keskeytä osoitteenvaihto?";
+
+/* No comment provided by engineer. */
+"About SimpleX" = "Tietoja SimpleX:stä";
+
+/* No comment provided by engineer. */
+"About SimpleX address" = "Tietoja SimpleX osoitteesta";
+
+/* No comment provided by engineer. */
+"About SimpleX Chat" = "Tietoja SimpleX Chatistä";
+
+/* No comment provided by engineer. */
+"above, then choose:" = "edellä, valitse sitten:";
+
+/* No comment provided by engineer. */
+"Accent color" = "Korostusväri";
+
+/* accept contact request via notification
+   accept incoming call via notification */
+"Accept" = "Hyväksy";
+
+/* No comment provided by engineer. */
+"Accept connection request?" = "Hyväksy yhteyspyyntö?";
+
+/* notification body */
+"Accept contact request from %@?" = "Hyväksy kontaktipyyntö %@:ltä?";
+
+/* accept contact request via notification */
+"Accept incognito" = "Hyväksy tuntematon";
+
+/* call status */
+"accepted call" = "hyväksytty puhelu";
+
+/* No comment provided by engineer. */
+"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.";
+
+/* No comment provided by engineer. */
+"Add preset servers" = "Lisää esiasetettuja palvelimia";
+
+/* No comment provided by engineer. */
+"Add profile" = "Lisää profiili";
+
+/* No comment provided by engineer. */
+"Add server…" = "Lisää palvelin…";
+
+/* No comment provided by engineer. */
+"Add servers by scanning QR codes." = "Lisää palvelimia skannaamalla QR-koodeja.";
+
+/* No comment provided by engineer. */
+"Add to another device" = "Lisää toiseen laitteeseen";
+
+/* No comment provided by engineer. */
+"Add welcome message" = "Lisää tervetuloviesti";
+
+/* No comment provided by engineer. */
+"Address" = "Osoite";
+
+/* No comment provided by engineer. */
+"Address change will be aborted. Old receiving address will be used." = "Osoitteenmuutos keskeytetään. Käytetään vanhaa vastaanotto-osoitetta.";
+
+/* member role */
+"admin" = "ylläpitäjä";
+
+/* No comment provided by engineer. */
+"Admins can create the links to join groups." = "Ylläpitäjät voivat luoda linkkejä ryhmiin liittymiseen.";
+
+/* No comment provided by engineer. */
+"Advanced network settings" = "Verkon lisäasetukset";
+
+/* chat item text */
+"agreeing encryption for %@…" = "salauksesta sovitaan %@:lle…";
+
+/* chat item text */
+"agreeing encryption…" = "hyväksyy salausta…";
+
+/* No comment provided by engineer. */
+"All app data is deleted." = "Kaikki sovelluksen tiedot poistetaan.";
+
+/* No comment provided by engineer. */
+"All chats and messages will be deleted - this cannot be undone!" = "Kaikki keskustelut ja viestit poistetaan - tätä ei voi kumota!";
+
+/* No comment provided by engineer. */
+"All data is erased when it is entered." = "Kaikki tiedot poistetaan, kun se syötetään.";
+
+/* No comment provided by engineer. */
+"All group members will remain connected." = "Kaikki ryhmän jäsenet pysyvät yhteydessä.";
+
+/* No comment provided by engineer. */
+"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Kaikki viestit poistetaan - tätä ei voi kumota! Viestit poistuvat VAIN sinulta.";
+
+/* No comment provided by engineer. */
+"All your contacts will remain connected." = "Kaikki kontaktisi pysyvät yhteydessä.";
+
+/* No comment provided by engineer. */
+"All your contacts will remain connected. Profile update will be sent to your contacts." = "Kaikki kontaktisi pysyvät yhteydessä. Profiilipäivitys lähetetään kontakteillesi.";
+
+/* No comment provided by engineer. */
+"Allow" = "Salli";
+
+/* No comment provided by engineer. */
+"Allow calls only if your contact allows them." = "Salli puhelut vain, jos kontaktisi sallii ne.";
+
+/* No comment provided by engineer. */
+"Allow disappearing messages only if your contact allows it to you." = "Salli katoavat viestit vain, jos kontaktisi sallii sen sinulle.";
+
+/* No comment provided by engineer. */
+"Allow irreversible message deletion only if your contact allows it to you." = "Salli peruuttamaton viestien poisto vain, jos kontaktisi sallii ne sinulle.";
+
+/* No comment provided by engineer. */
+"Allow message reactions only if your contact allows them." = "Salli reaktiot viesteihin vain, jos kontaktisi sallii ne.";
+
+/* No comment provided by engineer. */
+"Allow message reactions." = "Salli viestireaktiot.";
+
+/* No comment provided by engineer. */
+"Allow sending direct messages to members." = "Salli yksityisviestien lähettäminen jäsenille.";
+
+/* No comment provided by engineer. */
+"Allow sending disappearing messages." = "Salli katoavien viestien lähettäminen.";
+
+/* No comment provided by engineer. */
+"Allow to irreversibly delete sent messages." = "Salli lähetettyjen viestien peruuttamaton poistaminen.";
+
+/* No comment provided by engineer. */
+"Allow to send files and media." = "Salli tiedostojen ja median lähettäminen.";
+
+/* No comment provided by engineer. */
+"Allow to send voice messages." = "Salli ääniviestien lähettäminen.";
+
+/* No comment provided by engineer. */
+"Allow voice messages only if your contact allows them." = "Salli ääniviestit vain, jos kontaktisi sallii ne.";
+
+/* No comment provided by engineer. */
+"Allow voice messages?" = "Salli ääniviestit?";
+
+/* No comment provided by engineer. */
+"Allow your contacts adding message reactions." = "Salli kontaktiesi lisätä viestireaktioita.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to call you." = "Salli kontaktiesi soittaa sinulle.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to irreversibly delete sent messages." = "Salli kontaktiesi poistaa lähetetyt viestit peruuttamattomasti.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send disappearing messages." = "Salli kontaktiesi lähettää katoavia viestejä.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send voice messages." = "Salli kontaktiesi lähettää ääniviestejä.";
+
+/* No comment provided by engineer. */
+"Already connected?" = "Oletko jo muodostanut yhteyden?";
+
+/* pref value */
+"always" = "aina";
+
+/* No comment provided by engineer. */
+"Always use relay" = "Käytä aina relettä";
+
+/* No comment provided by engineer. */
+"An empty chat profile with the provided name is created, and the app opens as usual." = "Luodaan tyhjä chat-profiili annetulla nimellä, ja sovellus avautuu normaalisti.";
+
+/* No comment provided by engineer. */
+"Answer call" = "Vastaa puheluun";
+
+/* No comment provided by engineer. */
+"App build: %@" = "Sovellusversio: %@";
+
+/* No comment provided by engineer. */
+"App icon" = "Sovelluksen kuvake";
+
+/* No comment provided by engineer. */
+"App passcode" = "Sovelluksen pääsykoodi";
+
+/* No comment provided by engineer. */
+"App passcode is replaced with self-destruct passcode." = "Sovelluksen pääsykoodi korvataan itsetuhoutuvalla pääsykoodilla.";
+
+/* No comment provided by engineer. */
+"App version" = "Sovellusversio";
+
+/* No comment provided by engineer. */
+"App version: v%@" = "Sovellusversio: v%@";
+
+/* No comment provided by engineer. */
+"Appearance" = "Ulkonäkö";
+
+/* No comment provided by engineer. */
+"Attach" = "Liitä";
+
+/* No comment provided by engineer. */
+"Audio & video calls" = "Ääni- ja videopuhelut";
+
+/* No comment provided by engineer. */
+"Audio and video calls" = "Ääni- ja videopuhelut";
+
+/* No comment provided by engineer. */
+"audio call (not e2e encrypted)" = "äänipuhelu (ei e2e-salattu)";
+
+/* chat feature */
+"Audio/video calls" = "Ääni/videopuhelut";
+
+/* No comment provided by engineer. */
+"Audio/video calls are prohibited." = "Ääni-/videopuhelut ovat kiellettyjä.";
+
+/* PIN entry */
+"Authentication cancelled" = "Tunnistautuminen peruutettu";
+
+/* No comment provided by engineer. */
+"Authentication failed" = "Tunnistautuminen epäonnistui";
+
+/* No comment provided by engineer. */
+"Authentication is required before the call is connected, but you may miss calls." = "Tunnistautuminen vaaditaan ennen kuin puhelu yhdistetään, mutta puheluita voi jäädä vastaamatta.";
+
+/* No comment provided by engineer. */
+"Authentication unavailable" = "Tunnistautuminen ei ole käytettävissä";
+
+/* No comment provided by engineer. */
+"Auto-accept" = "Hyväksy automaattisesti";
+
+/* No comment provided by engineer. */
+"Auto-accept contact requests" = "Hyväksy yhteydenottopyynnöt automaattisesti";
+
+/* No comment provided by engineer. */
+"Auto-accept images" = "Hyväksy kuvat automaattisesti";
+
+/* No comment provided by engineer. */
+"Back" = "Takaisin";
+
+/* integrity error chat item */
+"bad message hash" = "virheellinen viestin tarkiste";
+
+/* No comment provided by engineer. */
+"Bad message hash" = "Virheellinen viestin tarkiste";
+
+/* integrity error chat item */
+"bad message ID" = "virheellinen viestin tunniste";
+
+/* No comment provided by engineer. */
+"Bad message ID" = "Virheellinen viestin tunniste";
+
+/* No comment provided by engineer. */
+"Better messages" = "Parempia viestejä";
+
+/* No comment provided by engineer. */
+"bold" = "lihavoitu";
+
+/* No comment provided by engineer. */
+"Both you and your contact can add message reactions." = "Sekä sinä että kontaktisi voivat käyttää viestireaktioita.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can irreversibly delete sent messages." = "Sekä sinä että kontaktisi voitte peruuttamattomasti poistaa lähetetyt viestit.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can make calls." = "Sekä sinä että kontaktisi voitte soittaa puheluita.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send disappearing messages." = "Sekä sinä että kontaktisi voitte lähettää katoavia viestejä.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send voice messages." = "Sekä sinä että kontaktisi voitte lähettää ääniviestejä.";
+
+/* No comment provided by engineer. */
+"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Chat-profiilin mukaan (oletus) tai [yhteyden mukaan](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
+
+/* No comment provided by engineer. */
+"Call already ended!" = "Puhelu on jo päättynyt!";
+
+/* call status */
+"call error" = "soittovirhe";
+
+/* call status */
+"call in progress" = "puhelu käynnissä";
+
+/* call status */
+"calling…" = "soittaa…";
+
+/* No comment provided by engineer. */
+"Calls" = "Puhelut";
+
+/* No comment provided by engineer. */
+"Can't delete user profile!" = "Käyttäjäprofiilia ei voi poistaa!";
+
+/* No comment provided by engineer. */
+"Can't invite contact!" = "Kontaktia ei voi kutsua!";
+
+/* No comment provided by engineer. */
+"Can't invite contacts!" = "Kontakteja ei voi kutsua!";
+
+/* No comment provided by engineer. */
+"Cancel" = "Peruuta";
+
+/* feature offered item */
+"cancelled %@" = "peruutettu %@";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Ei pääsyä avainnippuun tietokannan salasanan tallentamiseksi";
+
+/* No comment provided by engineer. */
+"Cannot receive file" = "Tiedostoa ei voi vastaanottaa";
+
+/* No comment provided by engineer. */
+"Change" = "Muuta";
+
+/* No comment provided by engineer. */
+"Change database passphrase?" = "Muutetaanko tietokannan tunnuslause?";
+
+/* authentication reason */
+"Change lock mode" = "Vaihda lukitustilaa";
+
+/* No comment provided by engineer. */
+"Change member role?" = "Vaihda jäsenroolia?";
+
+/* authentication reason */
+"Change passcode" = "Vaihda pääsykoodi";
+
+/* No comment provided by engineer. */
+"Change receiving address" = "Vaihda vastaanotto-osoitetta";
+
+/* No comment provided by engineer. */
+"Change receiving address?" = "Vaihda vastaanotto-osoite?";
+
+/* No comment provided by engineer. */
+"Change role" = "Vaihda rooli";
+
+/* authentication reason */
+"Change self-destruct mode" = "Vaihda itsetuhotilaa";
+
+/* authentication reason
+   set passcode view */
+"Change self-destruct passcode" = "Vaihda itsetuhoutuva pääsykoodi";
+
+/* chat item text */
+"changed address for you" = "muuttunut osoite sinulle";
+
+/* rcv group event chat item */
+"changed role of %@ to %@" = "%1$@:n roolin muuttui %2$@:ksi";
+
+/* rcv group event chat item */
+"changed your role to %@" = "roolisi muuttui %@:ksi";
+
+/* chat item text */
+"changing address for %@…" = "osoitteen muuttaminen %@:lle…";
+
+/* chat item text */
+"changing address…" = "muuttamassa osoitetta…";
+
+/* No comment provided by engineer. */
+"Chat archive" = "Chat-arkisto";
+
+/* No comment provided by engineer. */
+"Chat console" = "Chat-konsoli";
+
+/* No comment provided by engineer. */
+"Chat database" = "Chat-tietokanta";
+
+/* No comment provided by engineer. */
+"Chat database deleted" = "Chat-tietokanta poistettu";
+
+/* No comment provided by engineer. */
+"Chat database imported" = "Chat-tietokanta tuotu";
+
+/* No comment provided by engineer. */
+"Chat is running" = "Chat on käynnissä";
+
+/* No comment provided by engineer. */
+"Chat is stopped" = "Chat on pysäytetty";
+
+/* No comment provided by engineer. */
+"Chat preferences" = "Chat-asetukset";
+
+/* No comment provided by engineer. */
+"Chats" = "Keskustelut";
+
+/* No comment provided by engineer. */
+"Check server address and try again." = "Tarkista palvelimen osoite ja yritä uudelleen.";
+
+/* No comment provided by engineer. */
+"Chinese and Spanish interface" = "Kiinalainen ja espanjalainen käyttöliittymä";
+
+/* No comment provided by engineer. */
+"Choose file" = "Valitse tiedosto";
+
+/* No comment provided by engineer. */
+"Choose from library" = "Valitse kirjastosta";
+
+/* No comment provided by engineer. */
+"Clear" = "Tyhjennä";
+
+/* No comment provided by engineer. */
+"Clear conversation" = "Tyhjennä keskustelu";
+
+/* No comment provided by engineer. */
+"Clear conversation?" = "Tyhjennä keskustelu?";
+
+/* No comment provided by engineer. */
+"Clear verification" = "Tyhjennä vahvistus";
+
+/* No comment provided by engineer. */
+"colored" = "värillinen";
+
+/* No comment provided by engineer. */
+"Colors" = "Värit";
+
+/* server test step */
+"Compare file" = "Vertaa tiedostoa";
+
+/* No comment provided by engineer. */
+"Compare security codes with your contacts." = "Vertaa turvakoodeja kontaktiesi kanssa.";
+
+/* No comment provided by engineer. */
+"complete" = "valmis";
+
+/* No comment provided by engineer. */
+"Configure ICE servers" = "Määritä ICE-palvelimet";
+
+/* No comment provided by engineer. */
+"Confirm" = "Vahvista";
+
+/* No comment provided by engineer. */
+"Confirm database upgrades" = "Vahvista tietokannan päivitykset";
+
+/* No comment provided by engineer. */
+"Confirm new passphrase…" = "Vahvista uusi tunnuslause…";
+
+/* No comment provided by engineer. */
+"Confirm Passcode" = "Vahvista pääsykoodi";
+
+/* No comment provided by engineer. */
+"Confirm password" = "Vahvista salasana";
+
+/* server test step */
+"Connect" = "Yhdistä";
+
+/* No comment provided by engineer. */
+"Connect directly" = "Yhdistä suoraan";
+
+/* No comment provided by engineer. */
+"Connect incognito" = "Yhdistä Incognito";
+
+/* No comment provided by engineer. */
+"connect to SimpleX Chat developers." = "ole yhteydessä SimpleX Chat -kehittäjiin.";
+
+/* No comment provided by engineer. */
+"Connect via contact link" = "Yhdistä kontaktilinkillä";
+
+/* No comment provided by engineer. */
+"Connect via group link?" = "Yhdistetäänkö ryhmälinkin kautta?";
+
+/* No comment provided by engineer. */
+"Connect via link" = "Yhdistä linkin kautta";
+
+/* No comment provided by engineer. */
+"Connect via link / QR code" = "Yhdistä linkillä / QR-koodilla";
+
+/* No comment provided by engineer. */
+"Connect via one-time link" = "Yhdistä kertalinkillä";
+
+/* No comment provided by engineer. */
+"connected" = "yhdistetty";
+
+/* No comment provided by engineer. */
+"connecting" = "yhdistää";
+
+/* No comment provided by engineer. */
+"connecting (accepted)" = "yhdistäminen (hyväksytty)";
+
+/* No comment provided by engineer. */
+"connecting (announced)" = "yhdistäminen (ilmoitettu)";
+
+/* No comment provided by engineer. */
+"connecting (introduced)" = "yhdistäminen (esitelty)";
+
+/* No comment provided by engineer. */
+"connecting (introduction invitation)" = "yhdistäminen (esittelykutsu)";
+
+/* call status */
+"connecting call" = "yhdistää puhelun…";
+
+/* No comment provided by engineer. */
+"Connecting server…" = "Yhteyden muodostaminen palvelimeen…";
+
+/* No comment provided by engineer. */
+"Connecting server… (error: %@)" = "Yhteyden muodostaminen palvelimeen... (virhe: %@)";
+
+/* chat list item title */
+"connecting…" = "yhdistää…";
+
+/* No comment provided by engineer. */
+"Connection" = "Yhteys";
+
+/* No comment provided by engineer. */
+"Connection error" = "Yhteysvirhe";
+
+/* No comment provided by engineer. */
+"Connection error (AUTH)" = "Yhteysvirhe (AUTH)";
+
+/* chat list item title (it should not be shown */
+"connection established" = "yhteys luotu";
+
+/* No comment provided by engineer. */
+"Connection request sent!" = "Yhteyspyyntö lähetetty!";
+
+/* No comment provided by engineer. */
+"Connection timeout" = "Yhteyden aikakatkaisu";
+
+/* connection information */
+"connection:%@" = "yhteys:%@";
+
+/* No comment provided by engineer. */
+"Contact allows" = "Kontakti sallii";
+
+/* No comment provided by engineer. */
+"Contact already exists" = "Kontakti on jo olemassa";
+
+/* No comment provided by engineer. */
+"Contact and all messages will be deleted - this cannot be undone!" = "Kontakti ja kaikki viestit poistetaan - tätä ei voi perua!";
+
+/* No comment provided by engineer. */
+"contact has e2e encryption" = "kontaktilla on e2e-salaus";
+
+/* No comment provided by engineer. */
+"contact has no e2e encryption" = "kontaktilla ei ole e2e-salausta";
+
+/* notification */
+"Contact hidden:" = "Kontakti piilotettu:";
+
+/* notification */
+"Contact is connected" = "Kontakti on yhdistetty";
+
+/* No comment provided by engineer. */
+"Contact is not connected yet!" = "Kontaktia ei ole vielä yhdistetty!";
+
+/* No comment provided by engineer. */
+"Contact name" = "Kontaktin nimi";
+
+/* No comment provided by engineer. */
+"Contact preferences" = "Kontaktin asetukset";
+
+/* No comment provided by engineer. */
+"Contacts" = "Kontaktit";
+
+/* No comment provided by engineer. */
+"Contacts can mark messages for deletion; you will be able to view them." = "Kontaktit voivat merkitä viestit poistettaviksi; voit katsella niitä.";
+
+/* No comment provided by engineer. */
+"Continue" = "Jatka";
+
+/* chat item action */
+"Copy" = "Kopioi";
+
+/* No comment provided by engineer. */
+"Core version: v%@" = "Ydinversio: v%@";
+
+/* No comment provided by engineer. */
+"Create" = "Luo";
+
+/* No comment provided by engineer. */
+"Create an address to let people connect with you." = "Luo osoite, jolla ihmiset voivat ottaa sinuun yhteyttä.";
+
+/* server test step */
+"Create file" = "Luo tiedosto";
+
+/* No comment provided by engineer. */
+"Create group link" = "Luo ryhmälinkki";
+
+/* No comment provided by engineer. */
+"Create link" = "Luo linkki";
+
+/* No comment provided by engineer. */
+"Create one-time invitation link" = "Luo kertakutsulinkki";
+
+/* server test step */
+"Create queue" = "Luo jono";
+
+/* No comment provided by engineer. */
+"Create secret group" = "Luo salainen ryhmä";
+
+/* No comment provided by engineer. */
+"Create SimpleX address" = "Luo SimpleX-osoite";
+
+/* No comment provided by engineer. */
+"Create your profile" = "Luo profiilisi";
+
+/* No comment provided by engineer. */
+"Created on %@" = "Luotu %@";
+
+/* No comment provided by engineer. */
+"creator" = "luoja";
+
+/* No comment provided by engineer. */
+"Current Passcode" = "Nykyinen pääsykoodi";
+
+/* No comment provided by engineer. */
+"Current passphrase…" = "Nykyinen tunnuslause…";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "Nykyinen tuettu enimmäistiedostokoko on %@.";
+
+/* dropdown time picker choice */
+"custom" = "mukautettu";
+
+/* No comment provided by engineer. */
+"Custom time" = "Mukautettu aika";
+
+/* No comment provided by engineer. */
+"Dark" = "Tumma";
+
+/* No comment provided by engineer. */
+"Database downgrade" = "Tietokannan alentaminen";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "Tietokanta salattu!";
+
+/* No comment provided by engineer. */
+"Database encryption passphrase will be updated and stored in the keychain.\n" = "Tietokannan salaustunnuslause päivitetään ja tallennetaan avainnippuun.\n";
+
+/* No comment provided by engineer. */
+"Database encryption passphrase will be updated.\n" = "Tietokannan salauksen tunnuslause päivitetään.\n";
+
+/* No comment provided by engineer. */
+"Database error" = "Tietokantavirhe";
+
+/* No comment provided by engineer. */
+"Database ID" = "Tietokannan tunnus";
+
+/* copied message info */
+"Database ID: %d" = "Tietokannan tunnus: %d";
+
+/* No comment provided by engineer. */
+"Database IDs and Transport isolation option." = "Tietokantatunnukset ja kuljetuseristysvaihtoehto.";
+
+/* No comment provided by engineer. */
+"Database is encrypted using a random passphrase, you can change it." = "Tietokanta on salattu satunnaisella tunnuslauseella, voit muuttaa sitä.";
+
+/* No comment provided by engineer. */
+"Database is encrypted using a random passphrase. Please change it before exporting." = "Tietokanta on salattu satunnaisella tunnuslauseella. Vaihda se ennen vientiä.";
+
+/* No comment provided by engineer. */
+"Database passphrase" = "Tietokannan tunnuslause";
+
+/* No comment provided by engineer. */
+"Database passphrase & export" = "Tietokannan tunnuslause ja vienti";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Tietokannan tunnuslause eroaa avainnippuun tallennetusta.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Keskustelun avaamiseen tarvitaan tietokannan tunnuslause.";
+
+/* No comment provided by engineer. */
+"Database upgrade" = "Tietokannan päivitys";
+
+/* No comment provided by engineer. */
+"database version is newer than the app, but no down migration for: %@" = "tietokantaversio on uudempi kuin sovellus, mutta ei alaspäin siirtymistä varten: %@";
+
+/* No comment provided by engineer. */
+"Database will be encrypted and the passphrase stored in the keychain.\n" = "Tietokanta salataan ja tunnuslause tallennetaan avainnippuun.\n";
+
+/* No comment provided by engineer. */
+"Database will be encrypted.\n" = "Tietokanta salataan.\n";
+
+/* No comment provided by engineer. */
+"Database will be migrated when the app restarts" = "Tietokanta siirretään, kun sovellus käynnistyy uudelleen";
+
+/* time unit */
+"days" = "päivää";
+
+/* No comment provided by engineer. */
+"Decentralized" = "Hajautettu";
+
+/* message decrypt error item */
+"Decryption error" = "Salauksen purkuvirhe";
+
+/* pref value */
+"default (%@)" = "oletusarvo (%@)";
+
+/* No comment provided by engineer. */
+"default (no)" = "oletusarvo (ei)";
+
+/* No comment provided by engineer. */
+"default (yes)" = "oletusarvo (kyllä)";
+
+/* chat item action */
+"Delete" = "Poista";
+
+/* No comment provided by engineer. */
+"Delete address" = "Poista osoite";
+
+/* No comment provided by engineer. */
+"Delete address?" = "Poista osoite?";
+
+/* No comment provided by engineer. */
+"Delete after" = "Poista jälkeen";
+
+/* No comment provided by engineer. */
+"Delete all files" = "Poista kaikki tiedostot";
+
+/* No comment provided by engineer. */
+"Delete archive" = "Poista arkisto";
+
+/* No comment provided by engineer. */
+"Delete chat archive?" = "Poista keskusteluarkisto?";
+
+/* No comment provided by engineer. */
+"Delete chat profile" = "Poista keskusteluprofiili";
+
+/* No comment provided by engineer. */
+"Delete chat profile?" = "Poista keskusteluprofiili?";
+
+/* No comment provided by engineer. */
+"Delete connection" = "Poista yhteys";
+
+/* No comment provided by engineer. */
+"Delete contact" = "Poista kontakti";
+
+/* No comment provided by engineer. */
+"Delete Contact" = "Poista kontakti";
+
+/* No comment provided by engineer. */
+"Delete contact?" = "Poista kontakti?";
+
+/* No comment provided by engineer. */
+"Delete database" = "Poista tietokanta";
+
+/* server test step */
+"Delete file" = "Poista tiedosto";
+
+/* No comment provided by engineer. */
+"Delete files and media?" = "Poista tiedostot ja media?";
+
+/* No comment provided by engineer. */
+"Delete files for all chat profiles" = "Poista tiedostot kaikista keskusteluprofiileista";
+
+/* chat feature */
+"Delete for everyone" = "Poista kaikilta";
+
+/* No comment provided by engineer. */
+"Delete for me" = "Poista minulta";
+
+/* No comment provided by engineer. */
+"Delete group" = "Poista ryhmä";
+
+/* No comment provided by engineer. */
+"Delete group?" = "Poista ryhmä?";
+
+/* No comment provided by engineer. */
+"Delete invitation" = "Poista kutsu";
+
+/* No comment provided by engineer. */
+"Delete link" = "Poista linkki";
+
+/* No comment provided by engineer. */
+"Delete link?" = "Poista linkki?";
+
+/* No comment provided by engineer. */
+"Delete member message?" = "Poista jäsenviesti?";
+
+/* No comment provided by engineer. */
+"Delete message?" = "Poista viesti?";
+
+/* No comment provided by engineer. */
+"Delete messages" = "Poista viestit";
+
+/* No comment provided by engineer. */
+"Delete messages after" = "Poista viestit tämän jälkeen";
+
+/* No comment provided by engineer. */
+"Delete old database" = "Poista vanha tietokanta";
+
+/* No comment provided by engineer. */
+"Delete old database?" = "Poista vanha tietokanta?";
+
+/* No comment provided by engineer. */
+"Delete pending connection" = "Poista vireillä oleva yhteys";
+
+/* No comment provided by engineer. */
+"Delete pending connection?" = "Poistetaanko odottava yhteys?";
+
+/* No comment provided by engineer. */
+"Delete profile" = "Poista profiili";
+
+/* server test step */
+"Delete queue" = "Poista jono";
+
+/* No comment provided by engineer. */
+"Delete user profile?" = "Poista käyttäjäprofiili?";
+
+/* deleted chat item */
+"deleted" = "poistettu";
+
+/* No comment provided by engineer. */
+"Deleted at" = "Poistettu klo";
+
+/* copied message info */
+"Deleted at: %@" = "Poistettu klo: %@";
+
+/* rcv group event chat item */
+"deleted group" = "poistettu ryhmä";
+
+/* No comment provided by engineer. */
+"Delivery" = "Toimitus";
+
+/* No comment provided by engineer. */
+"Delivery receipts are disabled!" = "Toimituskuittaukset poissa käytöstä!";
+
+/* No comment provided by engineer. */
+"Delivery receipts!" = "Toimituskuittaukset!";
+
+/* No comment provided by engineer. */
+"Description" = "Kuvaus";
+
+/* No comment provided by engineer. */
+"Develop" = "Kehitä";
+
+/* No comment provided by engineer. */
+"Developer tools" = "Kehittäjätyökalut";
+
+/* No comment provided by engineer. */
+"Device" = "Laite";
+
+/* No comment provided by engineer. */
+"Device authentication is disabled. Turning off SimpleX Lock." = "Laitteen todennus on poistettu käytöstä. SimpleX Lock kytketään pois päältä.";
+
+/* No comment provided by engineer. */
+"Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "Laitteen todennus ei ole käytössä. Voit ottaa SimpleX Lockin käyttöön Asetuksista, kun olet ottanut laitteen todennuksen käyttöön.";
+
+/* No comment provided by engineer. */
+"different migration in the app/database: %@ / %@" = "eri siirtyminen sovelluksessa/tietokannassa: %@ / %@";
+
+/* No comment provided by engineer. */
+"Different names, avatars and transport isolation." = "Eri nimet, avatarit ja kuljetuseristys.";
+
+/* connection level description */
+"direct" = "suora";
+
+/* chat feature */
+"Direct messages" = "Yksityisviestit";
+
+/* No comment provided by engineer. */
+"Direct messages between members are prohibited in this group." = "Yksityisviestit jäsenten välillä ovat kiellettyjä tässä ryhmässä.";
+
+/* No comment provided by engineer. */
+"Disable (keep overrides)" = "Poista käytöstä (pidä ohitukset)";
+
+/* No comment provided by engineer. */
+"Disable for all" = "Poista käytöstä kaikilta";
+
+/* authentication reason */
+"Disable SimpleX Lock" = "Poista SimpleX Lock käytöstä";
+
+/* No comment provided by engineer. */
+"disabled" = "ei käytössä";
+
+/* No comment provided by engineer. */
+"Disappearing message" = "Tuhoutuva viesti";
+
+/* chat feature */
+"Disappearing messages" = "Tuhoutuvat viestit";
+
+/* No comment provided by engineer. */
+"Disappearing messages are prohibited in this chat." = "Katoavat viestit ovat kiellettyjä tässä keskustelussa.";
+
+/* No comment provided by engineer. */
+"Disappearing messages are prohibited in this group." = "Katoavat viestit ovat kiellettyjä tässä ryhmässä.";
+
+/* No comment provided by engineer. */
+"Disappears at" = "Katoaa klo";
+
+/* copied message info */
+"Disappears at: %@" = "Katoaa klo: %@";
+
+/* server test step */
+"Disconnect" = "Katkaise";
+
+/* No comment provided by engineer. */
+"Display name" = "Näyttönimi";
+
+/* No comment provided by engineer. */
+"Display name:" = "Näyttönimi:";
+
+/* No comment provided by engineer. */
+"Do it later" = "Tee myöhemmin";
+
+/* No comment provided by engineer. */
+"Do NOT use SimpleX for emergency calls." = "Älä käytä SimpleX-sovellusta hätäpuheluihin.";
+
+/* No comment provided by engineer. */
+"Don't create address" = "Älä luo osoitetta";
+
+/* No comment provided by engineer. */
+"Don't enable" = "Älä salli";
+
+/* No comment provided by engineer. */
+"Don't show again" = "Älä näytä uudelleen";
+
+/* No comment provided by engineer. */
+"Downgrade and open chat" = "Alenna ja avaa keskustelu";
+
+/* server test step */
+"Download file" = "Lataa tiedosto";
+
+/* No comment provided by engineer. */
+"Duplicate display name!" = "Päällekkäinen näyttönimi!";
+
+/* integrity error chat item */
+"duplicate message" = "päällekkäinen viesti";
+
+/* No comment provided by engineer. */
+"Duration" = "Kesto";
+
+/* No comment provided by engineer. */
+"e2e encrypted" = "e2e-salattu";
+
+/* chat item action */
+"Edit" = "Muokkaa";
+
+/* No comment provided by engineer. */
+"Edit group profile" = "Muokkaa ryhmäprofiilia";
+
+/* No comment provided by engineer. */
+"Enable" = "Salli";
+
+/* No comment provided by engineer. */
+"Enable (keep overrides)" = "Salli (pidä ohitukset)";
+
+/* No comment provided by engineer. */
+"Enable automatic message deletion?" = "Ota automaattinen viestien poisto käyttöön?";
+
+/* No comment provided by engineer. */
+"Enable for all" = "Salli kaikille";
+
+/* No comment provided by engineer. */
+"Enable instant notifications?" = "Salli välittömät ilmoitukset?";
+
+/* No comment provided by engineer. */
+"Enable lock" = "Ota lukitus käyttöön";
+
+/* No comment provided by engineer. */
+"Enable notifications" = "Salli ilmoitukset";
+
+/* No comment provided by engineer. */
+"Enable periodic notifications?" = "Salli säännölliset ilmoitukset?";
+
+/* No comment provided by engineer. */
+"Enable self-destruct" = "Ota itsetuho käyttöön";
+
+/* set passcode view */
+"Enable self-destruct passcode" = "Ota itsetuhoava pääsykoodi käyttöön";
+
+/* authentication reason */
+"Enable SimpleX Lock" = "Ota SimpleX Lock käyttöön";
+
+/* No comment provided by engineer. */
+"Enable TCP keep-alive" = "Ota TCP-säilytys käyttöön";
+
+/* enabled status */
+"enabled" = "käytössä";
+
+/* enabled status */
+"enabled for contact" = "käytössä kontaktille";
+
+/* enabled status */
+"enabled for you" = "käytössä sinulle";
+
+/* No comment provided by engineer. */
+"Encrypt" = "Salaa";
+
+/* No comment provided by engineer. */
+"Encrypt database?" = "Salaa tietokanta?";
+
+/* No comment provided by engineer. */
+"Encrypt local files" = "Salaa paikalliset tiedostot";
+
+/* No comment provided by engineer. */
+"Encrypted database" = "Salattu tietokanta";
+
+/* notification */
+"Encrypted message or another event" = "Salattu viesti tai muu tapahtuma";
+
+/* notification */
+"Encrypted message: database error" = "Salattu viesti: tietokantavirhe";
+
+/* notification */
+"Encrypted message: database migration error" = "Salattu viesti: tietokannan siirtovirhe";
+
+/* notification */
+"Encrypted message: keychain error" = "Salattu viesti: avainnipun virhe";
+
+/* notification */
+"Encrypted message: no passphrase" = "Salattu viesti: ei tunnuslausetta";
+
+/* notification */
+"Encrypted message: unexpected error" = "Salattu viesti: odottamaton virhe";
+
+/* chat item text */
+"encryption agreed" = "salaus sovittu";
+
+/* chat item text */
+"encryption agreed for %@" = "salaus sovittu %@:lle";
+
+/* chat item text */
+"encryption ok" = "salaus ok";
+
+/* chat item text */
+"encryption ok for %@" = "salaus ok %@:lle";
+
+/* chat item text */
+"encryption re-negotiation allowed" = "salauksen uudelleenneuvottelu sallittu";
+
+/* chat item text */
+"encryption re-negotiation allowed for %@" = "salauksen uudelleenneuvottelu sallittu %@:lle";
+
+/* chat item text */
+"encryption re-negotiation required" = "tarvitaan salauksen uudelleenneuvottelu";
+
+/* chat item text */
+"encryption re-negotiation required for %@" = "tarvitaan salauksen uudelleenneuvottelu %@:lle";
+
+/* No comment provided by engineer. */
+"ended" = "päättyi";
+
+/* call status */
+"ended call %@" = "puhelu päättyi %@:lle";
+
+/* No comment provided by engineer. */
+"Enter correct passphrase." = "Anna oikea tunnuslause.";
+
+/* No comment provided by engineer. */
+"Enter Passcode" = "Syötä pääsykoodi";
+
+/* No comment provided by engineer. */
+"Enter passphrase…" = "Syötä tunnuslause…";
+
+/* No comment provided by engineer. */
+"Enter password above to show!" = "Kirjoita yllä oleva salasana näyttääksesi!";
+
+/* No comment provided by engineer. */
+"Enter server manually" = "Syötä palvelin manuaalisesti";
+
+/* placeholder */
+"Enter welcome message…" = "Kirjoita tervetuloviesti…";
+
+/* placeholder */
+"Enter welcome message… (optional)" = "Kirjoita tervetuloviesti... (valinnainen)";
+
+/* No comment provided by engineer. */
+"error" = "virhe";
+
+/* No comment provided by engineer. */
+"Error" = "Virhe";
+
+/* No comment provided by engineer. */
+"Error aborting address change" = "Virhe osoitteenmuutoksen keskeytyksessä";
+
+/* No comment provided by engineer. */
+"Error accepting contact request" = "Virhe kontaktipyynnön hyväksymisessä";
+
+/* No comment provided by engineer. */
+"Error accessing database file" = "Virhe tietokantatiedoston käyttämisessä";
+
+/* No comment provided by engineer. */
+"Error adding member(s)" = "Virhe lisättäessä jäseniä";
+
+/* No comment provided by engineer. */
+"Error changing address" = "Virhe osoitteenvaihdossa";
+
+/* No comment provided by engineer. */
+"Error changing role" = "Virhe roolin vaihdossa";
+
+/* No comment provided by engineer. */
+"Error changing setting" = "Virhe asetuksen muuttamisessa";
+
+/* No comment provided by engineer. */
+"Error creating address" = "Virhe osoitteen luomisessa";
+
+/* No comment provided by engineer. */
+"Error creating group" = "Virhe ryhmän luomisessa";
+
+/* No comment provided by engineer. */
+"Error creating group link" = "Virhe ryhmälinkin luomisessa";
+
+/* No comment provided by engineer. */
+"Error creating profile!" = "Virhe profiilin luomisessa!";
+
+/* No comment provided by engineer. */
+"Error decrypting file" = "Virhe tiedoston salauksen purussa";
+
+/* No comment provided by engineer. */
+"Error deleting chat database" = "Virhe keskustelujen tietokannan poistamisessa";
+
+/* No comment provided by engineer. */
+"Error deleting chat!" = "Virhe keskutelun poistamisessa!";
+
+/* No comment provided by engineer. */
+"Error deleting connection" = "Virhe yhteyden poistamisessa";
+
+/* No comment provided by engineer. */
+"Error deleting contact" = "Virhe kontaktin poistamisessa";
+
+/* No comment provided by engineer. */
+"Error deleting database" = "Virhe tietokannan poistamisessa";
+
+/* No comment provided by engineer. */
+"Error deleting old database" = "Virhe vanhan tietokannan poistamisessa";
+
+/* No comment provided by engineer. */
+"Error deleting token" = "Virhe tokenin poistamisessa";
+
+/* No comment provided by engineer. */
+"Error deleting user profile" = "Virhe käyttäjäprofiilin poistamisessa";
+
+/* No comment provided by engineer. */
+"Error enabling delivery receipts!" = "Virhe toimituskuittauksien sallimisessa!";
+
+/* No comment provided by engineer. */
+"Error enabling notifications" = "Virhe ilmoitusten käyttöönotossa";
+
+/* No comment provided by engineer. */
+"Error encrypting database" = "Virhe tietokannan salauksessa";
+
+/* No comment provided by engineer. */
+"Error exporting chat database" = "Virhe vietäessä keskustelujen tietokantaa";
+
+/* No comment provided by engineer. */
+"Error importing chat database" = "Virhe keskustelujen tietokannan tuonnissa";
+
+/* No comment provided by engineer. */
+"Error joining group" = "Virhe ryhmään liittymisessä";
+
+/* No comment provided by engineer. */
+"Error loading %@ servers" = "Virhe %@-palvelimien lataamisessa";
+
+/* No comment provided by engineer. */
+"Error receiving file" = "Virhe tiedoston vastaanottamisessa";
+
+/* No comment provided by engineer. */
+"Error removing member" = "Virhe poistettaessa jäsentä";
+
+/* No comment provided by engineer. */
+"Error saving %@ servers" = "Virhe %@ palvelimien tallentamisessa";
+
+/* No comment provided by engineer. */
+"Error saving group profile" = "Virhe ryhmäprofiilin tallentamisessa";
+
+/* No comment provided by engineer. */
+"Error saving ICE servers" = "Virhe ICE-palvelimien tallentamisessa";
+
+/* No comment provided by engineer. */
+"Error saving passcode" = "Virhe pääsykoodin tallentamisessa";
+
+/* No comment provided by engineer. */
+"Error saving passphrase to keychain" = "Virhe tunnuslauseen tallentamisessa avainnippuun";
+
+/* No comment provided by engineer. */
+"Error saving user password" = "Virhe käyttäjän salasanan tallentamisessa";
+
+/* No comment provided by engineer. */
+"Error sending email" = "Virhe sähköpostin lähettämisessä";
+
+/* No comment provided by engineer. */
+"Error sending message" = "Virhe viestin lähettämisessä";
+
+/* No comment provided by engineer. */
+"Error setting delivery receipts!" = "Virhe toimituskuittauksien asettamisessa!";
+
+/* No comment provided by engineer. */
+"Error starting chat" = "Virhe käynnistettäessä keskustelua";
+
+/* No comment provided by engineer. */
+"Error stopping chat" = "Virhe keskustelun lopettamisessa";
+
+/* No comment provided by engineer. */
+"Error switching profile!" = "Virhe profiilin vaihdossa!";
+
+/* No comment provided by engineer. */
+"Error synchronizing connection" = "Virhe yhteyden synkronoinnissa";
+
+/* No comment provided by engineer. */
+"Error updating group link" = "Virhe ryhmälinkin päivittämisessä";
+
+/* No comment provided by engineer. */
+"Error updating message" = "Virhe viestin päivityksessä";
+
+/* No comment provided by engineer. */
+"Error updating settings" = "Virhe asetusten päivittämisessä";
+
+/* No comment provided by engineer. */
+"Error updating user privacy" = "Virhe päivitettäessä käyttäjän tietosuojaa";
+
+/* No comment provided by engineer. */
+"Error: " = "Virhe: ";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Virhe: %@";
+
+/* No comment provided by engineer. */
+"Error: no database file" = "Virhe: ei tietokantatiedostoa";
+
+/* No comment provided by engineer. */
+"Error: URL is invalid" = "Virhe: URL on virheellinen";
+
+/* No comment provided by engineer. */
+"Even when disabled in the conversation." = "Jopa kun ei käytössä keskustelussa.";
+
+/* No comment provided by engineer. */
+"event happened" = "tapahtuma tapahtui";
+
+/* No comment provided by engineer. */
+"Exit without saving" = "Poistu tallentamatta";
+
+/* No comment provided by engineer. */
+"Export database" = "Vie tietokanta";
+
+/* No comment provided by engineer. */
+"Export error:" = "Vientivirhe:";
+
+/* No comment provided by engineer. */
+"Exported database archive." = "Viety tietokanta-arkisto.";
+
+/* No comment provided by engineer. */
+"Exporting database archive…" = "Tietokanta-arkiston vienti…";
+
+/* No comment provided by engineer. */
+"Failed to remove passphrase" = "Tunnuslauseen poisto epäonnistui";
+
+/* No comment provided by engineer. */
+"Fast and no wait until the sender is online!" = "Nopea ja ei odotusta, kunnes lähettäjä on online-tilassa!";
+
+/* No comment provided by engineer. */
+"Favorite" = "Suosikki";
+
+/* No comment provided by engineer. */
+"File will be deleted from servers." = "Tiedosto poistetaan palvelimilta.";
+
+/* No comment provided by engineer. */
+"File will be received when your contact completes uploading it." = "Tiedosto vastaanotetaan, kun kontaktisi on ladannut sen.";
+
+/* No comment provided by engineer. */
+"File will be received when your contact is online, please wait or check later!" = "Tiedosto vastaanotetaan, kun kontakti on online-tilassa, odota tai tarkista myöhemmin!";
+
+/* No comment provided by engineer. */
+"File: %@" = "Tiedosto: %@";
+
+/* No comment provided by engineer. */
+"Files & media" = "Tiedostot & media";
+
+/* chat feature */
+"Files and media" = "Tiedostot ja media";
+
+/* No comment provided by engineer. */
+"Files and media are prohibited in this group." = "Tiedostot ja media ovat tässä ryhmässä kiellettyjä.";
+
+/* No comment provided by engineer. */
+"Files and media prohibited!" = "Tiedostot ja media kielletty!";
+
+/* No comment provided by engineer. */
+"Filter unread and favorite chats." = "Suodata lukemattomia- ja suosikkikeskusteluja.";
+
+/* No comment provided by engineer. */
+"Finally, we have them! 🚀" = "Vihdoinkin meillä! 🚀";
+
+/* No comment provided by engineer. */
+"Find chats faster" = "Löydä keskustelut nopeammin";
+
+/* No comment provided by engineer. */
+"Fix" = "Korjaa";
+
+/* No comment provided by engineer. */
+"Fix connection" = "Korjaa yhteys";
+
+/* No comment provided by engineer. */
+"Fix connection?" = "Korjaa yhteys?";
+
+/* No comment provided by engineer. */
+"Fix encryption after restoring backups." = "Korjaa salaus varmuuskopioiden palauttamisen jälkeen.";
+
+/* No comment provided by engineer. */
+"Fix not supported by contact" = "Kontakti ei tue korjausta";
+
+/* No comment provided by engineer. */
+"Fix not supported by group member" = "Ryhmän jäsen ei tue korjausta";
+
+/* No comment provided by engineer. */
+"For console" = "Konsoliin";
+
+/* No comment provided by engineer. */
+"French interface" = "Ranskalainen käyttöliittymä";
+
+/* No comment provided by engineer. */
+"Full link" = "Koko linkki";
+
+/* No comment provided by engineer. */
+"Full name (optional)" = "Koko nimi (valinnainen)";
+
+/* No comment provided by engineer. */
+"Full name:" = "Koko nimi:";
+
+/* No comment provided by engineer. */
+"Fully re-implemented - work in background!" = "Täysin uudistettu - toimii taustalla!";
+
+/* No comment provided by engineer. */
+"Further reduced battery usage" = "Entistä pienempi akun käyttö";
+
+/* No comment provided by engineer. */
+"GIFs and stickers" = "GIFit ja tarrat";
+
+/* No comment provided by engineer. */
+"Group" = "Ryhmä";
+
+/* No comment provided by engineer. */
+"group deleted" = "ryhmä poistettu";
+
+/* No comment provided by engineer. */
+"Group display name" = "Ryhmän näyttönimi";
+
+/* No comment provided by engineer. */
+"Group full name (optional)" = "Ryhmän näyttönimi (valinnainen)";
+
+/* No comment provided by engineer. */
+"Group image" = "Ryhmäkuva";
+
+/* No comment provided by engineer. */
+"Group invitation" = "Ryhmän kutsu";
+
+/* No comment provided by engineer. */
+"Group invitation expired" = "Vanhentunut ryhmäkutsu";
+
+/* No comment provided by engineer. */
+"Group invitation is no longer valid, it was removed by sender." = "Ryhmäkutsu ei ole enää voimassa, lähettäjä poisti sen.";
+
+/* No comment provided by engineer. */
+"Group link" = "Ryhmälinkki";
+
+/* No comment provided by engineer. */
+"Group links" = "Ryhmälinkit";
+
+/* No comment provided by engineer. */
+"Group members can add message reactions." = "Ryhmän jäsenet voivat lisätä viestireaktioita.";
+
+/* No comment provided by engineer. */
+"Group members can irreversibly delete sent messages." = "Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti.";
+
+/* No comment provided by engineer. */
+"Group members can send direct messages." = "Ryhmän jäsenet voivat lähettää suoraviestejä.";
+
+/* No comment provided by engineer. */
+"Group members can send disappearing messages." = "Ryhmän jäsenet voivat lähettää katoavia viestejä.";
+
+/* No comment provided by engineer. */
+"Group members can send files and media." = "Ryhmän jäsenet voivat lähettää tiedostoja ja mediaa.";
+
+/* No comment provided by engineer. */
+"Group members can send voice messages." = "Ryhmän jäsenet voivat lähettää ääniviestejä.";
+
+/* notification */
+"Group message:" = "Ryhmäviesti:";
+
+/* No comment provided by engineer. */
+"Group moderation" = "Ryhmän moderointi";
+
+/* No comment provided by engineer. */
+"Group preferences" = "Ryhmän asetukset";
+
+/* No comment provided by engineer. */
+"Group profile" = "Ryhmäprofiili";
+
+/* No comment provided by engineer. */
+"Group profile is stored on members' devices, not on the servers." = "Ryhmäprofiili tallennetaan jäsenten laitteille, ei palvelimille.";
+
+/* snd group event chat item */
+"group profile updated" = "ryhmäprofiili päivitetty";
+
+/* No comment provided by engineer. */
+"Group welcome message" = "Ryhmän tervetuloviesti";
+
+/* No comment provided by engineer. */
+"Group will be deleted for all members - this cannot be undone!" = "Ryhmä poistetaan kaikilta jäseniltä - tätä ei voi kumota!";
+
+/* No comment provided by engineer. */
+"Group will be deleted for you - this cannot be undone!" = "Ryhmä poistetaan sinulta - tätä ei voi perua!";
+
+/* No comment provided by engineer. */
+"Help" = "Apua";
+
+/* No comment provided by engineer. */
+"Hidden" = "Piilotettu";
+
+/* No comment provided by engineer. */
+"Hidden chat profiles" = "Piilotetut keskusteluprofiilit";
+
+/* No comment provided by engineer. */
+"Hidden profile password" = "Piilotettu profiilin salasana";
+
+/* chat item action */
+"Hide" = "Piilota";
+
+/* No comment provided by engineer. */
+"Hide app screen in the recent apps." = "Piilota sovellusnäyttö viimeisimmissä sovelluksissa.";
+
+/* No comment provided by engineer. */
+"Hide profile" = "Piilota profiili";
+
+/* No comment provided by engineer. */
+"Hide:" = "Piilota:";
+
+/* No comment provided by engineer. */
+"History" = "Historia";
+
+/* time unit */
+"hours" = "tuntia";
+
+/* No comment provided by engineer. */
+"How it works" = "Kuinka se toimii";
+
+/* No comment provided by engineer. */
+"How SimpleX works" = "Miten SimpleX toimii";
+
+/* No comment provided by engineer. */
+"How to" = "Miten";
+
+/* No comment provided by engineer. */
+"How to use it" = "Kuinka sitä käytetään";
+
+/* No comment provided by engineer. */
+"How to use your servers" = "Miten käytät palvelimiasi";
+
+/* No comment provided by engineer. */
+"ICE servers (one per line)" = "ICE-palvelimet (yksi per rivi)";
+
+/* No comment provided by engineer. */
+"If you can't meet in person, show QR code in a video call, or share the link." = "Jos et voi tavata henkilökohtaisesti, näytä QR-koodi videopuhelussa tai jaa linkki.";
+
+/* No comment provided by engineer. */
+"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Jos et voi tavata henkilökohtaisesti, voit **skannata QR-koodin videopuhelussa** tai kontaktisi voi jakaa kutsulinkin.";
+
+/* No comment provided by engineer. */
+"If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "Jos syötät tämän pääsykoodin sovellusta avatessasi, kaikki sovelluksen tiedot poistetaan peruuttamattomasti!";
+
+/* No comment provided by engineer. */
+"If you enter your self-destruct passcode while opening the app:" = "Jos syötät itsetuhoutuvan pääsykoodin sovellusta avattaessa:";
+
+/* No comment provided by engineer. */
+"If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Jos haluat käyttää keskustelua nyt, napauta **Tee se myöhemmin** alla (sinulle tarjotaan tietokannan siirtämistä, kun käynnistät sovelluksen uudelleen).";
+
+/* No comment provided by engineer. */
+"Ignore" = "Sivuuta";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact completes uploading it." = "Kuva vastaanotetaan, kun kontaktisi on ladannut sen.";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact is online, please wait or check later!" = "Kuva vastaanotetaan, kun kontaktisi on verkossa, odota tai tarkista myöhemmin!";
+
+/* No comment provided by engineer. */
+"Immediately" = "Heti";
+
+/* No comment provided by engineer. */
+"Immune to spam and abuse" = "Immuuni roskapostille ja väärinkäytöksille";
+
+/* No comment provided by engineer. */
+"Import" = "Tuo";
+
+/* No comment provided by engineer. */
+"Import chat database?" = "Tuo keskustelujen-tietokanta?";
+
+/* No comment provided by engineer. */
+"Import database" = "Tuo tietokanta";
+
+/* No comment provided by engineer. */
+"Improved privacy and security" = "Parannettu yksityisyys ja turvallisuus";
+
+/* No comment provided by engineer. */
+"Improved server configuration" = "Parannettu palvelimen kokoonpano";
+
+/* No comment provided by engineer. */
+"In reply to" = "Vastauksena";
+
+/* No comment provided by engineer. */
+"Incognito" = "Incognito";
+
+/* No comment provided by engineer. */
+"Incognito mode" = "Incognito-tila";
+
+/* No comment provided by engineer. */
+"Incognito mode protects your privacy by using a new random profile for each contact." = "Incognito-tila suojaa yksityisyyttäsi käyttämällä uutta satunnaista profiilia jokaiselle kontaktille.";
+
+/* chat list item description */
+"incognito via contact address link" = "incognito kontaktilinkin kautta";
+
+/* chat list item description */
+"incognito via group link" = "incognito ryhmälinkin kautta";
+
+/* chat list item description */
+"incognito via one-time link" = "incognito kertalinkillä";
+
+/* notification */
+"Incoming audio call" = "Saapuva äänipuhelu";
+
+/* notification */
+"Incoming call" = "Saapuva puhelu";
+
+/* notification */
+"Incoming video call" = "Saapuva videopuhelu";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Yhteensopimaton tietokantaversio";
+
+/* PIN entry */
+"Incorrect passcode" = "Väärä pääsykoodi";
+
+/* No comment provided by engineer. */
+"Incorrect security code!" = "Väärä turvakoodi!";
+
+/* connection level description */
+"indirect (%d)" = "epäsuora (%d)";
+
+/* chat item action */
+"Info" = "Tiedot";
+
+/* No comment provided by engineer. */
+"Initial role" = "Alkuperäinen rooli";
+
+/* No comment provided by engineer. */
+"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Asenna [SimpleX Chat terminaalille](https://github.com/simplex-chat/simplex-chat)";
+
+/* No comment provided by engineer. */
+"Instant push notifications will be hidden!\n" = "Välittömät push-ilmoitukset ovat piilossa!\n";
+
+/* No comment provided by engineer. */
+"Instantly" = "Heti";
+
+/* No comment provided by engineer. */
+"Interface" = "Käyttöliittymä";
+
+/* invalid chat data */
+"invalid chat" = "virheellinen keskustelu";
+
+/* No comment provided by engineer. */
+"invalid chat data" = "virheelliset keskustelu-tiedot";
+
+/* No comment provided by engineer. */
+"Invalid connection link" = "Virheellinen yhteyslinkki";
+
+/* invalid chat item */
+"invalid data" = "virheelliset tiedot";
+
+/* No comment provided by engineer. */
+"Invalid server address!" = "Virheellinen palvelinosoite!";
+
+/* item status text */
+"Invalid status" = "Virheellinen tila";
+
+/* No comment provided by engineer. */
+"Invitation expired!" = "Vanhentunut kutsu!";
+
+/* group name */
+"invitation to group %@" = "kutsu ryhmään %@";
+
+/* No comment provided by engineer. */
+"Invite friends" = "Kutsu ystäviä";
+
+/* No comment provided by engineer. */
+"Invite members" = "Kutsu jäseniä";
+
+/* No comment provided by engineer. */
+"Invite to group" = "Kutsu ryhmään";
+
+/* No comment provided by engineer. */
+"invited" = "kutsuttu";
+
+/* rcv group event chat item */
+"invited %@" = "kutsuttu %@";
+
+/* chat list item title */
+"invited to connect" = "kutsuttu yhteydenpitoon";
+
+/* rcv group event chat item */
+"invited via your group link" = "kutsuttu ryhmäsi linkin kautta";
+
+/* No comment provided by engineer. */
+"iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "iOS-Avainnippua käytetään tunnuslauseen turvalliseen tallentamiseen - se mahdollistaa push-ilmoitusten vastaanottamisen.";
+
+/* No comment provided by engineer. */
+"iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "iOS-Avainnippua käytetään tunnuslauseen turvalliseen tallentamiseen sen muuttamisen tai sovelluksen uudelleen käynnistämisen jälkeen - se mahdollistaa push-ilmoitusten vastaanottamisen.";
+
+/* No comment provided by engineer. */
+"Irreversible message deletion" = "Peruuttamaton viestin poisto";
+
+/* No comment provided by engineer. */
+"Irreversible message deletion is prohibited in this chat." = "Viestien peruuttamaton poisto on kielletty tässä keskustelussa.";
+
+/* No comment provided by engineer. */
+"Irreversible message deletion is prohibited in this group." = "Viestien peruuttamaton poisto on kielletty tässä ryhmässä.";
+
+/* No comment provided by engineer. */
+"It allows having many anonymous connections without any shared data between them in a single chat profile." = "Se mahdollistaa useiden nimettömien yhteyksien muodostamisen yhdessä keskusteluprofiilissa ilman, että niiden välillä on jaettuja tietoja.";
+
+/* No comment provided by engineer. */
+"It can happen when you or your connection used the old database backup." = "Se voi tapahtua, kun sinä tai kontaktisi käytitte vanhaa varmuuskopiota tietokannasta.";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Se voi tapahtua, kun:\n1. Viestit vanhenivat lähettävässä päätelaitteessa kahden päivän päästä tai palvelimella 30 päivän kuluttua.\n2. Viestin salauksen purku epäonnistui, koska sinä tai kontaktisi käytitte vanhaa varmuuskopiota tietokannasta.\n3. Yhteys vaarantui.";
+
+/* No comment provided by engineer. */
+"It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Näyttäisi, että olet jo yhteydessä tämän linkin kautta. Jos näin ei ole, tapahtui virhe (%@).";
+
+/* No comment provided by engineer. */
+"Italian interface" = "Italialainen käyttöliittymä";
+
+/* No comment provided by engineer. */
+"italic" = "kursivoitu";
+
+/* No comment provided by engineer. */
+"Japanese interface" = "Japanilainen käyttöliittymä";
+
+/* No comment provided by engineer. */
+"Join" = "Liity";
+
+/* No comment provided by engineer. */
+"join as %@" = "Liity %@:nä";
+
+/* No comment provided by engineer. */
+"Join group" = "Liity ryhmään";
+
+/* No comment provided by engineer. */
+"Join incognito" = "Liity incognito-tilassa";
+
+/* No comment provided by engineer. */
+"Joining group" = "Liittyy ryhmään";
+
+/* No comment provided by engineer. */
+"Keep your connections" = "Pidä kontaktisi";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Avainnipun virhe";
+
+/* No comment provided by engineer. */
+"KeyChain error" = "Avainnipun virhe";
+
+/* No comment provided by engineer. */
+"Large file!" = "Suuri tiedosto!";
+
+/* No comment provided by engineer. */
+"Learn more" = "Lue lisää";
+
+/* No comment provided by engineer. */
+"Leave" = "Poistu";
+
+/* No comment provided by engineer. */
+"Leave group" = "Poistu ryhmästä";
+
+/* No comment provided by engineer. */
+"Leave group?" = "Poistu ryhmästä?";
+
+/* rcv group event chat item */
+"left" = "poistunut";
+
+/* email subject */
+"Let's talk in SimpleX Chat" = "Jutellaan SimpleX Chatissa";
+
+/* No comment provided by engineer. */
+"Light" = "Vaalea";
+
+/* No comment provided by engineer. */
+"Limitations" = "Rajoitukset";
+
+/* No comment provided by engineer. */
+"LIVE" = "LIVE";
+
+/* No comment provided by engineer. */
+"Live message!" = "Live-viesti!";
+
+/* No comment provided by engineer. */
+"Live messages" = "Live-viestit";
+
+/* No comment provided by engineer. */
+"Local name" = "Paikallinen nimi";
+
+/* No comment provided by engineer. */
+"Local profile data only" = "Vain paikalliset profiilitiedot";
+
+/* No comment provided by engineer. */
+"Lock after" = "Lukitse jälkeen";
+
+/* No comment provided by engineer. */
+"Lock mode" = "Lukitustila";
+
+/* No comment provided by engineer. */
+"Make a private connection" = "Luo yksityinen yhteys";
+
+/* No comment provided by engineer. */
+"Make one message disappear" = "Hävitä yksi viesti";
+
+/* No comment provided by engineer. */
+"Make profile private!" = "Tee profiilista yksityinen!";
+
+/* No comment provided by engineer. */
+"Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." = "Varmista, että %@-palvelinosoitteet ovat oikeassa muodossa, että ne on erotettu toisistaan riveittäin ja että ne eivät ole päällekkäisiä (%@).";
+
+/* No comment provided by engineer. */
+"Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Varmista, että WebRTC ICE -palvelinosoitteet ovat oikeassa muodossa, rivieroteltuina ja että ne eivät ole päällekkäisiä.";
+
+/* No comment provided by engineer. */
+"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Monet ihmiset kysyivät: *Jos SimpleX:llä ei ole käyttäjätunnuksia, miten se voi toimittaa viestejä?*";
+
+/* No comment provided by engineer. */
+"Mark deleted for everyone" = "Merkitse poistetuksi kaikilta";
+
+/* No comment provided by engineer. */
+"Mark read" = "Merkitse luetuksi";
+
+/* No comment provided by engineer. */
+"Mark verified" = "Merkitse vahvistetuksi";
+
+/* No comment provided by engineer. */
+"Markdown in messages" = "Markdown viesteissä";
+
+/* marked deleted chat item preview text */
+"marked deleted" = "merkitty poistetuksi";
+
+/* No comment provided by engineer. */
+"Max 30 seconds, received instantly." = "Enintään 30 sekuntia, vastaanotetaan välittömästi.";
+
+/* member role */
+"member" = "jäsen";
+
+/* No comment provided by engineer. */
+"Member" = "Jäsen";
+
+/* rcv group event chat item */
+"member connected" = "yhdistetty";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". All group members will be notified." = "Jäsenen rooli muuttuu muotoon \"%@\". Kaikille ryhmän jäsenille ilmoitetaan asiasta.";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
+
+/* No comment provided by engineer. */
+"Member will be removed from group - this cannot be undone!" = "Jäsen poistetaan ryhmästä - tätä ei voi perua!";
+
+/* item status text */
+"Message delivery error" = "Viestin toimitusvirhe";
+
+/* No comment provided by engineer. */
+"Message delivery receipts!" = "Viestien toimituskuittaukset!";
+
+/* No comment provided by engineer. */
+"Message draft" = "Viestiluonnos";
+
+/* chat feature */
+"Message reactions" = "Viestireaktiot";
+
+/* No comment provided by engineer. */
+"Message reactions are prohibited in this chat." = "Viestireaktiot ovat kiellettyjä tässä keskustelussa.";
+
+/* No comment provided by engineer. */
+"Message reactions are prohibited in this group." = "Viestireaktiot ovat kiellettyjä tässä ryhmässä.";
+
+/* notification */
+"message received" = "viesti vastaanotettu";
+
+/* No comment provided by engineer. */
+"Message text" = "Viestin teksti";
+
+/* No comment provided by engineer. */
+"Messages" = "Viestit";
+
+/* No comment provided by engineer. */
+"Messages & files" = "Viestit ja tiedostot";
+
+/* No comment provided by engineer. */
+"Migrating database archive…" = "Siirretään tietokannan arkistoa…";
+
+/* No comment provided by engineer. */
+"Migration error:" = "Siirtovirhe:";
+
+/* No comment provided by engineer. */
+"Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." = "Siirto epäonnistui. Jatka nykyisen tietokannan käyttöä napauttamalla alla **Poistu**. Ilmoita ongelmasta sovelluskehittäjille keskustelussa tai sähköpostitse [chat@simplex.chat](mailto:chat@simplex.chat).";
+
+/* No comment provided by engineer. */
+"Migration is completed" = "Siirto on valmis";
+
+/* No comment provided by engineer. */
+"Migrations: %@" = "Siirrot: %@";
+
+/* time unit */
+"minutes" = "minuuttia";
+
+/* call status */
+"missed call" = "vastaamaton puhelu";
+
+/* chat item action */
+"Moderate" = "Moderoi";
+
+/* moderated chat item */
+"moderated" = "moderoitu";
+
+/* No comment provided by engineer. */
+"Moderated at" = "Moderoitu klo";
+
+/* copied message info */
+"Moderated at: %@" = "Moderoitu klo: %@";
+
+/* No comment provided by engineer. */
+"moderated by %@" = "%@ moderoi";
+
+/* time unit */
+"months" = "kuukautta";
+
+/* No comment provided by engineer. */
+"More improvements are coming soon!" = "Lisää parannuksia on tulossa pian!";
+
+/* item status description */
+"Most likely this connection is deleted." = "Todennäköisesti tämä yhteys on poistettu.";
+
+/* No comment provided by engineer. */
+"Most likely this contact has deleted the connection with you." = "Todennäköisesti tämä kontakti on poistanut yhteyden sinuun.";
+
+/* No comment provided by engineer. */
+"Multiple chat profiles" = "Useita keskusteluprofiileja";
+
+/* No comment provided by engineer. */
+"Mute" = "Mykistä";
+
+/* No comment provided by engineer. */
+"Muted when inactive!" = "Mykistetty ei-aktiivisena!";
+
+/* No comment provided by engineer. */
+"Name" = "Nimi";
+
+/* No comment provided by engineer. */
+"Network & servers" = "Verkko ja palvelimet";
+
+/* No comment provided by engineer. */
+"Network settings" = "Verkkoasetukset";
+
+/* No comment provided by engineer. */
+"Network status" = "Verkon tila";
+
+/* No comment provided by engineer. */
+"never" = "ei koskaan";
+
+/* notification */
+"New contact request" = "Uusi kontaktipyyntö";
+
+/* notification */
+"New contact:" = "Uusi kontakti:";
+
+/* No comment provided by engineer. */
+"New database archive" = "Uusi tietokanta-arkisto";
+
+/* No comment provided by engineer. */
+"New display name" = "Uusi näyttönimi";
+
+/* No comment provided by engineer. */
+"New in %@" = "Uutta %@";
+
+/* No comment provided by engineer. */
+"New member role" = "Uusi jäsenrooli";
+
+/* notification */
+"new message" = "uusi viesti";
+
+/* notification */
+"New message" = "Uusi viesti";
+
+/* No comment provided by engineer. */
+"New Passcode" = "Uusi pääsykoodi";
+
+/* No comment provided by engineer. */
+"New passphrase…" = "Uusi tunnuslause…";
+
+/* pref value */
+"no" = "ei";
+
+/* No comment provided by engineer. */
+"No" = "Ei";
+
+/* Authentication unavailable */
+"No app password" = "Ei sovelluksen salasanaa";
+
+/* No comment provided by engineer. */
+"No contacts selected" = "Kontakteja ei ole valittu";
+
+/* No comment provided by engineer. */
+"No contacts to add" = "Ei lisättäviä kontakteja";
+
+/* No comment provided by engineer. */
+"No delivery information" = "Ei toimitustietoja";
+
+/* No comment provided by engineer. */
+"No device token!" = "Ei laitetunnusta!";
+
+/* No comment provided by engineer. */
+"no e2e encryption" = "ei e2e-salausta";
+
+/* No comment provided by engineer. */
+"No filtered chats" = "Ei suodatettuja keskusteluja";
+
+/* No comment provided by engineer. */
+"No group!" = "Ryhmää ei löydy!";
+
+/* No comment provided by engineer. */
+"No history" = "Ei historiaa";
+
+/* No comment provided by engineer. */
+"No permission to record voice message" = "Ei lupaa ääniviestin tallentamiseen";
+
+/* No comment provided by engineer. */
+"No received or sent files" = "Ei vastaanotettuja tai lähetettyjä tiedostoja";
+
+/* copied message info in history */
+"no text" = "ei tekstiä";
+
+/* No comment provided by engineer. */
+"Notifications" = "Ilmoitukset";
+
+/* No comment provided by engineer. */
+"Notifications are disabled!" = "Ilmoitukset on poistettu käytöstä!";
+
+/* No comment provided by engineer. */
+"Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)" = "Nyt järjestelmänvalvojat voivat:\n- poistaa jäsenten viestit.\n- poista jäsenet käytöstä (\"tarkkailija\" rooli)";
+
+/* member role */
+"observer" = "tarkkailija";
+
+/* enabled status
+   group pref value */
+"off" = "pois";
+
+/* No comment provided by engineer. */
+"Off" = "Pois";
+
+/* No comment provided by engineer. */
+"Off (Local)" = "Pois (Paikallinen)";
+
+/* feature offered item */
+"offered %@" = "tarjottu %@";
+
+/* feature offered item */
+"offered %@: %@" = "tarjottu %1$@: %2$@";
+
+/* No comment provided by engineer. */
+"Ok" = "Ok";
+
+/* No comment provided by engineer. */
+"Old database" = "Vanha tietokanta";
+
+/* No comment provided by engineer. */
+"Old database archive" = "Vanha tietokanta-arkisto";
+
+/* group pref value */
+"on" = "päällä";
+
+/* No comment provided by engineer. */
+"One-time invitation link" = "Kertakutsulinkki";
+
+/* No comment provided by engineer. */
+"Onion hosts will be required for connection. Requires enabling VPN." = "Yhteyden muodostamiseen tarvitaan Onion-isäntiä. Edellyttää VPN:n sallimista.";
+
+/* No comment provided by engineer. */
+"Onion hosts will be used when available. Requires enabling VPN." = "Onion-isäntiä käytetään, kun niitä on saatavilla. Edellyttää VPN:n sallimista.";
+
+/* No comment provided by engineer. */
+"Onion hosts will not be used." = "Onion-isäntiä ei käytetä.";
+
+/* No comment provided by engineer. */
+"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Vain asiakaslaitteet tallentavat käyttäjäprofiileja, yhteystietoja, ryhmiä ja viestejä, jotka on lähetetty **kaksinkertaisella päästä päähän -salauksella**.";
+
+/* No comment provided by engineer. */
+"Only group owners can change group preferences." = "Vain ryhmän omistajat voivat muuttaa ryhmän asetuksia.";
+
+/* No comment provided by engineer. */
+"Only group owners can enable files and media." = "Vain ryhmän omistajat voivat sallia tiedostoja ja mediaa.";
+
+/* No comment provided by engineer. */
+"Only group owners can enable voice messages." = "Vain ryhmän omistajat voivat ottaa ääniviestit käyttöön.";
+
+/* No comment provided by engineer. */
+"Only you can add message reactions." = "Vain sinä voit lisätä viestireaktioita.";
+
+/* No comment provided by engineer. */
+"Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Vain sinä voit poistaa viestejä peruuttamattomasti (kontaktisi voi merkitä ne poistettavaksi).";
+
+/* No comment provided by engineer. */
+"Only you can make calls." = "Vain sinä voit soittaa puheluita.";
+
+/* No comment provided by engineer. */
+"Only you can send disappearing messages." = "Vain sinä voit lähettää katoavia viestejä.";
+
+/* No comment provided by engineer. */
+"Only you can send voice messages." = "Vain sinä voit lähettää ääniviestejä.";
+
+/* No comment provided by engineer. */
+"Only your contact can add message reactions." = "Vain kontaktisi voi lisätä viestireaktioita.";
+
+/* No comment provided by engineer. */
+"Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Vain kontaktisi voi poistaa viestejä peruuttamattomasti (voit merkitä ne poistettavaksi).";
+
+/* No comment provided by engineer. */
+"Only your contact can make calls." = "Vain kontaktisi voi soittaa puheluita.";
+
+/* No comment provided by engineer. */
+"Only your contact can send disappearing messages." = "Vain kontaktisi voi lähettää katoavia viestejä.";
+
+/* No comment provided by engineer. */
+"Only your contact can send voice messages." = "Vain kontaktisi voi lähettää ääniviestejä.";
+
+/* No comment provided by engineer. */
+"Open chat" = "Avaa keskustelu";
+
+/* authentication reason */
+"Open chat console" = "Avaa keskustelukonsoli";
+
+/* No comment provided by engineer. */
+"Open Settings" = "Avaa Asetukset";
+
+/* authentication reason */
+"Open user profiles" = "Avaa käyttäjäprofiilit";
+
+/* No comment provided by engineer. */
+"Open-source protocol and code – anybody can run the servers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
+
+/* No comment provided by engineer. */
+"Opening database…" = "Avataan tietokantaa…";
+
+/* No comment provided by engineer. */
+"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Linkin avaaminen selaimessa voi heikentää yhteyden yksityisyyttä ja turvallisuutta. Epäluotetut SimpleX-linkit näkyvät punaisina.";
+
+/* No comment provided by engineer. */
+"or chat with the developers" = "tai keskustele kehittäjien kanssa";
+
+/* member role */
+"owner" = "omistaja";
+
+/* No comment provided by engineer. */
+"Passcode" = "Pääsykoodi";
+
+/* No comment provided by engineer. */
+"Passcode changed!" = "Pääsykoodi vaihdettu!";
+
+/* No comment provided by engineer. */
+"Passcode entry" = "Pääsykoodin syöttö";
+
+/* No comment provided by engineer. */
+"Passcode not changed!" = "Pääsykoodia ei ole muutettu!";
+
+/* No comment provided by engineer. */
+"Passcode set!" = "Pääsykoodi asetettu!";
+
+/* No comment provided by engineer. */
+"Password to show" = "Salasana näytettäväksi";
+
+/* No comment provided by engineer. */
+"Paste" = "Liitä";
+
+/* No comment provided by engineer. */
+"Paste image" = "Liitä kuva";
+
+/* No comment provided by engineer. */
+"Paste received link" = "Liitä vastaanotettu linkki";
+
+/* placeholder */
+"Paste the link you received to connect with your contact." = "Liitä saamasi linkki, jonka avulla voit muodostaa yhteyden kontaktiisi.";
+
+/* No comment provided by engineer. */
+"peer-to-peer" = "vertais";
+
+/* No comment provided by engineer. */
+"People can connect to you only via the links you share." = "Ihmiset voivat ottaa sinuun yhteyttä vain jakamiesi linkkien kautta.";
+
+/* No comment provided by engineer. */
+"Periodically" = "Ajoittain";
+
+/* message decrypt error item */
+"Permanent decryption error" = "Pysyvä salauksen purkuvirhe";
+
+/* No comment provided by engineer. */
+"PING count" = "PING-määrä";
+
+/* No comment provided by engineer. */
+"PING interval" = "PING-väli";
+
+/* No comment provided by engineer. */
+"Please ask your contact to enable sending voice messages." = "Pyydä kontaktiasi sallimaan ääniviestien lähettäminen.";
+
+/* No comment provided by engineer. */
+"Please check that you used the correct link or ask your contact to send you another one." = "Tarkista, että käytit oikeaa linkkiä tai pyydä kontaktiasi lähettämään sinulle uusi linkki.";
+
+/* No comment provided by engineer. */
+"Please check your network connection with %@ and try again." = "Tarkista verkkoyhteytesi %@:lla ja yritä uudelleen.";
+
+/* No comment provided by engineer. */
+"Please check yours and your contact preferences." = "Tarkista omasi ja kontaktin asetukset.";
+
+/* No comment provided by engineer. */
+"Please contact group admin." = "Ota yhteyttä ryhmän ylläpitäjään.";
+
+/* No comment provided by engineer. */
+"Please enter correct current passphrase." = "Anna oikea nykyinen tunnuslause.";
+
+/* No comment provided by engineer. */
+"Please enter the previous password after restoring database backup. This action can not be undone." = "Anna edellinen salasana tietokannan varmuuskopion palauttamisen jälkeen. Tätä toimintoa ei voi kumota.";
+
+/* No comment provided by engineer. */
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "Muista tai säilytä se turvallisesti - kadonnutta pääsykoodia ei voi palauttaa!";
+
+/* No comment provided by engineer. */
+"Please report it to the developers." = "Ilmoita siitä kehittäjille.";
+
+/* No comment provided by engineer. */
+"Please restart the app and migrate the database to enable push notifications." = "Käynnistä sovellus uudelleen ja siirrä tietokanta push-ilmoitusten ottamiseksi käyttöön.";
+
+/* No comment provided by engineer. */
+"Please store passphrase securely, you will NOT be able to access chat if you lose it." = "Säilytä tunnuslause turvallisesti, ET pääse keskusteluihin, jos kadotat sen.";
+
+/* No comment provided by engineer. */
+"Please store passphrase securely, you will NOT be able to change it if you lose it." = "Säilytä tunnuslause turvallisesti, ET voi muuttaa sitä, jos kadotat sen.";
+
+/* No comment provided by engineer. */
+"Polish interface" = "Puolalainen käyttöliittymä";
+
+/* server test error */
+"Possibly, certificate fingerprint in server address is incorrect" = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
+
+/* No comment provided by engineer. */
+"Preserve the last message draft, with attachments." = "Säilytä viimeinen viestiluonnos liitteineen.";
+
+/* No comment provided by engineer. */
+"Preset server" = "Esiasetettu palvelin";
+
+/* No comment provided by engineer. */
+"Preset server address" = "Esiasetettu palvelimen osoite";
+
+/* No comment provided by engineer. */
+"Preview" = "Esikatselu";
+
+/* No comment provided by engineer. */
+"Privacy & security" = "Yksityisyys ja turvallisuus";
+
+/* No comment provided by engineer. */
+"Privacy redefined" = "Yksityisyys uudelleen määritettynä";
+
+/* No comment provided by engineer. */
+"Private filenames" = "Yksityiset tiedostonimet";
+
+/* No comment provided by engineer. */
+"Profile and server connections" = "Profiili- ja palvelinyhteydet";
+
+/* No comment provided by engineer. */
+"Profile image" = "Profiilikuva";
+
+/* No comment provided by engineer. */
+"Profile password" = "Profiilin salasana";
+
+/* No comment provided by engineer. */
+"Profile update will be sent to your contacts." = "Profiilipäivitys lähetetään kontakteillesi.";
+
+/* No comment provided by engineer. */
+"Prohibit audio/video calls." = "Estä ääni- ja videopuhelut.";
+
+/* No comment provided by engineer. */
+"Prohibit irreversible message deletion." = "Estä peruuttamaton viestien poistaminen.";
+
+/* No comment provided by engineer. */
+"Prohibit message reactions." = "Estä viestireaktiot.";
+
+/* No comment provided by engineer. */
+"Prohibit messages reactions." = "Estä viestireaktiot.";
+
+/* No comment provided by engineer. */
+"Prohibit sending direct messages to members." = "Estä suorien viestien lähettäminen jäsenille.";
+
+/* No comment provided by engineer. */
+"Prohibit sending disappearing messages." = "Estä katoavien viestien lähettäminen.";
+
+/* No comment provided by engineer. */
+"Prohibit sending files and media." = "Estä tiedostojen ja median lähettäminen.";
+
+/* No comment provided by engineer. */
+"Prohibit sending voice messages." = "Estä ääniviestien lähettäminen.";
+
+/* No comment provided by engineer. */
+"Protect app screen" = "Suojaa sovellusnäyttö";
+
+/* No comment provided by engineer. */
+"Protect your chat profiles with a password!" = "Suojaa keskusteluprofiilisi salasanalla!";
+
+/* No comment provided by engineer. */
+"Protocol timeout" = "Protokollan aikakatkaisu";
+
+/* No comment provided by engineer. */
+"Protocol timeout per KB" = "Protokollan aikakatkaisu per KB";
+
+/* No comment provided by engineer. */
+"Push notifications" = "Push-ilmoitukset";
+
+/* No comment provided by engineer. */
+"Rate the app" = "Arvioi sovellus";
+
+/* chat item menu */
+"React…" = "Reagoi…";
+
+/* No comment provided by engineer. */
+"Read" = "Lue";
+
+/* No comment provided by engineer. */
+"Read more" = "Lue lisää";
+
+/* No comment provided by engineer. */
+"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
+
+/* No comment provided by engineer. */
+"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
+
+/* No comment provided by engineer. */
+"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Lue lisää [GitHub-arkistosta](https://github.com/simplex-chat/simplex-chat#readme).";
+
+/* No comment provided by engineer. */
+"Read more in our GitHub repository." = "Lue lisää GitHub-tietovarastostamme.";
+
+/* No comment provided by engineer. */
+"Receipts are disabled" = "Kuittaukset pois käytöstä";
+
+/* No comment provided by engineer. */
+"received answer…" = "vastaus saatu…";
+
+/* No comment provided by engineer. */
+"Received at" = "Vastaanotettu klo";
+
+/* copied message info */
+"Received at: %@" = "Vastaanotettu klo: %@";
+
+/* No comment provided by engineer. */
+"received confirmation…" = "vahvistus saatu…";
+
+/* notification */
+"Received file event" = "Tiedoston vastaanottotapahtuma";
+
+/* message info title */
+"Received message" = "Vastaanotettu viesti";
+
+/* No comment provided by engineer. */
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Vastaanotto-osoite vaihdetaan toiseen palvelimeen. Osoitteenmuutos tehdään sen jälkeen, kun lähettäjä tulee verkkoon.";
+
+/* No comment provided by engineer. */
+"Receiving file will be stopped." = "Tiedoston vastaanotto pysäytetään.";
+
+/* No comment provided by engineer. */
+"Receiving via" = "Vastaanotto kautta";
+
+/* No comment provided by engineer. */
+"Recipients see updates as you type them." = "Vastaanottajat näkevät päivitykset, kun kirjoitat niitä.";
+
+/* No comment provided by engineer. */
+"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Yhdistä kaikki yhdistetyt palvelimet uudelleen pakottaaksesi viestin toimituksen. Tämä käyttää ylimääräistä liikennettä.";
+
+/* No comment provided by engineer. */
+"Reconnect servers?" = "Yhdistä palvelimet uudelleen?";
+
+/* No comment provided by engineer. */
+"Record updated at" = "Tietue päivitetty klo";
+
+/* copied message info */
+"Record updated at: %@" = "Tietue päivitetty klo: %@";
+
+/* No comment provided by engineer. */
+"Reduced battery usage" = "Pienempi akun käyttö";
+
+/* reject incoming call via notification */
+"Reject" = "Hylkää";
+
+/* No comment provided by engineer. */
+"Reject (sender NOT notified)" = "Hylkää (lähettäjälle EI ilmoiteta)";
+
+/* No comment provided by engineer. */
+"Reject contact request" = "Hylkää yhteyspyyntö";
+
+/* call status */
+"rejected call" = "hylätty puhelu";
+
+/* No comment provided by engineer. */
+"Relay server is only used if necessary. Another party can observe your IP address." = "Välityspalvelinta käytetään vain tarvittaessa. Toinen osapuoli voi tarkkailla IP-osoitettasi.";
+
+/* No comment provided by engineer. */
+"Relay server protects your IP address, but it can observe the duration of the call." = "Välityspalvelin suojaa IP-osoitteesi, mutta se voi tarkkailla puhelun kestoa.";
+
+/* No comment provided by engineer. */
+"Remove" = "Poista";
+
+/* No comment provided by engineer. */
+"Remove member" = "Poista jäsen";
+
+/* No comment provided by engineer. */
+"Remove member?" = "Poista jäsen?";
+
+/* No comment provided by engineer. */
+"Remove passphrase from keychain?" = "Poista tunnuslause avainnipusta?";
+
+/* No comment provided by engineer. */
+"removed" = "poistettu";
+
+/* rcv group event chat item */
+"removed %@" = "%@ poistettu";
+
+/* rcv group event chat item */
+"removed you" = "poisti sinut";
+
+/* No comment provided by engineer. */
+"Renegotiate" = "Neuvottele uudelleen";
+
+/* No comment provided by engineer. */
+"Renegotiate encryption" = "Uudelleenneuvottele salaus";
+
+/* No comment provided by engineer. */
+"Renegotiate encryption?" = "Uudelleenneuvottele salaus?";
+
+/* chat item action */
+"Reply" = "Vastaa";
+
+/* No comment provided by engineer. */
+"Required" = "Pakollinen";
+
+/* No comment provided by engineer. */
+"Reset" = "Oletustilaan";
+
+/* No comment provided by engineer. */
+"Reset colors" = "Oletusvärit";
+
+/* No comment provided by engineer. */
+"Reset to defaults" = "Palauta oletusasetukset";
+
+/* No comment provided by engineer. */
+"Restart the app to create a new chat profile" = "Käynnistä sovellus uudelleen uuden keskusteluprofiilin luomiseksi";
+
+/* No comment provided by engineer. */
+"Restart the app to use imported chat database" = "Käynnistä sovellus uudelleen käyttääksesi tuotua keskustelujen-tietokantaa";
+
+/* No comment provided by engineer. */
+"Restore" = "Palauta";
+
+/* No comment provided by engineer. */
+"Restore database backup" = "Palauta tietokannan varmuuskopio";
+
+/* No comment provided by engineer. */
+"Restore database backup?" = "Palauta tietokannan varmuuskopio?";
+
+/* No comment provided by engineer. */
+"Restore database error" = "Virhe tietokannan palauttamisessa";
+
+/* chat item action */
+"Reveal" = "Paljasta";
+
+/* No comment provided by engineer. */
+"Revert" = "Palauta";
+
+/* No comment provided by engineer. */
+"Revoke" = "Peruuta";
+
+/* cancel file action */
+"Revoke file" = "Peruuta tiedosto";
+
+/* No comment provided by engineer. */
+"Revoke file?" = "Peruuta tiedosto?";
+
+/* No comment provided by engineer. */
+"Role" = "Rooli";
+
+/* No comment provided by engineer. */
+"Run chat" = "Käynnistä chat";
+
+/* chat item action */
+"Save" = "Tallenna";
+
+/* No comment provided by engineer. */
+"Save (and notify contacts)" = "Tallenna (ja ilmoita kontakteille)";
+
+/* No comment provided by engineer. */
+"Save and notify contact" = "Tallenna ja ilmoita kontaktille";
+
+/* No comment provided by engineer. */
+"Save and notify group members" = "Tallenna ja ilmoita ryhmän jäsenille";
+
+/* No comment provided by engineer. */
+"Save and update group profile" = "Tallenna ja päivitä ryhmäprofiili";
+
+/* No comment provided by engineer. */
+"Save archive" = "Tallenna arkisto";
+
+/* No comment provided by engineer. */
+"Save auto-accept settings" = "Tallenna automaattisen hyväksynnän asetukset";
+
+/* No comment provided by engineer. */
+"Save group profile" = "Tallenna ryhmäprofiili";
+
+/* No comment provided by engineer. */
+"Save passphrase and open chat" = "Tallenna tunnuslause ja avaa keskustelu";
+
+/* No comment provided by engineer. */
+"Save passphrase in Keychain" = "Tallenna tunnuslause Avainnippuun";
+
+/* No comment provided by engineer. */
+"Save preferences?" = "Tallenna asetukset?";
+
+/* No comment provided by engineer. */
+"Save profile password" = "Tallenna profiilin salasana";
+
+/* No comment provided by engineer. */
+"Save servers" = "Tallenna palvelimet";
+
+/* No comment provided by engineer. */
+"Save servers?" = "Tallenna palvelimet?";
+
+/* No comment provided by engineer. */
+"Save settings?" = "Tallenna asetukset?";
+
+/* No comment provided by engineer. */
+"Save welcome message?" = "Tallenna tervetuloviesti?";
+
+/* No comment provided by engineer. */
+"Saved WebRTC ICE servers will be removed" = "Tallennetut WebRTC ICE -palvelimet poistetaan";
+
+/* No comment provided by engineer. */
+"Scan code" = "Skannaa koodi";
+
+/* No comment provided by engineer. */
+"Scan QR code" = "Skannaa QR-koodi";
+
+/* No comment provided by engineer. */
+"Scan security code from your contact's app." = "Skannaa turvakoodi kontaktisi sovelluksesta.";
+
+/* No comment provided by engineer. */
+"Scan server QR code" = "Skannaa palvelimen QR-koodi";
+
+/* No comment provided by engineer. */
+"Search" = "Haku";
+
+/* network option */
+"sec" = "sek";
+
+/* time unit */
+"seconds" = "sekuntia";
+
+/* No comment provided by engineer. */
+"secret" = "salainen";
+
+/* server test step */
+"Secure queue" = "Turvallinen jono";
+
+/* No comment provided by engineer. */
+"Security assessment" = "Turvallisuusarviointi";
+
+/* No comment provided by engineer. */
+"Security code" = "Turvakoodi";
+
+/* chat item text */
+"security code changed" = "turvakoodi on muuttunut";
+
+/* No comment provided by engineer. */
+"Select" = "Valitse";
+
+/* No comment provided by engineer. */
+"Self-destruct" = "Itsetuho";
+
+/* No comment provided by engineer. */
+"Self-destruct passcode" = "Itsetuhoutuva pääsykoodi";
+
+/* No comment provided by engineer. */
+"Self-destruct passcode changed!" = "Itsetuhoutuva pääsykoodi vaihdettu!";
+
+/* No comment provided by engineer. */
+"Self-destruct passcode enabled!" = "Itsetuhoutuva pääsykoodi käytössä!";
+
+/* No comment provided by engineer. */
+"Send" = "Lähetä";
+
+/* No comment provided by engineer. */
+"Send a live message - it will update for the recipient(s) as you type it" = "Lähetä live-viesti - se päivittyy vastaanottajille, kun kirjoitat sitä";
+
+/* No comment provided by engineer. */
+"Send delivery receipts to" = "Lähetä toimituskuittaukset vastaanottajalle";
+
+/* No comment provided by engineer. */
+"Send direct message" = "Lähetä yksityisviesti";
+
+/* No comment provided by engineer. */
+"Send disappearing message" = "Lähetä katoava viesti";
+
+/* No comment provided by engineer. */
+"Send link previews" = "Lähetä linkkien esikatselu";
+
+/* No comment provided by engineer. */
+"Send live message" = "Lähetä live-viesti";
+
+/* No comment provided by engineer. */
+"Send notifications" = "Lähetys ilmoitukset";
+
+/* No comment provided by engineer. */
+"Send notifications:" = "Lähetys ilmoitukset:";
+
+/* No comment provided by engineer. */
+"Send questions and ideas" = "Lähetä kysymyksiä ja ideoita";
+
+/* No comment provided by engineer. */
+"Send receipts" = "Lähetä kuittaukset";
+
+/* No comment provided by engineer. */
+"Send them from gallery or custom keyboards." = "Lähetä ne galleriasta tai mukautetuista näppäimistöistä.";
+
+/* No comment provided by engineer. */
+"Sender cancelled file transfer." = "Lähettäjä peruutti tiedoston siirron.";
+
+/* No comment provided by engineer. */
+"Sender may have deleted the connection request." = "Lähettäjä on saattanut poistaa yhteyspyynnön.";
+
+/* No comment provided by engineer. */
+"Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Toimituskuittauksien lähettäminen otetaan käyttöön kaikille kontakteille näkyvissä keskusteluprofiileissa.";
+
+/* No comment provided by engineer. */
+"Sending delivery receipts will be enabled for all contacts." = "Toimituskuittauksien lähettäminen otetaan käyttöön kaikille kontakteille.";
+
+/* No comment provided by engineer. */
+"Sending file will be stopped." = "Tiedoston lähettäminen lopetetaan.";
+
+/* No comment provided by engineer. */
+"Sending receipts is disabled for %lld contacts" = "Kuittauksien lähettäminen ei ole käytössä %lld kontakteille";
+
+/* No comment provided by engineer. */
+"Sending receipts is disabled for %lld groups" = "Kuittien lähettäminen ei ole käytössä %lld ryhmille";
+
+/* No comment provided by engineer. */
+"Sending receipts is enabled for %lld contacts" = "Kuittauksien lähettäminen on käytössä %lld kontakteille";
+
+/* No comment provided by engineer. */
+"Sending receipts is enabled for %lld groups" = "Kuittauksien lähettäminen on käytössä %lld ryhmille";
+
+/* No comment provided by engineer. */
+"Sending via" = "Lähetetään kautta";
+
+/* No comment provided by engineer. */
+"Sent at" = "Lähetetty klo";
+
+/* copied message info */
+"Sent at: %@" = "Lähetetty klo: %@";
+
+/* notification */
+"Sent file event" = "Lähetetty tiedosto tapahtuma";
+
+/* message info title */
+"Sent message" = "Lähetetty viesti";
+
+/* No comment provided by engineer. */
+"Sent messages will be deleted after set time." = "Lähetetyt viestit poistetaan asetetun ajan kuluttua.";
+
+/* server test error */
+"Server requires authorization to create queues, check password" = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
+
+/* server test error */
+"Server requires authorization to upload, check password" = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
+
+/* No comment provided by engineer. */
+"Server test failed!" = "Palvelintesti epäonnistui!";
+
+/* No comment provided by engineer. */
+"Servers" = "Palvelimet";
+
+/* No comment provided by engineer. */
+"Set 1 day" = "Aseta 1 päivä";
+
+/* No comment provided by engineer. */
+"Set contact name…" = "Aseta kontaktin nimi…";
+
+/* No comment provided by engineer. */
+"Set group preferences" = "Aseta ryhmän asetukset";
+
+/* No comment provided by engineer. */
+"Set it instead of system authentication." = "Aseta se järjestelmän todennuksen sijaan.";
+
+/* No comment provided by engineer. */
+"Set passcode" = "Aseta pääsykoodi";
+
+/* No comment provided by engineer. */
+"Set passphrase to export" = "Aseta tunnuslause vientiä varten";
+
+/* No comment provided by engineer. */
+"Set the message shown to new members!" = "Aseta uusille jäsenille näytettävä viesti!";
+
+/* No comment provided by engineer. */
+"Set timeouts for proxy/VPN" = "Aseta aikakatkaisut välityspalvelimelle/VPN:lle";
+
+/* No comment provided by engineer. */
+"Settings" = "Asetukset";
+
+/* chat item action */
+"Share" = "Jaa";
+
+/* No comment provided by engineer. */
+"Share 1-time link" = "Jaa kertakäyttölinkki";
+
+/* No comment provided by engineer. */
+"Share address" = "Jaa osoite";
+
+/* No comment provided by engineer. */
+"Share address with contacts?" = "Jaa osoite kontakteille?";
+
+/* No comment provided by engineer. */
+"Share link" = "Jaa linkki";
+
+/* No comment provided by engineer. */
+"Share one-time invitation link" = "Jaa kertakutsulinkki";
+
+/* No comment provided by engineer. */
+"Share with contacts" = "Jaa kontaktien kanssa";
+
+/* No comment provided by engineer. */
+"Show calls in phone history" = "Näytä puhelut puhelinhistoriassa";
+
+/* No comment provided by engineer. */
+"Show developer options" = "Näytä kehittäjävaihtoehdot";
+
+/* No comment provided by engineer. */
+"Show last messages" = "Näytä viimeiset viestit";
+
+/* No comment provided by engineer. */
+"Show preview" = "Näytä esikatselu";
+
+/* No comment provided by engineer. */
+"Show:" = "Näytä:";
+
+/* No comment provided by engineer. */
+"SimpleX address" = "SimpleX-osoite";
+
+/* No comment provided by engineer. */
+"SimpleX Address" = "SimpleX-osoite";
+
+/* No comment provided by engineer. */
+"SimpleX Chat security was audited by Trail of Bits." = "Trail of Bits on tarkastanut SimpleX Chatin tietoturvan.";
+
+/* simplex link type */
+"SimpleX contact address" = "SimpleX-yhteystiedot";
+
+/* notification */
+"SimpleX encrypted message or connection event" = "SimpleX-salattu viesti tai yhteystapahtuma";
+
+/* simplex link type */
+"SimpleX group link" = "SimpleX-ryhmän linkki";
+
+/* No comment provided by engineer. */
+"SimpleX links" = "SimpleX-linkit";
+
+/* No comment provided by engineer. */
+"SimpleX Lock" = "SimpleX Lock";
+
+/* No comment provided by engineer. */
+"SimpleX Lock mode" = "SimpleX Lock -tila";
+
+/* No comment provided by engineer. */
+"SimpleX Lock not enabled!" = "SimpleX Lock ei ole käytössä!";
+
+/* No comment provided by engineer. */
+"SimpleX Lock turned on" = "SimpleX Lock päällä";
+
+/* simplex link type */
+"SimpleX one-time invitation" = "SimpleX-kertakutsu";
+
+/* No comment provided by engineer. */
+"Skip" = "Ohita";
+
+/* No comment provided by engineer. */
+"Skipped messages" = "Ohitetut viestit";
+
+/* No comment provided by engineer. */
+"Small groups (max 20)" = "Pienryhmät (max 20)";
+
+/* No comment provided by engineer. */
+"SMP servers" = "SMP-palvelimet";
+
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Tuonnin aikana tapahtui joitakin ei-vakavia virheitä – saatat nähdä Chat-konsolissa lisätietoja.";
+
+/* notification title */
+"Somebody" = "Joku";
+
+/* No comment provided by engineer. */
+"Start a new chat" = "Aloita uusi keskustelu";
+
+/* No comment provided by engineer. */
+"Start chat" = "Aloita keskustelu";
+
+/* No comment provided by engineer. */
+"Start migration" = "Aloita siirto";
+
+/* No comment provided by engineer. */
+"starting…" = "alkaa…";
+
+/* No comment provided by engineer. */
+"Stop" = "Lopeta";
+
+/* No comment provided by engineer. */
+"Stop chat to enable database actions" = "Pysäytä keskustelu tietokantatoimien mahdollistamiseksi";
+
+/* No comment provided by engineer. */
+"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Pysäytä keskustelut viedäksesi, tuodaksesi tai poistaaksesi keskustelujen tietokannan. Et voi vastaanottaa ja lähettää viestejä, kun keskustelut on pysäytetty.";
+
+/* No comment provided by engineer. */
+"Stop chat?" = "Lopeta keskustelu?";
+
+/* cancel file action */
+"Stop file" = "Pysäytä tiedosto";
+
+/* No comment provided by engineer. */
+"Stop receiving file?" = "Lopeta tiedoston vastaanottaminen?";
+
+/* No comment provided by engineer. */
+"Stop sending file?" = "Lopeta tiedoston lähettäminen?";
+
+/* No comment provided by engineer. */
+"Stop sharing" = "Lopeta jakaminen";
+
+/* No comment provided by engineer. */
+"Stop sharing address?" = "Lopeta osoitteen jakaminen?";
+
+/* authentication reason */
+"Stop SimpleX" = "Lopeta SimpleX";
+
+/* No comment provided by engineer. */
+"strike" = "soita";
+
+/* No comment provided by engineer. */
+"Submit" = "Lähetä";
+
+/* No comment provided by engineer. */
+"Support SimpleX Chat" = "SimpleX Chat tuki";
+
+/* No comment provided by engineer. */
+"System" = "Järjestelmä";
+
+/* No comment provided by engineer. */
+"System authentication" = "Järjestelmän todennus";
+
+/* No comment provided by engineer. */
+"Take picture" = "Ota kuva";
+
+/* No comment provided by engineer. */
+"Tap button " = "Napauta painiketta ";
+
+/* No comment provided by engineer. */
+"Tap to activate profile." = "Aktivoi profiili napauttamalla.";
+
+/* No comment provided by engineer. */
+"Tap to join" = "Liity napauttamalla";
+
+/* No comment provided by engineer. */
+"Tap to join incognito" = "Napauta liittyäksesi incognito-tilassa";
+
+/* No comment provided by engineer. */
+"Tap to start a new chat" = "Aloita uusi keskustelu napauttamalla";
+
+/* No comment provided by engineer. */
+"TCP connection timeout" = "TCP-yhteyden aikakatkaisu";
+
+/* No comment provided by engineer. */
+"TCP_KEEPCNT" = "TCP_KEEPCNT";
+
+/* No comment provided by engineer. */
+"TCP_KEEPIDLE" = "TCP_KEEPIDLE";
+
+/* No comment provided by engineer. */
+"TCP_KEEPINTVL" = "TCP_KEEPINTVL";
+
+/* server test failure */
+"Test failed at step %@." = "Testi epäonnistui vaiheessa %@.";
+
+/* No comment provided by engineer. */
+"Test server" = "Testipalvelin";
+
+/* No comment provided by engineer. */
+"Test servers" = "Testipalvelimet";
+
+/* No comment provided by engineer. */
+"Tests failed!" = "Testit epäonnistuivat!";
+
+/* No comment provided by engineer. */
+"Thank you for installing SimpleX Chat!" = "Kiitos SimpleX Chatin asentamisesta!";
+
+/* No comment provided by engineer. */
+"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Kiitos käyttäjille - [osallistu Weblaten avulla](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
+
+/* No comment provided by engineer. */
+"Thanks to the users – contribute via Weblate!" = "Kiitokset käyttäjille – osallistu Weblaten kautta!";
+
+/* No comment provided by engineer. */
+"The 1st platform without any user identifiers – private by design." = "Ensimmäinen alusta ilman käyttäjätunnisteita – suunniteltu yksityiseksi.";
+
+/* No comment provided by engineer. */
+"The app can notify you when you receive messages or contact requests - please open settings to enable." = "Sovellus voi ilmoittaa sinulle, kun saat viestejä tai yhteydenottopyyntöjä - avaa asetukset ottaaksesi ne käyttöön.";
+
+/* No comment provided by engineer. */
+"The attempt to change database passphrase was not completed." = "Tietokannan tunnuslauseen muuttamista ei suoritettu loppuun.";
+
+/* No comment provided by engineer. */
+"The connection you accepted will be cancelled!" = "Hyväksymäsi yhteys peruuntuu!";
+
+/* No comment provided by engineer. */
+"The contact you shared this link with will NOT be able to connect!" = "Kontakti, jolle jaoit tämän linkin, EI voi muodostaa yhteyttä!";
+
+/* No comment provided by engineer. */
+"The created archive is available via app Settings / Database / Old database archive." = "Luotu arkisto on käytettävissä sovelluksen Asetukset / Tietokanta / Vanha tietokanta-arkisto kautta.";
+
+/* No comment provided by engineer. */
+"The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Salaus toimii ja uutta salaussopimusta ei tarvita. Tämä voi johtaa yhteysvirheisiin!";
+
+/* No comment provided by engineer. */
+"The group is fully decentralized – it is visible only to the members." = "Ryhmä on täysin hajautettu - se näkyy vain jäsenille.";
+
+/* No comment provided by engineer. */
+"The hash of the previous message is different." = "Edellisen viestin tarkiste on erilainen.";
+
+/* No comment provided by engineer. */
+"The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "Seuraavan viestin tunnus on väärä (pienempi tai yhtä suuri kuin edellisen).\nTämä voi johtua jostain virheestä tai siitä, että yhteys on vaarantunut.";
+
+/* No comment provided by engineer. */
+"The message will be deleted for all members." = "Viesti poistetaan kaikilta jäseniltä.";
+
+/* No comment provided by engineer. */
+"The message will be marked as moderated for all members." = "Viesti merkitään moderoiduksi kaikille jäsenille.";
+
+/* No comment provided by engineer. */
+"The next generation of private messaging" = "Seuraavan sukupolven yksityisviestit";
+
+/* No comment provided by engineer. */
+"The old database was not removed during the migration, it can be deleted." = "Vanhaa tietokantaa ei poistettu siirron aikana, se voidaan kuitenkin poistaa.";
+
+/* No comment provided by engineer. */
+"The profile is only shared with your contacts." = "Profiili jaetaan vain kontaktiesi kanssa.";
+
+/* No comment provided by engineer. */
+"The second tick we missed! ✅" = "Toinen kuittaus, joka uupui! ✅";
+
+/* No comment provided by engineer. */
+"The sender will NOT be notified" = "Lähettäjälle EI ilmoiteta";
+
+/* No comment provided by engineer. */
+"The servers for new connections of your current chat profile **%@**." = "Palvelimet nykyisen keskusteluprofiilisi uusille yhteyksille **%@**.";
+
+/* No comment provided by engineer. */
+"Theme" = "Teema";
+
+/* No comment provided by engineer. */
+"There should be at least one user profile." = "Käyttäjäprofiileja tulee olla vähintään yksi.";
+
+/* No comment provided by engineer. */
+"There should be at least one visible user profile." = "Näkyviä käyttäjäprofiileja tulee olla vähintään yksi.";
+
+/* No comment provided by engineer. */
+"These settings are for your current profile **%@**." = "Nämä asetukset koskevat nykyistä profiiliasi **%@**.";
+
+/* No comment provided by engineer. */
+"They can be overridden in contact and group settings." = "Ne voidaan ohittaa kontakti- ja ryhmäasetuksissa.";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Tätä toimintoa ei voi kumota - kaikki vastaanotetut ja lähetetyt tiedostot ja media poistetaan. Matalan resoluution kuvat säilyvät.";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Tätä toimintoa ei voi kumota - valittua aikaisemmin lähetetyt ja vastaanotetut viestit poistetaan. Tämä voi kestää useita minuutteja.";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Tätä toimintoa ei voi kumota - profiilisi, kontaktisi, viestisi ja tiedostosi poistuvat peruuttamattomasti.";
+
+/* notification title */
+"this contact" = "tämä kontakti";
+
+/* No comment provided by engineer. */
+"This group has over %lld members, delivery receipts are not sent." = "Tässä ryhmässä on yli %lld jäsentä, lähetyskuittauksia ei lähetetä.";
+
+/* No comment provided by engineer. */
+"This group no longer exists." = "Tätä ryhmää ei enää ole olemassa.";
+
+/* No comment provided by engineer. */
+"This setting applies to messages in your current chat profile **%@**." = "Tämä asetus koskee nykyisen keskusteluprofiilisi viestejä *%@**.";
+
+/* No comment provided by engineer. */
+"To ask any questions and to receive updates:" = "Voit esittää kysymyksiä ja saada päivityksiä:";
+
+/* No comment provided by engineer. */
+"To connect, your contact can scan QR code or use the link in the app." = "Kontaktisi voi muodostaa yhteyden skannaamalla QR-koodin tai käyttämällä sovelluksessa olevaa linkkiä.";
+
+/* No comment provided by engineer. */
+"To make a new connection" = "Uuden yhteyden luominen";
+
+/* No comment provided by engineer. */
+"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Yksityisyyden suojaamiseksi kaikkien muiden alustojen käyttämien käyttäjätunnusten sijaan SimpleX käyttää viestijonojen tunnisteita, jotka ovat kaikille kontakteille erillisiä.";
+
+/* No comment provided by engineer. */
+"To protect timezone, image/voice files use UTC." = "Aikavyöhykkeen suojaamiseksi kuva-/äänitiedostot käyttävät UTC:tä.";
+
+/* No comment provided by engineer. */
+"To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Suojaa tietosi ottamalla SimpleX Lock käyttöön.\nSinua kehotetaan suorittamaan todennus loppuun, ennen kuin tämä ominaisuus otetaan käyttöön.";
+
+/* No comment provided by engineer. */
+"To record voice message please grant permission to use Microphone." = "Jos haluat nauhoittaa ääniviestin, anna lupa käyttää mikrofonia.";
+
+/* No comment provided by engineer. */
+"To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Voit paljastaa piilotetun profiilisi syöttämällä koko salasanan hakukenttään **Keskusteluprofiilisi** -sivulla.";
+
+/* No comment provided by engineer. */
+"To support instant push notifications the chat database has to be migrated." = "Keskustelujen-tietokanta on siirrettävä välittömien push-ilmoitusten tukemiseksi.";
+
+/* No comment provided by engineer. */
+"To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Voit tarkistaa päästä päähän -salauksen kontaktisi kanssa vertaamalla (tai skannaamalla) laitteidenne koodia.";
+
+/* No comment provided by engineer. */
+"Transport isolation" = "Kuljetuksen eristäminen";
+
+/* No comment provided by engineer. */
+"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Yritetään muodostaa yhteyttä palvelimeen, jota käytetään tämän kontaktin viestien vastaanottamiseen (virhe: %@).";
+
+/* No comment provided by engineer. */
+"Trying to connect to the server used to receive messages from this contact." = "Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta.";
+
+/* No comment provided by engineer. */
+"Turn off" = "Sammuta";
+
+/* No comment provided by engineer. */
+"Turn off notifications?" = "Kytke ilmoitukset pois päältä?";
+
+/* No comment provided by engineer. */
+"Turn on" = "Kytke päälle";
+
+/* No comment provided by engineer. */
+"Unable to record voice message" = "Ääniviestiä ei voi tallentaa";
+
+/* item status description */
+"Unexpected error: %@" = "Odottamaton virhe: %@";
+
+/* No comment provided by engineer. */
+"Unexpected migration state" = "Odottamaton siirtotila";
+
+/* No comment provided by engineer. */
+"Unfav." = "Epäsuotuisa.";
+
+/* No comment provided by engineer. */
+"Unhide" = "Näytä";
+
+/* No comment provided by engineer. */
+"Unhide chat profile" = "Näytä keskusteluprofiili";
+
+/* No comment provided by engineer. */
+"Unhide profile" = "Näytä profiili";
+
+/* No comment provided by engineer. */
+"Unit" = "Yksikkö";
+
+/* connection info */
+"unknown" = "tuntematon";
+
+/* callkit banner */
+"Unknown caller" = "Tuntematon soittaja";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "Tuntematon tietokantavirhe: %@";
+
+/* No comment provided by engineer. */
+"Unknown error" = "Tuntematon virhe";
+
+/* No comment provided by engineer. */
+"Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Ellet käytä iOS:n puhelinkäyttöliittymää, ota Älä häiritse -tila käyttöön keskeytysten välttämiseksi.";
+
+/* No comment provided by engineer. */
+"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Ellei yhteyshenkilösi poistanut yhteyttä tai tämä linkki oli jo käytössä, se voi olla virhe - ilmoita siitä.\nJos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja tarkista, että verkkoyhteytesi on vakaa.";
+
+/* No comment provided by engineer. */
+"Unlock" = "Avaa";
+
+/* authentication reason */
+"Unlock app" = "Avaa sovellus";
+
+/* No comment provided by engineer. */
+"Unmute" = "Poista mykistys";
+
+/* No comment provided by engineer. */
+"Unread" = "Lukematon";
+
+/* No comment provided by engineer. */
+"Update" = "Päivitä";
+
+/* No comment provided by engineer. */
+"Update .onion hosts setting?" = "Päivitä .onion-isäntien asetus?";
+
+/* No comment provided by engineer. */
+"Update database passphrase" = "Päivitä tietokannan tunnuslause";
+
+/* No comment provided by engineer. */
+"Update network settings?" = "Päivitä verkkoasetukset?";
+
+/* No comment provided by engineer. */
+"Update transport isolation mode?" = "Päivitä kuljetuksen eristystila?";
+
+/* rcv group event chat item */
+"updated group profile" = "päivitetty ryhmäprofiili";
+
+/* No comment provided by engineer. */
+"Updating settings will re-connect the client to all servers." = "Asetusten päivittäminen yhdistää asiakkaan uudelleen kaikkiin palvelimiin.";
+
+/* No comment provided by engineer. */
+"Updating this setting will re-connect the client to all servers." = "Tämän asetuksen päivittäminen yhdistää asiakkaan uudelleen kaikkiin palvelimiin.";
+
+/* No comment provided by engineer. */
+"Upgrade and open chat" = "Päivitä ja avaa keskustelu";
+
+/* server test step */
+"Upload file" = "Lataa tiedosto";
+
+/* No comment provided by engineer. */
+"Use .onion hosts" = "Käytä .onion-isäntiä";
+
+/* No comment provided by engineer. */
+"Use chat" = "Käytä chattia";
+
+/* No comment provided by engineer. */
+"Use current profile" = "Käytä nykyistä profiilia";
+
+/* No comment provided by engineer. */
+"Use for new connections" = "Käytä uusiin yhteyksiin";
+
+/* No comment provided by engineer. */
+"Use iOS call interface" = "Käytä iOS:n puhelujen käyttöliittymää";
+
+/* No comment provided by engineer. */
+"Use new incognito profile" = "Käytä uutta incognito-profiilia";
+
+/* No comment provided by engineer. */
+"Use server" = "Käytä palvelinta";
+
+/* No comment provided by engineer. */
+"Use SimpleX Chat servers?" = "Käytä SimpleX Chat palvelimia?";
+
+/* No comment provided by engineer. */
+"User profile" = "Käyttäjäprofiili";
+
+/* No comment provided by engineer. */
+"Using .onion hosts requires compatible VPN provider." = ".onion-isäntien käyttäminen vaatii yhteensopivan VPN-palveluntarjoajan.";
+
+/* No comment provided by engineer. */
+"Using SimpleX Chat servers." = "Käyttää SimpleX Chat -palvelimia.";
+
+/* No comment provided by engineer. */
+"v%@ (%@)" = "v%@ (%@)";
+
+/* No comment provided by engineer. */
+"Verify connection security" = "Tarkista yhteyden suojaus";
+
+/* No comment provided by engineer. */
+"Verify security code" = "Tarkista turvakoodi";
+
+/* No comment provided by engineer. */
+"Via browser" = "Selaimella";
+
+/* chat list item description */
+"via contact address link" = "kontaktiosoitelinkillä";
+
+/* chat list item description */
+"via group link" = "ryhmälinkillä";
+
+/* chat list item description */
+"via one-time link" = "kertalinkillä";
+
+/* No comment provided by engineer. */
+"via relay" = "releellä";
+
+/* No comment provided by engineer. */
+"Video call" = "Videopuhelu";
+
+/* No comment provided by engineer. */
+"video call (not e2e encrypted)" = "videopuhelu (ei e2e-salattu)";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact completes uploading it." = "Video vastaanotetaan, kun kontaktisi on ladannut sen.";
+
+/* No comment provided by engineer. */
+"Video will be received when your contact is online, please wait or check later!" = "Video vastaanotetaan, kun kontaktisi on online-tilassa, odota tai tarkista myöhemmin!";
+
+/* No comment provided by engineer. */
+"Videos and files up to 1gb" = "Videot ja tiedostot 1 Gt asti";
+
+/* No comment provided by engineer. */
+"View security code" = "Näytä turvakoodi";
+
+/* No comment provided by engineer. */
+"Voice message…" = "Ääniviesti…";
+
+/* chat feature */
+"Voice messages" = "Ääniviestit";
+
+/* No comment provided by engineer. */
+"Voice messages are prohibited in this chat." = "Ääniviestit ovat kiellettyjä tässä keskustelussa.";
+
+/* No comment provided by engineer. */
+"Voice messages are prohibited in this group." = "Ääniviestit ovat kiellettyjä tässä ryhmässä.";
+
+/* No comment provided by engineer. */
+"Voice messages prohibited!" = "Ääniviestit kielletty!";
+
+/* No comment provided by engineer. */
+"waiting for answer…" = "odottaa vastaamista…";
+
+/* No comment provided by engineer. */
+"waiting for confirmation…" = "odottaa vahvistusta…";
+
+/* No comment provided by engineer. */
+"Waiting for file" = "Odottaa tiedostoa";
+
+/* No comment provided by engineer. */
+"Waiting for image" = "Odottaa kuvaa";
+
+/* No comment provided by engineer. */
+"Waiting for video" = "Odottaa videota";
+
+/* No comment provided by engineer. */
+"wants to connect to you!" = "haluaa olla yhteydessä sinuun!";
+
+/* No comment provided by engineer. */
+"Warning: you may lose some data!" = "Varoitus: saatat menettää joitain tietoja!";
+
+/* No comment provided by engineer. */
+"WebRTC ICE servers" = "WebRTC ICE -palvelimet";
+
+/* time unit */
+"weeks" = "viikkoa";
+
+/* No comment provided by engineer. */
+"Welcome %@!" = "Tervetuloa %@!";
+
+/* No comment provided by engineer. */
+"Welcome message" = "Tervetuloviesti";
+
+/* No comment provided by engineer. */
+"What's new" = "Uusimmat";
+
+/* No comment provided by engineer. */
+"When available" = "Kun saatavilla";
+
+/* No comment provided by engineer. */
+"When people request to connect, you can accept or reject it." = "Kun ihmiset pyytävät yhteyden muodostamista, voit hyväksyä tai hylätä sen.";
+
+/* No comment provided by engineer. */
+"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Kun jaat inkognitoprofiilin jonkun kanssa, tätä profiilia käytetään ryhmissä, joihin tämä sinut kutsuu.";
+
+/* No comment provided by engineer. */
+"With optional welcome message." = "Valinnaisella tervetuloviestillä.";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "Väärä tietokannan tunnuslause";
+
+/* No comment provided by engineer. */
+"Wrong passphrase!" = "Väärä tunnuslause!";
+
+/* No comment provided by engineer. */
+"XFTP servers" = "XFTP-palvelimet";
+
+/* pref value */
+"yes" = "kyllä";
+
+/* No comment provided by engineer. */
+"You" = "Sinä";
+
+/* No comment provided by engineer. */
+"You accepted connection" = "Hyväksyit yhteyden";
+
+/* No comment provided by engineer. */
+"You allow" = "Sallit";
+
+/* No comment provided by engineer. */
+"You already have a chat profile with the same display name. Please choose another name." = "Sinulla on jo keskusteluprofiili samalla näyttönimellä. Valitse toinen nimi.";
+
+/* No comment provided by engineer. */
+"You are already connected to %@." = "Olet jo muodostanut yhteyden %@:n kanssa.";
+
+/* No comment provided by engineer. */
+"You are connected to the server used to receive messages from this contact." = "Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.";
+
+/* No comment provided by engineer. */
+"you are invited to group" = "sinut on kutsuttu ryhmään";
+
+/* No comment provided by engineer. */
+"You are invited to group" = "Sinut on kutsuttu ryhmään";
+
+/* No comment provided by engineer. */
+"you are observer" = "olet tarkkailija";
+
+/* No comment provided by engineer. */
+"You can accept calls from lock screen, without device and app authentication." = "Voit vastaanottaa puheluita lukitusnäytöltä ilman laitteen ja sovelluksen todennusta.";
+
+/* No comment provided by engineer. */
+"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Voit myös muodostaa yhteyden klikkaamalla linkkiä. Jos se avautuu selaimessa, napsauta **Avaa mobiilisovelluksessa**-painiketta.";
+
+/* No comment provided by engineer. */
+"You can create it later" = "Voit luoda sen myöhemmin";
+
+/* No comment provided by engineer. */
+"You can enable later via Settings" = "Voit ottaa käyttöön myöhemmin asetusten kautta";
+
+/* No comment provided by engineer. */
+"You can enable them later via app Privacy & Security settings." = "Voit ottaa ne käyttöön myöhemmin sovelluksen Yksityisyys & Turvallisuus -asetuksista.";
+
+/* No comment provided by engineer. */
+"You can hide or mute a user profile - swipe it to the right." = "Voit piilottaa tai mykistää käyttäjäprofiilin pyyhkäisemällä sitä oikealle.";
+
+/* notification body */
+"You can now send messages to %@" = "Voit nyt lähettää viestejä %@:lle";
+
+/* No comment provided by engineer. */
+"You can set lock screen notification preview via settings." = "Voit määrittää lukitusnäytön ilmoituksen esikatselun asetuksista.";
+
+/* No comment provided by engineer. */
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Voit jakaa linkin tai QR-koodin - kuka tahansa voi liittyä ryhmään. Et menetä ryhmän jäseniä, jos poistat sen myöhemmin.";
+
+/* No comment provided by engineer. */
+"You can share this address with your contacts to let them connect with **%@**." = "Voit jakaa tämän osoitteen kontaktiesi kanssa, jotta ne voivat muodostaa yhteyden **%@** kanssa.";
+
+/* No comment provided by engineer. */
+"You can share your address as a link or QR code - anybody can connect to you." = "Voit jakaa osoitteesi linkkinä tai QR-koodina - kuka tahansa voi muodostaa yhteyden sinuun.";
+
+/* No comment provided by engineer. */
+"You can start chat via app Settings / Database or by restarting the app" = "Voit aloittaa keskustelun sovelluksen Asetukset / Tietokanta kautta tai käynnistämällä sovelluksen uudelleen";
+
+/* No comment provided by engineer. */
+"You can turn on SimpleX Lock via Settings." = "Voit ottaa SimpleX Lockin käyttöön Asetusten kautta.";
+
+/* No comment provided by engineer. */
+"You can use markdown to format messages:" = "Voit käyttää markdownia viestien muotoiluun:";
+
+/* No comment provided by engineer. */
+"You can't send messages!" = "Et voi lähettää viestejä!";
+
+/* chat item text */
+"you changed address" = "muutit osoitetta";
+
+/* chat item text */
+"you changed address for %@" = "muutit osoitetta %@:ksi";
+
+/* snd group event chat item */
+"you changed role for yourself to %@" = "vaihdoit roolin itsellesi %@:ksi";
+
+/* snd group event chat item */
+"you changed role of %@ to %@" = "olet vaihtanut %1$@:n roolin %2$@:ksi";
+
+/* No comment provided by engineer. */
+"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Sinä hallitset, minkä palvelim(i)en kautta **viestit vastaanotetaan**, kontaktisi - palvelimet, joita käytät viestien lähettämiseen niille.";
+
+/* No comment provided by engineer. */
+"You could not be verified; please try again." = "Sinua ei voitu todentaa; yritä uudelleen.";
+
+/* No comment provided by engineer. */
+"You have no chats" = "Sinulla ei ole keskusteluja";
+
+/* No comment provided by engineer. */
+"You have to enter passphrase every time the app starts - it is not stored on the device." = "Sinun on annettava tunnuslause aina, kun sovellus käynnistyy - sitä ei tallenneta laitteeseen.";
+
+/* No comment provided by engineer. */
+"You invited a contact" = "Kutsuit kontaktin";
+
+/* No comment provided by engineer. */
+"You joined this group" = "Liityit tähän ryhmään";
+
+/* No comment provided by engineer. */
+"You joined this group. Connecting to inviting group member." = "Liityit tähän ryhmään. Muodostetaan yhteyttä ryhmän jäsenten kutsumiseksi.";
+
+/* snd group event chat item */
+"you left" = "lähdit";
+
+/* No comment provided by engineer. */
+"You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Sinun tulee käyttää keskustelujen-tietokannan uusinta versiota AINOSTAAN yhdessä laitteessa, muuten saatat lakata vastaanottamasta viestejä joiltakin kontakteilta.";
+
+/* No comment provided by engineer. */
+"You need to allow your contact to send voice messages to be able to send them." = "Sinun on sallittava kontaktiesi lähettää ääniviestejä, jotta voit lähettää niitä.";
+
+/* No comment provided by engineer. */
+"You rejected group invitation" = "Hylkäsit ryhmäkutsun";
+
+/* snd group event chat item */
+"you removed %@" = "poistit %@";
+
+/* No comment provided by engineer. */
+"You sent group invitation" = "Lähetit ryhmäkutsun";
+
+/* chat list item description */
+"you shared one-time link" = "jaoit kertalinkin";
+
+/* chat list item description */
+"you shared one-time link incognito" = "jaoit kertalinkin incognito-tilassa";
+
+/* No comment provided by engineer. */
+"You will be connected to group when the group host's device is online, please wait or check later!" = "Sinut yhdistetään ryhmään, kun ryhmän isännän laite on online-tilassa, odota tai tarkista myöhemmin!";
+
+/* No comment provided by engineer. */
+"You will be connected when your connection request is accepted, please wait or check later!" = "Sinut yhdistetään, kun yhteyspyyntösi on hyväksytty, odota tai tarkista myöhemmin!";
+
+/* No comment provided by engineer. */
+"You will be connected when your contact's device is online, please wait or check later!" = "Sinut yhdistetään, kun kontaktisi laite on online-tilassa, odota tai tarkista myöhemmin!";
+
+/* No comment provided by engineer. */
+"You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Sinun on tunnistauduttava, kun käynnistät sovelluksen tai jatkat sen käyttöä 30 sekunnin tauon jälkeen.";
+
+/* No comment provided by engineer. */
+"You will join a group this link refers to and connect to its group members." = "Liityt ryhmään, johon tämä linkki viittaa, ja muodostat yhteyden sen ryhmän jäseniin.";
+
+/* No comment provided by engineer. */
+"You will still receive calls and notifications from muted profiles when they are active." = "Saat edelleen puheluita ja ilmoituksia mykistetyiltä profiileilta, kun ne ovat aktiivisia.";
+
+/* No comment provided by engineer. */
+"You will stop receiving messages from this group. Chat history will be preserved." = "Et enää saa viestejä tästä ryhmästä. Keskusteluhistoria säilytetään.";
+
+/* No comment provided by engineer. */
+"You won't lose your contacts if you later delete your address." = "Et menetä kontaktejasi, jos poistat osoitteesi myöhemmin.";
+
+/* No comment provided by engineer. */
+"you: " = "sinä: ";
+
+/* No comment provided by engineer. */
+"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Yrität kutsua kontaktia, jonka kanssa olet jakanut inkognito-profiilin, ryhmään, jossa käytät pääprofiiliasi";
+
+/* No comment provided by engineer. */
+"You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Käytät tässä ryhmässä incognito-profiilia. Kontaktien kutsuminen ei ole sallittua, jotta pääprofiilisi ei tule jaetuksi";
+
+/* No comment provided by engineer. */
+"Your %@ servers" = "%@-palvelimesi";
+
+/* No comment provided by engineer. */
+"Your calls" = "Puhelusi";
+
+/* No comment provided by engineer. */
+"Your chat database" = "Keskustelut-tietokantasi";
+
+/* No comment provided by engineer. */
+"Your chat database is not encrypted - set passphrase to encrypt it." = "Keskustelut-tietokantasi ei ole salattu - aseta tunnuslause sen salaamiseksi.";
+
+/* No comment provided by engineer. */
+"Your chat profile will be sent to group members" = "Keskusteluprofiilisi lähetetään ryhmän jäsenille";
+
+/* No comment provided by engineer. */
+"Your chat profiles" = "Keskusteluprofiilisi";
+
+/* No comment provided by engineer. */
+"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Kontaktin tulee olla online-tilassa, jotta yhteys voidaan muodostaa.\nVoit peruuttaa tämän yhteyden ja poistaa kontaktin (ja yrittää myöhemmin uudella linkillä).";
+
+/* No comment provided by engineer. */
+"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Yhteyshenkilösi lähetti tiedoston, joka on suurempi kuin tällä hetkellä tuettu enimmäiskoko (%@).";
+
+/* No comment provided by engineer. */
+"Your contacts can allow full message deletion." = "Kontaktisi voivat sallia viestien täydellisen poistamisen.";
+
+/* No comment provided by engineer. */
+"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Kontaktisi SimpleX:ssä näkevät sen.\nVoit muuttaa sitä Asetuksista.";
+
+/* No comment provided by engineer. */
+"Your contacts will remain connected." = "Kontaktisi pysyvät yhdistettyinä.";
+
+/* No comment provided by engineer. */
+"Your current chat database will be DELETED and REPLACED with the imported one." = "Nykyinen keskustelut-tietokantasi poistetaan ja korvataan tuodulla tietokannalla.";
+
+/* No comment provided by engineer. */
+"Your current profile" = "Nykyinen profiilisi";
+
+/* No comment provided by engineer. */
+"Your ICE servers" = "ICE-palvelimesi";
+
+/* No comment provided by engineer. */
+"Your preferences" = "Asetuksesi";
+
+/* No comment provided by engineer. */
+"Your privacy" = "Yksityisyytesi";
+
+/* No comment provided by engineer. */
+"Your profile **%@** will be shared." = "Profiilisi **%@** jaetaan.";
+
+/* No comment provided by engineer. */
+"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Profiilisi tallennetaan laitteeseesi ja jaetaan vain yhteystietojesi kanssa.\nSimpleX-palvelimet eivät näe profiiliasi.";
+
+/* No comment provided by engineer. */
+"Your profile, contacts and delivered messages are stored on your device." = "Profiilisi, kontaktisi ja toimitetut viestit tallennetaan laitteellesi.";
+
+/* No comment provided by engineer. */
+"Your random profile" = "Satunnainen profiilisi";
+
+/* No comment provided by engineer. */
+"Your server" = "Palvelimesi";
+
+/* No comment provided by engineer. */
+"Your server address" = "Palvelimesi osoite";
+
+/* No comment provided by engineer. */
+"Your settings" = "Asetuksesi";
+
+/* No comment provided by engineer. */
+"Your SimpleX address" = "SimpleX-osoitteesi";
+
+/* No comment provided by engineer. */
+"Your SMP servers" = "SMP-palvelimesi";
+
+/* No comment provided by engineer. */
+"Your XFTP servers" = "XFTP-palvelimesi";
+

@@ -130,7 +130,7 @@ struct GroupProfileView: View {
                 let err = responseError(error)
                 saveGroupError = err
                 showSaveErrorAlert = true
-                logger.error("UserProfile apiUpdateProfile error: \(err)")
+                logger.error("GroupProfile apiUpdateGroup error: \(err)")
             }
         }
     }

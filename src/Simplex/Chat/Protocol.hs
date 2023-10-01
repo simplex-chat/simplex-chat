@@ -46,6 +46,21 @@ import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Version hiding (version)
+
+currentChatVersion :: Version
+currentChatVersion = 2
+
+supportedChatVRange :: VersionRange
+supportedChatVRange = mkVersionRange 1 currentChatVersion
+
+-- version range that supports skipping establishing direct connections in a group
+groupNoDirectVRange :: VersionRange
+groupNoDirectVRange = mkVersionRange 2 currentChatVersion
+
+-- version range that supports establishing direct connection via x.grp.direct.inv with a group member
+xGrpDirectInvVRange :: VersionRange
+xGrpDirectInvVRange = mkVersionRange 2 currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -102,7 +117,8 @@ data AppMessage (e :: MsgEncoding) where
 
 -- chat message is sent as JSON with these properties
 data AppMessageJson = AppMessageJson
-  { msgId :: Maybe SharedMsgId,
+  { v :: Maybe ChatVersionRange,
+    msgId :: Maybe SharedMsgId,
     event :: Text,
     params :: J.Object
   }
@@ -161,7 +177,11 @@ instance ToJSON MsgRef where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data ChatMessage e = ChatMessage {msgId :: Maybe SharedMsgId, chatMsgEvent :: ChatMsgEvent e}
+data ChatMessage e = ChatMessage
+  { chatVRange :: VersionRange,
+    msgId :: Maybe SharedMsgId,
+    chatMsgEvent :: ChatMsgEvent e
+  }
   deriving (Eq, Show)
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
@@ -207,6 +227,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
+  XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -541,6 +562,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpLeave_ :: CMEventTag 'Json
   XGrpDel_ :: CMEventTag 'Json
   XGrpInfo_ :: CMEventTag 'Json
+  XGrpDirectInv_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
   XInfoProbeOk_ :: CMEventTag 'Json
@@ -586,6 +608,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpLeave_ -> "x.grp.leave"
     XGrpDel_ -> "x.grp.del"
     XGrpInfo_ -> "x.grp.info"
+    XGrpDirectInv_ -> "x.grp.direct.inv"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
@@ -632,6 +655,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.leave" -> XGrpLeave_
         "x.grp.del" -> XGrpDel_
         "x.grp.info" -> XGrpInfo_
+        "x.grp.direct.inv" -> XGrpDirectInv_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
         "x.info.probe.ok" -> XInfoProbeOk_
@@ -674,6 +698,7 @@ toCMEventTag msg = case msg of
   XGrpLeave -> XGrpLeave_
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
+  XGrpDirectInv _ _ -> XGrpDirectInv_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
@@ -724,17 +749,17 @@ appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
   eventTag <- strDecode $ B.singleton tag
   chatMsgEvent <- parseAll (msg eventTag) body
-  pure ChatMessage {msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = chatInitialVRange, msgId, chatMsgEvent}
   where
     msg :: CMEventTag 'Binary -> A.Parser (ChatMsgEvent 'Binary)
     msg = \case
       BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
 
 appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
-appJsonToCM AppMessageJson {msgId, event, params} = do
+appJsonToCM AppMessageJson {v, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
-  pure ChatMessage {msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent}
   where
     p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
@@ -769,6 +794,7 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
+      XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -784,11 +810,11 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
 key .=? value = maybe id ((:) . (key .=)) value
 
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
-chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
+chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
   SBinary ->
     let (binaryMsgId, body) = toBody chatMsgEvent
      in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
-  SJson -> AMJson AppMessageJson {msgId, event = textEncode tag, params = params chatMsgEvent}
+  SJson -> AMJson AppMessageJson {v = Just $ ChatVersionRange chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
   where
     tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
@@ -804,7 +830,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
       XMsgUpdate msgId' content ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
-      XMsgReact msgId' memberId reaction add -> o $ ("memberId" .=? memberId) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]        
+      XMsgReact msgId' memberId reaction add -> o $ ("memberId" .=? memberId) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]
@@ -825,6 +851,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
+      XGrpDirectInv connReq content -> o $ ("content" .=? content) ["connReq" .= connReq]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]

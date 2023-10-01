@@ -18,7 +18,6 @@ struct FramedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatInfo: ChatInfo
     var chatItem: ChatItem
-    var showMember = false
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
     @State var msgWidth: CGFloat = 0
@@ -57,7 +56,7 @@ struct FramedItemView: View {
                         }
                 }
 
-                ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: framedMsgContentView)
+                ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, msgContentView: framedMsgContentView)
                     .padding(chatItem.content.msgContent != nil ? 0 : 4)
                     .overlay(DetermineWidth())
             }
@@ -68,6 +67,7 @@ struct FramedItemView: View {
                     .padding(.horizontal, 12)
                     .padding(.bottom, 6)
                     .overlay(DetermineWidth())
+                    .accessibilityLabel("")
             }
         }
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, colorScheme))
@@ -97,7 +97,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, image):
-                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
+                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy, metaColor: metaColor)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -107,7 +107,7 @@ struct FramedItemView: View {
                             value: .white
                         )
                 } else {
-                    ciMsgContentView (chatItem, showMember)
+                    ciMsgContentView(chatItem)
                 }
             case let .video(text, image, duration):
                 CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, videoWidth: $videoWidth, scrollProxy: scrollProxy)
@@ -120,27 +120,27 @@ struct FramedItemView: View {
                         value: .white
                     )
                 } else {
-                    ciMsgContentView (chatItem, showMember)
+                    ciMsgContentView(chatItem)
                 }
             case let .voice(text, duration):
                 FramedCIVoiceView(chatItem: chatItem, recordingFile: chatItem.file, duration: duration, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
                     .overlay(DetermineWidth())
                 if text != "" {
-                    ciMsgContentView (chatItem, showMember)
+                    ciMsgContentView(chatItem)
                 }
             case let .file(text):
                 ciFileView(chatItem, text)
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
-                ciMsgContentView (chatItem, showMember)
+                ciMsgContentView(chatItem)
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
-                    ciMsgContentView (chatItem, showMember)
+                    ciMsgContentView(chatItem)
                 } else {
                     ciFileView(chatItem, text)
                 }
             default:
-                ciMsgContentView (chatItem, showMember)
+                ciMsgContentView(chatItem)
             }
         }
     }
@@ -232,17 +232,27 @@ struct FramedItemView: View {
     }
     
     private func ciQuotedMsgView(_ qi: CIQuote) -> some View {
-        MsgContentView(
-            text: qi.text,
-            formattedText: qi.formattedText,
-            sender: qi.getSender(membership())
-        )
-        .lineLimit(3)
-        .font(.subheadline)
-        .padding(.vertical, 6)
+        Group {
+            if let sender = qi.getSender(membership()) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(sender).font(.caption).foregroundColor(.secondary)
+                    ciQuotedMsgTextView(qi, lines: 2)
+                }
+            } else {
+                ciQuotedMsgTextView(qi, lines: 3)
+            }
+        }
+        .padding(.top, 6)
         .padding(.horizontal, 12)
     }
     
+    private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int) -> some View {
+        MsgContentView(text: qi.text, formattedText: qi.formattedText)
+            .lineLimit(lines)
+            .font(.subheadline)
+            .padding(.bottom, 6)
+    }
+
     private func ciQuoteIconView(_ image: String) -> some View {
         Image(systemName: image)
             .resizable()
@@ -260,13 +270,12 @@ struct FramedItemView: View {
         }
     }
     
-    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ showMember: Bool = false) -> some View {
+    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
         let v = MsgContentView(
             text: text,
             formattedText: text == "" ? [] : ci.formattedText,
-            sender: showMember ? ci.memberDisplayName : nil,
             meta: ci.meta,
             rightToLeft: rtl
         )
@@ -288,7 +297,7 @@ struct FramedItemView: View {
         CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
             .overlay(DetermineWidth())
         if text != "" || ci.meta.isLive {
-            ciMsgContentView (chatItem, showMember)
+            ciMsgContentView (chatItem)
         }
     }
 
@@ -349,8 +358,8 @@ struct FramedItemView_Previews: PreviewProvider {
         Group{
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello", quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directSnd)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent, quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent(sndProgress: .complete), quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent(sndProgress: .complete), quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -"), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat"), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
@@ -363,10 +372,10 @@ struct FramedItemView_Previews: PreviewProvider {
 struct FramedItemView_Edited_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello", quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directSnd), itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv), itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent, quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv), itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent(sndProgress: .complete), quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv), itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent(sndProgress: .complete), quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv), itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -", .rcvRead, itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line ", .rcvRead, itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat", .rcvRead, itemEdited: true), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
@@ -381,10 +390,10 @@ struct FramedItemView_Edited_Previews: PreviewProvider {
 struct FramedItemView_Deleted_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello", quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directSnd), itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv), itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent, quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv), itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent(sndProgress: .complete), quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv), itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent(sndProgress: .complete), quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv), itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -", .rcvRead, itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line ", .rcvRead, itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
             FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat", .rcvRead, itemDeleted: .deleted(deletedTs: .now)), allowMenu: Binding.constant(true), audioPlayer: .constant(nil), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))

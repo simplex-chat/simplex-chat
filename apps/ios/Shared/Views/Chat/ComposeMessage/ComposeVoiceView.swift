@@ -188,7 +188,7 @@ struct ComposeVoiceView: View {
                 playbackTime = recordingTime // animate progress bar to the end
             }
         )
-        audioPlayer?.start(fileName: recordingFileName, at: playbackTime)
+        audioPlayer?.start(fileSource: CryptoFile.plain(recordingFileName), at: playbackTime)
         playbackState = .playing
     }
 }

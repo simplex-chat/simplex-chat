@@ -7,17 +7,13 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-repositories {
-    maven("https://jitpack.io")
-}
-
 android {
     compileSdkVersion(33)
 
     defaultConfig {
         applicationId = "chat.simplex.app"
         minSdkVersion(26)
-        targetSdkVersion(32)
+        targetSdkVersion(33)
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
         versionCode = (extra["android.version_code"] as String).toInt()
@@ -87,16 +83,22 @@ android {
     // Comma separated list of languages that will be included in the apk
     android.defaultConfig.resConfigs(
         "en",
+        "ar",
+        "bg",
         "cs",
         "de",
         "es",
+        "fi",
         "fr",
         "it",
+        "iw",
         "ja",
         "nl",
         "pl",
         "pt-rBR",
         "ru",
+        "th",
+        "uk",
         "zh-rCN"
     )
     //    }
@@ -124,13 +126,18 @@ dependencies {
     //implementation("androidx.compose.ui:ui:${rootProject.extra["compose.version"] as String}")
     //implementation("androidx.compose.material:material:$compose_version")
     //implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
+    implementation("androidx.appcompat:appcompat:1.5.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.4.1")
     implementation("androidx.lifecycle:lifecycle-process:2.4.1")
     implementation("androidx.activity:activity-compose:1.5.0")
+    val work_version = "2.7.1"
+    implementation("androidx.work:work-runtime-ktx:$work_version")
+    implementation("androidx.work:work-multiprocess:$work_version")
+
+    implementation("com.jakewharton:process-phoenix:2.1.2")
+
     //implementation("androidx.compose.material:material-icons-extended:$compose_version")
     //implementation("androidx.compose.ui:ui-util:$compose_version")
-
-    implementation("com.google.accompanist:accompanist-pager:0.25.1")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.3")

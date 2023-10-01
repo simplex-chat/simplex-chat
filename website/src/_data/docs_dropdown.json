@@ -5,6 +5,10 @@
             "url": "/docs/simplex.html"
         },
         {
+            "title": "docs-dropdown-8",
+            "url": "/docs/directory.html"
+        },
+        {
             "title": "docs-dropdown-2",
             "url": "/docs/android.html"
         },
@@ -27,6 +31,10 @@
         {
             "title": "docs-dropdown-7",
             "url": "/docs/translations.html"
+        },
+        {
+            "title": "docs-dropdown-9",
+            "url": "/downloads/"
         }
     ]
 }

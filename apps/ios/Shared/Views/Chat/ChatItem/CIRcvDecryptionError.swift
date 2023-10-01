@@ -16,7 +16,6 @@ struct CIRcvDecryptionError: View {
     var msgDecryptError: MsgDecryptError
     var msgCount: UInt32
     var chatItem: ChatItem
-    var showMember = false
     @State private var alert: CIRcvDecryptionErrorAlert?
 
     enum CIRcvDecryptionErrorAlert: Identifiable {
@@ -106,9 +105,6 @@ struct CIRcvDecryptionError: View {
         ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    if showMember, let member = chatItem.memberDisplayName {
-                        Text(member).fontWeight(.medium) + Text(": ")
-                    }
                     Text(chatItem.content.text)
                         .foregroundColor(.red)
                         .italic()
@@ -122,7 +118,7 @@ struct CIRcvDecryptionError: View {
                         .foregroundColor(syncSupported ? .accentColor : .secondary)
                         .font(.callout)
                     + Text("   ")
-                    + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
+                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true)
                 )
             }
             .padding(.horizontal, 12)
@@ -137,20 +133,13 @@ struct CIRcvDecryptionError: View {
     }
 
     private func decryptionErrorItem(_ onClick: @escaping (() -> Void)) -> some View {
-        func text() -> Text {
-            Text(chatItem.content.text)
-                .foregroundColor(.red)
-                .italic()
-            + Text("   ")
-            + ciMetaText(chatItem.meta, chatTTL: nil, transparent: true)
-        }
         return ZStack(alignment: .bottomTrailing) {
             HStack {
-                if showMember, let member = chatItem.memberDisplayName {
-                    Text(member).fontWeight(.medium) + Text(": ") + text()
-                } else {
-                    text()
-                }
+                Text(chatItem.content.text)
+                    .foregroundColor(.red)
+                    .italic()
+                + Text("   ")
+                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true)
             }
             .padding(.horizontal, 12)
             CIMetaView(chatItem: chatItem)

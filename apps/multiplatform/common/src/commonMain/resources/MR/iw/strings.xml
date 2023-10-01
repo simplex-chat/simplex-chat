@@ -59,8 +59,6 @@
     <string name="notifications_mode_off_desc">האפליקציה יכולה לקבל התראות רק כאשר היא מופעלת, לא יופעל שירות ברקע.</string>
     <string name="v5_0_app_passcode">קוד גישה לאפליקציה</string>
     <string name="app_version_title">גרסת האפליקציה</string>
-    <string name="incognito_random_profile_description">פרופיל אקראי יישלח לאיש הקשר</string>
-    <string name="incognito_random_profile_from_contact_description">פרופיל אקראי יישלח לאיש הקשר שממנו קיבלת קישור זה</string>
     <string name="network_session_mode_user_description"><![CDATA[חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל פרופיל צ׳אט שיש ברשותך באפליקציה</b>.]]></string>
     <string name="network_session_mode_entity_description">חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל איש קשר וחבר קבוצה</b>.
 \n<b>שימו לב</b>: אם ברשותכם חיבורים רבים, צריכת הסוללה ותעבורת האינטרנט עשויה להיות גבוהה משמעותית וחלק מהחיבורים עלולים להיכשל.</string>
@@ -526,7 +524,6 @@
     <string name="import_database_confirmation">ייבא</string>
     <string name="import_theme">ייבא ערכת נושא</string>
     <string name="import_theme_error">שגיאה בייבוא ערכת נושא</string>
-    <string name="group_unsupported_incognito_main_profile_sent">מצב זהות נסתרת אינו נתמך כאן – הפרופיל הראשי שלך יישלח לחברי הקבוצה</string>
     <string name="v4_3_improved_server_configuration">תצורת שרתים משופרת</string>
     <string name="v4_3_improved_privacy_and_security">פרטיות ואבטחה משופרים</string>
     <string name="settings_section_title_incognito">מצב זהות נסתרת</string>
@@ -535,12 +532,12 @@
     <string name="description_via_group_link_incognito">זהות נסתרת באמצעות קישור קבוצה</string>
     <string name="description_via_one_time_link_incognito">זהות נסתרת באמצעות קישור חד־פעמי</string>
     <string name="invalid_connection_link">קישור חיבור לא תקין</string>
-    <string name="turn_off_battery_optimization"><![CDATA[על מנת להשתמש בזה, אנא <b>השביתו מיטוב סוללה</b> עבור SimpleX בתיבת הדו־שיח הבאה. אחרת, ההתראות יושבתו.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[בשביל להשתמש בזה, אנא <b>אפשרו ל-SimpleX לפעול ברקע</b> בתיבת הדו-שיח הבאה. אחרת, ההתראות יושבתו.]]></string>
     <string name="service_notifications_disabled">התראות מיידיות מושבתות!</string>
     <string name="icon_descr_add_members">הזמן חברי קבוצה</string>
     <string name="group_member_status_invited">הוזמן</string>
     <string name="conn_level_desc_indirect">עקיף (%1$s)</string>
-    <string name="incognito_info_protects">מצב זהות נסתרת מגן על התמונה והפרטיות של שם הפרופיל הראשי שלך – עבור כל איש קשר חדש נוצר פרופיל חדש אקראי.</string>
+    <string name="incognito_info_protects">מצב זהות נסתרת מגן על הפרטיות שלך על ידי שימוש בפרופיל אקראי חדש עבור כל איש קשר.</string>
     <string name="incompatible_database_version">גרסת מסד נתונים לא תואמת</string>
     <string name="invalid_migration_confirmation">אישור העברת נתונים לא תקין</string>
     <string name="v4_3_irreversible_message_deletion">מחיקה בלתי הפיכה של הודעות</string>
@@ -692,7 +689,7 @@
     <string name="old_database_archive">ארכיון מסד נתונים ישן</string>
     <string name="chat_item_ttl_none">לעולם לא</string>
     <string name="no_received_app_files">לא התקבלו או נשלחו קבצים</string>
-    <string name="new_member_role">תפקיד חבר קבוצה</string>
+    <string name="new_member_role">תפקיד חבר קבוצה חדש</string>
     <string name="no_contacts_selected">לא נבחרו אנשי קשר</string>
     <string name="member_info_section_title_member">חבר קבוצה</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">חבר הקבוצה יוסר מהקבוצה – לא ניתן לבטל זאת!</string>
@@ -766,7 +763,6 @@
     <string name="auth_open_chat_console">פתיחת מסוף צ׳אט</string>
     <string name="auth_open_chat_profiles">פתיחת פרופילי צ׳אט</string>
     <string name="icon_descr_server_status_pending">ממתין</string>
-    <string name="paste_connection_link_below_to_connect">הדביקו את הקישור שקיבלתם בתיבה למטה כדי להתחבר לאיש הקשר שלכם.</string>
     <string name="smp_servers_preset_address">כתובת שרת מוגדר מראש</string>
     <string name="password_to_show">סיסמה להצגה</string>
     <string name="onboarding_notifications_mode_title">התראות פרטיות</string>
@@ -1048,7 +1044,6 @@
     <string name="alert_text_msg_bad_hash">הגיבוב של ההודעה הקודמת שונה.</string>
     <string name="enable_automatic_deletion_message">לא ניתן לבטל פעולה זו - ההודעות שנשלחו והתקבלו לפני הזמן שנבחר יימחקו. זה עשוי להימשך מספר דקות.</string>
     <string name="alert_message_no_group">הקבוצה הזו כבר לא קיימת.</string>
-    <string name="incognito_info_find">כדי למצוא את הפרופיל המשמש לזהות נסתרת, הקישו על שם איש הקשר או הקבוצה בחלק העליון של הצ\'אט.</string>
     <string name="image_decoding_exception_desc">לא ניתן לפענח את התמונה. אנא נסו תמונה אחרת או צרו קשר עם המפתחים.</string>
     <string name="videos_limit_title">יותר מדי סרטונים!</string>
     <string name="switch_receiving_address_desc">כתובת הקבלה תשתנה לשרת אחר. שינוי הכתובת יושלם לאחר שהשולח יתחבר לאינטרנט.</string>
@@ -1182,7 +1177,7 @@
     <string name="waiting_for_video">ממתין לסרטון</string>
     <string name="waiting_for_file">ממתין לקובץ</string>
     <string name="voice_messages_prohibited">הודעות קוליות אסורות!</string>
-    <string name="you_invited_your_contact">הזמנת את איש הקשר שלך</string>
+    <string name="you_invited_a_contact">הזמנת את איש הקשר שלך</string>
     <string name="you_can_share_your_address">באפשרותכם לשתף את הכתובת שלכם כקישור או כקוד QR – כל אחד יכול להתחבר אליכם.</string>
     <string name="you_can_accept_or_reject_connection">כאשר אנשים מבקשים להתחבר, באפשרותך לקבל או לדחות זאת.</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[באפשרותכם גם להתחבר על־ידי לחיצה על הקישור. אם הוא נפתח בדפדפן, ליחצו על הכפתור <b>פתח באפליקציה</b>.]]></string>
@@ -1222,7 +1217,6 @@
 \nניתן לבטל חיבור זה ולהסיר את איש הקשר (ולנסות מאוחר יותר עם קישור חדש).</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">פרופיל הצ׳אט שלך יישלח
 \nלאיש הקשר שלך</string>
-    <string name="your_profile_will_be_sent">פרופיל הצ׳אט שלך יישלח לאיש הקשר שלך</string>
     <string name="your_chat_database">מסד הנתונים שלך</string>
     <string name="you_rejected_group_invitation">דחית את ההזמנה לקבוצה</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">מסד הנתונים הנוכחי שלך יימחק ויוחלף במסד הנתונים המיובא.
@@ -1263,7 +1257,7 @@
     <string name="your_preferences">ההעדפות שלך</string>
     <string name="you_will_still_receive_calls_and_ntfs">עדיין תקבלו שיחות והתראות מפרופילים מושתקים כאשר הם פעילים.</string>
     <string name="abort_switch_receiving_address_confirm">בטל</string>
-    <string name="abort_switch_receiving_address_question">בטל שינוי כתובת\?</string>
+    <string name="abort_switch_receiving_address_question">האם לבטל שינוי כתובת\?</string>
     <string name="abort_switch_receiving_address_desc">שינוי הכתובת יבוטל. ייעשה שימוש בכתובת הקבלה הישנה.</string>
     <string name="shutdown_alert_desc">ההתראות יפסיקו לפעול עד שתפעיל את האפליקציה מחדש</string>
     <string name="abort_switch_receiving_address">בטל שינוי כתובת</string>
@@ -1331,7 +1325,7 @@
 \n- ועוד!</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">שליחת קבלות שליחה תתאפשר עבור כל אנשי הקשר בכל פרופילי הצ\'אט הגלויים.</string>
     <string name="receipts_section_description">הגדרות אלו מיועדות לפרופיל הנוכחי שלך</string>
-    <string name="receipts_section_description_1">ניתן לעקוף אותם בהגדרות אנשי הקשר</string>
+    <string name="receipts_section_description_1">ניתן לעקוף אותם בהגדרות אנשי קשר וקבוצות.</string>
     <string name="receipts_contacts_override_disabled">שליחת קבלות מושבתת עבור %d אנשי קשר</string>
     <string name="receipts_contacts_override_enabled">שליחת קבלות מאופשרת עבור %d אנשי קשר</string>
     <string name="settings_section_title_delivery_receipts">שלח קבלות משלוח אל</string>
@@ -1340,4 +1334,47 @@
     <string name="sending_delivery_receipts_will_be_enabled">שליחת קבלות שליחה תתאפשר עבור כל אנשי הקשר.</string>
     <string name="you_can_enable_delivery_receipts_later">תוכל לאפשר מאוחר יותר דרך הגדרות</string>
     <string name="you_can_enable_delivery_receipts_later_alert">תוכל לאפשר אותם מאוחר יותר באמצעות הגדרות פרטיות ואבטחה של האפליקציה.</string>
+    <string name="v5_2_message_delivery_receipts">קבלות על הודעות!</string>
+    <string name="v5_2_disappear_one_message_descr">גם אם הוא מושבת בשיחה.</string>
+    <string name="v5_2_fix_encryption">שימרו על הקשרים שלכם</string>
+    <string name="choose_file_title">בחר קובץ</string>
+    <string name="connect_via_link_incognito">התחבר בזהות נסתרת</string>
+    <string name="connect_use_current_profile">השתמש בפרופיל הנוכחי</string>
+    <string name="connect_use_new_incognito_profile">השתמש בפרופיל זהות נסתרת חדש</string>
+    <string name="disable_notifications_button">השבת התראות</string>
+    <string name="turn_off_system_restriction_button">פתח את הגדרות האפליקציה</string>
+    <string name="system_restricted_background_in_call_title">ללא שיחות ברקע</string>
+    <string name="connect__a_new_random_profile_will_be_shared">ישותף פרופיל אקראי חדש.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">הדבק את הקישור שקיבלת כדי להתחבר לאיש הקשר שלך…</string>
+    <string name="connect__your_profile_will_be_shared">הפרופיל שלך %1$s ישותף.</string>
+    <string name="send_receipts_disabled_alert_title">קבלות מושבתות</string>
+    <string name="recipient_colon_delivery_status">%s :%s</string>
+    <string name="no_selected_chat">לא נבחר צ\'אט</string>
+    <string name="in_developing_title">בקרוב!</string>
+    <string name="delivery">מסירה</string>
+    <string name="no_info_on_delivery">אין מידע על מסירה</string>
+    <string name="privacy_message_draft">טיוטת הודעה</string>
+    <string name="receipts_groups_override_disabled">שליחת קבלות מושבתת עבור %d קבוצות</string>
+    <string name="receipts_groups_override_enabled">שליחת קבלות מופעלת עבור %d קבוצות</string>
+    <string name="privacy_show_last_messages">הצג הודעות אחרונות</string>
+    <string name="send_receipts_disabled">מושבת</string>
+    <string name="turn_off_battery_optimization_button">אפשר</string>
+    <string name="receipts_groups_disable_for_all">השבת לכל הקבוצות</string>
+    <string name="receipts_groups_disable_keep_overrides">השבת (שמור על עקיפות קבוצה)</string>
+    <string name="receipts_groups_title_disable">להשבית קבלות לקבוצות\?</string>
+    <string name="receipts_groups_enable_for_all">הפעל עבור כל הקבוצות</string>
+    <string name="receipts_groups_enable_keep_overrides">הפעל (שמור על עקיפות קבוצה)</string>
+    <string name="receipts_groups_title_enable">להפעיל קבלות לקבוצות\?</string>
+    <string name="rcv_group_event_2_members_connected">%s ו-%s מחוברים</string>
+    <string name="system_restricted_background_desc">SimpleX לא יכול לרוץ ברקע. תקבל את ההתראות רק כשהאפליקציה פועלת.</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s ו-%d חברים אחרים מחוברים</string>
+    <string name="system_restricted_background_in_call_desc">האפליקציה עשויה להיסגר לאחר דקה אחת ברקע.</string>
+    <string name="send_receipts_disabled_alert_msg">לקבוצה זו יש יותר מ-%1$d חברים, קבלות מסירה לא נשלחות.</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s ו-%s מחוברים</string>
+    <string name="in_developing_desc">מאפיין זה אינו נתמך עדיין. נסה את המהדורה הבאה.</string>
+    <string name="receipts_section_groups">קבוצות קטנות (מקסימום 20)</string>
+    <string name="system_restricted_background_warn"><![CDATA[כדי להפעיל התראות, בחר <b>שימוש בסוללה באפליקציה</b> / <b>ללא הגבלה</b> בהגדרות האפליקציה.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[כדי לבצע שיחות ברקע, בחר <b>שימוש בסוללה באפליקציה</b> / <b>ללא הגבלה</b> בהגדרות האפליקציה.]]></string>
+    <string name="connect_via_member_address_alert_title">להתחבר ישירות\?</string>
+    <string name="connect_via_member_address_alert_desc">בקשת חיבור תישלח לחבר קבוצה זה.</string>
 </resources>

@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="nl" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.3.1" build-num="14E300c"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A240d"/>
     </header>
     <body>
       <trans-unit id="&#10;" xml:space="preserve">
@@ -42,6 +42,21 @@
         <target>!1 gekleurd!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="# %@" xml:space="preserve">
+        <source># %@</source>
+        <target># %@</target>
+        <note>copied message info title, # &lt;title&gt;</note>
+      </trans-unit>
+      <trans-unit id="## History" xml:space="preserve">
+        <source>## History</source>
+        <target>## Geschiedenis</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="## In reply to" xml:space="preserve">
+        <source>## In reply to</source>
+        <target>## Als antwoord op</target>
+        <note>copied message info</note>
+      </trans-unit>
       <trans-unit id="#secret#" xml:space="preserve">
         <source>#secret#</source>
         <target>#geheim#</target>
@@ -70,6 +85,11 @@
       <trans-unit id="%@ / %@" xml:space="preserve">
         <source>%@ / %@</source>
         <target>%@ / %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ and %@ connected" xml:space="preserve">
+        <source>%@ and %@ connected</source>
+        <target>%@ en %@ verbonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ at %@:" xml:space="preserve">
@@ -101,6 +121,11 @@
         <source>%@ wants to connect!</source>
         <target>%@ wil verbinding maken!</target>
         <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
+        <source>%@, %@ and %lld other members connected</source>
+        <target>%@, %@ en %lld andere leden hebben verbinding gemaakt</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@:" xml:space="preserve">
         <source>%@:</source>
@@ -172,6 +197,11 @@
         <target>%lld minuten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lld new interface languages" xml:space="preserve">
+        <source>%lld new interface languages</source>
+        <target>%lld nieuwe interface-talen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">
         <source>%lld second(s)</source>
         <target>%lld seconde(n)</target>
@@ -219,7 +249,7 @@
       </trans-unit>
       <trans-unit id="%u messages failed to decrypt." xml:space="preserve">
         <source>%u messages failed to decrypt.</source>
-        <target>%u-berichten kunnen niet worden gedecodeerd.</target>
+        <target>%u berichten kunnen niet worden ontsleuteld.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%u messages skipped." xml:space="preserve">
@@ -244,7 +274,7 @@
       </trans-unit>
       <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve">
         <source>**Create link / QR code** for your contact to use.</source>
-        <target>**Maak een link / QR-code aan** die uw contactpersoon kan gebruiken.</target>
+        <target>**Maak een link / QR-code aan** die uw contact kan gebruiken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
@@ -274,7 +304,7 @@
       </trans-unit>
       <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve">
         <source>**Scan QR code**: to connect to your contact in person or via video call.</source>
-        <target>**Scan QR-code**: om persoonlijk of via een video gesprek verbinding te maken met uw contactpersoon.</target>
+        <target>**Scan QR-code**: om persoonlijk of via een video gesprek verbinding te maken met uw contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -300,6 +330,15 @@
       <trans-unit id=", " xml:space="preserve">
         <source>, </source>
         <target>, </target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
+        <source>- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
+- delivery receipts (up to 20 members).
+- faster and more stable.</source>
+        <target>- verbinding maken met [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)! 
+- ontvangst bevestiging(tot 20 leden). 
+- sneller en stabieler.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve">
@@ -397,14 +436,9 @@
         <target>Een nieuw contact</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="A random profile will be sent to the contact that you received this link from" xml:space="preserve">
-        <source>A random profile will be sent to the contact that you received this link from</source>
-        <target>Er wordt een willekeurig profiel verzonden naar het contact van wie je deze link hebt ontvangen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="A random profile will be sent to your contact" xml:space="preserve">
-        <source>A random profile will be sent to your contact</source>
-        <target>Er wordt een willekeurig profiel naar uw contactpersoon verzonden</target>
+      <trans-unit id="A new random profile will be shared." xml:space="preserve">
+        <source>A new random profile will be shared.</source>
+        <target>Een nieuw willekeurig profiel wordt gedeeld.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
@@ -460,9 +494,9 @@
         <note>accept contact request via notification
    accept incoming call via notification</note>
       </trans-unit>
-      <trans-unit id="Accept contact" xml:space="preserve">
-        <source>Accept contact</source>
-        <target>Accepteer contactpersoon</target>
+      <trans-unit id="Accept connection request?" xml:space="preserve">
+        <source>Accept connection request?</source>
+        <target>Accepteer contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
@@ -473,7 +507,7 @@
       <trans-unit id="Accept incognito" xml:space="preserve">
         <source>Accept incognito</source>
         <target>Accepteer incognito</target>
-        <note>No comment provided by engineer.</note>
+        <note>accept contact request via notification</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
@@ -572,22 +606,22 @@
       </trans-unit>
       <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
         <source>Allow calls only if your contact allows them.</source>
-        <target>Sta oproepen alleen toe als uw contact persoon dit toestaat.</target>
+        <target>Sta oproepen alleen toe als uw contact dit toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
         <source>Allow disappearing messages only if your contact allows it to you.</source>
-        <target>Sta verdwijnende berichten alleen toe als uw contactpersoon dit toestaat.</target>
+        <target>Sta verdwijnende berichten alleen toe als uw contact dit toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
         <source>Allow irreversible message deletion only if your contact allows it to you.</source>
-        <target>Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contactpersoon dit toestaat.</target>
+        <target>Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
         <source>Allow message reactions only if your contact allows them.</source>
-        <target>Sta berichtreacties alleen toe als uw contactpersoon dit toestaat.</target>
+        <target>Sta berichtreacties alleen toe als uw contact dit toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions." xml:space="preserve">
@@ -622,7 +656,7 @@
       </trans-unit>
       <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve">
         <source>Allow voice messages only if your contact allows them.</source>
-        <target>Sta spraak berichten alleen toe als uw contactpersoon ze toestaat.</target>
+        <target>Sta spraak berichten alleen toe als uw contact ze toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow voice messages?" xml:space="preserve">
@@ -678,6 +712,11 @@
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
         <target>App build: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve">
+        <source>App encrypts new local files (except videos).</source>
+        <target>App versleutelt nieuwe lokale bestanden (behalve video's).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
@@ -777,7 +816,7 @@
       </trans-unit>
       <trans-unit id="Bad message ID" xml:space="preserve">
         <source>Bad message ID</source>
-        <target>Onjuiste bericht ID</target>
+        <target>Onjuiste bericht-ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Bad message hash" xml:space="preserve">
@@ -792,27 +831,32 @@
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
         <source>Both you and your contact can add message reactions.</source>
-        <target>Zowel u als uw contactpersoon kunnen berichtreacties toevoegen.</target>
+        <target>Zowel u als uw contact kunnen berichtreacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
         <source>Both you and your contact can irreversibly delete sent messages.</source>
-        <target>Zowel jij als je contactpersoon kunnen verzonden berichten onherroepelijk verwijderen.</target>
+        <target>Zowel jij als je contact kunnen verzonden berichten onherroepelijk verwijderen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can make calls." xml:space="preserve">
         <source>Both you and your contact can make calls.</source>
-        <target>Zowel u als uw contact persoon kunnen bellen.</target>
+        <target>Zowel u als uw contact kunnen bellen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
         <source>Both you and your contact can send disappearing messages.</source>
-        <target>Zowel jij als je contactpersoon kunnen verdwijnende berichten sturen.</target>
+        <target>Zowel jij als je contact kunnen verdwijnende berichten sturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
         <source>Both you and your contact can send voice messages.</source>
-        <target>Zowel jij als je contactpersoon kunnen spraak berichten verzenden.</target>
+        <target>Zowel jij als je contact kunnen spraak berichten verzenden.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve">
+        <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
+        <target>Bulgaars, Fins, Thais en Oekraïens - dankzij de gebruikers en [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1046,8 +1090,18 @@
         <target>Verbind</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Connect via contact link?" xml:space="preserve">
-        <source>Connect via contact link?</source>
+      <trans-unit id="Connect directly" xml:space="preserve">
+        <source>Connect directly</source>
+        <target>Verbind direct</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect incognito" xml:space="preserve">
+        <source>Connect incognito</source>
+        <target>Verbind incognito</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect via contact link" xml:space="preserve">
+        <source>Connect via contact link</source>
         <target>Verbinden via contact link?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1066,8 +1120,8 @@
         <target>Maak verbinding via link / QR-code</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via one-time link?" xml:space="preserve">
-        <source>Connect via one-time link?</source>
+      <trans-unit id="Connect via one-time link" xml:space="preserve">
+        <source>Connect via one-time link</source>
         <target>Verbinden via een eenmalige link?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1094,11 +1148,6 @@
       <trans-unit id="Connection error (AUTH)" xml:space="preserve">
         <source>Connection error (AUTH)</source>
         <target>Verbindingsfout (AUTH)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Connection request" xml:space="preserve">
-        <source>Connection request</source>
-        <target>Verbindingsverzoek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection request sent!" xml:space="preserve">
@@ -1206,6 +1255,11 @@
         <target>Maak link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
+        <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
+        <target>Maak een nieuw profiel aan in [desktop-app](https://simplex.chat/downloads/). 💻</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create one-time invitation link" xml:space="preserve">
         <source>Create one-time invitation link</source>
         <target>Maak een eenmalige uitnodiging link</target>
@@ -1258,17 +1312,17 @@
       </trans-unit>
       <trans-unit id="Database ID" xml:space="preserve">
         <source>Database ID</source>
-        <target>Database ID</target>
+        <target>Database-ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database ID: %d" xml:space="preserve">
         <source>Database ID: %d</source>
-        <target>Database ID: %d</target>
+        <target>Database-ID: %d</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
         <source>Database IDs and Transport isolation option.</source>
-        <target>Database ID's en Transport isolatie optie.</target>
+        <target>Database-ID's en Transport isolatie optie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database downgrade" xml:space="preserve">
@@ -1549,6 +1603,11 @@
         <target>Verwijderd om: %@</target>
         <note>copied message info</note>
       </trans-unit>
+      <trans-unit id="Delivery" xml:space="preserve">
+        <source>Delivery</source>
+        <target>Bezorging</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
         <source>Delivery receipts are disabled!</source>
         <target>Ontvangstbewijzen zijn uitgeschakeld!</target>
@@ -1641,18 +1700,23 @@
       </trans-unit>
       <trans-unit id="Disappears at" xml:space="preserve">
         <source>Disappears at</source>
-        <target>Verdwijnt om</target>
+        <target>Verdwijnt op</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappears at: %@" xml:space="preserve">
         <source>Disappears at: %@</source>
-        <target>Verdwijnt om: %@</target>
+        <target>Verdwijnt op: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
         <source>Disconnect</source>
         <target>verbinding verbreken</target>
         <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Discover and join groups" xml:space="preserve">
+        <source>Discover and join groups</source>
+        <target>Ontdek en sluit je aan bij groepen</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
         <source>Display name</source>
@@ -1789,6 +1853,16 @@
         <target>Database versleutelen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Encrypt local files" xml:space="preserve">
+        <source>Encrypt local files</source>
+        <target>Versleutel lokale bestanden</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve">
+        <source>Encrypt stored files &amp; media</source>
+        <target>Versleutel opgeslagen bestanden en media</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
         <source>Encrypted database</source>
         <target>Versleutelde database</target>
@@ -1914,9 +1988,18 @@
         <target>Fout bij maken van groep link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error creating member contact" xml:space="preserve">
+        <source>Error creating member contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error creating profile!" xml:space="preserve">
         <source>Error creating profile!</source>
         <target>Fout bij aanmaken van profiel!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error decrypting file" xml:space="preserve">
+        <source>Error decrypting file</source>
+        <target>Fout bij het ontsleutelen van bestand</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
@@ -1961,7 +2044,7 @@
       </trans-unit>
       <trans-unit id="Error enabling delivery receipts!" xml:space="preserve">
         <source>Error enabling delivery receipts!</source>
-        <target>Fout bij het inschakelen van ontvangstbevestiging!</target>
+        <target>Fout bij het inschakelen van ontvangst bevestiging!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
@@ -2039,6 +2122,10 @@
         <target>Fout bij het verzenden van e-mail</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error sending member contact invitation" xml:space="preserve">
+        <source>Error sending member contact invitation</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
         <source>Error sending message</source>
         <target>Fout bij verzenden van bericht</target>
@@ -2046,7 +2133,7 @@
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
         <source>Error setting delivery receipts!</source>
-        <target>Fout bij het instellen van ontvangstbevestiging!</target>
+        <target>Fout bij het instellen van ontvangst bevestiging!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -2161,12 +2248,12 @@
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
         <source>File will be received when your contact completes uploading it.</source>
-        <target>Het bestand wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target>Het bestand wordt gedownload wanneer uw contact het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>File will be received when your contact is online, please wait or check later!</source>
-        <target>Het bestand wordt ontvangen wanneer uw contact persoon online is, even geduld a.u.b. of controleer later!</target>
+        <target>Het bestand wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of controleer later!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File: %@" xml:space="preserve">
@@ -2437,7 +2524,7 @@
       <trans-unit id="History" xml:space="preserve">
         <source>History</source>
         <target>Geschiedenis</target>
-        <note>copied message info</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
@@ -2476,7 +2563,7 @@
       </trans-unit>
       <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
         <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
-        <target>Als u elkaar niet persoonlijk kunt ontmoeten, kunt u **de QR-code scannen in het video gesprek**, of uw contactpersoon kan een uitnodiging link delen.</target>
+        <target>Als u elkaar niet persoonlijk kunt ontmoeten, kunt u **de QR-code scannen in het video gesprek**, of uw contact kan een uitnodiging link delen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
@@ -2501,7 +2588,7 @@
       </trans-unit>
       <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
         <source>Image will be received when your contact completes uploading it.</source>
-        <target>De afbeelding wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target>De afbeelding wordt gedownload wanneer uw contact het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -2547,7 +2634,7 @@
       <trans-unit id="In reply to" xml:space="preserve">
         <source>In reply to</source>
         <target>In antwoord op</target>
-        <note>copied message info</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
         <source>Incognito</source>
@@ -2559,14 +2646,9 @@
         <target>Incognito modus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode is not supported here - your main profile will be sent to group members" xml:space="preserve">
-        <source>Incognito mode is not supported here - your main profile will be sent to group members</source>
-        <target>Incognito modus wordt hier niet ondersteund, uw hoofdprofiel wordt naar groepsleden verzonden</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." xml:space="preserve">
-        <source>Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.</source>
-        <target>De incognito modus beschermt de privacy van uw hoofdprofielnaam en afbeelding, voor elk nieuw contact wordt een nieuw willekeurig profiel gemaakt.</target>
+      <trans-unit id="Incognito mode protects your privacy by using a new random profile for each contact." xml:space="preserve">
+        <source>Incognito mode protects your privacy by using a new random profile for each contact.</source>
+        <target>Incognito -modus beschermt uw privacy met behulp van een nieuw willekeurig profiel voor elk contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming audio call" xml:space="preserve">
@@ -2641,6 +2723,11 @@
         <target>Ongeldig server adres!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invalid status" xml:space="preserve">
+        <source>Invalid status</source>
+        <target>Ongeldige status</target>
+        <note>item status text</note>
+      </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve">
         <source>Invitation expired!</source>
         <target>Uitnodiging verlopen!</target>
@@ -2683,7 +2770,7 @@
       </trans-unit>
       <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target>Het kan gebeuren wanneer u of uw verbinding de oude databaseback-up gebruikte.</target>
+        <target>Het kan gebeuren wanneer u of de ander een oude databaseback-up gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
@@ -2693,7 +2780,7 @@
 3. The connection was compromised.</source>
         <target>Het kan gebeuren wanneer:
 1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.
-2. Decodering van het bericht is mislukt, omdat u of uw contactpersoon een oude databaseback-up heeft gebruikt.
+2. Decodering van het bericht is mislukt, omdat u of uw contact een oude databaseback-up heeft gebruikt.
 3. De verbinding is verbroken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2849,7 +2936,7 @@
       </trans-unit>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
         <source>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</source>
-        <target>Veel mensen vroegen: *als SimpleX geen gebruikers ID's heeft, hoe kan het dan berichten bezorgen?*</target>
+        <target>Veel mensen vroegen: *als SimpleX geen gebruikers-ID's heeft, hoe kan het dan berichten bezorgen?*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark deleted for everyone" xml:space="preserve">
@@ -2900,11 +2987,11 @@
       <trans-unit id="Message delivery error" xml:space="preserve">
         <source>Message delivery error</source>
         <target>Fout bij bezorging van bericht</target>
-        <note>No comment provided by engineer.</note>
+        <note>item status text</note>
       </trans-unit>
       <trans-unit id="Message delivery receipts!" xml:space="preserve">
         <source>Message delivery receipts!</source>
-        <target>Ontvangstbevestiging voor berichten!</target>
+        <target>Ontvangst bevestiging voor berichten!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
@@ -2987,6 +3074,11 @@
         <target>Meer verbeteringen volgen snel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
+        <source>Most likely this connection is deleted.</source>
+        <target>Hoogstwaarschijnlijk is deze verbinding verwijderd.</target>
+        <note>item status description</note>
+      </trans-unit>
       <trans-unit id="Most likely this contact has deleted the connection with you." xml:space="preserve">
         <source>Most likely this contact has deleted the connection with you.</source>
         <target>Hoogstwaarschijnlijk heeft dit contact de verbinding met jou verwijderd.</target>
@@ -3047,6 +3139,11 @@
         <target>Nieuw database archief</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New desktop app!" xml:space="preserve">
+        <source>New desktop app!</source>
+        <target>Nieuwe desktop app!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New display name" xml:space="preserve">
         <source>New display name</source>
         <target>Nieuwe weergavenaam</target>
@@ -3090,6 +3187,11 @@
       <trans-unit id="No contacts to add" xml:space="preserve">
         <source>No contacts to add</source>
         <target>Geen contacten om toe te voegen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No delivery information" xml:space="preserve">
+        <source>No delivery information</source>
+        <target>Geen bezorging informatie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No device token!" xml:space="preserve">
@@ -3213,7 +3315,7 @@
       </trans-unit>
       <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion).</source>
-        <target>Alleen jij kunt berichten onomkeerbaar verwijderen (je contactpersoon kan ze markeren voor verwijdering).</target>
+        <target>Alleen jij kunt berichten onomkeerbaar verwijderen (je contact kan ze markeren voor verwijdering).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can make calls." xml:space="preserve">
@@ -3233,12 +3335,12 @@
       </trans-unit>
       <trans-unit id="Only your contact can add message reactions." xml:space="preserve">
         <source>Only your contact can add message reactions.</source>
-        <target>Alleen uw contactpersoon kan berichtreacties toevoegen.</target>
+        <target>Alleen uw contact kan berichtreacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
-        <target>Alleen uw contactpersoon kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).</target>
+        <target>Alleen uw contact kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can make calls." xml:space="preserve">
@@ -3248,12 +3350,16 @@
       </trans-unit>
       <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
         <source>Only your contact can send disappearing messages.</source>
-        <target>Alleen uw contactpersoon kan verdwijnende berichten verzenden.</target>
+        <target>Alleen uw contact kan verdwijnende berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
         <source>Only your contact can send voice messages.</source>
-        <target>Alleen uw contactpersoon kan spraak berichten verzenden.</target>
+        <target>Alleen uw contact kan spraak berichten verzenden.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open" xml:space="preserve">
+        <source>Open</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
@@ -3346,10 +3452,10 @@
         <target>Plak de ontvangen link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
-        <source>Paste the link you received into the box below to connect with your contact.</source>
-        <target>Plak de link die je hebt ontvangen in het vak hieronder om verbinding te maken met je contactpersoon.</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Paste the link you received to connect with your contact." xml:space="preserve">
+        <source>Paste the link you received to connect with your contact.</source>
+        <target>Plak de link die je hebt ontvangen in het vak hieronder om verbinding te maken met je contact.</target>
+        <note>placeholder</note>
       </trans-unit>
       <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
         <source>People can connect to you only via the links you share.</source>
@@ -3368,12 +3474,12 @@
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
         <source>Please ask your contact to enable sending voice messages.</source>
-        <target>Vraag uw contactpersoon om het verzenden van spraak berichten in te schakelen.</target>
+        <target>Vraag uw contact om het verzenden van spraak berichten in te schakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
         <source>Please check that you used the correct link or ask your contact to send you another one.</source>
-        <target>Controleer of u de juiste link heeft gebruikt of vraag uw contactpersoon om u een andere te sturen.</target>
+        <target>Controleer of u de juiste link heeft gebruikt of vraag uw contact om u een andere te sturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve">
@@ -3596,6 +3702,11 @@
         <target>Lees meer in onze [GitHub-repository](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Receipts are disabled" xml:space="preserve">
+        <source>Receipts are disabled</source>
+        <target>Bevestigingen zijn uitgeschakeld</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Received at" xml:space="preserve">
         <source>Received at</source>
         <target>Ontvangen op</target>
@@ -3666,8 +3777,8 @@
         <target>Afwijzen</target>
         <note>reject incoming call via notification</note>
       </trans-unit>
-      <trans-unit id="Reject contact (sender NOT notified)" xml:space="preserve">
-        <source>Reject contact (sender NOT notified)</source>
+      <trans-unit id="Reject (sender NOT notified)" xml:space="preserve">
+        <source>Reject (sender NOT notified)</source>
         <target>Contact afwijzen (afzender NIET op de hoogte)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3913,7 +4024,7 @@
       </trans-unit>
       <trans-unit id="Scan security code from your contact's app." xml:space="preserve">
         <source>Scan security code from your contact's app.</source>
-        <target>Scan de beveiligingscode van de app van uw contactpersoon.</target>
+        <target>Scan de beveiligingscode van de app van uw contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scan server QR code" xml:space="preserve">
@@ -3986,6 +4097,10 @@
         <target>Direct bericht sturen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send direct message to connect" xml:space="preserve">
+        <source>Send direct message to connect</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">
         <source>Send disappearing message</source>
         <target>Stuur een verdwijnend bericht</target>
@@ -4038,12 +4153,12 @@
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
-        <target>Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</target>
+        <target>Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contacten in alle zichtbare chatprofielen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
-        <target>Het verzenden van ontvangstbevestiging wordt ingeschakeld voor alle contactpersonen.</target>
+        <target>Het verzenden van ontvangst bevestiging wordt ingeschakeld voor alle contactpersonen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
@@ -4053,12 +4168,22 @@
       </trans-unit>
       <trans-unit id="Sending receipts is disabled for %lld contacts" xml:space="preserve">
         <source>Sending receipts is disabled for %lld contacts</source>
-        <target>Het verzenden van ontvangstbevestiging is uitgeschakeld voor %lld-contactpersonen</target>
+        <target>Het verzenden van ontvangst bevestiging is uitgeschakeld voor %lld-contactpersonen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending receipts is disabled for %lld groups" xml:space="preserve">
+        <source>Sending receipts is disabled for %lld groups</source>
+        <target>Het verzenden van bevestigingen is uitgeschakeld voor %LLD -groepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending receipts is enabled for %lld contacts" xml:space="preserve">
         <source>Sending receipts is enabled for %lld contacts</source>
-        <target>Het verzenden van ontvangstbevestiging is ingeschakeld voor %lld-contactpersonen</target>
+        <target>Het verzenden van ontvangst bevestiging is ingeschakeld voor %lld-contactpersonen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending receipts is enabled for %lld groups" xml:space="preserve">
+        <source>Sending receipts is enabled for %lld groups</source>
+        <target>Het verzenden van bevestigingen is ingeschakeld voor %LLD -groepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -4201,6 +4326,11 @@
         <target>Ontwikkelaars opties tonen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Show last messages" xml:space="preserve">
+        <source>Show last messages</source>
+        <target>Laat laatste berichten zien</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
         <source>Show preview</source>
         <target>Toon voorbeeld</target>
@@ -4271,6 +4401,11 @@
         <target>Eenmalige SimpleX uitnodiging</target>
         <note>simplex link type</note>
       </trans-unit>
+      <trans-unit id="Simplified incognito mode" xml:space="preserve">
+        <source>Simplified incognito mode</source>
+        <target>Vereenvoudigde incognitomodus</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Skip" xml:space="preserve">
         <source>Skip</source>
         <target>Overslaan</target>
@@ -4279,6 +4414,11 @@
       <trans-unit id="Skipped messages" xml:space="preserve">
         <source>Skipped messages</source>
         <target>Overgeslagen berichten</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Small groups (max 20)" xml:space="preserve">
+        <source>Small groups (max 20)</source>
+        <target>Kleine groepen (max 20)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
@@ -4463,7 +4603,7 @@
       </trans-unit>
       <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
         <source>The 1st platform without any user identifiers – private by design.</source>
-        <target>Het eerste platform zonder gebruikers ID's, privé door ontwerp.</target>
+        <target>Het eerste platform zonder gebruikers-ID's, privé door ontwerp.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
@@ -4490,7 +4630,7 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       </trans-unit>
       <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve">
         <source>The contact you shared this link with will NOT be able to connect!</source>
-        <target>Het contact met wie je deze link hebt gedeeld, kan GEEN verbinding maken!</target>
+        <target>Het contact met wie je deze link hebt gedeeld kan GEEN verbinding maken!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The created archive is available via app Settings / Database / Old database archive." xml:space="preserve">
@@ -4573,8 +4713,8 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Deze instellingen zijn voor uw huidige profiel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="They can be overridden in contact settings" xml:space="preserve">
-        <source>They can be overridden in contact settings</source>
+      <trans-unit id="They can be overridden in contact and group settings." xml:space="preserve">
+        <source>They can be overridden in contact and group settings.</source>
         <target>Ze kunnen worden overschreven in contactinstellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4591,6 +4731,11 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
         <target>Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
+        <source>This group has over %lld members, delivery receipts are not sent.</source>
+        <target>Deze groep heeft meer dan %lld -leden, ontvangstbevestigingen worden niet verzonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve">
@@ -4610,12 +4755,7 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       </trans-unit>
       <trans-unit id="To connect, your contact can scan QR code or use the link in the app." xml:space="preserve">
         <source>To connect, your contact can scan QR code or use the link in the app.</source>
-        <target>Om verbinding te maken, kan uw contact persoon de QR-code scannen of de link in de app gebruiken.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="To find the profile used for an incognito connection, tap the contact or group name on top of the chat." xml:space="preserve">
-        <source>To find the profile used for an incognito connection, tap the contact or group name on top of the chat.</source>
-        <target>Om het profiel te vinden dat wordt gebruikt voor een incognito verbinding, tikt u op de naam van het contact of de groep bovenaan de chat.</target>
+        <target>Om verbinding te maken, kan uw contact de QR-code scannen of de link in de app gebruiken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
@@ -4625,7 +4765,7 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       </trans-unit>
       <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
         <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
-        <target>Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers ID's die door alle andere platforms worden gebruikt, ID's voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.</target>
+        <target>Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID's die door alle andere platforms worden gebruikt, ID's voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
@@ -4657,7 +4797,12 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       </trans-unit>
       <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
-        <target>Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contactpersoon te verifiëren.</target>
+        <target>Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contact te verifiëren.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
+        <source>Toggle incognito when connecting.</source>
+        <target>Schakel incognito in tijdens het verbinden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transport isolation" xml:space="preserve">
@@ -4698,7 +4843,7 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
         <source>Unexpected error: %@</source>
         <target>Onverwachte fout: %@</target>
-        <note>No comment provided by engineer.</note>
+        <note>item status description</note>
       </trans-unit>
       <trans-unit id="Unexpected migration state" xml:space="preserve">
         <source>Unexpected migration state</source>
@@ -4753,8 +4898,8 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
         <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
 To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>Tenzij uw contactpersoon de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
-Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</target>
+        <target>Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
+Om verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlock" xml:space="preserve">
@@ -4837,6 +4982,11 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Gebruik chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use current profile" xml:space="preserve">
+        <source>Use current profile</source>
+        <target>Gebruik het huidige profiel</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use for new connections" xml:space="preserve">
         <source>Use for new connections</source>
         <target>Gebruik voor nieuwe verbindingen</target>
@@ -4845,6 +4995,11 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       <trans-unit id="Use iOS call interface" xml:space="preserve">
         <source>Use iOS call interface</source>
         <target>De iOS-oproepinterface gebruiken</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use new incognito profile" xml:space="preserve">
+        <source>Use new incognito profile</source>
+        <target>Gebruik een nieuw incognitoprofiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -4889,7 +5044,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       </trans-unit>
       <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
         <source>Video will be received when your contact completes uploading it.</source>
-        <target>De video wordt ontvangen wanneer uw contactpersoon het uploaden heeft voltooid.</target>
+        <target>De video wordt gedownload wanneer uw contact het uploaden heeft voltooid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -5137,9 +5292,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>U moet elke keer dat de app start het wachtwoord invoeren, deze wordt niet op het apparaat opgeslagen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You invited your contact" xml:space="preserve">
-        <source>You invited your contact</source>
-        <target>Je hebt je contactpersoon uitgenodigd</target>
+      <trans-unit id="You invited a contact" xml:space="preserve">
+        <source>You invited a contact</source>
+        <target>Je hebt je contact uitgenodigd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You joined this group" xml:space="preserve">
@@ -5214,7 +5369,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       </trans-unit>
       <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
-        <target>Je probeert een contact met wie je een incognito profiel hebt gedeeld, uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</target>
+        <target>Je probeert een contact met wie je een incognito profiel hebt gedeeld uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
@@ -5267,11 +5422,6 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Uw chat profiel wordt verzonden naar de groepsleden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat profile will be sent to your contact" xml:space="preserve">
-        <source>Your chat profile will be sent to your contact</source>
-        <target>Uw chat profiel wordt naar uw contactpersoon verzonden</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>Uw chat profielen</target>
@@ -5280,13 +5430,13 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
         <source>Your contact needs to be online for the connection to complete.
 You can cancel this connection and remove the contact (and try later with a new link).</source>
-        <target>Uw contactpersoon moet online zijn om de verbinding te voltooien.
-U kunt deze verbinding verbreken en het contact verwijderen (en later proberen met een nieuwe link).</target>
+        <target>Uw contact moet online zijn om de verbinding te voltooien.
+U kunt deze verbinding verbreken en het contact verwijderen en later proberen met een nieuwe link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
-        <target>Uw contactpersoon heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%@).</target>
+        <target>Uw contact heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
@@ -5297,7 +5447,8 @@ U kunt deze verbinding verbreken en het contact verwijderen (en later proberen m
       <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
         <source>Your contacts in SimpleX will see it.
 You can change it in Settings.</source>
-        <target>Uw contacten in SimpleX zullen het zien. U kunt dit wijzigen in Instellingen.</target>
+        <target>Uw contacten in SimpleX kunnen het zien. 
+U kunt dit wijzigen in Instellingen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts will remain connected." xml:space="preserve">
@@ -5325,16 +5476,16 @@ You can change it in Settings.</source>
         <target>Uw privacy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your profile **%@** will be shared." xml:space="preserve">
+        <source>Your profile **%@** will be shared.</source>
+        <target>Uw profiel **%@** wordt gedeeld.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
         <source>Your profile is stored on your device and shared only with your contacts.
 SimpleX servers cannot see your profile.</source>
         <target>Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten.
 SimpleX servers kunnen uw profiel niet zien.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your profile will be sent to the contact that you received this link from" xml:space="preserve">
-        <source>Your profile will be sent to the contact that you received this link from</source>
-        <target>Je profiel wordt verzonden naar het contact van wie je deze link hebt ontvangen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
@@ -5424,7 +5575,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="bad message ID" xml:space="preserve">
         <source>bad message ID</source>
-        <target>Onjuiste bericht ID</target>
+        <target>Onjuiste bericht-ID</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="bad message hash" xml:space="preserve">
@@ -5501,6 +5652,10 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <source>connected</source>
         <target>verbonden</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="connected directly" xml:space="preserve">
+        <source>connected directly</source>
+        <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
         <source>connecting</source>
@@ -5612,6 +5767,11 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>direct</target>
         <note>connection level description</note>
       </trans-unit>
+      <trans-unit id="disabled" xml:space="preserve">
+        <source>disabled</source>
+        <target>uitgeschakeld</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="duplicate message" xml:space="preserve">
         <source>duplicate message</source>
         <target>dubbel bericht</target>
@@ -5692,6 +5852,11 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>fout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="event happened" xml:space="preserve">
+        <source>event happened</source>
+        <target>gebeurtenis gebeurd</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">
         <source>group deleted</source>
         <target>groep verwijderd</target>
@@ -5719,7 +5884,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="incognito via contact address link" xml:space="preserve">
         <source>incognito via contact address link</source>
-        <target>incognito via contact adres link</target>
+        <target>incognito via contactadres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via group link" xml:space="preserve">
@@ -5953,6 +6118,10 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>beveiligingscode gewijzigd</target>
         <note>chat item text</note>
       </trans-unit>
+      <trans-unit id="send direct message" xml:space="preserve">
+        <source>send direct message</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
         <source>starting…</source>
         <target>beginnen…</target>
@@ -5985,7 +6154,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="via contact address link" xml:space="preserve">
         <source>via contact address link</source>
-        <target>via contact adres link</target>
+        <target>via contactadres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve">
@@ -6097,7 +6266,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="nl" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.3.1" build-num="14E300c"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A240d"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -6112,7 +6281,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve">
         <source>SimpleX uses Face ID for local authentication</source>
-        <target>SimpleX gebruikt Face ID voor lokale authenticatie</target>
+        <target>SimpleX gebruikt Face-ID voor lokale authenticatie</target>
         <note>Privacy - Face ID Usage Description</note>
       </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
@@ -6129,7 +6298,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="nl" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.3.1" build-num="14E300c"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.0" build-num="15A240d"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">

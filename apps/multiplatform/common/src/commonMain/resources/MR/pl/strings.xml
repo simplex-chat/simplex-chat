@@ -257,7 +257,7 @@
     <string name="unmute_chat">Wyłącz wyciszenie</string>
     <string name="contact_wants_to_connect_with_you">chce się z Tobą połączyć!</string>
     <string name="you_accepted_connection">Zaakceptowałeś połączenie</string>
-    <string name="you_invited_your_contact">Zaprosiłeś swój kontakt</string>
+    <string name="you_invited_a_contact">Zaprosiłeś swój kontakt</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Twój kontakt musi być online, aby połączenie zostało zakończone.
 \nMożesz anulować to połączenie i usunąć kontakt (i spróbować później z nowym linkiem).</string>
     <string name="connect_button">Połącz</string>
@@ -273,7 +273,6 @@
     <string name="icon_descr_more_button">Więcej</string>
     <string name="one_time_link">Jednorazowy link zaproszenia</string>
     <string name="paste_button">Wklej</string>
-    <string name="paste_connection_link_below_to_connect">Wklej otrzymany link w pole poniżej, aby połączyć się z kontaktem.</string>
     <string name="image_descr_qr_code">Kod QR</string>
     <string name="scan_code">Zeskanuj kod</string>
     <string name="scan_code_from_contacts_app">Zeskanuj kod bezpieczeństwa z aplikacji Twojego kontaktu.</string>
@@ -289,7 +288,6 @@
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Możesz też połączyć się klikając w link. Jeśli otworzy się on w przeglądarce, kliknij przycisk <b>Otwórz w aplikacji mobilnej</b>.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Twój profil czatu zostanie wysłany
 \ndo Twojego kontaktu</string>
-    <string name="your_profile_will_be_sent">Twój profil czatu zostanie wysłany do Twojego kontaktu</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Zostaniesz połączony do grupy, gdy urządzenie gospodarza grupy będzie online, proszę czekać lub sprawdzić później!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Zostaniesz połączony, gdy urządzenie Twojego kontaktu będzie online, proszę czekać lub sprawdzić później!</string>
     <string name="smp_servers_preset_add">Dodaj gotowe serwery</string>
@@ -349,7 +347,8 @@
     <string name="network_and_servers">Sieć i serwery</string>
     <string name="network_settings_title">Ustawienia sieci</string>
     <string name="network_use_onion_hosts_no">Nie</string>
-    <string name="network_use_onion_hosts_required_desc">Hosty onion będą wymagane do połączenia.</string>
+    <string name="network_use_onion_hosts_required_desc">Hosty onion będą wymagane do połączenia.
+\nUwaga: nie będziesz mógł połączyć się z serwerami bez adresu .onion.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Hosty onion będą wymagane do połączenia.</string>
     <string name="network_use_onion_hosts_prefer_desc">Hosty onion będą używane, gdy będą dostępne.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Hosty onion będą używane, gdy będą dostępne.</string>
@@ -781,8 +780,6 @@
     <string name="you_will_still_receive_calls_and_ntfs">Nadal będziesz otrzymywać połączenia i powiadomienia z wyciszonych profili, gdy są one aktywne.</string>
     <string name="accept_feature">Akceptuj</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Zezwól swoim kontaktom na wysyłanie znikających wiadomości.</string>
-    <string name="incognito_random_profile_from_contact_description">Losowy profil zostanie wysłany do kontaktu, od którego otrzymałeś ten link</string>
-    <string name="incognito_random_profile_description">Losowy profil zostanie wysłany do Twojego kontaktu</string>
     <string name="chat_preferences">Preferencje czatu</string>
     <string name="chat_preferences_contact_allows">Kontakt pozwala</string>
     <string name="contact_preferences">Preferencje kontaktu</string>
@@ -974,10 +971,9 @@
     <string name="description_via_contact_address_link_incognito">incognito poprzez link adresu kontaktowego</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Jeśli otrzymałeś link do zaproszenia SimpleX Chat, możesz go otworzyć w swojej przeglądarce:</string>
     <string name="import_database_question">Zaimportować bazę danych czatu\?</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Tryb Incognito nie jest tutaj obsługiwany - główny profil zostanie wysłany do członków grupy.</string>
-    <string name="incognito_info_protects">Tryb incognito chroni prywatność nazwy i obrazu głównego profilu — dla każdego nowego kontaktu tworzony jest nowy losowy profil.</string>
+    <string name="incognito_info_protects">Tryb incognito chroni Twoją prywatność używając nowego losowego profilu dla każdego kontaktu.</string>
     <string name="conn_level_desc_indirect">pośrednie (%1$s)</string>
-    <string name="turn_off_battery_optimization"><![CDATA[Aby z niej skorzystać, należy <b>wyłączyć optymalizację baterii</b> dla SimpleX w następnym oknie dialogowym. W przeciwnym razie powiadomienia zostaną wyłączone.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Aby z niej skorzystać, należy <b>pozwolić SimpleX na działanie tle</b> w następnym oknie dialogowym. W przeciwnym razie powiadomienia zostaną wyłączone.]]></string>
     <string name="install_simplex_chat_for_terminal">Zainstaluj SimpleX Chat na terminal</string>
     <string name="invalid_migration_confirmation">Nieprawidłowe potwierdzenie migracji</string>
     <string name="group_invitation_item_description">zaproszenie do grupy %1$s</string>
@@ -1013,7 +1009,6 @@
     <string name="delete_files_and_media_desc">Tego działania nie można cofnąć - wszystkie odebrane i wysłane pliki oraz media zostaną usunięte. Obrazy o niskiej rozdzielczości pozostaną.</string>
     <string name="switch_receiving_address_desc">Adres odbiorczy zostanie zmieniony na inny serwer. Zmiana adresu zostanie zakończona gdy nadawca będzie online.</string>
     <string name="this_link_is_not_a_valid_connection_link">Ten link nie jest prawidłowym linkiem połączenia!</string>
-    <string name="incognito_info_find">Aby znaleźć profil używany do połączenia incognito, dotknij nazwę kontaktu lub grupy w górnej części czatu.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Aby zachować prywatność, zamiast powiadomień push aplikacja posiada usługę w tle <b>SimpleX</b> - zużywa ona kilka procent baterii dziennie.]]></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Aby chronić prywatność, zamiast identyfikatorów użytkowników używanych przez wszystkie inne platformy, SimpleX ma identyfikatory dla kolejek wiadomości, oddzielne dla każdego z Twoich kontaktów.</string>
     <string name="to_verify_compare">Aby zweryfikować szyfrowanie end-to-end z Twoim kontaktem porównaj (lub zeskanuj) kod na waszych urządzeniach.</string>
@@ -1322,7 +1317,7 @@
     <string name="receipts_contacts_override_enabled">Wysyłanie potwierdzeń jest włączone dla %d kontaktów</string>
     <string name="sync_connection_force_desc">Szyfrowanie działa, a nowe uzgodnienie szyfrowania nie jest wymagane. Może to spowodować błędy w połączeniu!</string>
     <string name="receipts_section_description">Te ustawienia dotyczą Twojego bieżącego profilu</string>
-    <string name="receipts_section_description_1">Można je nadpisać w ustawieniach kontaktu</string>
+    <string name="receipts_section_description_1">Można je nadpisać w ustawieniach kontaktu i grupy.</string>
     <string name="conn_event_ratchet_sync_ok">szyfrowanie ok</string>
     <string name="conn_event_ratchet_sync_allowed">renegocjacja szyfrowania dozwolona</string>
     <string name="snd_conn_event_ratchet_sync_started">uzgadnianie szyfrowania dla %s…</string>
@@ -1342,4 +1337,70 @@
     <string name="no_history">Brak historii</string>
     <string name="sync_connection_force_confirm">Renegocjuj</string>
     <string name="sender_at_ts">%s o %s</string>
+    <string name="choose_file_title">Wybierz plik</string>
+    <string name="in_developing_desc">Ta funkcja nie jest jeszcze obsługiwana. Wypróbuj następną wersję.</string>
+    <string name="no_selected_chat">Nie wybrano czatu</string>
+    <string name="in_developing_title">Już wkrótce!</string>
+    <string name="delivery">Dostarczenie</string>
+    <string name="send_receipts_disabled">wyłączony</string>
+    <string name="receipts_groups_disable_keep_overrides">Wyłącz (zachowaj nadpisania grup)</string>
+    <string name="receipts_groups_title_disable">Wyłączyć potwierdzenia dla grup\?</string>
+    <string name="no_info_on_delivery">Brak informacji dostawy</string>
+    <string name="receipts_groups_title_enable">Włączyć potwierdzenia dla grup\?</string>
+    <string name="receipts_section_groups">Małe grupy (maks. 20)</string>
+    <string name="receipts_groups_override_enabled">Wysyłanie potwierdzeń jest włączone dla %d grup.</string>
+    <string name="receipts_groups_enable_for_all">Włącz dla wszystkich grup</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="send_receipts_disabled_alert_msg">Ta grupa ma ponad %1$d członków, potwierdzenia dostawy nie są wysyłane.</string>
+    <string name="receipts_groups_disable_for_all">Wyłącz dla wszystkich grup</string>
+    <string name="receipts_groups_enable_keep_overrides">Włącz (zachowaj nadpisania grup)</string>
+    <string name="send_receipts_disabled_alert_title">Potwierdzenia są wyłączone</string>
+    <string name="receipts_groups_override_disabled">Wysyłanie potwierdzeń jest wyłączone dla %d grup.</string>
+    <string name="connect_via_member_address_alert_desc">Prośba o połączenie zostanie wysłana do tego członka grupy.</string>
+    <string name="connect_via_member_address_alert_title">Połączyć bezpośrednio\?</string>
+    <string name="connect_use_current_profile">Użyj obecnego profilu</string>
+    <string name="turn_off_battery_optimization_button">Pozwól</string>
+    <string name="disable_notifications_button">Wyłącz powiadomienia</string>
+    <string name="turn_off_system_restriction_button">Otwórz ustawienia aplikacji</string>
+    <string name="system_restricted_background_in_call_title">Brak rozmów w tle</string>
+    <string name="system_restricted_background_desc">SimpleX nie może działać w tle. Otrzymasz powiadomienia gdy aplikacja jest uruchomiona.</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Nowy losowy profil zostanie udostępniony.</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">Wklej otrzymany link w pole poniżej, aby połączyć się z kontaktem…</string>
+    <string name="connect__your_profile_will_be_shared">Twój profil %1$s zostanie udostępniony.</string>
+    <string name="connect_via_link_incognito">Połącz incognito</string>
+    <string name="system_restricted_background_in_call_desc">Aplikacja może zostać zamknięta po 1 minucie w tle.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Aby włączyć powiadomienia, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Aby robić połączenia w tle, wybierz <b>Optymalizacja baterii</b> / <b>Nieograniczony</b> w ustawieniach aplikacji.]]></string>
+    <string name="connect_use_new_incognito_profile">Użyj nowego profilu incognito</string>
+    <string name="privacy_show_last_messages">Pokaż ostatnie wiadomości</string>
+    <string name="privacy_message_draft">Wersja robocza wiadomości</string>
+    <string name="rcv_group_event_2_members_connected">%s i %s połączeni</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s i %d innych członków połączeni</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s i %s połączeni</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Baza danych zostanie zaszyfrowana, a hasło zapisane w ustawieniach.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Uwaga</b>: przekaźniki wiadomości i plików są połączone za pośrednictwem serwera proxy SOCKS. Połączenia i wysyłanie podglądów linków korzystają z połączenia bezpośredniego.]]></string>
+    <string name="encrypt_local_files">Zaszyfruj lokalne pliki</string>
+    <string name="you_can_change_it_later">Losowe hasło jest trzymane w ustawieniach w czystym tekście.
+\nMożesz zmienić je później.</string>
+    <string name="database_encryption_will_be_updated_in_settings">Hasło szyfrowania bazy danych zostanie zaktualizowane i zapisane w ustawieniach.</string>
+    <string name="remove_passphrase_from_settings">Usunąć hasło z ustawień\?</string>
+    <string name="use_random_passphrase">Użyj losowego hasła</string>
+    <string name="save_passphrase_in_settings">Zapisz hasło w ustawieniach</string>
+    <string name="setup_database_passphrase">Ustaw hasło bazy danych</string>
+    <string name="set_database_passphrase">Ustaw hasło bazy danych</string>
+    <string name="open_database_folder">Otwórz folder bazy danych</string>
+    <string name="passphrase_will_be_saved_in_settings">Hasło będzie trzymane w ustawieniach jako czysty tekst po tym jak je zmienisz lub zrestartujesz aplikację.</string>
+    <string name="settings_is_storing_in_clear_text">Hasło jest trzymane w ustawieniach w czystym tekście.</string>
+    <string name="v5_3_encrypt_local_files">Szyfruj przechowywane pliki i media</string>
+    <string name="v5_3_new_desktop_app">Nowa aplikacja desktopowa!</string>
+    <string name="v5_3_new_interface_languages">6 nowych języków interfejsu</string>
+    <string name="v5_3_encrypt_local_files_descr">Aplikacja szyfruje nowe lokalne pliki (bez filmów).</string>
+    <string name="v5_3_discover_join_groups">Odkrywaj i dołączaj do grup</string>
+    <string name="v5_3_simpler_incognito_mode">Uproszczony tryb incognito</string>
+    <string name="v5_3_new_interface_languages_descr">Arabski, bułgarski, fiński, hebrajski, tajski i ukraiński - dzięki użytkownikom i Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Utwórz nowy profil w aplikacji desktopowej. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Przełącz incognito przy połączeniu.</string>
+    <string name="v5_3_discover_join_groups_descr">- połącz się z usługą katalogową (BETA)!
+\n- potwierdzenia dostaw (do 20 członków).
+\n- szybszy i stabilniejszy.</string>
 </resources>

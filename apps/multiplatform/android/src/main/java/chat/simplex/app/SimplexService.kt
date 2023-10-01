@@ -7,23 +7,26 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.*
 import android.provider.Settings
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.platform.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
-import chat.simplex.app.model.ChatController
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.usersettings.NotificationsMode
+import chat.simplex.common.AppLock
+import chat.simplex.common.helpers.requiresIgnoringBattery
+import chat.simplex.common.model.ChatController
+import chat.simplex.common.model.NotificationsMode
+import chat.simplex.common.platform.androidAppContext
+import chat.simplex.common.views.helpers.*
+import kotlinx.coroutines.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.*
 
 // based on:
 // https://robertohuertas.com/2019/06/29/android_foreground_services/
@@ -47,6 +50,7 @@ class SimplexService: Service() {
     } else {
       Log.d(TAG, "null intent. Probably restarted by the system.")
     }
+    startForeground(SIMPLEX_SERVICE_ID, serviceNotification)
     return START_STICKY // to restart if killed
   }
 
@@ -97,7 +101,7 @@ class SimplexService: Service() {
     val self = this
     isStartingService = true
     withApi {
-      val chatController = (application as SimplexApp).chatController
+      val chatController = ChatController
       waitDbMigrationEnds(chatController)
       try {
         Log.w(TAG, "Starting foreground service")
@@ -105,7 +109,7 @@ class SimplexService: Service() {
         if (chatDbStatus != DBMigrationResult.OK) {
           Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
           showPassphraseNotification(chatDbStatus)
-          safeStopService(self)
+          safeStopService()
           return@withApi
         }
         saveServiceState(self, ServiceState.STARTED)
@@ -167,7 +171,7 @@ class SimplexService: Service() {
   // re-schedules the task when "Clear recent apps" is pressed
   override fun onTaskRemoved(rootIntent: Intent) {
     // Just to make sure that after restart of the app the user will need to re-authenticate
-    MainActivity.clearAuthState()
+    AppLock.clearAuthState()
 
     // If notification service isn't enabled or battery optimization isn't disabled, we shouldn't restart the service
     if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {
@@ -265,9 +269,9 @@ class SimplexService: Service() {
      * If there is a need to stop the service, use this function only. It makes sure that the service will be stopped without an
      * exception related to foreground services lifecycle
      * */
-    fun safeStopService(context: Context) {
+    fun safeStopService() {
       if (isServiceStarted) {
-        context.stopService(Intent(context, SimplexService::class.java))
+        androidAppContext.stopService(Intent(androidAppContext, SimplexService::class.java))
       } else {
         stopAfterStart = true
       }
@@ -276,9 +280,9 @@ class SimplexService: Service() {
     private suspend fun serviceAction(action: Action) {
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")
       withContext(Dispatchers.IO) {
-        Intent(SimplexApp.context, SimplexService::class.java).also {
+        Intent(androidAppContext, SimplexService::class.java).also {
           it.action = action.name
-          ContextCompat.startForegroundService(SimplexApp.context, it)
+          ContextCompat.startForegroundService(androidAppContext, it)
         }
       }
     }
@@ -350,37 +354,37 @@ class SimplexService: Service() {
 
     private fun getPreferences(context: Context): SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
-    fun showBackgroundServiceNoticeIfNeeded() {
+    fun showBackgroundServiceNoticeIfNeeded(showOffAlert: Boolean = true) {
       val appPrefs = ChatController.appPrefs
-      val mode = NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!)
+      val mode = appPrefs.notificationsMode.get()
       Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
       // Nothing to do if mode is OFF. Can be selected on on-boarding stage
       if (mode == NotificationsMode.OFF) return
 
       if (!appPrefs.backgroundServiceNoticeShown.get()) {
         // the branch for the new users who have never seen service notice
-        if (!mode.requiresIgnoringBattery || isIgnoringBatteryOptimizations()) {
+        if (!mode.requiresIgnoringBattery || isBackgroundAllowed()) {
           showBGServiceNotice(mode)
-        } else {
-          showBGServiceNoticeIgnoreOptimization(mode)
+        } else if (isBackgroundRestricted()) {
+          showBGServiceNoticeSystemRestricted(mode, showOffAlert)
+        } else if (!isIgnoringBatteryOptimizations()) {
+          showBGServiceNoticeIgnoreOptimization(mode, showOffAlert)
         }
         // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
         appPrefs.backgroundServiceNoticeShown.set(true)
         appPrefs.backgroundServiceBatteryNoticeShown.set(true)
+      } else if (mode.requiresIgnoringBattery && isBackgroundRestricted()) {
+        // the branch for users who have app installed, and have seen the service notice,
+        // but the service is running AND system background restriction is on OR the battery optimization for the app is in RESTRICTED state
+        showBGServiceNoticeSystemRestricted(mode, showOffAlert)
+        if (!appPrefs.backgroundServiceBatteryNoticeShown.get()) {
+          appPrefs.backgroundServiceBatteryNoticeShown.set(true)
+        }
       } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations()) {
         // the branch for users who have app installed, and have seen the service notice,
-        // but the battery optimization for the app is on (Android 12) AND the service is running
-        if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
-          // users have been presented with battery notice before - they did not allow ignoring optimizations -> disable service
-          showDisablingServiceNotice(mode)
-          appPrefs.notificationsMode.set(NotificationsMode.OFF.name)
-          ChatModel.notificationsMode.value = NotificationsMode.OFF
-          SimplexService.StartReceiver.toggleReceiver(false)
-          MessagesFetcherWorker.cancelAll()
-          SimplexService.safeStopService(SimplexApp.context)
-        } else {
-          // show battery optimization notice
-          showBGServiceNoticeIgnoreOptimization(mode)
+        // but the battery optimization for the app is in OPTIMIZED state (Android 12+) AND the service is running
+        showBGServiceNoticeIgnoreOptimization(mode, showOffAlert)
+        if (!appPrefs.backgroundServiceBatteryNoticeShown.get()) {
           appPrefs.backgroundServiceBatteryNoticeShown.set(true)
         }
       } else {
@@ -423,13 +427,17 @@ class SimplexService: Service() {
       )
     }
 
-    private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode) = AlertManager.shared.showAlert {
+    private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode, showOffAlert: Boolean) = AlertManager.shared.showAlert {
       val ignoreOptimization = {
         AlertManager.shared.hideAlert()
         askAboutIgnoringBatteryOptimization()
       }
+      val disableNotifications = {
+        AlertManager.shared.hideAlert()
+        disableNotifications(mode, showOffAlert)
+      }
       AlertDialog(
-        onDismissRequest = ignoreOptimization,
+        onDismissRequest = disableNotifications,
         title = {
           Row {
             Icon(
@@ -452,10 +460,96 @@ class SimplexService: Service() {
             Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
           }
         },
+        dismissButton = {
+          TextButton(onClick = disableNotifications) { Text(stringResource(MR.strings.disable_notifications_button), color = MaterialTheme.colors.error) }
+        },
         confirmButton = {
-          TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.ok)) }
+          TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.turn_off_battery_optimization_button)) }
         }
       )
+    }
+
+    private fun showBGServiceNoticeSystemRestricted(mode: NotificationsMode, showOffAlert: Boolean) = AlertManager.shared.showAlert {
+      val unrestrict = {
+        AlertManager.shared.hideAlert()
+        askToUnrestrictBackground()
+      }
+      val disableNotifications = {
+        AlertManager.shared.hideAlert()
+        disableNotifications(mode, showOffAlert)
+      }
+      AlertDialog(
+        onDismissRequest = disableNotifications,
+        title = {
+          Row {
+            Icon(
+              painterResource(MR.images.ic_bolt),
+              contentDescription =
+              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.icon_descr_instant_notifications) else stringResource(MR.strings.periodic_notifications),
+            )
+            Text(
+              if (mode == NotificationsMode.SERVICE) stringResource(MR.strings.service_notifications) else stringResource(MR.strings.periodic_notifications),
+              fontWeight = FontWeight.Bold
+            )
+          }
+        },
+        text = {
+          Column {
+            Text(
+              annotatedStringResource(MR.strings.system_restricted_background_desc),
+              Modifier.padding(bottom = 8.dp)
+            )
+            Text(annotatedStringResource(MR.strings.system_restricted_background_warn))
+          }
+        },
+        dismissButton = {
+          TextButton(onClick = disableNotifications) { Text(stringResource(MR.strings.disable_notifications_button), color = MaterialTheme.colors.error) }
+        },
+        confirmButton = {
+          TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
+        }
+      )
+    }
+
+    fun showBGRestrictedInCall(onDismiss: (allowedCall: Boolean) -> Unit) = AlertManager.shared.showAlert {
+      val unrestrict = {
+        askToUnrestrictBackground()
+      }
+      AlertDialog(
+        onDismissRequest = AlertManager.shared::hideAlert,
+        title = {
+          Text(
+            stringResource(MR.strings.system_restricted_background_in_call_title),
+            fontWeight = FontWeight.Bold
+          )
+        },
+        text = {
+          Column {
+            Text(
+              annotatedStringResource(MR.strings.system_restricted_background_in_call_desc),
+              Modifier.padding(bottom = 8.dp)
+            )
+            Text(annotatedStringResource(MR.strings.system_restricted_background_in_call_warn))
+          }
+        },
+        confirmButton = {
+          TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
+        }
+      )
+      val scope = rememberCoroutineScope()
+      DisposableEffect(Unit) {
+        scope.launch {
+          repeat(10000) {
+            delay(200)
+            if (!isBackgroundRestricted()) {
+              AlertManager.shared.hideAlert()
+            }
+          }
+        }
+        onDispose {
+          onDismiss(!isBackgroundRestricted())
+        }
+      }
     }
 
     private fun showDisablingServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
@@ -488,20 +582,55 @@ class SimplexService: Service() {
       )
     }
 
+    fun isBackgroundAllowed(): Boolean = isIgnoringBatteryOptimizations() && !isBackgroundRestricted()
+
     fun isIgnoringBatteryOptimizations(): Boolean {
-      val powerManager = SimplexApp.context.getSystemService(Application.POWER_SERVICE) as PowerManager
-      return powerManager.isIgnoringBatteryOptimizations(SimplexApp.context.packageName)
+      val powerManager = androidAppContext.getSystemService(Application.POWER_SERVICE) as PowerManager
+      return powerManager.isIgnoringBatteryOptimizations(androidAppContext.packageName)
+    }
+
+    fun isBackgroundRestricted(): Boolean {
+      return if (Build.VERSION.SDK_INT >= 28) {
+        val activityService = androidAppContext.getSystemService(ACTIVITY_SERVICE) as ActivityManager
+        activityService.isBackgroundRestricted
+      } else {
+        false
+      }
     }
 
     private fun askAboutIgnoringBatteryOptimization() {
       Intent().apply {
         @SuppressLint("BatteryLife")
         action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-        data = Uri.parse("package:${SimplexApp.context.packageName}")
+        data = Uri.parse("package:${androidAppContext.packageName}")
         // This flag is needed when you start a new activity from non-Activity context
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        SimplexApp.context.startActivity(this)
+        androidAppContext.startActivity(this)
       }
+    }
+
+    private fun askToUnrestrictBackground() {
+      Intent().apply {
+        action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+        data = Uri.parse("package:${androidAppContext.packageName}")
+        // This flag is needed when you start a new activity from non-Activity context
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+          androidAppContext.startActivity(this)
+        } catch (e: ActivityNotFoundException) {
+          Log.e(TAG, e.stackTraceToString())
+        }
+      }
+    }
+
+    private fun disableNotifications(mode: NotificationsMode, showOffAlert: Boolean) {
+      if (showOffAlert) {
+        showDisablingServiceNotice(mode)
+      }
+      ChatController.appPrefs.notificationsMode.set(NotificationsMode.OFF)
+      StartReceiver.toggleReceiver(false)
+      MessagesFetcherWorker.cancelAll()
+      safeStopService()
     }
   }
 }

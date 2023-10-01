@@ -1,101 +1,31 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.net.LocalServerSocket
-import android.util.Log
+import chat.simplex.common.platform.Log
 import androidx.lifecycle.*
 import androidx.work.*
-import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.DefaultTheme
-import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.onboarding.OnboardingStage
-import chat.simplex.app.views.usersettings.NotificationsMode
+import chat.simplex.app.model.NtfManager
+import chat.simplex.common.helpers.APPLICATION_ID
+import chat.simplex.common.helpers.requiresIgnoringBattery
+import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
+import chat.simplex.common.platform.*
+import chat.simplex.common.views.call.RcvCallInvitation
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
-import kotlinx.serialization.decodeFromString
 import java.io.*
-import java.lang.ref.WeakReference
 import java.util.*
-import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 
 const val TAG = "SIMPLEX"
 
-// ghc's rts
-external fun initHS()
-// android-support
-external fun pipeStdOutToSocket(socketName: String) : Int
-
-// SimpleX API
-typealias ChatCtrl = Long
-external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
-external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
-external fun chatRecvMsg(ctrl: ChatCtrl): String
-external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
-external fun chatParseMarkdown(str: String): String
-external fun chatParseServer(str: String): String
-external fun chatPasswordHash(pwd: String, salt: String): String
-
 class SimplexApp: Application(), LifecycleEventObserver {
-  var mainActivity: WeakReference<MainActivity> = WeakReference(null)
   val chatModel: ChatModel
     get() = chatController.chatModel
-  val appPreferences: AppPreferences
-    get() = chatController.appPrefs
 
   val chatController: ChatController = ChatController
-  var isAppOnForeground: Boolean = false
-
-  val defaultLocale: Locale = Locale.getDefault()
-
-  suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: Boolean = true) {
-    val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
-    val dbAbsolutePathPrefix = getFilesDirectory()
-    val confirm = confirmMigrations ?: if (appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
-    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey, confirm.value)
-    val res: DBMigrationResult = kotlin.runCatching {
-      json.decodeFromString<DBMigrationResult>(migrated[0] as String)
-    }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
-    val ctrl = if (res is DBMigrationResult.OK) {
-      migrated[1] as Long
-    } else null
-    chatController.ctrl = ctrl
-    chatModel.chatDbEncrypted.value = dbKey != ""
-    chatModel.chatDbStatus.value = res
-    if (res != DBMigrationResult.OK) {
-      Log.d(TAG, "Unable to migrate successfully: $res")
-    } else if (startChat) {
-      // If we migrated successfully means previous re-encryption process on database level finished successfully too
-      if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
-      val user = chatController.apiGetActiveUser()
-      if (user == null) {
-        chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-        chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
-        chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
-        chatModel.currentUser.value = null
-        chatModel.users.clear()
-      } else {
-        val savedOnboardingStage = appPreferences.onboardingStage.get()
-        chatModel.onboardingStage.value = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
-          OnboardingStage.Step3_CreateSimpleXAddress
-        } else {
-          savedOnboardingStage
-        }
-        if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete && !chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.get()) {
-          chatModel.setDeliveryReceipts.value = true
-        }
-        chatController.startChat(user)
-        // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
-        if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
-          SimplexService.showBackgroundServiceNoticeIfNeeded()
-          if (appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
-            SimplexService.start()
-        }
-      }
-    }
-  }
-
 
   override fun onCreate() {
     super.onCreate()
@@ -103,7 +33,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
       return;
     }
     context = this
-    context.getDir("temp", MODE_PRIVATE).deleteRecursively()
+    initHaskell()
+    initMultiplatform()
+    tmpDir.deleteRecursively()
+    tmpDir.mkdir()
+
     withBGApi {
       initChatController()
       runMigrations()
@@ -137,7 +71,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         Lifecycle.Event.ON_RESUME -> {
           isAppOnForeground = true
-          if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
+          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
             SimplexService.showBackgroundServiceNoticeIfNeeded()
           }
           /**
@@ -146,8 +80,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * It can happen when app was started and a user enables battery optimization while app in background
            * */
           if (chatModel.chatRunning.value != false &&
-            chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete &&
-            appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name
+            chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete &&
+            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
           ) {
             SimplexService.start()
           }
@@ -158,13 +92,13 @@ class SimplexApp: Application(), LifecycleEventObserver {
   }
 
   fun allowToStartServiceAfterAppExit() = with(chatModel.controller) {
-    appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name &&
-        (!NotificationsMode.SERVICE.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
+    appPrefs.notificationsMode.get() == NotificationsMode.SERVICE &&
+        (!NotificationsMode.SERVICE.requiresIgnoringBattery || SimplexService.isBackgroundAllowed())
   }
 
   private fun allowToStartPeriodically() = with(chatModel.controller) {
-    appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC.name &&
-        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || SimplexService.isIgnoringBatteryOptimizations())
+    appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC &&
+        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || SimplexService.isBackgroundAllowed())
   }
 
   /*
@@ -198,75 +132,86 @@ class SimplexApp: Application(), LifecycleEventObserver {
     MessagesFetcherWorker.scheduleWork()
   }
 
-  private fun runMigrations() {
-    val lastMigration = chatModel.controller.appPrefs.lastMigratedVersionCode
-    if (lastMigration.get() < BuildConfig.VERSION_CODE) {
-      while (true) {
-        if (lastMigration.get() < 117) {
-          if (chatModel.controller.appPrefs.currentTheme.get() == DefaultTheme.DARK.name) {
-            chatModel.controller.appPrefs.currentTheme.set(DefaultTheme.SIMPLEX.name)
-          }
-          lastMigration.set(117)
-        } else {
-          lastMigration.set(BuildConfig.VERSION_CODE)
-          break
-        }
-      }
-    }
-  }
-
   companion object {
     lateinit var context: SimplexApp private set
+  }
 
-    init {
-      val socketName = BuildConfig.APPLICATION_ID + ".local.socket.address.listen.native.cmd2"
-      val s = Semaphore(0)
-      thread(name="stdout/stderr pipe") {
-        Log.d(TAG, "starting server")
-        var server: LocalServerSocket? = null
-        for (i in 0..100) {
-          try {
-            server = LocalServerSocket(socketName + i)
-            break
-          } catch (e: IOException) {
-            Log.e(TAG, e.stackTraceToString())
-          }
+  private fun initMultiplatform() {
+    androidAppContext = this
+    APPLICATION_ID = BuildConfig.APPLICATION_ID
+    ntfManager = object : chat.simplex.common.platform.NtfManager() {
+      override fun notifyCallInvitation(invitation: RcvCallInvitation) = NtfManager.notifyCallInvitation(invitation)
+      override fun hasNotificationsForChat(chatId: String): Boolean = NtfManager.hasNotificationsForChat(chatId)
+      override fun cancelNotificationsForChat(chatId: String) = NtfManager.cancelNotificationsForChat(chatId)
+      override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions.map { it.first })
+      override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
+      override fun cancelCallNotification() = NtfManager.cancelCallNotification()
+      override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
+    }
+    platform = object : PlatformInterface {
+      override suspend fun androidServiceStart() {
+        SimplexService.start()
+      }
+
+      override fun androidServiceSafeStop() {
+        SimplexService.safeStopService()
+      }
+
+      override fun androidNotificationsModeChanged(mode: NotificationsMode) {
+        if (mode.requiresIgnoringBattery && !SimplexService.isBackgroundAllowed()) {
+          appPrefs.backgroundServiceNoticeShown.set(false)
         }
-        if (server == null) {
-          throw Error("Unable to setup local server socket. Contact developers")
+        SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+        CoroutineScope(Dispatchers.Default).launch {
+          if (mode == NotificationsMode.SERVICE)
+            SimplexService.start()
+          else
+            SimplexService.safeStopService()
         }
-        Log.d(TAG, "started server")
-        s.release()
-        val receiver = server.accept()
-        Log.d(TAG, "started receiver")
-        val logbuffer = FifoQueue<String>(500)
-        if (receiver != null) {
-          val inStream = receiver.inputStream
-          val inStreamReader = InputStreamReader(inStream)
-          val input = BufferedReader(inStreamReader)
-          Log.d(TAG, "starting receiver loop")
-          while (true) {
-            val line = input.readLine() ?: break
-            Log.w("$TAG (stdout/stderr)", line)
-            logbuffer.add(line)
-          }
-          Log.w(TAG, "exited receiver loop")
+
+        if (mode != NotificationsMode.PERIODIC) {
+          MessagesFetcherWorker.cancelAll()
+        }
+        SimplexService.showBackgroundServiceNoticeIfNeeded(showOffAlert = false)
+      }
+
+      override fun androidChatStartedAfterBeingOff() {
+        SimplexService.cancelPassphraseNotification()
+        when (appPrefs.notificationsMode.get()) {
+          NotificationsMode.SERVICE -> CoroutineScope(Dispatchers.Default).launch { platform.androidServiceStart() }
+          NotificationsMode.PERIODIC -> SimplexApp.context.schedulePeriodicWakeUp()
+          NotificationsMode.OFF -> {}
         }
       }
 
-      System.loadLibrary("app-lib")
+      override fun androidChatStopped() {
+        SimplexService.safeStopService()
+        MessagesFetcherWorker.cancelAll()
+      }
 
-      s.acquire()
-      pipeStdOutToSocket(socketName)
+      override fun androidChatInitializedAndStarted() {
+        // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
+        if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+          SimplexService.showBackgroundServiceNoticeIfNeeded()
+          if (appPrefs.notificationsMode.get() == NotificationsMode.SERVICE)
+            withBGApi {
+              platform.androidServiceStart()
+            }
+        }
+      }
 
-      initHS()
+      override fun androidIsBackgroundCallAllowed(): Boolean = !SimplexService.isBackgroundRestricted()
+
+      override suspend fun androidAskToAllowBackgroundCalls(): Boolean {
+        if (SimplexService.isBackgroundRestricted()) {
+          val userChoice: CompletableDeferred<Boolean> = CompletableDeferred()
+          SimplexService.showBGRestrictedInCall {
+            userChoice.complete(it)
+          }
+          return userChoice.await()
+        }
+        return true
+      }
     }
-  }
-}
-
-class FifoQueue<E>(private var capacity: Int) : LinkedList<E>() {
-  override fun add(element: E): Boolean {
-    if(size > capacity) removeFirst()
-    return super.add(element)
   }
 }
