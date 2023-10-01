@@ -7,13 +7,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.common.platform.AudioPlayer
-import chat.simplex.common.platform.chatController
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -606,10 +605,13 @@ data class Chat (
   val userCanSend: Boolean
     get() = when (chatInfo) {
       is ChatInfo.Direct -> true
-      is ChatInfo.Group -> {
-        val m = chatInfo.groupInfo.membership
-        m.memberActive && m.memberRole >= GroupMemberRole.Member
-      }
+      is ChatInfo.Group -> chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Member
+      else -> false
+    }
+
+  val nextSendGrpInv: Boolean
+    get() = when (chatInfo) {
+      is ChatInfo.Direct -> chatInfo.contact.nextSendGrpInv
       else -> false
     }
 
@@ -795,17 +797,24 @@ data class Contact(
   val activeConn: Connection,
   val viaGroup: Long? = null,
   val contactUsed: Boolean,
+  val contactStatus: ContactStatus,
   val chatSettings: ChatSettings,
   val userPreferences: ChatPreferences,
   val mergedPreferences: ContactUserPreferences,
   override val createdAt: Instant,
-  override val updatedAt: Instant
+  override val updatedAt: Instant,
+  val contactGroupMemberId: Long? = null,
+  val contactGrpInvSent: Boolean
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
   override val apiId get() = contactId
   override val ready get() = activeConn.connStatus == ConnStatus.Ready
-  override val sendMsgEnabled get() = !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false)
+  val active get() = contactStatus == ContactStatus.Active
+  override val sendMsgEnabled get() =
+    (ready && active && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false))
+        || nextSendGrpInv
+  val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   override val ntfsEnabled get() = chatSettings.enableNtfs
   override val incognito get() = contactConnIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
@@ -852,13 +861,21 @@ data class Contact(
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
       contactUsed = true,
+      contactStatus = ContactStatus.Active,
       chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
-      updatedAt = Clock.System.now()
+      updatedAt = Clock.System.now(),
+      contactGrpInvSent = false
     )
   }
+}
+
+@Serializable
+enum class ContactStatus {
+  @SerialName("active") Active,
+  @SerialName("deleted") Deleted;
 }
 
 @Serializable
@@ -881,6 +898,7 @@ class ContactSubStatus(
 data class Connection(
   val connId: Long,
   val agentConnId: String,
+  val peerChatVRange: VersionRange,
   val connStatus: ConnStatus,
   val connLevel: Int,
   val viaGroupLink: Boolean,
@@ -890,8 +908,15 @@ data class Connection(
 ) {
   val id: ChatId get() = ":$connId"
   companion object {
-    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, customUserProfileId = null)
+    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null)
   }
+}
+
+@Serializable
+data class VersionRange(val minVersion: Int, val maxVersion: Int) {
+
+  fun isCompatibleRange(vRange: VersionRange): Boolean =
+    this.minVersion <= vRange.maxVersion && vRange.minVersion <= this.maxVersion
 }
 
 @Serializable
@@ -1224,6 +1249,7 @@ class MemberSubError (
 @Serializable
 class UserContactRequest (
   val contactRequestId: Long,
+  val cReqChatVRange: VersionRange,
   override val localDisplayName: String,
   val profile: Profile,
   override val createdAt: Instant,
@@ -1246,6 +1272,7 @@ class UserContactRequest (
   companion object {
     val sampleData = UserContactRequest(
       contactRequestId = 1,
+      cReqChatVRange = VersionRange(1, 1),
       localDisplayName = "alice",
       profile = Profile.sampleData,
       createdAt = Clock.System.now(),
@@ -1398,8 +1425,7 @@ data class ChatItem (
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
 
   val encryptLocalFile: Boolean
-    get() = file?.fileProtocol == FileProtocol.XFTP &&
-        content.msgContent !is MsgContent.MCVideo &&
+    get() = content.msgContent !is MsgContent.MCVideo &&
         chatController.appPrefs.privacyEncryptLocalFiles.get()
 
   val memberDisplayName: String? get() =
@@ -1454,6 +1480,7 @@ data class ChatItem (
       is CIContent.RcvDecryptionError -> showNtfDir
       is CIContent.RcvGroupInvitation -> showNtfDir
       is CIContent.SndGroupInvitation -> showNtfDir
+      is CIContent.RcvDirectEventContent -> false
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
         is RcvGroupEvent.MemberAdded -> false
         is RcvGroupEvent.MemberConnected -> false
@@ -1465,6 +1492,7 @@ data class ChatItem (
         is RcvGroupEvent.GroupDeleted -> showNtfDir
         is RcvGroupEvent.GroupUpdated -> false
         is RcvGroupEvent.InvitedViaGroupLink -> false
+        is RcvGroupEvent.MemberCreatedContact -> false
       }
       is CIContent.SndGroupEventContent -> showNtfDir
       is CIContent.RcvConnEventContent -> false
@@ -1836,6 +1864,7 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvDecryptionError") class RcvDecryptionError(val msgDecryptError: MsgDecryptError, val msgCount: UInt): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvDirectEvent") class RcvDirectEventContent(val rcvDirectEvent: RcvDirectEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupEvent") class RcvGroupEventContent(val rcvGroupEvent: RcvGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupEvent") class SndGroupEventContent(val sndGroupEvent: SndGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvConnEvent") class RcvConnEventContent(val rcvConnEvent: RcvConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
@@ -1863,6 +1892,7 @@ sealed class CIContent: ItemContent {
       is RcvDecryptionError -> msgDecryptError.text
       is RcvGroupInvitation -> groupInvitation.text
       is SndGroupInvitation -> groupInvitation.text
+      is RcvDirectEventContent -> rcvDirectEvent.text
       is RcvGroupEventContent -> rcvGroupEvent.text
       is SndGroupEventContent -> sndGroupEvent.text
       is RcvConnEventContent -> rcvConnEvent.text
@@ -2092,6 +2122,23 @@ data class CryptoFile(
 
   val isAbsolutePath: Boolean
     get() = File(filePath).isAbsolute
+
+  @Transient
+  private var tmpFile: File? = null
+
+  fun createTmpFileIfNeeded(): File {
+    if (tmpFile == null) {
+      val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+      tmpFile.deleteOnExit()
+      ChatModel.filesToDelete.add(tmpFile)
+      this.tmpFile = tmpFile
+    }
+    return tmpFile!!
+  }
+
+  fun deleteTmpFile() {
+    tmpFile?.delete()
+  }
 
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)
@@ -2453,6 +2500,15 @@ sealed class MsgErrorType() {
 }
 
 @Serializable
+sealed class RcvDirectEvent() {
+  @Serializable @SerialName("contactDeleted") class ContactDeleted(): RcvDirectEvent()
+
+  val text: String get() = when (this) {
+    is ContactDeleted -> generalGetString(MR.strings.rcv_direct_event_contact_deleted)
+  }
+}
+
+@Serializable
 sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberAdded") class MemberAdded(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
   @Serializable @SerialName("memberConnected") class MemberConnected(): RcvGroupEvent()
@@ -2464,6 +2520,7 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("groupDeleted") class GroupDeleted(): RcvGroupEvent()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): RcvGroupEvent()
   @Serializable @SerialName("invitedViaGroupLink") class InvitedViaGroupLink(): RcvGroupEvent()
+  @Serializable @SerialName("memberCreatedContact") class MemberCreatedContact(): RcvGroupEvent()
 
   val text: String get() = when (this) {
     is MemberAdded -> String.format(generalGetString(MR.strings.rcv_group_event_member_added), profile.profileViewName)
@@ -2476,6 +2533,7 @@ sealed class RcvGroupEvent() {
     is GroupDeleted -> generalGetString(MR.strings.rcv_group_event_group_deleted)
     is GroupUpdated -> generalGetString(MR.strings.rcv_group_event_updated_group_profile)
     is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
+    is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
   }
 }
 

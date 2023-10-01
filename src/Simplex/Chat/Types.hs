@@ -16,6 +16,8 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
@@ -56,21 +58,21 @@ class IsContact a where
   preferences' :: a -> Maybe Preferences
 
 instance IsContact User where
-  contactId' = userContactId
+  contactId' u = u.userContactId
   {-# INLINE contactId' #-}
-  profile' = profile
+  profile' u = u.profile
   {-# INLINE profile' #-}
-  localDisplayName' = localDisplayName
+  localDisplayName' u = u.localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' User {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
 
 instance IsContact Contact where
-  contactId' = contactId
+  contactId' c = c.contactId
   {-# INLINE contactId' #-}
-  profile' = profile
+  profile' c = c.profile
   {-# INLINE profile' #-}
-  localDisplayName' = localDisplayName
+  localDisplayName' c = c.localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' Contact {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
@@ -167,6 +169,7 @@ data Contact = Contact
     activeConn :: Connection,
     viaGroup :: Maybe Int64,
     contactUsed :: Bool,
+    contactStatus :: ContactStatus,
     chatSettings :: ChatSettings,
     userPreferences :: Preferences,
     mergedPreferences :: ContactUserPreferences,
@@ -183,7 +186,7 @@ instance ToJSON Contact where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 contactConn :: Contact -> Connection
-contactConn = activeConn
+contactConn Contact {activeConn} = activeConn
 
 contactConnId :: Contact -> ConnId
 contactConnId = aConnId . contactConn
@@ -203,8 +206,33 @@ directOrUsed ct@Contact {contactUsed} =
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
 
+contactActive :: Contact -> Bool
+contactActive Contact {contactStatus} = contactStatus == CSActive
+
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode activeConn
+
+data ContactStatus
+  = CSActive
+  | CSDeleted -- contact deleted by contact
+  deriving (Eq, Show, Ord)
+
+instance FromField ContactStatus where fromField = fromTextField_ textDecode
+
+instance ToField ContactStatus where toField = toField . textEncode
+
+instance ToJSON ContactStatus where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance TextEncoding ContactStatus where
+  textDecode = \case
+    "active" -> Just CSActive
+    "deleted" -> Just CSDeleted
+    _ -> Nothing
+  textEncode = \case
+    CSActive -> "active"
+    CSDeleted -> "deleted"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -215,6 +243,19 @@ data ContactRef = ContactRef
   deriving (Eq, Show, Generic)
 
 instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
+
+data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
+  deriving (Show)
+
+contactOrGroupMemberIds :: ContactOrGroupMember -> (Maybe ContactId, Maybe GroupMemberId)
+contactOrGroupMemberIds = \case
+  CGMContact Contact {contactId} -> (Just contactId, Nothing)
+  CGMGroupMember _ GroupMember {groupMemberId} -> (Nothing, Just groupMemberId)
+
+contactOrGroupMemberIncognito :: ContactOrGroupMember -> IncognitoEnabled
+contactOrGroupMemberIncognito = \case
+  CGMContact ct -> contactConnIncognito ct
+  CGMGroupMember _ m -> memberIncognito m
 
 data UserContact = UserContact
   { userContactLinkId :: Int64,
@@ -427,10 +468,10 @@ instance ToJSON Profile where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 -- check if profiles match ignoring preferences
-profilesMatch :: Profile -> Profile -> Bool
+profilesMatch :: LocalProfile -> LocalProfile -> Bool
 profilesMatch
-  Profile {displayName = n1, fullName = fn1, image = i1}
-  Profile {displayName = n2, fullName = fn2, image = i2} =
+  LocalProfile {displayName = n1, fullName = fn1, image = i1}
+  LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
@@ -453,7 +494,7 @@ instance ToJSON LocalProfile where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 localProfileId :: LocalProfile -> ProfileId
-localProfileId = profileId
+localProfileId LocalProfile{profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, image, contactLink, preferences} localAlias =
@@ -588,8 +629,13 @@ data GroupMember = GroupMember
     memberStatus :: GroupMemberStatus,
     invitedBy :: InvitedBy,
     localDisplayName :: ContactName,
+    -- for membership, memberProfile can be either user's profile or incognito profile, based on memberIncognito test.
+    -- for other members it's whatever profile the local user can see (there is no info about whether it's main or incognito profile for remote users).
     memberProfile :: LocalProfile,
+    -- this is the ID of the associated contact (it will be used to send direct messages to the member)
     memberContactId :: Maybe ContactId,
+    -- for membership it would always point to user's contact
+    -- it is used to test for incognito status by comparing with ID in memberProfile
     memberContactProfileId :: ProfileId,
     activeConn :: Maybe Connection
   }
@@ -609,7 +655,7 @@ groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
 memberConn :: GroupMember -> Maybe Connection
-memberConn = activeConn
+memberConn GroupMember{activeConn} = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
@@ -619,6 +665,15 @@ groupMemberId' GroupMember {groupMemberId} = groupMemberId
 
 memberIncognito :: GroupMember -> IncognitoEnabled
 memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
+
+incognitoMembership :: GroupInfo -> IncognitoEnabled
+incognitoMembership GroupInfo {membership} = memberIncognito membership
+
+-- returns profile when membership is incognito, otherwise Nothing
+incognitoMembershipProfile :: GroupInfo -> Maybe LocalProfile
+incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}}
+  | memberIncognito m = Just memberProfile
+  | otherwise = Nothing
 
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
@@ -957,7 +1012,10 @@ data RcvFileTransfer = RcvFileTransfer
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
-    grpMemberId :: Maybe Int64
+    grpMemberId :: Maybe Int64,
+    -- XFTP files are encrypted as they are received, they are never stored unecrypted
+    -- SMP files are encrypted after all chunks are received
+    cryptoArgs :: Maybe CryptoFileArgs
   }
   deriving (Eq, Show, Generic)
 
@@ -966,8 +1024,7 @@ instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.default
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool,
-    cryptoArgs :: Maybe CryptoFileArgs
+    agentRcvFileDeleted :: Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -1361,8 +1418,6 @@ serializeIntroStatus = \case
   GMIntroConnected -> "con"
 
 data Notification = Notification {title :: Text, text :: Text}
-
-type JSONString = String
 
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode

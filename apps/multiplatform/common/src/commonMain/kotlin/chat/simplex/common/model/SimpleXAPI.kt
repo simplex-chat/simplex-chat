@@ -26,6 +26,12 @@ import java.util.Date
 
 typealias ChatCtrl = Long
 
+// currentChatVersion in core
+const val CURRENT_CHAT_VERSION: Int = 2
+
+// version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
+val CREATE_MEMBER_CONTACT_VRANGE = VersionRange(minVersion = 2, maxVersion = CURRENT_CHAT_VERSION)
+
 enum class CallOnLockScreen {
   DISABLE,
   SHOW,
@@ -786,16 +792,18 @@ object ChatController {
     return null
   }
 
-  suspend fun apiGetContactCode(contactId: Long): Pair<Contact, String> {
+  suspend fun apiGetContactCode(contactId: Long): Pair<Contact, String>? {
     val r = sendCmd(CC.APIGetContactCode(contactId))
     if (r is CR.ContactCode) return r.contact to r.connectionCode
-    throw Exception("failed to get contact code: ${r.responseType} ${r.details}")
+    Log.e(TAG,"failed to get contact code: ${r.responseType} ${r.details}")
+    return null
   }
 
-  suspend fun apiGetGroupMemberCode(groupId: Long, groupMemberId: Long): Pair<GroupMember, String> {
+  suspend fun apiGetGroupMemberCode(groupId: Long, groupMemberId: Long): Pair<GroupMember, String>? {
     val r = sendCmd(CC.APIGetGroupMemberCode(groupId, groupMemberId))
     if (r is CR.GroupMemberCode) return r.member to r.connectionCode
-    throw Exception("failed to get group member code: ${r.responseType} ${r.details}")
+    Log.e(TAG,"failed to get group member code: ${r.responseType} ${r.details}")
+    return null
   }
 
   suspend fun apiVerifyContact(contactId: Long, connectionCode: String?): Pair<Boolean, String>? {
@@ -1274,6 +1282,30 @@ object ChatController {
     }
   }
 
+  suspend fun apiCreateMemberContact(groupId: Long, groupMemberId: Long): Contact? {
+    return when (val r = sendCmd(CC.APICreateMemberContact(groupId, groupMemberId))) {
+      is CR.NewMemberContact -> r.contact
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiCreateMemberContact", generalGetString(MR.strings.error_creating_member_contact), r)
+        }
+        null
+      }
+    }
+  }
+
+  suspend fun apiSendMemberContactInvitation(contactId: Long, mc: MsgContent): Contact? {
+    return when (val r = sendCmd(CC.APISendMemberContactInvitation(contactId, mc))) {
+      is CR.NewMemberContactSentInv -> r.contact
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiSendMemberContactInvitation", generalGetString(MR.strings.error_sending_message_contact_invitation), r)
+        }
+        null
+      }
+    }
+  }
+
   suspend fun allowFeatureToContact(contact: Contact, feature: ChatFeature, param: Int? = null) {
     val prefs = contact.mergedPreferences.toPreferences().setAllowed(feature, param = param)
     val toContact = apiSetContactPrefs(contact.contactId, prefs)
@@ -1334,6 +1366,11 @@ object ChatController {
       is CR.ContactConnectionDeleted -> {
         if (active(r.user)) {
           chatModel.removeChat(r.connection.id)
+        }
+      }
+      is CR.ContactDeletedByContact -> {
+        if (active(r.user) && r.contact.directOrUsed) {
+          chatModel.updateContact(r.contact)
         }
       }
       is CR.ContactConnected -> {
@@ -1528,6 +1565,10 @@ object ChatController {
       is CR.GroupUpdated ->
         if (active(r.user)) {
           chatModel.updateGroup(r.toGroup)
+        }
+      is CR.NewMemberContactReceivedInv ->
+        if (active(r.user)) {
+          chatModel.updateContact(r.contact)
         }
       is CR.RcvFileStart ->
         chatItemSimpleUpdate(r.user, r.chatItem)
@@ -1824,6 +1865,8 @@ sealed class CC {
   class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
+  class APICreateMemberContact(val groupId: Long, val groupMemberId: Long): CC()
+  class APISendMemberContactInvitation(val contactId: Long, val mc: MsgContent): CC()
   class APIGetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol): CC()
   class APISetUserProtoServers(val userId: Long, val serverProtocol: ServerProtocol, val servers: List<ServerCfg>): CC()
   class APITestProtoServer(val userId: Long, val server: String): CC()
@@ -1929,6 +1972,8 @@ sealed class CC {
     is APIGroupLinkMemberRole -> "/_set link role #$groupId ${memberRole.name.lowercase()}"
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
+    is APICreateMemberContact -> "/_create member contact #$groupId $groupMemberId"
+    is APISendMemberContactInvitation -> "/_invite member contact @$contactId ${mc.cmdString}"
     is APIGetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()}"
     is APISetUserProtoServers -> "/_servers $userId ${serverProtocol.name.lowercase()} ${protoServersStr(servers)}"
     is APITestProtoServer -> "/_server test $userId $server"
@@ -2023,6 +2068,8 @@ sealed class CC {
     is APIGroupLinkMemberRole -> "apiGroupLinkMemberRole"
     is APIDeleteGroupLink -> "apiDeleteGroupLink"
     is APIGetGroupLink -> "apiGetGroupLink"
+    is APICreateMemberContact -> "apiCreateMemberContact"
+    is APISendMemberContactInvitation -> "apiSendMemberContactInvitation"
     is APIGetUserProtoServers -> "apiGetUserProtoServers"
     is APISetUserProtoServers -> "apiSetUserProtoServers"
     is APITestProtoServer -> "testProtoServer"
@@ -2352,7 +2399,7 @@ data class NetCfg(
         sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 15_000_000,
         tcpTimeout = 10_000_000,
-        tcpTimeoutPerKb = 20_000,
+        tcpTimeoutPerKb = 30_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3
@@ -2366,7 +2413,7 @@ data class NetCfg(
         sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 30_000_000,
         tcpTimeout = 20_000_000,
-        tcpTimeoutPerKb = 40_000,
+        tcpTimeoutPerKb = 60_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3
@@ -3255,6 +3302,7 @@ sealed class CR {
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactDeletedByContact") class ContactDeletedByContact(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
@@ -3313,6 +3361,9 @@ sealed class CR {
   @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val connReqContact: String, val memberRole: GroupMemberRole): CR()
   @Serializable @SerialName("groupLink") class GroupLink(val user: UserRef, val groupInfo: GroupInfo, val connReqContact: String, val memberRole: GroupMemberRole): CR()
   @Serializable @SerialName("groupLinkDeleted") class GroupLinkDeleted(val user: UserRef, val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("newMemberContact") class NewMemberContact(val user: UserRef, val contact: Contact,  val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("newMemberContactSentInv") class NewMemberContactSentInv(val user: UserRef, val contact: Contact,  val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("newMemberContactReceivedInv") class NewMemberContactReceivedInv(val user: UserRef, val contact: Contact,  val groupInfo: GroupInfo, val member: GroupMember): CR()
   // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileAcceptedSndCancelled") class RcvFileAcceptedSndCancelled(val user: UserRef, val rcvFileTransfer: RcvFileTransfer): CR()
@@ -3383,6 +3434,7 @@ sealed class CR {
     is ContactAlreadyExists -> "contactAlreadyExists"
     is ContactRequestAlreadyAccepted -> "contactRequestAlreadyAccepted"
     is ContactDeleted -> "contactDeleted"
+    is ContactDeletedByContact -> "contactDeletedByContact"
     is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
@@ -3440,6 +3492,9 @@ sealed class CR {
     is GroupLinkCreated -> "groupLinkCreated"
     is GroupLink -> "groupLink"
     is GroupLinkDeleted -> "groupLinkDeleted"
+    is NewMemberContact -> "newMemberContact"
+    is NewMemberContactSentInv -> "newMemberContactSentInv"
+    is NewMemberContactReceivedInv -> "newMemberContactReceivedInv"
     is RcvFileAcceptedSndCancelled -> "rcvFileAcceptedSndCancelled"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
@@ -3508,6 +3563,7 @@ sealed class CR {
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
     is ContactRequestAlreadyAccepted -> withUser(user, json.encodeToString(contact))
     is ContactDeleted -> withUser(user, json.encodeToString(contact))
+    is ContactDeletedByContact -> withUser(user, json.encodeToString(contact))
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
     is UserProfileNoChange -> withUser(user, noDetails())
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))
@@ -3565,6 +3621,9 @@ sealed class CR {
     is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\nconnReqContact: $connReqContact\nmemberRole: $memberRole")
     is GroupLink -> withUser(user, "groupInfo: $groupInfo\nconnReqContact: $connReqContact\nmemberRole: $memberRole")
     is GroupLinkDeleted -> withUser(user, json.encodeToString(groupInfo))
+    is NewMemberContact -> withUser(user, "contact: $contact\ngroupInfo: $groupInfo\nmember: $member")
+    is NewMemberContactSentInv -> withUser(user, "contact: $contact\ngroupInfo: $groupInfo\nmember: $member")
+    is NewMemberContactReceivedInv -> withUser(user, "contact: $contact\ngroupInfo: $groupInfo\nmember: $member")
     is RcvFileAcceptedSndCancelled -> withUser(user, noDetails())
     is RcvFileAccepted -> withUser(user, json.encodeToString(chatItem))
     is RcvFileStart -> withUser(user, json.encodeToString(chatItem))
@@ -3773,6 +3832,7 @@ sealed class ChatErrorType {
       is InvalidConnReq -> "invalidConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ContactNotReady -> "contactNotReady"
+      is ContactNotActive -> "contactNotActive"
       is ContactDisabled -> "contactDisabled"
       is ConnectionDisabled -> "connectionDisabled"
       is GroupUserRole -> "groupUserRole"
@@ -3822,6 +3882,7 @@ sealed class ChatErrorType {
       is AgentCommandError -> "agentCommandError"
       is InvalidFileDescription -> "invalidFileDescription"
       is ConnectionIncognitoChangeProhibited -> "connectionIncognitoChangeProhibited"
+      is PeerChatVRangeIncompatible -> "peerChatVRangeIncompatible"
       is InternalError -> "internalError"
       is CEException -> "exception $message"
     }
@@ -3847,6 +3908,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contact: Contact): ChatErrorType()
+  @Serializable @SerialName("contactNotActive") class ContactNotActive(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("contactDisabled") class ContactDisabled(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("connectionDisabled") class ConnectionDisabled(val connection: Connection): ChatErrorType()
   @Serializable @SerialName("groupUserRole") class GroupUserRole(val groupInfo: GroupInfo, val requiredRole: GroupMemberRole): ChatErrorType()
@@ -3896,6 +3958,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("agentCommandError") class AgentCommandError(val message: String): ChatErrorType()
   @Serializable @SerialName("invalidFileDescription") class InvalidFileDescription(val message: String): ChatErrorType()
   @Serializable @SerialName("connectionIncognitoChangeProhibited") object ConnectionIncognitoChangeProhibited: ChatErrorType()
+  @Serializable @SerialName("peerChatVRangeIncompatible") object PeerChatVRangeIncompatible: ChatErrorType()
   @Serializable @SerialName("internalError") class InternalError(val message: String): ChatErrorType()
   @Serializable @SerialName("exception") class CEException(val message: String): ChatErrorType()
 }
@@ -3924,6 +3987,7 @@ sealed class StoreError {
       is GroupMemberNameNotFound -> "groupMemberNameNotFound"
       is GroupMemberNotFound -> "groupMemberNotFound"
       is GroupMemberNotFoundByMemberId -> "groupMemberNotFoundByMemberId"
+      is MemberContactGroupMemberNotFound -> "memberContactGroupMemberNotFound"
       is GroupWithoutUser -> "groupWithoutUser"
       is DuplicateGroupMember -> "duplicateGroupMember"
       is GroupAlreadyJoined -> "groupAlreadyJoined"
@@ -3981,6 +4045,7 @@ sealed class StoreError {
   @Serializable @SerialName("groupMemberNameNotFound") class GroupMemberNameNotFound(val groupId: Long, val groupMemberName: String): StoreError()
   @Serializable @SerialName("groupMemberNotFound") class GroupMemberNotFound(val groupMemberId: Long): StoreError()
   @Serializable @SerialName("groupMemberNotFoundByMemberId") class GroupMemberNotFoundByMemberId(val memberId: String): StoreError()
+  @Serializable @SerialName("memberContactGroupMemberNotFound") class MemberContactGroupMemberNotFound(val contactId: Long): StoreError()
   @Serializable @SerialName("groupWithoutUser") object GroupWithoutUser: StoreError()
   @Serializable @SerialName("duplicateGroupMember") object DuplicateGroupMember: StoreError()
   @Serializable @SerialName("groupAlreadyJoined") object GroupAlreadyJoined: StoreError()

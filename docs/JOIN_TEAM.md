@@ -1,3 +1,9 @@
+---
+title: Join SimpleX Chat team
+permalink: /jobs/index.html
+layout: layouts/jobs.html
+---
+
 # Join SimpleX Chat team
 
 SimpleX Chat Ltd is a seed stage startup with a lot of user growth in 2022-2023, and a lot of exciting technical and product problems to solve to grow faster.
@@ -7,7 +13,33 @@ We currently have 4 full-time people in the team - all engineers, including the 
 We want to add up to 3 people to the team. 
 
 
-**You**:
+## Who we are looking for
+
+### Application Haskell engineer
+
+You are an expert in language models, databases and Haskell:
+- expert knowledge of SQL.
+- exception handling, concurrency, STM.
+- type systems - we use ad hoc dependent types a lot.
+- experience integrating open-source language models.
+- experience developing community-centric applications.
+- interested to build the next generation of messaging network.
+
+You will be focussed mostly on our client applications, and will also contribute to the servers also written in Haskell. 
+
+### iOS / Mac engineer
+
+You are an expert in Apple platforms, including:
+- iOS and Mac platform architecture.
+- Swift and Objective-C.
+- SwiftUI and UIKit.
+- extensions, including notification service extension and sharing extension.
+- low level inter-process communication primitives for concurrency.
+- interested about creating the next generation of UX for a communication/social network.
+
+Knowledge of Android and Kotlin Multiplatform would be a bonus - we use Kotlin Jetpack Compose for our Android and desktop apps.
+
+## About you
 
 - **Passionate about joining SimpleX Chat team**:
   - already use SimpleX Chat to communicate with friends/family or participate in public SimpleX Chat groups.
@@ -34,33 +66,6 @@ We want to add up to 3 people to the team.
   - high pace and intensity, longer hours.
   - a substantial part of the compensation is stock options.
   - full transparency – we believe that too much [autonomy](https://twitter.com/KentBeck/status/851459129830850561) hurts learning and slows down progress.
-
-
-## Who we are looking for
-
-### Systems Haskell engineer
-
-You are a servers/network/Haskell expert:
-- network libraries.
-- exception handling, concurrency, STM.
-- type systems - we use ad hoc dependent types a lot.
-- strictness.
-- has some expertise in network protocols, cryptography and general information security principles and approaches.
-- interested to build the next generation of messaging network.
-
-You will be focussed mostly on our servers code, and will also contribute to the core client code written in Haskell. 
-
-
-### Product engineer (iOS)
-
-You are a product UX expert who designs great user experiences directly in iOS code:
-- iOS and Mac platforms, including:
-  - SwiftUI and UIKit.
-  - extensions, including notification service extension and sharing extension.
-  - low level inter-process communication primitives for concurrency.
-- interested about creating the next generation of UX for a communication/social network.
-
-Knowledge of Android and Kotlin Multiplatform would be a bonus - we use Kotlin Jetpack Compose for our Android and desktop apps.
 
 
 ## How to join the team

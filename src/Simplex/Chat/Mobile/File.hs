@@ -16,7 +16,9 @@ module Simplex.Chat.Mobile.File
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import Data.ByteString (ByteString)
@@ -25,13 +27,14 @@ import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Lazy.Char8 as LB'
 import Data.Char (chr)
 import Data.Either (fromLeft)
-import Data.Word (Word8, Word32)
+import Data.Word (Word32, Word8)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
-import Foreign.Storable (poke)
+import Foreign.Storable (poke, pokeByteOff)
 import GHC.Generics (Generic)
 import Simplex.Chat.Mobile.Shared
+import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
@@ -51,7 +54,7 @@ cChatWriteFile cPath ptr len = do
   path <- peekCString cPath
   s <- getByteString ptr len
   r <- chatWriteFile path s
-  newCAString $ LB'.unpack $ J.encode r
+  newCStringFromLazyBS $ J.encode r
 
 chatWriteFile :: FilePath -> ByteString -> IO WriteFileResult
 chatWriteFile path s = do
@@ -75,12 +78,11 @@ cChatReadFile cPath cKey cNonce = do
   chatReadFile path key nonce >>= \case
     Left e -> castPtr <$> newCString (chr 1 : e)
     Right s -> do
-      let s' = LB.toStrict s
-          len = B.length s'
+      let len = fromIntegral $ LB.length s
       ptr <- mallocBytes $ len + 5
-      poke ptr 0
-      poke (ptr `plusPtr` 1) (fromIntegral len :: Word32)
-      putByteString (ptr `plusPtr` 5) s'
+      poke ptr (0 :: Word8)
+      pokeByteOff ptr 1 (fromIntegral len :: Word32)
+      putLazyByteString (ptr `plusPtr` 5) s
       pure ptr
 
 chatReadFile :: FilePath -> ByteString -> ByteString -> IO (Either String LB.ByteString)
@@ -103,16 +105,8 @@ chatEncryptFile fromPath toPath =
   where
     encrypt = do
       cfArgs <- liftIO $ CF.randomArgs
-      let toFile = CryptoFile toPath $ Just cfArgs
-      withExceptT show $
-        withFile fromPath ReadMode $ \r -> CF.withFile toFile WriteMode $ \w -> do
-          encryptChunks r w
-          liftIO $ CF.hPutTag w
+      encryptFile fromPath toPath cfArgs
       pure cfArgs
-    encryptChunks r w = do
-      ch <- liftIO $ LB.hGet r chunkSize
-      unless (LB.null ch) $ liftIO $ CF.hPut w ch
-      unless (LB.length ch < chunkSize) $ encryptChunks r w
 
 cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 cChatDecryptFile cFromPath cKey cNonce cToPath = do
@@ -147,7 +141,3 @@ chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runCatchExcept
 
 runCatchExceptT :: ExceptT String IO a -> IO (Either String a)
 runCatchExceptT action = runExceptT action `catchAll` (pure . Left . show)
-
-chunkSize :: Num a => a
-chunkSize = 65536
-{-# INLINE chunkSize #-}

@@ -58,7 +58,7 @@
     "simplex-explained-tab-2-p-1": "Voor elke verbinding gebruikt u twee afzonderlijke berichten wachtrijen om berichten via verschillende servers te verzenden en te ontvangen.",
     "simplex-explained-tab-2-p-2": "Servers geven berichten slechts in één richting door, zonder een volledig beeld te hebben van het gesprek of de connecties van de gebruiker.",
     "hero-p-1": "Andere apps hebben gebruikers-ID's: Signal, Matrix, Session, Briar, Jami, Cwtch, enz.<br> SimpleX niet, <strong>zelfs geen willekeurige getallen</strong>.<br> Dit verbetert uw privacy.",
-    "hero-2-header-desc": "De video laat zien hoe je verbinding maakt met een vriend via een eenmalige QR-code, persoonlijk of via een videolink. U kunt ook verbinding maken door een uitnodigingslink te delen.",
+    "hero-2-header-desc": "De video laat zien hoe je verbinding maakt met een vriend via een persoonlijk of videolink gedeelde eenmalige QR-code. U kunt ook verbinding maken door een uitnodigingslink te delen.",
     "hero-header": "Privacy opnieuw gedefinieerd",
     "feature-7-title": "Portable versleutelde database &mdash; verplaats je profiel naar een ander apparaat",
     "simplex-private-card-1-point-1": "Protocol met double-ratchet -<br>OTR-berichten met perfecte voorwaartse geheimhouding en inbraak herstel.",
@@ -194,7 +194,7 @@
     "simplex-unique-overlay-card-4-p-3": "Als u overweegt om voor het SimpleX platform te ontwikkelen, bijvoorbeeld de chatbot voor gebruikers van de SimpleX app, of de integratie van de SimpleX Chat bibliotheek in uw mobiele apps, <a href='https://simplex.chat/contact# /?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D' target='_blank'>get in touch</a> for any advice en ondersteuning.",
     "simplex-unique-card-1-p-1": "SimpleX beschermt de privacy van uw profiel, contacten en metadata en verbergt deze voor SimpleX platformservers en eventuele waarnemers.",
     "enter-your-email-address": "Voer uw e-mail adres in",
-    "get-simplex": "Verkrijg SimpleX",
+    "get-simplex": "Verkrijg SimpleX <a href=\"/downloads\">desktop app</a>",
     "tap-to-close": "Tik om te sluiten",
     "contact-hero-header": "Je hebt een adres ontvangen om verbinding te maken met SimpleX Chat",
     "invitation-hero-header": "Je hebt een eenmalige link ontvangen om verbinding te maken met SimpleX Chat",
@@ -204,8 +204,8 @@
     "simplex-unique-card-1-p-2": "In tegenstelling tot elk ander bestaand berichten platform, heeft SimpleX geen identificatiecodes toegewezen aan de gebruikers &mdash; <strong>zelfs geen willekeurige nummers </strong>.",
     "comparison-section-list-point-1": "Meestal op basis van een telefoonnummer, in sommige gevallen op gebruikersnamen",
     "comparison-section-list-point-2": "Op DNS gebaseerde adressen",
-    "comparison-section-list-point-4": "Als de servers van de operator zijn aangetast",
-    "comparison-section-list-point-5": "Beschermt de metadata van gebruikers niet",
+    "comparison-section-list-point-4": "Als de servers van de operator zijn gecompromitteerd. Controleer de beveiligingscode in Signal en enkele andere apps om dit te beperken",
+    "comparison-section-list-point-5": "Beschermt de privacy van metagegevens van gebruikers niet",
     "comparison-section-list-point-6": "Hoewel P2P wordt gedistribueerd, zijn ze niet federatief - ze werken als een enkel netwerk",
     "see-here": "kijk hier",
     "comparison-section-list-point-7": "P2P netwerken hebben een centrale autoriteit of het hele netwerk kan worden aangetast",
@@ -242,5 +242,6 @@
     "stable-versions-built-by-f-droid-org": "Stabiele versies gebouwd door F-Droid.org",
     "releases-to-this-repo-are-done-1-2-days-later": "De releases voor deze repository vinden 1-2 dagen later plaats",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat- en F-Droid.org-repository's ondertekenen builds met de verschillende sleutels. Om over te stappen, alstublieft <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exporteer</a> de chatdatabase en installeer de app opnieuw.",
-    "docs-dropdown-8": "SimpleX Directory Service"
+    "docs-dropdown-8": "SimpleX Directory Service",
+    "comparison-section-list-point-4a": "SimpleX relais kunnen de e2e-versleuteling niet in gevaar brengen. Controleer de beveiligingscode om aanvallen op out-of-band kanalen te beperken"
 }

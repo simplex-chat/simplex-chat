@@ -57,19 +57,26 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
-        if case let .group(groupInfo) = chat.chatInfo {
+        switch chat.chatInfo {
+        case let .direct(contact):
+            if !contact.active {
+                inactiveIcon()
+            } else {
+                EmptyView()
+            }
+        case let .group(groupInfo):
             switch (groupInfo.membership.memberStatus) {
-            case .memLeft: groupInactiveIcon()
-            case .memRemoved: groupInactiveIcon()
-            case .memGroupDeleted: groupInactiveIcon()
+            case .memLeft: inactiveIcon()
+            case .memRemoved: inactiveIcon()
+            case .memGroupDeleted: inactiveIcon()
             default: EmptyView()
             }
-        } else {
+        default:
             EmptyView()
         }
     }
 
-    @ViewBuilder private func groupInactiveIcon() -> some View {
+    @ViewBuilder private func inactiveIcon() -> some View {
         Image(systemName: "multiply.circle.fill")
             .foregroundColor(.secondary.opacity(0.65))
             .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
@@ -80,7 +87,6 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             previewTitle(contact.verified == true ? verifiedIcon + t : t)
-                .foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
         case let .group(groupInfo):
             let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
@@ -181,7 +187,11 @@ struct ChatPreviewView: View {
             switch (chat.chatInfo) {
             case let .direct(contact):
                 if !contact.ready {
-                    chatPreviewInfoText("connecting…")
+                    if contact.nextSendGrpInv {
+                        chatPreviewInfoText("send direct message")
+                    } else if contact.active {
+                        chatPreviewInfoText("connecting…")
+                    }
                 }
             case let .group(groupInfo):
                 switch (groupInfo.membership.memberStatus) {
@@ -224,16 +234,20 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatStatusImage() -> some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            switch (chatModel.contactNetworkStatus(contact)) {
-            case .connected: incognitoIcon(chat.chatInfo.incognito)
-            case .error:
-                Image(systemName: "exclamationmark.circle")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 17, height: 17)
-                    .foregroundColor(.secondary)
-            default:
-                ProgressView()
+            if contact.active {
+                switch (chatModel.contactNetworkStatus(contact)) {
+                case .connected: incognitoIcon(chat.chatInfo.incognito)
+                case .error:
+                    Image(systemName: "exclamationmark.circle")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 17, height: 17)
+                        .foregroundColor(.secondary)
+                default:
+                    ProgressView()
+                }
+            } else {
+                incognitoIcon(chat.chatInfo.incognito)
             }
         default:
             incognitoIcon(chat.chatInfo.incognito)

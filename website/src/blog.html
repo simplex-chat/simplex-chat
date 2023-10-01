@@ -44,7 +44,9 @@ active_blog: true
                     <div class="min-h-[inherit] h-full w-full flex items-end px-4 pt-4 justify-center relative">
                         {% if blog.data.image %}
                             {% if blog.data.imageBottom %}
-                                <img class="w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                                <img class="w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>   
+                            {% elif blog.data.imageWide %}
+                                <img class="mb-4 self-center w-full h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                             {% else %}
                                 <img class="mb-4 self-center w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                             {% endif %}

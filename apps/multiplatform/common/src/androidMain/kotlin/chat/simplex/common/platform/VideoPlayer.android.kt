@@ -1,10 +1,13 @@
 package chat.simplex.common.platform
 
+import android.media.MediaMetadataRetriever
 import android.media.session.PlaybackState
 import android.net.Uri
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import chat.simplex.common.helpers.toUri
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.google.android.exoplayer2.*
@@ -17,49 +20,15 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.net.URI
 
-actual class VideoPlayer private constructor(
-  private val uri: URI,
-  private val gallery: Boolean,
+actual class VideoPlayer actual constructor(
+  override val uri: URI,
+  override val gallery: Boolean,
   private val defaultPreview: ImageBitmap,
   defaultDuration: Long,
   soundEnabled: Boolean
 ): VideoPlayerInterface {
-  actual companion object {
-    private val players: MutableMap<Pair<URI, Boolean>, VideoPlayer> = mutableMapOf()
-    private val previewsAndDurations: MutableMap<URI, VideoPlayerInterface.PreviewAndDuration> = mutableMapOf()
-
-    actual fun getOrCreate(
-      uri: URI,
-      gallery: Boolean,
-      defaultPreview: ImageBitmap,
-      defaultDuration: Long,
-      soundEnabled: Boolean
-    ): VideoPlayer =
-      players.getOrPut(uri to gallery) { VideoPlayer(uri, gallery, defaultPreview, defaultDuration, soundEnabled) }
-
-    actual fun enableSound(enable: Boolean, fileName: String?, gallery: Boolean): Boolean =
-      player(fileName, gallery)?.enableSound(enable) == true
-
-    private fun player(fileName: String?, gallery: Boolean): VideoPlayer? {
-      fileName ?: return null
-      return players.values.firstOrNull { player -> player.uri.path?.endsWith(fileName) == true && player.gallery == gallery }
-    }
-
-    actual fun release(uri: URI, gallery: Boolean, remove: Boolean) =
-      player(uri.path, gallery)?.release(remove).run {  }
-
-    actual fun stopAll() {
-      players.values.forEach { it.stop() }
-    }
-
-    actual fun releaseAll() {
-      players.values.forEach { it.release(false) }
-      players.clear()
-      previewsAndDurations.clear()
-    }
-  }
-
   private val currentVolume: Float
+
   override val soundEnabled: MutableState<Boolean> = mutableStateOf(soundEnabled)
   override val brokenVideo: MutableState<Boolean> = mutableStateOf(false)
   override val videoPlaying: MutableState<Boolean> = mutableStateOf(false)
@@ -114,7 +83,7 @@ actual class VideoPlayer private constructor(
       RecorderInterface.stopRecording?.invoke()
     }
     AudioPlayer.stop()
-    stopAll()
+    VideoPlayerHolder.stopAll()
     if (listener.value == null) {
       runCatching {
         val dataSourceFactory = DefaultDataSource.Factory(androidAppContext, DefaultHttpDataSource.Factory())
@@ -224,14 +193,14 @@ actual class VideoPlayer private constructor(
   override fun release(remove: Boolean) {
     player.release()
     if (remove) {
-      players.remove(uri to gallery)
+      VideoPlayerHolder.players.remove(uri to gallery)
     }
   }
 
   private fun setPreviewAndDuration() {
     // It freezes main thread, doing it in IO thread
     CoroutineScope(Dispatchers.IO).launch {
-      val previewAndDuration = previewsAndDurations.getOrPut(uri) { getBitmapFromVideo(uri) }
+      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo(uri) }
       withContext(Dispatchers.Main) {
         preview.value = previewAndDuration.preview ?: defaultPreview
         duration.value = (previewAndDuration.duration ?: 0)

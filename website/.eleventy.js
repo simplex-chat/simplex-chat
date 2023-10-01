@@ -188,6 +188,50 @@ module.exports = function (ty) {
     return dom.serialize()
   })
 
+  ty.addFilter('wrapH3s', function (content, page) {
+    if (!page.url.includes("/jobs/")) {
+      return content
+    }
+
+    const dom = new JSDOM(content)
+    const document = dom.window.document
+
+    const makeBlock = (block) => {
+      const jobTab = document.createElement('div')
+      jobTab.className = "job-tab"
+
+      const flexDiv = document.createElement('div')
+      flexDiv.className = "flex items-center justify-between job-tab-btn cursor-pointer"
+      flexDiv.innerHTML = `
+        <${block.tagName}>${block.innerHTML}</${block.tagName}>
+        <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M8.40813 4.79332C8.69689 5.06889 9.16507 5.06889 9.45384 4.79332C9.7426 4.51775 9.7426 4.07097 9.45384 3.7954L5.69327 0.206676C5.65717 0.17223 5.61827 0.142089 5.57727 0.116255C5.29026 -0.064587 4.90023 -0.0344467 4.64756 0.206676L0.886983 3.7954C0.598219 4.07097 0.598219 4.51775 0.886983 4.79332C1.17575 5.06889 1.64393 5.06889 1.93269 4.79332L5.17041 1.70356L8.40813 4.79332Z"></path>
+        </svg>
+      `
+      jobTab.appendChild(flexDiv)
+
+      const jobContent = document.createElement('div')
+      jobContent.className = "job-tab-content"
+      jobTab.appendChild(jobContent)
+
+      block.parentNode.insertBefore(jobTab, block)
+      block.remove()
+
+      let sibling = jobTab.nextElementSibling
+      const siblingsToMove = []
+      while (sibling && !['H3', 'H2'].includes(sibling.tagName)) {
+        siblingsToMove.push(sibling)
+        sibling = sibling.nextElementSibling
+      }
+
+      siblingsToMove.forEach(el => jobContent.appendChild(el))
+    }
+
+    Array.from(document.querySelectorAll("h3")).forEach(makeBlock)
+
+    return dom.serialize()
+  })
+
   ty.addShortcode("completeRoute", (obj) => {
     const urlParts = obj.url.split("/")
 
@@ -271,7 +315,8 @@ module.exports = function (ty) {
       referenceMenu.data.forEach(referenceSubmenu => {
         docs.forEach(doc => {
           const url = doc.url.replace("/docs/", "")
-          const urlParts = url.split("/")
+          let urlParts = url.split("/")
+          urlParts = urlParts.filter((ele) => ele !== "")
 
           if (doc.inputPath.split('/').includes(referenceSubmenu)) {
             if (urlParts.length === 1 && urlParts[0] !== "") {

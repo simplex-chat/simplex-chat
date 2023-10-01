@@ -42,7 +42,7 @@ fun ChatPreviewView(
   val cInfo = chat.chatInfo
 
   @Composable
-  fun groupInactiveIcon() {
+  fun inactiveIcon() {
     Icon(
       painterResource(MR.images.ic_cancel_filled),
       stringResource(MR.strings.icon_descr_group_inactive),
@@ -53,13 +53,19 @@ fun ChatPreviewView(
 
   @Composable
   fun chatPreviewImageOverlayIcon() {
-    if (cInfo is ChatInfo.Group) {
-      when (cInfo.groupInfo.membership.memberStatus) {
-        GroupMemberStatus.MemLeft -> groupInactiveIcon()
-        GroupMemberStatus.MemRemoved -> groupInactiveIcon()
-        GroupMemberStatus.MemGroupDeleted -> groupInactiveIcon()
-        else -> {}
+    when (cInfo) {
+      is ChatInfo.Direct ->
+        if (!cInfo.contact.active) {
+          inactiveIcon()
+        }
+      is ChatInfo.Group ->
+        when (cInfo.groupInfo.membership.memberStatus) {
+          GroupMemberStatus.MemLeft -> inactiveIcon()
+          GroupMemberStatus.MemRemoved -> inactiveIcon()
+          GroupMemberStatus.MemGroupDeleted -> inactiveIcon()
+          else -> {}
       }
+      else -> {}
     }
   }
 
@@ -125,7 +131,7 @@ fun ChatPreviewView(
           if (cInfo.contact.verified) {
             VerifiedIcon()
           }
-          chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else MaterialTheme.colors.secondary)
+          chatPreviewTitleText()
         }
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
@@ -172,7 +178,9 @@ fun ChatPreviewView(
     } else {
       when (cInfo) {
         is ChatInfo.Direct ->
-          if (!cInfo.ready) {
+          if (cInfo.contact.nextSendGrpInv) {
+            Text(stringResource(MR.strings.member_contact_send_direct_message), color = MaterialTheme.colors.secondary)
+          } else if (!cInfo.ready && cInfo.contact.active) {
             Text(stringResource(MR.strings.contact_connection_pending), color = MaterialTheme.colors.secondary)
           }
         is ChatInfo.Group ->
@@ -189,28 +197,32 @@ fun ChatPreviewView(
   @Composable
   fun chatStatusImage() {
     if (cInfo is ChatInfo.Direct) {
-      val descr = contactNetworkStatus?.statusString
-      when (contactNetworkStatus) {
-        is NetworkStatus.Connected ->
-          IncognitoIcon(chat.chatInfo.incognito)
+      if (cInfo.contact.active) {
+        val descr = contactNetworkStatus?.statusString
+        when (contactNetworkStatus) {
+          is NetworkStatus.Connected ->
+            IncognitoIcon(chat.chatInfo.incognito)
 
-        is NetworkStatus.Error ->
-          Icon(
-            painterResource(MR.images.ic_error),
-            contentDescription = descr,
-            tint = MaterialTheme.colors.secondary,
-            modifier = Modifier
-              .size(19.dp)
-          )
+          is NetworkStatus.Error ->
+            Icon(
+              painterResource(MR.images.ic_error),
+              contentDescription = descr,
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier
+                .size(19.dp)
+            )
 
-        else ->
-          CircularProgressIndicator(
-            Modifier
-              .padding(horizontal = 2.dp)
-              .size(15.dp),
-            color = MaterialTheme.colors.secondary,
-            strokeWidth = 1.5.dp
-          )
+          else ->
+            CircularProgressIndicator(
+              Modifier
+                .padding(horizontal = 2.dp)
+                .size(15.dp),
+              color = MaterialTheme.colors.secondary,
+              strokeWidth = 1.5.dp
+            )
+        }
+      } else {
+        IncognitoIcon(chat.chatInfo.incognito)
       }
     } else {
       IncognitoIcon(chat.chatInfo.incognito)

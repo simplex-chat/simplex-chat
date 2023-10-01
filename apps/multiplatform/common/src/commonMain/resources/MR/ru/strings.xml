@@ -343,14 +343,14 @@
     <string name="one_time_link">Одноразовая ссылка</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
-    <string name="your_simplex_contact_address">Ваш адрес SimpleX</string>
-    <string name="database_passphrase_and_export">Пароль и экспорт базы</string>
+    <string name="your_simplex_contact_address">Ваш SimpleX адрес</string>
+    <string name="database_passphrase_and_export">База данных</string>
     <string name="about_simplex_chat">Информация о SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
     <string name="markdown_in_messages">Форматирование сообщений</string>
-    <string name="chat_with_the_founder">Отправьте вопросы и идеи</string>
-    <string name="send_us_an_email">Отправить email</string>
+    <string name="chat_with_the_founder">Вопросы и предложения</string>
+    <string name="send_us_an_email">Написать нам письмо</string>
     <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
@@ -403,7 +403,8 @@
     <string name="network_use_onion_hosts_required">Обязательно</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion хосты используются, если возможно.</string>
     <string name="network_use_onion_hosts_no_desc">Onion хосты не используются.</string>
-    <string name="network_use_onion_hosts_required_desc">Подключаться только к onion хостам.</string>
+    <string name="network_use_onion_hosts_required_desc">Подключаться только к onion хостам.
+\nОбратите внимание: Вы не сможете соединиться с серверами, у которых нет .onion адреса.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion хосты используются, если возможно.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion хосты не используются.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Подключаться только к onion хостам.</string>
@@ -862,11 +863,11 @@
     <string name="chat_preferences_always">всегда</string>
     <string name="chat_preferences_on">да</string>
     <string name="chat_preferences_off">нет</string>
-    <string name="chat_preferences">Предпочтения</string>
+    <string name="chat_preferences">Настройки чатов</string>
     <string name="contact_preferences">Предпочтения контакта</string>
     <string name="group_preferences">Предпочтения группы</string>
     <string name="set_group_preferences">Предпочтения группы</string>
-    <string name="your_preferences">Ваши предпочтения</string>
+    <string name="your_preferences">Настройки чатов</string>
     <string name="direct_messages">Прямые сообщения</string>
     <string name="full_deletion">Удаление для всех</string>
     <string name="voice_messages">Голосовые сообщения</string>
@@ -958,7 +959,7 @@
     <string name="allow_disappearing_messages_only_if">Разрешить исчезающие сообщения, только если Ваш контакт разрешает их Вам.</string>
     <string name="prohibit_sending_disappearing">Запретить посылать исчезающие сообщения.</string>
     <string name="group_members_can_send_disappearing">Члены группы могут посылать исчезающие сообщения.</string>
-    <string name="whats_new">Новые функции</string>
+    <string name="whats_new">Что нового</string>
     <string name="new_in_version">Новое в %s</string>
     <string name="v4_2_security_assessment">Аудит безопасности</string>
     <string name="v4_2_security_assessment_desc">Безопасность SimpleX Chat была проверена Trail of Bits.</string>
@@ -1000,7 +1001,7 @@
     <string name="users_delete_data_only">Только локальные данные профиля</string>
     <string name="messages_section_title">Сообщения</string>
     <string name="smp_servers_per_user">Серверы для новых соединений Вашего текущего профиля чата</string>
-    <string name="your_chat_profiles">Ваши профили чата</string>
+    <string name="your_chat_profiles">Ваши профили</string>
     <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
     <string name="app_version_code">Сборка приложения: %s</string>
     <string name="app_version_name">Версия приложения: v%s</string>
@@ -1049,7 +1050,7 @@
     <string name="smp_save_servers_question">Сохранить серверы\?</string>
     <string name="should_be_at_least_one_profile">Должен быть хотя бы один профиль пользователя.</string>
     <string name="should_be_at_least_one_visible_profile">Должен быть хотя бы один открытый профиль пользователя.</string>
-    <string name="to_reveal_profile_enter_password">Чтобы показать Ваш скрытый профиль, введите пароль в поле поиска на странице Ваши профили чата.</string>
+    <string name="to_reveal_profile_enter_password">Чтобы показать Ваш скрытый профиль, введите пароль в поле поиска на странице Ваши профили.</string>
     <string name="user_unmute">Уведомлять</string>
     <string name="group_welcome_title">Приветственное сообщение</string>
     <string name="confirm_password">Подтвердить пароль</string>
@@ -1082,10 +1083,10 @@
     <string name="v4_6_audio_video_calls_descr">Поддержка bluetooth и другие улучшения.</string>
     <string name="save_welcome_message_question">Сохранить приветственное сообщение\?</string>
     <string name="v4_6_group_welcome_message_descr">Установить сообщение для новых членов группы!</string>
-    <string name="tap_to_activate_profile">Нажмите, чтобы сделать профиль активным.</string>
-    <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="tap_to_activate_profile">Нажмите на профиль, чтобы переключиться на него.</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям - добавьте переводы через Weblate!</string>
     <string name="you_will_still_receive_calls_and_ntfs">Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
-    <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть профиль или выключить уведомления - подержите, чтобы увидеть меню.</string>
+    <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть или отключить уведомления профиля - нажмите и удерживайте профиль, чтобы открыть меню.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Изображение будет принято когда Ваш контакт его загрузит.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Файл будет принят когда Ваш контакт загрузит его.</string>
     <string name="database_upgrade">Обновление базы данных</string>
@@ -1362,7 +1363,7 @@
     <string name="receipts_section_description">Установки для Вашего активного профиля</string>
     <string name="receipts_contacts_override_disabled">Отправка отчётов о доставке выключена для %d контактов.</string>
     <string name="sync_connection_force_desc">Шифрование работает, и новое соглашение не требуется. Это может привести к ошибкам соединения!</string>
-    <string name="v5_2_message_delivery_receipts_descr">Вторая галочка - знать, что доставлено! ✅</string>
+    <string name="v5_2_message_delivery_receipts_descr">Вторая галочка, когда сообщение доставлено! ✅</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Вы можете включить их позже в настройках Конфиденциальности.</string>
     <string name="error_aborting_address_change">Ошибка при прекращении изменения адреса</string>
     <string name="abort_switch_receiving_address_confirm">Прекратить</string>
@@ -1396,7 +1397,7 @@
     <string name="fix_connection_not_supported_by_contact">Починка не поддерживается контактом.</string>
     <string name="fix_connection_not_supported_by_group_member">Починка не поддерживается членом группы.</string>
     <string name="renegotiate_encryption">Пересогласовать шифрование</string>
-    <string name="v5_2_favourites_filter">Быстро найти чаты</string>
+    <string name="v5_2_favourites_filter">Быстрый поиск чатов</string>
     <string name="v5_2_message_delivery_receipts">Отчеты о доставке сообщений!</string>
     <string name="v5_2_more_things">Еще несколько изменений</string>
     <string name="delivery_receipts_title">Отчёты о доставке!</string>
@@ -1458,4 +1459,30 @@
     <string name="connect_use_current_profile">Использовать активный профиль</string>
     <string name="connect_use_new_incognito_profile">Использовать новый Инкогнито профиль</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранен в настройках.</string>
+    <string name="v5_3_encrypt_local_files">Шифруйте сохраненные файлы и медиа</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS прокси. Звонки и картинки ссылок используют прямое соединение.]]></string>
+    <string name="encrypt_local_files">Шифровать локальные файлы</string>
+    <string name="v5_3_new_desktop_app">Приложение для компьютера!</string>
+    <string name="v5_3_new_interface_languages">6 новых языков интерфейса</string>
+    <string name="v5_3_encrypt_local_files_descr">Приложение шифрует новые локальные файлы (кроме видео).</string>
+    <string name="you_can_change_it_later">Случайный пароль хранится в настройках как открытый текст.
+\nВы можете изменить его позже.</string>
+    <string name="v5_3_discover_join_groups">Найдите и вступите в группы</string>
+    <string name="database_encryption_will_be_updated_in_settings">Пароль шифрования базы данных будет обновлён и сохранён в настройках.</string>
+    <string name="remove_passphrase_from_settings">Удалить пароль из настроек\?</string>
+    <string name="use_random_passphrase">Использовать случайный пароль</string>
+    <string name="save_passphrase_in_settings">Сохранить пароль в настройках</string>
+    <string name="v5_3_simpler_incognito_mode">Упрощенный режим Инкогнито</string>
+    <string name="setup_database_passphrase">Установить пароль базы данных</string>
+    <string name="set_database_passphrase">Установить пароль базы данных</string>
+    <string name="open_database_folder">Открыть директорию базы данных</string>
+    <string name="v5_3_new_interface_languages_descr">Арабский, болгарский, финский, иврит, тайский и украинский - благодаря пользователям и Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Создайте новый профиль в приложении для компьютера. 💻</string>
+    <string name="passphrase_will_be_saved_in_settings">Пароль будет сохранён в настройках как простой текст после того, как вы его измените или перезапустите приложение.</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Установите режим Инкогнито при соединении.</string>
+    <string name="v5_3_discover_join_groups_descr">- соединиться с каталогом групп (BETA)!
+\n- отчеты о доставке (до 20 членов).
+\n- быстрее и стабильнее.</string>
+    <string name="settings_is_storing_in_clear_text">Пароль хранится в настройках, как открытый текст.</string>
 </resources>

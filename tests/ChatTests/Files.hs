@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+
 module ChatTests.Files where
 
 import ChatClient
@@ -29,6 +31,7 @@ chatFileTests :: SpecWith FilePath
 chatFileTests = do
   describe "sending and receiving files" $ do
     describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
+    describe "send file, receive and locally encrypt file" $ fileTestMatrix2 runTestFileTransferEncrypted
     it "send and receive file inline (without accepting)" testInlineFileTransfer
     xit'' "accept inline file transfer, sender cancels during transfer" testAcceptInlineFileSndCancelDuringTransfer
     it "send and receive small file inline (default config)" testSmallInlineFileTransfer
@@ -94,6 +97,37 @@ runTestFileTransfer alice bob = do
   src <- B.readFile "./tests/fixtures/test.pdf"
   dest <- B.readFile "./tests/tmp/test.pdf"
   dest `shouldBe` src
+
+runTestFileTransferEncrypted :: HasCallStack => TestCC -> TestCC -> IO ()
+runTestFileTransferEncrypted alice bob = do
+  connectUsers alice bob
+  alice #> "/f @bob ./tests/fixtures/test.pdf"
+  alice <## "use /fc 1 to cancel sending"
+  bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  bob ##> "/fr 1 encrypt=on ./tests/tmp"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.pdf"
+  Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine bob
+  concurrently_
+    (bob <## "started receiving file 1 (test.pdf) from alice")
+    (alice <## "started sending file 1 (test.pdf) to bob")
+
+  concurrentlyN_
+    [ do
+        bob #> "@alice receiving here..."
+        -- uncomment this and below to test encryption error in encryptFile
+        -- bob <## "cannot write file ./tests/tmp/test.pdf: test error, received file not encrypted"
+        bob <## "completed receiving file 1 (test.pdf) from alice",
+      alice
+        <### [ WithTime "bob> receiving here...",
+               "completed sending file 1 (test.pdf) to bob"
+             ]
+    ]
+  src <- B.readFile "./tests/fixtures/test.pdf"
+  -- dest <- B.readFile "./tests/tmp/test.pdf"
+  -- dest `shouldBe` src
+  Right dest <- chatReadFile "./tests/tmp/test.pdf" (strEncode key) (strEncode nonce)
+  LB.toStrict dest `shouldBe` src
 
 testInlineFileTransfer :: HasCallStack => FilePath -> IO ()
 testInlineFileTransfer =
@@ -541,6 +575,7 @@ testSendImage =
       -- deleting contact without files folder set should not remove file
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
+      alice <## "bob (Bob) deleted contact with you"
       fileExists <- doesFileExist "./tests/tmp/test.jpg"
       fileExists `shouldBe` True
 
@@ -603,6 +638,7 @@ testFilesFoldersSendImage =
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
+        alice <## "bob (Bob) deleted contact with you"
 
 testFilesFoldersImageSndDelete :: HasCallStack => FilePath -> IO ()
 testFilesFoldersImageSndDelete =
@@ -626,6 +662,7 @@ testFilesFoldersImageSndDelete =
       checkActionDeletesFile "./tests/tmp/alice_app_files/test_1MB.pdf" $ do
         alice ##> "/d bob"
         alice <## "bob: contact is deleted"
+        bob <## "alice (Alice) deleted contact with you"
         bob ##> "/fs 1"
         bob <##. "receiving file 1 (test_1MB.pdf) progress"
       -- deleting contact should remove cancelled file
@@ -655,7 +692,10 @@ testFilesFoldersImageRcvDelete =
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
-        alice <## "bob cancelled receiving file 1 (test.jpg)"
+        alice
+          <### [ "bob (Bob) deleted contact with you",
+                 "bob cancelled receiving file 1 (test.jpg)"
+               ]
         alice ##> "/fs 1"
         alice <## "sending file 1 (test.jpg) cancelled: bob"
         alice <## "file transfer cancelled"

@@ -54,6 +54,7 @@ fun ChatItemView(
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
+  openDirectChat: (Long) -> Unit,
   updateContactStats: (Contact) -> Unit,
   updateMemberStats: (GroupInfo, GroupMember) -> Unit,
   syncContactConnection: (Contact) -> Unit,
@@ -63,6 +64,7 @@ fun ChatItemView(
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   getConnectedMemberNames: (() -> List<String>)? = null,
+  developerTools: Boolean,
 ) {
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
@@ -342,12 +344,18 @@ fun ChatItemView(
           is CIContent.RcvDeleted -> DeletedItem()
           is CIContent.SndCall -> CallItem(c.status, c.duration)
           is CIContent.RcvCall -> CallItem(c.status, c.duration)
-          is CIContent.RcvIntegrityError -> IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL)
+          is CIContent.RcvIntegrityError -> if (developerTools) {
+            IntegrityErrorItemView(c.msgError, cItem, cInfo.timedMessagesTTL)
+          } else {
+            Box(Modifier.size(0.dp)) {}
+          }
           is CIContent.RcvDecryptionError -> CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
           is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
           is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
+          is CIContent.RcvDirectEventContent -> EventItemView()
           is CIContent.RcvGroupEventContent -> when (c.rcvGroupEvent) {
             is RcvGroupEvent.MemberConnected -> CIEventView(membersConnectedItemText())
+            is RcvGroupEvent.MemberCreatedContact -> CIMemberCreatedContactView(cItem, openDirectChat)
             else -> EventItemView()
           }
           is CIContent.SndGroupEventContent -> EventItemView()
@@ -572,6 +580,7 @@ fun PreviewChatItemView() {
       acceptCall = { _ -> },
       scrollToItem = {},
       acceptFeature = { _, _, _ -> },
+      openDirectChat = { _ -> },
       updateContactStats = { },
       updateMemberStats = { _, _ -> },
       syncContactConnection = { },
@@ -580,6 +589,7 @@ fun PreviewChatItemView() {
       findModelMember = { null },
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
+      developerTools = false,
     )
   }
 }
@@ -601,6 +611,7 @@ fun PreviewChatItemViewDeletedContent() {
       acceptCall = { _ -> },
       scrollToItem = {},
       acceptFeature = { _, _, _ -> },
+      openDirectChat = { _ -> },
       updateContactStats = { },
       updateMemberStats = { _, _ -> },
       syncContactConnection = { },
@@ -609,6 +620,7 @@ fun PreviewChatItemViewDeletedContent() {
       findModelMember = { null },
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
+      developerTools = false,
     )
   }
 }

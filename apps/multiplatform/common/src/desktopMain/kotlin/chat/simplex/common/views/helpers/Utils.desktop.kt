@@ -132,9 +132,8 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   } else null
 }
 
-actual fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): VideoPlayerInterface.PreviewAndDuration {
-  // LALAL
-  return VideoPlayerInterface.PreviewAndDuration(preview = null, timestamp = 0L, duration = 0L)
+actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): VideoPlayerInterface.PreviewAndDuration {
+  return VideoPlayer.getBitmapFromVideo(null, uri)
 }
 
 @OptIn(ExperimentalEncodingApi::class)

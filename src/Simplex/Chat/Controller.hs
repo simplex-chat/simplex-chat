@@ -46,7 +46,7 @@ import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
@@ -54,8 +54,9 @@ import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -66,7 +67,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, 
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (allFinally, catchAllErrors, tryAllErrors, (<$$>))
+import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
@@ -248,7 +249,7 @@ data ChatCommand
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
-  | APIDeleteChat ChatRef
+  | APIDeleteChat ChatRef Bool -- `notify` flag is only applied to direct chats
   | APIClearChat ChatRef
   | APIAcceptContact IncognitoEnabled Int64
   | APIRejectContact Int64
@@ -491,6 +492,7 @@ data ChatResponse
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {user :: User, contact :: Contact}
+  | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {user :: User, connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted {user :: User}
@@ -560,6 +562,7 @@ data ChatResponse
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRMemberContactConnected {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSubError {user :: User, groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {user :: User, groupInfo :: GroupInfo}
@@ -886,6 +889,7 @@ data ChatErrorType
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
+  | CEContactNotActive {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
   | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
@@ -966,6 +970,15 @@ instance ToJSON SQLiteError where
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
 
+data ArchiveError
+  = AEImport {chatError :: ChatError}
+  | AEImportFile {file :: String, chatError :: ChatError}
+  deriving (Show, Exception, Generic)
+
+instance ToJSON ArchiveError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
+
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
@@ -1005,11 +1018,34 @@ unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
   where
     unset a' = if a == a' then ActiveNone else a'
 
-data ArchiveError
-  = AEImport {chatError :: ChatError}
-  | AEImportFile {file :: String, chatError :: ChatError}
-  deriving (Show, Exception, Generic)
+toView :: ChatMonad' m => ChatResponse -> m ()
+toView event = do
+  q <- asks outputQ
+  atomically $ writeTBQueue q (Nothing, event)
 
-instance ToJSON ArchiveError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
+withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
+withStore' action = withStore $ liftIO . action
+
+withStore :: ChatMonad m => (DB.Connection -> ExceptT StoreError IO a) -> m a
+withStore = withStoreCtx Nothing
+
+withStoreCtx' :: ChatMonad m => Maybe String -> (DB.Connection -> IO a) -> m a
+withStoreCtx' ctx_ action = withStoreCtx ctx_ $ liftIO . action
+
+withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreError IO a) -> m a
+withStoreCtx ctx_ action = do
+  ChatController {chatStore} <- ask
+  liftEitherError ChatErrorStore $ case ctx_ of
+    Nothing -> withTransaction chatStore (runExceptT . action) `catch` handleInternal ""
+    -- uncomment to debug store performance
+    -- Just ctx -> do
+    --   t1 <- liftIO getCurrentTime
+    --   putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
+    --   r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
+    --   t2 <- liftIO getCurrentTime
+    --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
+    --   pure r
+    Just _ -> withTransaction chatStore (runExceptT . action) `catch` handleInternal ""
+  where
+    handleInternal :: String -> SomeException -> IO (Either StoreError a)
+    handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr

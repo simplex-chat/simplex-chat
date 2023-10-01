@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Bots.BroadcastTests where
@@ -33,7 +34,7 @@ broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadc
 mkBotOpts :: FilePath -> [KnownContact] -> BroadcastBotOpts
 mkBotOpts tmp publishers =
   BroadcastBotOpts
-    { coreOptions = (coreOptions (testOpts :: ChatOpts)) {dbFilePrefix = tmp </> botDbPrefix},
+    { coreOptions = testOpts.coreOptions {dbFilePrefix = tmp </> botDbPrefix},
       publishers,
       welcomeMessage = defaultWelcomeMessage publishers,
       prohibitedMessage = defaultWelcomeMessage publishers

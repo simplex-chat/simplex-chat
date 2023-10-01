@@ -98,7 +98,7 @@
     "no-federated": "Nie - sfederowany",
     "comparison-section-list-point-1": "Zazwyczaj na podstawie numeru telefonu, w niektórych przypadkach na podstawie nazwy użytkownika",
     "comparison-section-list-point-2": "Adresy oparte na DNS",
-    "comparison-section-list-point-5": "Nie chroni metadanych użytkowników",
+    "comparison-section-list-point-5": "Nie chroni prywatności metadanych użytkowników",
     "see-here": "zobacz tutaj",
     "simplex-unique-1-title": "Masz pełną prywatność",
     "hero-overlay-card-1-p-3": "Ty określasz, którego serwera (serwerów) użyć do odbierania wiadomości, Twoje kontakty &mdash; serwery, których używasz do wysyłania do nich wiadomości. Każda rozmowa prawdopodobnie będzie korzystać z dwóch różnych serwerów.",
@@ -159,7 +159,7 @@
     "simplex-unique-card-4-p-2": "Możesz <strong>używać SimpleX z własnymi serwerami</strong> lub z serwerami dostarczonymi przez nas &mdash; i nadal łączyć się z dowolnym użytkownikiem.",
     "we-invite-you-to-join-the-conversation": "Zapraszamy do udziału w rozmowie",
     "enter-your-email-address": "Wpisz swój adres e-mail",
-    "get-simplex": "Pobierz SimpleX",
+    "get-simplex": "Pobierz SimpleX <a href=\"/downloads\">desktop app</a>",
     "why-simplex-is": "Dlaczego SimpleX jest",
     "join": "Dołącz do",
     "join-us-on-GitHub": "Dołącz do nas na GitHubie",
@@ -208,7 +208,7 @@
     "protocol-2-text": "XMPP, Matrix",
     "protocol-3-text": "Protokoły sieci P2P",
     "comparison-section-list-point-6": "Podczas gdy sieci P2P są rozproszone, nie są sfederowane - działają jako jedna sieć",
-    "comparison-section-list-point-4": "Jeśli bezpieczeństwo serwerów operatora zostało naruszone",
+    "comparison-section-list-point-4": "Jeśli bezpieczeństwo serwerów operatora zostało naruszone. Zweryfikuj kody bezpieczeństwa w Signalu lub innej aplikacji aby to złagodzić",
     "comparison-section-list-point-7": "Sieci P2P albo mają centralny organ, albo cała sieć może zostać skompromitowana",
     "guide-dropdown-1": "Szybki start",
     "guide-dropdown-2": "Wysyłanie wiadomości",
@@ -242,5 +242,6 @@
     "signing-key-fingerprint": "Odcisk klucza podpisu (SHA-256)",
     "f-droid-org-repo": "Repo F-Droid.org",
     "stable-versions-built-by-f-droid-org": "Wersje stabilne zbudowane przez F-Droid.org",
-    "releases-to-this-repo-are-done-1-2-days-later": "Wydania na tym repo są 1-2 dni później"
+    "releases-to-this-repo-are-done-1-2-days-later": "Wydania na tym repo są 1-2 dni później",
+    "comparison-section-list-point-4a": "Przekaźniki SimpleX nie mogą skompromitować szyfrowania e2e. Zweryfikuj kody bezpieczeństwa aby złagodzić atak na kanał pozapasmowy"
 }
