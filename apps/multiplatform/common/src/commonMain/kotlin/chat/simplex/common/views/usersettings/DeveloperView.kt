@@ -34,6 +34,17 @@ fun DeveloperView(
       ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential), showCustomModal { it, close -> TerminalView(it, close) })}
       SettingsPreferenceItem(painterResource(MR.images.ic_drive_folder_upload), stringResource(MR.strings.confirm_database_upgrades), m.controller.appPrefs.confirmDBUpgrades)
       SettingsPreferenceItem(painterResource(MR.images.ic_code), stringResource(MR.strings.show_developer_options), developerTools)
+      if (appPlatform.isDesktop && devTools.value) {
+        TerminalAlwaysVisibleItem(m.controller.appPrefs.terminalAlwaysVisible) { checked ->
+          if (checked) {
+            withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential)) {
+              m.controller.appPrefs.terminalAlwaysVisible.set(true)
+            }
+          } else {
+            m.controller.appPrefs.terminalAlwaysVisible.set(false)
+          }
+        }
+      }
     }
     SectionTextFooter(
       generalGetString(if (devTools.value) MR.strings.show_dev_options else MR.strings.hide_dev_options) + " " +
