@@ -5275,10 +5275,13 @@ getCreateActiveUser st testView = do
       T.unpack $ localDisplayName <> if T.null fullName || localDisplayName == fullName then "" else " (" <> fullName <> ")"
     getContactName :: IO ContactName
     getContactName = do
-      displayName <- getWithPrompt "display name (no spaces)"
-      if null displayName || isJust (find (== ' ') displayName)
-        then putStrLn "display name has space(s), choose another one" >> getContactName
-        else pure $ T.pack displayName
+      displayName <- getWithPrompt "display name"
+      let validName = mkValidName displayName
+      if
+        | null displayName -> putStrLn "display name cannot be empty" >> getContactName
+        | null validName -> putStrLn "display name is invalid, please choose another" >> getContactName
+        | displayName /= validName -> putStrLn ("display name is invalid, you could use this one: " <> validName) >> getContactName
+        | otherwise -> pure $ T.pack displayName
     getWithPrompt :: String -> IO String
     getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
 
