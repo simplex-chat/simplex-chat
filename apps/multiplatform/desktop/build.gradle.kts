@@ -63,8 +63,8 @@ compose {
         windows {
           packageName = "SimpleX"
           iconFile.set(project.file("src/jvmMain/resources/distribute/simplex.ico"))
-          console = true
-          perUserInstall = true
+          console = false
+          perUserInstall = false
           dirChooser = true
         }
         macOS {
@@ -119,9 +119,9 @@ cmake {
     /*machines.customMachines.register("linux-aarch64") {
       toolchainFile.set(project.file("$cppPath/toolchains/aarch64-linux-gnu-gcc.cmake"))
     }*/
-    machines.customMachines.register("win-amd64") {
+    /*machines.customMachines.register("win-amd64") {
       toolchainFile.set(project.file("$cppPath/toolchains/x86_64-windows-mingw32-gcc.cmake"))
-    }
+    }*/
     if (machines.host.name == "mac-amd64") {
       machines.customMachines.register("mac-amd64") {
         toolchainFile.set(project.file("$cppPath/toolchains/x86_64-mac-apple-darwin-gcc.cmake"))
@@ -139,6 +139,9 @@ cmake {
     val main by creating {
       cmakeLists.set(file("$cppPath/desktop/CMakeLists.txt"))
       targetMachines.addAll(compileMachineTargets.toSet())
+      if (machines.host.name.contains("win")) {
+        cmakeArgs.add("-G MinGW Makefiles")
+      }
     }
   }
 }
@@ -153,102 +156,106 @@ afterEvaluate {
   tasks.create("cmakeBuildAndCopy") {
     dependsOn("cmakeBuild")
     val copyDetails = mutableMapOf<String, ArrayList<FileCopyDetails>>()
-    copy {
-      from("${project(":desktop").buildDir}/cmake/main/linux-amd64", "$cppPath/desktop/libs/linux-x86_64", "$cppPath/desktop/libs/linux-x86_64/deps")
-      into("src/jvmMain/resources/libs/linux-x86_64")
-      include("*.so*")
-      eachFile {
-        path = name
-      }
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    }
-    copy {
-      val destinationDir = "src/jvmMain/resources/libs/linux-x86_64/vlc"
-      from("$cppPath/desktop/libs/linux-x86_64/deps/vlc")
-      into(destinationDir)
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-      copyIfNeeded(destinationDir, copyDetails)
-    }
-    copy {
-      from("${project(":desktop").buildDir}/cmake/main/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64/deps")
-      into("src/jvmMain/resources/libs/linux-aarch64")
-      include("*.so*")
-      eachFile {
-        path = name
-      }
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    }
-    copy {
-      val destinationDir = "src/jvmMain/resources/libs/linux-aarch64/vlc"
-      from("$cppPath/desktop/libs/linux-aarch64/deps/vlc")
-      into(destinationDir)
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-      copyIfNeeded(destinationDir, copyDetails)
-    }
-    copy {
-      from("${project(":desktop").buildDir}/cmake/main/win-amd64", "$cppPath/desktop/libs/windows-x86_64", "$cppPath/desktop/libs/windows-x86_64/deps")
-      into("src/jvmMain/resources/libs/windows-x86_64")
-      include("*.dll")
-      eachFile {
-        path = name
-      }
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    }
-    copy {
-      val destinationDir = "src/jvmMain/resources/libs/windows-x86_64/vlc"
-      from("$cppPath/desktop/libs/windows-x86_64/deps/vlc")
-      into(destinationDir)
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-      copyIfNeeded(destinationDir, copyDetails)
-    }
-    copy {
-      from("${project(":desktop").buildDir}/cmake/main/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64/deps")
-      into("src/jvmMain/resources/libs/mac-x86_64")
-      include("*.dylib")
-      eachFile {
-        path = name
-      }
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    }
-    copy {
-      val destinationDir = "src/jvmMain/resources/libs/mac-x86_64/vlc"
-      from("$cppPath/desktop/libs/mac-x86_64/deps/vlc")
-      into(destinationDir)
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-      copyIfNeeded(destinationDir, copyDetails)
-    }
-    copy {
-      from("${project(":desktop").buildDir}/cmake/main/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64/deps")
-      into("src/jvmMain/resources/libs/mac-aarch64")
-      include("*.dylib")
-      eachFile {
-        path = name
-      }
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    }
-    copy {
-      val destinationDir = "src/jvmMain/resources/libs/mac-aarch64/vlc"
-      from("$cppPath/desktop/libs/mac-aarch64/deps/vlc")
-      into(destinationDir)
-      includeEmptyDirs = false
-      duplicatesStrategy = DuplicatesStrategy.INCLUDE
-      copyIfNeeded(destinationDir, copyDetails)
-    }
     doLast {
-      copyDetails.forEach { (destinationDir, details) ->
-        details.forEach { detail ->
-          val target = File(projectDir.absolutePath + File.separator + destinationDir + File.separator + detail.path)
-          if (target.exists()) {
-            target.setLastModified(detail.lastModified)
+      copy {
+        from("${project(":desktop").buildDir}/cmake/main/linux-amd64", "$cppPath/desktop/libs/linux-x86_64", "$cppPath/desktop/libs/linux-x86_64/deps")
+        into("src/jvmMain/resources/libs/linux-x86_64")
+        include("*.so*")
+        eachFile {
+          path = name
+        }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
+        val destinationDir = "src/jvmMain/resources/libs/linux-x86_64/vlc"
+        from("$cppPath/desktop/libs/linux-x86_64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
+      }
+      copy {
+        from("${project(":desktop").buildDir}/cmake/main/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64", "$cppPath/desktop/libs/linux-aarch64/deps")
+        into("src/jvmMain/resources/libs/linux-aarch64")
+        include("*.so*")
+        eachFile {
+          path = name
+        }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
+        val destinationDir = "src/jvmMain/resources/libs/linux-aarch64/vlc"
+        from("$cppPath/desktop/libs/linux-aarch64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
+      }
+      copy {
+        from("${project(":desktop").buildDir}/cmake/main/windows-amd64", "$cppPath/desktop/libs/windows-x86_64", "$cppPath/desktop/libs/windows-x86_64/deps")
+        into("src/jvmMain/resources/libs/windows-x86_64")
+        include("*.dll")
+        eachFile {
+          path = name
+        }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
+        val destinationDir = "src/jvmMain/resources/libs/windows-x86_64/vlc"
+        from("$cppPath/desktop/libs/windows-x86_64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
+      }
+      copy {
+        from("${project(":desktop").buildDir}/cmake/main/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64", "$cppPath/desktop/libs/mac-x86_64/deps")
+        into("src/jvmMain/resources/libs/mac-x86_64")
+        include("*.dylib")
+        eachFile {
+          path = name
+        }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
+        val destinationDir = "src/jvmMain/resources/libs/mac-x86_64/vlc"
+        from("$cppPath/desktop/libs/mac-x86_64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
+      }
+      copy {
+        from("${project(":desktop").buildDir}/cmake/main/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64", "$cppPath/desktop/libs/mac-aarch64/deps")
+        into("src/jvmMain/resources/libs/mac-aarch64")
+        include("*.dylib")
+        eachFile {
+          path = name
+        }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+      copy {
+        val destinationDir = "src/jvmMain/resources/libs/mac-aarch64/vlc"
+        from("$cppPath/desktop/libs/mac-aarch64/deps/vlc")
+        into(destinationDir)
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        copyIfNeeded(destinationDir, copyDetails)
+      }
+    }
+    afterEvaluate {
+      doLast {
+        copyDetails.forEach { (destinationDir, details) ->
+          details.forEach { detail ->
+            val target = File(projectDir.absolutePath + File.separator + destinationDir + File.separator + detail.path)
+            if (target.exists()) {
+              target.setLastModified(detail.lastModified)
+            }
           }
         }
       }

@@ -1056,6 +1056,7 @@
   <string name="database_downgrade">Database downgrade</string>
   <string name="incompatible_database_version">Incompatible database version</string>
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
+  <string name="terminal_always_visible">Show console in new window</string>
   <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
   <string name="upgrade_and_open_chat">Upgrade and open chat</string>
   <string name="downgrade_and_open_chat">Downgrade and open chat</string>
@@ -1104,6 +1105,9 @@
   <string name="you_joined_this_group">You joined this group</string>
   <string name="you_rejected_group_invitation">You rejected group invitation</string>
   <string name="group_invitation_expired">Group invitation expired</string>
+
+  <!-- Direct event chat items -->
+  <string name="rcv_direct_event_contact_deleted">deleted contact</string>
 
   <!-- Group event chat items -->
   <string name="rcv_group_event_member_added">invited %1$s</string>

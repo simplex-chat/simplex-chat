@@ -629,6 +629,7 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     -- alice deletes contact, incognito profile is deleted
     alice ##> ("/d " <> bobIncognito)
     alice <## (bobIncognito <> ": contact is deleted")
+    bob <## (aliceIncognito <> " deleted contact with you")
     alice ##> "/contacts"
     alice <## "cath (Catherine)"
     alice `hasContactProfiles` ["alice", "cath"]
@@ -672,6 +673,7 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     -- delete contact, incognito profile is deleted
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
+    alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]
@@ -704,6 +706,7 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     -- delete contact, incognito profile is deleted
     alice ##> "/d bob"
     alice <## "bob: contact is deleted"
+    bob <## (aliceIncognitoBob <> " deleted contact with you")
     alice ##> "/contacts"
     (alice </)
     alice `hasContactProfiles` ["alice"]
@@ -1134,6 +1137,7 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     -- delete contact
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
+    alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
@@ -1196,6 +1200,7 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     -- delete contact
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
+    alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]

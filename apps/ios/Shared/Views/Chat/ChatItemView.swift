@@ -60,6 +60,7 @@ struct ChatItemContentView<Content: View>: View {
     var chatInfo: ChatInfo
     var chatItem: ChatItem
     var msgContentView: () -> Content
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     var body: some View {
         switch chatItem.content {
@@ -69,10 +70,16 @@ struct ChatItemContentView<Content: View>: View {
         case .rcvDeleted: deletedItemView()
         case let .sndCall(status, duration): callItemView(status, duration)
         case let .rcvCall(status, duration): callItemView(status, duration)
-        case let .rcvIntegrityError(msgError): IntegrityErrorItemView(msgError: msgError, chatItem: chatItem)
+        case let .rcvIntegrityError(msgError):
+            if developerTools {
+                IntegrityErrorItemView(msgError: msgError, chatItem: chatItem)
+            } else {
+                ZStack {}
+            }
         case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
+        case .rcvDirectEvent: eventItemView()
         case .rcvGroupEvent(.memberConnected): CIEventView(eventText: membersConnectedItemText)
         case .rcvGroupEvent(.memberCreatedContact): CIMemberCreatedContactView(chatItem: chatItem)
         case .rcvGroupEvent: eventItemView()

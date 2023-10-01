@@ -1373,6 +1373,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var activeConn: Connection
     public var viaGroup: Int64?
     public var contactUsed: Bool
+    public var contactStatus: ContactStatus
     public var chatSettings: ChatSettings
     public var userPreferences: Preferences
     public var mergedPreferences: ContactUserPreferences
@@ -1384,8 +1385,9 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn.connStatus == .ready } }
+    public var active: Bool { get { contactStatus == .active } }
     public var sendMsgEnabled: Bool { get {
-        (ready && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?? false))
+        (ready && active && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?? false))
         || nextSendGrpInv
     } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
@@ -1430,6 +1432,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         profile: LocalProfile.sampleData,
         activeConn: Connection.sampleData,
         contactUsed: true,
+        contactStatus: .active,
         chatSettings: ChatSettings.defaults,
         userPreferences: Preferences.sampleData,
         mergedPreferences: ContactUserPreferences.sampleData,
@@ -1437,6 +1440,11 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         updatedAt: .now,
         contactGrpInvSent: false
     )
+}
+
+public enum ContactStatus: String, Decodable {
+    case active = "active"
+    case deleted = "deleted"
 }
 
 public struct ContactRef: Decodable, Equatable {
@@ -2091,6 +2099,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvDecryptionError: return showNtfDir
         case .rcvGroupInvitation: return showNtfDir
         case .sndGroupInvitation: return showNtfDir
+        case .rcvDirectEvent: return false
         case .rcvGroupEvent(rcvGroupEvent: let rcvGroupEvent):
             switch rcvGroupEvent {
             case .groupUpdated: return false
@@ -2513,6 +2522,7 @@ public enum CIContent: Decodable, ItemContent {
     case rcvDecryptionError(msgDecryptError: MsgDecryptError, msgCount: UInt32)
     case rcvGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
+    case rcvDirectEvent(rcvDirectEvent: RcvDirectEvent)
     case rcvGroupEvent(rcvGroupEvent: RcvGroupEvent)
     case sndGroupEvent(sndGroupEvent: SndGroupEvent)
     case rcvConnEvent(rcvConnEvent: RcvConnEvent)
@@ -2542,6 +2552,7 @@ public enum CIContent: Decodable, ItemContent {
             case let .rcvDecryptionError(msgDecryptError, _): return msgDecryptError.text
             case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
             case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
+            case let .rcvDirectEvent(rcvDirectEvent): return rcvDirectEvent.text
             case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
             case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
             case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
@@ -3193,6 +3204,16 @@ public enum CIGroupInvitationStatus: String, Decodable {
     case accepted
     case rejected
     case expired
+}
+
+public enum RcvDirectEvent: Decodable {
+    case contactDeleted
+
+    var text: String {
+        switch self {
+        case .contactDeleted: return NSLocalizedString("deleted contact", comment: "rcv direct event chat item")
+        }
+    }
 }
 
 public enum RcvGroupEvent: Decodable {
