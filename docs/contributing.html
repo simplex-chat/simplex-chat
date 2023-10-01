@@ -798,12 +798,19 @@ window.addEventListener('scroll',changeHeaderBg);
 <p><code>master</code> - branch for beta version releases (GHC 9.6.2).</p>
 </li>
 <li>
-<p><code>master-android</code> - used to build beta Android core library with Nix (GHC 8.10.7).</p>
+<p><code>master-ghc8107</code> - branch for beta version releases (GHC 8.10.7).</p>
 </li>
 <li>
-<p><code>master-ios</code> - used to build beta iOS core library with Nix (GHC 8.10.7) – this branch should be the same as <code>master-android</code> except Nix configuration files.</p>
+<p><code>master-android</code> - used to build beta Android core library with Nix (GHC 8.10.7), same as <code>master-ghc8107</code></p>
+</li>
+<li>
+<p><code>master-ios</code> - used to build beta iOS core library with Nix (GHC 8.10.7).</p>
+</li>
+<li>
+<p><code>windows-ghc8107</code> - branch for windows core library build (GHC 8.10.7).</p>
 </li>
 </ul>
+<p><code>master-ios</code> and <code>windows-ghc8107</code> branches should be the same as <code>master-ghc8107</code> except Nix configuration files.</p>
 <p><strong>In simplexmq repo</strong></p>
 <ul>
 <li>
@@ -822,18 +829,24 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>If simplexmq repo was changed, to build mobile core libraries you need to merge its <code>master</code> branch into <code>master-ghc8107</code> branch.</p>
 </li>
 <li>
-<p>To build Android core library:</p>
+<p>To build core libraries for Android, iOS and windows:</p>
 </li>
 </ol>
 <ul>
-<li>merge <code>master</code> branch to <code>master-android</code> branch.</li>
+<li>merge <code>master</code> branch to <code>master-ghc8107</code> branch.</li>
+<li>update <code>simplexmq</code> commit in <code>master-ghc8107</code> branch to the commit in <code>master-ghc8107</code> branch (probably, when resolving merge conflicts).</li>
 <li>update code to be compatible with GHC 8.10.7 (see below).</li>
-<li>update <code>simplexmq</code> commit in <code>master-android</code> branch to the commit in <code>master-ghc8107</code> branch.</li>
 <li>push to GitHub.</li>
 </ul>
 <ol start="4">
 <li>
-<p>To build iOS core library, merge <code>master-android</code> branch to <code>master-ios</code> branch, and push to GitHub.</p>
+<p>To build Android core library, merge <code>master-ghc8107</code> branch to <code>master-android</code> branch, and push to GitHub.</p>
+</li>
+<li>
+<p>To build iOS core library, merge <code>master-ghc8107</code> branch to <code>master-ios</code> branch, and push to GitHub.</p>
+</li>
+<li>
+<p>To build windows core library, merge <code>master-ghc8107</code> branch to <code>windows-ghc8107</code> branch, and push to GitHub.</p>
 </li>
 <li>
 <p>To build Desktop and CLI apps, make tag in <code>master</code> branch, APK files should be attached to the release.</p>
@@ -844,12 +857,14 @@ window.addEventListener('scroll',changeHeaderBg);
 </ol>
 <ul>
 <li><code>master</code> to <code>stable</code></li>
-<li><code>master</code> to <code>master-android</code> (and compile/update code)</li>
-<li><code>master-android</code> to <code>master-ios</code></li>
+<li><code>master</code> to <code>master-ghc8107</code> (and compile/update code)</li>
+<li><code>master-ghc8107</code> to <code>master-android</code></li>
+<li><code>master-ghc8107</code> to <code>master-ios</code></li>
+<li><code>master-ghc8107</code> to <code>windows-ghc8107</code></li>
 <li><code>master-android</code> to <code>stable-android</code></li>
 <li><code>master-ios</code> to <code>stable-ios</code></li>
 </ul>
-<ol start="7">
+<ol start="9">
 <li>Independently, <code>master</code> branch of simplexmq repo should be merged to <code>stable</code> branch on stable releases.</li>
 </ol>
 <h2 id="differences-between-ghc-8107-and-ghc-962" tabindex="-1">Differences between GHC 8.10.7 and GHC 9.6.2</h2>
