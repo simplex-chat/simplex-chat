@@ -16,7 +16,6 @@ module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry, stateTVar)
-import qualified Control.Exception as E
 import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -351,11 +350,6 @@ execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processCha
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
-
-toView :: ChatMonad' m => ChatResponse -> m ()
-toView event = do
-  q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, event)
 
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
@@ -5336,33 +5330,6 @@ withAgent action =
   asks smpAgent
     >>= runExceptT . action
     >>= liftEither . first (`ChatErrorAgent` Nothing)
-
-withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
-withStore' action = withStore $ liftIO . action
-
-withStore :: ChatMonad m => (DB.Connection -> ExceptT StoreError IO a) -> m a
-withStore = withStoreCtx Nothing
-
-withStoreCtx' :: ChatMonad m => Maybe String -> (DB.Connection -> IO a) -> m a
-withStoreCtx' ctx_ action = withStoreCtx ctx_ $ liftIO . action
-
-withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreError IO a) -> m a
-withStoreCtx ctx_ action = do
-  ChatController {chatStore} <- ask
-  liftEitherError ChatErrorStore $ case ctx_ of
-    Nothing -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-    -- uncomment to debug store performance
-    -- Just ctx -> do
-    --   t1 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
-    --   r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
-    --   t2 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
-    --   pure r
-    Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-  where
-    handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
-    handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
