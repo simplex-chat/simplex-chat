@@ -56,5 +56,5 @@ actual fun ChatListNavLinkLayout(
       }
     }
   }
-  Divider(Modifier.padding(horizontal = 8.dp))
+  Divider()
 }

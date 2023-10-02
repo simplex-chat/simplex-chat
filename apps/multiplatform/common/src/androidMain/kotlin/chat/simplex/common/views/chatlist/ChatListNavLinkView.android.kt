@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 
+@Composable
 actual fun ChatListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
