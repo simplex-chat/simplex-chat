@@ -900,7 +900,7 @@ viewContactsMerged c1 c2 =
 viewUserProfile :: Profile -> [StyledString]
 viewUserProfile Profile {displayName, fullName} =
   [ "user profile: " <> ttyFullName displayName fullName,
-    "use " <> highlight' "/p <display name> [<full name>]" <> " to change it",
+    "use " <> highlight' "/p <display name>" <> " to change it",
     "(the updated profile will be sent to all your contacts)"
   ]
 
@@ -1553,6 +1553,9 @@ viewChatError logLevel = \case
     CEEmptyUserPassword _ -> ["user password is required"]
     CEUserAlreadyHidden _ -> ["user is already hidden"]
     CEUserNotHidden _ -> ["user is not hidden"]
+    CEInvalidDisplayName {displayName, validName} -> map plain $
+      ["invalid display name: " <> viewName displayName]
+        <> ["you could use this one: " <> viewName validName | not (T.null validName)]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
