@@ -456,6 +456,7 @@ test-suite simplex-chat-test
       MobileTests
       ProtocolTests
       SchemaDump
+      ValidNames
       ViewTests
       WebRTCTests
       Broadcast.Bot
