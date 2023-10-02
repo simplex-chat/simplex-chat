@@ -224,6 +224,7 @@ object ChatModel {
     }
     // add to current chat
     if (chatId.value == cInfo.id) {
+      Log.d(TAG, "TODOCHAT: addChatItem: adding to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
       withContext(Dispatchers.Main) {
         // Prevent situation when chat item already in the list received from backend
         if (chatItems.none { it.id == cItem.id }) {
@@ -231,6 +232,7 @@ object ChatModel {
             chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
           } else {
             chatItems.add(cItem)
+            Log.d(TAG, "TODOCHAT: addChatItem: added to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           }
         }
       }
@@ -259,13 +261,16 @@ object ChatModel {
     }
     // update current chat
     return if (chatId.value == cInfo.id) {
+      Log.d(TAG, "TODOCHAT: upsertChatItem: upserting to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
       withContext(Dispatchers.Main) {
         val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
           chatItems[itemIndex] = cItem
+          Log.d(TAG, "TODOCHAT: upsertChatItem: updated in chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           false
         } else {
           chatItems.add(cItem)
+          Log.d(TAG, "TODOCHAT: upsertChatItem: added to chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           true
         }
       }
@@ -374,6 +379,7 @@ object ChatModel {
     var markedRead = 0
     if (chatId.value == cInfo.id) {
       var i = 0
+      Log.d(TAG, "TODOCHAT: markItemsReadInCurrentChat: marking read ${cInfo.id}, current chatId ${chatId.value}, size was ${chatItems.size}")
       while (i < chatItems.count()) {
         val item = chatItems[i]
         if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from <= item.id && item.id <= range.to))) {
@@ -388,6 +394,7 @@ object ChatModel {
         }
         i += 1
       }
+      Log.d(TAG, "TODOCHAT: markItemsReadInCurrentChat: marked read ${cInfo.id}, current chatId ${chatId.value}, size now ${chatItems.size}")
     }
     return markedRead
   }

@@ -131,9 +131,11 @@ suspend fun openDirectChat(contactId: Long, chatModel: ChatModel) {
 }
 
 suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
+  Log.d(TAG, "TODOCHAT: openChat: opening ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
   if (chat != null) {
     openChat(chat, chatModel)
+    Log.d(TAG, "TODOCHAT: openChat: opened ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   }
 }
 
