@@ -47,7 +47,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     showMenu.value = false
     delay(500L)
   }
-  val selectedChat = remember { derivedStateOf { chat.id == ChatModel.chatId.value } }
+  val selectedChat = remember(chat.id) { derivedStateOf { chat.id == ChatModel.chatId.value } }
   val showChatPreviews = chatModel.showChatPreviews.value
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
