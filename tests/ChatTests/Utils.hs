@@ -435,7 +435,7 @@ lastItemId cc = do
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)
-  cc <## "use /p <display name> [<full name>] to change it"
+  cc <## "use /p <display name> to change it"
   cc <## "(the updated profile will be sent to all your contacts)"
 
 connectUsers :: HasCallStack => TestCC -> TestCC -> IO ()
