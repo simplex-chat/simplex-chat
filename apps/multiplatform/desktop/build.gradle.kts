@@ -66,6 +66,7 @@ compose {
           console = false
           perUserInstall = false
           dirChooser = true
+          shortcut = true
         }
         macOS {
           packageName = "SimpleX"
