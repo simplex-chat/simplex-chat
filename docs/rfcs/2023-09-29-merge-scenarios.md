@@ -16,7 +16,7 @@ Cases ignoring this problem:
 - Duplicate contacts on repeat connection via contact request, when the existing contact was not created via a contact request to the same address (it could be created via any other means - via invitation link, via request to an old address, via group member).
 - Contact and group member records (possibly for many groups) not being merged when contact connects and group member records already exist.
 - Group member records in different groups not being merged if contact doesn't exist.
-- Duplicate contacts, or contact and group member records not being merged when connecting via contact address present in contact/group member profile. Probing could be avoided in this case as client already has knowledge of contact address "identity".
+- Duplicate contacts, or contact and group member records not being merged when connecting via contact address present in contact/group member profile.
 
 This problem is a direct consequence of lack of user identity in the platform, and in some cases we even consider it a feature. For example, duplicate contacts via repeat connections can be used for having conversation scopes. Though in general it seems to bring more confusion. It also limits some interactions, such as sending direct message to group members, or viewing a list of groups contact is member of (not implemented).
 
@@ -29,6 +29,8 @@ There is one more problem that could be addressed in the same scope - repeat gro
 ### Duplicate contacts on repeat connections via invitation links
 
 Can be solved by probing contacts.
+
+Check connection with oneself and ask for confirmation.
 
 ### Duplicate contacts on repeat connection via contact request
 
@@ -72,15 +74,9 @@ Check: if both group member and associated confirm probe, will they be properly 
 
 ### Connecting via profile address
 
-There are two possible scenarios: contact request is made via member info (associated group member is already in UI scope); and contact request is made via any other means but contact address is known.
+Having contact address in profile is not proof that it belongs that user (malicious client can put arbitrary address in profile), so it shouldn't be used to directly associate contact or group member records.
 
-**1. Contact request is made via button in group member info**
-
-(contact chat info doesn't have such button currently, as we're already in a chat with contact)
-
-Contact record can be associated directly to a group member record.
-
-It can be simplified to reusing "send direct message" logic here (though there should be no message if direct messages preference is off in group), or even hiding this button now that "send direct message" exists.
+When connecting via contact address, having it associated with a contact record can be used as a sufficient condition to send probe hash, even if profile doesn't match. (index on contact_profiles.contact_link, lookup contact by contact_profile_id)
 
 To consider:
 
@@ -89,29 +85,6 @@ Currently group member address is shown even if direct messages are prohibited i
 - to prevent members from direct communication.
 
 Member address being shown regardless of this preference undermines the second use case.
-
-**2. Contact request is made via any other means**
-
-- On any contact request, search contact_profiles table for matching address (add index on contact_link).
-
-- If profile is not found:
-
-  - Send contact request as usual.
-
-- If profile is found:
-
-  - Search for contact by contact_profile_id.
-
-  - If contact is not found:
-
-    - Send contact request, associating it with existing profile.
-    - What if contact is accepted with a different profile? Update profile?
-
-  - If contact is found:
-
-    - Open existing contact.
-
-It's unlikely but possible (?) that contact deleted their contact address, didn't notify about profile change, then another user created link with the same address. If it is then used to make a contact request wrong record may be associated. Probability of that is very low, but maybe we shouldn't make such direct associations and instead always rely on probing?
 
 ### Repeat group join via group link
 
@@ -123,27 +96,4 @@ How to check for group existence? Currently we save group_link_id on host contac
 
 **If group doesn't exist:**
 
-If host contact was deleted, make contact request.
-
-If host contact wasn't deleted, it's possible to request repeat invite via host contact, if it wasn't also deleted on the host's side.
-
-```haskell
-XGrpRequestInv :: ConnReqContact -> ChatMsgEvent 'Json
-```
-
-Pass full link for host to search group by. Group link id may be enough.
-
-If host deleted contact and didn't notify, this approach wouldn't work - repeat contact request is required.
-
-The solution may be the following: instead of trying to send XGrpRequestInv to host contact, always send contact request with XGrpRequestInv (modified) instead of XContact:
-
-```haskell
--- Maybe XContactId?
-XGrpRequestInv :: Profile -> XContactId -> Bool -> ChatMsgEvent 'Json
-```
-
-Last Bool to let host know whether requesting client has contact.
-
-If host has contact with XContactId and requesting client has host's contact (host decides by flag in XGrpRequestInv), send group invitation to contact, otherwise accept contact request regularly.
-
-This seems quite complicated, and since clients now notify about contact deletion, maybe it's simpler to send XGrpRequestInv described above to host's contact if it exists and active. We could create chat item for host's contact and make it used to appear in chat list, so that at least it's easier to delete it if something goes wrong and group join gets stuck.
+For group links allow repeat contact request even if host contact exists (unlike for regular contact requests).
