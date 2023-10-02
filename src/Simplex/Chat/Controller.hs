@@ -882,6 +882,7 @@ data ChatErrorType
   | CEEmptyUserPassword {userId :: UserId}
   | CEUserAlreadyHidden {userId :: UserId}
   | CEUserNotHidden {userId :: UserId}
+  | CEInvalidDisplayName {displayName :: Text, validName :: Text}
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged

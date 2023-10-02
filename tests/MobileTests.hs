@@ -61,6 +61,8 @@ mobileTests = do
       it "utf8 name 1" $ testFileEncryptionCApi "тест"
       it "utf8 name 2" $ testFileEncryptionCApi "👍"
       it "no exception on missing file" testMissingFileEncryptionCApi
+    describe "validate name" $ do
+      it "should convert invalid name to a valid name" testValidNameCApi
 
 noActiveUser :: LB.ByteString
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -265,6 +267,14 @@ testMissingFileEncryptionCApi tmp = do
   cToPath' <- newCString toPath'
   err' <- peekCAString =<< cChatDecryptFile cToPath cKey cNonce cToPath'
   err' `shouldContain` toPath
+
+testValidNameCApi :: FilePath -> IO ()
+testValidNameCApi _ = do
+  let goodName = "Джон Доу 👍"
+  cName1 <- cChatValidName =<< newCString goodName
+  peekCString cName1 `shouldReturn` goodName
+  cName2 <- cChatValidName =<< newCString " @'Джон'  Доу   👍 "
+  peekCString cName2 `shouldReturn` goodName
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack
