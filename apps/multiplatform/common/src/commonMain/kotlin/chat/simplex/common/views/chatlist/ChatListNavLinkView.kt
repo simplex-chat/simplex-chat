@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -14,6 +13,10 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,6 +47,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     showMenu.value = false
     delay(500L)
   }
+  val selectedChat = remember { derivedStateOf { chat.id == ChatModel.chatId.value } }
   val showChatPreviews = chatModel.showChatPreviews.value
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
@@ -53,7 +57,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         click = { directChatAction(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
-        stopped
+        stopped,
+        selectedChat
       )
     }
     is ChatInfo.Group ->
@@ -62,7 +67,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
         dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
-        stopped
+        stopped,
+        selectedChat
       )
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
@@ -70,7 +76,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         click = { contactRequestAlertDialog(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactRequestMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu,
-        stopped
+        stopped,
+        selectedChat
       )
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
@@ -84,7 +91,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         },
         dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu,
-        stopped
+        stopped,
+        selectedChat
       )
     is ChatInfo.InvalidJSON ->
       ChatListNavLinkLayout(
@@ -97,7 +105,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         },
         dropdownMenuItems = null,
         showMenu,
-        stopped
+        stopped,
+        selectedChat
       )
   }
 }
@@ -628,32 +637,14 @@ fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatMo
 }
 
 @Composable
-fun ChatListNavLinkLayout(
+expect fun ChatListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
   dropdownMenuItems: (@Composable () -> Unit)?,
   showMenu: MutableState<Boolean>,
-  stopped: Boolean
-) {
-  var modifier = Modifier.fillMaxWidth()
-  if (!stopped) modifier = modifier
-    .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
-    .onRightClick { showMenu.value = true }
-  Box(modifier) {
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
-      verticalAlignment = Alignment.Top
-    ) {
-      chatLinkPreview()
-    }
-    if (dropdownMenuItems != null) {
-      DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)
-    }
-  }
-  Divider(Modifier.padding(horizontal = 8.dp))
-}
+  stopped: Boolean,
+  selectedChat: State<Boolean>
+)
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -690,7 +681,8 @@ fun PreviewChatListNavLinkDirect() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false
+      stopped = false,
+      selectedChat = remember { mutableStateOf(false) }
     )
   }
 }
@@ -730,7 +722,8 @@ fun PreviewChatListNavLinkGroup() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false
+      stopped = false,
+      selectedChat = remember { mutableStateOf(false) }
     )
   }
 }
@@ -750,7 +743,8 @@ fun PreviewChatListNavLinkContactRequest() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false
+      stopped = false,
+      selectedChat = remember { mutableStateOf(false) }
     )
   }
 }
