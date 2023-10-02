@@ -77,7 +77,7 @@
 &lt;img src=&quot;https://simplex.chat/blog/images/20230925-incognito.png&quot; width=&quot;330&quot; class=&quot;float-to-left&quot; /&gt;
 &lt;p&gt;Incognito mode was &lt;a href=&quot;https://simplex.chat/blog/20220901-simplex-chat-v3.2-incognito-mode.html&quot;&gt;added a year ago&lt;/a&gt; to improve anonymity of your profile, but it was confusing for some users - it was a global setting, but it only affected the new connections.&lt;/p&gt;
 &lt;p&gt;It is now simpler to use - you can decide whether to connect to a contact or join a group using your main profile at a point when you create an invitation link or connect via a link or QR code.&lt;/p&gt;
-&lt;p&gt;When you are connecting to people your know you usually want to share your main profile, and when connecting to public groups or strangers, you may prefer to use a random profile.&lt;/p&gt;
+&lt;p&gt;When you are connecting to people you know you usually want to share your main profile, and when connecting to public groups or strangers, you may prefer to use a random profile.&lt;/p&gt;
 &lt;h2 id=&quot;simplex-platform&quot; tabindex=&quot;-1&quot;&gt;SimpleX platform&lt;/h2&gt;
 &lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
 &lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html&quot;&gt;SimpleX Chat security assessment&lt;/a&gt;.&lt;/p&gt;
