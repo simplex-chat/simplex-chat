@@ -298,7 +298,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRChatError u e -> ttyUser' u $ viewChatError logLevel e
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRTimedAction _ _ -> []
-  todo'cr -> ["TODO" <> sShow todo'cr]
+  todo'cr -> ["TODO: " <> sShow todo'cr]
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser} ss

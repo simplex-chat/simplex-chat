@@ -9,10 +9,16 @@ module Simplex.Chat.Remote where
 
 import Control.Monad.Except
 import Control.Monad.IO.Class
+import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
 import qualified Data.Binary.Builder as Binary
-import Data.ByteString.Char8 (ByteString)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as BS8
+import qualified Data.ByteString.Base64.URL as B64U
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
+import Data.Text (Text)
+import Data.Text.Encoding (decodeUtf8)
 import qualified Network.HTTP.Types as HTTP
 import qualified Network.HTTP2.Client as HTTP2Client
 import Network.Socket (SockAddr (..), hostAddressToTuple)
@@ -26,6 +32,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
+import Simplex.Messaging.Transport.Credentials
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..))
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
 import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
@@ -39,19 +46,60 @@ withRemoteHostSession remoteHostId action = do
   where
     err = throwError $ ChatErrorRemoteHost remoteHostId RHMissing
 
+withRemoteHost :: (ChatMonad m) => RemoteHostId -> (RemoteHost -> m a) -> m a
+withRemoteHost remoteHostId action =
+  withStore' (\db -> getRemoteHost (DB.conn db) remoteHostId) >>= \case
+    Nothing -> throwError $ ChatErrorRemoteHost remoteHostId RHMissing
+    Just rh -> action rh
+
 startRemoteHost :: (ChatMonad m) => RemoteHostId -> m ChatResponse
-startRemoteHost remoteHostId = do
-  RemoteHost {displayName = _, storePath, caKey, caCert} <- error "TODO: get from DB"
-  (fingerprint :: ByteString, sessionCreds) <- error "TODO: derive session creds" (caKey, caCert)
-  cleanup <- toIO $ chatModifyVar remoteHostSessions (M.delete remoteHostId)
-  Discovery.runAnnouncer cleanup fingerprint sessionCreds >>= \case
+startRemoteHost remoteHostId = withRemoteHost remoteHostId $ \RemoteHost {caKey, caCert} -> do
+  let parent = (C.signatureKeyPair caKey, caCert)
+  sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
+  let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
+  cleanup <- toIO $ do
+    chatModifyVar remoteHostSessions (M.delete remoteHostId)
+    toView CRRemoteHostStopped {remoteHostId}
+  toView CRRemoteHostStarted {remoteHostId}
+  Discovery.runAnnouncer cleanup fingerprint credentials >>= \case
     Left todo'err -> pure $ chatCmdError Nothing "TODO: Some HTTP2 error"
     Right ctrlClient -> do
+      let storePath = show remoteHostId :: FilePath
       chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSession {storePath, ctrlClient}
-      pure $ CRRemoteHostStarted remoteHostId
+      pure CRRemoteHostConnected {remoteHostId}
 
 closeRemoteHostSession :: (ChatMonad m) => RemoteHostId -> m ()
 closeRemoteHostSession rh = withRemoteHostSession rh (liftIO . HTTP2.closeHTTP2Client . ctrlClient)
+
+createRemoteHost :: (ChatMonad m) => Text -> m ChatResponse
+createRemoteHost displayName = do
+  ((_, caKey), caCert) <- liftIO $ genCredentials Nothing (-25, 24 * 365) displayName
+  storePath <- liftIO randomStorePath
+  remoteHostId <- withStore' $ \db -> insertRemoteHost (DB.conn db) storePath displayName caKey caCert
+  let oobData =
+        RemoteHostOOB
+          { fingerprint = decodeUtf8 . strEncode $ C.certificateFingerprint caCert
+          }
+  pure CRRemoteHostCreated {remoteHostId, oobData}
+
+-- | Generate a random 32-char filepath without / in it by using base64url encoding.
+randomStorePath :: IO FilePath
+randomStorePath = (BS8.unpack . B64U.encode) <$> getRandomBytes 24
+
+listRemoteHosts :: (ChatMonad m) => m ChatResponse
+listRemoteHosts = do
+  stored <- withStore' (getRemoteHosts . DB.conn)
+  active <- chatReadVar remoteHostSessions
+  pure $ CRRemoteHostList $ do
+    RemoteHost {remoteHostId, storePath, displayName} <- stored
+    let sessionActive = M.member remoteHostId active
+    pure RemoteHostInfo {remoteHostId, storePath, displayName, sessionActive}
+
+disposeRemoteHost :: (ChatMonad m) => RemoteHostId -> m ChatResponse
+disposeRemoteHost remoteHostId = do
+  withStore' $ \db -> deleteRemoteHost (DB.conn db) remoteHostId
+  -- TODO: delete files
+  pure CRRemoteHostDisposed {remoteHostId}
 
 processRemoteCommand :: (ChatMonad m) => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
 processRemoteCommand rhs = \case

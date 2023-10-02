@@ -1835,11 +1835,11 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
-  CreateRemoteHost _displayName -> pure $ chatCmdError Nothing "not supported"
-  ListRemoteHosts -> pure $ chatCmdError Nothing "not supported"
+  CreateRemoteHost displayName -> createRemoteHost displayName
+  ListRemoteHosts -> listRemoteHosts
   StartRemoteHost rh -> startRemoteHost rh
   StopRemoteHost rh -> closeRemoteHostSession rh $> CRRemoteHostStopped rh
-  DisposeRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
+  DisposeRemoteHost rh -> disposeRemoteHost rh
   StartRemoteCtrl -> startRemoteCtrl
   ConfirmRemoteCtrl rc -> confirmRemoteCtrl rc
   RejectRemoteCtrl rc -> rejectRemoteCtrl rc
@@ -5609,13 +5609,14 @@ chatCommandP =
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
-      "/create remote host" *> (CreateRemoteHost <$> textP),
+      "/create remote host " *> (CreateRemoteHost <$> textP),
       "/list remote hosts" $> ListRemoteHosts,
       "/start remote host " *> (StartRemoteHost <$> A.decimal),
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/dispose remote host " *> (DisposeRemoteHost <$> A.decimal),
       "/start remote ctrl" $> StartRemoteCtrl,
       "/register remote ctrl " *> (RegisterRemoteCtrl <$> textP <*> remoteHostOOBP),
+      -- "/list remote controllers" $> ListRemoteCtrls,
       "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
       "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
       "/stop remote ctrl " *> (StopRemoteCtrl <$> A.decimal),

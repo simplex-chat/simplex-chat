@@ -600,6 +600,7 @@ data ChatResponse
   | CRRemoteHostCreated {remoteHostId :: RemoteHostId, oobData :: RemoteHostOOB}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]} -- XXX: RemoteHostInfo is mostly concerned with session setup
   | CRRemoteHostStarted {remoteHostId :: RemoteHostId}
+  | CRRemoteHostConnected {remoteHostId :: RemoteHostId}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
   | CRRemoteHostDisposed {remoteHostId :: RemoteHostId}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
@@ -663,6 +664,7 @@ data RemoteHostOOB = RemoteHostOOB
 
 data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
+    storePath :: FilePath,
     displayName :: Text,
     sessionActive :: Bool
   }
