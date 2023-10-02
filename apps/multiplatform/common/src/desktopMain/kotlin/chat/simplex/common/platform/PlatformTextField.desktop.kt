@@ -26,6 +26,7 @@ import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
+import java.io.File
 import java.net.URI
 import kotlin.io.path.*
 import kotlin.math.min
@@ -166,7 +167,7 @@ private fun parseToFiles(text: AnnotatedString?): List<URI> {
   val files = ArrayList<URI>()
   text.lines().forEach {
     try {
-      val uri = URI.create("file:$it")
+      val uri = File(it.removePrefix("\"").removeSuffix("\"")).toURI()
       val path = uri.toPath()
       if (!path.exists() || !path.isAbsolute || path.isDirectory()) return emptyList()
       files.add(uri)
