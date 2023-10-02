@@ -37,11 +37,15 @@ data RemoteCtrl = RemoteCtrl
   }
   deriving (Show, Generic, ToJSON)
 
-data RemoteHostSession = RemoteHostSession
-  { -- | Path for local resources to be synchronized with host
-    storePath :: FilePath,
-    ctrlClient :: HTTP2Client
-  }
+data RemoteHostSession
+  = RemoteHostSessionStarting
+      { announcer :: Async ()
+      }
+  | RemoteHostSessionStarted
+      { -- | Path for local resources to be synchronized with host
+        storePath :: FilePath,
+        ctrlClient :: HTTP2Client
+      }
 
 data RemoteCtrlSession = RemoteCtrlSession
   { -- | Server side of transport to process remote commands and forward notifications

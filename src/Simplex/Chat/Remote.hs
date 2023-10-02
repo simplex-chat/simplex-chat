@@ -13,8 +13,8 @@ import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
 import qualified Data.Binary.Builder as Binary
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Base64.URL as B64U
+import qualified Data.ByteString.Char8 as BS8
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
@@ -34,6 +34,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..))
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
 import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
 import Simplex.Messaging.Util (bshow)
@@ -53,23 +54,32 @@ withRemoteHost remoteHostId action =
     Just rh -> action rh
 
 startRemoteHost :: (ChatMonad m) => RemoteHostId -> m ChatResponse
-startRemoteHost remoteHostId = withRemoteHost remoteHostId $ \RemoteHost {caKey, caCert} -> do
-  let parent = (C.signatureKeyPair caKey, caCert)
-  sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
-  let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
-  cleanup <- toIO $ do
-    chatModifyVar remoteHostSessions (M.delete remoteHostId)
-    toView CRRemoteHostStopped {remoteHostId}
-  toView CRRemoteHostStarted {remoteHostId}
-  Discovery.runAnnouncer cleanup fingerprint credentials >>= \case
-    Left todo'err -> pure $ chatCmdError Nothing "TODO: Some HTTP2 error"
-    Right ctrlClient -> do
-      let storePath = show remoteHostId :: FilePath
-      chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSession {storePath, ctrlClient}
-      pure CRRemoteHostConnected {remoteHostId}
+startRemoteHost remoteHostId = do
+  M.lookup remoteHostId <$> chatReadVar remoteHostSessions >>= \case
+    Just _ -> throwError $ ChatErrorRemoteHost remoteHostId RHBusy
+    Nothing -> withRemoteHost remoteHostId run
+  where
+    run RemoteHost {storePath, caKey, caCert} = do
+      announcer <- async $ do
+        cleanup <- toIO $ do
+          chatModifyVar remoteHostSessions (M.delete remoteHostId)
+          toView CRRemoteHostStopped {remoteHostId}
+        let parent = (C.signatureKeyPair caKey, caCert)
+        sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
+        let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
+        Discovery.runAnnouncer cleanup fingerprint credentials >>= \case
+          Left todo'err -> liftIO cleanup -- TODO: log error
+          Right ctrlClient -> do
+            chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarted {storePath, ctrlClient}
+            -- TODO: start streaming outputQ
+            toView CRRemoteHostConnected {remoteHostId}
+      chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarting {announcer}
+      pure CRRemoteHostStarted {remoteHostId}
 
 closeRemoteHostSession :: (ChatMonad m) => RemoteHostId -> m ()
-closeRemoteHostSession rh = withRemoteHostSession rh (liftIO . HTTP2.closeHTTP2Client . ctrlClient)
+closeRemoteHostSession rh = withRemoteHostSession rh $ \case
+  RemoteHostSessionStarting {announcer} -> cancel announcer
+  RemoteHostSessionStarted {ctrlClient} -> liftIO $ HTTP2.closeHTTP2Client ctrlClient
 
 createRemoteHost :: (ChatMonad m) => Text -> m ChatResponse
 createRemoteHost displayName = do
@@ -96,20 +106,21 @@ listRemoteHosts = do
     pure RemoteHostInfo {remoteHostId, storePath, displayName, sessionActive}
 
 disposeRemoteHost :: (ChatMonad m) => RemoteHostId -> m ChatResponse
-disposeRemoteHost remoteHostId = do
-  withStore' $ \db -> deleteRemoteHost (DB.conn db) remoteHostId
+disposeRemoteHost remoteHostId = withRemoteHost remoteHostId $ \rh -> do
   -- TODO: delete files
+  withStore' $ \db -> deleteRemoteHost (DB.conn db) remoteHostId
   pure CRRemoteHostDisposed {remoteHostId}
 
 processRemoteCommand :: (ChatMonad m) => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
-processRemoteCommand rhs = \case
+processRemoteCommand RemoteHostSessionStarting {} _ = error "TODO: sending remote commands before session started"
+processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) =
   -- XXX: intercept and filter some commands
   -- TODO: store missing files on remote host
-  (s, _cmd) -> relayCommand rhs s
+  relayCommand ctrlClient s
 
-relayCommand :: (ChatMonad m) => RemoteHostSession -> ByteString -> m ChatResponse
-relayCommand RemoteHostSession {ctrlClient} s =
-  postBytestring Nothing ctrlClient "/relay" mempty s >>= \case
+relayCommand :: (ChatMonad m) => HTTP2Client -> ByteString -> m ChatResponse
+relayCommand http s =
+  postBytestring Nothing http "/relay" mempty s >>= \case
     Left e -> error "TODO: http2chatError"
     Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
       remoteChatResponse <-
@@ -133,9 +144,9 @@ relayCommand RemoteHostSession {ctrlClient} s =
       where
         req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
 
-storeRemoteFile :: (ChatMonad m) => RemoteHostSession -> FilePath -> m ChatResponse
-storeRemoteFile RemoteHostSession {ctrlClient} localFile = do
-  postFile Nothing ctrlClient "/store" mempty localFile >>= \case
+storeRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> m ChatResponse
+storeRemoteFile http localFile = do
+  postFile Nothing http "/store" mempty localFile >>= \case
     Left todo'err -> error "TODO: http2chatError"
     Right HTTP2.HTTP2Response {response} -> case HTTP.statusCode <$> HTTP2Client.responseStatus response of
       Just 200 -> pure $ CRCmdOk Nothing
@@ -147,9 +158,9 @@ storeRemoteFile RemoteHostSession {ctrlClient} localFile = do
       where
         req size = HTTP2Client.requestFile "POST" path hs (HTTP2Client.FileSpec file 0 size)
 
-fetchRemoteFile :: (ChatMonad m) => RemoteHostSession -> FileTransferId -> m ChatResponse
-fetchRemoteFile RemoteHostSession {ctrlClient, storePath} remoteFileId = do
-  liftIO (HTTP2.sendRequest ctrlClient req Nothing) >>= \case
+fetchRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> FileTransferId -> m ChatResponse
+fetchRemoteFile http storePath remoteFileId = do
+  liftIO (HTTP2.sendRequest http req Nothing) >>= \case
     Left e -> error "TODO: http2chatError"
     Right HTTP2.HTTP2Response {respBody} -> do
       error "TODO: stream body into a local file" -- XXX: consult headers for a file name?
