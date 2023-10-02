@@ -159,6 +159,17 @@ expect fun AttachmentSelection(
   processPickedMedia: (List<URI>, String?) -> Unit
 )
 
+fun MutableState<ComposeState>.onFilesAttached(uris: List<URI>) {
+  val groups =  uris.groupBy { isImage(it) }
+  val images = groups[true] ?: emptyList()
+  val files = groups[false] ?: emptyList()
+  if (images.isNotEmpty()) {
+    CoroutineScope(Dispatchers.IO).launch { processPickedMedia(images, null) }
+  } else if (files.isNotEmpty()) {
+    processPickedFile(uris.first(), null)
+  }
+}
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
     val fileSize = getFileSize(uri)
@@ -816,6 +827,7 @@ fun ComposeView(
           chatModel.removeLiveDummy()
         },
         editPrevMessage = ::editPrevMessage,
+        onFilesPasted = { composeState.onFilesAttached(it) },
         onMessageChange = ::onMessageChange,
         textStyle = textStyle
       )
