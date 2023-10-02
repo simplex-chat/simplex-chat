@@ -15,30 +15,29 @@ We want to add up to 3 people to the team.
 
 ## Who we are looking for
 
-### Systems Haskell engineer
+### Application Haskell engineer
 
-You are a servers/network/Haskell expert:
-- network libraries.
+You are an expert in language models, databases and Haskell:
+- expert knowledge of SQL.
 - exception handling, concurrency, STM.
 - type systems - we use ad hoc dependent types a lot.
-- strictness.
-- has some expertise in network protocols, cryptography and general information security principles and approaches.
+- experience integrating open-source language models.
+- experience developing community-centric applications.
 - interested to build the next generation of messaging network.
 
-You will be focussed mostly on our servers code, and will also contribute to the core client code written in Haskell. 
+You will be focussed mostly on our client applications, and will also contribute to the servers also written in Haskell. 
 
+### iOS / Mac engineer
 
-### Product engineer (iOS)
-
-You are a product UX expert who designs great user experiences directly in iOS code:
-- iOS and Mac platforms, including:
-  - SwiftUI and UIKit.
-  - extensions, including notification service extension and sharing extension.
-  - low level inter-process communication primitives for concurrency.
+You are an expert in Apple platforms, including:
+- iOS and Mac platform architecture.
+- Swift and Objective-C.
+- SwiftUI and UIKit.
+- extensions, including notification service extension and sharing extension.
+- low level inter-process communication primitives for concurrency.
 - interested about creating the next generation of UX for a communication/social network.
 
 Knowledge of Android and Kotlin Multiplatform would be a bonus - we use Kotlin Jetpack Compose for our Android and desktop apps.
-
 
 ## About you
 

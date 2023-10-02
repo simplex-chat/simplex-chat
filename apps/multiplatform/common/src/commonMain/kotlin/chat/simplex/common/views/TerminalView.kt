@@ -123,7 +123,18 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed().toList() } }
+  val reversedTerminalItems by remember {
+    derivedStateOf {
+      // Such logic prevents concurrent modification
+      val res = ArrayList<TerminalItem>()
+      var i = 0
+      while (i < terminalItems.size) {
+        res.add(terminalItems[i])
+        i++
+      }
+      res.asReversed()
+    }
+  }
   val clipboard = LocalClipboardManager.current
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->

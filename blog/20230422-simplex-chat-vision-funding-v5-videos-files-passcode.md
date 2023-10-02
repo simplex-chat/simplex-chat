@@ -63,7 +63,7 @@ To accelerate product development and growth we will be raising a seed funding t
 
 ### Send videos and files up to 1gb!
 
-<img src="./images/20230422-video.png" width="288">
+<img src="./images/20230422-video.png" width="288" class="float-to-left">
 
 In the beginning of March [we released servers and command-line utility to send and receive files via XFTP protocol](./20230301-simplex-file-transfer-protocol.md) - a very private and secure protocol that sends end-to-end encrypted files in chunks, protecting meta-data better than any alternatives we know of.
 
@@ -88,7 +88,7 @@ Now you can choose whether to use faster and more convenient system biometric au
 
 ### Networking improvements
 
-<img src="./images/20230422-socks.png" width="288">
+<img src="./images/20230422-socks.png" width="288" class="float-to-left">
 
 Two small improvements to the app networking capabilities were added in this version.
 

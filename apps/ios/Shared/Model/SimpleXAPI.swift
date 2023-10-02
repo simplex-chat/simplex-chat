@@ -1285,6 +1285,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.removeChat(connection.id)
             }
         }
+    case let .contactDeletedByContact(user, contact):
+        if active(user) && contact.directOrUsed {
+            await MainActor.run {
+                m.updateContact(contact)
+            }
+        }
     case let .contactConnected(user, contact, _):
         if active(user) && contact.directOrUsed {
             await MainActor.run {

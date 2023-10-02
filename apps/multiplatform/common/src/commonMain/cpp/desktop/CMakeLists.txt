@@ -31,9 +31,9 @@ else()
     set(CMAKE_BUILD_RPATH "@loader_path")
 endif()
 
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "amd64")
+if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "amd64" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES "AMD64")
     set(OS_LIB_ARCH "x86_64")
-elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64")
+elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES "ARM64")
     set(OS_LIB_ARCH "aarch64")
 else()
     set(OS_LIB_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
@@ -55,8 +55,13 @@ add_library( # Sets the name of the library.
 
 add_library( simplex SHARED IMPORTED )
 # Lib has different name because of version, find it
-FILE(GLOB SIMPLEXLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/libHSsimplex-chat-*.${OS_LIB_EXT})
-set_target_properties( simplex PROPERTIES IMPORTED_LOCATION ${SIMPLEXLIB})
+FILE(GLOB SIMPLEXLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/lib*simplex*.${OS_LIB_EXT})
+
+if(WIN32)
+    set_target_properties( simplex PROPERTIES IMPORTED_IMPLIB ${SIMPLEXLIB})
+else()
+    set_target_properties( simplex PROPERTIES IMPORTED_LOCATION ${SIMPLEXLIB})
+endif()
 
 
 # Specifies libraries CMake should link to your target library. You
@@ -73,6 +78,11 @@ else()
 	target_link_libraries(app-lib rts simplex)
 endif()
 
+if(APPLE)
+    add_custom_command(TARGET app-lib POST_BUILD
+        COMMAND  ${CMAKE_CURRENT_SOURCE_DIR}/patch-libapp-mac.sh
+)
+endif()
 
 
 # Trying to copy resulting files into needed directory, but none of these work for some reason. This could allow to
