@@ -19,7 +19,6 @@ module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
-import qualified Control.Exception as E
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
@@ -33,7 +32,7 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isSpace, toLower)
+import Data.Char
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
@@ -356,15 +355,11 @@ execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processCha
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 
-toView :: ChatMonad' m => ChatResponse -> m ()
-toView event = do
-  q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, event)
-
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
+    forM_ profile $ \Profile {displayName} -> checkValidName displayName
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
     (smp, smpServers) <- chooseServers SPSMP
@@ -903,7 +898,8 @@ processChatCommand = \case
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       withChatLock "deleteChat direct" . procCmd $ do
         deleteFilesAndConns user filesInfo
-        when (contactActive ct && notify) . void $ sendDirectContactMessage ct XDirectDel
+        when (isReady ct && contactActive ct && notify) $
+          void (sendDirectContactMessage ct XDirectDel) `catchChatError` const (pure ())
         contactConnIds <- map aConnId <$> withStore (\db -> getContactConnections db userId ct)
         deleteAgentConnectionsAsync user contactConnIds
         -- functions below are called in separate transactions to prevent crashes on android
@@ -1462,7 +1458,8 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
     processChatCommand $ APIChatItemReaction chatRef chatItemId add reaction
-  APINewGroup userId gProfile -> withUserId userId $ \user -> do
+  APINewGroup userId gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
+    checkValidName displayName
     gVar <- asks idsDrg
     groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile
     pure $ CRGroupCreated user groupInfo
@@ -1967,9 +1964,10 @@ processChatCommand = \case
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user p' = updateProfile_ user p' $ withStore $ \db -> updateUserProfile db user p'
     updateProfile_ :: User -> Profile -> m User -> m ChatResponse
-    updateProfile_ user@User {profile = p} p' updateUser
+    updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n'} updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
+        when (n /= n') $ checkValidName n'
         -- read contacts before user update to correctly merge preferences
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
@@ -2011,8 +2009,9 @@ processChatCommand = \case
             when (directOrUsed ct') $ createSndFeatureItems user ct ct'
         pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
-    runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
+    runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p@GroupProfile {displayName = n}} ms) p'@GroupProfile {displayName = n'} = do
       assertUserGroupRole g GROwner
+      when (n /= n') $ checkValidName n'
       g' <- withStore $ \db -> updateGroupProfile db user g p'
       (msg, _) <- sendGroupMessage user g' ms (XGrpInfo p')
       let cd = CDGroupSnd g'
@@ -2021,6 +2020,10 @@ processChatCommand = \case
         toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat g') ci)
       createGroupFeatureChangedItems user cd CISndGroupFeature g g'
       pure $ CRGroupUpdated user g g' Nothing
+    checkValidName :: GroupName -> m ()
+    checkValidName displayName = do
+      let validName = T.pack $ mkValidName $ T.unpack displayName
+      when (displayName /= validName) $ throwChatError CEInvalidDisplayName {displayName, validName}
     assertUserGroupRole :: GroupInfo -> GroupMemberRole -> m ()
     assertUserGroupRole g@GroupInfo {membership} requiredRole = do
       when (membership.memberRole < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
@@ -5250,8 +5253,7 @@ getCreateActiveUser st testView = do
       where
         loop = do
           displayName <- getContactName
-          fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing} True) >>= \case
+          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
@@ -5281,10 +5283,13 @@ getCreateActiveUser st testView = do
       T.unpack $ localDisplayName <> if T.null fullName || localDisplayName == fullName then "" else " (" <> fullName <> ")"
     getContactName :: IO ContactName
     getContactName = do
-      displayName <- getWithPrompt "display name (no spaces)"
-      if null displayName || isJust (find (== ' ') displayName)
-        then putStrLn "display name has space(s), choose another one" >> getContactName
-        else pure $ T.pack displayName
+      displayName <- getWithPrompt "display name"
+      let validName = mkValidName displayName
+      if
+        | null displayName -> putStrLn "display name can't be empty" >> getContactName
+        | null validName -> putStrLn "display name is invalid, please choose another" >> getContactName
+        | displayName /= validName -> putStrLn ("display name is invalid, you could use this one: " <> validName) >> getContactName
+        | otherwise -> pure $ T.pack displayName
     getWithPrompt :: String -> IO String
     getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
 
@@ -5345,33 +5350,6 @@ withAgent action =
   asks smpAgent
     >>= runExceptT . action
     >>= liftEither . first (`ChatErrorAgent` Nothing)
-
-withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
-withStore' action = withStore $ liftIO . action
-
-withStore :: ChatMonad m => (DB.Connection -> ExceptT StoreError IO a) -> m a
-withStore = withStoreCtx Nothing
-
-withStoreCtx' :: ChatMonad m => Maybe String -> (DB.Connection -> IO a) -> m a
-withStoreCtx' ctx_ action = withStoreCtx ctx_ $ liftIO . action
-
-withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreError IO a) -> m a
-withStoreCtx ctx_ action = do
-  ChatController {chatStore} <- ask
-  liftEitherError ChatErrorStore $ case ctx_ of
-    Nothing -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-    -- uncomment to debug store performance
-    -- Just ctx -> do
-    --   t1 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx start       :: " <> show t1 <> " :: " <> ctx
-    --   r <- withTransactionCtx ctx_ chatStore (runExceptT . action) `E.catch` handleInternal (" (" <> ctx <> ")")
-    --   t2 <- liftIO getCurrentTime
-    --   putStrLn $ "withStoreCtx end         :: " <> show t2 <> " :: " <> ctx <> " :: duration=" <> show (diffToMilliseconds $ diffUTCTime t2 t1)
-    --   pure r
-    Just _ -> withTransaction chatStore (runExceptT . action) `E.catch` handleInternal ""
-  where
-    handleInternal :: String -> E.SomeException -> IO (Either StoreError a)
-    handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -5642,7 +5620,13 @@ chatCommandP =
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
-    displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
+    displayName = safeDecodeUtf8 <$> (quoted "'\"" <|> takeNameTill isSpace)
+      where
+        takeNameTill p =
+          A.peekChar' >>= \c ->
+            if refChar c then A.takeTill p else fail "invalid first character in display name"
+        quoted cs = A.choice [A.char c *> takeNameTill (== c) <* A.char c | c <- cs]
+        refChar c = c > ' ' && c /= '#' && c /= '@'
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
     reactionP = MREmoji <$> (mrEmojiChar <$?> (toEmoji <$> A.anyChar))
@@ -5655,7 +5639,6 @@ chatCommandP =
       '*' -> head "❤️"
       '^' -> '🚀'
       c -> c
-    refChar c = c > ' ' && c /= '#' && c /= '@'
     liveMessageP = " live=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
     receiptSettings = do
@@ -5750,3 +5733,16 @@ timeItToView s action = do
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView $ CRTimedAction s diff
   pure a
+
+mkValidName :: String -> String
+mkValidName = reverse . dropWhile isSpace . fst . foldl' addChar ("", '\NUL')
+  where
+    addChar (r, prev) c = if notProhibited && validChar then (c' : r, c') else (r, prev)
+      where
+      c' = if isSpace c then ' ' else c
+      validChar
+        | prev == '\NUL' || isSpace prev = validFirstChar
+        | isPunctuation prev = validFirstChar || isSpace c
+        | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
+      validFirstChar = isLetter c || isNumber c || isSymbol c
+      notProhibited = c `notElem` ("@#'\"`" :: String)

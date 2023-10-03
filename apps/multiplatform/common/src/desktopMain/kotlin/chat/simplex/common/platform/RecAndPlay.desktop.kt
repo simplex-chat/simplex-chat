@@ -54,9 +54,9 @@ actual object AudioPlayer: AudioPlayerInterface {
         if (fileSource.cryptoArgs != null) {
           val tmpFile = fileSource.createTmpFileIfNeeded()
           decryptCryptoFile(absoluteFilePath, fileSource.cryptoArgs, tmpFile.absolutePath)
-          player.media().prepare("file://${tmpFile.absolutePath}")
+          player.media().prepare(tmpFile.toURI().toString().replaceFirst("file:", "file://"))
         } else {
-          player.media().prepare("file://$absoluteFilePath")
+          player.media().prepare(File(absoluteFilePath).toURI().toString().replaceFirst("file:", "file://"))
         }
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
@@ -171,7 +171,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     var res: Int? = null
     try {
       val helperPlayer = AudioPlayerComponent().mediaPlayer()
-      helperPlayer.media().startPaused("file://$unencryptedFilePath")
+      helperPlayer.media().startPaused(File(unencryptedFilePath).toURI().toString().replaceFirst("file:", "file://"))
       res = helperPlayer.duration
       helperPlayer.stop()
       helperPlayer.release()
