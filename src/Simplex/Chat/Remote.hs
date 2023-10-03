@@ -92,9 +92,9 @@ createRemoteHost displayName = do
           }
   pure CRRemoteHostCreated {remoteHostId, oobData}
 
--- | Generate a random 32-char filepath without / in it by using base64url encoding.
+-- | Generate a random 16-char filepath without / in it by using base64url encoding.
 randomStorePath :: IO FilePath
-randomStorePath = (BS8.unpack . B64U.encode) <$> getRandomBytes 24
+randomStorePath = (BS8.unpack . B64U.encode) <$> getRandomBytes 12
 
 listRemoteHosts :: (ChatMonad m) => m ChatResponse
 listRemoteHosts = do
