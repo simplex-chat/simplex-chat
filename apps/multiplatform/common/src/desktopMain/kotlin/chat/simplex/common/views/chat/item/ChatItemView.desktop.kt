@@ -46,7 +46,7 @@ actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) {
   val filePath = getLoadedFilePath(cItem.file)
   if (filePath != null) {
     when  {
-      desktopPlatform.isWindows() -> clipboard.setText(AnnotatedString("\"${File(filePath).absolutePath}}\""))
+      desktopPlatform.isWindows() -> clipboard.setText(AnnotatedString("\"${File(filePath).absolutePath}\""))
       else -> clipboard.setText(AnnotatedString(filePath))
     }
   } else {
