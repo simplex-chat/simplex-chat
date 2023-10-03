@@ -18,6 +18,7 @@ struct UserProfile: View {
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
     @State private var alert: UserProfileAlert?
+    @FocusState private var focusDisplayName
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -58,6 +59,7 @@ struct UserProfile: View {
                             Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
                         }
                         profileNameTextEdit("Profile name", $profile.displayName)
+                            .focused($focusDisplayName)
                     }
                     .padding(.bottom)
                     if showFullName(user) {
@@ -90,6 +92,7 @@ struct UserProfile: View {
                     Button("Edit") {
                         profile = fromLocalProfile(user.profile)
                         editProfile = true
+                        focusDisplayName = true
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)

@@ -66,7 +66,9 @@ struct CreateProfile: View {
         .navigationTitle("Create your profile")
         .alert(item: $alert) { a in userProfileAlert(a, $displayName) }
         .onAppear() {
-            focusDisplayName = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                focusDisplayName = true
+            }
         }
         .keyboardPadding()
     }
