@@ -16,12 +16,12 @@ arch=x86_64
 root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
 output_dir="$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/windows-$arch/"
 
-mkdir -p "$output_dir"/deps 2> /dev/null
+mkdir -p "$output_dir" 2> /dev/null
 
 curl --location -o libsimplex.zip $job_repo/$arch-linux.$arch-windows:lib:simplex-chat/latest/download/1 && \
 $WINDIR\\System32\\tar.exe -xf libsimplex.zip && \
 mv libsimplex.dll "$output_dir" && \
-mv libcrypto*.dll "$output_dir/deps" && \
-mv libffi*.dll "$output_dir/deps" && \
-mv libgmp*.dll "$output_dir/deps" && \
+mv libcrypto*.dll "$output_dir" && \
+mv libffi*.dll "$output_dir" && \
+mv libgmp*.dll "$output_dir" && \
 rm libsimplex.zip
