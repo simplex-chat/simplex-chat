@@ -9,175 +9,241 @@
 import SwiftUI
 import SimpleXChat
 
+enum UserProfileAlert: Identifiable {
+    case duplicateUserError
+    case createUserError(error: LocalizedStringKey)
+    case invalidNameError(validName: String)
+
+    var id: String {
+        switch self {
+        case .duplicateUserError: return "duplicateUserError"
+        case .createUserError: return "createUserError"
+        case let .invalidNameError(validName): return "invalidNameError \(validName)"
+        }
+    }
+}
+
 struct CreateProfile: View {
+    @Environment(\.dismiss) var dismiss
+    @State private var displayName: String = ""
+    @FocusState private var focusDisplayName
+    @State private var alert: UserProfileAlert?
+
+    var body: some View {
+        List {
+            Section {
+                TextField("Enter your name…", text: $displayName)
+                    .focused($focusDisplayName)
+                Button {
+                    createProfile(displayName, showAlert: { alert = $0 }, dismiss: dismiss)
+                } label: {
+                    Label("Create profile", systemImage: "checkmark")
+                }
+                .disabled(!canCreateProfile(displayName))
+            } header: {
+                HStack {
+                    Text("Your profile")
+                    let name = displayName.trimmingCharacters(in: .whitespaces)
+                    let validName = mkValidName(name)
+                    if name != validName {
+                        Spacer()
+                        Image(systemName: "exclamationmark.circle")
+                            .foregroundColor(.red)
+                            .onTapGesture {
+                                alert = .invalidNameError(validName: validName)
+                            }
+                    }
+                }
+                .frame(height: 20)
+            } footer: {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Your profile, contacts and delivered messages are stored on your device.")
+                    Text("The profile is only shared with your contacts.")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .navigationTitle("Create your profile")
+        .alert(item: $alert) { a in userProfileAlert(a, $displayName) }
+        .onAppear() {
+            focusDisplayName = true
+        }
+        .keyboardPadding()
+    }
+}
+
+struct CreateFirstProfile: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss
     @State private var displayName: String = ""
-    @State private var fullName: String = ""
     @FocusState private var focusDisplayName
-    @FocusState private var focusFullName
-    @State private var alert: CreateProfileAlert?
-
-    private enum CreateProfileAlert: Identifiable {
-        case duplicateUserError
-        case createUserError(error: LocalizedStringKey)
-
-        var id: String {
-            switch self {
-            case .duplicateUserError: return "duplicateUserError"
-            case .createUserError: return "createUserError"
-            }
-        }
-    }
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Create your profile")
-                .font(.largeTitle)
-                .bold()
-                .padding(.bottom, 4)
-                .frame(maxWidth: .infinity)
-            Text("Your profile, contacts and delivered messages are stored on your device.")
-                .padding(.bottom, 4)
-            Text("The profile is only shared with your contacts.")
-                .padding(.bottom)
+            Group {
+                Text("Create your profile")
+                    .font(.largeTitle)
+                    .bold()
+                Text("Your profile, contacts and delivered messages are stored on your device.")
+                    .foregroundColor(.secondary)
+                Text("The profile is only shared with your contacts.")
+                    .foregroundColor(.secondary)
+                    .padding(.bottom)
+            }
+            .padding(.bottom)
+
             ZStack(alignment: .topLeading) {
-                if !validDisplayName(displayName) {
-                    Image(systemName: "exclamationmark.circle")
-                        .foregroundColor(.red)
-                        .padding(.top, 4)
+                let name = displayName.trimmingCharacters(in: .whitespaces)
+                let validName = mkValidName(name)
+                if name != validName {
+                    Button {
+                        showAlert(.invalidNameError(validName: validName))
+                    } label: {
+                        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                    }
+                    .padding(.top, 2)
                 }
-                textField("Display name", text: $displayName)
+                TextField("Enter your name…", text: $displayName)
                     .focused($focusDisplayName)
-                    .submitLabel(.next)
-                    .onSubmit {
-                        if canCreateProfile() { focusFullName = true }
-                        else { focusDisplayName = true }
-                    }
+                    .padding(.leading, 28)
+                    .padding(.bottom)
             }
-            textField("Full name (optional)", text: $fullName)
-                .focused($focusFullName)
-                .submitLabel(.go)
-                .onSubmit {
-                    if canCreateProfile() { createProfile() }
-                    else { focusFullName = true }
-                }
-
             Spacer()
-
-            HStack {
-                if m.users.isEmpty {
-                    Button {
-                        hideKeyboard()
-                        withAnimation {
-                            m.onboardingStage = .step1_SimpleXInfo
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: "lessthan")
-                            Text("About SimpleX")
-                        }
-                    }
-                }
-
-                Spacer()
-
-                HStack {
-                    Button {
-                        createProfile()
-                    } label: {
-                        Text("Create")
-                        Image(systemName: "greaterthan")
-                    }
-                    .disabled(!canCreateProfile())
-                }
-            }
+            onboardingButtons()
         }
         .onAppear() {
             focusDisplayName = true
             setLastVersionDefault()
         }
-        .alert(item: $alert) { a in
-            switch a {
-            case .duplicateUserError: return duplicateUserAlert
-            case let .createUserError(err): return creatUserErrorAlert(err)
-            }
-        }
         .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
         .keyboardPadding()
     }
 
-    func textField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
-        TextField(placeholder, text: text)
-            .textInputAutocapitalization(.never)
-            .disableAutocorrection(true)
-            .padding(.leading, 28)
-            .padding(.bottom)
-    }
-
-    func createProfile() {
-        hideKeyboard()
-        let profile = Profile(
-            displayName: displayName,
-            fullName: fullName
-        )
-        do {
-            m.currentUser = try apiCreateActiveUser(profile)
-            if m.users.isEmpty {
-                try startChat()
+    func onboardingButtons() -> some View {
+        HStack {
+            Button {
+                hideKeyboard()
                 withAnimation {
-                    onboardingStageDefault.set(.step3_CreateSimpleXAddress)
-                    m.onboardingStage = .step3_CreateSimpleXAddress
+                    m.onboardingStage = .step1_SimpleXInfo
                 }
-            } else {
-                onboardingStageDefault.set(.onboardingComplete)
-                m.onboardingStage = .onboardingComplete
-                dismiss()
-                m.users = try listUsers()
-                try getUserChatData()
-            }
-        } catch let error {
-            switch error as? ChatResponse {
-            case .chatCmdError(_, .errorStore(.duplicateName)),
-                 .chatCmdError(_, .error(.userExists)):
-                if m.currentUser == nil {
-                    AlertManager.shared.showAlert(duplicateUserAlert)
-                } else {
-                    alert = .duplicateUserError
-                }
-            default:
-                let err: LocalizedStringKey = "Error: \(responseError(error))"
-                if m.currentUser == nil {
-                    AlertManager.shared.showAlert(creatUserErrorAlert(err))
-                } else {
-                    alert = .createUserError(error: err)
+            } label: {
+                HStack {
+                    Image(systemName: "lessthan")
+                    Text("About SimpleX")
                 }
             }
-            logger.error("Failed to create user or start chat: \(responseError(error))")
+
+            Spacer()
+
+            Button {
+                createProfile(displayName, showAlert: showAlert, dismiss: dismiss)
+            } label: {
+                HStack {
+                    Text("Create")
+                    Image(systemName: "greaterthan")
+                }
+            }
+            .disabled(!canCreateProfile(displayName))
         }
     }
 
-    func canCreateProfile() -> Bool {
-        displayName != "" && validDisplayName(displayName)
-    }
-
-    private var duplicateUserAlert: Alert {
-        Alert(
-            title: Text("Duplicate display name!"),
-            message: Text("You already have a chat profile with the same display name. Please choose another name.")
-        )
-    }
-
-    private func creatUserErrorAlert(_ err: LocalizedStringKey) -> Alert {
-        Alert(
-            title: Text("Error creating profile!"),
-            message: Text(err)
-        )
+    private func showAlert(_ alert: UserProfileAlert) {
+        AlertManager.shared.showAlert(userProfileAlert(alert, $displayName))
     }
 }
 
+private func createProfile(_ displayName: String, showAlert: (UserProfileAlert) -> Void, dismiss: DismissAction) {
+    hideKeyboard()
+    let profile = Profile(
+        displayName: displayName.trimmingCharacters(in: .whitespaces),
+        fullName: ""
+    )
+    let m = ChatModel.shared
+    do {
+        m.currentUser = try apiCreateActiveUser(profile)
+        if m.users.isEmpty {
+            try startChat()
+            withAnimation {
+                onboardingStageDefault.set(.step3_CreateSimpleXAddress)
+                m.onboardingStage = .step3_CreateSimpleXAddress
+            }
+        } else {
+            onboardingStageDefault.set(.onboardingComplete)
+            m.onboardingStage = .onboardingComplete
+            dismiss()
+            m.users = try listUsers()
+            try getUserChatData()
+        }
+    } catch let error {
+        switch error as? ChatResponse {
+        case .chatCmdError(_, .errorStore(.duplicateName)),
+             .chatCmdError(_, .error(.userExists)):
+            if m.currentUser == nil {
+                AlertManager.shared.showAlert(duplicateUserAlert)
+            } else {
+                showAlert(.duplicateUserError)
+            }
+        default:
+            let err: LocalizedStringKey = "Error: \(responseError(error))"
+            if m.currentUser == nil {
+                AlertManager.shared.showAlert(creatUserErrorAlert(err))
+            } else {
+                showAlert(.createUserError(error: err))
+            }
+        }
+        logger.error("Failed to create user or start chat: \(responseError(error))")
+    }
+}
+
+private func canCreateProfile(_ displayName: String) -> Bool {
+    let name = displayName.trimmingCharacters(in: .whitespaces)
+    return name != "" && mkValidName(name) == name
+}
+
+func userProfileAlert(_ alert: UserProfileAlert, _ displayName: Binding<String>) -> Alert {
+    switch alert {
+    case .duplicateUserError: return duplicateUserAlert
+    case let .createUserError(err): return creatUserErrorAlert(err)
+    case let .invalidNameError(name): return createInvalidNameAlert(name, displayName)
+    }
+}
+
+private var duplicateUserAlert: Alert {
+    Alert(
+        title: Text("Duplicate display name!"),
+        message: Text("You already have a chat profile with the same display name. Please choose another name.")
+    )
+}
+
+private func creatUserErrorAlert(_ err: LocalizedStringKey) -> Alert {
+    Alert(
+        title: Text("Error creating profile!"),
+        message: Text(err)
+    )
+}
+
+private func createInvalidNameAlert(_ name: String, _ displayName: Binding<String>) -> Alert {
+    name == ""
+    ? Alert(title: Text("Invalid name!"))
+    : Alert(
+        title: Text("Invalid name!"),
+        message: Text("Correct name to \(name)?"),
+        primaryButton: .default(
+            Text("Ok"),
+            action: { displayName.wrappedValue = name }
+        ),
+        secondaryButton: .cancel()
+    )
+}
+
 func validDisplayName(_ name: String) -> Bool {
-    name.firstIndex(of: " ") == nil && name.first != "@" && name.first != "#"
+    mkValidName(name.trimmingCharacters(in: .whitespaces)) == name
+}
+
+func mkValidName(_ s: String) -> String {
+    var c = s.cString(using: .utf8)!
+    return fromCString(chat_valid_name(&c)!)
 }
 
 struct CreateProfile_Previews: PreviewProvider {

@@ -17,6 +17,7 @@ struct UserProfile: View {
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
+    @State private var alert: UserProfileAlert?
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -47,18 +48,24 @@ struct UserProfile: View {
 
                 VStack(alignment: .leading) {
                     ZStack(alignment: .leading) {
-                        if !validDisplayName(profile.displayName) {
-                            Image(systemName: "exclamationmark.circle")
-                                .foregroundColor(.red)
-                                .padding(.bottom, 10)
+                        if !validNewProfileName(user) {
+                            Button {
+                                alert = .invalidNameError(validName: mkValidName(profile.displayName))
+                            } label: {
+                                Image(systemName: "exclamationmark.circle")
+                                    .foregroundColor(.red)
+                                    .padding(.bottom, 10)
+                            }
                         }
-                        profileNameTextEdit("Display name", $profile.displayName)
+                        profileNameTextEdit("Profile name", $profile.displayName)
                     }
-                    profileNameTextEdit("Full name (optional)", $profile.fullName)
+                    if user.profile.fullName != "" {
+                        profileNameTextEdit("Full name (optional)", $profile.fullName)
+                    }
                     HStack(spacing: 20) {
                         Button("Cancel") { editProfile = false }
                         Button("Save (and notify contacts)") { saveProfile() }
-                            .disabled(profile.displayName == "" || !validDisplayName(profile.displayName))
+                            .disabled(!canSaveProfile(user))
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
@@ -74,8 +81,10 @@ struct UserProfile: View {
                 .frame(maxWidth: .infinity, alignment: .center)
 
                 VStack(alignment: .leading) {
-                    profileNameView("Display name:", user.profile.displayName)
-                    profileNameView("Full name:", user.profile.fullName)
+                    profileNameView("Profile name:", user.profile.displayName)
+                    if user.profile.fullName != "" {
+                        profileNameView("Full name:", user.profile.fullName)
+                    }
                     Button("Edit") {
                         profile = fromLocalProfile(user.profile)
                         editProfile = true
@@ -117,6 +126,7 @@ struct UserProfile: View {
                 profile.image = nil
             }
         }
+        .alert(item: $alert) { a in userProfileAlert(a, $profile.displayName) }
     }
 
     func profileNameTextEdit(_ label: LocalizedStringKey, _ name: Binding<String>) -> some View {
@@ -139,6 +149,14 @@ struct UserProfile: View {
         profile = fromLocalProfile(user.profile)
         editProfile = true
         showChooseSource = true
+    }
+
+    private func validNewProfileName(_ user: User) -> Bool {
+        profile.displayName == user.profile.displayName || validDisplayName(profile.displayName)
+    }
+
+    private func canSaveProfile(_ user: User) -> Bool {
+        profile.displayName != "" && validNewProfileName(user)
     }
 
     func saveProfile() {
