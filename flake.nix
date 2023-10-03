@@ -1,6 +1,6 @@
 {
   description = "nix flake for simplex-chat";
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/armv7a";
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   # inputs.haskellNix.inputs.nixpkgs.follows = "nixpkgs";
   # inputs.nixpkgs.url = "github:angerman/nixpkgs/release-22.11";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs";
@@ -31,8 +31,8 @@
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
       let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
-        compiler-nix-name = "ghc8107";
-        index-state = "2022-06-20T00:00:00Z";
+        compiler-nix-name = "ghc962";
+        index-state = "2023-09-30T00:00:00Z";
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
         projectFileName = "cabal.project";
@@ -125,14 +125,29 @@
               );in {
               "${pkgs.pkgsCross.musl64.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl64).simplex-chat.components.exes.simplex-chat;
               "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl32).simplex-chat.components.exes.simplex-chat;
-              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = (drv pkgs.pkgsCross.mingwW64).simplex-chat.components.exes.simplex-chat.override {
+              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = (drv' {
+                pkgs' = pkgs.pkgsCross.mingwW64;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.openssl = true;
+                  packages.bitvec.flags.simd = false;
+                  packages.direct-sqlcipher.patches = [
+                    ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
+                  ];
+                  packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.pkgsCross.mingwW64.openssl) #.override) # { static = true; enableKTLS = false; })
+                  ];
+                  packages.unix-time.postPatch = ''
+                    sed -i 's/mingwex//g' unix-time.cabal
+                  '';
+                 }];
+                }).simplex-chat.components.exes.simplex-chat.override {
                 postInstall = ''
                   set -x
                   ${pkgs.tree}/bin/tree $out
                   mkdir -p $out/_pkg
                   cp $out/bin/* $out/_pkg
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/${pkgs.pkgsCross.mingwW64.hostPlatform.system}-ximplex-chat.zip *)
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/${pkgs.pkgsCross.mingwW64.hostPlatform.system}-simplex-chat.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
@@ -295,24 +310,68 @@
                       > $out/nix-support/hydra-build-products
                 '';
               };
-              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:lib:simplex-chat" = (drv' {
+              "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:lib:simplex-chat" = (drv' rec {
                 pkgs' = pkgs.pkgsCross.mingwW64;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.openssl = true;
-                  # packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
-                  #   (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
-                  # ];
+                  # simd will try to read __cpu_model, which we don't expose
+                  # from the rts (yet!).
+                  packages.bitvec.flags.simd = false;
+                  packages.direct-sqlcipher.patches = [
+                    ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
+                  ];
+                  packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
+                    pkgs.pkgsCross.mingwW64.openssl
+                  ];
+                  packages.unix-time.postPatch = ''
+                    sed -i 's/mingwex//g' unix-time.cabal
+                  '';
                 }];
               }).simplex-chat.components.library
-              .override {
+              .override (p: {
                 # enableShared = false;
-                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.dll" "-optl-lHSrts_thr" "-optl-lffi" "${./libsimplex.dll.def}" ];
+                setupBuildFlags = p.component.setupBuildFlags ++ map (x: "--ghc-option=${x}") [
+                  "-shared"
+                  "-threaded"
+                  "-o" "libsimplex.dll"
+                  # "-optl-lHSrts_thr"
+                  "-optl-lffi"
+                  # "-optl-static-libgcc"
+                  # We can't do -optl-static-libstdc++ with gcc. g++ might
+                  # but then we are chaning the compiler altogether.
+                  "${./libsimplex.dll.def}"
+                ];
                 postInstall = ''
                   set -x
+                  function deps() {
+                    ${pkgs.binutils}/bin/strings "$1" | grep '.\.dll'|grep -v -E 'Winsock|ADVAPI32|dbghelp|KERNEL32|msvcrt|ntdll|ole32|RPCRT4|SHELL32|USER32|WINMM|WS2_32|kernel32|GDI32'|grep -v "$1"
+                  }
                   ${pkgs.tree}/bin/tree $out
                   mkdir -p $out/_pkg
                   cp libsimplex.dll $out/_pkg
                   cp libsimplex.dll.a $out/_pkg
+                  mkdir $out/libs
+                  find ${pkgs.lib.getBin pkgs.pkgsCross.mingwW64.openssl}             -name "*.dll" -exec cp {} $out/libs \;
+                  find ${pkgs.lib.getBin pkgs.pkgsCross.mingwW64.libffi}              -name "*.dll" -exec cp {} $out/libs \;
+                  find ${pkgs.lib.getBin pkgs.pkgsCross.mingwW64.gmp}                 -name "*.dll" -exec cp {} $out/libs \;
+                  find ${pkgs.lib.getBin pkgs.pkgsCross.mingwW64.stdenv.cc.cc}        -name "*.dll" -exec cp {} $out/libs \;
+                  find ${pkgs.lib.getBin pkgs.pkgsCross.mingwW64.windows.mcfgthreads} -name "*.dll" -exec cp {} $out/libs \;
+
+                  pushd $out/_pkg
+                  function copyDeps() {
+                    for dep in $(deps "$1"); do
+                      if [ ! -f "$dep" ]; then
+                        if [ ! -f ../libs/"$dep" ]; then
+                          echo "WARN: $1 -> $dep not found!"
+                        else
+                          cp ../libs/"$dep" .
+                          copyDeps "$dep"
+                        fi
+                      fi
+                    done
+                  }
+                  copyDeps libsimplex.dll
+                  popd
                   ${pkgs.tree}/bin/tree $out/_pkg
                   (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-${pkgs.pkgsCross.mingwW64.hostPlatform.system}-libsimplex.zip *)
                   rm -fR $out/_pkg
@@ -320,7 +379,7 @@
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                       > $out/nix-support/hydra-build-products
                 '';
-              };
+              });
             };
 
             # builds for iOS and iOS simulator
