@@ -29,6 +29,8 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
+import java.io.File
+import java.net.URI
 
 @Composable
 fun SendMsgView(
@@ -52,6 +54,7 @@ fun SendMsgView(
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
   editPrevMessage: () -> Unit,
+  onFilesPasted: (List<URI>) -> Unit,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
@@ -79,7 +82,7 @@ fun SendMsgView(
     val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
-    PlatformTextField(composeState, sendMsgEnabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage) {
+    PlatformTextField(composeState, sendMsgEnabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage, onFilesPasted) {
       if (!cs.inProgress) {
         sendMessage(null)
       }
@@ -612,6 +615,7 @@ fun PreviewSendMsgView() {
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
+      onFilesPasted = {},
       textStyle = textStyle
     )
   }
@@ -645,6 +649,7 @@ fun PreviewSendMsgViewEditing() {
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
+      onFilesPasted = {},
       textStyle = textStyle
     )
   }
@@ -678,6 +683,7 @@ fun PreviewSendMsgViewInProgress() {
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
+      onFilesPasted = {},
       textStyle = textStyle
     )
   }
