@@ -293,4 +293,35 @@ jobs:
           body: |
             ${{ steps.windows_build.outputs.bin_hash }}
 
+      - name: Windows build desktop
+        id: windows_desktop_build
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          scripts/desktop/build-lib-windows.sh
+          cd apps/multiplatform
+          ./gradlew packageMsi
+          path=$(echo $PWD/release/main/msi/*imple*.msi)
+          echo "package_path=$path" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+      
+      - name: Windows upload desktop package to release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.windows_desktop_build.outputs.package_path }}
+          asset_name: ${{ matrix.desktop_asset_name }}
+          tag: ${{ github.ref }}
+
+      - name: Windows update desktop package hash
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          append_body: true
+          body: |
+            ${{ steps.windows_desktop_build.outputs.package_hash }}
+
       # Windows /
