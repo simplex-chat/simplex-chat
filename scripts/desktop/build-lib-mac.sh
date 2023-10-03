@@ -129,8 +129,8 @@ fi
 cd -
 scripts/desktop/prepare-vlc-mac.sh
 
-links_dir=apps/multiplatform/desktop/src/jvmMain/resources/links
+links_dir=apps/multiplatform/build/links
 mkdir -p $links_dir
 cd $links_dir
 rm macos-$COMPOSE_ARCH 2>/dev/null | true
-ln -sf ../../../../../common/src/commonMain/cpp/desktop/libs/mac-$ARCH/ macos-$COMPOSE_ARCH
+ln -sf ../../common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/ macos-$COMPOSE_ARCH

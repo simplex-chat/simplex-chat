@@ -54,7 +54,7 @@ compose {
         }
         //includeAllModules = true
         outputBaseDir.set(project.file("../release"))
-        appResourcesRootDir.set(project.file("src/jvmMain/resources/links"))
+        appResourcesRootDir.set(project.file("../build/links"))
         targetFormats(
           TargetFormat.Deb, TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Exe
           //, TargetFormat.AppImage // Gradle doesn't sync on Mac with it
@@ -183,6 +183,16 @@ afterEvaluate {
       copy {
         from("${project(":desktop").buildDir}/cmake/main/windows-amd64")
         into("$cppPath/desktop/libs/windows-x86_64")
+        include("*.dll")
+        eachFile {
+          path = name
+        }
+        includeEmptyDirs = false
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
+	  copy {
+        from("${project(":desktop").buildDir}/cmake/main/windows-amd64")
+        into("../build/links/windows-x64")
         include("*.dll")
         eachFile {
           path = name

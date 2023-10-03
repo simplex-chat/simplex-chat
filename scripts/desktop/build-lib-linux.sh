@@ -38,7 +38,7 @@ cp -r $BUILD_DIR/build/deps/* apps/multiplatform/common/src/commonMain/cpp/deskt
 cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 scripts/desktop/prepare-vlc-linux.sh
 
-links_dir=apps/multiplatform/desktop/src/jvmMain/resources/links
+links_dir=apps/multiplatform/build/links
 mkdir -p $links_dir
 cd $links_dir
-ln -sfT ../../../../../common/src/commonMain/cpp/desktop/libs/linux-$ARCH/ linux-$COMPOSE_ARCH
+ln -sfT ../../common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/ $OS-$COMPOSE_ARCH

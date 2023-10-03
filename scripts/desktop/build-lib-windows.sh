@@ -8,7 +8,7 @@ function readlink() {
 root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
 
 OS=windows
-ARCH=`uname -a | rev | cut -d' ' -f2 | rev`
+ARCH="x86_64"
 JOB_REPO=${1:-$SIMPLEX_CI_REPO_URL}
 
 if [ "$ARCH" == "aarch64" ]; then
@@ -26,7 +26,8 @@ mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 scripts/desktop/download-lib-windows.sh $JOB_REPO
 scripts/desktop/prepare-vlc-windows.sh
 
-links_dir=apps/multiplatform/desktop/src/jvmMain/resources/links
+links_dir=apps/multiplatform/build/links
 mkdir -p $links_dir
 cd $links_dir
-ln -sfT ../../../../../common/src/commonMain/cpp/desktop/libs/windows-$ARCH/ windows-$COMPOSE_ARCH
+rm -rf $OS-$COMPOSE_ARCH
+ln -sfT ../../common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/ $OS-$COMPOSE_ARCH
