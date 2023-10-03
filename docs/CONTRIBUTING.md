@@ -38,9 +38,15 @@ You will have to add `/opt/homebrew/opt/openssl@1.1/bin` to your PATH in order t
 
 - `master` - branch for beta version releases (GHC 9.6.2).
 
-- `master-android` - used to build beta Android core library with Nix (GHC 8.10.7).
+- `master-ghc8107` - branch for beta version releases (GHC 8.10.7).
 
-- `master-ios` - used to build beta iOS core library with Nix (GHC 8.10.7) – this branch should be the same as `master-android` except Nix configuration files.
+- `master-android` - used to build beta Android core library with Nix (GHC 8.10.7), same as `master-ghc8107`
+
+- `master-ios` - used to build beta iOS core library with Nix (GHC 8.10.7).
+
+- `windows-ghc8107` - branch for windows core library build (GHC 8.10.7).
+
+`master-ios` and `windows-ghc8107` branches should be the same as `master-ghc8107` except Nix configuration files.
 
 **In simplexmq repo**
 
@@ -54,24 +60,30 @@ You will have to add `/opt/homebrew/opt/openssl@1.1/bin` to your PATH in order t
 
 2. If simplexmq repo was changed, to build mobile core libraries you need to merge its `master` branch into `master-ghc8107` branch.
 
-3. To build Android core library:
-- merge `master` branch to `master-android` branch.
+3. To build core libraries for Android, iOS and windows:
+- merge `master` branch to `master-ghc8107` branch.
+- update `simplexmq` commit in `master-ghc8107` branch to the commit in `master-ghc8107` branch (probably, when resolving merge conflicts).
 - update code to be compatible with GHC 8.10.7 (see below).
-- update `simplexmq` commit in `master-android` branch to the commit in `master-ghc8107` branch.
 - push to GitHub.
 
-4. To build iOS core library, merge `master-android` branch to `master-ios` branch, and push to GitHub.
+4. To build Android core library, merge `master-ghc8107` branch to `master-android` branch, and push to GitHub.
 
-5. To build Desktop and CLI apps, make tag in `master` branch, APK files should be attached to the release.
+5. To build iOS core library, merge `master-ghc8107` branch to `master-ios` branch, and push to GitHub.
 
-6. After the public release to App Store and Play Store, merge:
+6. To build windows core library, merge `master-ghc8107` branch to `windows-ghc8107` branch, and push to GitHub.
+
+7. To build Desktop and CLI apps, make tag in `master` branch, APK files should be attached to the release.
+
+8. After the public release to App Store and Play Store, merge:
 - `master` to `stable`
-- `master` to `master-android` (and compile/update code)
-- `master-android` to `master-ios`
+- `master` to `master-ghc8107` (and compile/update code)
+- `master-ghc8107` to `master-android`
+- `master-ghc8107` to `master-ios`
+- `master-ghc8107` to `windows-ghc8107`
 - `master-android` to `stable-android`
 - `master-ios` to `stable-ios`
 
-7. Independently, `master` branch of simplexmq repo should be merged to `stable` branch on stable releases.
+9. Independently, `master` branch of simplexmq repo should be merged to `stable` branch on stable releases.
 
 
 ## Differences between GHC 8.10.7 and GHC 9.6.2

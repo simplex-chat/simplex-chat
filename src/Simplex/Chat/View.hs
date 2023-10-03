@@ -15,7 +15,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Char (toUpper)
+import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
@@ -151,6 +151,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
+  CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
   CRAcceptingContactRequest u c -> ttyUser u [ttyFullContact c <> ": accepting contact request..."]
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
@@ -223,7 +224,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
   CRGroupEmpty u g -> ttyUser u [ttyFullGroup g <> ": group is empty"]
   CRGroupRemoved u g -> ttyUser u [ttyFullGroup g <> ": you are no longer a member or group deleted"]
-  CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
+  CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the local copy of the group"]
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
   CRGroupDescription u g -> ttyUser u $ viewGroupDescription g
@@ -673,10 +674,7 @@ viewContactNotFound cName suspectedMember =
   ["no contact " <> ttyContact cName <> useMessageMember]
   where
     useMessageMember = case suspectedMember of
-      Just (g, m) -> do
-        let GroupInfo {localDisplayName = gName} = g
-            GroupMember {localDisplayName = mName} = m
-        ", use " <> highlight' ("@#" <> T.unpack gName <> " " <> T.unpack mName <> " <your message>")
+      Just (g, m) -> ", use " <> highlight ("@#" <> viewGroupName g <> " " <> viewMemberName m <> " <your message>")
       _ -> ""
 
 viewChatCleared :: AChatInfo -> [StyledString]
@@ -731,14 +729,14 @@ groupLink_ intro g cReq mRole =
     (plain . strEncode) cReq,
     "",
     "Anybody can connect to you and join group as " <> showRole mRole <> " with: " <> highlight' "/c <group_link_above>",
-    "to show it again: " <> highlight ("/show link #" <> groupName' g),
-    "to delete it: " <> highlight ("/delete link #" <> groupName' g) <> " (joined members will remain connected to you)"
+    "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
+    "to delete it: " <> highlight ("/delete link #" <> viewGroupName g) <> " (joined members will remain connected to you)"
   ]
 
 viewGroupLinkDeleted :: GroupInfo -> [StyledString]
 viewGroupLinkDeleted g =
   [ "Group link is deleted - joined members will remain connected.",
-    "To create a new group link use " <> highlight ("/create link #" <> groupName' g)
+    "To create a new group link use " <> highlight ("/create link #" <> viewGroupName g)
   ]
 
 viewSentInvitation :: Maybe Profile -> Bool -> [StyledString]
@@ -755,20 +753,20 @@ viewSentInvitation incognitoProfile testView =
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =
   [ ttyFullName c fullName <> " wants to connect to you!",
-    "to accept: " <> highlight ("/ac " <> c),
-    "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
+    "to accept: " <> highlight ("/ac " <> viewName c),
+    "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
 
 viewGroupCreated :: GroupInfo -> [StyledString]
-viewGroupCreated g@GroupInfo {localDisplayName = n} =
+viewGroupCreated g =
   [ "group " <> ttyFullGroup g <> " is created",
-    "to add members use " <> highlight ("/a " <> n <> " <name>") <> " or " <> highlight ("/create link #" <> n)
+    "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
   ]
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
-viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
-  [ ttyContact c <> " is already invited to group " <> ttyGroup gn,
-    "to re-send invitation: " <> highlight ("/rm " <> gn <> " " <> c) <> ", " <> highlight ("/a " <> gn <> " " <> c)
+viewCannotResendInvitation g c =
+  [ ttyContact c <> " is already invited to group " <> ttyGroup' g,
+    "to re-send invitation: " <> highlight ("/rm " <> viewGroupName g <> " " <> c) <> ", " <> highlight ("/a " <> viewGroupName g <> " " <> viewName c)
   ]
 
 viewDirectMessagesProhibited :: MsgDirection -> Contact -> [StyledString]
@@ -789,11 +787,11 @@ viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [Style
 viewReceivedGroupInvitation g c role =
   ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role) :
   case incognitoMembershipProfile g of
-    Just mp -> ["use " <> highlight ("/j " <> groupName' g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile mp)]
-    Nothing -> ["use " <> highlight ("/j " <> groupName' g) <> " to accept"]
+    Just mp -> ["use " <> highlight ("/j " <> viewGroupName g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile mp)]
+    Nothing -> ["use " <> highlight ("/j " <> viewGroupName g) <> " to accept"]
 
 groupPreserved :: GroupInfo -> [StyledString]
-groupPreserved g = ["use " <> highlight ("/d #" <> groupName' g) <> " to delete the group"]
+groupPreserved g = ["use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the group"]
 
 connectedMember :: GroupMember -> StyledString
 connectedMember m = case memberCategory m of
@@ -844,7 +842,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       _ -> ""
 
 viewContactConnected :: Contact -> Maybe Profile -> Bool -> [StyledString]
-viewContactConnected ct@Contact {localDisplayName} userIncognitoProfile testView =
+viewContactConnected ct userIncognitoProfile testView =
   case userIncognitoProfile of
     Just profile ->
       if testView
@@ -853,7 +851,7 @@ viewContactConnected ct@Contact {localDisplayName} userIncognitoProfile testView
       where
         message =
           [ ttyFullContact ct <> ": contact is connected, your incognito profile for this contact is " <> incognitoProfile' profile,
-            "use " <> highlight ("/i " <> localDisplayName) <> " to print out this incognito profile again"
+            "use " <> highlight ("/i " <> viewContactName ct) <> " to print out this incognito profile again"
           ]
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
@@ -864,10 +862,10 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
   where
     ldn_ :: GroupInfo -> Text
     ldn_ g = T.toLower g.localDisplayName
-    groupSS (g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings}, GroupSummary {currentMembers}) =
+    groupSS (g@GroupInfo {membership, chatSettings}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
-        s -> membershipIncognito g <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
+        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s
       where
         viewMemberStatus = \case
           GSMemRemoved -> delete "you are removed"
@@ -875,18 +873,18 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
           GSMemGroupDeleted -> delete "group deleted"
           _
             | enableNtfs chatSettings -> " (" <> memberCount <> ")"
-            | otherwise -> " (" <> memberCount <> ", muted, you can " <> highlight ("/unmute #" <> ldn) <> ")"
-        delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> ldn) <> ")"
+            | otherwise -> " (" <> memberCount <> ", muted, you can " <> highlight ("/unmute #" <> viewGroupName g) <> ")"
+        delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> viewGroupName g) <> ")"
         memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
 
 groupInvitation' :: GroupInfo -> StyledString
 groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
-  highlight ("#" <> ldn)
+  highlight ("#" <> viewName ldn)
     <> optFullName ldn fullName
     <> " - you are invited ("
-    <> highlight ("/j " <> ldn)
+    <> highlight ("/j " <> viewName ldn)
     <> joinText
-    <> highlight ("/d #" <> ldn)
+    <> highlight ("/d #" <> viewName ldn)
     <> " to delete invitation)"
   where
     joinText = case incognitoMembershipProfile g of
@@ -894,21 +892,21 @@ groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfil
       Nothing -> " to join, "
 
 viewContactsMerged :: Contact -> Contact -> [StyledString]
-viewContactsMerged _into@Contact {localDisplayName = c1} _merged@Contact {localDisplayName = c2} =
-  [ "contact " <> ttyContact c2 <> " is merged into " <> ttyContact c1,
-    "use " <> ttyToContact c1 <> highlight' "<message>" <> " to send messages"
+viewContactsMerged c1 c2 =
+  [ "contact " <> ttyContact' c2 <> " is merged into " <> ttyContact' c1,
+    "use " <> ttyToContact' c1 <> highlight' "<message>" <> " to send messages"
   ]
 
 viewUserProfile :: Profile -> [StyledString]
 viewUserProfile Profile {displayName, fullName} =
   [ "user profile: " <> ttyFullName displayName fullName,
-    "use " <> highlight' "/p <display name> [<full name>]" <> " to change it",
+    "use " <> highlight' "/p <display name>" <> " to change it",
     "(the updated profile will be sent to all your contacts)"
   ]
 
 viewUserPrivacy :: User -> User -> [StyledString]
 viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', showNtfs, viewPwdHash} =
-  [ (if userId == userId' then "current " else "") <> "user " <> plain n' <> ":",
+  [ plain $ (if userId == userId' then "current " else "") <> "user " <> viewName n' <> ":",
     "messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
@@ -1054,18 +1052,18 @@ viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
   QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
 
 viewContactRatchetSync :: Contact -> RatchetSyncProgress -> [StyledString]
-viewContactRatchetSync ct@Contact {localDisplayName = c} RatchetSyncProgress {ratchetSyncStatus = rss} =
+viewContactRatchetSync ct RatchetSyncProgress {ratchetSyncStatus = rss} =
   [ttyContact' ct <> ": " <> (plain . ratchetSyncStatusToText) rss]
     <> help
   where
-    help = ["use " <> highlight ("/sync " <> c) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
+    help = ["use " <> highlight ("/sync " <> viewContactName ct) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
 
 viewGroupMemberRatchetSync :: GroupInfo -> GroupMember -> RatchetSyncProgress -> [StyledString]
-viewGroupMemberRatchetSync g m@GroupMember {localDisplayName = n} RatchetSyncProgress {ratchetSyncStatus = rss} =
+viewGroupMemberRatchetSync g m RatchetSyncProgress {ratchetSyncStatus = rss} =
   [ttyGroup' g <> " " <> ttyMember m <> ": " <> (plain . ratchetSyncStatusToText) rss]
     <> help
   where
-    help = ["use " <> highlight ("/sync #" <> groupName' g <> " " <> n) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
+    help = ["use " <> highlight ("/sync #" <> viewGroupName g <> " " <> viewMemberName m) <> " to synchronize" | rss `elem` [RSAllowed, RSRequired]]
 
 viewContactVerificationReset :: Contact -> [StyledString]
 viewContactVerificationReset ct =
@@ -1076,10 +1074,10 @@ viewGroupMemberVerificationReset g m =
   [ttyGroup' g <> " " <> ttyMember m <> ": security code changed"]
 
 viewContactCode :: Contact -> Text -> Bool -> [StyledString]
-viewContactCode ct@Contact {localDisplayName = c} = viewSecurityCode (ttyContact' ct) ("/verify " <> c <> " <code from your contact>")
+viewContactCode ct = viewSecurityCode (ttyContact' ct) ("/verify " <> viewContactName ct <> " <code from your contact>")
 
 viewGroupMemberCode :: GroupInfo -> GroupMember -> Text -> Bool -> [StyledString]
-viewGroupMemberCode g m@GroupMember {localDisplayName = n} = viewSecurityCode (ttyGroup' g <> " " <> ttyMember m) ("/verify #" <> groupName' g <> " " <> n <> " <code from your contact>")
+viewGroupMemberCode g m = viewSecurityCode (ttyGroup' g <> " " <> ttyMember m) ("/verify #" <> viewGroupName g <> " " <> viewMemberName m <> " <code from your contact>")
 
 viewSecurityCode :: StyledString -> Text -> Text -> Bool -> [StyledString]
 viewSecurityCode name cmd code testView
@@ -1205,9 +1203,9 @@ bold' :: String -> StyledString
 bold' = styled Bold
 
 viewContactAliasUpdated :: Contact -> [StyledString]
-viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}
-  | localAlias == "" = ["contact " <> ttyContact n <> " alias removed"]
-  | otherwise = ["contact " <> ttyContact n <> " alias updated: " <> plain localAlias]
+viewContactAliasUpdated ct@Contact {profile = LocalProfile {localAlias}}
+  | localAlias == "" = ["contact " <> ttyContact' ct <> " alias removed"]
+  | otherwise = ["contact " <> ttyContact' ct <> " alias updated: " <> plain localAlias]
 
 viewConnectionAliasUpdated :: PendingContactConnection -> [StyledString]
 viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
@@ -1384,10 +1382,10 @@ savingFile' testView (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, f
 savingFile' _ _ = ["saving file"] -- shouldn't happen
 
 receivingFile_' :: StyledString -> AChatItem -> [StyledString]
-receivingFile_' status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =
-  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact c]
-receivingFile_' status (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
-  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact m]
+receivingFile_' status (AChatItem _ _ (DirectChat c) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =
+  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact' c]
+receivingFile_' status (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupRcv m}) =
+  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyMember m]
 receivingFile_' status _ = [status <> " receiving file"] -- shouldn't happen
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
@@ -1555,6 +1553,9 @@ viewChatError logLevel = \case
     CEEmptyUserPassword _ -> ["user password is required"]
     CEUserAlreadyHidden _ -> ["user is already hidden"]
     CEUserNotHidden _ -> ["user is not hidden"]
+    CEInvalidDisplayName {displayName, validName} -> map plain $
+      ["invalid display name: " <> viewName displayName]
+        <> ["you could use this one: " <> viewName validName | not (T.null validName)]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
@@ -1567,7 +1568,8 @@ viewChatError logLevel = \case
       ]
     CEContactNotFound cName m_ -> viewContactNotFound cName m_
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
-    CEContactDisabled Contact {localDisplayName = c} -> [ttyContact c <> ": disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
+    CEContactDisabled ct -> [ttyContact' ct <> ": disabled, to enable: " <> highlight ("/enable " <> viewContactName ct) <> ", to delete: " <> highlight ("/d " <> viewContactName ct)]
+    CEContactNotActive c -> [ttyContact' c <> ": not active"]
     CEConnectionDisabled Connection {connId, connType} -> [plain $ "connection " <> textEncode connType <> " (" <> tshow connId <> ") is disabled" | logLevel <= CLLWarning]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
@@ -1579,7 +1581,7 @@ viewChatError logLevel = \case
     CEContactIncognitoCantInvite -> ["you're using your main profile for this group - prohibited to invite contacts to whom you are connected incognito"]
     CEGroupIncognitoCantInvite -> ["you've connected to this group using an incognito profile - prohibited to invite contacts"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
-    CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> groupName' g)]
+    CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> viewGroupName g)]
     CEGroupMemberNotActive -> ["your group connection is not active yet, try later"]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
     CEGroupMemberNotFound -> ["group doesn't have this member"]
@@ -1639,8 +1641,8 @@ viewChatError logLevel = \case
     SEFileIdNotFoundBySharedMsgId _ -> [] -- recipient tried to accept cancelled file
     SEConnectionNotFound agentConnId -> ["event connection not found, agent ID: " <> sShow agentConnId | logLevel <= CLLWarning] -- mutes delete group error
     SEChatItemNotFoundByText text -> ["message not found by text: " <> plain text]
-    SEDuplicateGroupLink g -> ["you already have link for this group, to show: " <> highlight ("/show link #" <> groupName' g)]
-    SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/create link #" <> groupName' g)]
+    SEDuplicateGroupLink g -> ["you already have link for this group, to show: " <> highlight ("/show link #" <> viewGroupName g)]
+    SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/create link #" <> viewGroupName g)]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]
@@ -1685,8 +1687,8 @@ viewChatError logLevel = \case
 
 viewConnectionEntityDisabled :: ConnectionEntity -> [StyledString]
 viewConnectionEntityDisabled entity = case entity of
-  RcvDirectMsgConnection _ (Just Contact {localDisplayName = c}) -> ["[" <> entityLabel <> "] connection is disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
-  RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> ["[" <> entityLabel <> "] connection is disabled, to enable: " <> highlight ("/enable #" <> g <> " " <> m)]
+  RcvDirectMsgConnection _ (Just c) -> ["[" <> entityLabel <> "] connection is disabled, to enable: " <> highlight ("/enable " <> viewContactName c) <> ", to delete: " <> highlight ("/d " <> viewContactName c)]
+  RcvGroupMsgConnection _ g m -> ["[" <> entityLabel <> "] connection is disabled, to enable: " <> highlight ("/enable #" <> viewGroupName g <> " " <> viewMemberName m)]
   _ -> ["[" <> entityLabel <> "] connection is disabled"]
   where
     entityLabel = connEntityLabel entity
@@ -1701,7 +1703,7 @@ connEntityLabel = \case
   UserContactConnection _ UserContact {} -> "contact address"
 
 ttyContact :: ContactName -> StyledString
-ttyContact = styled $ colored Green
+ttyContact = styled (colored Green) . viewName
 
 ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
@@ -1721,36 +1723,45 @@ ttyFullName :: ContactName -> Text -> StyledString
 ttyFullName c fullName = ttyContact c <> optFullName c fullName
 
 ttyToContact :: ContactName -> StyledString
-ttyToContact c = ttyTo $ "@" <> c <> " "
+ttyToContact c = ttyTo $ "@" <> viewName c <> " "
 
 ttyToContact' :: Contact -> StyledString
 ttyToContact' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyToContact c
 
 ttyToContactEdited' :: Contact -> StyledString
-ttyToContactEdited' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyTo ("@" <> c <> " [edited] ")
+ttyToContactEdited' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyTo ("@" <> viewName c <> " [edited] ")
 
 ttyQuotedContact :: Contact -> StyledString
-ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ c <> ">"
+ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ viewName c <> ">"
 
 ttyQuotedMember :: Maybe GroupMember -> StyledString
-ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom c
+ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom (viewName c)
 ttyQuotedMember _ = "> " <> ttyFrom "?"
 
 ttyFromContact :: Contact -> StyledString
-ttyFromContact ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (c <> "> ")
+ttyFromContact ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (viewName c <> "> ")
 
 ttyFromContactEdited :: Contact -> StyledString
-ttyFromContactEdited ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (c <> "> [edited] ")
+ttyFromContactEdited ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (viewName c <> "> [edited] ")
 
 ttyFromContactDeleted :: Contact -> Maybe Text -> StyledString
 ttyFromContactDeleted ct@Contact {localDisplayName = c} deletedText_ =
-  ctIncognito ct <> ttyFrom (c <> "> " <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
+  ctIncognito ct <> ttyFrom (viewName c <> "> " <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
 
 ttyGroup :: GroupName -> StyledString
-ttyGroup g = styled (colored Blue) $ "#" <> g
+ttyGroup g = styled (colored Blue) $ "#" <> viewName g
 
 ttyGroup' :: GroupInfo -> StyledString
 ttyGroup' = ttyGroup . groupName'
+
+viewContactName :: Contact -> Text
+viewContactName = viewName . localDisplayName'
+
+viewGroupName :: GroupInfo -> Text
+viewGroupName = viewName . groupName'
+
+viewMemberName :: GroupMember -> Text
+viewMemberName GroupMember {localDisplayName = n} = viewName n
 
 ttyGroups :: [GroupName] -> StyledString
 ttyGroups [] = ""
@@ -1772,8 +1783,7 @@ ttyFromGroupDeleted g m deletedText_ =
   membershipIncognito g <> ttyFrom (fromGroup_ g m <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
 
 fromGroup_ :: GroupInfo -> GroupMember -> Text
-fromGroup_ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} =
-  "#" <> g <> " " <> m <> "> "
+fromGroup_ g m = "#" <> viewGroupName g <> " " <> viewMemberName m <> "> "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
@@ -1782,12 +1792,13 @@ ttyTo :: Text -> StyledString
 ttyTo = styled $ colored Cyan
 
 ttyToGroup :: GroupInfo -> StyledString
-ttyToGroup g@GroupInfo {localDisplayName = n} =
-  membershipIncognito g <> ttyTo ("#" <> n <> " ")
+ttyToGroup g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " ")
 
 ttyToGroupEdited :: GroupInfo -> StyledString
-ttyToGroupEdited g@GroupInfo {localDisplayName = n} =
-  membershipIncognito g <> ttyTo ("#" <> n <> " [edited] ")
+ttyToGroupEdited g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " [edited] ")
+
+viewName :: Text -> Text
+viewName s = if T.any isSpace s then "'" <> s <> "'" else s
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain

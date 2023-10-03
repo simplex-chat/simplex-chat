@@ -18,13 +18,15 @@ fun main() {
 
 @Suppress("UnsafeDynamicallyLoadedCode")
 private fun initHaskell() {
-  val libApp = "libapp-lib.${desktopPlatform.libExtension}"
   val libsTmpDir = File(tmpDir.absolutePath + File.separator + "libs")
   copyResources(desktopPlatform.libPath, libsTmpDir.toPath())
-  System.load(File(libsTmpDir, libApp).absolutePath)
-
   vlcDir.deleteRecursively()
   Files.move(File(libsTmpDir, "vlc").toPath(), vlcDir.toPath(), StandardCopyOption.REPLACE_EXISTING)
+  if (desktopPlatform == DesktopPlatform.WINDOWS_X86_64) {
+    windowsLoadRequiredLibs(libsTmpDir)
+  } else {
+    System.load(File(libsTmpDir, "libapp-lib.${desktopPlatform.libExtension}").absolutePath)
+  }
   // No picture without preloading it, only sound. However, with libs from AppImage it works without preloading
   //val libXcb = "libvlc_xcb_events.so.0.0.0"
   //System.load(File(File(vlcDir, "vlc"), libXcb).absolutePath)
@@ -54,4 +56,26 @@ private fun copyResources(from: String, to: Path) {
       return FileVisitResult.CONTINUE
     }
   })
+}
+
+private fun windowsLoadRequiredLibs(libsTmpDir: File) {
+  val mainLibs = arrayOf(
+    "libcrypto-3-x64.dll",
+    "libffi-8.dll",
+	"libgmp-10.dll",
+    "libsimplex.dll",
+    "libapp-lib.dll"
+  )
+  mainLibs.forEach {
+    System.load(File(libsTmpDir, it).absolutePath)
+  }
+  val vlcLibs = arrayOf(
+    "libvlccore.dll",
+    "libvlc.dll",
+	"axvlc.dll",
+    "npvlc.dll"
+  )
+  vlcLibs.forEach {
+    System.load(File(vlcDir, it).absolutePath)
+  }
 }

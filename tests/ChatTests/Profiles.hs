@@ -8,7 +8,7 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import qualified Data.Text as T
-import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..))
+import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec
 
@@ -17,6 +17,7 @@ chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
+    it "use multiword profile names" testMultiWordProfileNames
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "add contact link to profile" testProfileLink
@@ -62,7 +63,7 @@ testUpdateProfile =
       createGroup3 "team" alice bob cath
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
-      alice <## "use /p <display name> [<full name>] to change it"
+      alice <## "use /p <display name> to change it"
       alice <## "(the updated profile will be sent to all your contacts)"
       alice ##> "/p alice"
       concurrentlyN_
@@ -116,6 +117,76 @@ testUpdateProfileImage =
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
       (bob </)
+
+testMultiWordProfileNames :: HasCallStack => FilePath -> IO ()
+testMultiWordProfileNames =
+  testChat3 aliceProfile' bobProfile' cathProfile' $
+    \alice bob cath -> do
+      alice ##> "/c"
+      inv <- getInvitation alice
+      bob ##> ("/c " <> inv)
+      bob <## "confirmation sent!"
+      concurrently_
+        (bob <## "'Alice Jones': contact is connected")
+        (alice <## "'Bob James': contact is connected")
+      alice #> "@'Bob James' hi"
+      bob <# "'Alice Jones'> hi"
+      alice ##> "/g 'Our Team'"
+      alice <## "group #'Our Team' is created"
+      alice <## "to add members use /a 'Our Team' <name> or /create link #'Our Team'"
+      alice ##> "/a 'Our Team' 'Bob James' admin"
+      alice <## "invitation to join the group #'Our Team' sent to 'Bob James'"
+      bob <## "#'Our Team': 'Alice Jones' invites you to join the group as admin"
+      bob <## "use /j 'Our Team' to accept"
+      bob ##> "/j 'Our Team'"
+      bob <## "#'Our Team': you joined the group"
+      alice <## "#'Our Team': 'Bob James' joined the group"
+      bob ##> "/c"
+      inv' <- getInvitation bob
+      cath ##> ("/c " <> inv')
+      cath <## "confirmation sent!"
+      concurrently_
+        (cath <## "'Bob James': contact is connected")
+        (bob <## "'Cath Johnson': contact is connected")
+      bob ##> "/a 'Our Team' 'Cath Johnson'"
+      bob <## "invitation to join the group #'Our Team' sent to 'Cath Johnson'"
+      cath <## "#'Our Team': 'Bob James' invites you to join the group as member"
+      cath <## "use /j 'Our Team' to accept"
+      cath ##> "/j 'Our Team'"
+      concurrentlyN_
+        [ bob <## "#'Our Team': 'Cath Johnson' joined the group",
+          do
+            cath <## "#'Our Team': you joined the group"
+            cath <## "#'Our Team': member 'Alice Jones' is connected",
+          do
+            alice <## "#'Our Team': 'Bob James' added 'Cath Johnson' to the group (connecting...)"
+            alice <## "#'Our Team': new member 'Cath Johnson' is connected"
+        ]
+      bob #> "#'Our Team' hi"
+      alice <# "#'Our Team' 'Bob James'> hi"
+      cath <# "#'Our Team' 'Bob James'> hi"
+      alice `send` "@'Cath Johnson' hello"
+      alice <## "member #'Our Team' 'Cath Johnson' does not have direct connection, creating"
+      alice <## "contact for member #'Our Team' 'Cath Johnson' is created"
+      alice <## "sent invitation to connect directly to member #'Our Team' 'Cath Johnson'"
+      alice <# "@'Cath Johnson' hello"
+      cath <## "#'Our Team' 'Alice Jones' is creating direct contact 'Alice Jones' with you"
+      cath <# "'Alice Jones'> hello"
+      cath <## "'Alice Jones': contact is connected"
+      alice <## "'Cath Johnson': contact is connected"
+      cath ##> "/p 'Cath J'"
+      cath <## "user profile is changed to 'Cath J' (your 2 contacts are notified)"
+      alice <## "contact 'Cath Johnson' changed to 'Cath J'"
+      alice <## "use @'Cath J' <message> to send messages"
+      bob <## "contact 'Cath Johnson' changed to 'Cath J'"
+      bob <## "use @'Cath J' <message> to send messages"
+      alice #> "@'Cath J' hi"
+      cath <# "'Alice Jones'> hi"
+  where
+    aliceProfile' = baseProfile {displayName = "Alice Jones"}
+    bobProfile' = baseProfile {displayName = "Bob James"}
+    cathProfile' = baseProfile {displayName = "Cath Johnson"}
+    baseProfile = Profile {displayName = "", fullName = "", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
 testUserContactLink :: HasCallStack => FilePath -> IO ()
 testUserContactLink =
@@ -558,6 +629,7 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     -- alice deletes contact, incognito profile is deleted
     alice ##> ("/d " <> bobIncognito)
     alice <## (bobIncognito <> ": contact is deleted")
+    bob <## (aliceIncognito <> " deleted contact with you")
     alice ##> "/contacts"
     alice <## "cath (Catherine)"
     alice `hasContactProfiles` ["alice", "cath"]
@@ -601,6 +673,7 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     -- delete contact, incognito profile is deleted
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
+    alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]
@@ -633,6 +706,7 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     -- delete contact, incognito profile is deleted
     alice ##> "/d bob"
     alice <## "bob: contact is deleted"
+    bob <## (aliceIncognitoBob <> " deleted contact with you")
     alice ##> "/contacts"
     (alice </)
     alice `hasContactProfiles` ["alice"]
@@ -1063,6 +1137,7 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     -- delete contact
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
+    alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
@@ -1125,6 +1200,7 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     -- delete contact
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
+    alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]

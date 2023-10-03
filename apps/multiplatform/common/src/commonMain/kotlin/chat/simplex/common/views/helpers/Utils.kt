@@ -267,7 +267,7 @@ fun getMaxFileSize(fileProtocol: FileProtocol): Long {
   }
 }
 
-expect fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true): VideoPlayerInterface.PreviewAndDuration
+expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true): VideoPlayerInterface.PreviewAndDuration
 
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)

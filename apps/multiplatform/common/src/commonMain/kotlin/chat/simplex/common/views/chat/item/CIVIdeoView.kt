@@ -127,7 +127,7 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
     )
     if (showPreview.value) {
       VideoPreviewImageView(preview, onClick, onLongClick)
-      PlayButton(brokenVideo, onLongClick = onLongClick, if (appPlatform.isAndroid) play else onClick)
+      PlayButton(brokenVideo, onLongClick = onLongClick, play)
     }
     DurationProgress(file, videoPlaying, duration, progress/*, soundEnabled*/)
   }

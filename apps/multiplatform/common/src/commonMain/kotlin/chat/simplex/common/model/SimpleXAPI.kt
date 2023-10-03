@@ -106,6 +106,7 @@ class AppPreferences {
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
+  val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
   private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
@@ -265,6 +266,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
+    private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
     private const val SHARED_PREFS_NETWORK_SESSION_MODE = "NetworkSessionMode"
@@ -1364,6 +1366,11 @@ object ChatController {
       is CR.ContactConnectionDeleted -> {
         if (active(r.user)) {
           chatModel.removeChat(r.connection.id)
+        }
+      }
+      is CR.ContactDeletedByContact -> {
+        if (active(r.user) && r.contact.directOrUsed) {
+          chatModel.updateContact(r.contact)
         }
       }
       is CR.ContactConnected -> {
@@ -3295,6 +3302,7 @@ sealed class CR {
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactDeletedByContact") class ContactDeletedByContact(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
@@ -3426,6 +3434,7 @@ sealed class CR {
     is ContactAlreadyExists -> "contactAlreadyExists"
     is ContactRequestAlreadyAccepted -> "contactRequestAlreadyAccepted"
     is ContactDeleted -> "contactDeleted"
+    is ContactDeletedByContact -> "contactDeletedByContact"
     is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
@@ -3554,6 +3563,7 @@ sealed class CR {
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
     is ContactRequestAlreadyAccepted -> withUser(user, json.encodeToString(contact))
     is ContactDeleted -> withUser(user, json.encodeToString(contact))
+    is ContactDeletedByContact -> withUser(user, json.encodeToString(contact))
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
     is UserProfileNoChange -> withUser(user, noDetails())
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))
@@ -3822,6 +3832,7 @@ sealed class ChatErrorType {
       is InvalidConnReq -> "invalidConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ContactNotReady -> "contactNotReady"
+      is ContactNotActive -> "contactNotActive"
       is ContactDisabled -> "contactDisabled"
       is ConnectionDisabled -> "connectionDisabled"
       is GroupUserRole -> "groupUserRole"
@@ -3897,6 +3908,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contact: Contact): ChatErrorType()
+  @Serializable @SerialName("contactNotActive") class ContactNotActive(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("contactDisabled") class ContactDisabled(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("connectionDisabled") class ConnectionDisabled(val connection: Connection): ChatErrorType()
   @Serializable @SerialName("groupUserRole") class GroupUserRole(val groupInfo: GroupInfo, val requiredRole: GroupMemberRole): ChatErrorType()

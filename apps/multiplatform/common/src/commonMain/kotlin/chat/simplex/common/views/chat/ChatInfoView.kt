@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -291,7 +290,7 @@ fun ChatInfoLayout(
       SectionDividerSpaced()
     }
 
-    if (contact.ready) {
+    if (contact.ready && contact.active) {
       SectionView {
         if (connectionCode != null) {
           VerifyCodeButton(contact.verified, verifyClicked)
@@ -318,7 +317,7 @@ fun ChatInfoLayout(
       SectionDividerSpaced()
     }
 
-    if (contact.ready) {
+    if (contact.ready && contact.active) {
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
         SectionItemView({
           AlertManager.shared.showAlertMsg(
