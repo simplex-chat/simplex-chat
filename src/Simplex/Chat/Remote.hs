@@ -32,7 +32,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Transport.Credentials
+import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
@@ -67,7 +67,7 @@ startRemoteHost remoteHostId = do
         let parent = (C.signatureKeyPair caKey, caCert)
         sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
         let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
-        Discovery.runAnnouncer cleanup fingerprint credentials >>= \case
+        Discovery.announceRevHttp2 cleanup fingerprint credentials >>= \case
           Left todo'err -> liftIO cleanup -- TODO: log error
           Right ctrlClient -> do
             chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarted {storePath, ctrlClient}
@@ -144,6 +144,12 @@ relayCommand http s =
       where
         req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
 
+-- | Convert swift single-field sum encoding into tagged/discriminator-field
+sum2tagged :: J.Value -> J.Value
+sum2tagged = \case
+  J.Object todo'convert -> J.Object todo'convert
+  skip -> skip
+
 storeRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> m ChatResponse
 storeRemoteFile http localFile = do
   postFile Nothing http "/store" mempty localFile >>= \case
@@ -168,14 +174,8 @@ fetchRemoteFile http storePath remoteFileId = do
     req = HTTP2Client.requestNoBody "GET" path mempty
     path = "/fetch/" <> bshow remoteFileId
 
--- | Convert swift single-field sum encoding into tagged/discriminator-field
-sum2tagged :: J.Value -> J.Value
-sum2tagged = \case
-  J.Object todo'convert -> J.Object todo'convert
-  skip -> skip
-
-processControllerCommand :: (ChatMonad m) => RemoteCtrlId -> HTTP2.HTTP2Request -> m ()
-processControllerCommand rc req = error "TODO: processControllerCommand"
+processControllerRequest :: (ChatMonad m) => RemoteCtrlId -> HTTP2.HTTP2Request -> m ()
+processControllerRequest rc req = error "TODO: processControllerRequest"
 
 -- * ChatRequest handlers
 
@@ -190,7 +190,7 @@ startRemoteCtrl =
       _supervisor <- async $ do
         uiEvent <- async $ atomically $ readTMVar accepted
         waitEitherCatchCancel listener uiEvent >>= \case
-          Left _ -> pure () -- discover got cancelled or crashed on some UDP error
+          Left _ -> pure () -- discover got cancelled (okay) or crashed on some UDP error (indistinguishable)
           Right (Left _) -> toView . CRChatError Nothing . ChatError $ CEException "Crashed while waiting for remote session confirmation"
           Right (Right remoteCtrlId) ->
             -- got connection confirmation
@@ -198,7 +198,7 @@ startRemoteCtrl =
               Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote session accepted without getting discovered first"
               Just (source, fingerprint) -> do
                 atomically $ writeTVar discovered mempty -- flush unused sources
-                host <- async $ runRemoteHost remoteCtrlId source fingerprint
+                host <- async $ Discovery.connectRevHttp2 source fingerprint (processControllerRequest remoteCtrlId)
                 chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {ctrlAsync = host, accepted}
                 _ <- waitCatch host
                 chatWriteVar remoteCtrlSession Nothing
@@ -220,10 +220,6 @@ discoverRemoteCtrls discovered = Discovery.openListener >>= go
                 atomically $ TM.insert remoteCtrlId (THIPv4 (hostAddressToTuple addr), fingerprint) discovered
                 toView $ CRRemoteCtrlFound found
         _nonV4 -> go sock
-
-runRemoteHost :: (ChatMonad m) => RemoteCtrlId -> TransportHost -> C.KeyHash -> m ()
-runRemoteHost remoteCtrlId remoteCtrlHost fingerprint =
-  Discovery.connectSessionHost remoteCtrlHost fingerprint $ Discovery.attachServer (processControllerCommand remoteCtrlId)
 
 confirmRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
 confirmRemoteCtrl remoteCtrlId =

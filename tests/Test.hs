@@ -8,6 +8,7 @@ import Data.Time.Clock.System
 import MarkdownTests
 import MobileTests
 import ProtocolTests
+import RemoteTests
 import SchemaDump
 import Test.Hspec
 import UnliftIO.Temporary (withTempDirectory)
@@ -28,6 +29,7 @@ main = do
       describe "SimpleX chat client" chatTests
       xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
       xdescribe'' "SimpleX Directory service bot" directoryServiceTests
+      describe "Remote session" remoteTests
   where
     testBracket test = do
       t <- getSystemTime
