@@ -61,8 +61,11 @@ private fun copyResources(from: String, to: Path) {
 private fun windowsLoadRequiredLibs(libsTmpDir: File) {
   val mainLibs = arrayOf(
     "libcrypto-3-x64.dll",
+    "mcfgthread-12.dll",
+    "libgcc_s_seh-1.dll",
+    "libstdc++-6.dll",
     "libffi-8.dll",
-	"libgmp-10.dll",
+    "libgmp-10.dll",
     "libsimplex.dll",
     "libapp-lib.dll"
   )
@@ -72,7 +75,7 @@ private fun windowsLoadRequiredLibs(libsTmpDir: File) {
   val vlcLibs = arrayOf(
     "libvlccore.dll",
     "libvlc.dll",
-	"axvlc.dll",
+    "axvlc.dll",
     "npvlc.dll"
   )
   vlcLibs.forEach {

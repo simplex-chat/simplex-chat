@@ -24,4 +24,7 @@ mv libsimplex.dll "$output_dir" && \
 mv libcrypto*.dll "$output_dir/deps" && \
 mv libffi*.dll "$output_dir/deps" && \
 mv libgmp*.dll "$output_dir/deps" && \
+mv mcfgthread*.dll "$output_dir/deps" && \
+mv libgcc_s_seh*.dll "$output_dir/deps" && \
+mv libstdc++*.dll "$output_dir/deps" && \
 rm libsimplex.zip
