@@ -77,6 +77,7 @@ module Simplex.Chat.Store.Groups
     getViaGroupMember,
     getViaGroupContact,
     getMatchingContacts,
+    getMatchingMembers,
     getMatchingMemberContacts,
     createSentProbe,
     createSentProbeHash,
@@ -84,7 +85,8 @@ module Simplex.Chat.Store.Groups
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
-    updateMemberContact,
+    associateMemberWithContactRecord,
+    associateContactWithMemberRecord,
     updateGroupSettings,
     getXGrpMemIntroContDirect,
     getXGrpMemIntroContGroup,
@@ -105,7 +107,7 @@ import Crypto.Random (ChaChaDRG)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (sortOn)
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isNothing, catMaybes)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
@@ -1176,13 +1178,32 @@ getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalPro
           AND p.display_name = ? AND p.full_name = ?
       |]
 
+getMatchingMembers :: DB.Connection -> User -> Contact -> IO [GroupMember]
+getMatchingMembers db user@User {userId} Contact {profile = LocalProfile {displayName, fullName, image}} = do
+  memberIds <-
+    map fromOnly <$> case image of
+      Just img -> DB.query db (q <> " AND p.image = ?") (userId, GCUserMember, displayName, fullName, img)
+      Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, GCUserMember, displayName, fullName)
+  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db user) memberIds
+  where
+    -- only match with members without associated contact
+    q =
+      [sql|
+        SELECT m.group_member_id
+        FROM group_members m
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        WHERE m.user_id = ? AND m.contact_id IS NULL
+          AND m.member_category != ?
+          AND p.display_name = ? AND p.full_name = ?
+      |]
+
 getMatchingMemberContacts :: DB.Connection -> User -> GroupMember -> IO [Contact]
 getMatchingMemberContacts _ _ GroupMember {memberContactId = Just _} = pure []
 getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} = do
   contactIds <-
     map fromOnly <$> case image of
-      Just img -> DB.query db (q <> " AND p.image = ?") (userId, displayName, fullName, img)
-      Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, displayName, fullName)
+      Just img -> DB.query db (q <> " AND p.image = ?") (userId, CSActive, displayName, fullName, img)
+      Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, CSActive, displayName, fullName)
   rights <$> mapM (runExceptT . getContact db user) contactIds
   where
     q =
@@ -1191,7 +1212,7 @@ getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = Loc
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
         WHERE ct.user_id = ?
-          AND ct.deleted = 0
+          AND ct.contact_status = ? AND ct.deleted = 0
           AND p.display_name = ? AND p.full_name = ?
       |]
 
@@ -1204,40 +1225,39 @@ createSentProbe db gVar userId to =
       db
       "INSERT INTO sent_probes (contact_id, group_member_id, probe, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
       (ctId, gmId, probe, userId, currentTs, currentTs)
-    (Probe probe,) <$> insertedRowId db    
+    (Probe probe,) <$> insertedRowId db
 
-createSentProbeHash :: DB.Connection -> UserId -> Int64 -> ContactOrGroupMember -> IO ()
+createSentProbeHash :: DB.Connection -> UserId -> Int64 -> ContactOrMember -> IO ()
 createSentProbeHash db userId probeId to = do
   currentTs <- getCurrentTime
-  let (ctId, gmId) = contactOrGroupMemberIds to
+  let (ctId, gmId) = contactOrMemberIds to
   DB.execute
     db
     "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, group_member_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (probeId, ctId, gmId, userId, currentTs, currentTs)
 
-matchReceivedProbe :: DB.Connection -> User -> ContactOrGroupMember -> Probe -> IO (Maybe ContactOrGroupMember)
+matchReceivedProbe :: DB.Connection -> User -> ContactOrGroupMember -> Probe -> IO [ContactOrGroupMember]
 matchReceivedProbe db user@User {userId} from (Probe probe) = do
   let probeHash = C.sha256Hash probe
   cgmIds <-
-    maybeFirstRow id $
-      DB.query
-        db
-        [sql|
-          SELECT r.contact_id, g.group_id, r.group_member_id
-          FROM received_probes r
-          LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
-          LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
-          LEFT JOIN groups g ON g.group_id = m.group_id
-          WHERE r.user_id = ? AND r.probe_hash = ? AND r.probe IS NULL
-        |]
-        (userId, probeHash)
+    DB.query
+      db
+      [sql|
+        SELECT r.contact_id, g.group_id, r.group_member_id
+        FROM received_probes r
+        LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
+        LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
+        LEFT JOIN groups g ON g.group_id = m.group_id
+        WHERE r.user_id = ? AND r.probe_hash = ? AND r.probe IS NULL
+      |]
+      (userId, probeHash)
   currentTs <- getCurrentTime
   let (ctId, gmId) = contactOrGroupMemberIds from
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (ctId, gmId, probe, probeHash, userId, currentTs, currentTs)
-  pure cgmIds $>>= getContactOrGroupMember_ db user
+  catMaybes <$> mapM (getContactOrGroupMember_ db user) cgmIds
 
 matchReceivedProbeHash :: DB.Connection -> User -> ContactOrGroupMember -> ProbeHash -> IO (Maybe (ContactOrGroupMember, Probe))
 matchReceivedProbeHash db user@User {userId} from (ProbeHash probeHash) = do
@@ -1263,7 +1283,7 @@ matchReceivedProbeHash db user@User {userId} from (ProbeHash probeHash) = do
   pure probeIds $>>= \(Only probe :. cgmIds) -> (,Probe probe) <$$> getContactOrGroupMember_ db user cgmIds
 
 matchSentProbe :: DB.Connection -> User -> ContactOrGroupMember -> Probe -> IO (Maybe ContactOrGroupMember)
-matchSentProbe db user@User {userId} _from (Probe probe) =  
+matchSentProbe db user@User {userId} _from (Probe probe) =
   cgmIds $>>= getContactOrGroupMember_ db user
   where
     (ctId, gmId) = contactOrGroupMemberIds _from
@@ -1318,6 +1338,18 @@ mergeContactRecords db userId ct1 ct2 = do
     db
     "UPDATE chat_items SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
     (toContactId, currentTs, fromContactId, userId)
+  DB.execute
+    db
+    "UPDATE sent_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+    (toContactId, currentTs, fromContactId, userId)
+  DB.execute
+    db
+    "UPDATE sent_probe_hashes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+    (toContactId, currentTs, fromContactId, userId)
+  DB.execute
+    db
+    "UPDATE received_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+    (toContactId, currentTs, fromContactId, userId)
   DB.executeNamed
     db
     [sql|
@@ -1349,14 +1381,12 @@ mergeContactRecords db userId ct1 ct2 = do
         d2 = directOrUsed c2
         ctCreatedAt Contact {createdAt} = createdAt
 
-updateMemberContact :: DB.Connection -> User -> Contact -> GroupMember -> IO ()
-updateMemberContact
+associateMemberWithContactRecord :: DB.Connection -> User -> Contact -> GroupMember -> IO ()
+associateMemberWithContactRecord
   db
   User {userId}
   Contact {contactId, localDisplayName, profile = LocalProfile {profileId}}
   GroupMember {groupId, groupMemberId, localDisplayName = memLDN, memberProfile = LocalProfile {profileId = memProfileId}} = do
-    -- TODO possibly, we should update profiles and local_display_names of all members linked to the same remote user,
-    -- once we decide on how we identify it, either based on shared contact_profile_id or on local_display_name
     currentTs <- getCurrentTime
     DB.execute
       db
@@ -1368,6 +1398,32 @@ updateMemberContact
       (contactId, localDisplayName, profileId, currentTs, userId, groupId, groupMemberId)
     when (memProfileId /= profileId) $ deleteUnusedProfile_ db userId memProfileId
     when (memLDN /= localDisplayName) $ deleteUnusedDisplayName_ db userId memLDN
+
+associateContactWithMemberRecord :: DB.Connection -> User -> GroupMember -> Contact -> IO ()
+associateContactWithMemberRecord
+  db
+  User {userId}
+  GroupMember {groupId, groupMemberId, localDisplayName = memLDN, memberProfile = LocalProfile {profileId = memProfileId}}
+  Contact {contactId, localDisplayName, profile = LocalProfile {profileId}} = do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      [sql|
+        UPDATE group_members
+        SET contact_id = ?, updated_at = ?
+        WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+      |]
+      (contactId, currentTs, userId, groupId, groupMemberId)
+    DB.execute
+      db
+      [sql|
+        UPDATE contacts
+        SET local_display_name = ?, contact_profile_id = ?, updated_at = ?
+        WHERE user_id = ? AND contact_id = ?
+      |]
+      (memLDN, memProfileId, currentTs, userId, contactId)
+    when (profileId /= memProfileId) $ deleteUnusedProfile_ db userId profileId
+    when (localDisplayName /= memLDN) $ deleteUnusedDisplayName_ db userId localDisplayName
 
 deleteUnusedDisplayName_ :: DB.Connection -> UserId -> ContactName -> IO ()
 deleteUnusedDisplayName_ db userId localDisplayName =

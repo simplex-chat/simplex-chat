@@ -257,6 +257,14 @@ contactOrGroupMemberIncognito = \case
   CGMContact ct -> contactConnIncognito ct
   CGMGroupMember _ m -> memberIncognito m
 
+data ContactOrMember = COMContact Contact | COMGroupMember GroupMember
+  deriving (Show)
+
+contactOrMemberIds :: ContactOrMember -> (Maybe ContactId, Maybe GroupMemberId)
+contactOrMemberIds = \case
+  COMContact Contact {contactId} -> (Just contactId, Nothing)
+  COMGroupMember GroupMember {groupMemberId} -> (Nothing, Just groupMemberId)
+
 data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact,
