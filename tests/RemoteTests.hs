@@ -32,7 +32,7 @@ remoteTests :: SpecWith FilePath
 remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  fit "connects desktop and mobile" remoteHandshakeTest
+  it "connects desktop and mobile" remoteHandshakeTest
 
 -- * Low-level TLS with ephemeral credentials
 
