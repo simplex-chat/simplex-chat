@@ -77,7 +77,7 @@ chatGroupTests = do
     it "new member should merge with existing contact" testMergeMemberExistingContact
     it "new contact should merge with existing member" testMergeContactExistingMember
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
-    fit "new contact should merge with both existing members and contacts" testMergeContactExistingMembersAndContacts
+    it "new contact should merge with both existing members and contacts" testMergeContactExistingMembersAndContacts
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage

@@ -87,6 +87,7 @@ module Simplex.Chat.Store.Groups
     mergeContactRecords,
     associateMemberWithContactRecord,
     associateContactWithMemberRecord,
+    deleteOldProbes,
     updateGroupSettings,
     getXGrpMemIntroContDirect,
     getXGrpMemIntroContGroup,
@@ -1462,6 +1463,12 @@ deleteUnusedDisplayName_ db userId localDisplayName =
         )
     |]
     [":user_id" := userId, ":local_display_name" := localDisplayName]
+
+deleteOldProbes :: DB.Connection -> UTCTime -> IO ()
+deleteOldProbes db createdAtCutoff = do
+  DB.execute db "DELETE FROM sent_probes WHERE created_at <= ?" (Only createdAtCutoff)
+  DB.execute db "DELETE FROM sent_probe_hashes WHERE created_at <= ?" (Only createdAtCutoff)
+  DB.execute db "DELETE FROM received_probes WHERE created_at <= ?" (Only createdAtCutoff)
 
 updateGroupSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()
 updateGroupSettings db User {userId} groupId ChatSettings {enableNtfs, sendRcpts, favorite} =
