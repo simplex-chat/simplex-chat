@@ -18,7 +18,6 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
-import Data.Text.Encoding (decodeUtf8)
 import qualified Network.HTTP.Types as HTTP
 import qualified Network.HTTP2.Client as HTTP2Client
 import Network.Socket (SockAddr (..), hostAddressToTuple)
@@ -88,7 +87,7 @@ createRemoteHost displayName = do
   remoteHostId <- withStore' $ \db -> insertRemoteHost (DB.conn db) storePath displayName caKey caCert
   let oobData =
         RemoteHostOOB
-          { fingerprint = decodeUtf8 . strEncode $ C.certificateFingerprint caCert
+          { caFingerprint = C.certificateFingerprint caCert
           }
   pure CRRemoteHostCreated {remoteHostId, oobData}
 
@@ -221,8 +220,24 @@ discoverRemoteCtrls discovered = Discovery.openListener >>= go
                 toView $ CRRemoteCtrlFound found
         _nonV4 -> go sock
 
-confirmRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
-confirmRemoteCtrl remoteCtrlId =
+registerRemoteCtrl :: (ChatMonad m) => Text -> RemoteHostOOB -> m ChatResponse
+registerRemoteCtrl displayName RemoteHostOOB{caFingerprint} = do
+  remoteCtrlId <- withStore' $ \db -> insertRemoteCtrl (DB.conn db) displayName caFingerprint
+  pure $ CRRemoteCtrlRegistered{remoteCtrlId}
+
+listRemoteCtrls :: (ChatMonad m) => m ChatResponse
+listRemoteCtrls = do
+  stored <- withStore' (getRemoteCtrls . DB.conn)
+  active <- chatReadVar remoteCtrlSession >>= \case
+    Nothing -> pure Nothing
+    Just RemoteCtrlSession{accepted} -> atomically (tryReadTMVar accepted)
+  pure $ CRRemoteCtrlList $ do
+    RemoteCtrl {remoteCtrlId, displayName} <- stored
+    let sessionActive = active == Just remoteCtrlId
+    pure RemoteCtrlInfo {remoteCtrlId, displayName, sessionActive}
+
+acceptRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
+acceptRemoteCtrl remoteCtrlId =
   chatReadVar remoteCtrlSession >>= \case
     Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
     Just RemoteCtrlSession {accepted} -> do
@@ -245,6 +260,7 @@ stopRemoteCtrl remoteCtrlId =
     Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
     Just RemoteCtrlSession {ctrlAsync} -> do
       cancel ctrlAsync
+      chatWriteVar remoteCtrlSession Nothing
       pure CRRemoteCtrlStopped {remoteCtrlId}
 
 disposeRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse

@@ -11,7 +11,7 @@ m20230922_remote_controller =
 CREATE TABLE remote_hosts ( -- hosts known to a controlling app
   remote_host_id INTEGER PRIMARY KEY AUTOINCREMENT,
   store_path TEXT NOT NULL,            -- file path relative to app store (must not contain "/")
-  display_name TEXT NOT NULL,          -- user-provided name for a remote device
+  display_name TEXT NOT NULL,          -- user-provided name for a remote host
   ca_key BLOB NOT NULL,                -- private key for signing session certificates
   ca_cert BLOB NOT NULL,               -- root certificate, whose fingerprint is pinned on a remote
   contacted INTEGER NOT NULL DEFAULT 0 -- 0 (first time), 1 (connected before)
@@ -19,9 +19,9 @@ CREATE TABLE remote_hosts ( -- hosts known to a controlling app
 
 CREATE TABLE remote_controllers ( -- controllers known to a hosting app
   remote_controller_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  display_name TEXT NOT NULL,
-  fingerprint BLOB NOT NULL,
-  accepted INTEGER -- NULL (unknown), 0 (rejected), 1 (confirmed)
+  display_name TEXT NOT NULL, -- user-provided name for a remote controller
+  fingerprint BLOB NOT NULL,  -- remote controller CA fingerprint
+  accepted INTEGER            -- NULL (unknown), 0 (rejected), 1 (confirmed)
 );
 |]
 

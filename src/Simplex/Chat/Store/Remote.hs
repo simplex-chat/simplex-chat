@@ -35,6 +35,11 @@ toRemoteHost (remoteHostId, storePath, displayName, caKey, C.SignedObject caCert
 deleteRemoteHost :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHost db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (DB.Only remoteHostId)
 
+insertRemoteCtrl :: DB.Connection -> Text -> C.KeyHash -> IO RemoteCtrlId
+insertRemoteCtrl db displayName fingerprint = do
+  DB.execute db "INSERT INTO remote_controllers (display_name, fingerprint) VALUES (?,?)" (displayName, fingerprint)
+  DB.fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
+
 getRemoteCtrls :: DB.Connection -> IO [RemoteCtrl]
 getRemoteCtrls db =
   map toRemoteCtrl <$> DB.query_ db remoteCtrlQuery

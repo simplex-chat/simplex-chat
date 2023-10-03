@@ -422,7 +422,7 @@ data ChatCommand
   | RegisterRemoteCtrl Text RemoteHostOOB -- ^ Register OOB data for satellite discovery and handshake
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
   | ListRemoteCtrls
-  | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm discovered data and store confirmation
+  | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
   | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
   | StopRemoteCtrl RemoteCtrlId -- ^ Stop listening for announcements or terminate an active session
   | DisposeRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
@@ -608,7 +608,6 @@ data ChatResponse
   | CRRemoteCtrlStarted
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
   | CRRemoteCtrlFound {remoteCtrl::RemoteCtrl} -- registered fingerprint, may connect
-  -- | CRRemoteCtrlFirstContact {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
@@ -658,7 +657,7 @@ instance ToJSON ChatResponse where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
 data RemoteHostOOB = RemoteHostOOB
-  { fingerprint :: Text -- CA key fingerprint
+  { caFingerprint :: C.KeyHash
   }
   deriving (Show, Generic, ToJSON)
 
@@ -675,7 +674,7 @@ data RemoteCtrlInfo = RemoteCtrlInfo
     displayName :: Text,
     sessionActive :: Bool
   }
-  deriving (Show, Generic, ToJSON)
+  deriving (Eq, Show, Generic, ToJSON)
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -1054,6 +1053,7 @@ data RemoteCtrlError
   | RCEConnectionLost {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected due to transport issues
   | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
+  | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteCtrlError where

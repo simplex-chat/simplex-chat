@@ -1835,17 +1835,17 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
-  CreateRemoteHost displayName -> createRemoteHost displayName
+  CreateRemoteHost dn -> createRemoteHost dn
   ListRemoteHosts -> listRemoteHosts
   StartRemoteHost rh -> startRemoteHost rh
   StopRemoteHost rh -> closeRemoteHostSession rh $> CRRemoteHostStopped rh
   DisposeRemoteHost rh -> disposeRemoteHost rh
   StartRemoteCtrl -> startRemoteCtrl
-  ConfirmRemoteCtrl rc -> confirmRemoteCtrl rc
+  AcceptRemoteCtrl rc -> acceptRemoteCtrl rc
   RejectRemoteCtrl rc -> rejectRemoteCtrl rc
   StopRemoteCtrl rc -> stopRemoteCtrl rc
-  RegisterRemoteCtrl _displayName _oobData -> pure $ chatCmdError Nothing "not supported"
-  ListRemoteCtrls -> pure $ chatCmdError Nothing "not supported"
+  RegisterRemoteCtrl dn oob -> registerRemoteCtrl dn oob
+  ListRemoteCtrls -> listRemoteCtrls
   DisposeRemoteCtrl rc -> disposeRemoteCtrl rc
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
@@ -5609,15 +5609,15 @@ chatCommandP =
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
-      "/create remote host " *> (CreateRemoteHost <$> textP),
+      "/create remote host " *> (CreateRemoteHost <$> wordP),
       "/list remote hosts" $> ListRemoteHosts,
       "/start remote host " *> (StartRemoteHost <$> A.decimal),
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/dispose remote host " *> (DisposeRemoteHost <$> A.decimal),
       "/start remote ctrl" $> StartRemoteCtrl,
-      "/register remote ctrl " *> (RegisterRemoteCtrl <$> textP <*> remoteHostOOBP),
-      -- "/list remote controllers" $> ListRemoteCtrls,
-      "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
+      "/register remote ctrl " *> (RegisterRemoteCtrl <$> (wordP <* A.space) <*> (RemoteHostOOB <$> strP)),
+      "/list remote ctrls" $> ListRemoteCtrls,
+      "/accept remote ctrl " *> (AcceptRemoteCtrl <$> A.decimal),
       "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
       "/stop remote ctrl " *> (StopRemoteCtrl <$> A.decimal),
       "/dispose remote ctrl " *> (DisposeRemoteCtrl <$> A.decimal),
@@ -5678,6 +5678,7 @@ chatCommandP =
       pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
+    wordP = safeDecodeUtf8 <$> A.takeTill (== ' ')
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     msgTextP = jsonP <|> textP
     stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString
@@ -5738,7 +5739,6 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
-    remoteHostOOBP = RemoteHostOOB <$> textP
 
 adminContactReq :: ConnReqContact
 adminContactReq =
