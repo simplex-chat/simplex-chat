@@ -101,13 +101,14 @@ struct CreateFirstProfile: View {
                     } label: {
                         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                     }
-                    .padding(.top, 2)
+                } else {
+                    Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
                 }
                 TextField("Enter your name…", text: $displayName)
                     .focused($focusDisplayName)
-                    .padding(.leading, 28)
-                    .padding(.bottom)
+                    .padding(.leading, 32)
             }
+            .padding(.bottom)
             Spacer()
             onboardingButtons()
         }
@@ -223,7 +224,7 @@ private func creatUserErrorAlert(_ err: LocalizedStringKey) -> Alert {
     )
 }
 
-private func createInvalidNameAlert(_ name: String, _ displayName: Binding<String>) -> Alert {
+func createInvalidNameAlert(_ name: String, _ displayName: Binding<String>) -> Alert {
     name == ""
     ? Alert(title: Text("Invalid name!"))
     : Alert(

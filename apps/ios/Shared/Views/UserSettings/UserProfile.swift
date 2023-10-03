@@ -52,15 +52,17 @@ struct UserProfile: View {
                             Button {
                                 alert = .invalidNameError(validName: mkValidName(profile.displayName))
                             } label: {
-                                Image(systemName: "exclamationmark.circle")
-                                    .foregroundColor(.red)
-                                    .padding(.bottom, 10)
+                                Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                             }
+                        } else {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
                         }
                         profileNameTextEdit("Profile name", $profile.displayName)
                     }
-                    if user.profile.fullName != "" {
+                    .padding(.bottom)
+                    if showFullName(user) {
                         profileNameTextEdit("Full name (optional)", $profile.fullName)
+                            .padding(.bottom)
                     }
                     HStack(spacing: 20) {
                         Button("Cancel") { editProfile = false }
@@ -82,7 +84,7 @@ struct UserProfile: View {
 
                 VStack(alignment: .leading) {
                     profileNameView("Profile name:", user.profile.displayName)
-                    if user.profile.fullName != "" {
+                    if showFullName(user) {
                         profileNameView("Full name:", user.profile.fullName)
                     }
                     Button("Edit") {
@@ -131,10 +133,7 @@ struct UserProfile: View {
 
     func profileNameTextEdit(_ label: LocalizedStringKey, _ name: Binding<String>) -> some View {
         TextField(label, text: name)
-            .textInputAutocapitalization(.never)
-            .disableAutocorrection(true)
-            .padding(.bottom)
-            .padding(.leading, 28)
+            .padding(.leading, 32)
     }
 
     func profileNameView(_ label: LocalizedStringKey, _ name: String) -> some View {
@@ -152,7 +151,11 @@ struct UserProfile: View {
     }
 
     private func validNewProfileName(_ user: User) -> Bool {
-        profile.displayName == user.profile.displayName || validDisplayName(profile.displayName)
+        profile.displayName == user.profile.displayName || validDisplayName(profile.displayName.trimmingCharacters(in: .whitespaces))
+    }
+
+    private func showFullName(_ user: User) -> Bool {
+        user.profile.fullName != "" && user.profile.fullName != user.profile.displayName
     }
 
     private func canSaveProfile(_ user: User) -> Bool {
@@ -162,6 +165,7 @@ struct UserProfile: View {
     func saveProfile() {
         Task {
             do {
+                profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
                 if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
                     DispatchQueue.main.async {
                         chatModel.updateCurrentUser(newProfile)
