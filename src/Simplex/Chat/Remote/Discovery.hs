@@ -8,7 +8,7 @@ module Simplex.Chat.Remote.Discovery
   ( -- * Announce
     announceRevHttp2,
     runAnnouncer,
-    spawnTLSServer,
+    startTLSServer,
     attachHttp2Client,
 
     -- * Discovery
@@ -24,7 +24,6 @@ import Control.Monad
 import Data.ByteString (ByteString)
 import Data.Default (def)
 import Data.String (IsString)
-import Debug.Trace
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import qualified Network.UDP as UDP
@@ -57,7 +56,7 @@ announceRevHttp2 finishAction invite credentials = do
   started <- newEmptyTMVarIO
   finished <- newEmptyMVar
   announcer <- async . liftIO . whenM (atomically $ takeTMVar started) $ runAnnouncer (strEncode invite)
-  tlsServer <- spawnTLSServer started credentials $ \tls -> cancel announcer >> attachHttp2Client finished httpClient tls
+  tlsServer <- startTLSServer started credentials $ \tls -> cancel announcer >> attachHttp2Client finished httpClient tls
   _ <- forkIO . liftIO $ do
     readMVar finished
     cancel tlsServer
@@ -73,8 +72,8 @@ runAnnouncer inviteBS = do
     UDP.send sock inviteBS
     threadDelay 1000000
 
-spawnTLSServer :: (MonadUnliftIO m) => TMVar Bool -> TLS.Credentials -> (Transport.TLS -> IO ()) -> m (Async ())
-spawnTLSServer started credentials = async . liftIO . runTransportServer started BROADCAST_PORT serverParams defaultTransportServerConfig
+startTLSServer :: (MonadUnliftIO m) => TMVar Bool -> TLS.Credentials -> (Transport.TLS -> IO ()) -> m (Async ())
+startTLSServer started credentials = async . liftIO . runTransportServer started BROADCAST_PORT serverParams defaultTransportServerConfig
   where
     serverParams =
       def

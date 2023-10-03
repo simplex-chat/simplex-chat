@@ -3,27 +3,19 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module RemoteTests where
 
-import Control.Monad.Reader (runReaderT)
 import ChatClient
 import ChatTests.Utils
 import Control.Monad
-import qualified Data.ByteString.Char8 as BS8
-import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.String (fromString)
 import Debug.Trace
 import Network.HTTP.Types (ok200)
 import qualified Network.HTTP2.Client as C
 import qualified Network.HTTP2.Server as S
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
-import Simplex.Chat (execChatCommand)
-import Simplex.Chat.Controller (ChatResponse (..), RemoteCtrlInfo (..), RemoteHostInfo (..), RemoteHostOOB (..))
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -37,14 +29,10 @@ import UnliftIO
 import UnliftIO.Concurrent (threadDelay)
 
 remoteTests :: SpecWith FilePath
-remoteTests = do
-  remoteHandshakeTests
-
-remoteHandshakeTests :: SpecWith FilePath
-remoteHandshakeTests = describe "Handshake" $ do
+remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  it "stores data for controllers and hosts" remoteStoreTest
+  fit "connects desktop and mobile" remoteHandshakeTest
 
 -- * Low-level TLS with ephemeral credentials
 
@@ -52,7 +40,7 @@ genCredentialsTest :: (HasCallStack) => FilePath -> IO ()
 genCredentialsTest _tmp = do
   (fingerprint, credentials) <- genTestCredentials
   started <- newEmptyTMVarIO
-  server <- Discovery.spawnTLSServer started credentials serverHandler
+  server <- Discovery.startTLSServer started credentials serverHandler
   ok <- atomically (readTMVar started)
   unless ok $ cancel server >> error "TLS server failed to start"
   Discovery.connectTLSClient "127.0.0.1" fingerprint clientHandler
@@ -104,56 +92,48 @@ announceDiscoverHttp2Test _tmp = do
 
 -- * Chat commands
 
-cmd :: TestCC -> String -> IO ChatResponse
-cmd cc s = runReaderT (execChatCommand Nothing (encodeUtf8 $ fromString s)) cc.chatController
+remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
+  desktop ##> "/list remote hosts"
+  desktop <## "No remote hosts"
+  desktop ##> "/create remote host"
+  desktop <## "remote host 1 created"
+  desktop <## "connection code:"
+  fingerprint <- getTermLine desktop
 
-remoteStoreTest :: HasCallStack => FilePath -> IO ()
-remoteStoreTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
-  CRRemoteHostList [] <- cmd desktop "/list remote hosts"
-  CRRemoteHostCreated{remoteHostId=tmpHost, oobData=RemoteHostOOB{caFingerprint=tmpFP}} <- cmd desktop "/create remote host TmpHost"
-  cmd desktop "/list remote hosts" >>= \case
-    CRRemoteHostList [RemoteHostInfo {remoteHostId, displayName, sessionActive}] -> do
-      remoteHostId `shouldBe` tmpHost
-      displayName `shouldBe` ("TmpHost" :: Text)
-      sessionActive `shouldBe` False
-      -- XXX: check rhi.storePath exists?
-    unexpected -> fail $ "Unexpected: " <> show unexpected
+  desktop ##> "/list remote hosts"
+  desktop <## "Remote hosts:"
+  desktop <## "1. TODO" -- TODO host name probably should be Maybe, as when host is created there is no name yet
 
-  CRRemoteHostStarted{remoteHostId=hostStartedId} <- cmd desktop $ "/start remote host " <> show tmpHost
-  hostStartedId `shouldBe` tmpHost
+  desktop ##> "/start remote host 1"
+  desktop <## "remote host 1 started"
 
-  CRRemoteCtrlList [] <- cmd mobile "/list remote ctrls"
-  let ctrlRegisterCmd = "/register remote ctrl TmpCtrl " <> BS8.unpack (strEncode tmpFP)
-  CRRemoteCtrlRegistered{remoteCtrlId=tmpCtrl} <- cmd mobile ctrlRegisterCmd
-  cmd mobile "/list remote ctrls" >>= \case
-    CRRemoteCtrlList [RemoteCtrlInfo {remoteCtrlId, displayName, sessionActive}] -> do
-      remoteCtrlId `shouldBe` tmpCtrl
-      displayName `shouldBe` ("TmpCtrl" :: Text)
-      sessionActive `shouldBe` False
-    unexpected -> fail $ "Unexpected: " <> show unexpected
-  CRRemoteCtrlStarted <- cmd mobile "/start remote ctrl"
-
+  mobile ##> "/list remote ctrls"
+  mobile <## "No remote controllers"
+  mobile ##> ("/register remote ctrl " <> fingerprint)
+  mobile <## "remote controller 1 registered"
+  mobile ##> "/list remote ctrls"
+  mobile <## "Remote controllers:"
+  mobile <## "1. TODO"
+  mobile ##> "/start remote ctrl"
+  mobile <## "remote controller started"
   threadDelay 2000000 -- wait 2 broadcast intervals for discovery
-  -- TODO: read events
 
-  CRRemoteCtrlAccepted{remoteCtrlId=tmpCtrlAccepted} <- cmd mobile $ "/accept remote ctrl " <> show tmpCtrl
-  tmpCtrlAccepted `shouldBe` tmpCtrl
+  mobile ##> "/accept remote ctrl 1"
+  mobile <## "remote controller 1 accepted"
+  mobile ##> "/stop remote ctrl 1"
+  mobile <## "remote controller 1 stopped"
+  mobile ##> "/delete remote ctrl 1"
+  mobile <## "remote controller 1 deleted"
+  mobile ##> "/list remote ctrls"
+  mobile <## "No remote controllers"
 
-  CRRemoteCtrlStopped{remoteCtrlId=tmpCtrlStopped} <- cmd mobile $ "/stop remote ctrl " <> show tmpCtrl
-  tmpCtrlStopped `shouldBe` tmpCtrl
-  CRRemoteCtrlDisposed{remoteCtrlId=tmpCtrlDisposed} <- cmd mobile $ "/dispose remote ctrl " <> show tmpCtrl
-  tmpCtrlDisposed `shouldBe` tmpCtrl
-  CRRemoteCtrlList noCtrls <- cmd mobile "/list remote ctrls"
-  null noCtrls `shouldBe` True
-
-  CRRemoteHostStopped{remoteHostId=tmpHostStopped} <- cmd desktop $ "/stop remote host " <> show tmpHost
-  tmpHostStopped `shouldBe` tmpHost
-  CRRemoteHostDisposed{remoteHostId=tmpHostDisposed} <- cmd desktop $ "/dispose remote host " <> show tmpHost
-  tmpHostDisposed `shouldBe` tmpHost
-  CRRemoteHostList noHosts <- cmd desktop "/list remote hosts"
-  null noHosts `shouldBe` True
-
-  traceM "tests done"
+  desktop ##> "/stop remote host 1"
+  desktop <## "remote host 1 stopped"
+  desktop ##> "/delete remote host 1"
+  desktop <## "remote host 1 deleted"
+  desktop ##> "/list remote hosts"
+  desktop <## "No remote hosts"
 
 -- * Utils
 

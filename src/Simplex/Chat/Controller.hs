@@ -414,18 +414,18 @@ data ChatCommand
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
-  | CreateRemoteHost Text -- ^ Configure a new remote host
+  | CreateRemoteHost -- ^ Configure a new remote host
   | ListRemoteHosts
   | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
-  | DisposeRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
-  | RegisterRemoteCtrl Text RemoteHostOOB -- ^ Register OOB data for satellite discovery and handshake
+  | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
+  | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
   | ListRemoteCtrls
   | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
   | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
   | StopRemoteCtrl RemoteCtrlId -- ^ Stop listening for announcements or terminate an active session
-  | DisposeRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
+  | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -597,22 +597,22 @@ data ChatResponse
   | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
-  | CRRemoteHostCreated {remoteHostId :: RemoteHostId, oobData :: RemoteHostOOB}
+  | CRRemoteHostCreated {remoteHostId :: RemoteHostId, oobData :: RemoteCtrlOOB}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]} -- XXX: RemoteHostInfo is mostly concerned with session setup
   | CRRemoteHostStarted {remoteHostId :: RemoteHostId}
   | CRRemoteHostConnected {remoteHostId :: RemoteHostId}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
-  | CRRemoteHostDisposed {remoteHostId :: RemoteHostId}
+  | CRRemoteHostDeleted {remoteHostId :: RemoteHostId}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlStarted
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
-  | CRRemoteCtrlFound {remoteCtrl::RemoteCtrl} -- registered fingerprint, may connect
+  | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrl} -- registered fingerprint, may connect
   | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlStopped {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlDisposed {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlDeleted {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -656,7 +656,7 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
-data RemoteHostOOB = RemoteHostOOB
+data RemoteCtrlOOB = RemoteCtrlOOB
   { caFingerprint :: C.KeyHash
   }
   deriving (Show, Generic, ToJSON)
