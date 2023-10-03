@@ -11,8 +11,7 @@ import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.*
-import chat.simplex.common.model.ChatItem
-import chat.simplex.common.model.MsgContent
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.EmojiFont
 import chat.simplex.common.views.helpers.*
@@ -20,6 +19,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import java.io.File
+import java.util.*
 
 @Composable
 actual fun ReactionIcon(text: String, fontSize: TextUnit) {
@@ -43,8 +43,16 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
 }
 
 actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) {
-  val filePath = getLoadedFilePath(cItem.file)
-  if (filePath != null) {
+  val fileSource = getLoadedFileSource(cItem.file)
+  if (fileSource != null) {
+    val filePath: String = if (fileSource.cryptoArgs != null) {
+      val tmpFile = File(tmpDir, fileSource.filePath)
+      tmpFile.deleteOnExit()
+      decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
+      tmpFile.absolutePath
+    } else {
+      getAppFilePath(fileSource.filePath)
+    }
     when  {
       desktopPlatform.isWindows() -> clipboard.setText(AnnotatedString("\"${File(filePath).absolutePath}\""))
       else -> clipboard.setText(AnnotatedString(filePath))
