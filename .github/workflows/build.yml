@@ -296,6 +296,8 @@ jobs:
       - name: Windows build desktop
         id: windows_desktop_build
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        env:
+          SIMPLEX_CI_REPO_URL: ${{ secrets.SIMPLEX_CI_REPO_URL }}
         shell: bash
         run: |
           scripts/desktop/build-lib-windows.sh
