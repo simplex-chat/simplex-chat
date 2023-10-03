@@ -77,6 +77,7 @@ chatGroupTests = do
     it "new member should merge with existing contact" testMergeMemberExistingContact
     it "new contact should merge with existing member" testMergeContactExistingMember
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
+    fit "new contact should merge with both existing members and contacts" testMergeContactExistingMembersAndContacts
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage
@@ -2841,6 +2842,62 @@ testMergeContactMultipleMembers =
                    StartsWith "contact and member are merged: bob",
                    StartsWith "use @bob",
                    StartsWith "contact and member are merged: bob",
+                   StartsWith "use @bob"
+                 ]
+        ]
+      bob <##> cath
+
+      bob ##> "/contacts"
+      bob <### ["alice (Alice)", "cath (Catherine)"]
+      cath ##> "/contacts"
+      cath <### ["alice (Alice)", "bob (Bob)"]
+      bob `hasContactProfiles` ["alice", "bob", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+
+testMergeContactExistingMembersAndContacts :: HasCallStack => FilePath -> IO ()
+testMergeContactExistingMembersAndContacts =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      bob ##> "/contact_merge off"
+      bob <## "ok"
+
+      create2Groups3 "team" "club" alice bob cath
+
+      bob ##> "/c"
+      inv' <- getInvitation bob
+      cath ##> ("/c " <> inv')
+      cath <## "confirmation sent!"
+      concurrently_
+        (bob <## "cath_2 (Catherine): contact is connected")
+        (cath <## "bob_2 (Bob): contact is connected")
+
+      bob `hasContactProfiles` ["alice", "bob", "cath", "cath", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob", "bob", "bob"]
+
+      bob ##> "/contact_merge on"
+      bob <## "ok"
+
+      bob ##> "/c"
+      inv'' <- getInvitation bob
+      cath ##> ("/c " <> inv'')
+      cath <## "confirmation sent!"
+      concurrentlyN_
+        [ bob
+            <### [ "cath_3 (Catherine): contact is connected",
+                   StartsWith "contact and member are merged: cath",
+                   StartsWith "use @cath",
+                   StartsWith "contact and member are merged: cath",
+                   StartsWith "use @cath",
+                   StartsWith "contact cath_3 is merged into cath",
+                   StartsWith "use @cath"
+                 ],
+          cath
+            <### [ "bob_3 (Bob): contact is connected",
+                   StartsWith "contact and member are merged: bob",
+                   StartsWith "use @bob",
+                   StartsWith "contact and member are merged: bob",
+                   StartsWith "use @bob",
+                   StartsWith "contact bob_3 is merged into bob",
                    StartsWith "use @bob"
                  ]
         ]

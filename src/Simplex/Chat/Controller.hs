@@ -191,7 +191,8 @@ data ChatController = ChatController
     showLiveItems :: TVar Bool,
     userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     tempDirectory :: TVar (Maybe FilePath),
-    logFilePath :: Maybe FilePath
+    logFilePath :: Maybe FilePath,
+    contactMergeEnabled :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase
@@ -230,6 +231,7 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | APISetXFTPConfig (Maybe XFTPFileConfig)
+  | SetContactMergeEnabled Bool
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig

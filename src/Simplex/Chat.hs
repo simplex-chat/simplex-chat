@@ -212,7 +212,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  contactMergeEnabled <- newTVarIO True
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile, contactMergeEnabled}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -488,6 +489,9 @@ processChatCommand = \case
     ok_
   APISetXFTPConfig cfg -> do
     asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
+    ok_
+  SetContactMergeEnabled onOff -> do
+    asks contactMergeEnabled >>= atomically . (`writeTVar` onOff)
     ok_
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg >> ok_
   ExportArchive -> do
@@ -3682,7 +3686,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     probeMatchingContactsAndMembers :: Contact -> IncognitoEnabled -> m ()
     probeMatchingContactsAndMembers ct connectedIncognito = do
       gVar <- asks idsDrg
-      if connectedIncognito
+      contactMerge <- readTVarIO =<< asks contactMergeEnabled
+      if connectedIncognito || not contactMerge
         then sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
         else do
           (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId (CGMContact ct)
@@ -3698,7 +3703,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     probeMatchingMemberContact _ GroupMember {activeConn = Nothing} _ = pure ()
     probeMatchingMemberContact g m@GroupMember {groupId, activeConn = Just conn} connectedIncognito = do
       gVar <- asks idsDrg
-      if connectedIncognito
+      contactMerge <- readTVarIO =<< asks contactMergeEnabled
+      if connectedIncognito || not contactMerge
         then sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
         else do
           (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId $ CGMGroupMember g m
@@ -5433,6 +5439,7 @@ chatCommandP =
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
       "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
+      "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
