@@ -73,7 +73,7 @@ chatGroupTests = do
       testNoDirect _1 _0 False
       testNoDirect _1 _1 False
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
-  describe "merge members and contact" $ do
+  describe "merge members and contacts" $ do
     it "new member should merge with existing contact" testMergeMemberExistingContact
     it "new contact should merge with existing member" testMergeContactExistingMember
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers

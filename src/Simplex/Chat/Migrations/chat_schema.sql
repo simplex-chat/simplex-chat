@@ -733,3 +733,6 @@ CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
 CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
 CREATE INDEX idx_received_probes_probe ON received_probes(probe);
 CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);
+CREATE INDEX idx_sent_probes_created_at ON sent_probes(created_at);
+CREATE INDEX idx_sent_probe_hashes_created_at ON sent_probe_hashes(created_at);
+CREATE INDEX idx_received_probes_created_at ON received_probes(created_at);

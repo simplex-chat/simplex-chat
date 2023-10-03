@@ -31,6 +31,7 @@ chatDirectTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive messages" testAddContact
     it "merge duplicate contacts" testContactMerge
+    it "new contact should merge with multiple existing contacts" testMergeContactMultipleContacts
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "unused contact is deleted silently" testDeleteUnusedContactSilent
@@ -195,6 +196,60 @@ testContactMerge =
       alice @@@ [("@bob", "hey")]
       alice `hasContactProfiles` ["alice", "bob"]
       bob @@@ [("@alice", "hey")]
+      bob `hasContactProfiles` ["bob", "alice"]
+
+testMergeContactMultipleContacts :: HasCallStack => FilePath -> IO ()
+testMergeContactMultipleContacts =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      bob ##> "/contact_merge off"
+      bob <## "ok"
+
+      connectUsers alice bob
+
+      alice ##> "/c"
+      inv' <- getInvitation alice
+      bob ##> ("/c " <> inv')
+      bob <## "confirmation sent!"
+      concurrently_
+        (alice <## "bob_1 (Bob): contact is connected")
+        (bob <## "alice_1 (Alice): contact is connected")
+
+      alice `hasContactProfiles` ["alice", "bob", "bob"]
+      bob `hasContactProfiles` ["bob", "alice", "alice"]
+
+      threadDelay 10000
+
+      bob ##> "/contact_merge on"
+      bob <## "ok"
+
+      alice ##> "/c"
+      inv'' <- getInvitation alice
+      bob ##> ("/c " <> inv'')
+      bob <## "confirmation sent!"
+      concurrentlyN_
+        [ alice
+            <### [ "bob_2 (Bob): contact is connected",
+                   StartsWith "contact bob_2 is merged into bob",
+                   StartsWith "use @bob",
+                   StartsWith "contact bob_1 is merged into bob",
+                   StartsWith "use @bob"
+                 ],
+          bob
+            <### [ "alice_2 (Alice): contact is connected",
+                   StartsWith "contact alice_2 is merged into alice",
+                   StartsWith "use @alice",
+                   StartsWith "contact alice_1 is merged into alice",
+                   StartsWith "use @alice"
+                 ]
+        ]
+      alice <##> bob
+
+      alice ##> "/contacts"
+      alice <## "bob (Bob)"
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+      alice `hasContactProfiles` ["alice", "bob"]
       bob `hasContactProfiles` ["bob", "alice"]
 
 testContactClear :: HasCallStack => FilePath -> IO ()
