@@ -29,7 +29,9 @@ import Test.Hspec
 chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
-    describe "add contact and send/receive message" testAddContact
+    describe "add contact and send/receive messages" testAddContact
+    it "merge duplicate contacts" testContactMerge
+    it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "unused contact is deleted silently" testDeleteUnusedContactSilent
     it "direct message quoted replies" testDirectMessageQuotedReply
@@ -140,35 +142,6 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
       chatsManyMessages alice bob
-      -- test adding the same contact one more time - local name will be different
-      alice ##> "/c"
-      inv' <- getInvitation alice
-      bob ##> ("/c " <> inv')
-      bob <## "confirmation sent!"
-      concurrently_
-        (bob <## "alice_1 (Alice): contact is connected")
-        (alice <## "bob_1 (Bob): contact is connected")
-      alice #> "@bob_1 hello"
-      bob <# "alice_1> hello"
-      bob #> "@alice_1 hi"
-      alice <# "bob_1> hi"
-      alice @@@ [("@bob_1", "hi"), ("@bob", "how are you?")]
-      bob @@@ [("@alice_1", "hi"), ("@alice", "how are you?")]
-      -- test deleting contact
-      alice ##> "/d bob_1"
-      alice <## "bob_1: contact is deleted"
-      bob <## "alice_1 (Alice) deleted contact with you"
-      alice ##> "@bob_1 hey"
-      alice <## "no contact bob_1"
-      alice @@@ [("@bob", "how are you?")]
-      alice `hasContactProfiles` ["alice", "bob"]
-      bob @@@ [("@alice_1", "contact deleted"), ("@alice", "how are you?")]
-      bob `hasContactProfiles` ["alice", "alice", "bob"]
-      -- test clearing chat
-      alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
-      alice #$> ("/_get chat @2 count=100", chat, [])
-      bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
-      bob #$> ("/_get chat @2 count=100", chat, [])
     chatsEmpty alice bob = do
       alice @@@ [("@bob", lastChatFeature)]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
@@ -194,6 +167,47 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
       alice #$> ("/_read chat @2", id, "ok")
       bob #$> ("/_read chat @2", id, "ok")
+
+testContactMerge :: HasCallStack => FilePath -> IO ()
+testContactMerge =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/c"
+      inv' <- getInvitation alice
+      bob ##> ("/c " <> inv')
+      bob <## "confirmation sent!"
+      concurrentlyN_
+        [ alice
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact bob_1 is merged into bob",
+                   "use @bob <message> to send messages"
+                 ],
+          bob
+            <### [ "alice_1 (Alice): contact is connected",
+                   "contact alice_1 is merged into alice",
+                   "use @alice <message> to send messages"
+                 ]
+        ]
+      alice <##> bob
+      alice @@@ [("@bob", "hey")]
+      alice `hasContactProfiles` ["alice", "bob"]
+      bob @@@ [("@alice", "hey")]
+      bob `hasContactProfiles` ["bob", "alice"]
+
+testContactClear :: HasCallStack => FilePath -> IO ()
+testContactClear =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+      threadDelay 10000
+      alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
+      alice #$> ("/_get chat @2 count=100", chat, [])
+      bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
+      bob #$> ("/_get chat @2 count=100", chat, [])
 
 testDeleteContactDeletesProfile :: HasCallStack => FilePath -> IO ()
 testDeleteContactDeletesProfile =
@@ -2104,7 +2118,7 @@ testMsgDecryptError tmp =
     withTestChat tmp "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       alice #> "@bob hello again"
-      bob <# "alice> skipped message ID 9..11"
+      bob <# "alice> skipped message ID 10..12"
       bob <# "alice> hello again"
       bob #> "@alice received!"
       alice <# "bob> received!"

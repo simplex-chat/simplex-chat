@@ -19,6 +19,7 @@ chatProfileTests = do
     it "update user profile with image" testUpdateProfileImage
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
+    it "merge existing contact when connecting via contact link" testUserContactLinkMerge
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -146,6 +147,39 @@ testUserContactLink =
       threadDelay 100000
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
+
+testUserContactLinkMerge :: HasCallStack => FilePath -> IO ()
+testUserContactLinkMerge =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+      bob ##> ("/c " <> cLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob_1"
+      alice <## "to reject: /rc bob_1 (the sender will NOT be notified)"
+      alice @@@ [("@bob", "hey"), ("<@bob_1", "")]
+      alice ##> "/ac bob_1"
+      alice <## "bob_1 (Bob): accepting contact request..."
+      concurrentlyN_
+        [ alice
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact bob_1 is merged into bob",
+                   "use @bob <message> to send messages"
+                 ],
+          bob
+            <### [ "alice_1 (Alice): contact is connected",
+                   "contact alice_1 is merged into alice",
+                   "use @alice <message> to send messages"
+                 ]
+        ]
+      threadDelay 100000
+      alice @@@ [("@bob", lastChatFeature)]
+      alice <##> bob
 
 testProfileLink :: HasCallStack => FilePath -> IO ()
 testProfileLink =
