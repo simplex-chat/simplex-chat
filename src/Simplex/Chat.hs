@@ -4332,23 +4332,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- [incognito] unless connected incognito
       when (contactMerge && not (contactOrMemberIncognito cgm2)) $ do
         cgm1s <- withStore' $ \db -> matchReceivedProbe db user cgm2 probe
-        probeMatches cgm1s cgm2 probe
-
-    probeMatches :: [ContactOrMember] -> ContactOrMember -> Probe -> m ()
-    probeMatches cgm1s cgm2 probe = do
-      contactMerge <- readTVarIO =<< asks contactMergeEnabled
-      -- [incognito] unless connected incognito
-      when (contactMerge && not (contactOrMemberIncognito cgm2)) $ do
         let cgm1s' = filter (not . contactOrMemberIncognito) cgm1s
-        mergeCGMs cgm1s' cgm2
+        probeMatches cgm1s' cgm2
       where
-        mergeCGMs :: [ContactOrMember] -> ContactOrMember -> m ()
-        mergeCGMs [] _ = pure ()
-        mergeCGMs (cgm1' : cgm1s') cgm2' = do
+        probeMatches :: [ContactOrMember] -> ContactOrMember -> m ()
+        probeMatches [] _ = pure ()
+        probeMatches (cgm1' : cgm1s') cgm2' = do
           cgm2''_ <- probeMatch cgm1' cgm2' probe `catchChatError` \_ -> pure (Just cgm2')
           case cgm2''_ of
-            Just cgm2'' -> mergeCGMs cgm1s' cgm2''
-            _ -> mergeCGMs cgm1s' cgm2'
+            Just cgm2'' -> probeMatches cgm1s' cgm2''
+            Nothing -> probeMatches cgm1s' cgm2'
 
     xInfoProbeCheck :: ContactOrMember -> ProbeHash -> m ()
     xInfoProbeCheck cgm1 probeHash = do
