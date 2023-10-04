@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.*
@@ -27,6 +26,9 @@ import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
+import java.io.File
+import java.net.URI
+import kotlin.io.path.*
 import kotlin.math.min
 import kotlin.text.substring
 
@@ -39,6 +41,7 @@ actual fun PlatformTextField(
   userIsObserver: Boolean,
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
+  onFilesPasted: (List<URI>) -> Unit,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value
@@ -63,10 +66,20 @@ actual fun PlatformTextField(
   val isRtl = remember(cs.message) { isRtl(cs.message.subSequence(0, min(50, cs.message.length))) }
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message)) }
   val textFieldValue = textFieldValueState.copy(text = cs.message)
+  val clipboard = LocalClipboardManager.current
   BasicTextField(
     value = textFieldValue,
-    onValueChange = {
+    onValueChange = onValueChange@ {
       if (!composeState.value.inProgress && !(composeState.value.preview is ComposePreview.VoicePreview && it.text != "")) {
+        val diff = textFieldValueState.selection.length + (it.text.length - textFieldValueState.text.length)
+        if (diff > 1 && it.text != textFieldValueState.text && it.selection.max - diff >= 0) {
+          val pasted = it.text.substring(it.selection.max - diff, it.selection.max)
+          val files = parseToFiles(AnnotatedString(pasted))
+          if (files.isNotEmpty()) {
+            onFilesPasted(files)
+            return@onValueChange
+          }
+        }
         textFieldValueState = it
         onMessageChange(it.text)
       }
@@ -97,6 +110,12 @@ actual fun PlatformTextField(
           true
         } else if (it.key == Key.DirectionUp && it.type == KeyEventType.KeyDown && cs.message.isEmpty()) {
           onUpArrow()
+          true
+        } else if (it.key == Key.V &&
+          it.type == KeyEventType.KeyDown &&
+          ((it.isCtrlPressed && !desktopPlatform.isMac()) || (it.isMetaPressed && desktopPlatform.isMac())) &&
+          parseToFiles(clipboard.getText()).isNotEmpty()) {
+          onFilesPasted(parseToFiles(clipboard.getText()))
           true
         }
         else false
@@ -141,4 +160,20 @@ private fun ComposeOverlay(textId: StringResource, textStyle: MutableState<TextS
     color = MaterialTheme.colors.secondary,
     style = textStyle.value.copy(fontStyle = FontStyle.Italic)
   )
+}
+
+private fun parseToFiles(text: AnnotatedString?): List<URI> {
+  text ?: return emptyList()
+  val files = ArrayList<URI>()
+  text.lines().forEach {
+    try {
+      val uri = File(it.removePrefix("\"").removeSuffix("\"")).toURI()
+      val path = uri.toPath()
+      if (!path.exists() || !path.isAbsolute || path.isDirectory()) return emptyList()
+      files.add(uri)
+    } catch (e: Exception) {
+      return emptyList()
+    }
+  }
+  return files
 }
