@@ -7,8 +7,10 @@
 
 module Simplex.Chat.Remote where
 
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
+import Control.Monad.STM (retry)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
 import qualified Data.Binary.Builder as Binary
@@ -58,9 +60,7 @@ startRemoteHost remoteHostId = do
   where
     run RemoteHost {storePath, caKey, caCert} = do
       announcer <- async $ do
-        cleanup <- toIO $ do
-          chatModifyVar remoteHostSessions (M.delete remoteHostId)
-          toView CRRemoteHostStopped {remoteHostId}
+        cleanup <- toIO $ closeRemoteHostSession remoteHostId >>= toView
         let parent = (C.signatureKeyPair caKey, caCert)
         sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
         let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
@@ -73,10 +73,13 @@ startRemoteHost remoteHostId = do
       chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarting {announcer}
       pure CRRemoteHostStarted {remoteHostId}
 
-closeRemoteHostSession :: (ChatMonad m) => RemoteHostId -> m ()
-closeRemoteHostSession rh = withRemoteHostSession rh $ \case
-  RemoteHostSessionStarting {announcer} -> cancel announcer
-  RemoteHostSessionStarted {ctrlClient} -> liftIO $ HTTP2.closeHTTP2Client ctrlClient
+closeRemoteHostSession :: (ChatMonad m) => RemoteHostId -> m ChatResponse
+closeRemoteHostSession remoteHostId = withRemoteHostSession remoteHostId $ \session -> do
+  case session of
+    RemoteHostSessionStarting {announcer} -> cancel announcer
+    RemoteHostSessionStarted {ctrlClient} -> liftIO (HTTP2.closeHTTP2Client ctrlClient)
+  chatModifyVar remoteHostSessions $ M.delete remoteHostId
+  pure CRRemoteHostStopped { remoteHostId }
 
 createRemoteHost :: (ChatMonad m) => m ChatResponse
 createRemoteHost = do
@@ -184,27 +187,23 @@ startRemoteCtrl =
     Nothing -> do
       accepted <- newEmptyTMVarIO
       discovered <- newTVarIO mempty
-      listener <- async $ discoverRemoteCtrls discovered
-      _supervisor <- async $ do
-        uiEvent <- async $ atomically $ readTMVar accepted
-        waitEitherCatchCancel listener uiEvent >>= \case
-          Left _ -> pure () -- discover got cancelled (okay) or crashed on some UDP error (indistinguishable)
-          Right (Left _) -> toView . CRChatError Nothing . ChatError $ CEException "Crashed while waiting for remote session confirmation"
-          Right (Right remoteCtrlId) ->
-            -- got connection confirmation
-            atomically (TM.lookup remoteCtrlId discovered) >>= \case
-              Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote session accepted without getting discovered first"
-              Just (source, fingerprint) -> do
-                atomically $ writeTVar discovered mempty -- flush unused sources
-                host <- async $ Discovery.connectRevHTTP2 source fingerprint (processControllerRequest remoteCtrlId)
-                chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {ctrlAsync = host, accepted}
-                _ <- waitCatch host
-                chatWriteVar remoteCtrlSession Nothing
-                toView $ CRRemoteCtrlStopped {remoteCtrlId}
-      chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {ctrlAsync = listener, accepted}
+      discoverer <- async $ discoverRemoteCtrls discovered
+      supervisor <- async $ do
+        remoteCtrlId <- atomically (readTMVar accepted)
+        withRemoteCtrl remoteCtrlId $ \RemoteCtrl {displayName, fingerprint} -> do
+          source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
+          toView $ CRRemoteCtrlConnecting {remoteCtrlId, displayName}
+          atomically $ writeTVar discovered mempty -- flush unused sources
+          server <- async $ Discovery.connectRevHTTP2 source fingerprint (processControllerRequest remoteCtrlId)
+          chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
+          toView $ CRRemoteCtrlConnected {remoteCtrlId, displayName}
+          _ <- waitCatch server
+          chatWriteVar remoteCtrlSession Nothing
+          toView $ CRRemoteCtrlStopped {remoteCtrlId}
+      chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted}
       pure CRRemoteCtrlStarted
 
-discoverRemoteCtrls :: (ChatMonad m) => TM.TMap RemoteCtrlId (TransportHost, C.KeyHash) -> m ()
+discoverRemoteCtrls :: (ChatMonad m) => TM.TMap C.KeyHash TransportHost -> m ()
 discoverRemoteCtrls discovered = Discovery.openListener >>= go
   where
     go sock =
@@ -212,11 +211,15 @@ discoverRemoteCtrls discovered = Discovery.openListener >>= go
         (SockAddrInet _port addr, invite) -> case strDecode invite of
           Left _ -> go sock -- ignore malformed datagrams
           Right fingerprint -> do
+            atomically $ TM.insert fingerprint (THIPv4 $ hostAddressToTuple addr) discovered
             withStore' (`getRemoteCtrlByFingerprint` fingerprint) >>= \case
-              Nothing -> toView $ CRRemoteCtrlAnnounce fingerprint
-              Just found@RemoteCtrl {remoteCtrlId} -> do
-                atomically $ TM.insert remoteCtrlId (THIPv4 (hostAddressToTuple addr), fingerprint) discovered
-                toView $ CRRemoteCtrlFound found
+              Nothing -> toView $ CRRemoteCtrlAnnounce fingerprint -- unknown controller, ui action required
+              Just found@RemoteCtrl {remoteCtrlId, accepted=storedChoice} -> case storedChoice of
+                Nothing -> toView $ CRRemoteCtrlFound found -- first-time controller, ui action required
+                Just False -> pure () -- skipping a rejected item
+                Just True -> chatReadVar remoteCtrlSession >>= \case
+                  Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"
+                  Just RemoteCtrlSession {accepted} -> atomically $ void $ tryPutTMVar accepted remoteCtrlId -- previously accepted controller, connect automatically
         _nonV4 -> go sock
 
 registerRemoteCtrl :: (ChatMonad m) => RemoteCtrlOOB -> m ChatResponse
@@ -238,30 +241,34 @@ listRemoteCtrls = do
     pure RemoteCtrlInfo {remoteCtrlId, displayName, sessionActive}
 
 acceptRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
-acceptRemoteCtrl remoteCtrlId =
+acceptRemoteCtrl remoteCtrlId = do
+  withStore' $ \db -> markRemoteCtrlResolution db remoteCtrlId True
   chatReadVar remoteCtrlSession >>= \case
     Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-    Just RemoteCtrlSession {accepted} -> do
-      withStore' $ \db -> markRemoteCtrlResolution db remoteCtrlId True
-      atomically $ putTMVar accepted remoteCtrlId -- the remote host can now proceed with connection
-      pure $ CRRemoteCtrlAccepted {remoteCtrlId}
+    Just RemoteCtrlSession {accepted} -> atomically . void $ tryPutTMVar accepted remoteCtrlId -- the remote host can now proceed with connection
+  pure $ CRRemoteCtrlAccepted {remoteCtrlId}
 
 rejectRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
-rejectRemoteCtrl remoteCtrlId =
+rejectRemoteCtrl remoteCtrlId = do
+  withStore' $ \db -> markRemoteCtrlResolution db remoteCtrlId False
   chatReadVar remoteCtrlSession >>= \case
     Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-    Just RemoteCtrlSession {ctrlAsync} -> do
-      withStore' $ \db -> markRemoteCtrlResolution db remoteCtrlId False
-      cancel ctrlAsync
-      pure $ CRRemoteCtrlRejected {remoteCtrlId}
+    Just RemoteCtrlSession {discoverer, supervisor} -> do
+      cancel discoverer
+      cancel supervisor
+  pure $ CRRemoteCtrlRejected {remoteCtrlId}
 
 stopRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
 stopRemoteCtrl remoteCtrlId =
   chatReadVar remoteCtrlSession >>= \case
     Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-    Just RemoteCtrlSession {ctrlAsync} -> do
-      cancel ctrlAsync
-      chatWriteVar remoteCtrlSession Nothing
+    Just RemoteCtrlSession {discoverer, supervisor, hostServer} -> do
+      cancel discoverer -- may be gone by now
+      case hostServer of
+        Just host -> cancel host -- supervisor will clean up
+        Nothing -> do
+          cancel supervisor -- supervisor is blocked until session progresses
+          chatWriteVar remoteCtrlSession Nothing
       pure CRRemoteCtrlStopped {remoteCtrlId}
 
 deleteRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
@@ -271,3 +278,9 @@ deleteRemoteCtrl remoteCtrlId =
       withStore' $ \db -> deleteRemoteCtrlRecord db remoteCtrlId
       pure $ CRRemoteCtrlDeleted {remoteCtrlId}
     Just _ -> throwError $ ChatErrorRemoteCtrl RCEBusy
+
+withRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> (RemoteCtrl -> m a) -> m a
+withRemoteCtrl remoteCtrlId action =
+  withStore' (`getRemoteCtrl` remoteCtrlId) >>= \case
+    Nothing -> throwError $ ChatErrorRemoteCtrl RCEMissing {remoteCtrlId}
+    Just rc -> action rc

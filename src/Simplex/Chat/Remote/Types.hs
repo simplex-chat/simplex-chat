@@ -10,6 +10,8 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.TMap (TMap)
+import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import UnliftIO.STM
 
@@ -49,6 +51,9 @@ data RemoteHostSession
 
 data RemoteCtrlSession = RemoteCtrlSession
   { -- | Server side of transport to process remote commands and forward notifications
-    ctrlAsync :: Async (),
+    discoverer :: Async (),
+    supervisor :: Async (),
+    hostServer :: Maybe (Async ()),
+    discovered :: TMap C.KeyHash TransportHost,
     accepted :: TMVar RemoteCtrlId
   }

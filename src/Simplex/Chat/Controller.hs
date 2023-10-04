@@ -610,6 +610,7 @@ data ChatResponse
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrl} -- registered fingerprint, may connect
   | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlConnecting {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlStopped {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlDeleted {remoteCtrlId :: RemoteCtrlId}

@@ -272,6 +272,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRRemoteCtrlFound rc -> ["remote controller found:", viewRemoteCtrl rc]
   CRRemoteCtrlAccepted rcId -> ["remote controller " <> sShow rcId <> " accepted"]
   CRRemoteCtrlRejected rcId -> ["remote controller " <> sShow rcId <> " rejected"]
+  CRRemoteCtrlConnecting rcId rcName -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
   CRRemoteCtrlConnected rcId rcName -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
   CRRemoteCtrlStopped rcId -> ["remote controller " <> sShow rcId <> " stopped"]
   CRRemoteCtrlDeleted rcId -> ["remote controller " <> sShow rcId <> " deleted"]

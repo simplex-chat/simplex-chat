@@ -1838,7 +1838,7 @@ processChatCommand = \case
   CreateRemoteHost -> createRemoteHost
   ListRemoteHosts -> listRemoteHosts
   StartRemoteHost rh -> startRemoteHost rh
-  StopRemoteHost rh -> closeRemoteHostSession rh $> CRRemoteHostStopped rh
+  StopRemoteHost rh -> closeRemoteHostSession rh
   DeleteRemoteHost rh -> deleteRemoteHost rh
   StartRemoteCtrl -> startRemoteCtrl
   AcceptRemoteCtrl rc -> acceptRemoteCtrl rc

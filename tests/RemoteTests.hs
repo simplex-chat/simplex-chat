@@ -26,7 +26,6 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2C
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Test.Hspec
 import UnliftIO
-import UnliftIO.Concurrent (threadDelay)
 
 remoteTests :: SpecWith FilePath
 remoteTests = fdescribe "Handshake" $ do
@@ -117,10 +116,8 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile <## "1. TODO"
   mobile ##> "/start remote ctrl"
   mobile <## "remote controller started"
-  threadDelay 2000000 -- wait 2 broadcast intervals for discovery
-
   mobile ##> "/accept remote ctrl 1"
-  mobile <## "remote controller 1 accepted"
+  mobile <## "remote controller 1 accepted" -- alternative scenario: accepted before controller start
   mobile ##> "/stop remote ctrl 1"
   mobile <## "remote controller 1 stopped"
   mobile ##> "/delete remote ctrl 1"
