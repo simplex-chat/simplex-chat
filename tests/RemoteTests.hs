@@ -28,7 +28,7 @@ import Test.Hspec
 import UnliftIO
 
 remoteTests :: SpecWith FilePath
-remoteTests = fdescribe "Handshake" $ do
+remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "connects desktop and mobile" remoteHandshakeTest
@@ -107,19 +107,26 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop ##> "/start remote host 1"
   desktop <## "remote host 1 started"
 
+  mobile ##> "/start remote ctrl"
+  mobile <## "remote controller started"
+  mobile <## "remote controller announced"
+  mobile <## "connection code:"
+  fingerprint' <- getTermLine mobile
+  fingerprint' `shouldBe` fingerprint
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
-  mobile ##> ("/register remote ctrl " <> fingerprint)
+  mobile ##> ("/register remote ctrl " <> fingerprint')
   mobile <## "remote controller 1 registered"
   mobile ##> "/list remote ctrls"
   mobile <## "Remote controllers:"
   mobile <## "1. TODO"
-  mobile ##> "/start remote ctrl"
-  mobile <## "remote controller started"
   mobile ##> "/accept remote ctrl 1"
   mobile <## "remote controller 1 accepted" -- alternative scenario: accepted before controller start
+  mobile <## "remote controller 1 connecting to TODO"
+  mobile <## "remote controller 1 connected, TODO"
   mobile ##> "/stop remote ctrl 1"
-  mobile <## "remote controller 1 stopped"
+  mobile <## "ok"
+  mobile <## "remote controller 1 stopped" -- TODO two outputs
   mobile ##> "/delete remote ctrl 1"
   mobile <## "remote controller 1 deleted"
   mobile ##> "/list remote ctrls"

@@ -269,7 +269,8 @@ stopRemoteCtrl remoteCtrlId =
         Nothing -> do
           cancel supervisor -- supervisor is blocked until session progresses
           chatWriteVar remoteCtrlSession Nothing
-      pure CRRemoteCtrlStopped {remoteCtrlId}
+          toView $ CRRemoteCtrlStopped {remoteCtrlId}
+      pure $ CRCmdOk Nothing
 
 deleteRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
 deleteRemoteCtrl remoteCtrlId =
