@@ -33,27 +33,6 @@ private fun initHaskell() {
   initHS()
 }
 
-private fun copyResources(from: String, to: Path) {
-  val resource = Class.forName("chat.simplex.desktop.MainKt").getResource("")!!.toURI()
-  val fileSystem = FileSystems.newFileSystem(resource, emptyMap<String, String>())
-  val resPath = fileSystem.getPath(from)
-  Files.walkFileTree(resPath, object: SimpleFileVisitor<Path>() {
-    override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
-      Files.createDirectories(to.resolve(resPath.relativize(dir).toString()))
-      return FileVisitResult.CONTINUE
-    }
-    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-      val dest = to.resolve(resPath.relativize(file).toString())
-      Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING)
-      // Setting the same time on file as the time set in script that generates VLC libs
-      if (dest.toString().contains("." + desktopPlatform.libExtension)) {
-        dest.setLastModifiedTime(FileTime.fromMillis(0))
-      }
-      return FileVisitResult.CONTINUE
-    }
-  })
-}
-
 private fun windowsLoadRequiredLibs(libsTmpDir: File, vlcDir: File) {
   val mainLibs = arrayOf(
     "libcrypto-3-x64.dll",

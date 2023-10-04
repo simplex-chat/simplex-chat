@@ -223,16 +223,3 @@ afterEvaluate {
     }
   }
 }
-
-fun CopySpec.copyIfNeeded(destinationDir: String, into: MutableMap<String, ArrayList<FileCopyDetails>>) {
-  val details = arrayListOf<FileCopyDetails>()
-  eachFile {
-    val targetFile = File(destinationDir, path)
-    if (file.lastModified() == targetFile.lastModified() && file.length() == targetFile.length()) {
-      exclude()
-    } else {
-      details.add(this)
-    }
-  }
-  into[destinationDir] = details
-}
