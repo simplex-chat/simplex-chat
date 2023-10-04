@@ -303,7 +303,7 @@ jobs:
           scripts/desktop/build-lib-windows.sh
           cd apps/multiplatform
           ./gradlew packageMsi
-          path=$(echo $PWD/release/main/msi/*imple*.msi)
+          path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
       
