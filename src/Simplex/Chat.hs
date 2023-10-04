@@ -4385,11 +4385,18 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         COMGroupMember GroupMember {activeConn = Nothing} -> pure Nothing
         COMGroupMember m1@GroupMember {groupId, memberProfile = p1, memberContactId, activeConn = Just conn} ->
           case cgm2 of
-            COMContact c2@Contact {profile = p2}
-              | memberCurrent m1 && isNothing memberContactId && profilesMatch p1 p2 -> do
-                void $ sendDirectMessage conn (XInfoProbeOk probe) (GroupId groupId)
-                COMContact <$$> associateMemberAndContact c2 m1
-              | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact" >> pure Nothing
+            COMContact c2@Contact {contactId = cId2, profile = p2}
+              | memberCurrent m1 && profilesMatch p1 p2 -> case memberContactId of
+                Nothing -> do
+                  void $ sendDirectMessage conn (XInfoProbeOk probe) (GroupId groupId)
+                  COMContact <$$> associateMemberAndContact c2 m1
+                Just mCtId
+                  | mCtId /= cId2 -> do
+                    void $ sendDirectMessage conn (XInfoProbeOk probe) (GroupId groupId)
+                    mCt <- withStore $ \db -> getContact db user mCtId
+                    COMContact <$$> mergeContacts c2 mCt
+                  | otherwise -> messageWarning "probeMatch ignored: same contact id" >> pure Nothing
+              | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member not current" >> pure Nothing
             COMGroupMember _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
 
     xInfoProbeOk :: ContactOrMember -> Probe -> m ()
@@ -4412,9 +4419,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> pure ()
         COMGroupMember m1@GroupMember {memberContactId} ->
           case cgm2 of
-            Just (COMContact c2)
-              | isNothing memberContactId -> void $ associateMemberAndContact c2 m1
-              | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
+            Just (COMContact c2@Contact {contactId = cId2}) -> case memberContactId of
+              Nothing -> void $ associateMemberAndContact c2 m1
+              Just mCtId
+                | mCtId /= cId2 -> do
+                  mCt <- withStore $ \db -> getContact db user mCtId
+                  void $ mergeContacts c2 mCt
+                | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
             Just (COMGroupMember _) -> messageWarning "xInfoProbeOk ignored: members are not matched with members"
             _ -> pure ()
 

@@ -77,6 +77,7 @@ chatGroupTests = do
     it "new member should merge with existing contact" testMergeMemberExistingContact
     it "new member should merge with multiple existing contacts" testMergeMemberMultipleContacts
     it "new contact should merge with existing member" testMergeContactExistingMember
+    it "new contact should merge with existing member with associated contact" testMergeContactExistingMemberWithContact
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
     it "new contact should merge with both existing members and contacts" testMergeContactExistingMembersAndContacts
     it "new member contact is merged with existing contact" testMergeMemberContact
@@ -2876,6 +2877,66 @@ testMergeContactExistingMember =
           cath
             <### [ "bob_1 (Bob): contact is connected",
                    "contact and member are merged: bob_1, #team bob",
+                   "use @bob <message> to send messages"
+                 ]
+        ]
+      bob <##> cath
+
+      bob ##> "/contacts"
+      bob <### ["alice (Alice)", "cath (Catherine)"]
+      cath ##> "/contacts"
+      cath <### ["alice (Alice)", "bob (Bob)"]
+      bob `hasContactProfiles` ["alice", "bob", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+
+testMergeContactExistingMemberWithContact :: HasCallStack => FilePath -> IO ()
+testMergeContactExistingMemberWithContact =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      -- create contact, delete only for bob so he would send probe hash to member
+      bob ##> "/_create member contact #1 3"
+      bob <## "contact for member #team cath is created"
+
+      bob ##> "/_invite member contact @3 text hi"
+      bob
+        <### [ "sent invitation to connect directly to member #team cath",
+               WithTime "@cath hi"
+             ]
+      cath
+        <### [ "#team bob is creating direct contact bob with you",
+               WithTime "bob> hi"
+             ]
+      concurrently_
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
+      bob <##> cath
+
+      bob ##> "/_delete @3 notify=off"
+      bob <## "cath: contact is deleted"
+
+      bob ##> "/contacts"
+      bob <### ["alice (Alice)"]
+      cath ##> "/contacts"
+      cath <### ["alice (Alice)", "bob (Bob)"]
+      bob `hasContactProfiles` ["alice", "bob", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+
+      -- contact connects, member is merged
+      bob ##> "/c"
+      inv' <- getInvitation bob
+      cath ##> ("/c " <> inv')
+      cath <## "confirmation sent!"
+      concurrentlyN_
+        [ bob
+            <### [ "cath_1 (Catherine): contact is connected",
+                   "contact and member are merged: cath_1, #team cath",
+                   "use @cath <message> to send messages"
+                 ],
+          cath
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages"
                  ]
         ]
