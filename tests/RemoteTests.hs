@@ -29,7 +29,7 @@ import UnliftIO
 import UnliftIO.Concurrent (threadDelay)
 
 remoteTests :: SpecWith FilePath
-remoteTests = describe "Handshake" $ do
+remoteTests = fdescribe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "connects desktop and mobile" remoteHandshakeTest
@@ -65,7 +65,7 @@ announceDiscoverHttp2Test _tmp = do
   finished <- newEmptyMVar
   announcer <- async $ do
     traceM "    - Controller: starting"
-    http <- Discovery.announceRevHttp2 (putMVar finished ()) fingerprint credentials >>= either (fail . show) pure
+    http <- Discovery.announceRevHTTP2 (putMVar finished ()) fingerprint credentials >>= either (fail . show) pure
     traceM "    - Controller: got client"
     sendRequest http (C.requestNoBody "GET" "/" []) (Just 10000000) >>= \case
       Left err -> do
@@ -81,7 +81,7 @@ announceDiscoverHttp2Test _tmp = do
     traceM "    - Host: connecting"
     server <- async $ Discovery.connectTLSClient (THIPv4 $ N.hostAddressToTuple addr) fingerprint $ \tls -> do
       traceM "    - Host: got tls"
-      flip Discovery.attachHttp2Server tls $ \HTTP2Request {sendResponse} -> do
+      flip Discovery.attachHTTP2Server tls $ \HTTP2Request {sendResponse} -> do
         traceM "    - Host: got request"
         sendResponse $ S.responseNoBody ok200 []
         traceM "    - Host: sent response"

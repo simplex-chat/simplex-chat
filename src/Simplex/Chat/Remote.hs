@@ -64,7 +64,7 @@ startRemoteHost remoteHostId = do
         let parent = (C.signatureKeyPair caKey, caCert)
         sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
         let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
-        Discovery.announceRevHttp2 cleanup fingerprint credentials >>= \case
+        Discovery.announceRevHTTP2 cleanup fingerprint credentials >>= \case
           Left todo'err -> liftIO cleanup -- TODO: log error
           Right ctrlClient -> do
             chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarted {storePath, ctrlClient}
@@ -196,7 +196,7 @@ startRemoteCtrl =
               Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote session accepted without getting discovered first"
               Just (source, fingerprint) -> do
                 atomically $ writeTVar discovered mempty -- flush unused sources
-                host <- async $ Discovery.connectRevHttp2 source fingerprint (processControllerRequest remoteCtrlId)
+                host <- async $ Discovery.connectRevHTTP2 source fingerprint (processControllerRequest remoteCtrlId)
                 chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {ctrlAsync = host, accepted}
                 _ <- waitCatch host
                 chatWriteVar remoteCtrlSession Nothing
