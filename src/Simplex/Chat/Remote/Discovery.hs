@@ -88,7 +88,7 @@ startTLSServer started credentials = async . liftIO . runTransportServer started
 
 -- | Attach HTTP2 client and hold the TLS until the attached client finishes.
 runHttp2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> Transport.TLS -> IO ()
-runHttp2Client finishedVar clientVar tls =
+runHttp2Client finishedVar clientVar tls = do
   attachHTTP2Client defaultHTTP2ClientConfig ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
   readMVar finishedVar
 
