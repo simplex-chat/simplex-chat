@@ -3728,8 +3728,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         sendProbe probe = void $ sendDirectMessage conn (XInfoProbe probe) (GroupId groupId)
 
     sendProbeHashes :: [ContactOrMember] -> Probe -> Int64 -> m ()
-    sendProbeHashes coms probe probeId =
-      forM_ coms $ \cgm -> sendProbeHash cgm `catchChatError` \_ -> pure ()
+    sendProbeHashes cgms probe probeId =
+      forM_ cgms $ \cgm -> sendProbeHash cgm `catchChatError` \_ -> pure ()
       where
         probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
         sendProbeHash :: ContactOrMember -> m ()
