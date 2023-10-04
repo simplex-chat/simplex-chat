@@ -9,7 +9,7 @@ module Simplex.Chat.Remote.Discovery
     announceRevHttp2,
     runAnnouncer,
     startTLSServer,
-    attachHttp2Client,
+    runHttp2Client,
 
     -- * Discovery
     connectRevHttp2,
@@ -44,6 +44,9 @@ import UnliftIO.Concurrent
 pattern BROADCAST_ADDR_V4 :: (IsString a, Eq a) => a
 pattern BROADCAST_ADDR_V4 = "255.255.255.255"
 
+pattern ANY_ADDR_V4 :: (IsString a, Eq a) => a
+pattern ANY_ADDR_V4 = "0.0.0.0"
+
 pattern BROADCAST_PORT :: (IsString a, Eq a) => a
 pattern BROADCAST_PORT = "5226"
 
@@ -56,7 +59,7 @@ announceRevHttp2 finishAction invite credentials = do
   started <- newEmptyTMVarIO
   finished <- newEmptyMVar
   announcer <- async . liftIO . whenM (atomically $ takeTMVar started) $ runAnnouncer (strEncode invite)
-  tlsServer <- startTLSServer started credentials $ \tls -> cancel announcer >> attachHttp2Client finished httpClient tls
+  tlsServer <- startTLSServer started credentials $ \tls -> cancel announcer >> runHttp2Client finished httpClient tls
   _ <- forkIO . liftIO $ do
     readMVar finished
     cancel tlsServer
@@ -84,15 +87,14 @@ startTLSServer started credentials = async . liftIO . runTransportServer started
         }
 
 -- | Attach HTTP2 client and hold the TLS until the attached client finishes.
-attachHttp2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> Transport.TLS -> IO ()
-attachHttp2Client finishedVar clientVar tls = do
-  let partyHost = "255.255.255.255" -- XXX: get from tls somehow? not required as host verification is disabled.
-  attachHTTP2Client defaultHTTP2ClientConfig partyHost BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
+runHttp2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> Transport.TLS -> IO ()
+runHttp2Client finishedVar clientVar tls =
+  attachHTTP2Client defaultHTTP2ClientConfig ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
   readMVar finishedVar
 
 openListener :: (MonadIO m) => m UDP.ListenSocket
 openListener = liftIO $ do
-  sock <- UDP.serverSocket (BROADCAST_ADDR_V4, read BROADCAST_PORT)
+  sock <- UDP.serverSocket (ANY_ADDR_V4, read BROADCAST_PORT)
   N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
   pure sock
 
