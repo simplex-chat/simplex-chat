@@ -18,51 +18,29 @@ fun main() {
 
 @Suppress("UnsafeDynamicallyLoadedCode")
 private fun initHaskell() {
-  val libsTmpDir = File(tmpDir.absolutePath + File.separator + "libs")
-  copyResources(desktopPlatform.libPath, libsTmpDir.toPath())
-  vlcDir.deleteRecursively()
-  Files.move(File(libsTmpDir, "vlc").toPath(), vlcDir.toPath(), StandardCopyOption.REPLACE_EXISTING)
+  val resourcesDir = File(System.getProperty("compose.application.resources.dir"))
+  val vlcDir = File(resourcesDir.absolutePath + File.separator + "vlc")
   if (desktopPlatform == DesktopPlatform.WINDOWS_X86_64) {
-    windowsLoadRequiredLibs(libsTmpDir)
+    windowsLoadRequiredLibs(resourcesDir, vlcDir)
   } else {
-    System.load(File(libsTmpDir, "libapp-lib.${desktopPlatform.libExtension}").absolutePath)
+    System.load(File(resourcesDir, "libapp-lib.${desktopPlatform.libExtension}").absolutePath)
   }
   // No picture without preloading it, only sound. However, with libs from AppImage it works without preloading
   //val libXcb = "libvlc_xcb_events.so.0.0.0"
   //System.load(File(File(vlcDir, "vlc"), libXcb).absolutePath)
   System.setProperty("jna.library.path", vlcDir.absolutePath)
   //discoverVlcLibs(File(File(vlcDir, "vlc"), "plugins").absolutePath)
-
-  libsTmpDir.deleteRecursively()
   initHS()
 }
 
-private fun copyResources(from: String, to: Path) {
-  val resource = Class.forName("chat.simplex.desktop.MainKt").getResource("")!!.toURI()
-  val fileSystem = FileSystems.newFileSystem(resource, emptyMap<String, String>())
-  val resPath = fileSystem.getPath(from)
-  Files.walkFileTree(resPath, object: SimpleFileVisitor<Path>() {
-    override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
-      Files.createDirectories(to.resolve(resPath.relativize(dir).toString()))
-      return FileVisitResult.CONTINUE
-    }
-    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-      val dest = to.resolve(resPath.relativize(file).toString())
-      Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING)
-      // Setting the same time on file as the time set in script that generates VLC libs
-      if (dest.toString().contains("." + desktopPlatform.libExtension)) {
-        dest.setLastModifiedTime(FileTime.fromMillis(0))
-      }
-      return FileVisitResult.CONTINUE
-    }
-  })
-}
-
-private fun windowsLoadRequiredLibs(libsTmpDir: File) {
+private fun windowsLoadRequiredLibs(libsTmpDir: File, vlcDir: File) {
   val mainLibs = arrayOf(
     "libcrypto-3-x64.dll",
+    "mcfgthread-12.dll",
+    "libgcc_s_seh-1.dll",
+    "libstdc++-6.dll",
     "libffi-8.dll",
-	"libgmp-10.dll",
+    "libgmp-10.dll",
     "libsimplex.dll",
     "libapp-lib.dll"
   )
@@ -72,7 +50,7 @@ private fun windowsLoadRequiredLibs(libsTmpDir: File) {
   val vlcLibs = arrayOf(
     "libvlccore.dll",
     "libvlc.dll",
-	"axvlc.dll",
+    "axvlc.dll",
     "npvlc.dll"
   )
   vlcLibs.forEach {
