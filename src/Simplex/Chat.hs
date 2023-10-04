@@ -3733,14 +3733,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       where
         probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
         sendProbeHash :: ContactOrMember -> m ()
-        sendProbeHash com@(COMContact c) = do
+        sendProbeHash cgm@(COMContact c) = do
           void . sendDirectContactMessage c $ XInfoProbeCheck probeHash
-          withStore' $ \db -> createSentProbeHash db userId probeId com
+          withStore' $ \db -> createSentProbeHash db userId probeId cgm
         sendProbeHash (COMGroupMember GroupMember {activeConn = Nothing}) = pure ()
-        sendProbeHash com@(COMGroupMember m@GroupMember {groupId, activeConn = Just conn}) =
+        sendProbeHash cgm@(COMGroupMember m@GroupMember {groupId, activeConn = Just conn}) =
           when (memberCurrent m) $ do
             void $ sendDirectMessage conn (XInfoProbeCheck probeHash) (GroupId groupId)
-            withStore' $ \db -> createSentProbeHash db userId probeId com
+            withStore' $ \db -> createSentProbeHash db userId probeId cgm
 
     messageWarning :: Text -> m ()
     messageWarning = toView . CRMessageError user "warning"
