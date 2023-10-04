@@ -1,7 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
-import java.nio.file.Files
-import java.nio.file.Path
 
 plugins {
   kotlin("multiplatform")
