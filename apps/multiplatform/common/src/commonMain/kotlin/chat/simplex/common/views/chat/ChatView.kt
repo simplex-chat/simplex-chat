@@ -66,11 +66,13 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
     launch {
       snapshotFlow { chatModel.chatId.value }
         .distinctUntilChanged()
+        .onEach { Log.d(TAG, "TODOCHAT: chatId: activeChatId ${activeChat.value?.id} == new chatId $it ${activeChat.value?.id == it} ") }
         .filter { it != null && activeChat.value?.id != it }
         .collect { chatId ->
           // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
           // Also for situation when chatId changes after clicking in notification, etc
           activeChat.value = chatModel.getChat(chatId!!)
+          Log.d(TAG, "TODOCHAT: chatId: activeChatId became ${activeChat.value?.id}")
           markUnreadChatAsRead(activeChat, chatModel)
         }
     }
@@ -89,9 +91,13 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         }
       }
         .distinctUntilChanged()
+        .onEach { Log.d(TAG, "TODOCHAT: chats: activeChatId ${activeChat.value?.id} == new chatId ${it?.id} ${activeChat.value?.id == it?.id} ") }
         // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
         .filter { it != null && it?.chatInfo != activeChat.value?.chatInfo }
-        .collect { activeChat.value = it }
+        .collect {
+          activeChat.value = it
+          Log.d(TAG, "TODOCHAT: chats: activeChatId became ${activeChat.value?.id}")
+        }
     }
   }
   val view = LocalMultiplatformView()
@@ -218,7 +224,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         val firstId = chatModel.chatItems.firstOrNull()?.id
         if (c != null && firstId != null) {
           withApi {
+            Log.d(TAG, "TODOCHAT: loadPrevMessages: loading for ${c.id}, current chatId ${ChatModel.chatId.value}, size was ${ChatModel.chatItems.size}")
             apiLoadPrevMessages(c.chatInfo, chatModel, firstId, searchText.value)
+            Log.d(TAG, "TODOCHAT: loadPrevMessages: loaded for ${c.id}, current chatId ${ChatModel.chatId.value}, size now ${ChatModel.chatItems.size}")
           }
         }
       },
@@ -450,17 +458,7 @@ fun ChatLayout(
       .fillMaxWidth()
       .desktopOnExternalDrag(
         enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
-        onFiles = { paths ->
-          val uris = paths.map { URI.create(it) }
-          val groups =  uris.groupBy { isImage(it) }
-          val images = groups[true] ?: emptyList()
-          val files = groups[false] ?: emptyList()
-          if (images.isNotEmpty()) {
-            CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(images, null) }
-          } else if (files.isNotEmpty()) {
-            composeState.processPickedFile(uris.first(), null)
-          }
-        },
+        onFiles = { paths -> composeState.onFilesAttached(paths.map { URI.create(it) }) },
         onImage = {
           val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
           tmpFile.deleteOnExit()

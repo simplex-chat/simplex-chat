@@ -13,6 +13,7 @@ import SchemaDump
 import Test.Hspec
 import UnliftIO.Temporary (withTempDirectory)
 import ViewTests
+import ValidNames
 import WebRTCTests
 
 main :: IO ()
@@ -24,6 +25,7 @@ main = do
     describe "SimpleX chat view" viewTests
     describe "SimpleX chat protocol" protocolTests
     describe "WebRTC encryption" webRTCTests
+    describe "Valid names" validNameTests
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests

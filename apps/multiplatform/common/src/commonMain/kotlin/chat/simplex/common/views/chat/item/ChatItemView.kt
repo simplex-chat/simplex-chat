@@ -201,7 +201,7 @@ fun ChatItemView(
               showMenu.value = false
             })
             ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
-              clipboard.setText(AnnotatedString(cItem.content.text))
+              copyItemToClipboard(cItem, clipboard)
               showMenu.value = false
             })
             if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && getLoadedFilePath(cItem.file) != null) {
@@ -560,6 +560,8 @@ private fun showMsgDeliveryErrorAlert(description: String) {
     text = description,
   )
 }
+
+expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 
 @Preview
 @Composable

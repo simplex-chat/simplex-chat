@@ -69,6 +69,8 @@ foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSON
 
 foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CString -> IO CString
 
+foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
+
 foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
 foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
@@ -135,6 +137,10 @@ cChatPasswordHash cPwd cSalt = do
   pwd <- B.packCString cPwd
   salt <- B.packCString cSalt
   newCStringFromBS $ chatPasswordHash pwd salt
+
+-- This function supports utf8 strings
+cChatValidName :: CString -> IO CString
+cChatValidName cName = newCString . mkValidName =<< peekCString cName
 
 mobileChatOpts :: String -> String -> ChatOpts
 mobileChatOpts dbFilePrefix dbKey =

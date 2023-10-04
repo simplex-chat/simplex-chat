@@ -1,13 +1,15 @@
 ---
 title: Download SimpleX apps
 permalink: /downloads/index.html
-revision: 20.09.2023
+revision: 01.10.2023
 ---
 
-| Updated 20.09.2023 | Languages: EN |
+| Updated 01.10.2023 | Languages: EN |
 # Download SimpleX apps
 
-The latest version is v5.3.1.
+The latest stable version is v5.3.1.
+
+You can get the latest beta releases from [GitHub](https://github.com/simplex-chat/simplex-chat/releases).
 
 - [desktop](#desktop-app)
 - [mobile](#mobile-apps)
@@ -23,7 +25,7 @@ Using the same profile as on mobile device is not yet supported – you need to 
 
 **Mac**: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/download/v5.3.1/simplex-desktop-macos-x86_64.dmg) (Intel), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/download/v5.3.1/simplex-desktop-macos-aarch64.dmg) (Apple Silicon).
 
-**Windows**: coming soon.
+**Windows**: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/download/v5.4.0-beta.0/simplex-desktop-windows-x86-64.msi) (BETA).
 
 ## Mobile apps
 
