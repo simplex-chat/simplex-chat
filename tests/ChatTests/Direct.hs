@@ -219,7 +219,7 @@ testMergeContactMultipleContacts =
       alice `hasContactProfiles` ["alice", "bob", "bob"]
       bob `hasContactProfiles` ["bob", "alice", "alice"]
 
-      threadDelay 10000
+      threadDelay 500000
 
       bob ##> "/contact_merge on"
       bob <## "ok"
@@ -259,7 +259,7 @@ testContactClear =
     \alice bob -> do
       connectUsers alice bob
       alice <##> bob
-      threadDelay 10000
+      threadDelay 500000
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
       alice #$> ("/_get chat @2 count=100", chat, [])
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
