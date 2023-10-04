@@ -6,26 +6,26 @@ module Simplex.Chat.Remote.Types where
 
 import Control.Concurrent.Async (Async)
 import Data.Aeson (ToJSON (..))
-import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.TMap (TMap)
+import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import UnliftIO.STM
-import Simplex.Messaging.Encoding.String (strToJEncoding, strToJSON)
 
 type RemoteHostId = Int64
 
 data RemoteHost = RemoteHost
   { remoteHostId :: RemoteHostId,
-    displayName :: Text,
-    -- | Path to store replicated files
     storePath :: FilePath,
-    -- | A stable part of X509 credentials used to access the host
-    caCert :: ByteString,
+    displayName :: Text,
     -- | Credentials signing key for root and session certs
-    caKey :: C.Key
+    caKey :: C.APrivateSignKey,
+    -- | A stable part of TLS credentials used in remote session
+    caCert :: C.SignedCertificate,
+    contacted :: Bool
   }
   deriving (Show)
 
@@ -39,19 +39,21 @@ data RemoteCtrl = RemoteCtrl
   }
   deriving (Show, Generic, ToJSON)
 
--- XXX: until fixed in master
-instance ToJSON C.KeyHash where
-  toEncoding = strToJEncoding
-  toJSON = strToJSON
-
-data RemoteHostSession = RemoteHostSession
-  { -- | Path for local resources to be synchronized with host
-    storePath :: FilePath,
-    ctrlClient :: HTTP2Client
-  }
+data RemoteHostSession
+  = RemoteHostSessionStarting
+      { announcer :: Async ()
+      }
+  | RemoteHostSessionStarted
+      { -- | Path for local resources to be synchronized with host
+        storePath :: FilePath,
+        ctrlClient :: HTTP2Client
+      }
 
 data RemoteCtrlSession = RemoteCtrlSession
   { -- | Server side of transport to process remote commands and forward notifications
-    ctrlAsync :: Async (),
+    discoverer :: Async (),
+    supervisor :: Async (),
+    hostServer :: Maybe (Async ()),
+    discovered :: TMap C.KeyHash TransportHost,
     accepted :: TMVar RemoteCtrlId
   }

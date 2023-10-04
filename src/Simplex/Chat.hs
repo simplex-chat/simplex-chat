@@ -1835,18 +1835,18 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
-  CreateRemoteHost _displayName -> pure $ chatCmdError Nothing "not supported"
-  ListRemoteHosts -> pure $ chatCmdError Nothing "not supported"
+  CreateRemoteHost -> createRemoteHost
+  ListRemoteHosts -> listRemoteHosts
   StartRemoteHost rh -> startRemoteHost rh
-  StopRemoteHost rh -> closeRemoteHostSession rh $> CRRemoteHostStopped rh
-  DisposeRemoteHost _rh -> pure $ chatCmdError Nothing "not supported"
+  StopRemoteHost rh -> closeRemoteHostSession rh
+  DeleteRemoteHost rh -> deleteRemoteHost rh
   StartRemoteCtrl -> startRemoteCtrl
-  ConfirmRemoteCtrl rc -> confirmRemoteCtrl rc
+  AcceptRemoteCtrl rc -> acceptRemoteCtrl rc
   RejectRemoteCtrl rc -> rejectRemoteCtrl rc
   StopRemoteCtrl rc -> stopRemoteCtrl rc
-  RegisterRemoteCtrl _displayName _oobData -> pure $ chatCmdError Nothing "not supported"
-  ListRemoteCtrls -> pure $ chatCmdError Nothing "not supported"
-  DisposeRemoteCtrl rc -> disposeRemoteCtrl rc
+  RegisterRemoteCtrl oob -> registerRemoteCtrl oob
+  ListRemoteCtrls -> listRemoteCtrls
+  DeleteRemoteCtrl rc -> deleteRemoteCtrl rc
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)
@@ -5609,17 +5609,19 @@ chatCommandP =
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
-      "/create remote host" *> (CreateRemoteHost <$> textP),
+      "/create remote host" $> CreateRemoteHost,
       "/list remote hosts" $> ListRemoteHosts,
       "/start remote host " *> (StartRemoteHost <$> A.decimal),
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
-      "/dispose remote host " *> (DisposeRemoteHost <$> A.decimal),
+      "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/start remote ctrl" $> StartRemoteCtrl,
-      "/register remote ctrl " *> (RegisterRemoteCtrl <$> textP <*> remoteHostOOBP),
-      "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
+      -- TODO *** you need to pass multiple parameters here
+      "/register remote ctrl " *> (RegisterRemoteCtrl <$> (RemoteCtrlOOB <$> strP)),
+      "/list remote ctrls" $> ListRemoteCtrls,
+      "/accept remote ctrl " *> (AcceptRemoteCtrl <$> A.decimal),
       "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
       "/stop remote ctrl " *> (StopRemoteCtrl <$> A.decimal),
-      "/dispose remote ctrl " *> (DisposeRemoteCtrl <$> A.decimal),
+      "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
@@ -5737,7 +5739,6 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
-    remoteHostOOBP = RemoteHostOOB <$> textP
 
 adminContactReq :: ConnReqContact
 adminContactReq =

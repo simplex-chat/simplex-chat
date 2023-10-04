@@ -490,6 +490,7 @@ test-suite simplex-chat-test
       MarkdownTests
       MobileTests
       ProtocolTests
+      RemoteTests
       SchemaDump
       ViewTests
       WebRTCTests
