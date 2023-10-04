@@ -175,7 +175,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
   CRConnectionAliasUpdated u c -> ttyUser u $ viewConnectionAliasUpdated c
   CRContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
-  CRContactsMerged u intoCt mergedCt -> ttyUser u $ viewContactsMerged intoCt mergedCt
+  CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
   CRRcvFileStart u ci -> ttyUser u $ receivingFile_' "started" ci
   CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' "completed" ci
@@ -236,7 +236,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
   CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
-  CRMemberContactConnected u ct g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " is merged into " <> ttyContact' ct]
+  CRContactAndMemberAssociated u ct g m ct' -> ttyUser u $ viewContactAndMemberAssociated ct g m ct'
   CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
@@ -891,11 +891,17 @@ groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfil
       Just mp -> " to join as " <> incognitoProfile' (fromLocalProfile mp) <> ", "
       Nothing -> " to join, "
 
-viewContactsMerged :: Contact -> Contact -> [StyledString]
-viewContactsMerged c1 c2 =
+viewContactsMerged :: Contact -> Contact -> Contact -> [StyledString]
+viewContactsMerged c1 c2 ct' =
   [ "contact " <> ttyContact' c2 <> " is merged into " <> ttyContact' c1,
-    "use " <> ttyToContact' c1 <> highlight' "<message>" <> " to send messages"
+    "use " <> ttyToContact' ct' <> highlight' "<message>" <> " to send messages"
   ]
+
+viewContactAndMemberAssociated :: Contact -> GroupInfo -> GroupMember -> Contact -> [StyledString]
+viewContactAndMemberAssociated ct g m ct' =
+   [ "contact and member are merged: " <> ttyContact' ct <> ", " <> ttyGroup' g <> " " <> ttyMember m,
+     "use " <> ttyToContact' ct' <> highlight' "<message>" <> " to send messages"
+   ]
 
 viewUserProfile :: Profile -> [StyledString]
 viewUserProfile Profile {displayName, fullName} =
