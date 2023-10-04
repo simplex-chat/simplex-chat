@@ -4339,9 +4339,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         probeMatches [] _ = pure ()
         probeMatches (cgm1' : cgm1s') cgm2' = do
           cgm2''_ <- probeMatch cgm1' cgm2' probe `catchChatError` \_ -> pure (Just cgm2')
-          case cgm2''_ of
-            Just cgm2'' -> probeMatches cgm1s' cgm2''
-            Nothing -> probeMatches cgm1s' cgm2'
+          let cgm2'' = fromMaybe cgm2' cgm2''_
+          probeMatches cgm1s' cgm2''
 
     xInfoProbeCheck :: ContactOrMember -> ProbeHash -> m ()
     xInfoProbeCheck cgm1 probeHash = do
