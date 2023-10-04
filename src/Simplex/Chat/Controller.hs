@@ -492,7 +492,7 @@ data ChatResponse
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
-  | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact}
+  | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CRContactDeleted {user :: User, contact :: Contact}
   | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
@@ -564,8 +564,7 @@ data ChatResponse
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRMemberAssociatedWithContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRContactAssociatedWithMember {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRContactAndMemberAssociated {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember, updatedContact :: Contact}
   | CRMemberSubError {user :: User, groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {user :: User, groupInfo :: GroupInfo}

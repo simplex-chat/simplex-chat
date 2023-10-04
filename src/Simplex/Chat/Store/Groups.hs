@@ -1311,65 +1311,67 @@ getContactOrGroupMember_ db user ids =
     (_, Just gId, Just gmId) -> CGMGroupMember <$> getGroupInfo db user gId <*> getGroupMember db user gId gmId
     _ -> throwError $ SEInternalError ""
 
-mergeContactRecords :: DB.Connection -> UserId -> Contact -> Contact -> IO ()
-mergeContactRecords db userId ct1 ct2 = do
+mergeContactRecords :: DB.Connection -> User -> Contact -> Contact -> ExceptT StoreError IO Contact
+mergeContactRecords db user@User {userId} ct1 ct2 = do
   let (toCt, fromCt) = toFromContacts ct1 ct2
       Contact {contactId = toContactId} = toCt
       Contact {contactId = fromContactId, localDisplayName} = fromCt
-  currentTs <- getCurrentTime
-  -- TODO next query fixes incorrect unused contacts deletion; consider more thorough fix
-  when (contactDirect toCt && not (contactUsed toCt)) $
+  liftIO $ do
+    currentTs <- getCurrentTime
+    -- TODO next query fixes incorrect unused contacts deletion; consider more thorough fix
+    when (contactDirect toCt && not (contactUsed toCt)) $
+      DB.execute
+        db
+        "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?"
+        (currentTs, userId, toContactId)
     DB.execute
       db
-      "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?"
-      (currentTs, userId, toContactId)
-  DB.execute
-    db
-    "UPDATE connections SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-    (toContactId, currentTs, fromContactId, userId)
-  DB.execute
-    db
-    "UPDATE connections SET via_contact = ?, updated_at = ? WHERE via_contact = ? AND user_id = ?"
-    (toContactId, currentTs, fromContactId, userId)
-  DB.execute
-    db
-    "UPDATE group_members SET invited_by = ?, updated_at = ? WHERE invited_by = ? AND user_id = ?"
-    (toContactId, currentTs, fromContactId, userId)
-  DB.execute
-    db
-    "UPDATE chat_items SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-    (toContactId, currentTs, fromContactId, userId)
-  DB.execute
-    db
-    "UPDATE sent_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-    (toContactId, currentTs, fromContactId, userId)
-  DB.execute
-    db
-    "UPDATE sent_probe_hashes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-    (toContactId, currentTs, fromContactId, userId)
-  DB.execute
-    db
-    "UPDATE received_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-    (toContactId, currentTs, fromContactId, userId)
-  DB.executeNamed
-    db
-    [sql|
-      UPDATE group_members
-      SET contact_id = :to_contact_id,
-          local_display_name = (SELECT local_display_name FROM contacts WHERE contact_id = :to_contact_id),
-          contact_profile_id = (SELECT contact_profile_id FROM contacts WHERE contact_id = :to_contact_id),
-          updated_at = :updated_at
-      WHERE contact_id = :from_contact_id
-        AND user_id = :user_id
-    |]
-    [ ":to_contact_id" := toContactId,
-      ":from_contact_id" := fromContactId,
-      ":user_id" := userId,
-      ":updated_at" := currentTs
-    ]
-  deleteContactProfile_ db userId fromContactId
-  DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
-  deleteUnusedDisplayName_ db userId localDisplayName
+      "UPDATE connections SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.execute
+      db
+      "UPDATE connections SET via_contact = ?, updated_at = ? WHERE via_contact = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.execute
+      db
+      "UPDATE group_members SET invited_by = ?, updated_at = ? WHERE invited_by = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.execute
+      db
+      "UPDATE chat_items SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.execute
+      db
+      "UPDATE sent_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.execute
+      db
+      "UPDATE sent_probe_hashes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.execute
+      db
+      "UPDATE received_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.executeNamed
+      db
+      [sql|
+        UPDATE group_members
+        SET contact_id = :to_contact_id,
+            local_display_name = (SELECT local_display_name FROM contacts WHERE contact_id = :to_contact_id),
+            contact_profile_id = (SELECT contact_profile_id FROM contacts WHERE contact_id = :to_contact_id),
+            updated_at = :updated_at
+        WHERE contact_id = :from_contact_id
+          AND user_id = :user_id
+      |]
+      [ ":to_contact_id" := toContactId,
+        ":from_contact_id" := fromContactId,
+        ":user_id" := userId,
+        ":updated_at" := currentTs
+      ]
+    deleteContactProfile_ db userId fromContactId
+    DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
+    deleteUnusedDisplayName_ db userId localDisplayName
+  getContact db user toContactId
   where
     toFromContacts :: Contact -> Contact -> (Contact, Contact)
     toFromContacts c1 c2
@@ -1400,31 +1402,33 @@ associateMemberWithContactRecord
     when (memProfileId /= profileId) $ deleteUnusedProfile_ db userId memProfileId
     when (memLDN /= localDisplayName) $ deleteUnusedDisplayName_ db userId memLDN
 
-associateContactWithMemberRecord :: DB.Connection -> User -> GroupMember -> Contact -> IO ()
+associateContactWithMemberRecord :: DB.Connection -> User -> GroupMember -> Contact -> ExceptT StoreError IO Contact
 associateContactWithMemberRecord
   db
-  User {userId}
+  user@User {userId}
   GroupMember {groupId, groupMemberId, localDisplayName = memLDN, memberProfile = LocalProfile {profileId = memProfileId}}
   Contact {contactId, localDisplayName, profile = LocalProfile {profileId}} = do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      [sql|
-        UPDATE group_members
-        SET contact_id = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND group_member_id = ?
-      |]
-      (contactId, currentTs, userId, groupId, groupMemberId)
-    DB.execute
-      db
-      [sql|
-        UPDATE contacts
-        SET local_display_name = ?, contact_profile_id = ?, updated_at = ?
-        WHERE user_id = ? AND contact_id = ?
-      |]
-      (memLDN, memProfileId, currentTs, userId, contactId)
-    when (profileId /= memProfileId) $ deleteUnusedProfile_ db userId profileId
-    when (localDisplayName /= memLDN) $ deleteUnusedDisplayName_ db userId localDisplayName
+    liftIO $ do
+      currentTs <- getCurrentTime
+      DB.execute
+        db
+        [sql|
+          UPDATE group_members
+          SET contact_id = ?, updated_at = ?
+          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+        |]
+        (contactId, currentTs, userId, groupId, groupMemberId)
+      DB.execute
+        db
+        [sql|
+          UPDATE contacts
+          SET local_display_name = ?, contact_profile_id = ?, updated_at = ?
+          WHERE user_id = ? AND contact_id = ?
+        |]
+        (memLDN, memProfileId, currentTs, userId, contactId)
+      when (profileId /= memProfileId) $ deleteUnusedProfile_ db userId profileId
+      when (localDisplayName /= memLDN) $ deleteUnusedDisplayName_ db userId localDisplayName
+    getContact db user contactId
 
 deleteUnusedDisplayName_ :: DB.Connection -> UserId -> ContactName -> IO ()
 deleteUnusedDisplayName_ db userId localDisplayName =
