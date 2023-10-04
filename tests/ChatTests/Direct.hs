@@ -30,8 +30,6 @@ chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive messages" testAddContact
-    it "merge duplicate contacts" testContactMerge
-    it "new contact should merge with multiple existing contacts" testMergeContactMultipleContacts
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "unused contact is deleted silently" testDeleteUnusedContactSilent
@@ -43,6 +41,9 @@ chatDirectTests = do
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
+  describe "contact merge" $ do
+    it "merge duplicate contacts" testContactMerge
+    it "new contact should merge with multiple existing contacts" testMergeContactMultipleContacts
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection

@@ -108,7 +108,7 @@ import Crypto.Random (ChaChaDRG)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (sortOn)
-import Data.Maybe (fromMaybe, isNothing, catMaybes)
+import Data.Maybe (fromMaybe, isNothing, catMaybes, isJust)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
@@ -1311,14 +1311,16 @@ getContactOrGroupMember_ db user ids =
     (_, Just gId, Just gmId) -> CGMGroupMember <$> getGroupInfo db user gId <*> getGroupMember db user gId gmId
     _ -> throwError $ SEInternalError ""
 
-mergeContactRecords :: DB.Connection -> User -> Contact -> Contact -> ExceptT StoreError IO Contact
-mergeContactRecords db user@User {userId} ct1 ct2 = do
+-- connection being verified and connection level 0 have priority over requested merge direction;
+-- if requested merge direction is overruled, keepLDN is kept
+mergeContactRecords :: DB.Connection -> User -> Contact -> Contact -> ContactName -> ExceptT StoreError IO Contact
+mergeContactRecords db user@User {userId} ct1 ct2 keepLDN = do
   let (toCt, fromCt) = toFromContacts ct1 ct2
-      Contact {contactId = toContactId} = toCt
-      Contact {contactId = fromContactId, localDisplayName} = fromCt
+      Contact {contactId = toContactId, localDisplayName = toLDN} = toCt
+      Contact {contactId = fromContactId, localDisplayName = fromLDN} = fromCt
   liftIO $ do
     currentTs <- getCurrentTime
-    -- TODO next query fixes incorrect unused contacts deletion; consider more thorough fix
+    -- next query fixes incorrect unused contacts deletion
     when (contactDirect toCt && not (contactUsed toCt)) $
       DB.execute
         db
@@ -1370,19 +1372,28 @@ mergeContactRecords db user@User {userId} ct1 ct2 = do
       ]
     deleteContactProfile_ db userId fromContactId
     DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
-    deleteUnusedDisplayName_ db userId localDisplayName
+    deleteUnusedDisplayName_ db userId fromLDN
+    when (keepLDN /= toLDN && keepLDN == fromLDN) $
+      DB.execute
+        db
+        [sql|
+          UPDATE display_names
+          SET local_display_name = ?, updated_at = ?
+          WHERE user_id = ? AND local_display_name = ?
+        |]
+        (keepLDN, currentTs, userId, toLDN)
   getContact db user toContactId
   where
     toFromContacts :: Contact -> Contact -> (Contact, Contact)
-    toFromContacts c1 c2
-      | d1 && not d2 = (c1, c2)
-      | d2 && not d1 = (c2, c1)
-      | ctCreatedAt c1 <= ctCreatedAt c2 = (c1, c2)
-      | otherwise = (c2, c1)
+    toFromContacts c1@Contact {activeConn = Connection {connLevel = cl1}} c2@Contact {activeConn = Connection {connLevel = cl2}}
+      | vrf2 && not vrf1 = (c2, c1)
+      | d2 && not vrf1 && not d1 = (c2, c1)
+      | otherwise = (c1, c2)
       where
-        d1 = directOrUsed c1
-        d2 = directOrUsed c2
-        ctCreatedAt Contact {createdAt} = createdAt
+        vrf1 = isJust $ contactSecurityCode c1
+        vrf2 = isJust $ contactSecurityCode c2
+        d1 = cl1 == 0
+        d2 = cl2 == 0
 
 associateMemberWithContactRecord :: DB.Connection -> User -> Contact -> GroupMember -> IO ()
 associateMemberWithContactRecord

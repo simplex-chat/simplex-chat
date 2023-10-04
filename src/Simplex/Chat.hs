@@ -3105,7 +3105,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               whenUserNtfs user $ do
                 setActive $ ActiveC c
                 showToast (c <> "> ") "connected"
-              when (contactConnInitiated conn) $ probeMatchingContactsAndMembers ct (contactConnIncognito ct)
+              when (contactConnInitiated conn) $ do
+                probeMatchingContactsAndMembers ct (contactConnIncognito ct)
+                withStore' $ \db -> resetContactConnInitiated db user conn
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
                   Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_, gLinkMemRole) -> do
@@ -4330,11 +4332,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- [incognito] unless connected incognito
       when (contactMerge && not (contactOrGroupMemberIncognito cgm2)) $ do
         cgm1s <- withStore' $ \db -> matchReceivedProbe db user cgm2 probe
-        -- liftIO $ print $ "xInfoProbe: " <> intercalate ", " (map cgmStr cgm1s)
         probeMatches cgm1s cgm2 probe
-      where
-        cgmStr (CGMContact Contact {localDisplayName}) = "contact " <> T.unpack localDisplayName
-        cgmStr (CGMGroupMember _ GroupMember {localDisplayName}) = "member " <> T.unpack localDisplayName
 
     probeMatches :: [ContactOrGroupMember] -> ContactOrGroupMember -> Probe -> m ()
     probeMatches cgm1s cgm2 probe = do
@@ -4519,13 +4517,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           Contact {localDisplayName = cLDN2} = c2
       case (suffixOrd displayName cLDN1, suffixOrd displayName cLDN2) of
         (Just cOrd1, Just cOrd2)
-          | cOrd1 < cOrd2 -> merge c1 c2
-          | cOrd2 < cOrd1 -> merge c2 c1
+          | cOrd1 < cOrd2 -> merge c1 c2 cLDN1
+          | cOrd2 < cOrd1 -> merge c2 c1 cLDN2
           | otherwise -> pure Nothing
         _ -> pure Nothing
       where
-        merge c1' c2' = do
-          c2'' <- withStore $ \db -> mergeContactRecords db user c1' c2'
+        merge c1' c2' keepLDN = do
+          c2'' <- withStore $ \db -> mergeContactRecords db user c1' c2' keepLDN
           toView $ CRContactsMerged user c1' c2' c2''
           pure $ Just c2''
 

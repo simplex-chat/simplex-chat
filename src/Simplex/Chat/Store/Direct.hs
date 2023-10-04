@@ -62,6 +62,7 @@ module Simplex.Chat.Store.Direct
     updateConnectionStatus,
     updateContactSettings,
     setConnConnReqInv,
+    resetContactConnInitiated,
   )
 where
 
@@ -795,3 +796,16 @@ setConnConnReqInv db User {userId} connId connReq = do
       WHERE user_id = ? AND connection_id = ?
     |]
     (connReq, updatedAt, userId, connId)
+
+resetContactConnInitiated :: DB.Connection -> User -> Connection -> IO ()
+resetContactConnInitiated db User {userId} Connection {connId} = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET contact_conn_initiated = 0, updated_at = ?
+      WHERE user_id = ? AND connection_id = ?
+    |]
+    (updatedAt, userId, connId)
+
