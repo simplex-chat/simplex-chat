@@ -1313,9 +1313,9 @@ getContactOrMember_ db user ids =
 
 -- connection being verified and connection level 0 have priority over requested merge direction;
 -- if requested merge direction is overruled, keepLDN is kept
-mergeContactRecords :: DB.Connection -> User -> Contact -> Contact -> ContactName -> ExceptT StoreError IO Contact
-mergeContactRecords db user@User {userId} ct1 ct2 keepLDN = do
-  let (toCt, fromCt) = toFromContacts ct1 ct2
+mergeContactRecords :: DB.Connection -> User -> Contact -> Contact -> ExceptT StoreError IO Contact
+mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN} from = do
+  let (toCt, fromCt) = checkToFromContacts
       Contact {contactId = toContactId, localDisplayName = toLDN} = toCt
       Contact {contactId = fromContactId, localDisplayName = fromLDN} = fromCt
   liftIO $ do
@@ -1384,16 +1384,16 @@ mergeContactRecords db user@User {userId} ct1 ct2 keepLDN = do
         (keepLDN, currentTs, userId, toLDN)
   getContact db user toContactId
   where
-    toFromContacts :: Contact -> Contact -> (Contact, Contact)
-    toFromContacts c1@Contact {activeConn = Connection {connLevel = cl1}} c2@Contact {activeConn = Connection {connLevel = cl2}}
-      | vrf2 && not vrf1 = (c2, c1)
-      | d2 && not vrf1 && not d1 = (c2, c1)
-      | otherwise = (c1, c2)
+    checkToFromContacts :: (Contact, Contact)
+    checkToFromContacts
+      | vrfFrom && not vrfTo = (from, to)
+      | dirFrom && not vrfTo && not dirTo = (from, to)
+      | otherwise = (to, from)
       where
-        vrf1 = isJust $ contactSecurityCode c1
-        vrf2 = isJust $ contactSecurityCode c2
-        d1 = cl1 == 0
-        d2 = cl2 == 0
+        vrfTo = isJust $ contactSecurityCode to
+        vrfFrom = isJust $ contactSecurityCode from
+        dirTo = let Contact {activeConn = Connection {connLevel = clTo}} = to in clTo == 0
+        dirFrom = let Contact {activeConn = Connection {connLevel = clFrom}} = from in clFrom == 0
 
 associateMemberWithContactRecord :: DB.Connection -> User -> Contact -> GroupMember -> IO ()
 associateMemberWithContactRecord

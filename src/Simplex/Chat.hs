@@ -4532,13 +4532,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           Contact {localDisplayName = cLDN2} = c2
       case (suffixOrd displayName cLDN1, suffixOrd displayName cLDN2) of
         (Just cOrd1, Just cOrd2)
-          | cOrd1 < cOrd2 -> merge c1 c2 cLDN1
-          | cOrd2 < cOrd1 -> merge c2 c1 cLDN2
+          | cOrd1 < cOrd2 -> merge c1 c2
+          | cOrd2 < cOrd1 -> merge c2 c1
           | otherwise -> pure Nothing
         _ -> pure Nothing
       where
-        merge c1' c2' keepLDN = do
-          c2'' <- withStore $ \db -> mergeContactRecords db user c1' c2' keepLDN
+        merge c1' c2' = do
+          c2'' <- withStore $ \db -> mergeContactRecords db user c1' c2'
           toView $ CRContactsMerged user c1' c2' c2''
           pure $ Just c2''
 
