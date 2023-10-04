@@ -75,6 +75,7 @@ chatGroupTests = do
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
   describe "merge members and contacts" $ do
     it "new member should merge with existing contact" testMergeMemberExistingContact
+    it "new member should merge with multiple existing contacts" testMergeMemberMultipleContacts
     it "new contact should merge with existing member" testMergeContactExistingMember
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
     it "new contact should merge with both existing members and contacts" testMergeContactExistingMembersAndContacts
@@ -2764,6 +2765,76 @@ testMergeMemberExistingContact =
             cath <## "#team: new member alice_1 is connected"
             cath <## "contact and member are merged: alice, #team alice_1"
             cath <## "use @alice <message> to send messages"
+        ]
+      alice <##> cath
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      cath <# "#team alice> hello"
+      cath #> "#team hello too"
+      bob <# "#team cath> hello too"
+      alice <# "#team cath> hello too"
+
+      alice ##> "/contacts"
+      alice
+        <### [ "bob (Bob)",
+               "cath (Catherine)"
+             ]
+      cath ##> "/contacts"
+      cath
+        <### [ "alice (Alice)",
+               "bob (Bob)"
+             ]
+      alice `hasContactProfiles` ["alice", "bob", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+
+testMergeMemberMultipleContacts :: HasCallStack => FilePath -> IO ()
+testMergeMemberMultipleContacts =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/contact_merge off"
+      alice <## "ok"
+
+      connectUsers alice bob
+      connectUsers alice cath
+
+      alice ##> "/c"
+      inv' <- getInvitation alice
+      cath ##> ("/c " <> inv')
+      cath <## "confirmation sent!"
+      concurrently_
+        (alice <## "cath_1 (Catherine): contact is connected")
+        (cath <## "alice_1 (Alice): contact is connected")
+
+      alice `hasContactProfiles` ["alice", "bob", "cath", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "alice"]
+
+      alice ##> "/contact_merge on"
+      alice <## "ok"
+
+      createGroup2 "team" bob cath
+      bob ##> "/a #team alice"
+      bob <## "invitation to join the group #team sent to alice"
+      alice <## "#team: bob invites you to join the group as member"
+      alice <## "use /j team to accept"
+      alice ##> "/j team"
+      concurrentlyN_
+        [ alice
+            <### [ "#team: you joined the group",
+                   "#team: member cath_2 (Catherine) is connected",
+                   StartsWith "contact and member are merged: cath",
+                   StartsWith "use @cath",
+                   StartsWith "contact cath_",
+                   StartsWith "use @cath"
+                 ],
+          bob <## "#team: alice joined the group",
+          cath
+            <### [ "#team: bob added alice_2 (Alice) to the group (connecting...)",
+                   "#team: new member alice_2 is connected",
+                   StartsWith "contact and member are merged: alice",
+                   StartsWith "use @alice",
+                   StartsWith "contact alice_",
+                   StartsWith "use @alice"
+                 ]
         ]
       alice <##> cath
       alice #> "#team hello"

@@ -4371,10 +4371,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 CGMContact <$$> mergeContacts c1 c2
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or same contact id" >> pure Nothing
             CGMGroupMember g m2@GroupMember {memberProfile = p2, memberContactId}
-              | isNothing memberContactId && profilesMatch p1 p2 -> do
-                void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-                CGMContact <$$> associateMemberAndContact g m2 c1
-              | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact" >> pure Nothing
+              | profilesMatch p1 p2 -> case memberContactId of
+                Nothing -> do
+                  void . sendDirectContactMessage c1 $ XInfoProbeOk probe
+                  CGMContact <$$> associateMemberAndContact g m2 c1
+                Just mCtId
+                  | mCtId /= cId1 -> do
+                    void . sendDirectContactMessage c1 $ XInfoProbeOk probe
+                    mCt <- withStore $ \db -> getContact db user mCtId
+                    CGMContact <$$> mergeContacts c1 mCt
+                  | otherwise -> messageWarning "probeMatch ignored: same contact id" >> pure Nothing
+              | otherwise -> messageWarning "probeMatch ignored: profiles don't match" >> pure Nothing
         CGMGroupMember _ GroupMember {activeConn = Nothing} -> pure Nothing
         CGMGroupMember g@GroupInfo {groupId} m1@GroupMember {memberProfile = p1, memberContactId, activeConn = Just conn} ->
           case cgm2 of
@@ -4394,9 +4401,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Just (CGMContact c2@Contact {contactId = cId2})
               | cId1 /= cId2 -> void $ mergeContacts c1 c2
               | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
-            Just (CGMGroupMember g m2@GroupMember {memberContactId})
-              | isNothing memberContactId -> void $ associateMemberAndContact g m2 c1
-              | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
+            Just (CGMGroupMember g m2@GroupMember {memberContactId}) ->
+              case memberContactId of
+                Nothing -> void $ associateMemberAndContact g m2 c1
+                Just mCtId
+                  | mCtId /= cId1 -> do
+                    mCt <- withStore $ \db -> getContact db user mCtId
+                    void $ mergeContacts c1 mCt
+                  | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
             _ -> pure ()
         CGMGroupMember g m1@GroupMember {memberContactId} ->
           case cgm2 of
