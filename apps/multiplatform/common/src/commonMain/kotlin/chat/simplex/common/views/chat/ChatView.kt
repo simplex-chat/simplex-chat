@@ -458,17 +458,7 @@ fun ChatLayout(
       .fillMaxWidth()
       .desktopOnExternalDrag(
         enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
-        onFiles = { paths ->
-          val uris = paths.map { URI.create(it) }
-          val groups =  uris.groupBy { isImage(it) }
-          val images = groups[true] ?: emptyList()
-          val files = groups[false] ?: emptyList()
-          if (images.isNotEmpty()) {
-            CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(images, null) }
-          } else if (files.isNotEmpty()) {
-            composeState.processPickedFile(uris.first(), null)
-          }
-        },
+        onFiles = { paths -> composeState.onFilesAttached(paths.map { URI.create(it) }) },
         onImage = {
           val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
           tmpFile.deleteOnExit()
