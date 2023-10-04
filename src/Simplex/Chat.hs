@@ -3050,9 +3050,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XInfo p -> xInfo ct' p
               XDirectDel -> xDirectDel ct' msg msgMeta
               XGrpInv gInv -> processGroupInvitation ct' gInv msg msgMeta
-              XInfoProbe probe -> xInfoProbe (CGMContact ct') probe
-              XInfoProbeCheck probeHash -> xInfoProbeCheck (CGMContact ct') probeHash
-              XInfoProbeOk probe -> xInfoProbeOk (CGMContact ct') probe
+              XInfoProbe probe -> xInfoProbe (COMContact ct') probe
+              XInfoProbeCheck probeHash -> xInfoProbeCheck (COMContact ct') probeHash
+              XInfoProbeOk probe -> xInfoProbeOk (COMContact ct') probe
               XCallInv callId invitation -> xCallInv ct' callId invitation msg msgMeta
               XCallOffer callId offer -> xCallOffer ct' callId offer msg msgMeta
               XCallAnswer callId answer -> xCallAnswer ct' callId answer msg msgMeta
@@ -3293,7 +3293,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               Nothing -> do
                 notifyMemberConnected gInfo m Nothing
                 let connectedIncognito = memberIncognito membership
-                when (memberCategory m == GCPreMember) $ probeMatchingMemberContact gInfo m connectedIncognito
+                when (memberCategory m == GCPreMember) $ probeMatchingMemberContact m connectedIncognito
               Just ct@Contact {activeConn = Connection {connStatus}} ->
                 when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m $ Just ct
@@ -3326,9 +3326,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpDel -> xGrpDel gInfo m' msg msgMeta
             XGrpInfo p' -> xGrpInfo gInfo m' p' msg msgMeta
             XGrpDirectInv connReq mContent_ -> canSend m' $ xGrpDirectInv gInfo m' conn' connReq mContent_ msg msgMeta
-            XInfoProbe probe -> xInfoProbe (CGMGroupMember gInfo m') probe
-            XInfoProbeCheck probeHash -> xInfoProbeCheck (CGMGroupMember gInfo m') probeHash
-            XInfoProbeOk probe -> xInfoProbeOk (CGMGroupMember gInfo m') probe
+            XInfoProbe probe -> xInfoProbe (COMGroupMember m') probe
+            XInfoProbeCheck probeHash -> xInfoProbeCheck (COMGroupMember m') probeHash
+            XInfoProbeOk probe -> xInfoProbeOk (COMGroupMember m') probe
             BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
           currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
@@ -3697,7 +3697,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       if contactMerge && not connectedIncognito
         then do
-          (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId (CGMContact ct)
+          (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId (COMContact ct)
           -- ! when making changes to probe-and-merge mechanism,
           -- ! test scenario in which recipient receives probe after probe hashes (not covered in tests):
           -- sendProbe -> sendProbeHashes (currently)
@@ -3711,14 +3711,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         sendProbe :: Probe -> m ()
         sendProbe probe = void . sendDirectContactMessage ct $ XInfoProbe probe
 
-    probeMatchingMemberContact :: GroupInfo -> GroupMember -> IncognitoEnabled -> m ()
-    probeMatchingMemberContact _ GroupMember {activeConn = Nothing} _ = pure ()
-    probeMatchingMemberContact g m@GroupMember {groupId, activeConn = Just conn} connectedIncognito = do
+    probeMatchingMemberContact :: GroupMember -> IncognitoEnabled -> m ()
+    probeMatchingMemberContact GroupMember {activeConn = Nothing} _ = pure ()
+    probeMatchingMemberContact m@GroupMember {groupId, activeConn = Just conn} connectedIncognito = do
       gVar <- asks idsDrg
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       if contactMerge && not connectedIncognito
         then do
-          (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId $ CGMGroupMember g m
+          (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId $ COMGroupMember m
           sendProbe probe
           cs <- map COMContact <$> withStore' (\db -> getMatchingMemberContacts db user m)
           sendProbeHashes cs probe probeId
@@ -3729,7 +3729,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     sendProbeHashes :: [ContactOrMember] -> Probe -> Int64 -> m ()
     sendProbeHashes coms probe probeId =
-      forM_ coms $ \com -> sendProbeHash com `catchChatError` \_ -> pure ()
+      forM_ coms $ \cgm -> sendProbeHash cgm `catchChatError` \_ -> pure ()
       where
         probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
         sendProbeHash :: ContactOrMember -> m ()
@@ -4326,23 +4326,23 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             (_, param) = groupFeatureState p
         createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) param) Nothing
 
-    xInfoProbe :: ContactOrGroupMember -> Probe -> m ()
+    xInfoProbe :: ContactOrMember -> Probe -> m ()
     xInfoProbe cgm2 probe = do
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       -- [incognito] unless connected incognito
-      when (contactMerge && not (contactOrGroupMemberIncognito cgm2)) $ do
+      when (contactMerge && not (contactOrMemberIncognito cgm2)) $ do
         cgm1s <- withStore' $ \db -> matchReceivedProbe db user cgm2 probe
         probeMatches cgm1s cgm2 probe
 
-    probeMatches :: [ContactOrGroupMember] -> ContactOrGroupMember -> Probe -> m ()
+    probeMatches :: [ContactOrMember] -> ContactOrMember -> Probe -> m ()
     probeMatches cgm1s cgm2 probe = do
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       -- [incognito] unless connected incognito
-      when (contactMerge && not (contactOrGroupMemberIncognito cgm2)) $ do
-        let cgm1s' = filter (not . contactOrGroupMemberIncognito) cgm1s
+      when (contactMerge && not (contactOrMemberIncognito cgm2)) $ do
+        let cgm1s' = filter (not . contactOrMemberIncognito) cgm1s
         mergeCGMs cgm1s' cgm2
       where
-        mergeCGMs :: [ContactOrGroupMember] -> ContactOrGroupMember -> m ()
+        mergeCGMs :: [ContactOrMember] -> ContactOrMember -> m ()
         mergeCGMs [] _ = pure ()
         mergeCGMs (cgm1' : cgm1s') cgm2' = do
           cgm2''_ <- probeMatch cgm1' cgm2' probe `catchChatError` \_ -> pure (Just cgm2')
@@ -4350,72 +4350,72 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Just cgm2'' -> mergeCGMs cgm1s' cgm2''
             _ -> mergeCGMs cgm1s' cgm2'
 
-    xInfoProbeCheck :: ContactOrGroupMember -> ProbeHash -> m ()
+    xInfoProbeCheck :: ContactOrMember -> ProbeHash -> m ()
     xInfoProbeCheck cgm1 probeHash = do
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       -- [incognito] unless connected incognito
-      when (contactMerge && not (contactOrGroupMemberIncognito cgm1)) $ do
+      when (contactMerge && not (contactOrMemberIncognito cgm1)) $ do
         cgm2Probe_ <- withStore' $ \db -> matchReceivedProbeHash db user cgm1 probeHash
         forM_ cgm2Probe_ $ \(cgm2, probe) ->
-          unless (contactOrGroupMemberIncognito cgm2) $
+          unless (contactOrMemberIncognito cgm2) $
             void $ probeMatch cgm1 cgm2 probe
 
-    probeMatch :: ContactOrGroupMember -> ContactOrGroupMember -> Probe -> m (Maybe ContactOrGroupMember)
+    probeMatch :: ContactOrMember -> ContactOrMember -> Probe -> m (Maybe ContactOrMember)
     probeMatch cgm1 cgm2 probe =
       case cgm1 of
-        CGMContact c1@Contact {contactId = cId1, profile = p1} ->
+        COMContact c1@Contact {contactId = cId1, profile = p1} ->
           case cgm2 of
-            CGMContact c2@Contact {contactId = cId2, profile = p2}
+            COMContact c2@Contact {contactId = cId2, profile = p2}
               | cId1 /= cId2 && profilesMatch p1 p2 -> do
                 void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-                CGMContact <$$> mergeContacts c1 c2
+                COMContact <$$> mergeContacts c1 c2
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or same contact id" >> pure Nothing
-            CGMGroupMember g m2@GroupMember {memberProfile = p2, memberContactId}
+            COMGroupMember m2@GroupMember {memberProfile = p2, memberContactId}
               | profilesMatch p1 p2 -> case memberContactId of
                 Nothing -> do
                   void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-                  CGMContact <$$> associateMemberAndContact g m2 c1
+                  COMContact <$$> associateMemberAndContact c1 m2
                 Just mCtId
                   | mCtId /= cId1 -> do
                     void . sendDirectContactMessage c1 $ XInfoProbeOk probe
                     mCt <- withStore $ \db -> getContact db user mCtId
-                    CGMContact <$$> mergeContacts c1 mCt
+                    COMContact <$$> mergeContacts c1 mCt
                   | otherwise -> messageWarning "probeMatch ignored: same contact id" >> pure Nothing
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match" >> pure Nothing
-        CGMGroupMember _ GroupMember {activeConn = Nothing} -> pure Nothing
-        CGMGroupMember g@GroupInfo {groupId} m1@GroupMember {memberProfile = p1, memberContactId, activeConn = Just conn} ->
+        COMGroupMember GroupMember {activeConn = Nothing} -> pure Nothing
+        COMGroupMember m1@GroupMember {groupId, memberProfile = p1, memberContactId, activeConn = Just conn} ->
           case cgm2 of
-            CGMContact c2@Contact {profile = p2}
+            COMContact c2@Contact {profile = p2}
               | memberCurrent m1 && isNothing memberContactId && profilesMatch p1 p2 -> do
                 void $ sendDirectMessage conn (XInfoProbeOk probe) (GroupId groupId)
-                CGMContact <$$> associateMemberAndContact g m1 c2
+                COMContact <$$> associateMemberAndContact c2 m1
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact" >> pure Nothing
-            CGMGroupMember _ _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
+            COMGroupMember _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
 
-    xInfoProbeOk :: ContactOrGroupMember -> Probe -> m ()
+    xInfoProbeOk :: ContactOrMember -> Probe -> m ()
     xInfoProbeOk cgm1 probe = do
       cgm2 <- withStore' $ \db -> matchSentProbe db user cgm1 probe
       case cgm1 of
-        CGMContact c1@Contact {contactId = cId1} ->
+        COMContact c1@Contact {contactId = cId1} ->
           case cgm2 of
-            Just (CGMContact c2@Contact {contactId = cId2})
+            Just (COMContact c2@Contact {contactId = cId2})
               | cId1 /= cId2 -> void $ mergeContacts c1 c2
               | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
-            Just (CGMGroupMember g m2@GroupMember {memberContactId}) ->
+            Just (COMGroupMember m2@GroupMember {memberContactId}) ->
               case memberContactId of
-                Nothing -> void $ associateMemberAndContact g m2 c1
+                Nothing -> void $ associateMemberAndContact c1 m2
                 Just mCtId
                   | mCtId /= cId1 -> do
                     mCt <- withStore $ \db -> getContact db user mCtId
                     void $ mergeContacts c1 mCt
                   | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
             _ -> pure ()
-        CGMGroupMember g m1@GroupMember {memberContactId} ->
+        COMGroupMember m1@GroupMember {memberContactId} ->
           case cgm2 of
-            Just (CGMContact c2)
-              | isNothing memberContactId -> void $ associateMemberAndContact g m1 c2
+            Just (COMContact c2)
+              | isNothing memberContactId -> void $ associateMemberAndContact c2 m1
               | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
-            Just (CGMGroupMember _ _) -> messageWarning "xInfoProbeOk ignored: members are not matched with members"
+            Just (COMGroupMember _) -> messageWarning "xInfoProbeOk ignored: members are not matched with members"
             _ -> pure ()
 
     -- to party accepting call
@@ -4539,14 +4539,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           toView $ CRContactsMerged user c1' c2' c2''
           pure $ Just c2''
 
-    associateMemberAndContact :: GroupInfo -> GroupMember -> Contact -> m (Maybe Contact)
-    associateMemberAndContact g m c = do
+    associateMemberAndContact :: Contact -> GroupMember -> m (Maybe Contact)
+    associateMemberAndContact c m = do
       let Contact {localDisplayName = cLDN, profile = LocalProfile {displayName}} = c
           GroupMember {localDisplayName = mLDN} = m
       case (suffixOrd displayName cLDN, suffixOrd displayName mLDN) of
         (Just cOrd, Just mOrd)
-          | cOrd < mOrd -> Just <$> associateMemberWithContact c g m
-          | mOrd < cOrd -> Just <$> associateContactWithMember g m c
+          | cOrd < mOrd -> Just <$> associateMemberWithContact c m
+          | mOrd < cOrd -> Just <$> associateContactWithMember m c
           | otherwise -> pure Nothing
         _ -> pure Nothing
 
@@ -4557,15 +4557,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Just suffix -> readMaybe $ T.unpack suffix
         Nothing -> Nothing
 
-    associateMemberWithContact :: Contact -> GroupInfo -> GroupMember -> m Contact
-    associateMemberWithContact c1 g m2 = do
+    associateMemberWithContact :: Contact -> GroupMember -> m Contact
+    associateMemberWithContact c1 m2@GroupMember {groupId} = do
       withStore' $ \db -> associateMemberWithContactRecord db user c1 m2
+      g <- withStore $ \db -> getGroupInfo db user groupId
       toView $ CRContactAndMemberAssociated user c1 g m2 c1
       pure c1
 
-    associateContactWithMember :: GroupInfo -> GroupMember -> Contact -> m Contact
-    associateContactWithMember g m1 c2 = do
+    associateContactWithMember :: GroupMember -> Contact -> m Contact
+    associateContactWithMember m1@GroupMember {groupId} c2 = do
       c2' <- withStore $ \db -> associateContactWithMemberRecord db user m1 c2
+      g <- withStore $ \db -> getGroupInfo db user groupId
       toView $ CRContactAndMemberAssociated user c2 g m1 c2'
       pure c2'
 

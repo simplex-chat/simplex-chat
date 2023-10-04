@@ -1217,11 +1217,11 @@ getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = Loc
           AND p.display_name = ? AND p.full_name = ?
       |]
 
-createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> ContactOrGroupMember -> ExceptT StoreError IO (Probe, Int64)
+createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> ContactOrMember -> ExceptT StoreError IO (Probe, Int64)
 createSentProbe db gVar userId to =
   createWithRandomBytes 32 gVar $ \probe -> do
     currentTs <- getCurrentTime
-    let (ctId, gmId) = contactOrGroupMemberIds to
+    let (ctId, gmId) = contactOrMemberIds to
     DB.execute
       db
       "INSERT INTO sent_probes (contact_id, group_member_id, probe, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
@@ -1237,7 +1237,7 @@ createSentProbeHash db userId probeId to = do
     "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, group_member_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (probeId, ctId, gmId, userId, currentTs, currentTs)
 
-matchReceivedProbe :: DB.Connection -> User -> ContactOrGroupMember -> Probe -> IO [ContactOrGroupMember]
+matchReceivedProbe :: DB.Connection -> User -> ContactOrMember -> Probe -> IO [ContactOrMember]
 matchReceivedProbe db user@User {userId} from (Probe probe) = do
   let probeHash = C.sha256Hash probe
   cgmIds <-
@@ -1253,14 +1253,14 @@ matchReceivedProbe db user@User {userId} from (Probe probe) = do
       |]
       (userId, probeHash)
   currentTs <- getCurrentTime
-  let (ctId, gmId) = contactOrGroupMemberIds from
+  let (ctId, gmId) = contactOrMemberIds from
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (ctId, gmId, probe, probeHash, userId, currentTs, currentTs)
-  catMaybes <$> mapM (getContactOrGroupMember_ db user) cgmIds
+  catMaybes <$> mapM (getContactOrMember_ db user) cgmIds
 
-matchReceivedProbeHash :: DB.Connection -> User -> ContactOrGroupMember -> ProbeHash -> IO (Maybe (ContactOrGroupMember, Probe))
+matchReceivedProbeHash :: DB.Connection -> User -> ContactOrMember -> ProbeHash -> IO (Maybe (ContactOrMember, Probe))
 matchReceivedProbeHash db user@User {userId} from (ProbeHash probeHash) = do
   probeIds <-
     maybeFirstRow id $
@@ -1276,18 +1276,18 @@ matchReceivedProbeHash db user@User {userId} from (ProbeHash probeHash) = do
         |]
         (userId, probeHash)
   currentTs <- getCurrentTime
-  let (ctId, gmId) = contactOrGroupMemberIds from
+  let (ctId, gmId) = contactOrMemberIds from
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (ctId, gmId, probeHash, userId, currentTs, currentTs)
-  pure probeIds $>>= \(Only probe :. cgmIds) -> (,Probe probe) <$$> getContactOrGroupMember_ db user cgmIds
+  pure probeIds $>>= \(Only probe :. cgmIds) -> (,Probe probe) <$$> getContactOrMember_ db user cgmIds
 
-matchSentProbe :: DB.Connection -> User -> ContactOrGroupMember -> Probe -> IO (Maybe ContactOrGroupMember)
+matchSentProbe :: DB.Connection -> User -> ContactOrMember -> Probe -> IO (Maybe ContactOrMember)
 matchSentProbe db user@User {userId} _from (Probe probe) =
-  cgmIds $>>= getContactOrGroupMember_ db user
+  cgmIds $>>= getContactOrMember_ db user
   where
-    (ctId, gmId) = contactOrGroupMemberIds _from
+    (ctId, gmId) = contactOrMemberIds _from
     cgmIds =
       maybeFirstRow id $
         DB.query
@@ -1304,11 +1304,11 @@ matchSentProbe db user@User {userId} _from (Probe probe) =
           |]
           (userId, probe, ctId, gmId)
 
-getContactOrGroupMember_ :: DB.Connection -> User -> (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId) -> IO (Maybe ContactOrGroupMember)
-getContactOrGroupMember_ db user ids =
+getContactOrMember_ :: DB.Connection -> User -> (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId) -> IO (Maybe ContactOrMember)
+getContactOrMember_ db user ids =
   fmap eitherToMaybe . runExceptT $ case ids of
-    (Just ctId, _, _) -> CGMContact <$> getContact db user ctId
-    (_, Just gId, Just gmId) -> CGMGroupMember <$> getGroupInfo db user gId <*> getGroupMember db user gId gmId
+    (Just ctId, _, _) -> COMContact <$> getContact db user ctId
+    (_, Just gId, Just gmId) -> COMGroupMember <$> getGroupMember db user gId gmId
     _ -> throwError $ SEInternalError ""
 
 -- connection being verified and connection level 0 have priority over requested merge direction;
