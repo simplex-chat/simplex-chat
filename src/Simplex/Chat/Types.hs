@@ -1442,6 +1442,7 @@ serializeIntroStatus = \case
   GMIntroConnected -> "con"
 
 data Notification = Notification {title :: Text, text :: Text}
+  deriving (Show, Generic, FromJSON, ToJSON)
 
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode

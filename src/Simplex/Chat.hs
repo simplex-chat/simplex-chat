@@ -193,6 +193,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
+  currentRemoteHost <- newTVarIO Nothing
   servers <- agentServers config
   smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
   agentAsync <- newTVarIO Nothing
@@ -216,7 +217,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, remoteHostSessions, remoteCtrlSession, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  pure ChatController {activeTo, firstTime, currentUser, currentRemoteHost, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, remoteHostSessions, remoteCtrlSession, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -1843,7 +1844,7 @@ processChatCommand = \case
   StartRemoteHost rh -> startRemoteHost rh
   StopRemoteHost rh -> closeRemoteHostSession rh
   DeleteRemoteHost rh -> deleteRemoteHost rh
-  StartRemoteCtrl -> startRemoteCtrl
+  StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing)
   AcceptRemoteCtrl rc -> acceptRemoteCtrl rc
   RejectRemoteCtrl rc -> rejectRemoteCtrl rc
   StopRemoteCtrl rc -> stopRemoteCtrl rc
@@ -5332,12 +5333,21 @@ showMsgToast from mc md_ = showToast from $ maybe (msgContentText mc) (mconcat .
     hideSecret FormattedText {text} = text
 
 showToast :: ChatMonad' m => Text -> Text -> m ()
-showToast title text = atomically . (`writeTBQueue` Notification {title, text}) =<< asks notifyQ
+showToast title text = do
+  ChatController {notifyQ} <- ask
+  atomically $ writeTBQueue notifyQ Notification {title, text}
 
 notificationSubscriber :: ChatMonad' m => m ()
 notificationSubscriber = do
-  ChatController {notifyQ, sendNotification} <- ask
-  forever $ atomically (readTBQueue notifyQ) >>= liftIO . sendNotification
+  ChatController {currentRemoteHost, notifyQ, sendNotification} <- ask
+  forever $ do
+    n <- atomically $ do
+      readTVar currentRemoteHost >>= \case
+        Nothing -> pure ()
+        Just _ -> retry
+      readTBQueue notifyQ
+    -- TODO: check remote session
+    liftIO $ sendNotification n
 
 withUser' :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser' action =

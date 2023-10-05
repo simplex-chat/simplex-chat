@@ -72,6 +72,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), Cor
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
 import System.IO (Handle)
@@ -171,6 +172,7 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
+    currentRemoteHost :: TVar (Maybe RemoteHostId),
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
@@ -1107,6 +1109,27 @@ instance ToJSON ArchiveError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
 
+data RemoteHostSession
+  = RemoteHostSessionStarting
+      { announcer :: Async ()
+      }
+  | RemoteHostSessionStarted
+      { -- | Path for local resources to be synchronized with host
+        storePath :: FilePath,
+        ctrlClient :: HTTP2Client
+      }
+
+data RemoteCtrlSession = RemoteCtrlSession
+  { -- | Server side of transport to process remote commands and forward notifications
+    discoverer :: Async (),
+    supervisor :: Async (),
+    hostServer :: Maybe (Async ()),
+    discovered :: TMap C.KeyHash TransportHost,
+    accepted :: TMVar RemoteCtrlId,
+    remoteOutputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
+    remoteNotifyQ :: TBQueue Notification
+  }
+
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
@@ -1160,8 +1183,12 @@ toViewRemote = toView_ . Just
 
 toView_ :: ChatMonad' m => Maybe RemoteHostId -> ChatResponse -> m ()
 toView_ rh event = do
-  q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, rh, event)
+  localQ <- asks outputQ
+  chatReadVar remoteCtrlSession >>= \case
+    Nothing -> atomically $ writeTBQueue localQ (Nothing, rh, event)
+    Just RemoteCtrlSession {remoteOutputQ} -> do
+      atomically $ writeTBQueue localQ (Nothing, rh, event) -- TODO: filter events ?
+      atomically $ writeTBQueue remoteOutputQ (Nothing, rh, event) -- TODO: check full
 
 withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
 withStore' action = withStore $ liftIO . action
