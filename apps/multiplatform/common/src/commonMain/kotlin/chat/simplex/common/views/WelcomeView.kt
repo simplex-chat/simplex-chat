@@ -72,7 +72,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
         }
         SettingsActionItem(
           painterResource(MR.images.ic_check),
-          stringResource(MR.strings.create_profile_button),
+          stringResource(MR.strings.create_another_profile_button),
           disabled = !canCreateProfile(displayName.value),
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
@@ -143,7 +143,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
               }
             }
           }
-          ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
+          ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
         }
         Spacer(Modifier.fillMaxHeight().weight(1f))
         OnboardingButtons(displayName, close)

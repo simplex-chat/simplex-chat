@@ -706,6 +706,7 @@
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
   <string name="display_name">Enter your name:</string>
   <string name="create_profile_button">Create</string>
+  <string name="create_another_profile_button">Create profile</string>
   <string name="invalid_name">Invalid name!</string>
   <string name="correct_name_to">Correct name to %s?</string>
   <string name="about_simplex">About SimpleX</string>
