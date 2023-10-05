@@ -156,7 +156,7 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
   }
 }
 
-fun canCreateProfile(displayName: String): Boolean = displayName.isNotEmpty() && isValidDisplayName(displayName.trim())
+fun canCreateProfile(displayName: String): Boolean = displayName.trim().isNotEmpty() && isValidDisplayName(displayName.trim())
 
 @Preview
 @Composable

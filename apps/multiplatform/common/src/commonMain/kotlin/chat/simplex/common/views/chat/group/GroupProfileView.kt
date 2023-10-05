@@ -65,7 +65,7 @@ fun GroupProfileLayout(
         fullName.value == groupProfile.fullName &&
         groupProfile.image == profileImage.value
   val closeWithAlert = {
-    if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidNewProfileName(displayName.value, groupProfile))) {
+    if (dataUnchanged || !canUpdateProfile(displayName.value, groupProfile)) {
       close()
     } else {
       showUnsavedChangesAlert({
@@ -143,7 +143,7 @@ fun GroupProfileLayout(
               ProfileNameField(fullName)
             }
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && displayName.value.isNotEmpty() && isValidNewProfileName(displayName.value, groupProfile)
+            val enabled = !dataUnchanged && canUpdateProfile(displayName.value, groupProfile)
             if (enabled) {
               Text(
                 stringResource(MR.strings.save_group_profile),
@@ -177,6 +177,9 @@ fun GroupProfileLayout(
     }
   }
 }
+
+private fun canUpdateProfile(displayName: String, groupProfile: GroupProfile): Boolean =
+  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, groupProfile)
 
 private fun isValidNewProfileName(displayName: String, groupProfile: GroupProfile): Boolean =
   displayName == groupProfile.displayName || isValidDisplayName(displayName.trim())

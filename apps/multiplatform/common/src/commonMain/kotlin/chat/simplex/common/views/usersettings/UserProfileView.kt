@@ -212,7 +212,7 @@ private fun showFullName(profile: Profile): Boolean =
   profile.fullName.isNotEmpty() && profile.fullName != profile.displayName
 
 private fun canSaveProfile(displayName: String, profile: Profile): Boolean =
-  displayName.isNotEmpty() && isValidNewProfileName(displayName, profile)
+  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, profile)
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,

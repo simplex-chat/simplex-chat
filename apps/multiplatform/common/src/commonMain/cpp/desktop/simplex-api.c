@@ -76,7 +76,7 @@ Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, jclass cla
     jstring res = decode_to_utf8_string(env, chat_migrate_init(_dbPath, _dbKey, _confirm, &_ctrl));
     (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
     (*env)->ReleaseStringUTFChars(env, dbKey, _dbKey);
-    (*env)->ReleaseStringUTFChars(env, dbKey, _confirm);
+    (*env)->ReleaseStringUTFChars(env, confirm, _confirm);
 
     // Creating array of Object's (boxed values can be passed, eg. Long instead of long)
     jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);

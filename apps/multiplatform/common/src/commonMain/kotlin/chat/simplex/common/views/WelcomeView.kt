@@ -277,7 +277,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
 
 private fun canCreateProfile(displayName: String): Boolean {
   val name = displayName.trim()
-  return name != "" && mkValidName(name) == name
+  return name.isNotEmpty() && mkValidName(name) == name
 }
 
 fun showInvalidNameAlert(name: String, displayName: MutableState<String>) {
