@@ -69,21 +69,18 @@ instance TestEquality SMsgDirection where
   testEquality SMDSnd SMDSnd = Just Refl
   testEquality _ _ = Nothing
 
+instance MsgDirectionI d => FromJSON (SMsgDirection d) where
+  parseJSON v = (\(AMsgDirection d) -> checkDirection d) . fromMsgDirection <$?> J.parseJSON v
+
 instance ToJSON (SMsgDirection d) where
   toJSON = J.toJSON . toMsgDirection
   toEncoding = J.toEncoding . toMsgDirection
-
-instance MsgDirectionI d => FromJSON (SMsgDirection d) where
-  parseJSON v = (\(AMsgDirection d) -> checkDirection d) <$?> J.parseJSON v
 
 instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
 data AMsgDirection = forall d. MsgDirectionI d => AMsgDirection (SMsgDirection d)
 
 deriving instance Show AMsgDirection
-
-instance FromJSON AMsgDirection where
-  parseJSON v = fromMsgDirection <$> J.parseJSON v
 
 toMsgDirection :: SMsgDirection d -> MsgDirection
 toMsgDirection = \case

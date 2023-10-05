@@ -179,10 +179,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool
   }
-  deriving (Eq, Show, Generic)
-
-instance FromJSON Contact where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON Contact where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -246,7 +243,9 @@ data ContactRef = ContactRef
     agentConnId :: AgentConnId,
     localDisplayName :: ContactName
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
   deriving (Show)
@@ -266,7 +265,9 @@ data UserContact = UserContact
     connReqContact :: ConnReqContact,
     groupId :: Maybe GroupId
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON UserContact where toEncoding = J.genericToEncoding J.defaultOptions
 
 userContactGroupId :: UserContact -> Maybe GroupId
 userContactGroupId UserContact {groupId} = groupId
@@ -284,7 +285,10 @@ data UserContactRequest = UserContactRequest
     updatedAt :: UTCTime,
     xContactId :: Maybe XContactId
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON UserContactRequest where
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 newtype XContactId = XContactId ByteString
   deriving (Eq, Show)
@@ -356,7 +360,9 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
@@ -364,7 +370,9 @@ groupName' GroupInfo {localDisplayName = g} = g
 data GroupSummary = GroupSummary
   { currentMembers :: Int
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON GroupSummary where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ContactOrGroup = CGContact Contact | CGGroup Group
 
@@ -936,7 +944,9 @@ data SndFileTransfer = SndFileTransfer
     fileDescrId :: Maybe Int64,
     fileInline :: Maybe InlineFileMode
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON SndFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
 sndFileTransferConnId :: SndFileTransfer -> ConnId
 sndFileTransferConnId SndFileTransfer {agentConnId = AgentConnId acId} = acId
@@ -1020,14 +1030,18 @@ data RcvFileTransfer = RcvFileTransfer
     -- SMP files are encrypted after all chunks are received
     cryptoArgs :: Maybe CryptoFileArgs
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
     agentRcvFileDeleted :: Bool
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON XFTPRcvFile where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RcvFileDescr = RcvFileDescr
   { fileDescrId :: Int64,
@@ -1035,7 +1049,9 @@ data RcvFileDescr = RcvFileDescr
     fileDescrPartNo :: Int,
     fileDescrComplete :: Bool
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON RcvFileDescr where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RcvFileStatus
   = RFSNew
@@ -1065,7 +1081,9 @@ data RcvFileInfo = RcvFileInfo
     connId :: Maybe Int64,
     agentConnId :: Maybe AgentConnId
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON RcvFileInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 liveRcvFileTransferInfo :: RcvFileTransfer -> Maybe RcvFileInfo
 liveRcvFileTransferInfo RcvFileTransfer {fileStatus} = case fileStatus of
@@ -1185,7 +1203,9 @@ data FileTransferMeta = FileTransferMeta
     chunkSize :: Integer,
     cancelled :: Bool
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaultOptions
 
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
@@ -1193,7 +1213,9 @@ data XFTPSndFile = XFTPSndFile
     agentSndFileDeleted :: Bool,
     cryptoArgs :: Maybe CryptoFileArgs
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON XFTPSndFile where toEncoding = J.genericToEncoding J.defaultOptions
 
 fileTransferCancelled :: FileTransfer -> Bool
 fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled
@@ -1262,7 +1284,9 @@ connDisabled :: Connection -> Bool
 connDisabled Connection {authErrCounter} = authErrCounter >= authErrDisableCount
 
 data SecurityCode = SecurityCode {securityCode :: Text, verifiedAt :: UTCTime}
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON SecurityCode where toEncoding = J.genericToEncoding J.defaultOptions
 
 verificationCode :: ByteString -> Text
 verificationCode = T.pack . unwords . chunks 5 . show . os2ip
@@ -1301,7 +1325,9 @@ data PendingContactConnection = PendingContactConnection
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON PendingContactConnection where toEncoding = J.genericToEncoding J.defaultOptions
 
 aConnId' :: PendingContactConnection -> ConnId
 aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId

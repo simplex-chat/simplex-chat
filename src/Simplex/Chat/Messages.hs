@@ -426,7 +426,9 @@ data CITimed = CITimed
   { ttl :: Int, -- seconds
     deleteAt :: Maybe UTCTime -- this is initially Nothing for received items, the timer starts when they are read
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 
 ttl' :: CITimed -> Int
 ttl' CITimed {ttl} = ttl
@@ -463,7 +465,7 @@ data CIQuote (c :: ChatType) = CIQuote
   deriving (Show, Generic)
 
 instance ChatTypeI c => FromJSON (CIQuote c) where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+  parseJSON = J.genericParseJSON J.defaultOptions
 
 instance ToJSON (CIQuote c) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}

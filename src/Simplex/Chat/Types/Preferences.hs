@@ -338,7 +338,7 @@ data ContactUserPreferences = ContactUserPreferences
     voice :: ContactUserPreference VoicePreference,
     calls :: ContactUserPreference CallsPreference
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
 
 data ContactUserPreference p = ContactUserPreference
   { enabled :: PrefEnabled,
@@ -349,6 +349,8 @@ data ContactUserPreference p = ContactUserPreference
 
 data ContactUserPref p = CUPContact {preference :: p} | CUPUser {preference :: p}
   deriving (Eq, Show, Generic)
+
+instance ToJSON ContactUserPreferences where toEncoding = J.genericToEncoding J.defaultOptions
 
 instance FromJSON p => FromJSON (ContactUserPreference p) where parseJSON = J.genericParseJSON J.defaultOptions
 

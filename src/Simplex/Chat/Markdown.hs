@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -121,10 +122,7 @@ instance ToJSON FormatColor where
     White -> "white"
 
 data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
-  deriving (Eq, Show, Generic)
-
-instance FromJSON FormattedText where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON FormattedText where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
