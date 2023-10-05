@@ -17,14 +17,12 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.ProfileNameField
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.onboarding.ReadableText
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.Profile
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
 import java.net.URI
@@ -39,7 +37,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
       close,
       saveProfile = { displayName, fullName, image ->
         withApi {
-          val updated = chatModel.controller.apiUpdateProfile(profile.copy(displayName = displayName, fullName = fullName, image = image))
+          val updated = chatModel.controller.apiUpdateProfile(profile.copy(displayName = displayName.trim(), fullName = fullName, image = image))
           if (updated != null) {
             val (newProfile, _) = updated
             chatModel.updateCurrentUser(newProfile)
@@ -89,7 +87,7 @@ fun UserProfileLayout(
             profile.image == profileImage.value
 
       val closeWithAlert = {
-        if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))) {
+        if (dataUnchanged || !canSaveProfile(displayName.value, profile)) {
           close()
         } else {
           showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, profileImage.value) }, close)
@@ -128,36 +126,27 @@ fun UserProfileLayout(
                 stringResource(MR.strings.display_name__field),
                 fontSize = 16.sp
               )
-              if (!isValidDisplayName(displayName.value)) {
-                Spacer(Modifier.size(DEFAULT_PADDING_HALF))
-                Text(
-                  stringResource(MR.strings.no_spaces),
-                  fontSize = 16.sp,
-                  color = Color.Red
-                )
+              if (!isValidNewProfileName(displayName.value, profile)) {
+                Spacer(Modifier.width(DEFAULT_PADDING_HALF))
+                IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
+                  Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+                }
               }
             }
-            ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
-            Spacer(Modifier.height(DEFAULT_PADDING))
-            Text(
-              stringResource(MR.strings.full_name__field),
-              fontSize = 16.sp,
-              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-            )
-            ProfileNameField(fullName)
-
-            Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
-            val saveModifier: Modifier
-            val saveColor: Color
-            if (enabled) {
-              saveModifier = Modifier
-                .clickable { saveProfile(displayName.value, fullName.value, profileImage.value) }
-              saveColor = MaterialTheme.colors.primary
-            } else {
-              saveModifier = Modifier
-              saveColor = MaterialTheme.colors.secondary
+            ProfileNameField(displayName, "", { isValidNewProfileName(it, profile) }, focusRequester)
+            if (showFullName(profile)) {
+              Spacer(Modifier.height(DEFAULT_PADDING))
+              Text(
+                stringResource(MR.strings.full_name__field),
+                fontSize = 16.sp,
+                modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+              )
+              ProfileNameField(fullName)
             }
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            val enabled = !dataUnchanged && canSaveProfile(displayName.value, profile)
+            val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, profileImage.value) }
+            val saveColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
             Text(
               stringResource(MR.strings.save_and_notify_contacts),
               modifier = saveModifier,
@@ -215,6 +204,15 @@ private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
     onDismiss = revert,
   )
 }
+
+private fun isValidNewProfileName(displayName: String, profile: Profile): Boolean =
+  displayName == profile.displayName || isValidDisplayName(displayName.trim())
+
+private fun showFullName(profile: Profile): Boolean =
+  profile.fullName.isNotEmpty() && profile.fullName != profile.displayName
+
+private fun canSaveProfile(displayName: String, profile: Profile): Boolean =
+  displayName.isNotEmpty() && isValidNewProfileName(displayName, profile)
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
