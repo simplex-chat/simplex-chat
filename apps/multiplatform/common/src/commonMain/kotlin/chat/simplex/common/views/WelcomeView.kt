@@ -1,10 +1,10 @@
 package chat.simplex.common.views
 
+import SectionTextFooter
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
@@ -18,115 +18,160 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.Profile
-import chat.simplex.common.platform.appPlatform
-import chat.simplex.common.platform.navigationBarsWithImePadding
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.common.views.onboarding.ReadableText
+import chat.simplex.common.views.onboarding.*
+import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-
-fun isValidDisplayName(name: String) : Boolean {
-  return (name.firstOrNull { it.isWhitespace() }) == null && !name.startsWith("@") && !name.startsWith("#")
-}
+import kotlinx.coroutines.launch
 
 @Composable
-fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
-  val displayName = rememberSaveable { mutableStateOf("") }
-  val fullName = rememberSaveable { mutableStateOf("") }
-  val focusRequester = remember { FocusRequester() }
+fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
+  val scope = rememberCoroutineScope()
+  val scrollState = rememberScrollState()
+  val keyboardState by getKeyboardState()
+  var savedKeyboardState by remember { mutableStateOf(keyboardState) }
 
-  Column(
-    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-  ) {
-    /*CloseSheetBar(close = {
-      if (chatModel.users.isEmpty()) {
-        chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
-      } else {
-        close()
-      }
-    })*/
-    Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-      AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
-      ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1)
-      ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1)
-      Spacer(Modifier.height(DEFAULT_PADDING))
-      Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(
-          stringResource(MR.strings.display_name),
-          fontSize = 16.sp
-        )
-        if (!isValidDisplayName(displayName.value)) {
-          Text(
-            stringResource(MR.strings.no_spaces),
-            fontSize = 16.sp,
-            color = Color.Red
-          )
-        }
-      }
-      ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
-      Spacer(Modifier.height(DEFAULT_PADDING))
-      Text(
-        stringResource(MR.strings.full_name_optional__prompt),
-        fontSize = 16.sp,
-        modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-      )
-      ProfileNameField(fullName, "")
-    }
-    Spacer(Modifier.fillMaxHeight().weight(1f))
-    Row {
-      if (chatModel.users.isEmpty()) {
-        SimpleButtonDecorated(
-          text = stringResource(MR.strings.about_simplex),
-          icon = painterResource(MR.images.ic_arrow_back_ios_new),
-          textDecoration = TextDecoration.None,
-          fontWeight = FontWeight.Medium
-        ) { chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) }
-      }
-      Spacer(Modifier.fillMaxWidth().weight(1f))
-      val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
-      val createModifier: Modifier
-      val createColor: Color
-      if (enabled) {
-        createModifier = Modifier.clickable {
-          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-            createProfileInProfiles(chatModel, displayName.value, fullName.value, close)
-          } else {
-            createProfileOnboarding(chatModel, displayName.value, fullName.value, close)
+  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(top = 20.dp)
+    ) {
+      val displayName = rememberSaveable { mutableStateOf("") }
+      val focusRequester = remember { FocusRequester() }
+
+      Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+      ) {
+        Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+          AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
+          Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+              stringResource(MR.strings.display_name),
+              fontSize = 16.sp
+            )
+            val name = displayName.value.trim()
+            val validName = mkValidName(name)
+            Spacer(Modifier.height(20.dp))
+            if (name != validName) {
+              IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
+                Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+              }
+            }
           }
-        }.padding(8.dp)
-        createColor = MaterialTheme.colors.primary
-      } else {
-        createModifier = Modifier.padding(8.dp)
-        createColor = MaterialTheme.colors.secondary
-      }
-      Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
-          Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
-          Icon(painterResource(MR.images.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = createColor)
+          ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
+        }
+        SettingsActionItem(
+          painterResource(MR.images.ic_check),
+          stringResource(MR.strings.create_another_profile_button),
+          disabled = !canCreateProfile(displayName.value),
+          textColor = MaterialTheme.colors.primary,
+          iconColor = MaterialTheme.colors.primary,
+          click = { createProfileInProfiles(chatModel, displayName.value, close) },
+        )
+        SectionTextFooter(generalGetString(MR.strings.your_profile_is_stored_on_your_device))
+        SectionTextFooter(generalGetString(MR.strings.profile_is_only_shared_with_your_contacts))
+
+        LaunchedEffect(Unit) {
+          delay(300)
+          focusRequester.requestFocus()
         }
       }
-    }
-
-    LaunchedEffect(Unit) {
-      delay(300)
-      focusRequester.requestFocus()
+      if (savedKeyboardState != keyboardState) {
+        LaunchedEffect(keyboardState) {
+          scope.launch {
+            savedKeyboardState = keyboardState
+            scrollState.animateScrollTo(scrollState.maxValue)
+          }
+        }
+      }
     }
   }
 }
 
-fun createProfileInProfiles(chatModel: ChatModel, displayName: String, fullName: String, close: () -> Unit) {
+@Composable
+fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
+  val scope = rememberCoroutineScope()
+  val scrollState = rememberScrollState()
+  val keyboardState by getKeyboardState()
+  var savedKeyboardState by remember { mutableStateOf(keyboardState) }
+
+  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(top = 20.dp)
+    ) {
+      val displayName = rememberSaveable { mutableStateOf("") }
+      val focusRequester = remember { FocusRequester() }
+
+      Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+      ) {
+        /*CloseSheetBar(close = {
+          if (chatModel.users.isEmpty()) {
+            chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
+          } else {
+            close()
+          }
+        })*/
+        Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+          AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
+          ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+              stringResource(MR.strings.display_name),
+              fontSize = 16.sp
+            )
+            val name = displayName.value.trim()
+            val validName = mkValidName(name)
+            Spacer(Modifier.height(20.dp))
+            if (name != validName) {
+              IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
+                Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+              }
+            }
+          }
+          ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
+        }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        OnboardingButtons(displayName, close)
+
+        LaunchedEffect(Unit) {
+          delay(300)
+          focusRequester.requestFocus()
+        }
+      }
+      LaunchedEffect(Unit) {
+        setLastVersionDefault(chatModel)
+      }
+      if (savedKeyboardState != keyboardState) {
+        LaunchedEffect(keyboardState) {
+          scope.launch {
+            savedKeyboardState = keyboardState
+            scrollState.animateScrollTo(scrollState.maxValue)
+          }
+        }
+      }
+    }
+  }
+}
+
+fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withApi {
     val user = chatModel.controller.apiCreateActiveUser(
-      Profile(displayName, fullName, null)
+      Profile(displayName.trim(), "", null)
     ) ?: return@withApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
@@ -142,10 +187,10 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, fullName:
   }
 }
 
-fun createProfileOnboarding(chatModel: ChatModel, displayName: String, fullName: String, close: () -> Unit) {
+fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withApi {
     chatModel.controller.apiCreateActiveUser(
-      Profile(displayName, fullName, null)
+      Profile(displayName.trim(), "", null)
     ) ?: return@withApi
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
     if (chatModel.users.isEmpty()) {
@@ -159,6 +204,28 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, fullName:
       // this will get it unstuck.
       onboardingStage.set(OnboardingStage.OnboardingComplete)
       close()
+    }
+  }
+}
+
+@Composable
+fun OnboardingButtons(displayName: MutableState<String>, close: () -> Unit) {
+  Row {
+    SimpleButtonDecorated(
+      text = stringResource(MR.strings.about_simplex),
+      icon = painterResource(MR.images.ic_arrow_back_ios_new),
+      textDecoration = TextDecoration.None,
+      fontWeight = FontWeight.Medium
+    ) { chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) }
+    Spacer(Modifier.fillMaxWidth().weight(1f))
+    val enabled = canCreateProfile(displayName.value)
+    val createModifier: Modifier = Modifier.clickable(enabled) {  createProfileOnboarding(chatModel, displayName.value, close) }.padding(8.dp)
+    val createColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+    Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
+        Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
+        Icon(painterResource(MR.images.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = createColor)
+      }
     }
   }
 }
@@ -195,10 +262,6 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
       onValueChange = { name.value = it },
       modifier = if (focusRequester == null) modifier else modifier.focusRequester(focusRequester),
       textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
-      keyboardOptions = KeyboardOptions(
-        capitalization = KeyboardCapitalization.None,
-        autoCorrect = false
-      ),
       singleLine = true,
       cursorBrush = SolidColor(MaterialTheme.colors.secondary)
     )
@@ -211,3 +274,28 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
       }
   }
 }
+
+private fun canCreateProfile(displayName: String): Boolean {
+  val name = displayName.trim()
+  return name.isNotEmpty() && mkValidName(name) == name
+}
+
+fun showInvalidNameAlert(name: String, displayName: MutableState<String>) {
+  if (name.isEmpty()) {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.invalid_name),
+    )
+  } else {
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.invalid_name),
+      text = generalGetString(MR.strings.correct_name_to).format(name),
+      onConfirm = {
+        displayName.value = name
+      }
+    )
+  }
+}
+
+fun isValidDisplayName(name: String) : Boolean = mkValidName(name.trim()) == name
+
+fun mkValidName(s: String): String = chatValidName(s)
