@@ -81,8 +81,8 @@ import Simplex.Chat.Migrations.M20230829_connections_chat_vrange
 import Simplex.Chat.Migrations.M20230903_connections_to_subscribe
 import Simplex.Chat.Migrations.M20230913_member_contacts
 import Simplex.Chat.Migrations.M20230914_member_probes
-import Simplex.Chat.Migrations.M20230922_remote_controller
 import Simplex.Chat.Migrations.M20230926_contact_status
+import Simplex.Chat.Migrations.M20231005_remote_controller
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -164,8 +164,8 @@ schemaMigrations =
     ("20230903_connections_to_subscribe", m20230903_connections_to_subscribe, Just down_m20230903_connections_to_subscribe),
     ("20230913_member_contacts", m20230913_member_contacts, Just down_m20230913_member_contacts),
     ("20230914_member_probes", m20230914_member_probes, Just down_m20230914_member_probes),
-    ("20230922_remote_controller", m20230922_remote_controller, Just down_m20230922_remote_controller),
-    ("20230926_contact_status", m20230926_contact_status, Just down_m20230926_contact_status)
+    ("20230926_contact_status", m20230926_contact_status, Just down_m20230926_contact_status),
+    ("20231005_remote_controller", m20231005_remote_controller, Just down_m20231005_remote_controller)
   ]
 
 -- | The list of migrations in ascending order by date

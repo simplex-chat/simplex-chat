@@ -113,8 +113,8 @@ library
       Simplex.Chat.Migrations.M20230903_connections_to_subscribe
       Simplex.Chat.Migrations.M20230913_member_contacts
       Simplex.Chat.Migrations.M20230914_member_probes
-      Simplex.Chat.Migrations.M20230922_remote_controller
       Simplex.Chat.Migrations.M20230926_contact_status
+      Simplex.Chat.Migrations.M20231005_remote_controller
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -170,7 +170,7 @@ library
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
-    , http2
+    , http2 ==4.1.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -188,7 +188,7 @@ library
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , tls
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -223,7 +223,7 @@ executable simplex-bot
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
-    , http2
+    , http2 ==4.1.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -242,7 +242,7 @@ executable simplex-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , tls
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -277,7 +277,7 @@ executable simplex-bot-advanced
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
-    , http2
+    , http2 ==4.1.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -296,7 +296,7 @@ executable simplex-bot-advanced
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , tls
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -333,7 +333,7 @@ executable simplex-broadcast-bot
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
-    , http2
+    , http2 ==4.1.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -352,7 +352,7 @@ executable simplex-broadcast-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , tls
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -388,7 +388,7 @@ executable simplex-chat
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
-    , http2
+    , http2 ==4.1.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*
@@ -407,7 +407,7 @@ executable simplex-chat
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , tls
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
@@ -447,7 +447,7 @@ executable simplex-directory-service
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
-    , http2
+    , http2 ==4.1.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
@@ -466,7 +466,7 @@ executable simplex-directory-service
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , tls
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -529,7 +529,7 @@ test-suite simplex-chat-test
     , filepath ==1.4.*
     , hspec ==2.11.*
     , http-types ==0.12.*
-    , http2
+    , http2 ==4.1.*
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*
@@ -549,7 +549,7 @@ test-suite simplex-chat-test
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
-    , tls
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*

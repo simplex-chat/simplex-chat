@@ -32,7 +32,7 @@ dependencies:
   - exceptions == 0.10.*
   - filepath == 1.4.*
   - http-types == 0.12.*
-  - http2
+  - http2 == 4.1.*
   - memory == 0.18.*
   - mtl == 2.3.*
   - network >= 3.1.2.7 && < 3.2
@@ -50,7 +50,7 @@ dependencies:
   - terminal == 0.2.*
   - text == 2.0.*
   - time == 1.9.*
-  - tls
+  - tls >= 1.6.0 && < 1.7
   - unliftio == 0.2.*
   - unliftio-core == 0.2.*
   - zip == 2.0.*
