@@ -640,10 +640,7 @@ data GroupMember = GroupMember
     memberContactProfileId :: ProfileId,
     activeConn :: Maybe Connection
   }
-  deriving (Eq, Show, Generic)
-
-instance FromJSON GroupMember where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON GroupMember where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -1327,10 +1324,10 @@ data PendingContactConnection = PendingContactConnection
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON PendingContactConnection where toEncoding = J.genericToEncoding J.defaultOptions
-
 aConnId' :: PendingContactConnection -> ConnId
 aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId
+
+instance ToJSON PendingContactConnection where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ConnStatus
   = -- | connection is created by initiating party with agent NEW command (createConnection)
