@@ -73,10 +73,10 @@ responseToView :: Maybe User -> ChatConfig -> Bool -> CurrentTime -> TimeZone ->
 responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
-  CRChatStarted -> ["chat started"]
-  CRChatRunning -> ["chat is running"]
-  CRChatStopped -> ["chat stopped"]
-  CRChatSuspended -> ["chat suspended"]
+  CRChatStarted _ -> ["chat started"]
+  CRChatRunning _ -> ["chat is running"]
+  CRChatStopped _ -> ["chat stopped"]
+  CRChatSuspended _ -> ["chat suspended"]
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [plain . bshow $ J.encode chat]
@@ -267,7 +267,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRRemoteHostDeleted rhId -> ["remote host " <> sShow rhId <> " deleted"]
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
   CRRemoteCtrlRegistered rcId -> ["remote controller " <> sShow rcId <> " registered"]
-  CRRemoteCtrlStarted -> ["remote controller started"]
+  CRRemoteCtrlStarted _ -> ["remote controller started"]
   CRRemoteCtrlAnnounce fingerprint -> ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
   CRRemoteCtrlFound rc -> ["remote controller found:", viewRemoteCtrl rc]
   CRRemoteCtrlAccepted rcId -> ["remote controller " <> sShow rcId <> " accepted"]

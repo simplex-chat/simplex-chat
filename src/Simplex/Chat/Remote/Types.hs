@@ -1,15 +1,14 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Remote.Types where
 
 import Control.Concurrent.Async (Async)
-import Data.Aeson (ToJSON (..), FromJSON)
-import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as J
 import Data.Int (Int64)
 import Data.Text (Text)
-import GHC.Generics (Generic)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -38,9 +37,9 @@ data RemoteCtrl = RemoteCtrl
     fingerprint :: C.KeyHash,
     accepted :: Maybe Bool
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Show)
 
-instance ToJSON RemoteCtrl where toEncoding = J.genericToEncoding J.defaultOptions
+$(J.deriveJSON J.defaultOptions ''RemoteCtrl)
 
 data RemoteHostSession
   = RemoteHostSessionStarting

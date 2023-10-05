@@ -26,6 +26,7 @@ import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH  as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
@@ -444,10 +445,10 @@ data ChatCommand
 data ChatResponse
   = CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
-  | CRChatStarted
-  | CRChatRunning
-  | CRChatStopped
-  | CRChatSuspended
+  | CRChatStarted {_nullary :: Maybe Int}
+  | CRChatRunning {_nullary :: Maybe Int}
+  | CRChatStopped {_nullary :: Maybe Int}
+  | CRChatSuspended {_nullary :: Maybe Int}
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat}
@@ -611,7 +612,7 @@ data ChatResponse
   | CRRemoteHostDeleted {remoteHostId :: RemoteHostId}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlStarted
+  | CRRemoteCtrlStarted {_nullary :: Maybe Int}
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrl} -- registered fingerprint, may connect
   | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
@@ -635,7 +636,7 @@ data ChatResponse
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
-  deriving (Show, Generic)
+  deriving (Show)
 
 logResponseToFile :: ChatResponse -> Bool
 logResponseToFile = \case
@@ -655,13 +656,6 @@ logResponseToFile = \case
   CRChatError {} -> True
   CRMessageError {} -> True
   _ -> False
-
-instance FromJSON ChatResponse where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CR"
-
-instance ToJSON ChatResponse where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
 data RemoteCtrlOOB = RemoteCtrlOOB
   { caFingerprint :: C.KeyHash
@@ -1195,3 +1189,5 @@ withStoreCtx ctx_ action = do
   where
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)

@@ -28,3 +28,6 @@ fromBlobField_ p = \case
       Right k -> Ok k
       Left e -> returnError ConversionFailed f ("could not parse field: " ++ e)
   f -> returnError ConversionFailed f "expecting SQLBlob column type"
+
+defOpts :: J.Options
+defOpts = J.defaultOptions {J.omitNothingFields = True}

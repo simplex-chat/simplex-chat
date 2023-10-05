@@ -15,6 +15,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -28,6 +29,7 @@ import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
@@ -112,18 +114,14 @@ data User = User
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON User where
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show)
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
     sameServers :: Bool,
     pastTimestamp :: Bool
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Show)
 
 newtype B64UrlByteString = B64UrlByteString ByteString
   deriving (Eq, Show)
@@ -144,19 +142,13 @@ instance ToJSON B64UrlByteString where
   toEncoding = strToJEncoding
 
 data UserPwdHash = UserPwdHash {hash :: B64UrlByteString, salt :: B64UrlByteString}
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON UserPwdHash where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data UserInfo = UserInfo
   { user :: User,
     unreadCount :: Int
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON UserInfo where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 type ContactId = Int64
 
@@ -179,11 +171,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON Contact where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show)
 
 contactConn :: Contact -> Connection
 contactConn Contact {activeConn} = activeConn
@@ -243,9 +231,7 @@ data ContactRef = ContactRef
     agentConnId :: AgentConnId,
     localDisplayName :: ContactName
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
   deriving (Show)
@@ -1597,3 +1583,15 @@ instance FromJSON JVersionRange where
 instance ToJSON JVersionRange where
   toJSON (JVersionRange (VersionRange minV maxV)) = J.object ["minVersion" .= minV, "maxVersion" .= maxV]
   toEncoding (JVersionRange (VersionRange minV maxV)) = J.pairs $ "minVersion" .= minV <> "maxVersion" .= maxV
+
+$(JQ.deriveJSON defOpts ''UserPwdHash)
+
+$(JQ.deriveJSON defOpts ''User)
+
+$(JQ.deriveJSON defOpts ''NewUser)
+
+$(JQ.deriveJSON defOpts ''UserInfo)
+
+$(JQ.deriveJSON defOpts ''Contact)
+
+$(JQ.deriveJSON defOpts ''ContactRef)

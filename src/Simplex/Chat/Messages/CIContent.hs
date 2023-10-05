@@ -9,12 +9,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Messages.CIContent where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH  as JQ
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -493,29 +495,9 @@ msgDirToModeratedContent_ = \case
 ciModeratedText :: Text
 ciModeratedText = "moderated"
 
--- platform independent
-instance MsgDirectionI d => ToField (CIContent d) where
-  toField = toField . encodeJSON . dbJsonCIContent
-
--- platform specific
-instance MsgDirectionI d => ToJSON (CIContent d) where
-  toJSON = J.toJSON . jsonCIContent
-  toEncoding = J.toEncoding . jsonCIContent
-
-instance MsgDirectionI d => FromJSON (CIContent d) where
-  parseJSON v = (\(ACIContent _ c) -> checkDirection c) <$?> J.parseJSON v
-
 data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIContent d)
 
 deriving instance Show ACIContent
-
--- platform independent
-dbParseACIContent :: Text -> Either String ACIContent
-dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
-
--- platform specific
-instance FromJSON ACIContent where
-  parseJSON = fmap aciContentJSON . J.parseJSON
 
 -- platform specific
 data JSONCIContent
@@ -542,17 +524,9 @@ data JSONCIContent
   | JCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
   | JCIRcvChatFeatureRejected {feature :: ChatFeature}
   | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
-  | JCISndModerated
-  | JCIRcvModerated
+  | JCISndModerated {_nullary :: Maybe Int}
+  | JCIRcvModerated {_nullary :: Maybe Int}
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
-  deriving (Generic)
-
-instance FromJSON JSONCIContent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
-
-instance ToJSON JSONCIContent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
 jsonCIContent = \case
@@ -579,8 +553,8 @@ jsonCIContent = \case
   CISndGroupFeature groupFeature preference param -> JCISndGroupFeature {groupFeature, preference, param}
   CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
-  CISndModerated -> JCISndModerated
-  CIRcvModerated -> JCISndModerated
+  CISndModerated -> JCISndModerated Nothing
+  CIRcvModerated -> JCISndModerated Nothing
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -608,8 +582,8 @@ aciContentJSON = \case
   JCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
   JCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
-  JCISndModerated -> ACIContent SMDSnd CISndModerated
-  JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  JCISndModerated _ -> ACIContent SMDSnd CISndModerated
+  JCIRcvModerated _ -> ACIContent SMDRcv CIRcvModerated
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -638,17 +612,9 @@ data DBJSONCIContent
   | DBJCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
   | DBJCIRcvChatFeatureRejected {feature :: ChatFeature}
   | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
-  | DBJCISndModerated
-  | DBJCIRcvModerated
+  | DBJCISndModerated {_nullary :: Maybe Int}
+  | DBJCIRcvModerated {_nullary :: Maybe Int}
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
-  deriving (Generic)
-
-instance FromJSON DBJSONCIContent where
-  parseJSON = J.genericParseJSON . singleFieldJSON $ dropPrefix "DBJCI"
-
-instance ToJSON DBJSONCIContent where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "DBJCI"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "DBJCI"
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
 dbJsonCIContent = \case
@@ -675,8 +641,8 @@ dbJsonCIContent = \case
   CISndGroupFeature groupFeature preference param -> DBJCISndGroupFeature {groupFeature, preference, param}
   CIRcvChatFeatureRejected feature -> DBJCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
-  CISndModerated -> DBJCISndModerated
-  CIRcvModerated -> DBJCIRcvModerated
+  CISndModerated -> DBJCISndModerated Nothing
+  CIRcvModerated -> DBJCIRcvModerated Nothing
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -704,8 +670,8 @@ aciContentDBJSON = \case
   DBJCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
   DBJCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
-  DBJCISndModerated -> ACIContent SMDSnd CISndModerated
-  DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  DBJCISndModerated _ -> ACIContent SMDSnd CISndModerated
+  DBJCIRcvModerated _ -> ACIContent SMDRcv CIRcvModerated
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -718,14 +684,7 @@ data CICallStatus
   | CISCallProgress
   | CISCallEnded
   | CISCallError
-  deriving (Show, Generic)
-
-instance FromJSON CICallStatus where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CISCall"
-
-instance ToJSON CICallStatus where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CISCall"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CISCall"
+  deriving (Show)
 
 ciCallInfoText :: CICallStatus -> Int -> Text
 ciCallInfoText status duration = case status of
@@ -737,3 +696,31 @@ ciCallInfoText status duration = case status of
   CISCallProgress -> "in progress " <> durationText duration
   CISCallEnded -> "ended " <> durationText duration
   CISCallError -> "error"
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CISCall") ''CICallStatus)
+
+-- platform specific
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent)
+
+-- platform independent
+$(JQ.deriveJSON (singleFieldJSON $ dropPrefix "DBJCI") ''DBJSONCIContent)
+
+-- platform independent
+instance MsgDirectionI d => ToField (CIContent d) where
+  toField = toField . encodeJSON . dbJsonCIContent
+
+-- platform specific
+instance MsgDirectionI d => ToJSON (CIContent d) where
+  toJSON = J.toJSON . jsonCIContent
+  toEncoding = J.toEncoding . jsonCIContent
+
+instance MsgDirectionI d => FromJSON (CIContent d) where
+  parseJSON v = (\(ACIContent _ c) -> checkDirection c) <$?> J.parseJSON v
+
+-- platform independent
+dbParseACIContent :: Text -> Either String ACIContent
+dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
+
+-- platform specific
+instance FromJSON ACIContent where
+  parseJSON = fmap aciContentJSON . J.parseJSON
