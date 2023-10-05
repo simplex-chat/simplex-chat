@@ -15,11 +15,21 @@ UPDATE connections SET conn_req_inv = NULL WHERE conn_status IN ('ready', 'delet
 CREATE INDEX idx_sent_probes_created_at ON sent_probes(created_at);
 CREATE INDEX idx_sent_probe_hashes_created_at ON sent_probe_hashes(created_at);
 CREATE INDEX idx_received_probes_created_at ON received_probes(created_at);
+
+CREATE INDEX idx_connections_conn_req_inv ON connections(conn_req_inv);
+
+ALTER TABLE groups ADD COLUMN via_group_link_uri_hash BLOB;
+CREATE INDEX idx_groups_via_group_link_uri_hash ON groups(via_group_link_uri_hash);
 |]
 
 down_m20231002_conn_initiated :: Query
 down_m20231002_conn_initiated =
   [sql|
+DROP INDEX idx_groups_via_group_link_uri_hash;
+ALTER TABLE groups DROP COLUMN via_group_link_uri_hash;
+
+DROP INDEX idx_connections_conn_req_inv;
+
 DROP INDEX idx_sent_probes_created_at;
 DROP INDEX idx_sent_probe_hashes_created_at;
 DROP INDEX idx_received_probes_created_at;

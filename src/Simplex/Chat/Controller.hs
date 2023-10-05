@@ -338,6 +338,7 @@ data ChatCommand
   | APIAddContact UserId IncognitoEnabled
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
+  | APICheckConnectionRequestURI UserId AConnectionRequestUri
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -489,6 +490,7 @@ data ChatResponse
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
+  | CRConnectionRequestURIChecked {user :: User, checkResult :: ConnReqURICheckResult}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
@@ -623,6 +625,29 @@ logResponseToFile = \case
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+-- reduce to 4 result types, add connection type to result?
+-- results may diverge per type, for example:
+-- CRUInvitationLinkKnown shouldn't be possible, because conn_req_inv is removed on connection status changing to ready;
+-- own link and own address / group link are checks for different things
+data ConnReqURICheckResult
+  = CRUInvitationLinkOkToConnect
+  | CRUInvitationLinkOwn
+  | CRUInvitationLinkConnecting {contact_ :: Maybe Contact}
+  | CRUInvitationLinkKnown {contact :: Contact}
+  | CRUContactAddressOkToConnect
+  | CRUContactAddressOwn
+  | CRUContactAddressConnecting {contact_ :: Maybe Contact}
+  | CRUContactAddressKnown {contact :: Contact}
+  | CRUGroupLinkOkToConnect
+  | CRUGroupLinkOwn
+  | CRUGroupLinkConnecting {groupInfo_ :: Maybe GroupInfo}
+  | CRUGroupLinkKnown {groupInfo :: GroupInfo}
+  deriving (Show, Generic)
+
+instance ToJSON ConnReqURICheckResult where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CRU"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CRU"
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)

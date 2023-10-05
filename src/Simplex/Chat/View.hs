@@ -148,6 +148,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
+  CRConnectionRequestURIChecked u checkResult -> ttyUser u ["ok/own/connecting/known"]
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]

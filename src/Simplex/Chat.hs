@@ -1311,7 +1311,45 @@ processChatCommand = \case
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
+  APICheckConnectionRequestURI userId (ACR SCMInvitation cReq) -> do
+    -- TODO [repeat connect]
+    -- - search connections (getConnectionEntity?) where conn_req_inv = cReq (and user_id? if yes add to idx_connections_conn_req_inv)
+    --   - if connection not found, return CRUInvitationLinkOkToConnect
+    --   - if connection entity is not RcvDirectMsgConnection, throw chat error prohibited (?)
+    --   - if connection found and contactConnInitiated, return CRUInvitationLinkOwn
+    --   - if connection found and not ready, return CRUInvitationLinkConnecting
+    --   - if connection found and ready, return CRUInvitationLinkKnown (? - see ConnReqURICheckResult comment)
+    ok_
+  APICheckConnectionRequestURI userId (ACR SCMContact cReq) -> do
+    -- TODO [repeat connect]
+    -- - check if cReq is contact address or group link by parsing cReq crClientData (see connectViaContact):
+    --   let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+    -- - if contact address:
+    --   - search user_contact_links by conn_req_contact = cReq (and user_id?)
+    --     - if found, return CRUContactAddressOwn
+    --   - search connections by via_contact_uri_hash = hash(cReq) (and user_id?)
+    --     - if connection not found, return CRUContactAddressOkToConnect
+    --     - if connection found and not ready, return CRUContactAddressConnecting
+    --     - if connection found and ready, return CRUContactAddressKnown
+    -- - if group link *:
+    --   - search user_contact_links by conn_req_contact = cReq (and user_id?)
+    --     - if found, return CRUGroupLinkOwn
+    --   - search connections and groups ** by via_contact_uri_hash (via_group_link_uri_hash) = hash(cReq) (and user_id?)
+    --     - if group not found, return CRUGroupLinkOkToConnect ***
+    --     - if connection found and not ready and group not found, return CRUGroupLinkConnecting
+    --     - if group found, return CRUGroupLinkKnown (don't chek membership? or check !active and !removed?)
+    --   (*) rework group links to connect directly to group, w/t creating contact? would remove merge scenario
+    --   (**) host contact may be deleted, but group may exist - no reason to reconnect with contact;
+    --        add via_contact_uri_hash (via_group_link_uri_hash) to groups and populate on auto accepting invitation? (use group_link_id?)
+    --   (***) even if host contact exists, host should allow repeat connection:
+    --         to do: check how host reacts to repeated XContactId, and/or don't repeat XContactId when requesting,
+    --         see https://github.com/simplex-chat/simplex-chat/pull/2956/files
+    ok_
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withChatLock "connect" . procCmd $ do
+    -- TODO [repeat connect]
+    -- repeat check as in APICheckConnectionRequestURI (SCMInvitation)
+    -- proceed to connect only if OkToConnect or Own
+    -- otherwise throw error
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -1321,7 +1359,12 @@ processChatCommand = \case
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode
     toView $ CRNewContactConnection user conn
     pure $ CRSentConfirmation user
-  APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
+  APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> do
+    -- TODO [repeat connect]
+    -- repeat check as in APICheckConnectionRequestURI (SCMContact)
+    -- proceed to connect only if OkToConnect (or Own?)
+    -- otherwise throw error
+    connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito cReqUri -> withUser $ \User {userId} ->
     processChatCommand $ APIConnect userId incognito cReqUri
@@ -5642,6 +5685,7 @@ chatCommandP =
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
+      "/_check_creq_uri " *> (APICheckConnectionRequestURI <$> A.decimal <* A.space <*> strP),
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
