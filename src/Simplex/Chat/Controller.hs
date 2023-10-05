@@ -657,7 +657,6 @@ logResponseToFile = \case
   _ -> False
 
 instance FromJSON ChatResponse where
-  -- parseJSON todo = pure $ CRCmdOk Nothing -- TODO: actually use the instances
   parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CR"
 
 instance ToJSON ChatResponse where
