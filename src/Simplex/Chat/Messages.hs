@@ -163,8 +163,8 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   }
   deriving (Show, Generic)
 
--- instance (ChatTypeI c, MsgDirectionI d) => FromJSON (ChatItem c d) where
---   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+instance (ChatTypeI c, MsgDirectionI d) => FromJSON (ChatItem c d) where
+  parseJSON = J.genericParseJSON J.defaultOptions
 
 instance (ChatTypeI c, MsgDirectionI d) => ToJSON (ChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -178,9 +178,12 @@ data CIDirection (c :: ChatType) (d :: MsgDirection) where
 
 deriving instance Show (CIDirection c d)
 
-data CCIDirection c = forall d. MsgDirectionI d => CCIDirection (SMsgDirection d) (CIDirection c d)
+data CCIDirection c = forall d. MsgDirectionI d => CCID (SMsgDirection d) (CIDirection c d)
 
-data ACIDirection = forall c d. (ChatTypeI c, MsgDirectionI d) => ACIDirection (SChatType c) (SMsgDirection d) (CIDirection c d)
+instance ChatTypeI c => FromJSON (CCIDirection c) where
+  parseJSON v = (\(ACID _ d x) -> checkChatType (CCID d x)) <$?> J.parseJSON v
+
+data ACIDirection = forall c d. (ChatTypeI c, MsgDirectionI d) => ACID (SChatType c) (SMsgDirection d) (CIDirection c d)
 
 instance FromJSON ACIDirection where
   parseJSON v = jsonACIDirection <$> J.parseJSON v
@@ -200,7 +203,7 @@ instance ToJSON JSONCIDirection where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
 
 instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIDirection c d) where
-  parseJSON v = (\(ACIDirection _ d x) -> checkChatType (CCIDirection d x) >>= \(CCIDirection _ x') -> checkDirection x') <$?> J.parseJSON v
+  parseJSON v = (\(CCID _ x') -> checkDirection x') <$?> J.parseJSON v
 
 instance ToJSON (CIDirection c d) where
   toJSON = J.toJSON . jsonCIDirection
@@ -215,10 +218,10 @@ jsonCIDirection = \case
 
 jsonACIDirection :: JSONCIDirection -> ACIDirection
 jsonACIDirection = \case
-  JCIDirectSnd -> ACIDirection SCTDirect SMDSnd CIDirectSnd
-  JCIDirectRcv -> ACIDirection SCTDirect SMDRcv CIDirectRcv
-  JCIGroupSnd -> ACIDirection SCTGroup SMDSnd CIGroupSnd
-  JCIGroupRcv m -> ACIDirection SCTGroup SMDRcv $ CIGroupRcv m
+  JCIDirectSnd -> ACID SCTDirect SMDSnd CIDirectSnd
+  JCIDirectRcv -> ACID SCTDirect SMDRcv CIDirectRcv
+  JCIGroupSnd -> ACID SCTGroup SMDSnd CIGroupSnd
+  JCIGroupRcv m -> ACID SCTGroup SMDRcv $ CIGroupRcv m
 
 data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
   deriving (Show, Generic, FromJSON)
@@ -228,6 +231,14 @@ instance ToJSON CIReactionCount where toEncoding = J.genericToEncoding J.default
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (CChatItem c)
+
+instance forall c. ChatTypeI c => FromJSON (CChatItem c) where
+  parseJSON v = J.withObject "CChatItem" parse v
+    where
+      parse o = do
+        CCID d (_ :: CIDirection c d) <- o .: "chatDir"
+        ci <- J.parseJSON @(ChatItem c d) v
+        pure $ CChatItem d ci
 
 instance ChatTypeI c => ToJSON (CChatItem c) where
   toJSON (CChatItem _ ci) = J.toJSON ci
@@ -327,14 +338,12 @@ data AChat = forall c. ChatTypeI c => AChat (SChatType c) (Chat c)
 
 deriving instance Show AChat
 
--- instance FromJSON AChat where
---   parseJSON = J.withObject "Chat" $ \o -> do
---     jci <- o .: "chatInfo"
---     case jsonAChatInfo jci of
---       AChatInfo sct chatInfo -> do
---         chatItems <- o .: "chatItems"
---         chatStats <- o .: "chatStats"
---         pure $ AChat sct Chat {chatInfo, chatItems, chatStats}
+instance FromJSON AChat where
+  parseJSON = J.withObject "AChat" $ \o -> do
+    AChatInfo c chatInfo <- o .: "chatInfo"
+    chatItems <- o .: "chatItems"
+    chatStats <- o .: "chatStats"
+    pure $ AChat c Chat {chatInfo, chatItems, chatStats}
 
 instance ToJSON AChat where
   toJSON (AChat _ c) = J.toJSON c
@@ -354,15 +363,11 @@ data AChatItem = forall c d. (ChatTypeI c, MsgDirectionI d) => AChatItem (SChatT
 
 deriving instance Show AChatItem
 
--- instance FromJSON AChatItem where
---   parseJSON = J.withObject "ChatItem" $ \o -> do
---     jChatInfo <- o .: "chatInfo"
---     case jsonAChatInfo jChatInfo of
---       AChatInfo sct chatInfo -> do
---         vChatItem <- o .: "chatItem"
---         vChatItem .: "chatDir" >>= \(ACIDirection _sct smd _cid) -> do
---           o .: "chatItem" >>= \JSONAnyChatItem { chatItem } ->
---             pure $ AChatItem sct smd chatInfo chatItem
+instance FromJSON AChatItem where
+  parseJSON = J.withObject "AChatItem" $ \o -> do
+    AChatInfo c chatInfo <- o .: "chatInfo"
+    CChatItem d chatItem <- o .: "chatItem"
+    pure $ AChatItem c d chatInfo chatItem
 
 instance ToJSON AChatItem where
   toJSON (AChatItem _ _ chat item) = J.toJSON $ JSONAnyChatItem chat item
@@ -472,35 +477,36 @@ data CIReaction (c :: ChatType) (d :: MsgDirection) = CIReaction
   }
   deriving (Show, Generic)
 
+instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIReaction c d) where
+  parseJSON = J.genericParseJSON J.defaultOptions
+
 instance ChatTypeI c => ToJSON (CIReaction c d) where
   toEncoding = J.genericToEncoding J.defaultOptions
 
--- instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIReaction c d) where
---   parseJSON = J.genericParseJSON J.defaultOptions
+data AnyCIReaction = forall c d. ChatTypeI c => ACIR (SChatType c) (SMsgDirection d) (CIReaction c d)
+
+instance FromJSON AnyCIReaction where
+  parseJSON v = J.withObject "AnyCIReaction" parse v
+    where
+      parse o = do
+        ACID c d (_ :: CIDirection c d) <- o .: "chatDir"
+        ACIR c d <$> J.parseJSON @(CIReaction c d) v
 
 data ACIReaction = forall c d. ChatTypeI c => ACIReaction (SChatType c) (SMsgDirection d) (ChatInfo c) (CIReaction c d)
 
 deriving instance Show ACIReaction
 
--- instance FromJSON ACIReaction where
---   parseJSON = J.withObject "ACIReaction" $ \o -> do
---     o .: "chatType" >>= \case
---       ACT c -> o .: "msgDir" >>= \case
---         AMsgDirection d -> do
---           cInfo <- o .: "chatInfo"
---           reaction <- o .: "chatReaction"
---           pure $ ACIReaction c d cInfo reaction
+instance FromJSON ACIReaction where
+  parseJSON = J.withObject "ACIReaction" $ \o -> do
+    ACIR c d reaction <- o .: "chatReaction"
+    cInfo <- o .: "chatInfo"
+    pure $ ACIReaction c d cInfo reaction
 
 instance ToJSON ACIReaction where
-  toJSON (ACIReaction c d cInfo reaction) = J.toJSON $ JSONCIReaction c d cInfo reaction
-  toEncoding (ACIReaction c d cInfo reaction) = J.toEncoding $ JSONCIReaction c d cInfo reaction
+  toJSON (ACIReaction _ _ cInfo reaction) = J.toJSON $ JSONCIReaction cInfo reaction
+  toEncoding (ACIReaction _ _ cInfo reaction) = J.toEncoding $ JSONCIReaction cInfo reaction
 
-data JSONCIReaction c d = JSONCIReaction
-  { chatType :: SChatType c,
-    msgDir :: SMsgDirection d,
-    chatInfo :: ChatInfo c,
-    chatReaction :: CIReaction c d
-  }
+data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
   deriving (Generic)
 
 instance ChatTypeI c => ToJSON (JSONCIReaction c d) where toEncoding = J.genericToEncoding J.defaultOptions
@@ -513,8 +519,10 @@ data CIQDirection (c :: ChatType) where
 
 deriving instance Show (CIQDirection c)
 
+data ACIQDirection = forall c. ChatTypeI c => ACIQDirection (SChatType c) (CIQDirection c)
+
 instance ChatTypeI c => FromJSON (CIQDirection c) where
-  parseJSON v = (\(ACIQDirection _ x) -> checkChatType x) <$?> J.parseJSON v
+  parseJSON v = (\(ACIQDirection _ x) -> checkChatType x) . jsonACIQDirection <$?> J.parseJSON v
 
 instance ToJSON (CIQDirection c) where
   toJSON = J.toJSON . jsonCIQDirection
@@ -527,11 +535,6 @@ jsonCIQDirection = \case
   CIQGroupSnd -> Just JCIGroupSnd
   CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
   CIQGroupRcv Nothing -> Nothing
-
-data ACIQDirection = forall c. ChatTypeI c => ACIQDirection (SChatType c) (CIQDirection c)
-
-instance FromJSON ACIQDirection where
-  parseJSON v = jsonACIQDirection <$> J.parseJSON v
 
 jsonACIQDirection :: Maybe JSONCIDirection -> ACIQDirection
 jsonACIQDirection = \case
@@ -557,6 +560,9 @@ data CIFile (d :: MsgDirection) = CIFile
     fileProtocol :: FileProtocol
   }
   deriving (Show, Generic)
+
+instance MsgDirectionI d => FromJSON (CIFile d) where
+  parseJSON = J.genericParseJSON J.defaultOptions
 
 instance MsgDirectionI d => ToJSON (CIFile d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -617,6 +623,9 @@ ciFileEnded = \case
   CIFSRcvComplete -> True
   CIFSRcvError -> True
   CIFSInvalid {} -> True
+
+instance MsgDirectionI d => FromJSON (CIFileStatus d) where
+  parseJSON v = (\(AFS _ s) -> checkDirection s) . aciFileStatusJSON <$?> J.parseJSON v
 
 instance ToJSON (CIFileStatus d) where
   toJSON = J.toJSON . jsonCIFileStatus
@@ -753,7 +762,7 @@ deriving instance Eq (CIStatus d)
 deriving instance Show (CIStatus d)
 
 instance MsgDirectionI d => FromJSON (CIStatus d) where
-  parseJSON v = (\(ACIStatus _ s) -> checkDirection s) <$?> J.parseJSON v
+  parseJSON v = (\(ACIStatus _ s) -> checkDirection s) . jsonACIStatus <$?> J.parseJSON v
 
 instance ToJSON (CIStatus d) where
   toJSON = J.toJSON . jsonCIStatus
@@ -766,9 +775,6 @@ instance (Typeable d, MsgDirectionI d) => FromField (CIStatus d) where fromField
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 data ACIStatus = forall d. MsgDirectionI d => ACIStatus (SMsgDirection d) (CIStatus d)
-
-instance FromJSON ACIStatus where
-  parseJSON v = jsonACIStatus <$> J.parseJSON v
 
 deriving instance Show ACIStatus
 
@@ -926,11 +932,8 @@ instance ChatTypeI 'CTContactRequest where chatTypeI = SCTContactRequest
 
 instance ChatTypeI 'CTContactConnection where chatTypeI = SCTContactConnection
 
-instance FromJSON AChatType where
-  parseJSON v = aChatType <$> J.parseJSON v
-
 instance ChatTypeI c => FromJSON (SChatType c) where
-  parseJSON v = (\(ACT t) -> checkChatType t) <$?> J.parseJSON v
+  parseJSON v = (\(ACT t) -> checkChatType t) . aChatType <$?> J.parseJSON v
 
 instance ToJSON (SChatType c) where
   toJSON = J.toJSON . toChatType
@@ -1080,11 +1083,8 @@ deriving instance Show (CIDeleted c)
 
 data ACIDeleted = forall c. ChatTypeI c => ACIDeleted (SChatType c) (CIDeleted c)
 
-instance FromJSON ACIDeleted where
-  parseJSON v = jsonACIDeleted <$> J.parseJSON v
-
 instance ChatTypeI c => FromJSON (CIDeleted c) where
-  parseJSON v = (\(ACIDeleted _ x) -> checkChatType x) <$?> J.parseJSON v
+  parseJSON v = (\(ACIDeleted _ x) -> checkChatType x) . jsonACIDeleted <$?> J.parseJSON v
 
 instance ChatTypeI c => ToJSON (CIDeleted c) where
   toJSON = J.toJSON . jsonCIDeleted

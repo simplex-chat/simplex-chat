@@ -135,7 +135,7 @@ data RcvCallInvitation = RcvCallInvitation
     sharedKey :: Maybe C.Key,
     callTs :: UTCTime
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, FromJSON)
 
 instance ToJSON RcvCallInvitation where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -160,10 +160,7 @@ data CallInvitation = CallInvitation
   { callType :: CallType,
     callDhPubKey :: Maybe C.PublicKeyX25519
   }
-  deriving (Eq, Show, Generic)
-
-instance FromJSON CallInvitation where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON CallInvitation where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -193,10 +190,7 @@ data CallOffer = CallOffer
     rtcSession :: WebRTCSession,
     callDhPubKey :: Maybe C.PublicKeyX25519
   }
-  deriving (Eq, Show, Generic)
-
-instance FromJSON CallOffer where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON CallOffer where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -206,10 +200,7 @@ data WebRTCCallOffer = WebRTCCallOffer
   { callType :: CallType,
     rtcSession :: WebRTCSession
   }
-  deriving (Eq, Show, Generic)
-
-instance FromJSON WebRTCCallOffer where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON WebRTCCallOffer where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}

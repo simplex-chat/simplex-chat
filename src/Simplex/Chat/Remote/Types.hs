@@ -5,7 +5,8 @@
 module Simplex.Chat.Remote.Types where
 
 import Control.Concurrent.Async (Async)
-import Data.Aeson (ToJSON (..))
+import Data.Aeson (ToJSON (..), FromJSON)
+import qualified Data.Aeson as J
 import Data.Int (Int64)
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -37,7 +38,9 @@ data RemoteCtrl = RemoteCtrl
     fingerprint :: C.KeyHash,
     accepted :: Maybe Bool
   }
-  deriving (Show, Generic, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON RemoteCtrl where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RemoteHostSession
   = RemoteHostSessionStarting

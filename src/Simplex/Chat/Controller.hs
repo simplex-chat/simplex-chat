@@ -13,6 +13,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Controller where
 
@@ -30,6 +31,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (ord)
+import Data.Constraint (Dict (..))
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
@@ -65,7 +67,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType, CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -200,6 +202,9 @@ data ChatController = ChatController
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase
   deriving (Show, Generic)
+
+instance FromJSON HelpSection where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "HS"
 
 instance ToJSON HelpSection where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "HS"
@@ -652,8 +657,8 @@ logResponseToFile = \case
   _ -> False
 
 instance FromJSON ChatResponse where
-  parseJSON todo = pure $ CRCmdOk Nothing -- TODO: actually use the instances
-  -- parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CR"
+  -- parseJSON todo = pure $ CRCmdOk Nothing -- TODO: actually use the instances
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CR"
 
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
@@ -724,11 +729,22 @@ data UserProtoServers p = UserProtoServers
   }
   deriving (Show, Generic)
 
+instance ProtocolTypeI p => FromJSON (UserProtoServers p) where
+  parseJSON = J.genericParseJSON J.defaultOptions
+
 instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
-  toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
 data AUserProtoServers = forall p. (ProtocolTypeI p, UserProtocol p) => AUPS (UserProtoServers p)
+
+instance FromJSON AUserProtoServers where
+  parseJSON v = J.withObject "AUserProtoServers" parse v
+    where
+      parse o = do
+        AProtocolType (p :: SProtocolType p) <- o .: "serverProtocol"
+        case userProtocol p of
+          Just Dict -> AUPS <$> J.parseJSON @(UserProtoServers p) v
+          Nothing -> fail $ "AUserProtoServers: unsupported protocol " <> show p
 
 instance ToJSON AUserProtoServers where
   toJSON (AUPS s) = J.genericToJSON J.defaultOptions s
@@ -758,10 +774,7 @@ data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError
   }
-  deriving (Show, Generic)
-
-instance FromJSON ContactSubStatus where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show, Generic, FromJSON)
 
 instance ToJSON ContactSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -771,7 +784,7 @@ data MemberSubStatus = MemberSubStatus
   { member :: GroupMember,
     memberError :: Maybe ChatError
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, FromJSON)
 
 instance ToJSON MemberSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -781,7 +794,7 @@ data UserContactSubStatus = UserContactSubStatus
   { userContact :: UserContact,
     userContactError :: Maybe ChatError
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, FromJSON)
 
 instance ToJSON UserContactSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -791,10 +804,7 @@ data PendingSubStatus = PendingSubStatus
   { connection :: PendingContactConnection,
     connError :: Maybe ChatError
   }
-  deriving (Show, Generic)
-
-instance FromJSON PendingSubStatus where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show, Generic, FromJSON)
 
 instance ToJSON PendingSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -921,9 +931,7 @@ data SlowSQLQuery = SlowSQLQuery
   { query :: Text,
     queryStats :: SlowQueryStats
   }
-  deriving (Show, Generic)
-
-instance FromJSON SlowSQLQuery where parseJSON = J.genericParseJSON J.defaultOptions
+  deriving (Show, Generic, FromJSON)
 
 instance ToJSON SlowSQLQuery where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -1098,6 +1106,9 @@ data ArchiveError
   = AEImport {chatError :: ChatError}
   | AEImportFile {file :: String, chatError :: ChatError}
   deriving (Show, Exception, Generic)
+
+instance FromJSON ArchiveError where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "AE"
 
 instance ToJSON ArchiveError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"

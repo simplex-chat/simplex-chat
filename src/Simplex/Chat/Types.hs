@@ -338,7 +338,7 @@ optionalFullName displayName fullName
   | otherwise = " (" <> fullName <> ")"
 
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON Group where toEncoding = J.genericToEncoding J.defaultOptions
 
