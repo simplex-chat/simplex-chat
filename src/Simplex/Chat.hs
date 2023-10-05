@@ -469,11 +469,11 @@ processChatCommand = \case
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
   StartChat subConns enableExpireCIs startXFTPWorkers -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
-      Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged $ startChatController subConns enableExpireCIs startXFTPWorkers $> CRChatStarted
+      Just _ -> pure $ CRChatRunning Nothing
+      _ -> checkStoreNotChanged $ startChatController subConns enableExpireCIs startXFTPWorkers $> CRChatStarted Nothing
   APIStopChat -> do
     ask >>= stopChatController
-    pure CRChatStopped
+    pure $ CRChatStopped Nothing
   APIActivateChat -> withUser $ \_ -> do
     restoreCalls
     withAgent foregroundAgent
@@ -2814,7 +2814,7 @@ processAgentMessageNoConn = \case
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
   UP srv conns -> serverEvent srv conns CRContactsSubscribed "connected"
-  SUSPENDED -> toView CRChatSuspended
+  SUSPENDED -> toView $ CRChatSuspended Nothing
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
   where
     hostEvent :: ChatResponse -> m ()

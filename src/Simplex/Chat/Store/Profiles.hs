@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -59,7 +60,7 @@ where
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -398,7 +399,7 @@ data UserContactLink = UserContactLink
   { connReqContact :: ConnReqContact,
     autoAccept :: Maybe AutoAccept
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, FromJSON)
 
 instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -406,7 +407,7 @@ data AutoAccept = AutoAccept
   { acceptIncognito :: IncognitoEnabled,
     autoReply :: Maybe MsgContent
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, FromJSON)
 
 instance ToJSON AutoAccept where toEncoding = J.genericToEncoding J.defaultOptions
 

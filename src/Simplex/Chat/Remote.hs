@@ -201,7 +201,7 @@ startRemoteCtrl =
           chatWriteVar remoteCtrlSession Nothing
           toView $ CRRemoteCtrlStopped {remoteCtrlId}
       chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted}
-      pure CRRemoteCtrlStarted
+      pure $ CRRemoteCtrlStarted Nothing
 
 discoverRemoteCtrls :: (ChatMonad m) => TM.TMap C.KeyHash TransportHost -> m ()
 discoverRemoteCtrls discovered = Discovery.openListener >>= go

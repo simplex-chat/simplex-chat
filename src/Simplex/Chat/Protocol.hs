@@ -72,6 +72,9 @@ data ConnectionEntity
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
   deriving (Eq, Show, Generic)
 
+instance FromJSON ConnectionEntity where
+  parseJSON = J.genericParseJSON $ sumTypeJSON fstToLower
+
 instance ToJSON ConnectionEntity where
   toJSON = J.genericToJSON $ sumTypeJSON fstToLower
   toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
