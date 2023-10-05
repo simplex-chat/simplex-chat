@@ -224,6 +224,9 @@ instance FromField ContactStatus where fromField = fromTextField_ textDecode
 
 instance ToField ContactStatus where toField = toField . textEncode
 
+instance FromJSON ContactStatus where
+  parseJSON = textParseJSON "ContactStatus"
+
 instance ToJSON ContactStatus where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode

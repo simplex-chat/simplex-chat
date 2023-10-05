@@ -652,7 +652,8 @@ logResponseToFile = \case
   _ -> False
 
 instance FromJSON ChatResponse where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CR"
+  parseJSON todo = pure $ CRCmdOk Nothing -- TODO: actually use the instances
+  -- parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CR"
 
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
@@ -661,7 +662,9 @@ instance ToJSON ChatResponse where
 data RemoteCtrlOOB = RemoteCtrlOOB
   { caFingerprint :: C.KeyHash
   }
-  deriving (Show, Generic, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON RemoteCtrlOOB where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
@@ -669,14 +672,18 @@ data RemoteHostInfo = RemoteHostInfo
     displayName :: Text,
     sessionActive :: Bool
   }
-  deriving (Show, Generic, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON RemoteHostInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RemoteCtrlInfo = RemoteCtrlInfo
   { remoteCtrlId :: RemoteCtrlId,
     displayName :: Text,
     sessionActive :: Bool
   }
-  deriving (Eq, Show, Generic, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON RemoteCtrlInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -799,7 +806,9 @@ data UserProfileUpdateSummary = UserProfileUpdateSummary
     updateFailures :: Int,
     changedContacts :: [Contact]
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON UserProfileUpdateSummary where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
@@ -828,13 +837,17 @@ instance ToJSON ComposedMessage where
 data XFTPFileConfig = XFTPFileConfig
   { minFileSize :: Integer
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
 
 defaultXFTPFileConfig :: XFTPFileConfig
 defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0}
 
+instance ToJSON XFTPFileConfig where toEncoding = J.genericToEncoding J.defaultOptions
+
 data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON NtfMsgInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode) -> ChatResponse
 crNtfToken (token, status, ntfMode) = CRNtfToken {token, status, ntfMode}
@@ -844,19 +857,25 @@ data SwitchProgress = SwitchProgress
     switchPhase :: SwitchPhase,
     connectionStats :: ConnectionStats
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON SwitchProgress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RatchetSyncProgress = RatchetSyncProgress
   { ratchetSyncStatus :: RatchetSyncState,
     connectionStats :: ConnectionStats
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON RatchetSyncProgress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ParsedServerAddress = ParsedServerAddress
   { serverAddress :: Maybe ServerAddress,
     parseError :: String
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON ParsedServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ServerAddress = ServerAddress
   { serverProtocol :: AProtocolType,
@@ -865,7 +884,9 @@ data ServerAddress = ServerAddress
     keyHash :: String,
     basicAuth :: String
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON ServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data TimedMessagesEnabled
   = TMEEnableSetTTL Int
@@ -887,7 +908,9 @@ data CoreVersionInfo = CoreVersionInfo
     simplexmqVersion :: String,
     simplexmqCommit :: String
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 data SendFileMode
   = SendFileSMP (Maybe InlineFileMode)
@@ -901,6 +924,7 @@ data SlowSQLQuery = SlowSQLQuery
   deriving (Show, Generic)
 
 instance FromJSON SlowSQLQuery where parseJSON = J.genericParseJSON J.defaultOptions
+
 instance ToJSON SlowSQLQuery where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError

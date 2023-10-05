@@ -34,7 +34,7 @@ import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), RatchetSyncState (..), SwitchPhase (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow, (<$?>))
 
 data MsgDirection = MDRcv | MDSnd
   deriving (Eq, Show, Generic)
@@ -69,11 +69,21 @@ instance TestEquality SMsgDirection where
   testEquality SMDSnd SMDSnd = Just Refl
   testEquality _ _ = Nothing
 
+instance ToJSON (SMsgDirection d) where
+  toJSON = J.toJSON . toMsgDirection
+  toEncoding = J.toEncoding . toMsgDirection
+
+instance MsgDirectionI d => FromJSON (SMsgDirection d) where
+  parseJSON v = (\(AMsgDirection d) -> checkDirection d) <$?> J.parseJSON v
+
 instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
 data AMsgDirection = forall d. MsgDirectionI d => AMsgDirection (SMsgDirection d)
 
 deriving instance Show AMsgDirection
+
+instance FromJSON AMsgDirection where
+  parseJSON v = fromMsgDirection <$> J.parseJSON v
 
 toMsgDirection :: SMsgDirection d -> MsgDirection
 toMsgDirection = \case
@@ -91,6 +101,11 @@ class MsgDirectionI (d :: MsgDirection) where
 instance MsgDirectionI 'MDRcv where msgDirection = SMDRcv
 
 instance MsgDirectionI 'MDSnd where msgDirection = SMDSnd
+
+checkDirection :: forall t d d'. (MsgDirectionI d, MsgDirectionI d') => t d' -> Either String (t d)
+checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
+  Just Refl -> Right x
+  Nothing -> Left "bad direction"
 
 msgDirectionInt :: MsgDirection -> Int
 msgDirectionInt = \case
@@ -489,6 +504,9 @@ instance MsgDirectionI d => ToField (CIContent d) where
 instance MsgDirectionI d => ToJSON (CIContent d) where
   toJSON = J.toJSON . jsonCIContent
   toEncoding = J.toEncoding . jsonCIContent
+
+instance MsgDirectionI d => FromJSON (CIContent d) where
+  parseJSON v = (\(ACIContent _ c) -> checkDirection c) <$?> J.parseJSON v
 
 data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIContent d)
 
