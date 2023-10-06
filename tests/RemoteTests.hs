@@ -92,7 +92,7 @@ announceDiscoverHttp2Test _tmp = do
 -- * Chat commands
 
 remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
-remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
+remoteHandshakeTest = testChat3 aliceProfile bobProfile cathProfile $ \desktop mobile cath -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
   desktop ##> "/create remote host"
@@ -138,6 +138,11 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop <## "remote host 1 deleted"
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
+
+  cath ##> "/c"
+  inv' <- getInvitation cath
+  desktop ##> ("/c " <> inv')
+  desktop <## "confirmation sent!"
 
 -- * Utils
 

@@ -7,6 +7,7 @@
 
 module Simplex.Chat.Remote where
 
+import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
@@ -20,6 +21,7 @@ import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import qualified Network.HTTP.Types as HTTP
 import Network.HTTP.Types.Status (ok200, badRequest400)
 import qualified Network.HTTP2.Client as HTTP2Client
@@ -66,27 +68,34 @@ startRemoteHost remoteHostId = do
       finished <- newTVarIO False
       announcer <- async $ do
         cleanup <- toIO $ do
+          logInfo "Remote host http2 client fininshed"
           atomically $ writeTVar finished True
           closeRemoteHostSession remoteHostId >>= toView
         let parent = (C.signatureKeyPair caKey, caCert)
         sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
         let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
         Discovery.announceRevHTTP2 cleanup fingerprint credentials >>= \case
-          Left todo'err -> liftIO cleanup -- TODO: log error
+          Left h2ce -> do
+            logError $ "Failed to set up remote host connection: " <> T.pack (show h2ce)
+            liftIO cleanup -- TODO: log error
           Right ctrlClient -> do
             chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarted {storePath, ctrlClient}
             chatWriteVar currentRemoteHost $ Just remoteHostId
             sendHello ctrlClient >>= \case
-              Left todo'err -> liftIO cleanup
-              Right todo'ok -> do
+              Left h2ce -> do
+                logError $ "Failed to send initial remote host request: " <> T.pack (show h2ce)
+                liftIO cleanup
+              Right HTTP2.HTTP2Response {respBody=HTTP2Body{bodyHead}} -> do
+                logDebug $ "Got initial from remote host: " <> T.pack (show bodyHead)
                 _ <- asks outputQ >>= async . pumpRemote finished ctrlClient "/output" (\(ci, _noHost :: Maybe (), cr) -> (ci, Just remoteHostId, cr))
                 _ <- asks notifyQ >>= async . pumpRemote finished ctrlClient "/notify" id
+                relayCommand ctrlClient "/contacts" >>= logDebug . T.pack . show
                 toView CRRemoteHostConnected {remoteHostId}
       chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarting {announcer}
       pure CRRemoteHostStarted {remoteHostId}
 
 sendHello :: (ChatMonad m) => HTTP2Client -> m (Either HTTP2.HTTP2ClientError HTTP2.HTTP2Response)
-sendHello http = liftIO (HTTP2.sendRequest http req Nothing)
+sendHello http = liftIO (HTTP2.sendRequestDirect http req Nothing)
   where
     req = HTTP2Client.requestNoBody "GET" "/" mempty
 
@@ -94,11 +103,11 @@ pumpRemote :: (ChatMonad m, J.FromJSON a) => TVar Bool -> HTTP2Client -> ByteStr
 pumpRemote finished http path f queue = loop
   where
     loop = do
-      liftIO (HTTP2.sendRequest http req Nothing) >>= \case
-        Left e -> pure ()
+      liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
+        Left e -> logError $ "pumpRemote: " <> T.pack (show (path, e))
         Right HTTP2.HTTP2Response {respBody=HTTP2Body{bodyHead}} ->
           case J.eitherDecodeStrict' bodyHead of
-            Left e -> pure ()
+            Left e -> logError $ "pumpRemote/decode: " <> T.pack (show (path, e))
             Right o -> atomically $ writeTBQueue queue (f o)
       readTVarIO finished >>= (`unless` loop)
     req = HTTP2Client.requestNoBody "GET" path mempty
@@ -143,36 +152,45 @@ deleteRemoteHost remoteHostId = withRemoteHost remoteHostId $ \rh -> do
   withStore' $ \db -> deleteRemoteHostRecord db remoteHostId
   pure CRRemoteHostDeleted {remoteHostId}
 
+remoteCommand :: ChatCommand -> Bool
+remoteCommand = \case
+  QuitChat -> False
+  _ -> True
+
 processRemoteCommand :: (ChatMonad m) => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
-processRemoteCommand RemoteHostSessionStarting {} _ = error "TODO: sending remote commands before session started"
-processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) =
+processRemoteCommand RemoteHostSessionStarting {} _ = pure . CRChatError Nothing . ChatError $ CEInternalError "sending remote commands before session started"
+processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) = do
+  logDebug $ "processRemoteCommand: " <> T.pack (show s)
   -- XXX: intercept and filter some commands
   -- TODO: store missing files on remote host
   relayCommand ctrlClient s
+  where
 
 relayCommand :: (ChatMonad m) => HTTP2Client -> ByteString -> m ChatResponse
 relayCommand http s =
-  postBytestring Nothing http "/command" mempty s >>= \case
-    Left e -> error "TODO: http2chatError"
+  postBytestring (Just 1000000) http "/command" mempty s >>= \case
+    Left e -> oops $ "relayCommand/post: " <> show e
     Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
+      logDebug $ "Got /command response: " <> T.pack (show bodyHead)
       remoteChatResponse <-
         if iTax
           then case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
-            Left e -> error "TODO: json2chatError" e
+            Left e -> oops $ "relayCommand/decodeValue: " <> show e
             Right (raw :: J.Value) -> case J.fromJSON (sum2tagged raw) of
-              J.Error e -> error "TODO: json2chatError" e
+              J.Error e -> oops $ "relayCommand/sum2tagged: " <> show e
               J.Success cr -> pure cr
           else case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
-            Left e -> error "TODO: json2chatError" e
+            Left e -> oops $ "relayCommand/decode: " <> show e
             Right cr -> pure cr
       case remoteChatResponse of
         -- TODO: intercept file responses and fetch files when needed
         -- XXX: is that even possible, to have a file response to a command?
         _ -> pure remoteChatResponse
   where
+    oops = pure . CRChatError Nothing . ChatError . CEInternalError
     iTax = True -- TODO: get from RemoteHost
     -- XXX: extract to http2 transport
-    postBytestring timeout c path hs body = liftIO $ HTTP2.sendRequest c req timeout
+    postBytestring timeout c path hs body = liftIO $ HTTP2.sendRequestDirect c req timeout
       where
         req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
 
@@ -192,13 +210,13 @@ storeRemoteFile http localFile = do
   where
     postFile timeout c path hs file = liftIO $ do
       fileSize <- fromIntegral <$> getFileSize file
-      HTTP2.sendRequest c (req fileSize) timeout
+      HTTP2.sendRequestDirect c (req fileSize) timeout
       where
-        req size = HTTP2Client.requestFile "POST" path hs (HTTP2Client.FileSpec file 0 size)
+        req size = HTTP2Client.requestFile "PUT" path hs (HTTP2Client.FileSpec file 0 size)
 
 fetchRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> FileTransferId -> m ChatResponse
 fetchRemoteFile http storePath remoteFileId = do
-  liftIO (HTTP2.sendRequest http req Nothing) >>= \case
+  liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
     Left e -> error "TODO: http2chatError"
     Right HTTP2.HTTP2Response {respBody} -> do
       error "TODO: stream body into a local file" -- XXX: consult headers for a file name?
@@ -207,18 +225,25 @@ fetchRemoteFile http storePath remoteFileId = do
     path = "/fetch/" <> bshow remoteFileId
 
 processControllerRequest :: forall m . (ChatMonad m) => (ByteString -> m ChatResponse) -> RemoteCtrlId -> HTTP2.HTTP2Request -> m ()
-processControllerRequest execChatCommand rc HTTP2.HTTP2Request {request, reqBody = HTTP2Body {bodyHead}, sendResponse} = case (HTTP2Server.requestMethod request, HTTP2Server.requestPath request) of
-  (Just "GET", Just "/") -> getHello
-  (Just "POST", Just "/command") -> postCommand
-  (Just "GET", Just "/output") -> getOutput
-  (Just "GET", Just "/notify") -> getNotify
-  (Just "PUT", Just "/store") -> putStore
-  (Just "GET", Just "/fetch") -> getFetch
-  unexpected -> respondWith badRequest400 $ "unexpected method/path: " <> Binary.putStringUtf8 (show unexpected)
+processControllerRequest execChatCommand rc HTTP2.HTTP2Request {request, reqBody = HTTP2Body {bodyHead}, sendResponse} = do
+  logDebug $ "Remote controller request: " <> T.pack (show $ method <> " " <> path)
+  res <- try $ case (method, path) of
+    ("GET", "/") -> getHello
+    ("POST", "/command") -> postCommand
+    ("GET", "/output") -> getOutput
+    ("GET", "/notify") -> getNotify
+    ("PUT", "/store") -> putStore
+    ("GET", "/fetch") -> getFetch
+    unexpected -> respondWith badRequest400 $ "unexpected method/path: " <> Binary.putStringUtf8 (show unexpected)
+  case res of
+    Left (SomeException e) -> logError $ "Error handling remote controller request (" <> T.pack (show $ method <> " " <> path) <> "): " <> T.pack (show e)
+    Right () -> logDebug $ "Remote controller request: " <> T.pack (show $ method <> " " <> path) <> " OK"
   where
-    getHello = respond "TODO: getHello"
+    method = maybe "" id $ HTTP2Server.requestMethod request
+    path = maybe "" id $ HTTP2Server.requestPath request
+    getHello = respond "OK"
     postCommand = execChatCommand bodyHead >>= respondJSON
-    getOutput = respond "TODO: getOutput"
+    getOutput = asks outputQ >>= atomically . readTBQueue >>= respondJSON
     getNotify = asks notifyQ >>= atomically . readTBQueue >>= respondJSON
     putStore = respond "TODO: putStore"
     getFetch = respond "TODO: getFetch"
@@ -227,7 +252,6 @@ processControllerRequest execChatCommand rc HTTP2.HTTP2Request {request, reqBody
     respondJSON = respond . Binary.fromLazyByteString . J.encode
     respond = respondWith ok200
     respondWith status = liftIO . sendResponse . HTTP2Server.responseBuilder status []
-
 
 -- * ChatRequest handlers
 

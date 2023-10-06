@@ -53,10 +53,11 @@ getKey =
 runInputLoop :: ChatTerminal -> ChatController -> IO ()
 runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
+  rh <- readTVarIO $ currentRemoteHost cc
   let bs = encodeUtf8 $ T.pack s
       cmd = parseChatCommand bs
   unless (isMessage cmd) $ echo s
-  r <- runReaderT (execChatCommand Nothing bs) cc
+  r <- runReaderT (execChatCommand rh bs) cc
   case r of
     CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
     CRChatError _ _ -> when (isMessage cmd) $ echo s

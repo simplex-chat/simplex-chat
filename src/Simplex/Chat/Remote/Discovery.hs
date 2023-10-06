@@ -32,7 +32,7 @@ import Simplex.Messaging.Transport (supportedParameters)
 import qualified Simplex.Messaging.Transport as Transport
 import Simplex.Messaging.Transport.Client (TransportHost (..), defaultTransportClientConfig, runTransportClient)
 import Simplex.Messaging.Transport.HTTP2 (defaultHTTP2BufferSize, getHTTP2Body)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError, attachHTTP2Client, defaultHTTP2ClientConfig)
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError, attachHTTP2Client, connTimeout, defaultHTTP2ClientConfig)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..), runHTTP2ServerWith)
 import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServer)
 import Simplex.Messaging.Util (whenM)
@@ -70,6 +70,7 @@ runAnnouncer :: ByteString -> IO ()
 runAnnouncer inviteBS = do
   sock <- UDP.clientSocket BROADCAST_ADDR_V4 BROADCAST_PORT False
   N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
+  N.setSocketOption (UDP.udpSocket sock) N.ReuseAddr 1
   forever $ do
     UDP.send sock inviteBS
     threadDelay 1000000
@@ -88,8 +89,10 @@ startTLSServer started credentials = async . liftIO . runTransportServer started
 -- | Attach HTTP2 client and hold the TLS until the attached client finishes.
 runHTTP2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> Transport.TLS -> IO ()
 runHTTP2Client finishedVar clientVar tls = do
-  attachHTTP2Client defaultHTTP2ClientConfig ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
+  attachHTTP2Client config ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
   readMVar finishedVar
+  where
+    config = defaultHTTP2ClientConfig { connTimeout = 86400000000 }
 
 openListener :: (MonadIO m) => m UDP.ListenSocket
 openListener = liftIO $ do
