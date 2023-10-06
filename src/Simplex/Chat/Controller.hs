@@ -684,8 +684,8 @@ instance ToJSON ContactAddressConnectionPlan where
 data GroupLinkConnectionPlan
   = GLCPOk
   | GLCPOwnLink
-  | GLCPConnecting {contact_ :: Maybe Contact}
-  | GLCPKnown {contact :: Contact}
+  | GLCPConnecting {contact_ :: Maybe GroupInfo}
+  | GLCPKnown {contact :: GroupInfo}
   deriving (Show, Generic)
 
 instance ToJSON GroupLinkConnectionPlan where
